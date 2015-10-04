@@ -1,0 +1,2123 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module time_manager_mod</title>
+<link type="text/css" href="http://www.gfdl.noaa.gov/~fms/style/doc.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module time_manager_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:fms@gfdl.noaa.gov">   fms </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/shared/time_manager">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   A software package that provides a set of simple interfaces for
+   modelers to perform computations related to time and dates. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div>   The changes between the lima revision and this revision are more
+   extensive that all those between antwerp and lima.
+   A brief description of these changes follows.
+   <br>
+<br>
+   1) Added option to set the smallest time increment to something less than one second.
+   This is controlled by calling the pubic subroutine set_ticks_per_second.
+   <br>
+<br>
+   2) Gregorian calendar fixed.
+   <br>
+<br>
+   3) Optional error flag added to calling arguments of public routines.
+   This allows the using routine to terminate the program. It is likely that more
+   diagnostic information is available from the user than from time_manager alone.
+   If the error flag is present then it is the responsibility of the using
+   routine to test it and add additional information to the error message.
+   <br>
+<br>
+   4) Removed the restriction that time increments be positive in routines that increment or decrement
+   time and date. The option to prohibit negative increments can be turned on via optional argument.
+   <br>
+<br>
+   5) subroutine set_date_c modified to handle strings that include only hours or only hours and minutes.
+   This complies with CF convensions.
+   <br>
+<br>
+   6) Made calendar specific routines private.
+   They are not used, and should not be used, by any using code.
+   <br>
+<br>
+   7) Error messages made more informative.
+   <br>
+<br>
+   The module defines a type that can be used to represent discrete
+   times (accurate to one second) and to map these times into dates
+   using a variety of calendars. A time is mapped to a date by
+   representing the time with respect to an arbitrary base date (refer
+   to <b>NOTES</b>   section for the <a href="#base date">base date</a>   setting).
+   <br>
+<br>
+   The time_manager provides a single defined type, time_type, which is
+   used to store time and date quantities. A time_type is a positive
+   definite quantity that represents an interval of time. It can be
+   most easily thought of as representing the number of seconds in some
+   time interval. A time interval can be mapped to a date under a given
+   calendar definition by using it to represent the time that has passed
+   since some base date. A number of interfaces are provided to operate
+   on time_type variables and their associated calendars. Time intervals
+   can be as large as n days where n is the largest number represented by
+   the default integer type on a compiler. This is typically considerably
+   greater than 10 million years (assuming 32 bit integer representation)
+   which is likely to be adequate for most applications. The description
+   of the interfaces is separated into two sections. The first deals with
+   operations on time intervals while the second deals with operations
+   that convert time intervals to dates for a given calendar.
+   The smallest increment of time is referred to as a tick.
+   A tick cannot be larger than 1 second, which also is the default.
+   The number of ticks per second is set via pubic subroutine set_ticks_per_second.
+   For example, ticks_per_second = 1000  will set the tick to one millisecond. </div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>fms_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#set_time">set_time</a>:</dt>
+<dd>   Given some number of seconds and days, returns the
+   corresponding time_type. </dd>
+<dt>
+<a href="#get_time">get_time</a>:</dt>
+<dd>   Given a time interval, returns the corresponding seconds and days. </dd>
+<dt>
+<a href="#increment_time">increment_time</a>:</dt>
+<dd>   Given a time and an increment of days and seconds, returns
+   a time that adds this increment to an input time. </dd>
+<dt>
+<a href="#decrement_time">decrement_time</a>:</dt>
+<dd>   Given a time and a decrement of days and seconds, returns
+   a time that subtracts this decrement from an input time. </dd>
+<dt>
+<a href="#time_gt  operator(>)">time_gt  operator(&gt;)</a>:</dt>
+<dd>   Returns true if time1 &gt; time2. </dd>
+<dt>
+<a href="#time_ge; operator(>=)">time_ge; operator(&gt;=)</a>:</dt>
+<dd>   Returns true if time1 &gt;= time2. </dd>
+<dt>
+<a href="#time_lt; operator(<)">time_lt; operator(&lt;)</a>:</dt>
+<dd>   Returns true if time1 &lt; time2. </dd>
+<dt>
+<a href="#time_le; operator(<=)">time_le; operator(&lt;=)</a>:</dt>
+<dd>   Returns true if time1 &lt;= time2. </dd>
+<dt>
+<a href="#time_eq; operator(==)">time_eq; operator(==)</a>:</dt>
+<dd>   Returns true if time1 == time2. </dd>
+<dt>
+<a href="#time_ne; operator(/=)">time_ne; operator(/=)</a>:</dt>
+<dd>   Returns true if time1 /= time2. </dd>
+<dt>
+<a href="#time_plus; operator(+)">time_plus; operator(+)</a>:</dt>
+<dd>   Returns sum of two time_types. </dd>
+<dt>
+<a href="#time_minus; operator(-)">time_minus; operator(-)</a>:</dt>
+<dd>   Returns difference of two time_types. </dd>
+<dt>
+<a href="#time_scalar_mult; operator(*)">time_scalar_mult; operator(*)</a>:</dt>
+<dd>   Returns time multiplied by integer factor n. </dd>
+<dt>
+<a href="#scalar_time_mult; operator(*)">scalar_time_mult; operator(*)</a>:</dt>
+<dd>   Returns time multiplied by integer factor n. </dd>
+<dt>
+<a href="#time_divide; operator(/)">time_divide; operator(/)</a>:</dt>
+<dd>   Returns the largest integer, n, for which time1 &gt;= time2 * n. </dd>
+<dt>
+<a href="#time_real_divide; operator(//)">time_real_divide; operator(//)</a>:</dt>
+<dd>   Returns the double precision quotient of two times. </dd>
+<dt>
+<a href="#time_type_to_real">time_type_to_real</a>:</dt>
+<dd>   Converts time to seconds and returns it as a real number </dd>
+<dt>
+<a href="#real_to_time_type">real_to_time_type</a>:</dt>
+<dd>   Converts a real number of seconds to a time_type variable </dd>
+<dt>
+<a href="#time_scalar_divide; operator(/)">time_scalar_divide; operator(/)</a>:</dt>
+<dd>   Returns the largest time, t, for which n * t &lt;= time. </dd>
+<dt>
+<a href="#interval_alarm">interval_alarm</a>:</dt>
+<dd>   Given a time, and a time interval, this function returns true
+   if this is the closest time step to the alarm time. </dd>
+<dt>
+<a href="#repeat_alarm">repeat_alarm</a>:</dt>
+<dd>   Repeat_alarm supports an alarm that goes off with
+   alarm_frequency and lasts for alarm_length. </dd>
+<dt>
+<a href="#set_calendar_type">set_calendar_type</a>:</dt>
+<dd>   Sets the default calendar type for mapping time intervals to dates. </dd>
+<dt>
+<a href="#get_calendar_type">get_calendar_type</a>:</dt>
+<dd>   Returns the value of the default calendar type for mapping
+   from time to date. </dd>
+<dt>
+<a href="#set_ticks_per_second">set_ticks_per_second</a>:</dt>
+<dd>   Sets the number of ticks per second. </dd>
+<dt>
+<a href="#get_ticks_per_second">get_ticks_per_second</a>:</dt>
+<dd>   Returns the number of ticks per second. </dd>
+<dt>
+<a href="#get_date">get_date</a>:</dt>
+<dd>   Given a time_interval, returns the corresponding date under
+   the selected calendar. </dd>
+<dt>
+<a href="#set_date">set_date</a>:</dt>
+<dd>   Given an input date in year, month, days, etc., creates a
+   time_type that represents this time interval from the
+   internally defined base date. </dd>
+<dt>
+<a href="#increment_date">increment_date</a>:</dt>
+<dd>   Increments the date represented by a time interval and the
+   default calendar type by a number of seconds, etc. </dd>
+<dt>
+<a href="#decrement_date">decrement_date</a>:</dt>
+<dd>   Decrements the date represented by a time interval and the
+   default calendar type by a number of seconds, etc. </dd>
+<dt>
+<a href="#days_in_month">days_in_month</a>:</dt>
+<dd>   Given a time interval, gives the number of days in the
+   month corresponding to the default calendar. </dd>
+<dt>
+<a href="#leap_year">leap_year</a>:</dt>
+<dd>   Returns true if the year corresponding to the input time is
+   a leap year. Always returns false for THIRTY_DAY_MONTHS and NOLEAP. </dd>
+<dt>
+<a href="#length_of_year">length_of_year</a>:</dt>
+<dd>   Returns the mean length of the year in the default calendar setting. </dd>
+<dt>
+<a href="#days_in_year">days_in_year</a>:</dt>
+<dd>   Returns the number of days in the calendar year corresponding to
+   the date represented by time for the default calendar. </dd>
+<dt>
+<a href="#month_name">month_name</a>:</dt>
+<dd>   Returns a character string containing the name of the
+   month corresponding to month number n. </dd>
+<dt>
+<a href="#time_manager_init">time_manager_init</a>:</dt>
+<dd>   Writes the version information to the log file </dd>
+<dt>
+<a href="#print_time">print_time</a>:</dt>
+<dd>   Prints the given time_type argument as a time (using days, seconds and ticks) </dd>
+<dt>
+<a href="#print_date">print_date</a>:</dt>
+<dd>   prints the time to standard output (or optional unit) as a date. </dd>
+<dt>
+<a href="#valid_calendar_types">valid_calendar_types</a>:</dt>
+<dd>   Returns a character string that describes the
+   calendar type corresponding to the input integer. </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>
+<table align="center" cellspacing="2" CELLPADDING="2" BORDER="2">
+<tr>
+<th> Name  </th><th> Type  </th><th> Value  </th><th> Units  </th><th> Description  </th>
+</tr>
+<tr>
+<td> time_type  </td><td> derived type  </td><td> ---  </td><td> ---  </td><td>    Derived-type data variable used to store time and date quantities. It
+   contains three PRIVATE variables: days, seconds and ticks.   </td>
+</tr>
+</table>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="set_time"></a>
+<h4>set_time</h4>
+<pre>1. <b>set_time</b> (seconds, days, ticks, err_msg)</pre>
+<pre>2. <b>set_time</b> (time_string, err_msg, allow_rounding)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Given some number of seconds and days, returns the
+   corresponding time_type. set_time has two forms;
+   one accepts integer input, the other a character string.
+   For the first form, there are no restrictions on the range of the inputs,
+   except that the result must be positive time.
+   e.g. days=-1, seconds=86401 is acceptable.
+   For the second form, days and seconds must both be positive. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>seconds&nbsp;&nbsp;&nbsp;</tt></td><td>   A number of seconds. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>days&nbsp;&nbsp;&nbsp;</tt></td><td>   A number of days. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ticks&nbsp;&nbsp;&nbsp;</tt></td><td>   A number of ticks. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, optional, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_string&nbsp;&nbsp;&nbsp;</tt></td><td>   Contains days and seconds separated by a single blank.
+   days must be integer, seconds may be integer or real.
+   Examples: '100 43200'  '100 43200.50' <br>&nbsp;&nbsp;&nbsp;<span class="type">[character]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>allow_rounding&nbsp;&nbsp;&nbsp;</tt></td><td>   When .true., any fractions of a second will be rounded off to the nearest tick.
+   When .false., it is a fatal error if the second fraction cannot be exactly
+   represented by a number of ticks. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, optional]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   When present, and when non-blank, a fatal error condition as been detected.
+   The string itself is an error message.
+   It is recommended that, when err_msg is present in the call
+   to this routine, the next line of code should be something
+   similar to this:
+   if(err_msg /= '') call error_mesg('my_routine','additional info: '//trim(err_msg),FATAL) <br>&nbsp;&nbsp;&nbsp;<span class="type">[character, optional, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>set_time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval corresponding to this number of days and seconds. <br>&nbsp;&nbsp;&nbsp;<span class="type">[, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_time"></a>
+<h4>get_time</h4>
+<pre> 
+<b>get_time</b> (time, seconds, days, ticks, err_msg)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Given a time interval, returns the corresponding seconds and days. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>seconds&nbsp;&nbsp;&nbsp;</tt></td><td>   A number of seconds. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>days&nbsp;&nbsp;&nbsp;</tt></td><td>   A number of days. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ticks&nbsp;&nbsp;&nbsp;</tt></td><td>   A number of ticks. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, optional, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   When present, and when non-blank, a fatal error condition as been detected.
+   The string itself is an error message.
+   It is recommended that, when err_msg is present in the call
+   to this routine, the next line of code should be something
+   similar to this:
+   if(err_msg /= '') call error_mesg('my_routine','additional info: '//trim(err_msg),FATAL) <br>&nbsp;&nbsp;&nbsp;<span class="type">[character, optional, dimension(scalar)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="increment_time"></a>
+<h4>increment_time</h4>
+<pre> 
+<b>increment_time</b> (time, seconds, days, ticks, err_msg, allow_neg_inc)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Given a time and an increment of days and seconds, returns
+   a time that adds this increment to an input time.
+   Increments a time by seconds and days. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>seconds&nbsp;&nbsp;&nbsp;</tt></td><td>   Increment of seconds. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>days&nbsp;&nbsp;&nbsp;</tt></td><td>   Increment of days. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, optional, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ticks&nbsp;&nbsp;&nbsp;</tt></td><td>   Increment of ticks. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, optional, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>allow_neg_inc&nbsp;&nbsp;&nbsp;</tt></td><td>   When .false., it is a fatal error if any of the input time increments are negative.
+   This mimics the behavior of lima and earlier revisions. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, optional, dimension(scalar)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>increment_time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time that adds this increment to the input time.
+   A negative result is a fatal error. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   When present, and when non-blank, a fatal error condition as been detected.
+   The string itself is an error message.
+   It is recommended that, when err_msg is present in the call
+   to this routine, the next line of code should be something
+   similar to this:
+   if(err_msg /= '') call error_mesg('my_routine','additional info: '//trim(err_msg),FATAL) <br>&nbsp;&nbsp;&nbsp;<span class="type">[character, optional, dimension(scalar)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="decrement_time"></a>
+<h4>decrement_time</h4>
+<pre> 
+<b>decrement_time</b> (time, seconds, days, ticks, err_msg, allow_neg_inc)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Decrements a time by seconds and days. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>seconds&nbsp;&nbsp;&nbsp;</tt></td><td>   Decrement of seconds. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>days&nbsp;&nbsp;&nbsp;</tt></td><td>   Decrement of days. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, optional, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ticks&nbsp;&nbsp;&nbsp;</tt></td><td>   Decrement of ticks. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, optional, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>allow_neg_inc&nbsp;&nbsp;&nbsp;</tt></td><td>   When .false., it is a fatal error if any of the input time increments are negative.
+   This mimics the behavior of lima and earlier revisions. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, optional, dimension(scalar)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>decrement_time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time that subtracts this decrement from an input time.
+   A negative result is a fatal error. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   When present, and when non-blank, a fatal error condition as been detected.
+   The string itself is an error message.
+   It is recommended that, when err_msg is present in the call
+   to this routine, the next line of code should be something
+   similar to this:
+   if(err_msg /= '') call error_mesg('my_routine','additional info: '//trim(err_msg),FATAL) <br>&nbsp;&nbsp;&nbsp;<span class="type">[character, optional, dimension(scalar)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_gt  operator(>)"></a>
+<h4>time_gt  operator(&gt;)</h4>
+<pre> 
+<b>time_gt  operator(&gt;)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns true if time1 &gt; time2. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time1&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time2&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns true if time1 &gt; time2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_ge; operator(>=)"></a>
+<h4>time_ge; operator(&gt;=)</h4>
+<pre> 
+<b>time_ge; operator(&gt;=)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns true if time1 &gt;= time2. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time1&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time2&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns true if time1 &gt;= time2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_lt; operator(<)"></a>
+<h4>time_lt; operator(&lt;)</h4>
+<pre> 
+<b>time_lt; operator(&lt;)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns true if time1 &lt; time2. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time1&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time2&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns true if time1 &lt; time2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_le; operator(<=)"></a>
+<h4>time_le; operator(&lt;=)</h4>
+<pre> 
+<b>time_le; operator(&lt;=)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns true if time1 &lt;= time2. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time1&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time2&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns true if time1 &lt;= time2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_eq; operator(==)"></a>
+<h4>time_eq; operator(==)</h4>
+<pre> 
+<b>time_eq; operator(==)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns true if time1 == time2. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time1&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time2&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns true if time1 == time2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_ne; operator(/=)"></a>
+<h4>time_ne; operator(/=)</h4>
+<pre> 
+<b>time_ne; operator(/=)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns true if time1 /= time2. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time1&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time2&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns true if time1 /= time2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_plus; operator(+)"></a>
+<h4>time_plus; operator(+)</h4>
+<pre> 
+<b>time_plus; operator(+)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns sum of two time_types. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time1&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time2&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns sum of two time_types. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_minus; operator(-)"></a>
+<h4>time_minus; operator(-)</h4>
+<pre> 
+<b>time_minus; operator(-)</b> 
+</pre>
+<pre> 
+<b>time_minus; operator(-)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns difference of two time_types. WARNING: a time type is positive 
+   so by definition time1 - time2  is the same as time2 - time1. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time1&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time2&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns difference of two time_types. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_scalar_mult; operator(*)"></a>
+<h4>time_scalar_mult; operator(*)</h4>
+<pre> 
+<b>time_scalar_mult; operator(*)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns time multiplied by integer factor n. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>n&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns time multiplied by integer factor n. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="scalar_time_mult; operator(*)"></a>
+<h4>scalar_time_mult; operator(*)</h4>
+<pre> 
+<b>scalar_time_mult; operator(*)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns time multiplied by integer factor n. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>A time interval.<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>n&nbsp;&nbsp;&nbsp;</tt></td><td>   An integer. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns time multiplied by integer factor n. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_divide; operator(/)"></a>
+<h4>time_divide; operator(/)</h4>
+<pre> 
+<b>time_divide; operator(/)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns the largest integer, n, for which time1 &gt;= time2 * n. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time1&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time2&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns the largest integer, n, for which time1 &gt;= time2 * n. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_real_divide; operator(//)"></a>
+<h4>time_real_divide; operator(//)</h4>
+<pre> 
+<b>time_real_divide; operator(//)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns the double precision quotient of two times. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time1&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time2&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns the double precision quotient of two times <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimensiondouble precision]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_type_to_real"></a>
+<h4>time_type_to_real</h4>
+<pre> 
+<b>time_type_to_real</b> (time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Converts time to seconds and returns it as a real number </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="real_to_time_type"></a>
+<h4>real_to_time_type</h4>
+<pre> 
+<b>real_to_time_type</b> (x, err_msg)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Converts a real number of seconds to a time_type variable </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>x&nbsp;&nbsp;&nbsp;</tt></td><td>   A real number of seconds <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   When present, and when non-blank, a fatal error condition as been detected.
+   The string itself is an error message.
+   It is recommended that, when err_msg is present in the call
+   to this routine, the next line of code should be something
+   similar to this:
+   if(err_msg /= '') call error_mesg('my_routine','additional info: '//trim(err_msg),FATAL) <br>&nbsp;&nbsp;&nbsp;<span class="type">[character, optional, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>real_to_time_type&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_scalar_divide; operator(/)"></a>
+<h4>time_scalar_divide; operator(/)</h4>
+<pre> 
+<b>time_scalar_divide; operator(/)</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns the largest time, t, for which n * t &lt;= time. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>n&nbsp;&nbsp;&nbsp;</tt></td><td>   An integer factor. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns the largest time, t, for which n * t &lt;= time. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimensiondouble precision]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="interval_alarm"></a>
+<h4>interval_alarm</h4>
+<pre> 
+<b>interval_alarm</b> (time, time_interval, alarm, alarm_interval)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   This is a specialized operation that is frequently performed in models.
+   Given a time, and a time interval, this function is true if this is the
+   closest time step to the alarm time. The actual computation is:
+   <br>
+<br>
+   if((alarm_time - time) &lt;= (time_interval / 2))
+   <br>
+<br>
+   If the function is true, the alarm time is incremented by the
+   alarm_interval; WARNING, this is a featured side effect. Otherwise, the
+   function is false and there are no other effects. CAUTION: if the
+   alarm_interval is smaller than the time_interval, the alarm may fail to
+   return true ever again.  Watch
+   for problems if the new alarm time is less than time + time_interval </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   Current time. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_interval&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>alarm_interval&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>alarm&nbsp;&nbsp;&nbsp;</tt></td><td>   An alarm time, which is incremented by the alarm_interval
+   if the function is true. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>interval_alarm&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns either True or false. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="repeat_alarm"></a>
+<h4>repeat_alarm</h4>
+<pre> 
+<b>repeat_alarm</b> (time, alarm_frequency, alarm_length)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Repeat_alarm supports an alarm that goes off with alarm_frequency and
+   lasts for alarm_length.  If the nearest occurence of an alarm time
+   is less than half an alarm_length from the input time, repeat_alarm
+   is true.  For instance, if the alarm_frequency is 1 day, and the 
+   alarm_length is 2 hours, then repeat_alarm is true from time 2300 on 
+   day n to time 0100 on day n + 1 for all n. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   Current time. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>alarm_frequency&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval for alarm_frequency. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>alarm_length&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval for alarm_length. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>repeat_alarm&nbsp;&nbsp;&nbsp;</tt></td><td>   Returns either True or false. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="set_calendar_type"></a>
+<h4>set_calendar_type</h4>
+<pre> 
+<b>set_calendar_type</b> (type, err_msg)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   A constant number for setting the calendar type. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>type&nbsp;&nbsp;&nbsp;</tt></td><td>   A constant number for setting the calendar type. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension(scalar)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   When present, and when non-blank, a fatal error condition as been detected.
+   The string itself is an error message.
+   It is recommended that, when err_msg is present in the call
+   to this routine, the next line of code should be something
+   similar to this:
+   if(err_msg /= '') call error_mesg('my_routine','additional info: '//trim(err_msg),FATAL) <br>&nbsp;&nbsp;&nbsp;<span class="type">[character, optional, dimension(scalar)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_calendar_type"></a>
+<h4>get_calendar_type</h4>
+<pre> 
+<b>get_calendar_type</b> ()</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   There are no arguments in this function. It returns the value of
+   the default calendar type for mapping from time to date. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="set_ticks_per_second"></a>
+<h4>set_ticks_per_second</h4>
+<pre>
+<b>call set_ticks_per_second </b>(ticks_per_second)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Sets the number of ticks per second. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>type&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension(scalar)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_ticks_per_second"></a>
+<h4>get_ticks_per_second</h4>
+<pre>ticks_per_second = <b>get_ticks_per_second</b> ()</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns the number of ticks per second. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_date"></a>
+<h4>get_date</h4>
+<pre> 
+<b>get_date</b> (time, year, month, day, hour, minute, second, tick, err_msg)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Given a time_interval, returns the corresponding date under
+   the selected calendar. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval.<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>year&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>month&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>day&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>hour&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>minute&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>second&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tick&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, optional]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   When present, and when non-blank, a fatal error condition as been detected.
+   The string itself is an error message.
+   It is recommended that, when err_msg is present in the call
+   to this routine, the next line of code should be something
+   similar to this:
+   if(err_msg /= '') call error_mesg('my_routine','additional info: '//trim(err_msg),FATAL) <br>&nbsp;&nbsp;&nbsp;<span class="type">[character, optional, dimension(scalar)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="set_date"></a>
+<h4>set_date</h4>
+<pre>1. <b>set_date</b> (year, month, day, hours, minute, second, tick, err_msg)</pre>
+<pre>2. <b>set_date</b> _c(time_string, zero_year_warning, err_msg, allow_rounding) time_string is a character string containing a date formatted according to CF conventions. e.g. '1980-12-31 23:59:59.9'</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Given a date, computes the corresponding time given the selected
+   date time mapping algorithm. Note that it is possible to specify
+   any number of illegal dates; these should be checked for and generate
+   errors as appropriate. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval.<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>year&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>month&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>day&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>hour&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>minute&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>second&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tick&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>zero_year_warning&nbsp;&nbsp;&nbsp;</tt></td><td>   If the year number is zero, it will be silently changed to one,
+   unless zero_year_warning=.true., in which case a WARNING message
+   will also be issued. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>allow_rounding&nbsp;&nbsp;&nbsp;</tt></td><td>   When .true., any fractions of a second will be rounded off to the nearest tick.
+   When .false., it is a fatal error if the second fraction cannot be exactly
+   represented by a number of ticks. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, optional]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   When present, and when non-blank, a fatal error condition as been detected.
+   The string itself is an error message.
+   It is recommended that, when err_msg is present in the call
+   to this routine, the next line of code should be something
+   similar to this:
+   if(err_msg /= '') call error_mesg('my_routine','additional info: '//trim(err_msg),FATAL) <br>&nbsp;&nbsp;&nbsp;<span class="type">[character, optional, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>set_date&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval.<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="increment_date"></a>
+<h4>increment_date</h4>
+<pre> 
+<b>increment_date</b> (time, years, months, days, hours, minutes, seconds, ticks, err_msg)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Given a time and some date increment, computes a new time.  Depending
+   on the mapping algorithm from date to time, it may be possible to specify
+   undefined increments (i.e. if one increments by 68 days and 3 months in
+   a Julian calendar, it matters which order these operations are done and
+   we don't want to deal with stuff like that, make it an error). </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval.<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>years&nbsp;&nbsp;&nbsp;</tt></td><td>An increment of years.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>months&nbsp;&nbsp;&nbsp;</tt></td><td>An increment of months.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>days&nbsp;&nbsp;&nbsp;</tt></td><td>An increment of days.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>hours&nbsp;&nbsp;&nbsp;</tt></td><td>An increment of hours.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>minutes&nbsp;&nbsp;&nbsp;</tt></td><td>An increment of minutes.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>seconds&nbsp;&nbsp;&nbsp;</tt></td><td>An increment of seconds.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ticks&nbsp;&nbsp;&nbsp;</tt></td><td>An increment of ticks.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>allow_neg_inc&nbsp;&nbsp;&nbsp;</tt></td><td>   When .false., it is a fatal error if any of the input time increments are negative.
+   This mimics the behavior of lima and earlier revisions. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, optional, dimension(scalar)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   When present, and when non-blank, a fatal error condition as been detected.
+   The string itself is an error message.
+   It is recommended that, when err_msg is present in the call
+   to this routine, the next line of code should be something
+   similar to this:
+   if(err_msg /= '') call error_mesg('my_routine','additional info: '//trim(err_msg),FATAL) <br>&nbsp;&nbsp;&nbsp;<span class="type">[character, optional, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>increment_date&nbsp;&nbsp;&nbsp;</tt></td><td>   A new time based on the input 
+   time interval and the calendar type. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>NOTE</b>
+</dt>
+<dd>   For all but the thirty_day_months calendar, increments to months
+   and years must be made separately from other units because of the
+   non-associative nature of addition.
+   If the result is a negative time (i.e. date before the base date)
+   it is considered a fatal error. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="decrement_date"></a>
+<h4>decrement_date</h4>
+<pre> 
+<b>decrement_date</b> (time, years, months, days, hours, minutes, seconds, ticks, err_msg))</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Given a time and some date decrement, computes a new time.  Depending
+   on the mapping algorithm from date to time, it may be possible to specify
+   undefined decrements (i.e. if one decrements by 68 days and 3 months in
+   a Julian calendar, it matters which order these operations are done and
+   we don't want to deal with stuff like that, make it an error). </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval.<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>years&nbsp;&nbsp;&nbsp;</tt></td><td>An decrement of years.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>months&nbsp;&nbsp;&nbsp;</tt></td><td>An decrement of months.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>days&nbsp;&nbsp;&nbsp;</tt></td><td>An decrement of days.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>hours&nbsp;&nbsp;&nbsp;</tt></td><td>An decrement of hours.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>minutes&nbsp;&nbsp;&nbsp;</tt></td><td>An decrement of minutes.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>seconds&nbsp;&nbsp;&nbsp;</tt></td><td>An decrement of seconds.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ticks&nbsp;&nbsp;&nbsp;</tt></td><td>An decrement of ticks.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>allow_neg_inc&nbsp;&nbsp;&nbsp;</tt></td><td>   When .false., it is a fatal error if any of the input time increments are negative.
+   This mimics the behavior of lima and earlier revisions. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, optional, dimension(scalar)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   When present, and when non-blank, a fatal error condition as been detected.
+   The string itself is an error message.
+   It is recommended that, when err_msg is present in the call
+   to this routine, the next line of code should be something
+   similar to this:
+   if(err_msg /= '') call error_mesg('my_routine','additional info: '//trim(err_msg),FATAL) <br>&nbsp;&nbsp;&nbsp;<span class="type">[character, optional, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>decrement_date&nbsp;&nbsp;&nbsp;</tt></td><td>   A new time based on the input 
+   time interval and the calendar type. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>NOTE</b>
+</dt>
+<dd>   For all but the thirty_day_months calendar, decrements to months
+   and years must be made separately from other units because of the
+   non-associative nature of addition.
+   If the result is a negative time (i.e. date before the base date)
+   it is considered a fatal error. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="days_in_month"></a>
+<h4>days_in_month</h4>
+<pre> 
+<b>days_in_month</b> (time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Given a time, computes the corresponding date given the selected
+   date time mapping algorithm. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>A time interval.<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>days_in_month&nbsp;&nbsp;&nbsp;</tt></td><td>   The number of days in the month given the selected time
+   mapping algorithm. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="leap_year"></a>
+<h4>leap_year</h4>
+<pre> 
+<b>leap_year</b> (time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns true if the year corresponding to the input time is
+   a leap year. Always returns false for THIRTY_DAY_MONTHS and NOLEAP. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>A time interval.<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>leap_year&nbsp;&nbsp;&nbsp;</tt></td><td>   true if the year corresponding to the input time is a leap year. <br>&nbsp;&nbsp;&nbsp;<span class="type">[calendar_type, dimension]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="length_of_year"></a>
+<h4>length_of_year</h4>
+<pre> 
+<b>length_of_year</b> ()</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   There are no arguments in this function. It returns the mean
+   length of the year in the default calendar setting. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="days_in_year"></a>
+<h4>days_in_year</h4>
+<pre> 
+<b>days_in_year</b> (Time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns the number of days in the calendar year corresponding to
+   the date represented by time for the default calendar. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>Time&nbsp;&nbsp;&nbsp;</tt></td><td>A time interval.<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>   The number of days in this year for the default calendar type. </td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="month_name"></a>
+<h4>month_name</h4>
+<pre> 
+<b>month_name</b> (n)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns a character string containing the name of the
+   month corresponding to month number n. Definition is the
+   same for all calendar types. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>n&nbsp;&nbsp;&nbsp;</tt></td><td>Month number.<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>month_name&nbsp;&nbsp;&nbsp;</tt></td><td>   The character string associated with a month.
+   All calendars have 12 months and return full
+   month names, not abreviations. <br>&nbsp;&nbsp;&nbsp;<span class="type">[character(len=9)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_manager_init"></a>
+<h4>time_manager_init</h4>
+<pre> 
+<b>time_manager_init</b> ()</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Initialization routine.
+   Writes the version information to the log file </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="print_time"></a>
+<h4>print_time</h4>
+<pre> 
+<b>print_time</b> (time,str,unit)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Prints the given time_type argument as a time (using days, seconds and ticks)
+   NOTE: there is no check for PE number. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   Time that will be printed. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>str&nbsp;&nbsp;&nbsp;</tt></td><td>   Character string that precedes the printed time or date. <br>&nbsp;&nbsp;&nbsp;<span class="type">[character (len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>unit&nbsp;&nbsp;&nbsp;</tt></td><td>   Unit number for printed output. The default unit is stdout. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="print_date"></a>
+<h4>print_date</h4>
+<pre> 
+<b>print_date</b> (time,str,unit)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Prints the given time_type argument as a date (using year, month, day,
+   hour, minutes, seconds and ticks). NOTE: there is no check for PE number. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   Time that will be printed. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>str&nbsp;&nbsp;&nbsp;</tt></td><td>   Character string that precedes the printed time or date. <br>&nbsp;&nbsp;&nbsp;<span class="type">[character (len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>unit&nbsp;&nbsp;&nbsp;</tt></td><td>   Unit number for printed output. The default unit is stdout. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="valid_calendar_types"></a>
+<h4>valid_calendar_types</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns a character string that describes the
+   calendar type corresponding to the input integer. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>ncal&nbsp;&nbsp;&nbsp;</tt></td><td>   An integer corresponding to a valid calendar type. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   When present, and when non-blank, a fatal error condition as been detected.
+   The string itself is an error message.
+   It is recommended that, when err_msg is present in the call
+   to this routine, the next line of code should be something
+   similar to this:
+   if(err_msg /= '') call error_mesg('my_routine','additional info: '//trim(err_msg),FATAL) <br>&nbsp;&nbsp;&nbsp;<span class="type">[character, optional, dimension(scalar)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>valid_calendar_types&nbsp;&nbsp;&nbsp;</tt></td><td>   A character string describing the calendar type. <br>&nbsp;&nbsp;&nbsp;<span class="type">[character(len=24)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<!-- END NAMELIST --><a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<a name="REFERENCES"></a>
+<hr>
+<h4>REFERENCES</h4>
+<!-- BEGIN REFERENCES -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END REFERENCES -->
+<a name="COMPILER SPECIFICS"></a>
+<hr>
+<h4>COMPILER SPECIFICS</h4>
+<!-- BEGIN COMPILER SPECIFICS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END COMPILER SPECIFICS -->
+<a name="PRECOMPILER OPTIONS"></a>
+<hr>
+<h4>PRECOMPILER OPTIONS</h4>
+<!-- BEGIN PRECOMPILER OPTIONS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END PRECOMPILER OPTIONS -->
+<a name="LOADER OPTIONS"></a>
+<hr>
+<h4>LOADER OPTIONS</h4>
+<!-- BEGIN LOADER -->
+<div>None.<br>
+<br>
+</div>
+<!-- END LOADER OPTIONS -->
+<a name="TEST PROGRAM"></a>
+<hr>
+<h4>TEST PROGRAM</h4>
+<!-- BEGIN TEST PROGRAM -->
+<div>
+<dl>
+<dt>time_main2</dt>
+<dd> 
+<pre>        use time_manager_mod
+        implicit none
+        type(time_type) :: dt, init_date, astro_base_date, time, final_date
+        type(time_type) :: next_rad_time, mid_date
+        type(time_type) :: repeat_alarm_freq, repeat_alarm_length
+        integer :: num_steps, i, days, months, years, seconds, minutes, hours
+        integer :: months2, length
+        real :: astro_days
+   
+Set calendar type
+    call set_calendar_type(THIRTY_DAY_MONTHS)
+        call set_calendar_type(JULIAN)
+    call set_calendar_type(NOLEAP)
+   
+ Set timestep
+        dt = set_time(1100, 0)
+   
+ Set initial date
+        init_date = set_date(1992, 1, 1)
+   
+ Set date for astronomy delta calculation
+        astro_base_date = set_date(1970, 1, 1, 12, 0, 0)
+   
+ Copy initial time to model current time
+        time = init_date
+   
+ Determine how many steps to do to run one year
+        final_date = increment_date(init_date, years = 1)
+        num_steps = (final_date - init_date) / dt
+        write(*, *) 'Number of steps is' , num_steps
+   
+ Want to compute radiation at initial step, then every two hours
+        next_rad_time = time + set_time(7200, 0)
+   
+ Test repeat alarm
+        repeat_alarm_freq = set_time(0, 1)
+        repeat_alarm_length = set_time(7200, 0)
+   
+ Loop through a year
+        do i = 1, num_steps
+   
+ Increment time
+        time = time + dt
+   
+ Test repeat alarm
+        if(repeat_alarm(time, repeat_alarm_freq, repeat_alarm_length)) &amp;
+        write(*, *) 'REPEAT ALARM IS TRUE'
+   
+ Should radiation be computed? Three possible tests.
+ First test assumes exact interval; just ask if times are equal
+     if(time == next_rad_time) then
+ Second test computes rad on last time step that is &lt;= radiation time
+     if((next_rad_time - time) &lt; dt .and. time &lt; next_rad) then
+ Third test computes rad on time step closest to radiation time
+         if(interval_alarm(time, dt, next_rad_time, set_time(7200, 0))) then
+           call get_date(time, years, months, days, hours, minutes, seconds)
+           write(*, *) days, month_name(months), years, hours, minutes, seconds
+   
+ Need to compute real number of days between current time and astro_base
+           call get_time(time - astro_base_date, seconds, days)
+           astro_days = days + seconds / 86400.
+       write(*, *) 'astro offset ', astro_days
+        end if
+   
+ Can compute daily, monthly, yearly, hourly, etc. diagnostics as for rad
+   
+ Example: do diagnostics on last time step of this month
+        call get_date(time + dt, years, months2, days, hours, minutes, seconds)
+        call get_date(time, years, months, days, hours, minutes, seconds)
+        if(months /= months2) then
+           write(*, *) 'last timestep of month'
+           write(*, *) days, months, years, hours, minutes, seconds
+        endif
+   
+ Example: mid-month diagnostics; inefficient to make things clear
+        length = days_in_month(time)
+        call get_date(time, years, months, days, hours, minutes, seconds)
+        mid_date = set_date(years, months, 1) + set_time(0, length) / 2
+   
+        if(time &lt; mid_date .and. (mid_date - time) &lt; dt) then
+           write(*, *) 'mid-month time'
+           write(*, *) days, months, years, hours, minutes, seconds
+        endif
+   
+        end do</pre>   end program time_main2 </dd>
+</dl>
+</div>
+<br>
+<!-- END TEST PROGRAM -->
+<a name="KNOWN BUGS"></a>
+<hr>
+<h4>KNOWN BUGS</h4>
+<!-- BEGIN KNOWN BUGS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END KNOWN BUGS -->
+<a name="NOTES"></a>
+<hr>
+<h4>NOTES</h4>
+<!-- BEGIN NOTES -->
+<div>   The &lt;a name="base date"&gt;base date&lt;/a&gt; is implicitly defined so users don't 
+   need to be concerned with it. For the curious, the base date is defined as 
+   0 seconds, 0 minutes, 0 hours, day 1, month 1, year 1 <br>
+<br>   Please note that a time is a positive definite quantity. <br>
+<br>   See the <a href="TEST PROGRAM">Test Program </a>   for a simple program 
+   that shows some of the capabilities of the time manager. </div>
+<br>
+<!-- END NOTES -->
+<a name="FUTURE PLANS"></a>
+<hr>
+<h4>FUTURE PLANS</h4>
+<!-- BEGIN FUTURE PLANS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END FUTURE PLANS -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

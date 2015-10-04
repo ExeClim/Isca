@@ -1,0 +1,295 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module tridiagonal_mod</title>
+<link type="text/css" href="http://www.gfdl.noaa.gov/~fms/style/doc.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module tridiagonal_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:Isaac.Held@noaa.gov">   Isaac Held </a>,&nbsp;
+    <a href="mailto:Bruce.Wyman@noaa.gov">   Bruce Wyman </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/shared/tridiagonal">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   Solves the tridiagonal system of equations. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div>   The following schematic represents the system of equations solved,
+   where X is the solution. <pre>     | B(1)  A(1)   0     0                .......            0    |  |X(1)|   |D(1)|
+     | C(2)  B(2)  A(2)   0                .......            0    |  |X(2)|   |D(2)|
+     |  0    C(3)  B(3)  A(3)  0           .......            0    |  | .. |   | .. |
+     |  ..........................................                 |  | .. | = | .. |
+     |  ..........................................                 |  | .. |   | .. |
+     |                                  C(N-2) B(N-2) A(N-2)  0    |  | .. |   | .. |
+     |                                    0    C(N-1) B(N-1) A(N-1)|  | .. |   | .. |
+     |                                    0      0    C(N)   B(N)  |  |X(N)|   |D(N)|</pre>   To solve this system <pre>   call tri_invert(X,D,A,B,C)
+
+       real, intent(out), dimension(:,:,:) :: X
+       real, intent(in),  dimension(:,:,:) :: D
+       real, optional,    dimension(:,:,:) :: A,B,C</pre>   For simplicity (?), A and C are assumed to be dimensioned the same size 
+   as B, D, and X, although any input values for A(N) and C(1) are ignored.
+   (some checks are needed here)
+   <br>
+<br>
+   If A is not present, it is assumed that the matrix (A,B.C) has not been changed 
+   since the last call to tri_invert.
+   <br>
+<br>
+   To release memory, <pre>    call close_tridiagonal</pre>   The following module variables are used to retain the relevant information
+   if one recalls tri_invert without changing (A,B,C) </div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre></pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#tri_invert">tri_invert</a>:</dt>
+<dd>   Sets up and solves the tridiagonal system of equations. </dd>
+<dt>
+<a href="#close_tridiagonal">close_tridiagonal</a>:</dt>
+<dd>   Releases memory used by the solver. </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>None.<br>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="tri_invert"></a>
+<h4>tri_invert</h4>
+<pre>
+<b>call tri_invert </b>( x,d,a,b,c)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Sets up and solves the tridiagonal system of equations. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>d&nbsp;&nbsp;&nbsp;</tt></td><td>   The right-hand side term, see the schematic above. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:,:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>a,b,c&nbsp;&nbsp;&nbsp;</tt></td><td>   The left-hand-side terms (matrix), see the schematic above.
+   If A is not present, it is assumed that the matrix (A,B.C)
+   has not been changed since the last call to tri_invert. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:,:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>x&nbsp;&nbsp;&nbsp;</tt></td><td>   The solution to the tridiagonal system of equations. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:,:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>NOTE</b>
+</dt>
+<dd>   For simplicity, A and C are assumed to be dimensioned the same size
+   as B, D, and X, although any input values for A(N) and C(1) are ignored.
+   There are no checks to make sure the sizes agree. <br>
+<br>   The value of A(N) is modified on output, and B and C are unchanged. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="close_tridiagonal"></a>
+<h4>close_tridiagonal</h4>
+<pre>
+<b>call close_tridiagonal </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Releases memory used by the solver. </dd>
+<br>
+<br>
+<dt>
+<b>NOTE</b>
+</dt>
+<dd>   There are no arguments to this routine. </dd>
+<br>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<!-- END NAMELIST --><a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<a name="REFERENCES"></a>
+<hr>
+<h4>REFERENCES</h4>
+<!-- BEGIN REFERENCES -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END REFERENCES -->
+<a name="COMPILER SPECIFICS"></a>
+<hr>
+<h4>COMPILER SPECIFICS</h4>
+<!-- BEGIN COMPILER SPECIFICS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END COMPILER SPECIFICS -->
+<a name="PRECOMPILER OPTIONS"></a>
+<hr>
+<h4>PRECOMPILER OPTIONS</h4>
+<!-- BEGIN PRECOMPILER OPTIONS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END PRECOMPILER OPTIONS -->
+<a name="LOADER OPTIONS"></a>
+<hr>
+<h4>LOADER OPTIONS</h4>
+<!-- BEGIN LOADER -->
+<div>None.<br>
+<br>
+</div>
+<!-- END LOADER OPTIONS -->
+<a name="TEST PROGRAM"></a>
+<hr>
+<h4>TEST PROGRAM</h4>
+<!-- BEGIN TEST PROGRAM -->
+<div>None.<br>
+</div>
+<br>
+<!-- END TEST PROGRAM -->
+<a name="KNOWN BUGS"></a>
+<hr>
+<h4>KNOWN BUGS</h4>
+<!-- BEGIN KNOWN BUGS -->
+<div>
+<p>   Optional arguments A,B,C have no intent declaration,
+   so the default intent is inout. The value of A(N) is modified
+   on output, and B and C are unchanged. </p>
+</div>
+<br>
+<!-- END KNOWN BUGS -->
+<a name="NOTES"></a>
+<hr>
+<h4>NOTES</h4>
+<!-- BEGIN NOTES -->
+<div>   The following private allocatable arrays save the relevant information
+   if one recalls tri_invert without changing (A,B,C): <pre>        allocate ( e  (size(x,1), size(x,2), size(x,3)) )
+        allocate ( g  (size(x,1), size(x,2), size(x,3)) )
+        allocate ( cc (size(x,1), size(x,2), size(x,3)) )
+        allocate ( bb (size(x,1), size(x,2)) )</pre>   This storage is deallocated when close_tridiagonal is called. </div>
+<br>
+<!-- END NOTES -->
+<a name="FUTURE PLANS"></a>
+<hr>
+<h4>FUTURE PLANS</h4>
+<!-- BEGIN FUTURE PLANS -->
+<div>
+<p>   Maybe a cleaner version? </p>
+</div>
+<br>
+<!-- END FUTURE PLANS -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

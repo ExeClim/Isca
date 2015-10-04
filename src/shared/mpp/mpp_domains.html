@@ -1,0 +1,2107 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module mpp_domains_mod</title>
+<link type="text/css" href="http://data1.gfdl.noaa.gov/~fms/style/docbook.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module mpp_domains_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:V.Balaji@noaa.gov">
+   V. Balaji
+ </a>,&nbsp;
+    <a href="mailto:Zhi.Liang@noaa.gov">
+   Zhi Liang
+ </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://cobweb.gfdl.noaa.gov/fms-cgi-bin/viewcvs/FMS/shared/mpp">WebCVS Log</a>
+<br>
+<b>RCS Log:&nbsp;</b><a href="http://www.gfdl.noaa.gov/~vb/changes_mpp_domains.html">RCS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">
+   
+<tt>mpp_domains_mod</tt> is a set of simple calls for domain
+   decomposition and domain updates on rectilinear grids. It requires the
+   module <a href="mpp.html">mpp_mod</a>, upon which it is built.
+ </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div>
+   Scalable implementations of finite-difference codes are generally
+   based on decomposing the model domain into subdomains that are
+   distributed among processors. These domains will then be obliged to
+   exchange data at their boundaries if data dependencies are merely
+   nearest-neighbour, or may need to acquire information from the global
+   domain if there are extended data dependencies, as in the spectral
+   transform. The domain decomposition is a key operation in the
+   development of parallel codes.
+   
+   <tt>mpp_domains_mod</tt> provides a domain decomposition and domain
+   update API for <i>rectilinear</i> grids, built on top of the <a href="mpp.html">mpp_mod</a> API for message passing. Features
+   of <tt>mpp_domains_mod</tt> include:
+ 
+   Simple, minimal API, with free access to underlying API for more complicated stuff.
+
+   Design toward typical use in climate/weather CFD codes.
+  
+   <h4>Domains</h4>
+ 
+   I have assumed that domain decomposition will mainly be in 2
+   horizontal dimensions, which will in general be the two
+   fastest-varying indices. There is a separate implementation of 1D
+   decomposition on the fastest-varying index, and 1D decomposition on
+   the second index, treated as a special case of 2D decomposition, is
+   also possible. We define <i>domain</i> as the grid associated with a <i>task</i>.
+   We define the <i>compute domain</i> as the set of gridpoints that are
+   computed by a task, and the <i>data domain</i> as the set of points
+   that are required by the task for the calculation. There can in
+   general be more than 1 task per PE, though often
+   the number of domains is the same as the processor count. We define
+   the <i>global domain</i> as the global computational domain of the
+   entire model (i.e, the same as the computational domain if run on a
+   single processor). 2D domains are defined using a derived type <tt>domain2D</tt>,
+   constructed as follows (see comments in code for more details):
+   
+   <pre>     type, public :: domain_axis_spec
+        private
+        integer :: begin, end, size, max_size
+        logical :: is_global
+     end type domain_axis_spec
+     type, public :: domain1D
+        private
+        type(domain_axis_spec) :: compute, data, global, active
+        logical :: mustputb, mustgetb, mustputf, mustgetf, folded
+        type(domain1D), pointer, dimension(:) :: list
+        integer :: pe              !PE to which this domain is assigned
+        integer :: pos
+     end type domain1D
+domaintypes of higher rank can be constructed from type domain1D
+typically we only need 1 and 2D, but could need higher (e.g 3D LES)
+some elements are repeated below if they are needed once per domain
+     type, public :: domain2D
+        private
+        type(domain1D) :: x
+        type(domain1D) :: y
+        type(domain2D), pointer, dimension(:) :: list
+        integer :: pe              !PE to which this domain is assigned
+        integer :: pos
+     end type domain2D
+     type(domain1D), public :: NULL_DOMAIN1D
+     type(domain2D), public :: NULL_DOMAIN2D</pre>
+   The <tt>domain2D</tt> type contains all the necessary information to
+   define the global, compute and data domains of each task, as well as the PE
+   associated with the task. The PEs from which remote data may be
+   acquired to update the data domain are also contained in a linked list
+   of neighbours.
+ </div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>              mpi<br>mpp_parameter_mod<br>     mpp_data_mod<br>          mpp_mod<br> mpp_memutils_mod<br>     mpp_pset_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#mpp_define_layout">mpp_define_layout</a>:</dt>
+<dd>
+    Retrieve layout associated with a domain decomposition.
+  </dd>
+<dt>
+<a href="#mpp_define_domains">mpp_define_domains</a>:</dt>
+<dd>
+     Set up a domain decomposition.
+   </dd>
+<dt>
+<a href="#mpp_modify_domain">mpp_modify_domain</a>:</dt>
+<dd>
+     modifies the extents (compute, data and global) of domain
+   </dd>
+<dt>
+<a href="#mpp_update_domains">mpp_update_domains</a>:</dt>
+<dd>
+     Halo updates.
+  </dd>
+<dt>
+<a href="#mpp_start_update_domains/mpp_complete_update_domains">mpp_start_update_domains/mpp_complete_update_domains</a>:</dt>
+<dd>
+     Interface to start halo updates.
+  </dd>
+<dt>
+<a href="#mpp_define_nest_domains">mpp_define_nest_domains</a>:</dt>
+<dd>
+     Set up a domain to pass data between coarse and fine grid of nested model.
+   </dd>
+<dt>
+<a href="#mpp_get_C2F_index">mpp_get_C2F_index</a>:</dt>
+<dd>
+     Get the index of the data passed from coarse grid to fine grid.
+   </dd>
+<dt>
+<a href="#mpp_get_F2C_index">mpp_get_F2C_index</a>:</dt>
+<dd>
+     Get the index of the data passed from fine grid to coarse grid.
+   </dd>
+<dt>
+<a href="#mpp_update_nest_fine">mpp_update_nest_fine</a>:</dt>
+<dd>
+     Pass the data from coarse grid to fill the buffer to be ready to be interpolated 
+     onto fine grid.
+   </dd>
+<dt>
+<a href="#mpp_update_nest_coarse">mpp_update_nest_coarse</a>:</dt>
+<dd>
+     Pass the data from fine grid to fill the buffer to be ready to be interpolated 
+     onto coarse grid.
+   </dd>
+<dt>
+<a href="#mpp_get_boundary">mpp_get_boundary</a>:</dt>
+<dd>
+    Get the boundary data for symmetric domain when the data is at C, E, or N-cell center
+ </dd>
+<dt>
+<a href="#mpp_redistribute">mpp_redistribute</a>:</dt>
+<dd>
+    Reorganization of distributed global arrays.
+  </dd>
+<dt>
+<a href="#mpp_check_field">mpp_check_field</a>:</dt>
+<dd>
+     Parallel checking between two ensembles which run
+     on different set pes at the same time.
+   </dd>
+<dt>
+<a href="#mpp_global_field">mpp_global_field</a>:</dt>
+<dd>
+    Fill in a global array from domain-decomposed arrays.
+  </dd>
+<dt>
+<a href="#mpp_global_max">mpp_global_max</a>:</dt>
+<dd>
+    Global max/min of domain-decomposed arrays.
+  </dd>
+<dt>
+<a href="#mpp_global_sum">mpp_global_sum</a>:</dt>
+<dd>
+    Global sum of domain-decomposed arrays.
+  </dd>
+<dt>
+<a href="#mpp_get_neighbor_pe">mpp_get_neighbor_pe</a>:</dt>
+<dd>
+    Retrieve PE number of a neighboring domain.
+  </dd>
+<dt>
+<a href="#operator">operator</a>:</dt>
+<dd>
+    Equality/inequality operators for domaintypes.
+  </dd>
+<dt>
+<a href="#mpp_get_compute_domain">mpp_get_compute_domain</a>:</dt>
+<dd>
+    These routines retrieve the axis specifications associated with the compute domains.
+  </dd>
+<dt>
+<a href="#mpp_get_compute_domains">mpp_get_compute_domains</a>:</dt>
+<dd>
+    Retrieve the entire array of compute domain extents associated with a decomposition.
+  </dd>
+<dt>
+<a href="#mpp_get_data_domain">mpp_get_data_domain</a>:</dt>
+<dd>
+    These routines retrieve the axis specifications associated with the data domains.
+  </dd>
+<dt>
+<a href="#mpp_get_global_domain">mpp_get_global_domain</a>:</dt>
+<dd>
+    These routines retrieve the axis specifications associated with the global domains.
+  </dd>
+<dt>
+<a href="#mpp_get_memory_domain">mpp_get_memory_domain</a>:</dt>
+<dd>
+    These routines retrieve the axis specifications associated with the memory domains.
+  </dd>
+<dt>
+<a href="#mpp_set_compute_domain">mpp_set_compute_domain</a>:</dt>
+<dd>
+    These routines set the axis specifications associated with the compute domains.
+  </dd>
+<dt>
+<a href="#mpp_set_data_domain">mpp_set_data_domain</a>:</dt>
+<dd>
+    These routines set the axis specifications associated with the data domains.
+  </dd>
+<dt>
+<a href="#mpp_set_global_domain">mpp_set_global_domain</a>:</dt>
+<dd>
+    These routines set the axis specifications associated with the global domains.
+  </dd>
+<dt>
+<a href="#mpp_get_pelist">mpp_get_pelist</a>:</dt>
+<dd>
+    Retrieve list of PEs associated with a domain decomposition.
+  </dd>
+<dt>
+<a href="#mpp_get_layout">mpp_get_layout</a>:</dt>
+<dd>
+    Retrieve layout associated with a domain decomposition.
+  </dd>
+<dt>
+<a href="#mpp_nullify_domain_list">mpp_nullify_domain_list</a>:</dt>
+<dd>
+    nullify domain list.
+  </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>None.<br>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="mpp_define_layout"></a>
+<h4>mpp_define_layout</h4>
+<pre>
+<b>call mpp_define_layout </b>( global_indices, ndivs, layout )</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    Given a global 2D domain and the number of divisions in the
+    decomposition (<tt>ndivs</tt>: usually the PE count unless some
+    domains are masked) this calls returns a 2D domain layout.
+    
+    By default, <tt>mpp_define_layout</tt> will attempt to divide the
+    2D index space into domains that maintain the aspect ratio of the
+    global domain. If this cannot be done, the algorithm favours domains
+    that are longer in <tt>x</tt> than <tt>y</tt>, a preference that could
+    improve vector performance.
+  </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>global_indices&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ndivs&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>layout&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_define_domains"></a>
+<h4>mpp_define_domains</h4>
+<pre>
+<b>call mpp_define_domains </b>( global_indices, ndivs, domain, &amp; pelist, flags, halo, extent, maskmap )</pre>
+<pre>
+<b>call mpp_define_domains </b>( global_indices, layout, domain, pelist, &amp; xflags, yflags, xhalo, yhalo, &amp; xextent, yextent, maskmap, name )</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+     There are two forms for the <tt>mpp_define_domains</tt> call. The 2D
+     version is generally to be used but is built by repeated calls to the
+     1D version, also provided.
+   </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>global_indices&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Defines the global domain.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ndivs&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Is the number of domain divisions required.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>pelist&nbsp;&nbsp;&nbsp;</tt></td><td>
+     List of PEs to which the domains are to be assigned.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>flags&nbsp;&nbsp;&nbsp;</tt></td><td>
+      An optional flag to pass additional information
+      about the desired domain topology. Useful flags in a 1D decomposition
+      include <tt>GLOBAL_DATA_DOMAIN</tt> and
+      <tt>CYCLIC_GLOBAL_DOMAIN</tt>. Flags are integers: multiple flags may
+      be added together. The flag values are public parameters available by
+      use association.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>halo&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Width of the halo.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>extent&nbsp;&nbsp;&nbsp;</tt></td><td>
+      Normally <tt>mpp_define_domains</tt> attempts
+      an even division of the global domain across <tt>ndivs</tt>
+      domains. The <tt>extent</tt> array can be used by the user to pass a
+      custom domain division. The <tt>extent</tt> array has <tt>ndivs</tt>
+      elements and holds the compute domain widths, which should add up to
+      cover the global domain exactly.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>maskmap&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Some divisions may be masked
+     (<tt>maskmap=.FALSE.</tt>) to exclude them from the computation (e.g
+     for ocean model domains that are all land). The <tt>maskmap</tt> array
+     is dimensioned <tt>ndivs</tt> and contains <tt>.TRUE.</tt> values for
+     any domain that must be <i>included</i> in the computation (default
+     all). The <tt>pelist</tt> array length should match the number of
+     domains included in the computation.
+    </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>layout&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>xflags, yflags&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>xhalo, yhalo&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>xextent, yextent&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>name&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>domain&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Holds the resulting domain decomposition.
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>NOTE</b>
+</dt>
+<dd>    
+    For example:
+    
+    <pre>    call mpp_define_domains( (/1,100/), 10, domain, &amp;
+         flags=GLOBAL_DATA_DOMAIN+CYCLIC_GLOBAL_DOMAIN, halo=2 )</pre>
+    
+    defines 10 compute domains spanning the range [1,100] of the global
+    domain. The compute domains are non-overlapping blocks of 10. All the data
+    domains are global, and with a halo of 2 span the range [-1:102]. And
+    since the global domain has been declared to be cyclic,
+    <tt>domain(9)%next =&gt; domain(0)</tt> and <tt>domain(0)%prev =&gt;
+    domain(9)</tt>. A field is allocated on the data domain, and computations proceed on
+    the compute domain. A call to <a href="#mpp_update_domains"><tt>mpp_update_domains</tt></a> would fill in
+    the values in the halo region:
+    <pre>    call mpp_get_data_domain( domain, isd, ied ) !returns -1 and 102
+    call mpp_get_compute_domain( domain, is, ie ) !returns (1,10) on PE 0 ...
+    allocate( a(isd:ied) )
+    do i = is,ie
+       a(i) = &lt;perform computations&gt;
+    end do
+    call mpp_update_domains( a, domain )</pre>
+    The call to <tt>mpp_update_domains</tt> fills in the regions outside
+    the compute domain. Since the global domain is cyclic, the values at
+    <tt>i=(-1,0)</tt> are the same as at <tt>i=(99,100)</tt>; and
+    <tt>i=(101,102)</tt> are the same as <tt>i=(1,2)</tt>.
+    
+    The 2D version is just an extension of this syntax to two
+    dimensions.
+
+    The 2D version of the above should generally be used in
+    codes, including 1D-decomposed ones, if there is a possibility of
+    future evolution toward 2D decomposition. The arguments are similar to
+    the 1D case, except that now we have optional arguments
+    <tt>flags</tt>, <tt>halo</tt>, <tt>extent</tt> and <tt>maskmap</tt>
+    along two axes.
+    
+    <tt>flags</tt> can now take an additional possible value to fold
+    one or more edges. This is done by using flags
+    <tt>FOLD_WEST_EDGE</tt>, <tt>FOLD_EAST_EDGE</tt>,
+    <tt>FOLD_SOUTH_EDGE</tt> or <tt>FOLD_NORTH_EDGE</tt>. When a fold
+    exists (e.g cylindrical domain), vector fields reverse sign upon
+    crossing the fold. This parity reversal is performed only in the
+    vector version of <a href="#mpp_update_domains"><tt>mpp_update_domains</tt></a>. In
+    addition, shift operations may need to be applied to vector fields on
+    staggered grids, also described in the vector interface to
+    <tt>mpp_update_domains</tt>.
+    
+    <tt>name</tt> is the name associated with the decomposition,
+    e.g <tt>'Ocean model'</tt>. If this argument is present,
+    <tt>mpp_define_domains</tt> will print the domain decomposition
+    generated to <tt>stdlog</tt>.
+    
+    Examples:
+    
+    <pre>    call mpp_define_domains( (/1,100,1,100/), (/2,2/), domain, xhalo=1 )</pre>
+    
+    will create the following domain layout:
+    <pre>                   |---------|-----------|-----------|-------------|
+                   |domain(1)|domain(2)  |domain(3)  |domain(4)    |
+    |--------------|---------|-----------|-----------|-------------|
+    |Compute domain|1,50,1,50|51,100,1,50|1,50,51,100|51,100,51,100|
+    |--------------|---------|-----------|-----------|-------------|
+    |Data domain   |0,51,1,50|50,101,1,50|0,51,51,100|50,101,51,100|
+    |--------------|---------|-----------|-----------|-------------|</pre>
+    
+    Again, we allocate arrays on the data domain, perform computations
+    on the compute domain, and call <tt>mpp_update_domains</tt> to update
+    the halo region.
+    
+    If we wished to perfom a 1D decomposition along <tt>Y</tt>
+    on the same global domain, we could use:
+    <pre>    call mpp_define_domains( (/1,100,1,100/), layout=(/4,1/), domain, xhalo=1 )</pre>
+    This will create the following domain layout:
+    <pre>                   |----------|-----------|-----------|------------|
+                   |domain(1) |domain(2)  |domain(3)  |domain(4)   |
+    |--------------|----------|-----------|-----------|------------|
+    |Compute domain|1,100,1,25|1,100,26,50|1,100,51,75|1,100,76,100|
+    |--------------|----------|-----------|-----------|------------|
+    |Data domain   |0,101,1,25|0,101,26,50|0,101,51,75|1,101,76,100|
+    |--------------|----------|-----------|-----------|------------|</pre>
+   
+</dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_modify_domain"></a>
+<h4>mpp_modify_domain</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd></dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>domain_in&nbsp;&nbsp;&nbsp;</tt></td><td>
+     The source domain.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>halo&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Halo size of the returned 1D doamin. Default value is 0.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>cbegin,cend&nbsp;&nbsp;&nbsp;</tt></td><td>
+    Axis specifications associated with the compute domain of the returned 1D domain.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>gbegin,gend&nbsp;&nbsp;&nbsp;</tt></td><td>
+    Axis specifications associated with the global domain of the returned 1D domain.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>isc,iec&nbsp;&nbsp;&nbsp;</tt></td><td>
+    Zonal axis specifications associated with the compute domain of the returned 2D domain.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>jsc,jec&nbsp;&nbsp;&nbsp;</tt></td><td>
+    Meridinal axis specifications associated with the compute domain of the returned 2D domain.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>isg,ieg&nbsp;&nbsp;&nbsp;</tt></td><td>
+    Zonal axis specifications associated with the global domain of the returned 2D domain.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>jsg,jeg&nbsp;&nbsp;&nbsp;</tt></td><td>
+    Meridinal axis specifications associated with the global domain of the returned 2D domain.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>xhalo,yhalo&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Halo size of the returned 2D doamin. Default value is 0.
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>domain_out&nbsp;&nbsp;&nbsp;</tt></td><td>
+     The returned domain.
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_update_domains"></a>
+<h4>mpp_update_domains</h4>
+<pre>
+<b>call mpp_update_domains </b>( field, domain, flags )</pre>
+<pre>
+<b>call mpp_update_domains </b>( fieldx, fieldy, domain, flags, gridtype )</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    
+<tt>mpp_update_domains</tt> is used to perform a halo update of a
+    domain-decomposed array on each PE. <tt>MPP_TYPE_</tt> can be of type
+    <tt>complex</tt>, <tt>integer</tt>, <tt>logical</tt> or <tt>real</tt>;
+    of 4-byte or 8-byte kind; of rank up to 5. The vector version (with
+    two input data fields) is only present for <tt>real</tt> types.
+    
+    For 2D domain updates, if there are halos present along both
+    <tt>x</tt> and <tt>y</tt>, we can choose to update one only, by
+    specifying <tt>flags=XUPDATE</tt> or <tt>flags=YUPDATE</tt>. In
+    addition, one-sided updates can be performed by setting <tt>flags</tt>
+    to any combination of <tt>WUPDATE</tt>, <tt>EUPDATE</tt>,
+    <tt>SUPDATE</tt> and <tt>NUPDATE</tt>, to update the west, east, north
+    and south halos respectively. Any combination of halos may be used by
+    adding the requisite flags, e.g: <tt>flags=XUPDATE+SUPDATE</tt> or
+    <tt>flags=EUPDATE+WUPDATE+SUPDATE</tt> will update the east, west and
+    south halos.
+    
+    If a call to <tt>mpp_update_domains</tt> involves at least one E-W
+    halo and one N-S halo, the corners involved will also be updated, i.e,
+    in the example above, the SE and SW corners will be updated.
+    
+    If <tt>flags</tt> is not supplied, that is
+    equivalent to <tt>flags=XUPDATE+YUPDATE</tt>.
+    
+    The vector version is passed the <tt>x</tt> and <tt>y</tt>
+    components of a vector field in tandem, and both are updated upon
+    return. They are passed together to treat parity issues on various
+    grids. For example, on a cubic sphere projection, the <tt>x</tt> and
+    <tt>y</tt> components may be interchanged when passing from an
+    equatorial cube face to a polar face. For grids with folds, vector
+    components change sign on crossing the fold.  Paired scalar quantities
+    can also be passed with the vector version if flags=SCALAR_PAIR, in which
+    case components are appropriately interchanged, but signs are not.
+    
+    Special treatment at boundaries such as folds is also required for
+    staggered grids. The following types of staggered grids are
+    recognized:
+    
+    1) <tt>AGRID</tt>: values are at grid centers.<br>
+    2) <tt>BGRID_NE</tt>: vector fields are at the NE vertex of a grid
+    cell, i.e: the array elements <tt>u(i,j)</tt> and <tt>v(i,j)</tt> are
+    actually at (i+&frac12;,j+&frac12;) with respect to the grid centers.<br>
+    3) <tt>BGRID_SW</tt>: vector fields are at the SW vertex of a grid
+    cell, i.e: the array elements <tt>u(i,j)</tt> and <tt>v(i,j)</tt> are
+    actually at (i-&frac12;,j-&frac12;) with respect to the grid centers.<br>
+    4) <tt>CGRID_NE</tt>: vector fields are at the N and E faces of a
+    grid cell, i.e: the array elements <tt>u(i,j)</tt> and <tt>v(i,j)</tt>
+    are actually at (i+&frac12;,j) and (i,j+&frac12;) with respect to the
+    grid centers.<br>
+    5) <tt>CGRID_SW</tt>: vector fields are at the S and W faces of a
+    grid cell, i.e: the array elements <tt>u(i,j)</tt> and <tt>v(i,j)</tt>
+    are actually at (i-&frac12;,j) and (i,j-&frac12;) with respect to the
+    grid centers.
+
+    The gridtypes listed above are all available by use association as
+    integer parameters. The scalar version of <tt>mpp_update_domains</tt>
+    assumes that the values of a scalar field are always at <tt>AGRID</tt>
+    locations, and no special boundary treatment is required. If vector
+    fields are at staggered locations, the optional argument
+    <tt>gridtype</tt> must be appropriately set for correct treatment at
+    boundaries.
+    
+    It is safe to apply vector field updates to the appropriate arrays
+    irrespective of the domain topology: if the topology requires no
+    special treatment of vector fields, specifying <tt>gridtype</tt> will
+    do no harm.
+
+    <tt>mpp_update_domains</tt> internally buffers the date being sent
+    and received into single messages for efficiency. A turnable internal
+    buffer area in memory is provided for this purpose by
+    <tt>mpp_domains_mod</tt>. The size of this buffer area can be set by
+    the user by calling <a href="mpp_domains.html#mpp_domains_set_stack_size">
+    <tt>mpp_domains_set_stack_size</tt></a>.
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_start_update_domains/mpp_complete_update_domains"></a>
+<h4>mpp_start_update_domains/mpp_complete_update_domains</h4>
+<pre>
+<b>call mpp_start_update_domains/mpp_complete_update_domains </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    
+<tt>mpp_start_update_domains</tt> is used to start a halo update of a
+    domain-decomposed array on each PE. <tt>MPP_TYPE_</tt> can be of type
+    <tt>complex</tt>, <tt>integer</tt>, <tt>logical</tt> or <tt>real</tt>;
+    of 4-byte or 8-byte kind; of rank up to 5. The vector version (with
+    two input data fields) is only present for <tt>real</tt> types.
+    
+    <tt>mpp_start_update_domains</tt> must be paired together with 
+    <tt>mpp_complete_update_domains</tt>. In <tt>mpp_start_update_domains</tt>,
+    a buffer will be pre-post to receive (non-blocking) the 
+    data and data on computational domain will be packed and sent (non-blocking send)
+    to other processor. In <tt>mpp_complete_update_domains</tt>, buffer will
+    be unpacked to fill the halo and mpp_sync_self will be called to 
+    to ensure communication safe at the last call of mpp_complete_update_domains.
+
+    Each mpp_update_domains can be replaced by the combination of mpp_start_update_domains
+    and mpp_complete_update_domains. The arguments in mpp_start_update_domains
+    and mpp_complete_update_domains should be the exact the same as in 
+    mpp_update_domains to be replaced except no optional argument "complete". 
+    The following are examples on how to replace mpp_update_domains with
+    mpp_start_update_domains/mpp_complete_update_domains
+    
+    Example 1: Replace one scalar mpp_update_domains.
+
+    Replace 
+    
+        call mpp_update_domains(data, domain, flags=update_flags)
+
+    with
+
+        id_update = mpp_start_update_domains(data, domain, flags=update_flags)<br>
+        ...( doing some computation )<br>
+        call mpp_complete_update_domains(id_update, data, domain, flags=update_flags)<br>
+
+<br>
+    Example 2: Replace group scalar mpp_update_domains,
+
+    Replace
+    
+        call mpp_update_domains(data_1, domain, flags=update_flags, complete=.false.)<br>
+        .... ( other n-2 call mpp_update_domains with complete = .false. )<br>
+        call mpp_update_domains(data_n, domain, flags=update_flags, complete=.true. )<br>
+
+<br>
+    With
+
+        id_up_1 = mpp_start_update_domains(data_1, domain, flags=update_flags)<br>
+        .... ( other n-2 call mpp_start_update_domains )<br>
+        id_up_n = mpp_start_update_domains(data_n, domain, flags=update_flags)<br>
+
+        ..... ( doing some computation )
+
+        call mpp_complete_update_domains(id_up_1, data_1, domain, flags=update_flags)<br>
+        .... ( other n-2 call mpp_complete_update_domains  )<br>
+        call mpp_complete_update_domains(id_up_n, data_n, domain, flags=update_flags)<br>
+
+<br>
+    Example 3: Replace group CGRID_NE vector, mpp_update_domains
+
+    Replace
+    
+        call mpp_update_domains(u_1, v_1, domain, flags=update_flgs, gridtype=CGRID_NE, complete=.false.)<br>
+        .... ( other n-2 call mpp_update_domains with complete = .false. )<br>
+        call mpp_update_domains(u_1, v_1, domain, flags=update_flags, gridtype=CGRID_NE, complete=.true. )<br>
+
+<br>
+    with
+
+        id_up_1 = mpp_start_update_domains(u_1, v_1, domain, flags=update_flags, gridtype=CGRID_NE)<br>
+        .... ( other n-2 call mpp_start_update_domains )<br>
+        id_up_n = mpp_start_update_domains(u_n, v_n, domain, flags=update_flags, gridtype=CGRID_NE)<br>
+
+<br>
+        ..... ( doing some computation )
+
+        call mpp_complete_update_domains(id_up_1, u_1, v_1, domain, flags=update_flags, gridtype=CGRID_NE)<br>
+        .... ( other n-2 call mpp_complete_update_domains  )<br>
+        call mpp_complete_update_domains(id_up_n, u_n, v_n, domain, flags=update_flags, gridtype=CGRID_NE)<br>
+ 
+<br>
+    For 2D domain updates, if there are halos present along both
+    <tt>x</tt> and <tt>y</tt>, we can choose to update one only, by
+    specifying <tt>flags=XUPDATE</tt> or <tt>flags=YUPDATE</tt>. In
+    addition, one-sided updates can be performed by setting <tt>flags</tt>
+    to any combination of <tt>WUPDATE</tt>, <tt>EUPDATE</tt>,
+    <tt>SUPDATE</tt> and <tt>NUPDATE</tt>, to update the west, east, north
+    and south halos respectively. Any combination of halos may be used by
+    adding the requisite flags, e.g: <tt>flags=XUPDATE+SUPDATE</tt> or
+    <tt>flags=EUPDATE+WUPDATE+SUPDATE</tt> will update the east, west and
+    south halos.
+    
+    If a call to <tt>mpp_start_update_domains/mpp_complete_update_domains</tt> involves at least one E-W
+    halo and one N-S halo, the corners involved will also be updated, i.e,
+    in the example above, the SE and SW corners will be updated.
+    
+    If <tt>flags</tt> is not supplied, that is
+    equivalent to <tt>flags=XUPDATE+YUPDATE</tt>.
+    
+    The vector version is passed the <tt>x</tt> and <tt>y</tt>
+    components of a vector field in tandem, and both are updated upon
+    return. They are passed together to treat parity issues on various
+    grids. For example, on a cubic sphere projection, the <tt>x</tt> and
+    <tt>y</tt> components may be interchanged when passing from an
+    equatorial cube face to a polar face. For grids with folds, vector
+    components change sign on crossing the fold.  Paired scalar quantities
+    can also be passed with the vector version if flags=SCALAR_PAIR, in which
+    case components are appropriately interchanged, but signs are not.
+    
+    Special treatment at boundaries such as folds is also required for
+    staggered grids. The following types of staggered grids are
+    recognized:
+    
+    1) <tt>AGRID</tt>: values are at grid centers.<br>
+    2) <tt>BGRID_NE</tt>: vector fields are at the NE vertex of a grid
+    cell, i.e: the array elements <tt>u(i,j)</tt> and <tt>v(i,j)</tt> are
+    actually at (i+&frac12;,j+&frac12;) with respect to the grid centers.<br>
+    3) <tt>BGRID_SW</tt>: vector fields are at the SW vertex of a grid
+    cell, i.e: the array elements <tt>u(i,j)</tt> and <tt>v(i,j)</tt> are
+    actually at (i-&frac12;,j-&frac12;) with respect to the grid centers.<br>
+    4) <tt>CGRID_NE</tt>: vector fields are at the N and E faces of a
+    grid cell, i.e: the array elements <tt>u(i,j)</tt> and <tt>v(i,j)</tt>
+    are actually at (i+&frac12;,j) and (i,j+&frac12;) with respect to the
+    grid centers.<br>
+    5) <tt>CGRID_SW</tt>: vector fields are at the S and W faces of a
+    grid cell, i.e: the array elements <tt>u(i,j)</tt> and <tt>v(i,j)</tt>
+    are actually at (i-&frac12;,j) and (i,j-&frac12;) with respect to the
+    grid centers.
+
+    The gridtypes listed above are all available by use association as
+    integer parameters. If vector fields are at staggered locations, the 
+    optional argument <tt>gridtype</tt> must be appropriately set for 
+    correct treatment at boundaries.
+    
+    It is safe to apply vector field updates to the appropriate arrays
+    irrespective of the domain topology: if the topology requires no
+    special treatment of vector fields, specifying <tt>gridtype</tt> will
+    do no harm.
+
+    <tt>mpp_start_update_domains/mpp_complete_update_domains</tt> internally 
+    buffers the data being sent and received into single messages for efficiency. 
+    A turnable internal buffer area in memory is provided for this purpose by
+    <tt>mpp_domains_mod</tt>. The size of this buffer area can be set by
+    the user by calling <a href="mpp_domains.html#mpp_domains_set_stack_size">
+    <tt>mpp_domains_set_stack_size</tt></a>.
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_define_nest_domains"></a>
+<h4>mpp_define_nest_domains</h4>
+<pre>
+<b>call mpp_define_nest_domains </b>(nest_domain, domain_fine, domain_coarse, tile_fine, tile_coarse, istart_fine, iend_fine, jstart_fine, jend_fine, istart_coarse, iend_coarse, jstart_coarse, jend_coarse, pelist, extra_halo, name)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+     Set up a domain to pass data between coarse and fine grid of nested model. 
+     Currently it only support one fine nest region over the corase grid region.
+     It supports both serial and concurrent nesting. The serial nesting is that 
+     both coarse and fine grid are on the exact same processor list. Concurrent
+     nesting is that coarse and fine grid are on individual processor list and 
+     no overlapping. Coarse and fine grid domain need to be defined before 
+     calling mpp_define_nest_domains. For concurrent nesting, mpp_broadcast
+     need to be called to broadcast both fine and coarse grid domain onto
+     all the processors. 
+     <br>
+     
+<br> 
+     mpp_update_nest_coarse is used to pass data from fine grid to coarse grid computing domain.
+     mpp_update_nest_fine   is used to pass data from coarse grid to fine grid halo.
+     You may call mpp_get_C2F_index before calling mpp_update_nest_fine to get the index for 
+     passing data from coarse to fine. You may call mpp_get_F2C_index before calling 
+     mpp_update_nest_coarse to get the index for passing data from coarse to fine.
+     <br>
+     
+<br> 
+     NOTE: The following tests are done in test_mpp_domains: the coarse grid is cubic sphere
+           grid and the fine grid is a regular-latlon grid (symmetric domain) nested inside
+           face 3 of the cubic sphere grid. Tests are done for data at T, E, C, N-cell center.
+           
+     Below is an example to pass data between fine and coarse grid (More details on how to
+     use the nesting domain update are available in routing test_update_nest_domain of 
+     shared/mpp/test_mpp_domains.F90.
+
+    <pre>    if( concurrent ) then
+       call mpp_broadcast_domain(domain_fine)
+       call mpp_broadcast_domain(domain_coarse)
+    endif
+    
+     call mpp_define_nest_domains(nest_domain, domain_fine, domain_coarse, tile_fine, tile_coarse, &amp;
+                                  istart_fine, iend_fine, jstart_fine, jend_fine,                  &amp;
+                                  istart_coarse, iend_coarse, jstart_coarse, jend_coarse,         &amp;
+                                  pelist, extra_halo, name="nest_domain")
+     call mpp_get_C2F_index(nest_domain, isw_f, iew_f, jsw_f, jew_f, isw_c, iew_c, jsw_c, jew_c, WEST)
+     call mpp_get_C2F_index(nest_domain, ise_f, iee_f, jse_f, jee_f, ise_c, iee_c, jse_c, jee_c, EAST)
+     call mpp_get_C2F_index(nest_domain, iss_f, ies_f, jss_f, jes_f, iss_c, ies_c, jss_c, jes_c, SOUTH)
+     call mpp_get_C2F_index(nest_domain, isn_f, ien_f, jsn_f, jen_f, isn_c, ien_c, jsn_c, jen_c, NORTH)
+
+     allocate(wbuffer(isw_c:iew_c, jsw_c:jew_c,nz))
+     allocate(ebuffer(ise_c:iee_c, jse_c:jee_c,nz))
+     allocate(sbuffer(iss_c:ies_c, jss_c:jes_c,nz))
+     allocate(nbuffer(isn_c:ien_c, jsn_c:jen_c,nz))
+     call mpp_update_nest_fine(x, nest_domain, wbuffer, sbuffer, ebuffer, nbuffer)
+
+     call mpp_get_F2C_index(nest_domain, is_c, ie_c, js_c, je_c, is_f, ie_f, js_f, je_f)
+     allocate(buffer (is_f:ie_f, js_f:je_f,nz))
+     call mpp_update_nest_coarse(x, nest_domain, buffer)</pre>
+   
+</dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>domain_fine&nbsp;&nbsp;&nbsp;</tt></td><td>
+     domain for fine grid.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>domain_coarse&nbsp;&nbsp;&nbsp;</tt></td><td>
+     domain for coarse grid.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tile_fine&nbsp;&nbsp;&nbsp;</tt></td><td>
+     tile number of the fine grid. Currently this value should be 1.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tile_coarse&nbsp;&nbsp;&nbsp;</tt></td><td>
+     tile numuber of the coarse grid.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>istart_fine, iend_fine, jstart_fine, jend_fine&nbsp;&nbsp;&nbsp;</tt></td><td>
+     index in the fine grid of the nested region
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>istart_coarse, iend_coarse, jstart_coarse, jend_coarse&nbsp;&nbsp;&nbsp;</tt></td><td>
+     index in the coarse grid of the nested region
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>pelist&nbsp;&nbsp;&nbsp;</tt></td><td>
+     List of PEs to which the domains are to be assigned.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>extra_halo&nbsp;&nbsp;&nbsp;</tt></td><td>
+     optional argument. extra halo for passing data from coarse grid to fine grid. 
+     Default is 0 and currently only support extra_halo = 0.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>name&nbsp;&nbsp;&nbsp;</tt></td><td>
+     opitonal argument. Name of the nest domain. 
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>nest_domain&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Holds the information to pass data between fine and coarse grid.
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_get_C2F_index"></a>
+<h4>mpp_get_C2F_index</h4>
+<pre>
+<b>call mpp_get_C2F_index </b>(nest_domain, is_fine, ie_fine, js_fine, je_fine, is_coarse, ie_coarse, js_coarse, je_coarse, dir, position)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+     Get the index of the data passed from coarse grid to fine grid.
+   </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>nest_domain&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Holds the information to pass data between fine and coarse grid.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dir&nbsp;&nbsp;&nbsp;</tt></td><td>
+     direction of the halo update. Its value should be WEST, EAST, SOUTH or NORTH. 
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>position&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Cell position. It value should be CENTER, EAST, NORTH or SOUTH. 
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>istart_fine, iend_fine, jstart_fine, jend_fine&nbsp;&nbsp;&nbsp;</tt></td><td>
+     index in the fine grid of the nested region
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>istart_coarse, iend_coarse, jstart_coarse, jend_coarse&nbsp;&nbsp;&nbsp;</tt></td><td>
+     index in the coarse grid of the nested region
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_get_F2C_index"></a>
+<h4>mpp_get_F2C_index</h4>
+<pre>
+<b>call mpp_get_F2C_index </b>(nest_domain, is_coarse, ie_coarse, js_coarse, je_coarse, is_fine, ie_fine, js_fine, je_fine, position)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+     Get the index of the data passed from fine grid to coarse grid.
+   </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>nest_domain&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Holds the information to pass data between fine and coarse grid.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>position&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Cell position. It value should be CENTER, EAST, NORTH or SOUTH. 
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>istart_fine, iend_fine, jstart_fine, jend_fine&nbsp;&nbsp;&nbsp;</tt></td><td>
+     index in the fine grid of the nested region
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>istart_coarse, iend_coarse, jstart_coarse, jend_coarse&nbsp;&nbsp;&nbsp;</tt></td><td>
+     index in the coarse grid of the nested region
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_update_nest_fine"></a>
+<h4>mpp_update_nest_fine</h4>
+<pre>
+<b>call mpp_update_nest_fine </b>(field, nest_domain, wbuffer, ebuffer, sbuffer, nbuffer, flags, complete, position, extra_halo, name, tile_count)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+     Pass the data from coarse grid to fill the buffer to be ready to be interpolated 
+     onto fine grid.
+   </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>field&nbsp;&nbsp;&nbsp;</tt></td><td>
+     field on the model grid.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>flags&nbsp;&nbsp;&nbsp;</tt></td><td>
+     optional arguments. Specify the direction of fine grid halo buffer to be filled.
+     Default value is XUPDATE+YUPDATE.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>complete&nbsp;&nbsp;&nbsp;</tt></td><td>
+     optional argument. When true, do the buffer filling. Default value is true.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>position&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Cell position. It value should be CENTER, EAST, NORTH or SOUTH. Default is CENTER.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>extra_halo&nbsp;&nbsp;&nbsp;</tt></td><td>
+     optional argument. extra halo for passing data from coarse grid to fine grid. 
+     Default is 0 and currently only support extra_halo = 0.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>name&nbsp;&nbsp;&nbsp;</tt></td><td>
+     opitonal argument. Name of the nest domain. 
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tile_count&nbsp;&nbsp;&nbsp;</tt></td><td>
+     optional argument. Used to support multiple-tile-per-pe. default is 1 and currently
+     only support tile_count = 1.
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>nest_domain&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Holds the information to pass data between fine and coarse grid.
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>wbuffer&nbsp;&nbsp;&nbsp;</tt></td><td>
+     west side buffer to be filled with data on coarse grid.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ebuffer&nbsp;&nbsp;&nbsp;</tt></td><td>
+     east side buffer to be filled with data on coarse grid.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>sbuffer&nbsp;&nbsp;&nbsp;</tt></td><td>
+     south side buffer to be filled with data on coarse grid.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>nbuffer&nbsp;&nbsp;&nbsp;</tt></td><td>
+     north side buffer to be filled with data on coarse grid.
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_update_nest_coarse"></a>
+<h4>mpp_update_nest_coarse</h4>
+<pre>
+<b>call mpp_update_nest_coarse </b>(field, nest_domain, buffer, complete, position, name, tile_count)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+     Pass the data from fine grid to fill the buffer to be ready to be interpolated 
+     onto coarse grid.
+   </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>field&nbsp;&nbsp;&nbsp;</tt></td><td>
+     field on the model grid.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>complete&nbsp;&nbsp;&nbsp;</tt></td><td>
+     optional argument. When true, do the buffer filling. Default value is true.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>position&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Cell position. It value should be CENTER, EAST, NORTH or SOUTH. Default is CENTER.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>name&nbsp;&nbsp;&nbsp;</tt></td><td>
+     opitonal argument. Name of the nest domain. 
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tile_count&nbsp;&nbsp;&nbsp;</tt></td><td>
+     optional argument. Used to support multiple-tile-per-pe. default is 1 and currently
+     only support tile_count = 1.
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>nest_domain&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Holds the information to pass data between fine and coarse grid.
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>buffer&nbsp;&nbsp;&nbsp;</tt></td><td>
+     buffer to be filled with data on coarse grid.
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_get_boundary"></a>
+<h4>mpp_get_boundary</h4>
+<pre>
+<b>call mpp_get_boundary </b>
+</pre>
+<pre>
+<b>call mpp_get_boundary </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    
+<tt>mpp_get_boundary</tt> is used to get the boundary data for symmetric domain 
+        when the data is at C, E, or N-cell center. For cubic grid, the data should 
+        always at C-cell center. 
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_redistribute"></a>
+<h4>mpp_redistribute</h4>
+<pre>
+<b>call mpp_redistribute </b>( domain_in, field_in, domain_out, field_out )</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    
+<tt>mpp_redistribute</tt> is used to reorganize a distributed
+    array.  <tt>MPP_TYPE_</tt> can be of type <tt>integer</tt>,
+    <tt>complex</tt>, or <tt>real</tt>; of 4-byte or 8-byte kind; of rank
+    up to 5.
+  </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>field_in&nbsp;&nbsp;&nbsp;</tt></td><td>
+    <tt>field_in</tt> is dimensioned on the data domain of <tt>domain_in</tt>.
+  </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>field_out&nbsp;&nbsp;&nbsp;</tt></td><td>
+    <tt>field_out</tt> on the data domain of <tt>domain_out</tt>.
+  </td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_check_field"></a>
+<h4>mpp_check_field</h4>
+<pre>
+<b>call mpp_check_field </b>(field_in, pelist1, pelist2, domain, mesg, &amp; w_halo, s_halo, e_halo, n_halo, force_abort )</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+     There are two forms for the <tt>mpp_check_field</tt> call. The 2D
+     version is generally to be used and 3D version is  built by repeated calls to the
+     2D version.
+   </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>field_in&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Field to be checked
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>pelist1, pelist2&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Pelist of the two ensembles to be compared
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>domain&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Domain of current pe
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>mesg&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Message to be printed out
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>w_halo, s_halo, e_halo, n_halo&nbsp;&nbsp;&nbsp;</tt></td><td>
+     Halo size to be checked. Default value is 0.
+   </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>force_abort&nbsp;&nbsp;&nbsp;</tt></td><td>
+     When true, abort program when any difference found. Default value is false.
+   </td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_global_field"></a>
+<h4>mpp_global_field</h4>
+<pre>
+<b>call mpp_global_field </b>( domain, local, global, flags )</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    
+<tt>mpp_global_field</tt> is used to get an entire
+    domain-decomposed array on each PE. <tt>MPP_TYPE_</tt> can be of type
+    <tt>complex</tt>, <tt>integer</tt>, <tt>logical</tt> or <tt>real</tt>;
+    of 4-byte or 8-byte kind; of rank up to 5.
+    
+    All PEs in a domain decomposition must call
+    <tt>mpp_global_field</tt>, and each will have a complete global field
+    at the end. Please note that a global array of rank 3 or higher could
+    occupy a lot of memory.
+  </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>domain&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>local&nbsp;&nbsp;&nbsp;</tt></td><td>
+    <tt>local</tt> is dimensioned on either the compute domain or the
+    data domain of <tt>domain</tt>.
+  </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>flags&nbsp;&nbsp;&nbsp;</tt></td><td>
+    <tt>flags</tt> can be given the value <tt>XONLY</tt> or
+    <tt>YONLY</tt>, to specify a globalization on one axis only.
+  </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>global&nbsp;&nbsp;&nbsp;</tt></td><td>
+    <tt>global</tt> is dimensioned on the corresponding global domain.
+  </td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_global_max"></a>
+<h4>mpp_global_max</h4>
+<pre> 
+<b>mpp_global_max</b> ( domain, field, locus )</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    
+<tt>mpp_global_max</tt> is used to get the maximum value of a
+    domain-decomposed array on each PE. <tt>MPP_TYPE_</tt> can be of type
+    <tt>integer</tt> or <tt>real</tt>; of 4-byte or 8-byte kind; of rank
+    up to 5. The dimension of <tt>locus</tt> must equal the rank of
+    <tt>field</tt>.
+    
+    All PEs in a domain decomposition must call
+    <tt>mpp_global_max</tt>, and each will have the result upon exit.
+    
+    The function <tt>mpp_global_min</tt>, with an identical syntax. is
+    also available.
+  </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>domain&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>field&nbsp;&nbsp;&nbsp;</tt></td><td>  
+    <tt>field</tt> is dimensioned on either the compute domain or the
+    data domain of <tt>domain</tt>.
+  </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>locus&nbsp;&nbsp;&nbsp;</tt></td><td>
+    <tt>locus</tt>, if present, can be used to retrieve the location of
+    the maximum (as in the <tt>MAXLOC</tt> intrinsic of f90).
+  </td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_global_sum"></a>
+<h4>mpp_global_sum</h4>
+<pre>
+<b>call mpp_global_sum </b>( domain, field, flags )</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    
+<tt>mpp_global_sum</tt> is used to get the sum of a
+    domain-decomposed array on each PE. <tt>MPP_TYPE_</tt> can be of type
+    <tt>integer</tt>, <tt>complex</tt>, or <tt>real</tt>; of 4-byte or
+    8-byte kind; of rank up to 5.
+  </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>domain&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>field&nbsp;&nbsp;&nbsp;</tt></td><td>
+    <tt>field</tt> is dimensioned on either the compute domain or the
+    data domain of <tt>domain</tt>.
+  </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>flags&nbsp;&nbsp;&nbsp;</tt></td><td>
+    <tt>flags</tt>, if present, must have the value
+    <tt>BITWISE_EXACT_SUM</tt>. This produces a sum that is guaranteed to
+    produce the identical result irrespective of how the domain is
+    decomposed. This method does the sum first along the ranks beyond 2,
+    and then calls <a href="#mpp_global_field"><tt>mpp_global_field</tt></a> to produce a
+    global 2D array which is then summed. The default method, which is
+    considerably faster, does a local sum followed by <a href="mpp.html#mpp_sum"><tt>mpp_sum</tt></a> across the domain
+    decomposition.
+  </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>NOTE</b>
+</dt>
+<dd>
+    All PEs in a domain decomposition must call
+    <tt>mpp_global_sum</tt>, and each will have the result upon exit.
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_get_neighbor_pe"></a>
+<h4>mpp_get_neighbor_pe</h4>
+<pre>
+<b>call mpp_get_neighbor_pe </b>( domain1d, direction=+1 , pe) call mpp_get_neighbor_pe( domain2d, direction=NORTH, pe)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    Given a 1-D or 2-D domain decomposition, this call allows users to retrieve 
+    the PE number of an adjacent PE-domain while taking into account that the 
+    domain may have holes (masked) and/or have cyclic boundary conditions and/or a 
+    folded edge. Which PE-domain will be retrived will depend on "direction": 
+    +1 (right) or -1 (left) for a 1-D domain decomposition and either NORTH, SOUTH, 
+    EAST, WEST, NORTH_EAST, SOUTH_EAST, SOUTH_WEST, or NORTH_WEST for a 2-D 
+    decomposition. If no neighboring domain exists (masked domain), then the 
+    returned "pe" value will be set to NULL_PE.
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="operator"></a>
+<h4>operator</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    The module provides public operators to check for
+    equality/inequality of domaintypes, e.g:
+    
+    <pre>    type(domain1D) :: a, b
+    type(domain2D) :: c, d
+    ...
+    if( a.NE.b )then
+        ...
+    end if
+    if( c==d )then
+        ...
+    end if</pre>
+    
+    Domains are considered equal if and only if the start and end
+    indices of each of their component global, data and compute domains
+    are equal.
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_get_compute_domain"></a>
+<h4>mpp_get_compute_domain</h4>
+<pre>
+<b>call mpp_get_compute_domain </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    The domain is a derived type with private elements. These routines 
+    retrieve the axis specifications associated with the compute domains
+    The 2D version of these is a simple extension of 1D.
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_get_compute_domains"></a>
+<h4>mpp_get_compute_domains</h4>
+<pre>
+<b>call mpp_get_compute_domains </b>( domain, xbegin, xend, xsize, &amp; ybegin, yend, ysize )</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    Retrieve the entire array of compute domain extents associated with a decomposition.
+  </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>domain&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>xbegin,ybegin&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>xend,yend&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>xsize,ysize&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_get_data_domain"></a>
+<h4>mpp_get_data_domain</h4>
+<pre>
+<b>call mpp_get_data_domain </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    The domain is a derived type with private elements. These routines 
+    retrieve the axis specifications associated with the data domains.
+    The 2D version of these is a simple extension of 1D.
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_get_global_domain"></a>
+<h4>mpp_get_global_domain</h4>
+<pre>
+<b>call mpp_get_global_domain </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    The domain is a derived type with private elements. These routines 
+    retrieve the axis specifications associated with the global domains.
+    The 2D version of these is a simple extension of 1D.
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_get_memory_domain"></a>
+<h4>mpp_get_memory_domain</h4>
+<pre>
+<b>call mpp_get_memory_domain </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    The domain is a derived type with private elements. These routines 
+    retrieve the axis specifications associated with the memory domains.
+    The 2D version of these is a simple extension of 1D.
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_set_compute_domain"></a>
+<h4>mpp_set_compute_domain</h4>
+<pre>
+<b>call mpp_set_compute_domain </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    The domain is a derived type with private elements. These routines 
+    set the axis specifications associated with the compute domains
+    The 2D version of these is a simple extension of 1D.
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_set_data_domain"></a>
+<h4>mpp_set_data_domain</h4>
+<pre>
+<b>call mpp_set_data_domain </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    The domain is a derived type with private elements. These routines 
+    set the axis specifications associated with the data domains.
+    The 2D version of these is a simple extension of 1D.
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_set_global_domain"></a>
+<h4>mpp_set_global_domain</h4>
+<pre>
+<b>call mpp_set_global_domain </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    The domain is a derived type with private elements. These routines 
+    set the axis specifications associated with the global domains.
+    The 2D version of these is a simple extension of 1D.
+  </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_get_pelist"></a>
+<h4>mpp_get_pelist</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    The 1D version of this call returns an array of the PEs assigned to this 1D domain
+    decomposition. In addition the optional argument <tt>pos</tt> may be
+    used to retrieve the 0-based position of the domain local to the
+    calling PE, i.e <tt>domain%list(pos)%pe</tt> is the local PE,
+    as returned by <a href="mpp.html#mpp_pe"><tt>mpp_pe()</tt></a>.
+    The 2D version of this call is identical to 1D version.
+  </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>domain&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>pelist&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>pos&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_get_layout"></a>
+<h4>mpp_get_layout</h4>
+<pre>
+<b>call mpp_get_layout </b>( domain, layout )</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    The 1D version of this call returns the number of divisions that was assigned to this
+    decomposition axis. The 2D version of this call returns an array of
+    dimension 2 holding the results on two axes.
+  </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>domain&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>layout&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="mpp_nullify_domain_list"></a>
+<h4>mpp_nullify_domain_list</h4>
+<pre>
+<b>call mpp_nullify_domain_list </b>( domain)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>
+    Nullify domain list. This interface is needed in mpp_domains_test.
+    1-D case can be added in if needed.
+  </dd>
+<br>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>domain&nbsp;&nbsp;&nbsp;</tt></td><td></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<hr>
+<h4>NAMELIST</h4>
+<div>
+<b>&amp;mpp_domains_nml</b>
+<br>
+<br>
+<div>
+<dl>
+<dt>
+<tt>debug_update_domain</tt>
+</dt>
+<dl>
+     when debug_update_domain = none, no debug will be done. When debug_update_domain is set to fatal, 
+     the run will be exited with fatal error message. When debug_update_domain is set to 
+     warning, the run will output warning message. when debug update_domain is set to 
+     note, the run will output some note message. Will check the consistency on the boundary between
+     processor/tile when updating doamin for symmetric domain and check the consistency on the north
+     folded edge. 
+   <br>
+<span class="type">[character(len=32), default: none]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<!-- END NAMELIST -->
+<a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<a name="REFERENCES"></a>
+<hr>
+<h4>REFERENCES</h4>
+<!-- BEGIN REFERENCES -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END REFERENCES -->
+<a name="COMPILER SPECIFICS"></a>
+<hr>
+<h4>COMPILER SPECIFICS</h4>
+<!-- BEGIN COMPILER SPECIFICS -->
+<div>
+<dl>
+<dt>
+</dt>
+<dd>     
+     Any module or program unit using <tt>mpp_domains_mod</tt>
+     must contain the line
+     <pre>     use mpp_domains_mod</pre>
+     
+<tt>mpp_domains_mod</tt> <tt>use</tt>s <a href="mpp.html">mpp_mod</a>, and therefore is subject to the <a href="mpp.html#COMPILING AND LINKING SOURCE">compiling and linking requirements of that module.</a>
+   
+</dd>
+</dl>
+</div>
+<br>
+<!-- END COMPILER SPECIFICS -->
+<a name="PRECOMPILER OPTIONS"></a>
+<hr>
+<h4>PRECOMPILER OPTIONS</h4>
+<!-- BEGIN PRECOMPILER OPTIONS -->
+<div>
+<dl>
+<dt>
+</dt>
+<dd>      
+     
+<tt>mpp_domains_mod</tt> uses standard f90, and has no special
+     requirements. There are some OS-dependent
+     pre-processor directives that you might need to modify on
+     non-SGI/Cray systems and compilers. The <a href="mpp.html#PORTABILITY">portability of mpp_mod</a>
+     obviously is a constraint, since this module is built on top of
+     it. Contact me, Balaji, SGI/GFDL, with questions.
+   </dd>
+</dl>
+</div>
+<br>
+<!-- END PRECOMPILER OPTIONS -->
+<a name="LOADER OPTIONS"></a>
+<hr>
+<h4>LOADER OPTIONS</h4>
+<!-- BEGIN LOADER -->
+<div>
+<p>       
+     The  source consists of the main source file
+      and also requires the following include files:
+    
+    GFDL users can check it out of the main CVS repository as part of
+    the  CVS module. The current public tag is .
+    External users can download the latest  package . Public access
+    to the GFDL CVS repository will soon be made available.
+   </p>
+<pre>        
+</pre>
+</div>
+<!-- END LOADER OPTIONS -->
+<a name="TEST PROGRAM"></a>
+<hr>
+<h4>TEST PROGRAM</h4>
+<!-- BEGIN TEST PROGRAM -->
+<div>None.<br>
+</div>
+<br>
+<!-- END TEST PROGRAM -->
+<a name="KNOWN BUGS"></a>
+<hr>
+<h4>KNOWN BUGS</h4>
+<!-- BEGIN KNOWN BUGS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END KNOWN BUGS -->
+<a name="NOTES"></a>
+<hr>
+<h4>NOTES</h4>
+<!-- BEGIN NOTES -->
+<div>None.<br>
+</div>
+<br>
+<!-- END NOTES -->
+<a name="FUTURE PLANS"></a>
+<hr>
+<h4>FUTURE PLANS</h4>
+<!-- BEGIN FUTURE PLANS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END FUTURE PLANS -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

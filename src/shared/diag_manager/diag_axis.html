@@ -1,0 +1,729 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module diag_axis_mod</title>
+<link type="text/css" href="http://data1.gfdl.noaa.gov/~fms/style/docbook.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>
+
+          ~ <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>
+	    ~ <a href="#ERROR MESSAGES">ERROR MESSAGES </a></font>
+<hr>
+<h2>Module diag_axis_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:seth.underwood@noaa.gov">   Seth Underwood </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://cobweb.gfdl.noaa.gov/fms-cgi-bin/viewcvs/FMS/shared/diag_manager">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text"> 
+<tt>diag_axis_mod</tt>   is an integral part 
+   of diag_manager_mod. It helps to create axis IDs 
+   that are used in register_diag_field. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div>   Users first create axis ID by calling
+   diag_axis_init, then use this axis ID in 
+   register_diag_field. </div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>mpp_domains_mod<br>        fms_mod<br>  diag_data_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#diag_axis_init">diag_axis_init</a>:</dt>
+<dd>   Initialize the axis, and return the axis ID. </dd>
+<dt>
+<a href="#diag_subaxes_init">diag_subaxes_init</a>:</dt>
+<dd>   Create a subaxis on a parent axis. </dd>
+<dt>
+<a href="#get_diag_axis">get_diag_axis</a>:</dt>
+<dd>   Return information about the axis with index ID </dd>
+<dt>
+<a href="#get_diag_axis_cart">get_diag_axis_cart</a>:</dt>
+<dd>   Return the axis cartesian. </dd>
+<dt>
+<a href="#get_diag_axis_data">get_diag_axis_data</a>:</dt>
+<dd>   Return the axis data. </dd>
+<dt>
+<a href="#get_diag_axis_name">get_diag_axis_name</a>:</dt>
+<dd>   Return the short name of the axis. </dd>
+<dt>
+<a href="#get_diag_axis_domain_name">get_diag_axis_domain_name</a>:</dt>
+<dd>   Return the name of the axis' domain </dd>
+<dt>
+<a href="#get_axis_length">get_axis_length</a>:</dt>
+<dd>   Return the length of the axis. </dd>
+<dt>
+<a href="#get_axis_aux">get_axis_aux</a>:</dt>
+<dd>   Return the auxiliary name for the axis. </dd>
+<dt>
+<a href="#get_axis_global_length">get_axis_global_length</a>:</dt>
+<dd>   Return the global length of the axis. </dd>
+<dt>
+<a href="#get_tile_count">get_tile_count</a>:</dt>
+<dd>   Return the tile count for the axis. </dd>
+<dt>
+<a href="#get_domain1d">get_domain1d</a>:</dt>
+<dd>   Return the 1D domain. </dd>
+<dt>
+<a href="#get_domain2d">get_domain2d</a>:</dt>
+<dd>   Return the 2D domain. </dd>
+<dt>
+<a href="#get_axes_shift">get_axes_shift</a>:</dt>
+<dd>   Return the value of the shift. </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="diag_axis_init"></a>
+<h4>diag_axis_init</h4>
+<pre>INTEGER FUNCTION <b>diag_axis_init</b> (name, data, units, cart_name, long_name, direction, set_name, edges, Domain, Domain2, aux, tile_count)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+<tt>diag_axis_init</tt>   initializes an axis and returns the axis ID that
+   is to be used with <tt>register_diag_field</tt>.  This function also
+   increments the axis counter and fills in the axes </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>name&nbsp;&nbsp;&nbsp;</tt></td><td>Short name for axis<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>data&nbsp;&nbsp;&nbsp;</tt></td><td>Array of coordinate values<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>units&nbsp;&nbsp;&nbsp;</tt></td><td>Units for the axis<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>cart_name&nbsp;&nbsp;&nbsp;</tt></td><td>   Cartesian axis ("X", "Y", "Z", "T") <br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>direction&nbsp;&nbsp;&nbsp;</tt></td><td>   Indicates the direction of the axis: <ul> 
+<li>Up if +1</li> 
+<li>Down if -1</li> 
+<li>Neither up or down if 0</li> 
+</ul> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]&nbsp;[Default: 0]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>long_name&nbsp;&nbsp;&nbsp;</tt></td><td>   Long name for the axis. <br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]&nbsp;[Default: name]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>edges&nbsp;&nbsp;&nbsp;</tt></td><td>   Axis ID for the previously defined "edges axis" <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>Domain&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(domain1d), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>Domain2&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(domain2d), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>aux&nbsp;&nbsp;&nbsp;</tt></td><td>   Auxiliary name, can only be <tt>geolon_t</tt>   or <tt>geolat_t</tt> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tile_count&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diag_subaxes_init"></a>
+<h4>diag_subaxes_init</h4>
+<pre>INTEGER FUNCTION <b>diag_subaxes_init</b> (axis, subdata, start_indx, end_indx, domain_1d, domain_2d)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Given the ID of a parent axis, create a subaxis and fill it with data,
+   and return the ID of the corresponding subaxis.
+   <br>
+<br>
+   The subaxis is defined on the parent axis from <tt>start_indx</tt>   to <tt>end_indx</tt>. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>axis&nbsp;&nbsp;&nbsp;</tt></td><td>ID of the parent axis<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>subdata&nbsp;&nbsp;&nbsp;</tt></td><td>Data of the subaxis<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>start_indx&nbsp;&nbsp;&nbsp;</tt></td><td>Start index of the subaxis<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>end_indx&nbsp;&nbsp;&nbsp;</tt></td><td>End index of the subaxis<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>domain_1d&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(domain1d), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>domain_2d&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(domain2d), OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_diag_axis"></a>
+<h4>get_diag_axis</h4>
+<pre>SUBROUTINE <b>get_diag_axis</b> (id, name, units, long_name, cart_name, direction, edges, Domain, data)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return information about the axis with index ID </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>id&nbsp;&nbsp;&nbsp;</tt></td><td>Axis ID<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>name&nbsp;&nbsp;&nbsp;</tt></td><td>Short name for axis<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>units&nbsp;&nbsp;&nbsp;</tt></td><td>Units for axis<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>long_name&nbsp;&nbsp;&nbsp;</tt></td><td>Long name for axis<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>cart_name&nbsp;&nbsp;&nbsp;</tt></td><td>   Cartesian axis ("x", "y", "z", "t"). <br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>direction&nbsp;&nbsp;&nbsp;</tt></td><td>   Direction of data. (See <tt>diag_axis_init</tt>   for a description of
+   allowed values) <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>edges&nbsp;&nbsp;&nbsp;</tt></td><td>   Axis ID for the previously defined "edges axis". <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>Domain&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(domain1d)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>data&nbsp;&nbsp;&nbsp;</tt></td><td>   Array of coordinate values for this axis. <br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_diag_axis_cart"></a>
+<h4>get_diag_axis_cart</h4>
+<pre>SUBROUTINE <b>get_diag_axis_cart</b> (id, cart_name)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return the axis cartesian ('X', 'Y', 'Z' or 'T') for the axis ID given. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>id&nbsp;&nbsp;&nbsp;</tt></td><td>Axis ID<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cart_name&nbsp;&nbsp;&nbsp;</tt></td><td>Cartesian axis<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_diag_axis_data"></a>
+<h4>get_diag_axis_data</h4>
+<pre>SUBROUTINE <b>get_diag_axis_data</b> (id, data)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return the axis data for the axis ID given. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>id&nbsp;&nbsp;&nbsp;</tt></td><td>Axis ID<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>data&nbsp;&nbsp;&nbsp;</tt></td><td>Axis data<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_diag_axis_name"></a>
+<h4>get_diag_axis_name</h4>
+<pre>SUBROUTINE <b>get_diag_axis_name</b> (id, name)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return the short name for the axis ID given. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>id&nbsp;&nbsp;&nbsp;</tt></td><td>Axis ID<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>name&nbsp;&nbsp;&nbsp;</tt></td><td>Axis short name<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_diag_axis_domain_name"></a>
+<h4>get_diag_axis_domain_name</h4>
+<pre>SUBROUTINE <b>get_diag_axis_domain_name</b> (id, name)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Retruns the name of the axis' domain. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>id&nbsp;&nbsp;&nbsp;</tt></td><td>Axis ID<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>name&nbsp;&nbsp;&nbsp;</tt></td><td>Axis' domain name<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_axis_length"></a>
+<h4>get_axis_length</h4>
+<pre>INTEGER FUNCTION <b>get_axis_length</b> (id)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return the length of the axis ID given. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>id&nbsp;&nbsp;&nbsp;</tt></td><td>Axis ID<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_axis_aux"></a>
+<h4>get_axis_aux</h4>
+<pre>CHARACTER(len=128) FUNCTION <b>get_axis_aux</b> (id)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns the auxiliary name for the axis.  The only possible values for
+   the auxiliary names is <tt>geolon_t</tt>   or <tt>geolat_t</tt>. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>id&nbsp;&nbsp;&nbsp;</tt></td><td>Axis ID<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_axis_global_length"></a>
+<h4>get_axis_global_length</h4>
+<pre>INTEGER FUNCTION <b>get_axis_global_length</b> (id)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns the global length of the axis ID given. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>id&nbsp;&nbsp;&nbsp;</tt></td><td>Axis ID<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_tile_count"></a>
+<h4>get_tile_count</h4>
+<pre>INTEGER FUNCTION <b>get_tile_count</b> (ids)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return the tile count for the axis IDs given. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>ids&nbsp;&nbsp;&nbsp;</tt></td><td>   Axis IDs.  Possible dimensions: 1 &lt;= <tt>size(ids(:))</tt>   &lt;= 4. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, DIMENSION(:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_domain1d"></a>
+<h4>get_domain1d</h4>
+<pre>TYPE(domain1d) FUNCTION <b>get_domain1d</b> (id)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Retrun the 1D domain for the axis ID given. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>id&nbsp;&nbsp;&nbsp;</tt></td><td>Axis ID<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_domain2d"></a>
+<h4>get_domain2d</h4>
+<pre>TYPE(domain2d) FUNCTION <b>get_domain2d</b> (ids)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return the 2D domain for the axis IDs given. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>ids&nbsp;&nbsp;&nbsp;</tt></td><td>   Axis IDs.  Possible dimensions: 1 &lt;= <tt>size(ids(:))</tt>   &lt;= 4. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, DIMENSION(:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_axes_shift"></a>
+<h4>get_axes_shift</h4>
+<pre>SUBROUTINE <b>get_axes_shift</b> (ids, ishift, jshift)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return the value of the shift for the axis IDs given. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>ids&nbsp;&nbsp;&nbsp;</tt></td><td>   Axis IDs.  Possible dimensions: 1 &lt;= <tt>size(ids(:))</tt>   &lt;= 4 <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, DIMENSION(:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>ishift&nbsp;&nbsp;&nbsp;</tt></td><td>X shift value.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>jshift&nbsp;&nbsp;&nbsp;</tt></td><td>Y shift value.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<hr>
+<h4>ERROR MESSAGES</h4>
+<!-- BEGIN ERROR MESSAGES -->
+<div>
+<dl>
+<dt>
+<b>FATAL in diag_axis_init</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   num_axis_sets (&lt;num_axis_sets&gt;) exceeds max_num_axis_sets(&lt;num_axis_sets&gt;).
+   Increase max_num_axis_sets via diag_manager_nml. </dd>
+<dt>
+<b>FATAL in diag_axis_init</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>axis_name &lt;NAME&gt; and axis_set already exist.</dd>
+<dt>
+<b>FATAL in diag_axis_init</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>max_axes exceeded, increase it via diag_manager_nml</dd>
+<dt>
+<b>FATAL in diag_axis_init</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>Invalid cart_name name.</dd>
+<dt>
+<b>FATAL in diag_axis_init</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>direction must be 0, +1, or -1</dd>
+<dt>
+<b>FATAL in diag_axis_init</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>Presence of both Domain and Domain2 at the same time is prohibited</dd>
+<dt>
+<b>FATAL in diag_axis_init</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>Domain must not be present for an axis which is not in the X or Y direction.</dd>
+<dt>
+<b>FATAL in diag_axis_init</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>Edges axis does not match axis (code &lt;CODE&gt;).</dd>
+<dt>
+<b>FATAL in diag_axis_init</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>Edges axis is not defined.</dd>
+<dt>
+<b>FATAL in diag_subaxes_init</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>max_subaxes (value &lt;VALUE&gt;) is too small.  Consider increasing max_subaxes.</dd>
+<dt>
+<b>FATAL in get_diag_axis</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>array data is too small.</dd>
+<dt>
+<b>FATAL in get_diag_axis_data</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>array data is too small</dd>
+<dt>
+<b>FATAL in get_tile_count</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>input argument has incorrect size.</dd>
+<dt>
+<b>FATAL in get_domain2d</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>input argument has incorrect size.</dd>
+</dl>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

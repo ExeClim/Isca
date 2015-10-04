@@ -1,0 +1,1196 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module diag_data_mod</title>
+<link type="text/css" href="http://data1.gfdl.noaa.gov/~fms/style/docbook.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>
+	    ~ <a href="#PUBLIC DATA">PUBLIC DATA </a>
+
+          ~ <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a></font>
+<hr>
+<h2>Module diag_data_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:seth.underwood@noaa.gov">   Seth Underwood </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://cobweb.gfdl.noaa.gov/fms-cgi-bin/viewcvs/FMS/shared/diag_manager">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   Type descriptions and global variables for the diag_manager modules. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div>   Notation: <dl> 
+<dt>input field</dt> 
+<dd>The data structure describing the field as
+   registered by the model code.</dd> 
+<dt>output field</dt> 
+<dd>The data structure describing the actual
+   diagnostic output with requested frequency and
+   other options.</dd> 
+</dl>   Input fields, output fields, and output files are gathered in arrays called
+   "input_fields", "output_fields", and "files", respectively. Indices in these
+   arrays are used as pointers to create associations between various data
+   structures.
+   <br>
+<br>
+   Each input field associated with one or several output fields via array of
+   indices output_fields; each output field points to the single "parent" input
+   field with the input_field index, and to the output file with the output_file 
+   index </div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>time_manager_mod<br> mpp_domains_mod<br>      mpp_io_mod<br>         fms_mod<br>          netcdf</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl></dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>
+<table align="center" cellspacing="2" CELLPADDING="2" BORDER="2">
+<tr>
+<th> Name  </th><th> Type  </th><th> Value  </th><th> Units  </th><th> Description  </th>
+</tr>
+<tr>
+<td> MAX_FIELDS_PER_FILE  </td><td> INTEGER, PARAMETER  </td><td> 300  </td><td> ---  </td><td>    Maximum number of fields per file.   </td>
+</tr>
+<tr>
+<td> MAX_OUT_PER_IN_FIELD  </td><td> INTEGER, PARAMETER  </td><td> 150  </td><td> ---  </td><td>    Maximum number of output_fields per input_field.   </td>
+</tr>
+<tr>
+<td> DIAG_OTHER  </td><td> INTEGER, PARAMETER  </td><td> 0  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> DIAG_OCEAN  </td><td> INTEGER, PARAMETER  </td><td> 1  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> DIAG_ALL  </td><td> INTEGER, PARAMETER  </td><td> 2  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> VERY_LARGE_FILE_FREQ  </td><td> INTEGER, PARAMETER  </td><td> 100000  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> VERY_LARGE_AXIS_LENGTH  </td><td> INTEGER, PARAMETER  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> EVERY_TIME  </td><td> INTEGER, PARAMETER  </td><td> 0  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> END_OF_RUN  </td><td> INTEGER, PARAMETER  </td><td> -1  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> DIAG_SECONDS  </td><td> INTEGER, PARAMETER  </td><td> 1  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> DIAG_MINUTES  </td><td> INTEGER, PARAMETER  </td><td> 2  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> DIAG_HOURS  </td><td> INTEGER, PARAMETER  </td><td> 3  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> DIAG_DAYS  </td><td> INTEGER, PARAMETER  </td><td> 4  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> DIAG_MONTHS  </td><td> INTEGER, PARAMETER  </td><td> 5  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> DIAG_YEARS  </td><td> INTEGER, PARAMETER  </td><td> 6  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> MAX_SUBAXES  </td><td> INTEGER, PARAMETER  </td><td> 10  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> CMOR_MISSING_VALUE  </td><td> REAL, PARAMETER  </td><td> 1.0e20  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> num_files  </td><td> INTEGER  </td><td> 0  </td><td> ---  </td><td>    Number of output files currenly in use by the diag_manager.   </td>
+</tr>
+<tr>
+<td> num_input_fields  </td><td> INTEGER  </td><td> 0  </td><td> ---  </td><td>    Number of input fields in use.   </td>
+</tr>
+<tr>
+<td> num_output_fields  </td><td> INTEGER  </td><td> 0  </td><td> ---  </td><td>    Number of output fields in use.   </td>
+</tr>
+<tr>
+<td> null_axis_id  </td><td> INTEGER  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> append_pelist_name  </td><td> LOGICAL  </td><td> .FALSE.  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> mix_snapshot_average_fields  </td><td> LOGICAL  </td><td> .FALSE.  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> max_files  </td><td> INTEGER  </td><td> 31  </td><td> ---  </td><td>    Maximum number of output files allowed.  Increase via the diag_manager_nml namelist.   </td>
+</tr>
+<tr>
+<td> max_output_fields  </td><td> INTEGER  </td><td> 300  </td><td> ---  </td><td>    Maximum number of output fields.  Increase via the diag_manager_nml namelist.   </td>
+</tr>
+<tr>
+<td> max_input_fields  </td><td> INTEGER  </td><td> 300  </td><td> ---  </td><td>    Maximum number of input fields.  Increase via the diag_manager_nml namelist.   </td>
+</tr>
+<tr>
+<td> max_axes  </td><td> INTEGER  </td><td> 60  </td><td> ---  </td><td>    Maximum number of independent axes.   </td>
+</tr>
+<tr>
+<td> do_diag_field_log  </td><td> LOGICAL  </td><td> .FALSE.  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> write_bytes_in_file  </td><td> LOGICAL  </td><td> .FALSE.  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> debug_diag_manager  </td><td> LOGICAL  </td><td> .FALSE.  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> max_num_axis_sets  </td><td> INTEGER  </td><td> 25  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> use_cmor  </td><td> LOGICAL  </td><td> .FALSE.  </td><td> ---  </td><td>    Indicates if we should overwrite the MISSING_VALUE to use the CMOR missing value.   </td>
+</tr>
+<tr>
+<td> ISSUE_OOR_WARNINGS  </td><td> LOGICAL  </td><td> .TRUE.  </td><td> ---  </td><td>    Issue warnings if the output field has values outside the given
+   range for a variable.   </td>
+</tr>
+<tr>
+<td> OOR_WARNINGS_FATAL  </td><td> LOGICAL  </td><td> .FALSE.  </td><td> ---  </td><td>    Cause a fatal error if the output field has a value outside the
+   given range for a variable.   </td>
+</tr>
+<tr>
+<td> FILL_VALUE  </td><td> REAL  </td><td> NF90_FILL_REAL  </td><td> ---  </td><td>    Fill value used.  Value will be    if using the
+   netCDF module, otherwise will be 9.9692099683868690e+36.   </td>
+</tr>
+<tr>
+<td> EMPTY  </td><td> REAL  </td><td> 0.0  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> MAX_VALUE  </td><td> REAL  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> MIN_VALUE  </td><td> REAL  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> base_time  </td><td> TYPE(time_type)  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> base_year  </td><td> INTEGER  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> base_month  </td><td> INTEGER  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> base_day  </td><td> INTEGER  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> base_hour  </td><td> INTEGER  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> base_minute  </td><td> INTEGER  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> base_second  </td><td> INTEGER  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> global_descriptor  </td><td> CHARACTER(len=256)  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> files  </td><td> TYPE(file_type), DIMENSION(:), SAVE, ALLOCATABLE  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> input_fields  </td><td> TYPE(input_field_type), DIMENSION(:), ALLOCATABLE  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> output_fields  </td><td> TYPE(output_field_type), DIMENSION(:), ALLOCATABLE  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> time_zero  </td><td> TYPE(time_type)  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> first_send_data_call  </td><td> LOGICAL  </td><td> .TRUE.  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> module_is_initialized  </td><td> LOGICAL  </td><td> .FALSE.  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> diag_log_unit  </td><td> INTEGER  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> time_unit_list  </td><td> CHARACTER(len=10), DIMENSION(6)  </td><td> (/'seconds   ', 'minutes   ', 'hours     ', 'days      ', 'months    ', 'years     '/)  </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> filename_appendix  </td><td> CHARACTER(len=32)  </td><td>   </td><td> ---  </td><td> ---  </td>
+</tr>
+<tr>
+<td> pelist_name  </td><td> CHARACTER(len=32)  </td><td> ---  </td><td> ---  </td><td> ---  </td>
+</tr>
+</table>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a"></ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<hr>
+<h4>PUBLIC TYPES</h4>
+<div>
+<b>diag_grid</b>
+<br>
+<br>
+<div>
+<dl>   Contains the coordinates of the local domain to output. <br>
+<br>
+<dt>
+<tt>start</tt>
+</dt>
+<dl>   Start coordinates (Lat, Lon, Depth) of the local domain to output. <br>
+<span class="type">[REAL, DIMENSION(3)]</span>
+</dl>
+<dt>
+<tt>end</tt>
+</dt>
+<dl>   End coordinates (Lat, Lon, Depth) of the local domain to output. <br>
+<span class="type">[REAL, DIMENSION(3)]</span>
+</dl>
+<dt>
+<tt>l_start_indx</tt>
+</dt>
+<dl>   Start indices at each local PE. <br>
+<span class="type">[INTEGER, DIMENSION(3)]</span>
+</dl>
+<dt>
+<tt>l_end_indx</tt>
+</dt>
+<dl>   End indices at each local PE. <br>
+<span class="type">[INTEGER, DIMENSION(3)]</span>
+</dl>
+<dt>
+<tt>subaxes</tt>
+</dt>
+<dl>   ID returned from diag_subaxes_init of 3 subaces. <br>
+<span class="type">[INTEGER, DIMENSION(3)]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<div>
+<b>diag_fieldtype</b>
+<br>
+<br>
+<div>
+<dl>   Diagnostic field type <br>
+<br>
+<dt>
+<tt>Field</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(fieldtype)]</span>
+</dl>
+<dt>
+<tt>Domain</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(domain2d)]</span>
+</dl>
+<dt>
+<tt>miss</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL]</span>
+</dl>
+<dt>
+<tt>miss_pack</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL]</span>
+</dl>
+<dt>
+<tt>miss_present</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>miss_pack_present</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>tile_count</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<div>
+<b>coord_type</b>
+<br>
+<br>
+<div>
+<dl>   Define the region for field output. <br>
+<br>
+<dt>
+<tt>xbegin</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL]</span>
+</dl>
+<dt>
+<tt>xend</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL]</span>
+</dl>
+<dt>
+<tt>ybegin</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL]</span>
+</dl>
+<dt>
+<tt>yend</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL]</span>
+</dl>
+<dt>
+<tt>zbegin</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL]</span>
+</dl>
+<dt>
+<tt>zend</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<div>
+<b>file_type</b>
+<br>
+<br>
+<div>
+<dl>   Type to define the diagnostic files that will be written as defined by the diagnostic table. <br>
+<br>
+<dt>
+<tt>name</tt>
+</dt>
+<dl>   Name of the output file. <br>
+<span class="type">[CHARACTER(len=128)]</span>
+</dl>
+<dt>
+<tt>long_name</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=128)]</span>
+</dl>
+<dt>
+<tt>fields</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER, dimension(max_fields_per_file)]</span>
+</dl>
+<dt>
+<tt>num_fields</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>output_freq</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>output_units</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>format</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>time_units</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>file_unit</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>bytes_written</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>time_axis_id</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>time_bounds_id</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>new_file_freq</tt>
+</dt>
+<dl>   Frequency to create a new file. <br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>new_file_freq_units</tt>
+</dt>
+<dl>   Time units of new_file_freq ( days, hours, years, ...) <br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>duration</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>duration_units</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>tile_count</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>local</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>last_flush</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(time_type)]</span>
+</dl>
+<dt>
+<tt>next_open</tt>
+</dt>
+<dl>   Time to open next file. <br>
+<span class="type">[TYPE(time_type)]</span>
+</dl>
+<dt>
+<tt>start_time</tt>
+</dt>
+<dl>   Time file opened <br>
+<span class="type">[TYPE(time_type)]</span>
+</dl>
+<dt>
+<tt>close_time</tt>
+</dt>
+<dl>   Time file closed.  File does not allow data after close time <br>
+<span class="type">[TYPE(time_type)]</span>
+</dl>
+<dt>
+<tt>f_avg_start</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(diag_fieldtype)]</span>
+</dl>
+<dt>
+<tt>f_avg_end</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(diag_fieldtype)]</span>
+</dl>
+<dt>
+<tt>f_avg_nitems</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(diag_fieldtype)]</span>
+</dl>
+<dt>
+<tt>f_bounds</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(diag_fieldtype)]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<div>
+<b>input_field_type</b>
+<br>
+<br>
+<div>
+<dl>   Type to hold the input field description <br>
+<br>
+<dt>
+<tt>module_name</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=128)]</span>
+</dl>
+<dt>
+<tt>field_name</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=128)]</span>
+</dl>
+<dt>
+<tt>long_name</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=128)]</span>
+</dl>
+<dt>
+<tt>units</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=128)]</span>
+</dl>
+<dt>
+<tt>standard_name</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=128)]</span>
+</dl>
+<dt>
+<tt>interp_method</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=64)]</span>
+</dl>
+<dt>
+<tt>axes</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER, DIMENSION(3)]</span>
+</dl>
+<dt>
+<tt>num_axes</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>missing_value_present</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>range_present</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>missing_value</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL]</span>
+</dl>
+<dt>
+<tt>range</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL, DIMENSION(2)]</span>
+</dl>
+<dt>
+<tt>output_fields</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER, DIMENSION(max_out_per_in_field)]</span>
+</dl>
+<dt>
+<tt>num_output_fields</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>size</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER, DIMENSION(3)]</span>
+</dl>
+<dt>
+<tt>static</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>register</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>mask_variant</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>local</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>tile_count</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>local_coord</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(coord_type)]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<div>
+<b>output_field_type</b>
+<br>
+<br>
+<div>
+<dl>   Type to hold the output field description. <br>
+<br>
+<dt>
+<tt>input_field</tt>
+</dt>
+<dl>   Index of the corresponding input field in the table <br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>output_file</tt>
+</dt>
+<dl>   Index of the output file in the table <br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>output_name</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=128)]</span>
+</dl>
+<dt>
+<tt>static</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>time_max</tt>
+</dt>
+<dl>   .TRUE. if the output field is maximum over time interval <br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>time_min</tt>
+</dt>
+<dl>   .TRUE. if the output field is minimum over time interval <br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>time_average</tt>
+</dt>
+<dl>   .TRUE. if the output field is averaged over time interval. <br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>time_ops</tt>
+</dt>
+<dl>   .TRUE. if any of time_min, time_max, or time_average is true <br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>pack</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>time_method</tt>
+</dt>
+<dl>   Time method field from the input file <br>
+<span class="type">[CHARACTER(len=50)]</span>
+</dl>
+<dt>
+<tt>buffer</tt>
+</dt>
+<dl>   Coordinates of buffer are (x, y, z, time-of-day) <br>
+<span class="type">[REAL, _ALLOCATABLE, DIMENSION(:,:,:,:), default: _NULL]</span>
+</dl>
+<dt>
+<tt>counter</tt>
+</dt>
+<dl>   Coordinates of buffer are (x, y, z, time-of-day) <br>
+<span class="type">[REAL, _ALLOCATABLE, DIMENSION(:,:,:,:), default: _NULL]</span>
+</dl>
+<dt>
+<tt>count_0d</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL, _ALLOCATABLE, DIMENSION(:)]</span>
+</dl>
+<dt>
+<tt>num_elements</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL, _ALLOCATABLE, DIMENSION(:)]</span>
+</dl>
+<dt>
+<tt>last_output</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(time_type)]</span>
+</dl>
+<dt>
+<tt>next_output</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(time_type)]</span>
+</dl>
+<dt>
+<tt>next_next_output</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(time_type)]</span>
+</dl>
+<dt>
+<tt>f_type</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(diag_fieldtype)]</span>
+</dl>
+<dt>
+<tt>axes</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER, DIMENSION(4)]</span>
+</dl>
+<dt>
+<tt>num_axes</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>total_elements</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>region_elements</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>n_diurnal_samples</tt>
+</dt>
+<dl>   Number of diurnal sample intervals, 1 or more <br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>output_grid</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(diag_grid)]</span>
+</dl>
+<dt>
+<tt>local_output</tt>
+</dt>
+<dl>   .TRUE. if this field is written out on a region and not globally. <br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>need_compute</tt>
+</dt>
+<dl>   .TRUE. if this field is written out on a region, not global. <br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>phys_window</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>written_once</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>reduced_k_range</tt>
+</dt>
+<dl>   .TRUE. if dealing with vertical sub-level output. <br>
+<span class="type">[LOGICAL]</span>
+</dl>
+<dt>
+<tt>imin</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>imax</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>jmin</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>jmax</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>kmin</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>kmax</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>Time_of_prev_field_data</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(time_type)]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<div>
+<b>diag_axis_type</b>
+<br>
+<br>
+<div>
+<dl>   Type to hold the diagnostic axis description. <br>
+<br>
+<dt>
+<tt>name</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=128)]</span>
+</dl>
+<dt>
+<tt>units</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=256)]</span>
+</dl>
+<dt>
+<tt>long_name</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=256)]</span>
+</dl>
+<dt>
+<tt>cart_name</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=1)]</span>
+</dl>
+<dt>
+<tt>data</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[REAL, DIMENSION(:), POINTER]</span>
+</dl>
+<dt>
+<tt>start</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER, DIMENSION(MAX_SUBAXES)]</span>
+</dl>
+<dt>
+<tt>end</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER, DIMENSION(MAX_SUBAXES)]</span>
+</dl>
+<dt>
+<tt>subaxis_name</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=128), DIMENSION(MAX_SUBAXES)]</span>
+</dl>
+<dt>
+<tt>length</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>direction</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>edges</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>set</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>shift</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>Domain</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(domain1d)]</span>
+</dl>
+<dt>
+<tt>Domain2</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(domain2d)]</span>
+</dl>
+<dt>
+<tt>subaxis_domain2</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[TYPE(domain2d), dimension(MAX_SUBAXES)]</span>
+</dl>
+<dt>
+<tt>aux</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=128)]</span>
+</dl>
+<dt>
+<tt>tile_count</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<div>
+<b>diag_global_att_type</b>
+<br>
+<br>
+<div>
+<dl> 
+<br>
+<br>
+<dt>
+<tt>grid_type</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=128), default: regular]</span>
+</dl>
+<dt>
+<tt>tile_name</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[CHARACTER(len=128), default: N/A]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<!-- END PUBLIC TYPES -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<html>
+
+<title>Quickstart Guide: Idealized Moist Atmospheric Model</title>
+<h2>Idealized Moist Spectral Atmospheric Model</h2>
+
+<body>
+
+<p><strong>Table of Contents</strong></p>
+
+<dl>
+<dt><a href="#Description_of_model">1. Description of model</a></dt>
+<dt><a href="#Acquire_the_Source_Code_and_Runscripts">2. Acquire the Source Code and Runscripts</a></dt>
+<dt><a href="#Run_the_Model">3. Run the Model</a></dt>
+<dd>
+<dl>
+    <dt><a href="#The_Sample_Runscripts">3.1. The Sample Runscripts</a></dt>
+    <dd>
+    <dl>
+        <dt><a href="#The_compilation_templates">3.1.1. The compilation templates</a></dt>
+        <dt><a href="#The_work_directory">3.1.2. The work directory</a></dt>
+    </dl>
+    </dd> 
+    <dt><a href="#Grid_decomposition">3.2. Grid decomposition</a></dt>
+    <dt><a href="#Restarting_and_cold-starting">3.3. Restarting and cold-starting</a></dt>
+    <dd>
+    <dl> 
+         <dt><a href="#restarting">3.3.1. restarting</a></dt>
+         <dt><a href="#cold-starting">3.3.2. cold-starting</a></dt>
+    </dl>
+    </dd>
+    <dt><a href="#Control_of_model_time_and_length_of_integration">3.4. Control of model time and length of integration</a></dt>
+    <dt><a href="#diag_table">3.5. diag_table</a></dt>
+    <dt><a href="#field_table">3.6. field_table</a></dt>
+</dl>
+</dd>
+<dt><a href="#Examine_the_Output"> 4. Examine the Output</a></dt>
+<dt><a href="#Reference">5. Reference</a></dt>
+</dl>
+
+<a name="Description_of_model"></a>
+<h3>1. Description of model</h3>
+<p>
+This atmospheric general circulation model (GCM) integrates the
+primitive equations of motion and includes an idealized representation
+of the hydrological cycle (Frierson, Zurita-Gotor, and Held 2006 and
+O'Gorman and Schneider 2008).
+The lower boundary condition is an aquaplanet slab ocean (i.e., there
+are no continents), so the surface temperature responds to radiative
+and turbulent surface fluxes.
+The longwave radiation is a gray radiation scheme with a prescribed
+optical depth is a simple function of latitude and pressure. The
+top-of-atmosphere downward shortwave radiation is a function of
+latitude designed to be similar to that of the annual-mean of Earth
+(there is no seasonal or diurnal cycle); atmospheric absorption of
+solar radiation is included as a simple function of pressure.
+Precipitation occurs when resolved motion lead to supersaturation and
+in a sub-grid scale parameterization of convection, based on the
+quasi-equilibrium hypothesis. The parameterization of convection
+relaxes convectively unstable atmospheric columns to a moist
+pseudoadiabatic temperature profile with constant relative humidity
+(see Frierson 2007 and O'Gorman and Schneider 2008 for details). There
+is no condensed water phase in the atmosphere (water is assumed to
+instantaneously return to the surface), and no representation of the
+effect of clouds or water vapor on radiative transfer.
+
+The dynamical core of the model is the spectral dynamical core
+as described in the public release of idealized spectral models.<br>
+For more information see: <a href="http://www.gfdl.noaa.gov/idealized-models-with-spectral-dynamics">idealized-models-with-spectral-dynamics</a>
+<br>
+Also see: <a href="http://www.gfdl.noaa.gov/idealized-moist-atmospheric-models">idealized-moist-atmospheric-models</a>
+</p>
+<a name="Acquire_the_Source_Code_and_Runscripts"></a>
+<h3>2. Acquire the Source Code and Runscripts</h3>
+<p>
+The Flexible Modeling System development team at GFDL uses a local implementation
+of GForge to serve FMS software, located at https://fms.gfdl.noaa.gov/gf
+In order to obtain the source code, you must <a target="_top" href="https://fms.gfdl.noaa.gov/gf/account/?action=UserAdd">register</a>
+as an FMS user on our software server. After submitting the registration form on the software server, you should receive an automatically
+generated confirmation email within a few minutes. Clicking on the link in the email confirms the creation of your account.
+</p>
+<p>
+After your account has been created, you should <a target="_top" href="https://fms.gfdl.noaa.gov/gf/account/?action=Login&amp;amp;redirect=/gf/my/">log in</a>
+and <a href="https://fms.gfdl.noaa.gov/extra/request-project-access.cgi">request access</a>
+to the Idealized Moist Atmospheric Model project. Once the FMS project administrator grants you access,
+you will receive a second e-mail notification. This email requires action on the part of the project administrator and thus may take longer to arrive.
+The email will contain a software access password along with instructions for obtaining the release package, which are described below.
+</p>
+<p>
+You may download the release package from <a target="_top" href="https://fms.gfdl.noaa.gov/gf/project/idealized_moist_atmospheric_model/frs">https://fms.gfdl.noaa.gov/gf/project/idealized_moist_atmospheric_model/frs</a>
+Click on "idealized_moist_atmospheric_model.tar.gz" to download.
+</p>
+<a name="Run_the_Model"></a>
+<h3>3. Run the Model</h3>
+
+<a name="The_Sample_Runscripts"></a>
+<h4>3.1. The Sample Runscripts</h4>
+<p>
+This release includes compile and run scripts in the exp directory.
+The code and assorted tools used by these scripts are included and are organized into several directories.
+These scripts were developed on the gaea machine at ORNL.
+</p>
+<p>
+The compile script:
+<ul>
+<li>compiles the source code (mppnccombine.c) for a tool that combines distributed model output.</li>
+<li>executes mkmf, a tool that generates a makefile for compilation of the model code.</li>
+<li>executes the makefile.</li>
+</ul>
+</p>
+<p>
+Adapting the compile script to a different platform will likely require a few modifications.<br>
+The items most likely to need modification are:
+<ul>
+<li>The modules loaded.</li>
+<li>The command lines to compile mppnccombine.c</li>
+<li>The compilation template. See the separate discussion of the compilation templates below.</li>
+</ul>
+</p>
+<p>
+ The run script:
+<ul>
+<li>Creates a working directory where the model will be run.</li>
+<li>Creates or copies the required input data for the model into the working directory.</li>
+<li>Runs the model.</li>
+<li>Combines distributed output and renames the output files using the timestamp.</li>
+</ul>
+</p>
+<p>
+ Note that the directory paths and file paths are variables. They are initially set to
+ correspond to the directory structure as it exists after extraction from the tar file,
+ but are made variables to accommodate changes to this directory structure.
+</p>
+<p>
+ The directory path most likely to need changing is workdir.
+ workdir is a temporary directory where the model will run. A large amount of data
+ will be copied into the work directory, and output from the model is also written
+ to the work directory. workdir must be large enough to accommodate all of this.
+ The input data is approximately 20GB and model output is potentially even larger.
+</p>
+<a name="The_compilation_templates"></a>
+<h4>3.1.1. The compilation templates</h4>
+<p>
+The scripts use
+the mkmf utility, which creates a Makefile to facilitate compilation. The mkmf
+utility uses a platform-specific template for setting up system and platform
+dependent parameters. Sample templates for various platforms are provided in the
+bin directory. You may need to consult your system administrator to set up a
+compilation template for your platform and ensure the locations for system
+libraries are defined correctly. For documentation on the use of mkmf, see the
+file named "mkmf.html", which is supplied with this package.
+</p>
+<a name="The_work_directory"></a>
+<h4>3.1.2. The work directory</h4>
+<p>
+The directory path most likely to need changing is workdir.
+workdir is a temporary directory where the model will run. The executable and input
+data is copied into the work directory, and output from the model is also written
+to the work directory. workdir must be large enough to accommodate all of this.
+</p>
+<a name="Grid_decomposition"></a>
+<h4>3.3. Grid decomposition</h4>
+<p>
+  The spectral model decomposes the horizontal grid into latitude bands with each
+band assigned to a processor. When 2 processors are used it is decomposed into
+northern and southern hemispheres.
+The number of processors that may be used is restricted such that lat_max/npes must be a multiple of 2.
+For example, for t42 resolution there are 64 latitudes so that the choices for npes are 1,2,4,8,16,32
+  The diagnostic output is distributed, that is, each processor writes its own files.
+The processor number is appended to the file name. For example, a diagnostic file named "atmos_daily.nc"
+would appear as these four files when npes=4:<br>
+atmos_daily.nc.0000<br>
+atmos_daily.nc.0001<br>
+atmos_daily.nc.0002<br>
+atmos_daily.nc.0003
+</p>
+<p>
+A tool is provided to combine these distributed files into files of data on a single grid.
+Combining the four files shown above would result in a single file named "atmos_daily.nc"
+</p>
+
+<a name="Restarting_and_cold-starting"></a>
+<h4>3.3.  Restarting and cold-starting</h4>
+
+<a name="restarting"></a>
+<h4>3.3.1. Restarting the model to continue a previous integration</h4>
+<p>
+  Restart files are written to a sub-directory, named RESTART, off the working directory.
+Information about the state of the model at the point of termination is contained
+in these files. Each component model and/or sub-component may have restart files.
+To continue a previous integration these files are put in the INPUT directory.
+They are read at initialization to restore the state of the model as it was at
+termination of the previous integration.
+</p>
+
+<a name="cold-starting"></a>
+<h4>3.3.2. Cold-starting the model</h4>
+<p>
+  If a component and/or sub-component does not find its restart files in the INPUT
+directory then it performs a default initialization, also referred to as a cold-start.
+The default initialization of each component is required to be compatible with other
+model components, but otherwise is entirely at the discretion of the developer(s). 
+</p>
+<p>
+  The atmospheric models typically fill the model fields with constant values for a
+cold-start. The result is a model state that is very flat and far away from anything
+scientifically interesting. As a result, a cold-started model needs to be spun-up.
+</p>
+
+<a name="Control_of_model_time_and_length_of_integration"></a>
+<h4>3.4. Control of model time and length of integration</h4>
+<p>
+ The length of integration is set by setting days, hours, minutes and seconds
+ in main_nml. The default integration period is zero, so it must be set.
+</p>
+<p>
+ The model time starts at zero by default. It can be changed by setting current_time
+ in main_nml, but this is not recommended. current_time is an array of four elements
+ representing days, hours, minutes and seconds. The model time is saved with the
+ restart data (in atmos_model.res). Upon restarting, the model time will be read from
+ atmos_model.res and any setting via namelist will be ignored. 
+</p>
+<p>
+ The second line of diag_table is an initial date, by default a string of six zeros. 
+ This is the model initial time. The six zeros represent years, months, days, hours, minutes and seconds.
+ years and months must be zero. The others should always be equal to what is set for current_time.
+ The date in diag_table is intended to be used only for the time axis of the diagnostic output files,
+ but unfortunately this standard has not been strictly adhered to. If it is not equal to that
+ set for current_time the results are unpredictable.
+</p>
+
+<a name="diag_table"></a>
+<h4>3.5  diag_table</h4>
+<p>
+ The diagnostic output is controlled via the diagnostics table, which is named "diag_table".
+ For documentation on the use of diag_table, see the file named "diag_table.html",
+ which is supplied with this package.
+</p>
+
+<a name="field_table"></a>
+<h4>3.6  field_table</h4>
+<p>
+ Aside from the model's required prognostic variables; velocity, pressure,
+ temperature and humidity, the model may or may not have any number of additional
+ tracers. Tracers are advected by the dynamical code, but do not feed back on the
+ model solution. Tracers are specified in field_table. For each tracer, the field_table
+ specifies the method of advection, convection, and the tracers source and sinks.
+</p>
+<p>
+ For a more thorough description of field_table, see the file named "field_manager.html",
+ which is supplied with this package.
+</p>
+
+<a name="Examine_the_Output"></a>
+<h3>4. Examine the Output</h3>
+<p>
+ You may download sample output data for comparison at:
+ <a href="ftp://ftp.gfdl.noaa.gov/perm/pjp/Idealized_Moist_Atmospheric_Model/sample_output.tar.gz">ftp://ftp.gfdl.noaa.gov/perm/pjp/Idealized_Moist_Atmospheric_Model/sample_output.tar.gz</a>
+ The size of the sample output, after unzipping, is 671 MB.
+ This output was generated on the gaea machine at ORNL.
+ The file output.tar.gz contains three directories: ascii, history and restart.
+ The ascii directory contains text output of the model including stdout and log messages.
+ The history directory contains netCDF diagnostic output, governed by your entries in
+ the diag_table. History and ascii files are labeled with the timestamp corresponding to
+ the model time at the beginning of execution. The restart directory contains files which
+ describe the state of the model at termination. To restart the model running from this
+ state, these restart files are moved to the INPUT directory to serve as the initial
+ conditions for your next run. 
+</p>
+
+<a name="Reference"></a>
+<h3>5. Reference</h3>
+Frierson, D. M. W., Held, I. M. and P. Zurita-Gotor.
+<a href="http://www.gfdl.noaa.gov/bibliography/related_files/dmwf0601.pdf">A Gray-Radiation Aquaplanet Moist GCM. Part I: Static Stability and Eddy Scales.</a>
+Journal of the Atmospheric Sciences, 63, 2548-2566, doi:10.1175/JAS3753.1, 2006.
+</html>

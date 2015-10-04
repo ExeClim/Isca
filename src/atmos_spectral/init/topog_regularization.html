@@ -1,0 +1,213 @@
+<HTML>
+<TITLE>module topog_regularization_mod</TITLE>
+<BODY BGCOLOR="#AABBCC" TEXT="#332211" >
+
+<DIV ALIGN="CENTER"> <FONT SIZE=1>
+<A HREF="#INTERFACE">PUBLIC INTERFACE</A> / 
+<A HREF="#ROUTINES">ROUTINES</A> / 
+<A HREF="#NAMELIST">NAMELIST</A> / 
+<A HREF="#ERRORS">ERRORS</A> / 
+<A HREF="#REFERENCES">REFERENCES</A> / 
+<A HREF="#NOTES">NOTES</A> 
+</FONT>
+<BR><BR></DIV><HR>
+
+
+<H2>Module shallow_conv_mod</H2>
+<A NAME="HEADER">
+<PRE>
+     <B>Contact:</B>   Peter Phillipps
+     <B>Reviewers:</B>
+
+</PRE>
+</A><!-- END HEADER -->
+<!--------------------------------------------------------------------->
+<A NAME="OVERVIEW">
+<HR>
+<H4>OVERVIEW</H4>
+<!-- BEGIN OVERVIEW -->
+<PRE>
+
+     Produces regularized topography according to Lindberg and Broccoli,
+     J. of Climate vol 9, no 11 pg. 2641-2659 (1996)
+
+</PRE>
+</A><!-- END OVERVIEW -->
+<!--------------------------------------------------------------------->
+<A NAME="DESCRIPTION">
+<!-- BEGIN DESCRIPTION -->
+<PRE>
+
+   Smooths topography in such a way as to reduce Gibbs ripples that
+   result from spectral truncation.
+
+</PRE>
+</A><!-- END DESCRIPTION -->
+<!--------------------------------------------------------------------->
+<A NAME="MODULES_USED">
+<HR>
+<H4>OTHER MODULES USED</H4>
+<!-- BEGIN MODULES_USED -->
+<PRE>
+
+  mpp_mod
+  transforms_mod
+  fms_mod
+  global_integral_mod
+  spec_mpp_mod
+  mpp_domains_mod
+
+</PRE>
+</A><!-- END MODULES_USED -->
+<!--------------------------------------------------------------------->
+<A NAME="INTERFACE">
+<HR>
+<H4>PUBLIC INTERFACE</H4>
+<!-- BEGIN INTERFACE -->
+<PRE>
+
+use topog_regularization_mod [,only: compute_lambda, regularize]
+
+regularize - Performs regularization of topography.
+
+compute_lambda - Given a fractional smoothing over water, returns
+                 lambda, the smoothing constant which is input to 
+		 subroutine regularize.
+
+</PRE>
+</A><!-- END INTERFACE -->
+<!--------------------------------------------------------------------->
+<A NAME="ROUTINES">
+<HR>
+<H4>PUBLIC ROUTINES</H4>
+<!-- BEGIN ROUTINES -->
+<PRE>
+
+ <b>call regularize</b>( lambda, ocean_mask, unsmoothed_field, smoothed_field, fraction_smoothed )
+
+input:
+
+   real :: lambda -- Determines degrees of smoothing
+                    (Smoothing increases with increasing lambda)
+
+   logical, dimension(:,:) :: ocean_mask -- .true. over ocean, false over land
+
+   real, dimension(:,:) :: unsmoothed_field -- The unsmoothed topography
+
+output:
+
+   real, dimension(:,:) :: smoothed_field -- The smoothed topography
+
+   real :: fraction_smoothed -- The fractional smoothing over water.
+---------------------------------------------------------------------
+
+  <b>call compute_lambda</b>( ocean_topog_smoothing, ocean_mask, &
+                    unsmoothed_field, lambda, actual_fraction_smoothed )
+
+input
+
+   real, ocean_topog_smoothing -- The desired fractional smoothing over water.
+
+   logical, dimension(:,:) :: ocean_mask -- .true. over ocean, false over land
+
+   real, dimension(:,:) :: unsmoothed_field -- The unsmoothed topography
+
+output
+
+   real :: lambda -- Determines degrees of smoothing
+                    (Smoothing increases with increasing lambda)
+
+   real :: actual_fraction_smoothed -- The actual fraction smoothed, which
+                     is within some tolerance of ocean_topog_smoothing.
+
+</PRE>
+</A><!-- END ROUTINES -->
+<!--------------------------------------------------------------------->
+<A NAME="NAMELIST">
+<HR>
+<H4>NAMELIST</H4>
+<!-- BEGIN NAMELIST -->
+<PRE>
+
+ There is no namelist.
+
+</PRE>
+</A><!-- END NAMELIST -->
+<!--------------------------------------------------------------------->
+<A NAME="ERRORS">
+<HR>
+<H4>ERROR MESSAGES</H4>
+<!-- BEGIN ERRORS -->
+<PRE>
+
+<b>Fatal errors :</b>
+
+    <b>Input argument unsmoothed_field has incorrect dimensions.</b>
+
+    <b>Iterative scheme for computing lambda may not work unless initial values of lambda_1 and lambda_2 are reduced.</b>
+
+    <b>Iterative scheme for finding lambda failed. lambda went negative on iteration number ...</b>
+       Should never see this message, if you do there probably is a bug in the code.
+
+    <b>Cannot converge on a value of lambda. Perhaps more interations are needed.</b>
+
+    <b>subroutine regularize is not yet coded for 2-d decomposition. It was assumed that it will never be needed.</b>
+
+    <b>Failure to converge</b>
+       The iterative scheme for smoothing topography (subroutine regularize) did not converge
+       after the maximum number of iterations is reached.
+
+    <b>Transforms are not initialized</b>
+       The spectral transform package must be initialized before calling any interface of this module.
+
+    <b>Input argument ocean_mask has incorrect dimensions.</b>
+
+</PRE>
+</A><!-- END ERRORS -->
+<!--------------------------------------------------------------------->
+<A NAME="REFERENCES">
+<HR>
+<H4>REFERENCES</H4>
+<!-- BEGIN REFERENCES -->
+<PRE>
+
+Lindberg and Broccoli, J. of Climate vol 9, no 11 pg. 2641-2659 (1996)
+
+</PRE>
+</A><!-- END REFERENCES -->
+<!--------------------------------------------------------------------->
+<A NAME="BUGS">
+<HR>
+<H4>KNOWN BUGS</H4>
+<!-- BEGIN BUGS -->
+<PRE>
+
+     There are no known bugs, but this is only the initial revision.
+
+</PRE>
+</A><!-- END BUGS -->
+<!--------------------------------------------------------------------->
+<A NAME="NOTES">
+<HR>
+<H4>NOTES</H4>
+<!-- BEGIN NOTES -->
+<PRE>
+
+
+</PRE>
+</A><!-- END NOTES -->
+<!--------------------------------------------------------------------->
+<A NAME="PLANS">
+<HR>
+<H4>FUTURE PLANS</H4>
+<!-- BEGIN PLANS -->
+<PRE>
+
+
+</PRE>
+</A><!-- END PLANS -->
+<!--------------------------------------------------------------------->
+
+<HR>
+</BODY>
+</HTML>

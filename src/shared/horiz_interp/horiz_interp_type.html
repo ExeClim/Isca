@@ -1,0 +1,151 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module horiz_interp_type_mod</title>
+<link type="text/css" href="http://www.gfdl.noaa.gov/~fms/style/doc.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module horiz_interp_type_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:Zhi.Liang@noaa.gov">   Zhi Liang </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/shared/horiz_interp">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   define derived data type that contains indices and weights used for subsequent 
+   interpolations. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div>   define derived data type that contains indices and weights used for subsequent 
+   interpolations. </div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>mpp_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl></dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>None.<br>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a"></ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<hr>
+<h4>PUBLIC TYPES</h4>
+<div>
+<table cellspacing="0" CELLPADDING="0" BORDER="0">
+<tr>
+<td>
+<pre> type horiz_interp_type
+   real,    dimension(:,:), pointer   :: faci =&gt;NULL(), facj =&gt;NULL()   !weights for conservative scheme
+   integer, dimension(:,:), pointer   :: ilon =&gt;NULL(), jlat =&gt;NULL()   !indices for conservative scheme
+   real,    dimension(:,:), pointer   :: area_src =&gt;NULL()              !area of the source grid
+   real,    dimension(:,:), pointer   :: area_dst =&gt;NULL()              !area of the destination grid
+   real,    dimension(:,:,:), pointer :: wti =&gt;NULL(),wtj =&gt;NULL()      !weights for bilinear interpolation
+                                                                        !wti ist used for derivative "weights" in bicubic 
+   integer, dimension(:,:,:), pointer :: i_lon =&gt;NULL(), j_lat =&gt;NULL() !indices for bilinear interpolation 
+                                                                        !and spherical regrid
+   real,    dimension(:,:,:), pointer :: src_dist =&gt;NULL()              !distance between destination grid and 
+                                                                        !neighbor source grid.
+   logical, dimension(:,:), pointer   :: found_neighbors =&gt;NULL()       !indicate whether destination grid 
+                                                                        !has some source grid around it.
+   real                               :: max_src_dist
+   integer, dimension(:,:), pointer   :: num_found =&gt; NULL()
+   integer                            :: nlon_src, nlat_src !size of source grid
+   integer                            :: nlon_dst, nlat_dst !size of destination grid
+   integer                            :: interp_method      !interpolation method.
+                                                            !=1, conservative scheme
+                                                            !=2, bilinear interpolation
+                                                            !=3, spherical regrid
+                                                            !=4, bicubic regrid
+   real,    dimension(:,:), pointer   :: rat_x =&gt;NULL(), rat_y =&gt;NULL() !the ratio of coordinates of the dest grid
+                                                                                ! (x_dest -x_src_r)/(x_src_l -x_src_r) and (y_dest -y_src_r)/(y_src_l -y_src_r)
+   real,    dimension(:), pointer     :: lon_in =&gt;NULL(),  lat_in =&gt;NULL()      !the coordinates of the source grid
+ end type</pre>
+</td>
+</tr>
+</table>
+</div>
+<br>
+<!-- END PUBLIC TYPES -->
+<a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<!-- END NAMELIST --><a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

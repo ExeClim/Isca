@@ -1,0 +1,1208 @@
+<HTML>
+<TITLE>module transforms_mod</TITLE>
+<BODY BGCOLOR="#AABBCC" TEXT="#332211" >
+
+<DIV ALIGN="CENTER"> <FONT SIZE=1>
+<A HREF="#INTERFACE">PUBLIC INTERFACE</A> / 
+<A HREF="#DATA_TYPES">DATA</A> / 
+<A HREF="#ROUTINES">ROUTINES</A> / 
+<A HREF="#NAMELIST">NAMELIST</A> / 
+<A HREF="#ERRORS">ERRORS</A>
+</FONT>
+<BR><BR></DIV><HR>
+
+
+<H2>module transforms_mod</H2>
+<A NAME="HEADER">
+<!-- BEGIN HEADER -->
+<PRE>
+     <B>Contact:</B> Isaac Held,  Peter Phillipps
+     <B>Reviewers:</B>
+
+</PRE>
+<!-- END HEADER --></A>
+<!--------------------------------------------------------------------->
+<A NAME="OVERVIEW">
+<HR>
+<H4>OVERVIEW</H4>
+<!-- BEGIN OVERVIEW -->
+<PRE>
+
+     A package of routines for spectral transforms
+     and manipulation of spherical coefficients.
+     Supports domain decomposition for running on
+     distributed memory machines.
+
+</PRE>
+<!-- END OVERVIEW --></A>
+<!--------------------------------------------------------------------->
+<A NAME="DESCRIPTION">
+<HR>
+<H4>DESCRIPTION</H4>
+<!-- BEGIN DESCRIPTION -->
+<PRE>
+
+   This transforms module provides the ability to transform spectral
+   spherical harmonics fields to a transform grid (and vice-versa) 
+   to differentiate in the spectral domain, to compute vorticity and
+   divergence from a velocity field (and vice-versa) and a variety
+   of related operations.
+
+   Arrays of both gridded data and spherical coefficients are
+   distributed across processors. This domain decomposition is
+   done in the meridional direction only, the domain of each processor
+   retains all vertical levels and all longitudes.
+
+   Except where indicated, all arrays appearing as arguments to
+   public routines must have horizontal dimensions equal to the
+   extents on the local processor. These extents are denoted as follows:
+   is:ie -- the lower and upper limits of the longitude index of gridded data arrays
+            Currently, is=1 and je=(global number of longitude points) for any decomposition.
+   js:je -- the lower and upper limits of the latitude index of gridded data arrays
+   ms:me -- the lower and upper limits of zonal wavenumber of spectral data arrays
+   ns:ne -- the lower and upper limits of meridional wavenumber of spectral data arrays
+
+   The number of processors must be less than or equal to the
+   number of fourier waves and must divide evenly into half the
+   number of latitude rows.
+
+   A tutorial program is available which provides
+   a way of learning how to use this module.
+
+</PRE>
+<!-- END DESCRIPTION --></A>
+<!--------------------------------------------------------------------->
+<A NAME="MODULES_USED">
+<HR>
+<H4>OTHER MODULES USED</H4>
+<!-- BEGIN MODULES_USED -->
+<PRE>
+
+     mpp_mod
+     mpp_domains_mod
+     spec_mpp_mod
+     fms_mod
+     spherical_fourier_mod
+     grid_fourier_mod
+
+</PRE>
+<!-- END MODULES_USED --></A>
+<!--------------------------------------------------------------------->
+<A NAME="INTERFACE">
+<HR>
+<H4>PUBLIC INTERFACE</H4>
+<!-- BEGIN INTERFACE -->
+<PRE>
+
+  use transforms_mod [,only: transforms_init,       
+                             transforms_are_initialized,
+                             reset_num_lon_in_transform,
+                             trans_spherical_to_grid,
+                             trans_grid_to_spherical,
+                             divide_by_cos,
+                             divide_by_cos2,
+                             trans_filter,
+                             vor_div_from_uv_grid,
+                             uv_grid_from_vor_div,
+                             horizontal_advection,
+                             area_weighted_global_mean,
+                             get_lat_max,
+                             get_triang_trunc,
+                             get_num_fourier,
+                             get_fourier_inc,
+                             get_num_spherical,
+                             get_grid_boundaries,
+                             spherical_fourier_init,
+                             trans_spherical_to_fourier,
+                             trans_fourier_to_spherical,
+                             get_south_to_north,
+                             get_sin_lat,
+                             get_cos_lat,
+                             get_cosm_lat,
+                             get_cosm2_lat,
+                             get_deg_lat,
+                             get_wts_lat,
+                             grid_fourier_init,
+                             trans_grid_to_fourier,
+                             trans_fourier_to_grid,
+                             get_lon_max,
+                             get_longitude_origin,
+                             get_deg_lon,
+                             spherical_init,
+                             compute_lon_deriv_cos,
+                             compute_lat_deriv_cos,
+                             compute_laplacian,
+                             compute_vor,
+                             compute_div,
+                             get_spherical_wave,
+                             get_fourier_wave,
+                             get_eigen_laplacian,
+                             compute_gradient_cos,
+                             compute_ucos_vcos,
+                             compute_vor_div,
+                             triangular_truncation,
+                             rhomboidal_truncation,
+                             compute_legendre,
+                             compute_gaussian,
+                             spec_mpp_init,
+                             get_grid_domain,
+                             get_spec_domain,
+                             grid_domain,
+                             spectral_domain,
+                             grid_fourier_end,
+                             spherical_end,
+                             spherical_fourier_end,
+                             transforms_end,
+
+                                
+</PRE>
+<!-- END INTERFACE --></A>
+<!--------------------------------------------------------------------->
+<A NAME="DATA_TYPES">
+<HR>
+<H4>PUBLIC DATA</H4>
+<!-- BEGIN DATA_TYPES -->
+<PRE>
+     
+ ---------------------------------------------------------------------------
+ <A NAME="grid_domain">
+    type(domain2d) :: grid_domain
+
+    Derived-type variable that containing information related
+    to the decomposition of grid data arrays amoung processors.
+
+    Example of its use:
+
+    call set_domain(grid_domain)
+    call read_data(unit,grid_data)
+    call write_data(unit,grid_data)
+
+    Note that read_data and write_data are public routines of fms_mod
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="spectral_domain">
+    type(domain2d) :: spectral_domain
+
+    Derived-type variable that contains information related to the
+    decomposition of spherical coefficent arrays amoung processors.
+
+    Example of its use:
+
+    call set_domain(spectral_domain)
+    call read_data(unit,spectral_data)
+    call write_data(unit,spectral_data)
+
+ </A>
+ ---------------------------------------------------------------------------
+
+</PRE>
+<!-- END DATA_TYPES --></A>
+<!--------------------------------------------------------------------->
+<A NAME="ROUTINES">
+<HR>
+<H4>PUBLIC ROUTINES</H4>
+<!-- BEGIN ROUTINES -->
+<PRE>
+
+<A HREF="#transforms_init">subroutine  transforms_init</A>
+<A HREF="#transforms_are_initialized">function    transforms_are_initialized</A>
+<A HREF="#get_grid_domain">subroutine  get_grid_domain</A>
+<A HREF="#get_spec_domain">subroutine  get_spec_domain</A>
+<A HREF="#trans_spherical_to_grid">subroutine  trans_spherical_to_grid</A>
+<A HREF="#trans_grid_to_spherical">subroutine  trans_grid_to_spherical</A>
+<A HREF="#divide_by_cos">subroutine  divide_by_cos</A>
+<A HREF="#divide_by_cos2">subroutine  divide_by_cos2</A>
+<A HREF="#get_lat_max">subroutine  get_lat_max</A>
+<A HREF="#get_triang_trunc">subroutine  get_triang_trunc</A>
+<A HREF="#get_num_fourier">subroutine  get_num_fourier</A>
+<A HREF="#get_fourier_inc">subroutine  get_fourier_inc</A>
+<A HREF="#get_num_spherical">subroutine  get_num_spherical</A>
+<A HREF="#get_grid_boundaries">subroutine  get_grid_boundaries</A>
+<A HREF="#vor_div_from_uv_grid">subroutine  vor_div_from_uv_grid</A>
+<A HREF="#uv_grid_from_vor_div">subroutine  uv_grid_from_vor_div</A>
+<A HREF="#horizontal_advection">subroutine  horizontal_advection</A>
+<A HREF="#area_weighted_global_mean">function    area_weighted_global_mean</A>
+<A HREF="#reset_num_lon_in_transform">subroutine  reset_num_lon_in_transform</A>
+<A HREF="#trans_filter">subroutine  trans_filter</A>
+<A HREF="#spherical_fourier_init">subroutine  spherical_fourier_init</A>
+<A HREF="#trans_spherical_to_fourier">subroutine  trans_spherical_to_fourier</A>
+<A HREF="#trans_fourier_to_spherical">subroutine  trans_fourier_to_spherical</A>
+<A HREF="#get_south_to_north">subroutine  get_south_to_north</A>
+<A HREF="#get_sin_lat">subroutine  get_sin_lat</A>
+<A HREF="#get_cos_lat">subroutine  get_cos_lat</A>
+<A HREF="#get_cosm_lat">subroutine  get_cosm_lat</A>
+<A HREF="#get_cosm2_lat">subroutine  get_cosm2_lat</A>
+<A HREF="#get_deg_lat">subroutine  get_deg_lat</A>
+<A HREF="#get_wts_lat">subroutine  get_wts_lat</A>
+<A HREF="#grid_fourier_init">subroutine  grid_fourier_init</A>
+<A HREF="#trans_grid_to_fourier">function    trans_grid_to_fourier</A>
+<A HREF="#trans_fourier_to_grid">function    trans_fourier_to_grid</A>
+<A HREF="#get_lon_max">subroutine  get_lon_max</A>
+<A HREF="#get_longitude_origin">subroutine  get_longitude_origin</A>
+<A HREF="#get_deg_lon">subroutine  get_deg_lon</A>
+<A HREF="#spherical_init">subroutine  spherical_init</A>
+<A HREF="#compute_lon_deriv_cos">function    compute_lon_deriv_cos</A>
+<A HREF="#compute_lat_deriv_cos">function    compute_lat_deriv_cos</A>
+<A HREF="#compute_laplacian">function    compute_laplacian</A>
+<A HREF="#compute_vor">function    compute_vor</A>
+<A HREF="#compute_div">function    compute_div</A>
+<A HREF="#get_spherical_wave">subroutine  get_spherical_wave</A>
+<A HREF="#get_fourier_wave">subroutine  get_fourier_wave</A>
+<A HREF="#get_eigen_laplacian">subroutine  get_eigen_laplacian</A>
+<A HREF="#compute_gradient_cos">subroutine  compute_gradient_cos</A>
+<A HREF="#compute_ucos_vcos">subroutine  compute_ucos_vcos</A>
+<A HREF="#compute_vor_div">subroutine  compute_vor_div</A>
+<A HREF="#triangular_truncation">subroutine  triangular_truncation</A>
+<A HREF="#rhomboidal_truncation">subroutine  rhomboidal_truncation</A>
+<A HREF="#compute_legendre">subroutine  compute_legendre</A>
+<A HREF="#compute_gaussian">subroutine  compute_gaussian</A>
+<A HREF="#spec_mpp_init">subroutine  spec_mpp_init</A>
+<A HREF="#grid_fourier_end">subroutine  grid_fourier_end</A>
+<A HREF="#spherical_end">subroutine  spherical_end</A>
+<A HREF="#spherical_fourier_end">subroutine  spherical_fourier_end</A>
+<A HREF="#transforms_end">subroutine  transforms_end</A>
+
+<A NAME="transforms_init">
+<PRE>
+
+ subroutine transforms_init(radius,         &
+                            lat_max,        &
+                            lon_max,        &
+                            num_fourier,    &
+                            fourier_inc,    &
+                            num_spherical,  &
+                            south_to_north, &
+                            triang_trunc,   &
+                            longitude_origin)
+ 
+ input
+
+          real    :: radius  -- radius of the sphere
+
+          integer :: lat_max -- number of latitude points in transform grid
+
+          integer :: lon_max -- number of longitude points in transform grid
+
+          integer :: num_fourier --
+              the fourier wavenumbers in the truncation are set equal to
+              fourier_inc*m, where m = 0, num_fourier
+              therefore, the total number of fourier modes is num_fourier +1
+
+          integer :: fourier_inc -- the wavenumber increment (see num_fourier above)
+
+          integer :: num_spherical -- the maximum meridional wavenumber
+              Retained meridional wavewnumbers are n = 0,num_spherical
+              The total spherical wavenumber is L = n+m
+
+  optional:
+
+        logical :: south_to_north --
+             .true.  -- the latitudinal dimension of
+                        grid and fourier fields runs from south to north
+             .false. -- the latitudinal dimension of
+                        grid and fourier fields runs from north to south
+                 default is .true.
+
+        logical :: triang_trunc --
+
+             .true.  -- subroutines trans_grid_to_spherical and vor_div_from_uv_grid
+                        will triangularly truncate their output, except that
+                        <A HREF="#trans_grid_to_spherical">subroutine  trans_grid_to_spherical</A> can optionally
+                        skip this step.
+
+             .false. -- as above, except rhomboidal truncation is done.
+
+                default = .true.
+
+         real :: longitude_origin --
+                        the longitude of the first longitude point (radians)
+                        default = 0.0
+                        longitude_origin has no function within the transform
+                        package itself. It is included to facilitate the correct
+                        alignment of model data to the transform grid.
+
+<!-- END transforms_init --></A>
+ ----------------------------------------------------------------------------
+<A NAME="transforms_are_initialized">
+
+  function transforms_are_initialized()
+
+    Returns .true. if transforms_init has been called, .false. if not.
+
+<!-- END transforms_are_initialized --></A>
+ ----------------------------------------------------------------------------
+ <A NAME="get_grid_domain">
+   subroutine get_grid_domain(is, ie, js, je)
+
+   intent(out):
+
+    is, ie, js, je = starting and endding indices within the global horizontal
+                     domain of a gridded field's processor local data.
+
+    Example of the use of these indices:
+    A field dimensioned (lon_max, lat_max, num_levels) in the global domain
+    could be dimensioned on each processor as (is:ie, js:je, num_levels)
+                                    or as (ie-is+1, je-js+1, num_levels)
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_spec_domain">
+   subroutine get_spec_domain(ms, me, ns, ne)
+   
+   intent(out):
+
+   ms, me, ns, ne = starting and endding indices within the global horizontal
+                    domain of a spectral coefficient field's processor local data.
+		    
+   Example of the use of these indices:
+   A field dimensioned (0:num_fourier, 0:num_spherical, num_levels) in the global domain
+   could be dimensioned on each processor as (ms:me, ns:ne, num_levels)
+                                       or as (me-ms+1, ne-ns+1, num_levels)
+
+ </A>
+ ---------------------------------------------------------------------------
+<A NAME="trans_spherical_to_grid">
+
+  subroutine trans_spherical_to_grid(spherical, grid)
+ 
+    transforms either 2D or 3D spherical harmonics field to grid field
+ 
+    intent (in):
+      complex, dimension(ms:me, ns:ne, num_levels) :: spherical
+                  or
+      complex, dimension(ms:me, ns:ne) :: spherical
+ 
+ 
+    intent (out): 
+       real, dimension(is:ie, js:je, num_levels) :: grid
+                or
+       real, dimension(is:ie, js:je) :: grid
+ 
+<!-- END trans_spherical_to_grid --></A>
+ ----------------------------------------------------------------------------
+<A NAME="trans_grid_to_spherical">
+
+  subroutine trans_grid_to_spherical(grid, spherical, do_truncation)
+ 
+    transforms either 2D or 3D grid field to spherical harmonics field
+ 
+    intent (in):
+       real, dimension(is:ie, js:je, num_levels) :: grid
+                or
+       real, dimension(is:ie, js:je) :: grid
+ 
+    intent (out): 
+       complex, dimension(ms:me, ns:ne, num_levels) :: spherical
+                   or
+       complex, dimension(ms:me, ns:ne) :: spherical
+ 
+ 
+    optional:
+       logical :: do_truncation --
+       .true.  -- truncation of spherical field is performed
+       .false. -- truncation of spherical field is not performed
+          default = .true.
+ 
+<!-- END trans_grid_to_spherical --></A>
+ ---------------------------------------------------------------------------
+<A NAME="divide_by_cos">
+
+  subroutine divide_by_cos(grid)
+ 
+    divides grid by cos(lat)
+ 
+    intent (in/out):
+       real, dimension(is:ie, js:je, num_levels) :: grid
+                or
+       real, dimension(is:ie, js:je) :: grid
+ 
+<!-- END divide_by_cos --></A>
+ ---------------------------------------------------------------------------
+<A NAME="divide_by_cos2">
+
+  subroutine divide_by_cos2(grid)
+ 
+    divides grid by cos(lat)*cos(lat)
+ 
+    intent (in/out):
+       real, dimension(is:ie, js:je, num_levels) :: grid
+                or
+       real, dimension(is:ie, js:je) :: grid
+ 
+<!-- END divide_by_cos2 --></A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_lon_max">
+   subroutine get_lon_max(lon_max)
+
+   Returns the number of longitude points in the transform grid.
+   lon_max is specified at initialization.
+   See <A HREF="#transforms_init">subroutine transforms_init</A>
+
+   integer, intent(out) :: lon_max
+
+ </A>
+ ---------------------------------------------------------------------------
+<A NAME="get_lat_max">
+
+  subroutine get_lat_max(lat_max)
+
+  Returns the number of latitude rows in the transform grid.
+  lat_max is specified at initialization.
+  See <A HREF="#transforms_init">subroutine transforms_init</A>
+
+  integer, intent (out) :: lat_max
+
+<!-- END get_lat_max --></A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_longitude_origin">
+   subroutine get_longitude_origin(longitude_origin)
+
+   Returns longitude of the first longitude point
+   longitude_origin is specified at initialization.
+   See <A HREF="#transforms_init">subroutine transforms_init</A>
+
+   real, intent (out) :: longitude_origin
+
+ </A>
+ ---------------------------------------------------------------------------
+<A NAME="get_triang_trunc">
+
+  subroutine get_triang_trunc(triang_trunc)
+
+  Returns .true.  if truncation is triangular
+  Returns .false. if truncation is rhomboidal
+  triang_trunc is specified at initialization.
+  See <A HREF="#transforms_init">subroutine transforms_init</A>
+
+  intent (out):
+     logical :: triang_trunc
+
+<!-- END get_triang_trunc --></A>
+ ---------------------------------------------------------------------------
+<A NAME="get_num_fourier">
+
+  subroutine get_num_fourier(num_fourier)
+
+  Returns the number of retained zonal wavenumbers.
+  num_fourier is specified at initialization.
+  See <A HREF="#transforms_init">subroutine transforms_init</A>
+
+  intent (out):
+    integer :: num_fourier
+
+<!-- END get_num_fourier --></A>
+ ---------------------------------------------------------------------------
+<A NAME="get_fourier_inc">
+
+  subroutine get_fourier_inc(fourier_inc)
+
+  Returns the zonal wavenumber increment.
+  fourier_inc is specified at initialization.
+  See <A HREF="#transforms_init">subroutine transforms_init</A>
+
+  intent (out):
+     integer :: fourier_inc
+
+<!-- END get_fourier_inc --></A>
+ ---------------------------------------------------------------------------
+<A NAME="get_num_spherical">
+
+  subroutine get_num_spherical(num_spherical)
+
+  Returns the number of meridional wavenumbers.
+  num_spherical is specified at initialization.
+  See <A HREF="#transforms_init">subroutine transforms_init</A>
+
+  intent (out):
+     integer :: num_spherical
+
+<!-- END get_num_spherical --></A>
+ ---------------------------------------------------------------------------
+<A NAME="get_grid_boundaries">
+
+  subroutine get_grid_boundaries(lon_boundaries, lat_boundaries, global)
+ 
+  Returns the coordinates of the boundaries of the transform grid boxes. (radians)
+ 
+  intent (out):
+    real, dimension(is:ie+1) :: lon_boundaries
+    real, dimension(js:je+1) :: lat_boundaries
+            or
+    real, dimension(lon_max+1) :: lon_boundaries
+    real, dimension(lat_max+1) :: lat_boundaries
+
+  optional:
+    logical :: global --
+     .true.  -- Returns boundaries of global grid
+     .false. -- Returns boundaries of grid local to processor
+        default = .false.
+
+<!-- END get_grid_boundaries --></A>
+ ---------------------------------------------------------------------------
+ <A NAME="vor_div_from_uv_grid">
+
+ subroutine vor_div_from_uv_grid(ug, vg, vors, divs, triang)
+
+ Returns spectral coefficients of vorticity and
+ divergence given grid fields of velocity.
+ (Inverse of uv_grid_from_vor_div)
+ Both 2d and 3d interfaces exist.
+
+ intent (in):
+   real, dimension(is:ie, js:je, num_levels) :: ug, vg
+   or
+   real, dimension(is:ie, js:je) :: ug, vg
+
+ intent (out):
+   complex, dimension(ms:me, ns:me, num_levels) :: vors, divs
+   or
+   complex, dimension(ms:me, ns:me) :: vors, divs
+
+ optional:
+   logical :: triang -- determines triangular or rhomboidal truncation.
+                        If not present then does triangular truncation.
+
+ <!-- END vor_div_from_uv_grid --></A>
+ ---------------------------------------------------------------------------
+ <A NAME="uv_grid_from_vor_div">
+
+ subroutine uv_grid_from_vor_div(vors, divs, ug, vg)
+
+ Returns grid fields of velocity given spectral
+ coefficients of vorticity and divergence.
+ (Inverse of vor_div_from_uv_grid)
+ Both 2d and 3d interfaces exist.
+
+ intent (in):
+   complex, dimension(ms:me, ns:me, num_levels) :: vors, divs
+   or
+   complex, dimension(ms:me, ns:me) :: vors, divs
+
+ intent (out):
+   real, dimension(is:ie, js:je, num_levels) :: ug, vg
+   or
+   real, dimension(is:ie, js:je) :: ug, vg
+
+ <!-- END uv_grid_from_vor_div --></A>
+ ---------------------------------------------------------------------------
+ <A NAME="horizontal_advection">
+
+ subroutine horizontal_advection(field_spec, ug, vg, tendency)
+
+ Adds the tendency of "field_spec" due to
+ horizontal advection to the input tendency.
+ Both 2d and 3d interfaces exist.
+
+ intent (in):
+   complex, dimension(is:ie, js:je, num_levels) :: field_spec
+   or
+   complex, dimension(is:ie, js:je) :: field_spec
+
+   real, dimension(is:ie, js:je, num_levels) :: ug, vg
+   or
+   real, dimension(is:ie, js:je) :: ug, vg
+
+ intent(inout):
+   real, dimension(is:ie, js:je, num_levels) :: tendency
+   or
+   real, dimension(is:ie, js:je) :: tendency
+
+ <!-- END horizontal_advection --></A>
+ ---------------------------------------------------------------------------
+ <A NAME="area_weighted_global_mean">
+
+ function area_weighted_global_mean(field)
+
+ Returns the area weighted global mean of a 2-d field
+ Input is a field of values local to the processor.
+
+ intent (in):
+   real, dimension(is:ie, js:je) :: field
+
+ <!-- END area_weighted_global_mean --></A>
+
+ ---------------------------------------------------------------------------
+ <A NAME="reset_num_lon_in_transform">
+   subroutine reset_num_lon_in_transform(num_lon, trunc_fourier, longitude_origin)
+
+   intent (in):
+     integer :: num_lon -- the number of longitudes to which the
+                           transforms module is reset
+
+     integer :: trunc_fourier -- the fourier wavenumbers to be
+                           used by the fft are (0:trunc_fourier)
+                           must be less than or equal to num_fourier
+   optional:
+        real :: longitude_origin --
+                       the longitude of the first longitude point (radians)
+                       default = 0.0
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="trans_filter">
+   subroutine trans_filter(grid, filter)
+
+   Transforms grid to spectral harmonics field,
+   multiplies by filter, then transforms back.
+
+   intent (inout):
+     real, dimension(is:ie, js:je, num_levels) :: grid
+                 or
+     real, dimension(is:ie, js:je) :: grid
+ 
+   optional:
+     real, dimension (ms:me, ns:ne) :: filter
+     if filter is not present, then filter is assumed = 1
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="spherical_fourier_init">
+   subroutine spherical_fourier_init(lat_max, num_fourier, &
+                                     fourier_inc, num_spherical,   &
+                                     south_to_north=south_to_north)
+
+ <H5><I>   This routine is called by transforms_init.</I></H5>
+   Initializes module that handles transforms between
+   spherical harmonics and fourier waves.
+   It is needed only when it is desired to use the 
+   spherical_fourier module independantly of transforms_mod.
+
+   intent (in):
+        integer :: lat_max -- total number of latitudes on sphere
+        integer :: num_fourier -- upper bound on zonal dimension of spectral field
+        integer :: fourier_inc -- zonal wavenumber increment ( = 1 for full global model)
+        integer :: num_spherical -- upper bound on meridional dimension of spectral field
+        logical :: south_to_north --
+             = .true.  implies grid runs from south to north
+             = .false. implies grid runs from north to south
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="trans_spherical_to_fourier">
+   subroutine trans_spherical_to_fourier(spherical, fourier)
+
+     transforms 2D or 3D fields from spectral spherical harmonics
+     to (fourier, latitude)
+
+     intent (in):
+        complex, dimension(ms:me, ns:ne, num_levels) :: spherical
+                    or
+        complex, dimension(ms:me, ns:ne) :: spherical
+
+     intent (out):
+        complex, dimension(ms:me, js:je) :: fourier
+                    or
+        complex, dimension(ms:me, js:je) :: fourier
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="trans_fourier_to_spherical">
+   subroutine trans_fourier_to_spherical
+
+   inverse of trans_spherical_to_fourier
+   (exchange input and output)
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_south_to_north">
+   subroutine get_south_to_north(south_to_north)
+
+   Returns current value of south_to_north
+
+   logical, intent (out): south_to_north
+
+   See <A HREF="#transforms_init">subroutine transforms_init</A>
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_sin_lat">
+   subroutine get_sin_lat(sin_lat)
+
+   Returns sine of gaussian latitudes
+
+   real, intent(out), dimension(js:je) :: sin_lat
+            or
+   real, intent(out), dimension(lat_max) :: sin_lat
+
+   Returns either global values or values within domain
+   of local processor, depending on size of sin_lat.
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_cos_lat">
+   subroutine get_cos_lat(cos_lat)
+
+   Returns cosine of gaussian latitudes
+
+   real, intent(out), dimension(js:je) :: cos_lat
+            or
+   real, intent(out), dimension(lat_max) :: cos_lat
+
+   Returns either global values or values within domain
+   of local processor, depending on size of cos_lat.
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_cosm_lat">
+   subroutine get_cosm_lat(cosm_lat)
+
+   Returns multiplicative inverse of the cosine of gaussian latitudes.
+   That is: cosm_lat = 1./cos_lat
+
+   real, intent(out), dimension(js:je) :: cosm_lat
+            or
+   real, intent(out), dimension(lat_max) :: cosm_lat
+
+   Returns either global values or values within domain
+   of local processor, depending on size of cosm_lat.
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_cosm2_lat">
+   subroutine get_cosm2_lat(cosm2_lat)
+
+   Returns multiplicative inverse of the square of the cosine of gaussian latitudes.
+   That is: cosm2_lat = 1./cos_lat**2
+
+   real, intent(out), dimension(js:je) :: cosm2_lat
+            or
+   real, intent(out), dimension(lat_max) :: cosm2_lat
+
+   Returns either global values or values within domain
+   of local processor, depending on size of cosm2_lat.
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_deg_lon">
+   subroutine get_deg_lon(deg_lon)
+
+   Returns values of longitude on gaussian grid (in degrees)
+   
+   real, intent(out), dimension(js:je) :: deg_lon
+            or
+   real, intent(out), dimension(lat_max) :: deg_lon
+
+   Returns either global values or values within domain
+   of local processor, depending on size of deg_lon.
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_deg_lat">
+   subroutine get_deg_lat(deg_lat)
+
+   Returns values of latitude on gaussian grid (in degrees)
+   
+   real, intent(out), dimension(js:je) :: deg_lat
+            or
+   real, intent(out), dimension(lat_max) :: deg_lat
+
+   Returns either global values or values within domain
+   of local processor, depending on size of deg_lat.
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_wts_lat">
+   subroutine get_wts_lat(wts_lat)
+
+   Returns relative area of each latitude row of the gaussian grid.
+   The global sum of wts_lat is 2.0, therefore latitude row "j"
+   covers an area of the sphere equal to 2*pi*radius*wts_lat(j)
+
+   real, intent(out), dimension(js:je) :: wts_lat
+            or
+   real, intent(out), dimension(lat_max) :: wts_lat
+
+   Returns either global values or values within domain
+   of local processor, depending on size of wts_lat.
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="grid_fourier_init">
+   subroutine grid_fourier_init
+
+ <H5><I>   This routine is called by transforms_init.</I></H5>
+   Initializes module that handles transforms between
+   the gaussian grid and fourier waves.
+   It is needed only when it is desired to use the
+   grid_fourier module independantly of transforms_mod.
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="trans_grid_to_fourier">
+   function trans_grid_to_fourier(grid)
+
+   Returns fourier transform of a gridded field.
+
+   intent(in):
+     real, dimension(lon_max, js:je, num_levels) :: grid
+                or
+     real, dimension(lon_max, js:je) :: grid
+
+   result:
+     complex, dimension(0:lon_max/2, js:je, num_levels)   :: fourier
+                or
+     complex, dimension(0:lon_max/2, js:je) :: fourier
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="trans_fourier_to_grid">
+   function trans_fourier_to_grid(fourier)
+
+   Inverse of trans_grid_to_fourier 
+
+   intent(in):
+     complex, dimension(0:lon_max/2, js:je, num_levels)   :: fourier
+                or
+     complex, dimension(0:lon_max/2, js:je) :: fourier
+
+   result:
+     real, dimension(lon_max, js:je, num_levels) :: grid
+                or
+     real, dimension(lon_max, js:je) :: grid
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="spherical_init">
+   subroutine spherical_init(radius, num_fourier, fourier_inc, num_spherical)
+
+ <H5><I>   This routine is called by spherical_fourier_init, which is called by transforms_init.</I></H5>
+   Initializes module that handles operations involving
+   spherical harmonics.
+   It is needed only when it is desired to use the
+   spherical module independently of transforms_mod.
+
+   real (in): radius -- radius of the sphere
+
+   intent (in):
+      integer :: num_fourier -- upper bound on zonal dimension of spectral field
+      integer :: fourier_inc -- zonal wavenumber increment ( = 1 for full global model)
+      integer :: num_spherical -- upper bound on meridional dimension of spectral field
+   
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="compute_lon_deriv_cos">
+   function compute_lon_deriv_cos(spherical)
+   
+   Returns cos(lat)*(zonal deriviative of 2D or 3D spectral field)
+   
+   intent (in):
+      complex, intent(in), dimension(ms:me, ns:me, num_levels) :: spherical
+                  or
+      complex, intent(in), dimension(ms:me, ns:me) :: spherical
+
+   Result:
+      complex, dimension(ms:me, ns:me, num_levels) :: deriv_lon
+                  or
+      complex, dimension(ms:me, ns:me) :: deriv_lon
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="compute_lat_deriv_cos">
+   function compute_lat_deriv_cos(spherical)
+
+   Returns cos(lat)*(meridional deriviative of 2D or 3D spectral field)
+
+   intent (in):
+      complex, intent(in), dimension(ms:me, ns:me, num_levels) :: spherical
+                  or
+      complex, intent(in), dimension(ms:me, ns:me) :: spherical
+
+   Result:
+      complex, dimension(ms:me, ns:me, num_levels) :: deriv_lat
+                  or
+      complex, dimension(ms:me, ns:me) :: deriv_lat
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="compute_laplacian">
+   function compute_laplacian(spherical, power)
+
+   Returns (laplacian**power) of spherical
+
+   intent (in):
+      complex, intent(in), dimension(ms:me, ns:me, num_levels) :: spherical
+                  or
+      complex, intent(in), dimension(ms:me, ns:me) :: spherical
+
+   optional:
+      integer :: power -- can be positive or negative;  default value = 1
+
+   result:
+      complex, dimension(ms:me, ns:me, num_levels) :: laplacian
+                 or
+      complex, dimension(ms:me, ns:me) :: laplacian
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_spherical_wave">
+   subroutine get_spherical_wave(spherical_wave)
+
+   Returns "total", 2D, spherical wavenumber for all harmonics, L = M + n
+
+   integer, intent(out), dimension(ms:me, ns:ne) :: spherical_wave
+            or
+   integer, intent(out), dimension(0:num_fourier, 0:num_spherical) :: spherical_wave
+
+   Returns either global values or values within domain
+   of local processor, depending on dimensions of spherical_wave.
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_fourier_wave">
+   subroutine get_fourier_wave(fourier_wave)
+
+   Returns zonal wavenumber for all harmonics, M
+
+   integer, intent(out), dimension(ms:me, ns:ne) :: fourier_wave
+            or
+   integer, intent(out), dimension(0:num_fourier, 0:num_spherical) :: fourier_wave
+
+   Returns either global values or values within domain
+   of local processor, depending on dimensions of fourier_wave.
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="get_eigen_laplacian">
+   subroutine get_eigen_laplacian
+
+   Returns L(L+1)/(radius*radius), 
+       where L is the total 2D spherical wavenumber
+
+   real, intent(out), dimension(ms:me, ns:ne) :: fourier_wave
+            or
+   real, intent(out), dimension(0:num_fourier, 0:num_spherical) :: fourier_wave
+
+   Returns either global values or values within domain
+   of local processor, depending on dimensions of fourier_wave.
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="compute_gradient_cos">
+   subroutine compute_gradient_cos(spherical, deriv_lon, deriv_lat)
+
+   Returns cos(lat)*(gradient of 2D or 3D spectral field)
+   Uses functions compute_lon_deriv_cos and compute_lat_deriv_cos.
+
+   intent (in):
+      complex, dimension(ms:me, ns:ne, num_levels) :: spherical
+                  or
+      complex, dimension(ms:me, ns:ne) :: spherical
+
+   intent (out):
+      complex, dimension(ms:me, ns:ne, num_levels) :: deriv_lon, deriv_lat
+                  or
+      complex, dimension(ms:me, ns:ne) :: deriv_lon, deriv_lat
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="compute_ucos_vcos">
+   subroutine compute_ucos_vcos(vorticity , divergence, u_cos, v_cos)
+
+   Returns cos(lat)*(u,v) given vorticity and divergence
+
+   intent (in):
+      complex, dimension(ms:me, ns:ne, num_levels) :: vorticity, divergence
+                  or
+      complex, dimension(ms:me, ns:ne) :: vorticity, divergence
+
+    intent (out):
+       complex, dimension(ms:me, ns:ne, num_levels) :: u_cos, v_cos
+                  or
+       complex, dimension(ms:me, ns:ne) :: u_cos, v_cos
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="compute_vor_div">
+   subroutine compute_vor_div(u_over_cos, v_over_cos, vorticity, divergence)
+
+   Returns vorticity and divergence given spectral coefficients of
+   velocity components divided by cos(latitude).
+
+   intent (in):
+      complex, dimension(ms:me, ns:ne, num_levels) :: u_over_cos, v_over_cos
+                 or
+      complex, dimension(ms:me, ns:ne) :: u_over_cos, v_over_cos
+
+    intent (out):
+      complex, dimension(ms:me, ns:ne, num_levels) :: vorticity, divergence
+                  or
+      complex, dimension(ms:me, ns:ne) :: vorticity, divergence
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="compute_vor">
+   function compute_vor(u_over_cos, v_over_cos)
+
+   As above, but returns only vorticity
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="compute_div">
+   function compute_div(u_over_cos, v_over_cos)
+
+   As above, but returns only divergence
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="triangular_truncation">
+   subroutine triangular_truncation(spherical, trunc)
+
+   zeros all harmonics with total wavenumber > trunc
+
+   intent (inout):
+     complex, dimension(ms:me, ns:ne, num_levels) :: spherical
+                 or 
+     complex, dimension(ms:me, ns:ne) :: spherical
+
+   optional, intent(in):
+     integer :: trunc
+     if not present then truncation is performed at num_spherical-1)
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="rhomboidal_truncation">
+   subroutine rhomboidal_truncation(spherical, trunc_fourier, trunc_spherical)
+
+   zeros all harmonics with zonal wavenumber M > trunc_fourier
+                   and meridional wavenumber N > trunc_spherical
+
+   intent (inout):
+      complex, dimension(ms:me, ns:ne, num_levels) :: spherical
+                  or 
+      complex, dimension(ms:me, ns:ne) :: spherical
+
+   optional:
+      integer :: trunc_fourier
+      integer :: trunc_spherical
+      (if either is not present then fourier truncation is not performed
+       and spherical truncation is performed at num_spherical-1)
+       
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="compute_legendre">
+   subroutine compute_legendre(legendre, num_fourier, fourier_inc, &
+                               num_spherical, sin_lat, n_lat)
+
+  computes associated legendre polynomials legendre(m,n,j)
+  for m*fourier_inc, m = 0, num_fourier
+      n = 0, num_spherical
+  at the latitudes arcsin(sin_lat(j), j=1,n_lat)
+
+  intent(in):
+     real, dimension(n_lat) :: sin_lat
+        sin of latitudes at which polynomials are desired
+
+     integer :: n_lat -- number of latitudes
+     integer :: num_fourier, fourier_inc, num_spherical -- See <A HREF="#transforms_init">subroutine transforms_init</A>
+
+  intent(out):
+     real, dimension(0:num_fourier, 0:num_spherical, n_lat) :: legendre
+
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="compute_gaussian">
+   subroutine compute_gaussian(sin_hem, wts_hem, n_hem)
+
+   computes Gaussian latitudes and weights in Northern hemisphere
+
+   intent(in):
+      integer :: n_hem -- number of latitudes in hemisphere
+
+   intent(out):
+      real, dimension(n_hem) :: sin_hem -- sin(Gaussian latitude)
+      real, dimension(n_hem) :: wts_hem -- Gaussian weights
+        Gaussian weights sum to unity over hemisphere.
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="spec_mpp_init">
+   subroutine spec_mpp_init( num_fourier, num_spherical, num_lon, lat_max, &
+                             grid_layout, spectral_layout)
+   
+ <H5><I>   This routine is called by transforms_init.</I></H5>
+
+ intent(in):
+
+   integer :: lat_max -- number of latitude points in transform grid
+
+   integer :: lon_max -- number of longitude points in transform grid
+
+   integer :: num_fourier -- number of fourier wavenumbers
+
+   integer :: num_spherical -- the maximum meridional wavenumber
+
+ optional, intent(in):
+
+   grid_layout,     dimension(2) -- specifies decomposition of transforms
+                                    grid across processors
+
+   spectral_layout, dimension(2) -- specifies decomposition of spherical
+                                    coefficent fields across processors
+
+   If either of the two above are not present then the decomposition will
+   be automatically. 
+
+   <i><strong>It is not recommended that the automatic decomposition be overridden.</strong></i>
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="transforms_end">
+   subroutine transforms_end()
+
+   Releases allocatable array space used by transforms_mod
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="spherical_fourier_end">
+   subroutine spherical_fourier_end()
+
+   Releases allocatable array space used by spherical_fourier_mod
+   Called by transforms_end
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="grid_fourier_end">
+   subroutine grid_fourier_end()
+
+   Releases allocatable array space used by grid_fourier_mod
+   Called by transforms_end
+ </A>
+ ---------------------------------------------------------------------------
+ <A NAME="spherical_end">
+   subroutine spherical_end()
+
+   Releases allocatable array space used by spherical_mod
+   Called by transforms_end
+ </A>
+ ---------------------------------------------------------------------------
+</PRE>
+<!-- END ROUTINES --></A>
+<!--------------------------------------------------------------------->
+<A NAME="NAMELIST">
+<HR>
+<H4>NAMELIST</H4>
+<!-- BEGIN NAMELIST -->
+<PRE>
+
+<B>&transforms_nml</B>
+
+     check_fourier_imag = .true. : A check that the imaginary part of wavenumber zero
+                                   is zero is done when trans_fourier_to_grid is called.
+                        = .false.: No such check is done.
+                        default = .false.
+
+</PRE>
+<!-- END NAMELIST --></A>
+<!--------------------------------------------------------------------->
+<A NAME="ERRORS">
+<HR>
+<H4>ERROR MESSAGES</H4>
+<!-- BEGIN ERRORS -->
+<PRE>
+
+   Numerous error checks exist.
+   All error messages are self explanatory so far as possible.
+
+</PRE>
+<!-- END ERRORS --></A>
+<!--------------------------------------------------------------------->
+
+<HR>
+</BODY>
+</HTML>

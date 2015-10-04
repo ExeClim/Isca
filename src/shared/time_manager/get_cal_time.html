@@ -1,0 +1,262 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module get_cal_time_mod</title>
+<link type="text/css" href="http://www.gfdl.noaa.gov/~fms/style/doc.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module get_cal_time_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:fms@gfdl.noaa.gov">   fms </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/shared/time_manager">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   Given a time increment as a real number, and base time and calendar
+   as a character strings, returns time as a time_type variable. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div></div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>         fms_mod<br>time_manager_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#get_cal_time">get_cal_time</a>:</dt>
+<dd></dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>None.<br>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="get_cal_time"></a>
+<h4>get_cal_time</h4>
+<pre> 
+<b>get_cal_time</b> (time_increment, units, calendar, permit_calendar_conversion)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd></dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time_increment&nbsp;&nbsp;&nbsp;</tt></td><td>   A time interval.<br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>units&nbsp;&nbsp;&nbsp;</tt></td><td>   Examples of acceptable values of units:
+   <br>
+<br>
+   'days since 1980-01-01 00:00:00',
+   'hours since 1980-1-1 0:0:0',
+   'minutes since 0001-4-12'
+   <br>
+<br>
+   The first word in the string must be
+   'years', 'months', 'days', 'hours', 'minutes' or 'seconds'.
+   The second word must be 'since'
+   <br>
+<br>
+   year number must occupy 4 spaces.
+   Number of months, days, hours, minutes, seconds may occupy 1 or 2 spaces
+   year, month and day must be separated by a '-'
+   hour, minute, second must be separated by a ':'
+   hour, minute, second are optional. If not present then zero is assumed.
+   <br>
+<br>
+   Because months are not equal increments of time, and, for julian calendar,
+   neither are years, the 'years since' and 'month since' cases deserve
+   further explaination. 
+   <br>
+<br>
+   When 'years since' is used:
+   The year number is increased by floor(time_increment)   to obtain a time T1.
+   The year number is increased by floor(time_increment)+1 to obtain a time T2.
+   The time returned is T1 + (time_increment-floor(time_increment))*(T2-T1).
+   <br>
+<br>
+   When 'months since' is used:
+   The month number is increased by floor(time_increment). If it falls outside
+   to range 1 to 12 then it is adjusted along with the year number to convert
+   to a valid date. The number of days in the month of this date is used to
+   compute the time interval of the fraction.
+   That is:
+   The month number is increased by floor(time_increment) to obtain a time T1.
+   delt = the number of days in the month in which T1 falls.
+   The time returned is T1 + ((time_increment-floor(time_increment))*delt.
+   Two of the consequences of this scheme should be kept in mind.
+   -- The time since should not be from the 29'th to 31'st of a month,
+   since an invalid date is likely to result, triggering an error stop.
+   -- When time since is from the begining of a month, the fraction of a month
+   will never advance into the month after that which results from only
+   the whole number.
+   <br>
+<br>
+   When NO_CALENDAR is in effect, units attribute must specify a starting
+   day and second, with day number appearing first
+   <br>
+<br>
+   Example: 'days since 100 0' Indicates 100 days 0 seconds <br>&nbsp;&nbsp;&nbsp;<span class="type">[character]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>calendar&nbsp;&nbsp;&nbsp;</tt></td><td>   Acceptable values of calendar are:
+   'noleap'
+   '365_day'
+   '360_day'
+   'julian'
+   'thirty_day_months'
+   'no_calendar' <br>&nbsp;&nbsp;&nbsp;<span class="type">[character]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>permit_calendar_conversion&nbsp;&nbsp;&nbsp;</tt></td><td>   It is sometimes desirable to allow the value of the intent(in) argument
+   "calendar" to be different than the calendar in use by time_manager_mod.
+   If this is not desirable, then the optional variable "permit_calendar_conversion"
+   should be set to .false. so as to allow an error check.
+   When calendar conversion is done, the time returned is the time in the
+   time_manager's calendar, but corresponds to the date computed using the input calendar.
+   For example, suppose the time_manager is using the julian calendar and
+   the values of the input arguments of get_cal_time are:
+   time_increment = 59.0
+   units = 'days since 1980-1-1 00:00:00'
+   calendar = 'noleap'
+   Because it will use the noleap calendar to calculate the date, get_cal_time will return
+   value of time for midnight March 1 1980, but it will be time in the julian calendar
+   rather than the noleap calendar. It will never return a value of time corresponding
+   to anytime during the day Feb 29.
+   <br>
+<br>
+   Another example:
+   Suppose the time_manager is using either the noleap or julian calendars,
+   and the values of the input arguments are:
+   time_increment = 30.0
+   units = 'days since 1980-1-1'
+   calendar = 'thirty_day_months'
+   In this case get_cal_time will return the value of time for Feb 1 1980 00:00:00,
+   but in the time_manager's calendar.
+   Calendar conversion may result in a fatal error when the input calendar type is
+   a calendar that has more days per year than that of the time_manager's calendar.
+   For example, if the input calendar type is julian and the time_manager's calendar
+   is thirty_day_months, then get_cal_time will try to convert Jan 31 to a time in
+   the thirty_day_months calendar, resulting in a fatal error.
+   Note: this option was originally coded to allow noleap calendar as input when
+   the julian calendar was in effect by the time_manager. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, optional]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<hr>
+<h4>NAMELIST</h4>
+<div>
+<b>&amp;get_cal_time_nml</b>
+<br>
+<br>
+<div>
+<dl>
+<dt>
+<tt>allow_calendar_conversion</tt>
+</dt>
+<dl>   This sets the default value of the optional argument named "permit_calendar_conversion" of get_cal_time.
+   This namelist is deprecated as of the memphis release.
+   If calendar conversion is not desired, then it is recommended that permit_calendar_conversion 
+   be present in the call to get_cal_time and that it be set to .false. <br>
+<span class="type">[logical, default: .true.]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<!-- END NAMELIST -->
+<a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

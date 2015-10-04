@@ -1,0 +1,1233 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module diag_manager_mod</title>
+<link type="text/css" href="http://data1.gfdl.noaa.gov/~fms/style/docbook.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>
+
+          ~ <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>
+	    ~ <a href="#NAMELIST">NAMELIST </a>
+	    ~ <a href="#ERROR MESSAGES">ERROR MESSAGES </a></font>
+<hr>
+<h2>Module diag_manager_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:Matthew.Harrison@gfdl.noaa.gov">   Matt Harrison </a>,&nbsp;
+    <a href="mailto:Giang.Nong@noaa.gov">   Giang Nong </a>,&nbsp;
+    <a href="mailto:seth.underwood@noaa.gov">   Seth Underwood </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://cobweb.gfdl.noaa.gov/fms-cgi-bin/viewcvs/FMS/shared/diag_manager">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text"> 
+<tt>diag_manager_mod</tt>   is a set of simple calls for parallel diagnostics
+   on distributed systems. It is geared toward the writing of data in netCDF
+   format. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div> 
+<tt>diag_manager_mod</tt>   provides a convenient set of interfaces for
+   writing data to disk.  It is built upon the parallel I/O interface of FMS
+   code <tt>/shared/mpp/mpp_io.F90</tt>.
+   <br>
+<br>
+   A single group of calls to the <tt>diag_manager_mod</tt>   interfaces
+   provides data to disk at any number of sampling and/or averaging intervals
+   specified at run-time. Run-time specification of diagnostics are input
+   through the diagnostics table.
+   <br>
+<br> 
+<h4>Usage</h4>   Use of <tt>diag_manager</tt>   includes the following steps: <ol> 
+<li>   Create diag_table as described in the <a href="diag_table.html">diag_table.F90</a>   documentation.</li> 
+<li>   Call <a href="#diag_manager_init"><tt>diag_manager_init</tt></a>   to initialize
+   diag_manager_mod.</li> 
+<li>   Call <a href="#register_diag_field"><tt>register_diag_field</tt></a>   to register the field to be
+   output. <b>NOTE:</b>   ALL fields in diag_table should be registered <i>BEFORE</i>   the first send_data call</li> 
+<li>   Call <a href="#send_data"><tt>send_data</tt></a>   to send data to output fields </li> 
+<li>   Call <a href="#diag_manager_end"><tt>diag_manager_end</tt></a>   to exit diag_manager </li> 
+</ol> 
+<h4>Features</h4>   Features of <tt>diag_manager_mod</tt>: <ol> 
+<li>   Ability to output from 0D arrays (scalars) to 3D arrays.</li> 
+<li>   Ability to output time average of fields that have time dependent
+   mask.</li> 
+<li>   Give optional warning if <tt>register_diag_field</tt>   fails due to
+   misspelled module name or field name.</li> 
+<li>   Check if a field is registered twice.</li> 
+<li>   Check for duplicate lines in diag_table. </li> 
+<li> 
+<a href="diag_table.html">diag_table</a>   can contain fields
+   that are NOT written to any files. The file name in diag_table of
+   these fields is <tt>null</tt>.</li> 
+<li>   By default, a field is output in its global grid.  The user can now 
+   output a field in a specified region.  See <a href="#send_data"><tt>send_data</tt></a>   for more details.</li> 
+<li>   To check if the diag table is set up correctly, user should set <tt>debug_diag_manager=.true.</tt>   in diag_manager namelist, then
+   the the content of diag_table is printed in stdout.</li> 
+<li>   New optional format of file information in <a href="diag_table.html">diag_table</a>.It is possible to have just
+   one file name and reuse it many times. A time string will be appended to the base file name each time a new file is
+   opened. The time string can be any combination from year to second of current model time.
+   <br>
+<br>
+   Here is an example file line: <br> 
+<pre>"file2_yr_dy%1yr%3dy",2,"hours",1,"hours","Time", 10, "days", "1 1 7 0 0 0", 6, "hours"</pre> 
+<br>   From left to right we have: <ul> 
+<li>file name</li> 
+<li>output frequency</li> 
+<li>output frequency unit</li> 
+<li>Format (should always be 1)</li> 
+<li>time axis unit</li> 
+<li>time axis name</li> 
+<li>frequency for creating new file</li> 
+<li>unit for creating new file</li> 
+<li>start time of the new file</li> 
+<li>file duration</li> 
+<li>file duration unit.</li> 
+</ul>   The 'file duration', if absent, will be equal to frequency for creating a new file.
+   <br>
+<br>
+   Thus, the above means: create a new file every 10 days, each file will last 6 hours from creation time, no files will
+   be created before time "1 1 7 0 0 0".
+   <br>
+<br>
+   In this example the string <tt>10, "days", "1 1 7 0 0 0", 6, "hours"</tt>   is optional.
+   <br>
+<br>
+   Keywords for the time string suffix is <tt>%xyr,%xmo,%xdy,%xhr,%xmi,%xsc</tt>   where <tt>x</tt>   is a
+   mandatory 1 digit number specifying the width of field used in
+   writing the string</li> 
+<li>   New time axis for time averaged fields.  Users can use a namelist option to handle the time value written
+   to time axis for time averaged fields.
+   <br>
+<br>
+   If <tt>mix_snapshot_average_fields=.true.</tt>   then a time averaged file will have time values corresponding to
+   ending time_bound e.g. January monthly average is labeled Feb01. Users can have both snapshot and averaged fields in
+   one file.
+   <br>
+<br>
+   If <tt>mix_snapshot_average_fields=.false.</tt>   The time value written to time axis for time averaged fields is the
+   middle on the averaging time. For example, January monthly mean will be written at Jan 16 not Feb 01 as
+   before. However, to use this new feature users should <b>separate</b>   snapshot fields and time averaged fields in <b>different</b>   files or a fatal error will occur.
+   <br>
+<br>
+   The namelist <b>default</b>   value is <tt>mix_snapshot_average_fields=.false.</tt>
+</li> 
+<li>   Time average, Max and Min, and diurnal. In addition to time average users can also get then Max or Min value
+   during the same interval of time as time average. For this purpose, in the diag table users must replace <tt>.true.</tt>   or <tt>.false.</tt>   by "<tt>max</tt>" or "<tt>min</tt>". <b><i>Note:</i></b>   Currently, max
+   and min are not available for regional output.
+   <br>
+<br>
+   A diurnal average can also be requested using <tt>diurnal##</tt>   where <tt>##</tt>   are the number of diurnal
+   sections to average.</li> 
+<li> 
+<tt>standard_name</tt>   is added as optional argument in <a href="#register_diag_field"><tt>register_diag_field</tt> </a>.</li> 
+<li>When namelist variable <tt>debug_diag_manager = .true.</tt>   array
+   bounds are checked in <a href="#send_data"><tt>send_data</tt></a>.</li> 
+<li>Coordinate attributes can be written in the output file if the
+   argument "<tt>aux</tt>" is given in <a href="diag_axis.html#diag_axis_init"><tt>diag_axis_init</tt></a>. The
+   corresponding fields (geolat/geolon) should also be written to the
+   same file.</li> 
+</ol> 
+</div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>time_manager_mod<br>      mpp_io_mod<br>         mpp_mod<br>         fms_mod<br>   diag_axis_mod<br>   diag_util_mod<br>   diag_data_mod<br>  diag_table_mod<br> diag_output_mod<br>   diag_grid_mod<br>   constants_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#send_data">send_data</a>:</dt>
+<dd>   Send data over to output fields. </dd>
+<dt>
+<a href="#register_diag_field">register_diag_field</a>:</dt>
+<dd>   Register Diagnostic Field. </dd>
+<dt>
+<a href="#send_tile_averaged_data">send_tile_averaged_data</a>:</dt>
+<dd>   Send tile-averaged data over to output fields. </dd>
+<dt>
+<a href="#register_static_field">register_static_field</a>:</dt>
+<dd>   Register Static Field. </dd>
+<dt>
+<a href="#average_tiles">average_tiles</a>:</dt>
+<dd> 
+</dd>
+<dt>
+<a href="#diag_manager_end">diag_manager_end</a>:</dt>
+<dd>   Exit Diagnostics Manager. </dd>
+<dt>
+<a href="#closing_file">closing_file</a>:</dt>
+<dd>   Replaces diag_manager_end; close just one file: files(file) </dd>
+<dt>
+<a href="#diag_manager_init">diag_manager_init</a>:</dt>
+<dd>   Initialize Diagnostics Manager. </dd>
+<dt>
+<a href="#get_base_time">get_base_time</a>:</dt>
+<dd>   Return base time for diagnostics. </dd>
+<dt>
+<a href="#get_base_date">get_base_date</a>:</dt>
+<dd>   Return base date for diagnostics. </dd>
+<dt>
+<a href="#need_data">need_data</a>:</dt>
+<dd>   Determine whether data is needed for the current model time step. </dd>
+<dt>
+<a href="#set_diag_filename_appendix">set_diag_filename_appendix</a>:</dt>
+<dd> 
+</dd>
+<dt>
+<a href="#init_diurnal_axis">init_diurnal_axis</a>:</dt>
+<dd>   Finds or initializes a diurnal time axis and returns its' ID. </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="send_data"></a>
+<h4>send_data</h4>
+<pre> 
+<b>send_data</b> (diag_field_id, field, time, is_in, js_in, ks_in, mask, rmask, ie_in, je_in, ke_in, weight)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+<tt>send_data</tt>   is overloaded for fields having zero dimension
+   (scalars) to 3 dimension. <tt>diag_field_id</tt>   corresponds to the id
+   returned from a previous call to <tt>register_diag_field</tt>. The field
+   array is restricted to the computational range of the array. Optional
+   argument <tt>is_in</tt>   can be used to update sub-arrays of the entire
+   field. Additionally, an optional logical or real mask can be used to
+   apply missing values to the array.
+   <br>
+<br>
+   If a field is declared to be <tt>mask_variant</tt>   in <tt>register_diag_field</tt>   logical mask should be mandatory.
+   <br>
+<br>
+   For the real  mask, the mask is applied if the mask value is less than
+   0.5.
+   <br>
+<br>
+   By default, a field will be written out entirely in its global grid.
+   Users can also specify regions in which the field will be output. The
+   region is specified in diag-table just before the end of output_field
+   replacing "none". 
+   <br>
+<br>
+   For example, by default:
+   <br>
+<br>
+   "ocean_mod","Vorticity","vorticity","file1","all",.false.,"none",2 
+   <br>
+<br>
+   for regional output:
+   <br>
+<br>
+   "ocean_mod","Vorticity","vorticity_local","file2","all",.false.,"0.5 53.5 -89.5 -28.5 -1 -1",2
+   <br>
+<br>
+   The format of region is "<tt>xbegin xend ybegin yend zbegin zend</tt>".
+   If it is a 2D field use (-1 -1) for (zbegin zend) as in the example
+   above. For a 3D field use (-1 -1) for (zbegin zend) when you want to
+   write the entire vertical extent, otherwise specify real coordinates.
+   The units used for region are the actual units used in grid_spec.nc
+   (for example degrees for lat, lon). a FATAL error will occur if the
+   region's boundaries are not found in grid_spec.nc.
+   <br>
+<br>
+   Regional output on the cubed sphere is also supported.  To use regional output on the cubed sphere, first the grid
+   information needs to be sent to <tt>diag_manager_mod</tt>   using the <a href="diag_grid.html#diag_grid_init"><tt>   diag_grid_init</tt></a>   subroutine. <b><i>NOTE:</i></b>   Regions must be confined to a single tile.  Regions spanning
+   tiles will be ignored.  A future release will allow multi-tile regions.
+   <br>
+<br> 
+<b><i>NOTE:</i></b>   When using regional output the files containing regional 
+   outputs should be different from files containing global (default) output. 
+   It is a FATAL error to have one file containing both regional and global 
+   results. For maximum flexibility and independence from PE counts one file 
+   should contain just one region.
+   <br>
+<br>
+   Time averaging is supported in regional output.
+   <br>
+<br>
+   Physical fields (written in "physics windows" of atmospheric code) are 
+   currently fully supported for regional outputs.
+   <br>
+<br>
+   Note of dimension of field in send_data
+   <br>
+<br>
+   Most fields are defined in data_domain but used in compute domain. In <tt>send_data</tt>   users can pass EITHER field in data domain OR field in 
+   compute domain. If data domain is used, users should also pass the starting and 
+   ending indices of compute domain (isc, iec ...). If compute domain is used no 
+   indices are needed. These indices are for determining halo exclusively. If 
+   users want to ouput the field partially they should use regional output as 
+   mentioned above.
+   <br>
+<br>
+   Weight in Time averaging is now supported, each time level may have a
+   different weight. The default of weight is 1. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>diag_field_id&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>field&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:)]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:)]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>is_in&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>js_in&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ks_in&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>mask&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, DIMENSION(:), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, DIMENSION(:,:), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, DIMENSION(:,:,:), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rmask&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:,:), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ie_in&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>je_in&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ke_in&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>weight&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="register_diag_field"></a>
+<h4>register_diag_field</h4>
+<pre>INTEGER FUNCTION <b>register_diag_field</b> (module_name, field_name, axes, init_time, long_name, units, missing_value, range, mask_variant, standard_name, verbose)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return field index for subsequent calls to <a href="#send_data">send_data</a>.
+   <br>
+<br> 
+<tt>axes</tt>   are the axis ID returned from <tt>diag_axis_init</tt>, <tt>axes</tt>   are required for fields of 1-3 dimension and NOT required
+   for scalars.
+   <br>
+<br>
+   For a static scalar (constant) <tt>init_time</tt>   is not needed.
+   <br>
+<br>
+   Optional <tt>mask_variant</tt>   is for fields that have a time-dependent
+   mask. If <tt>mask_variant</tt>   is true then <tt>mask</tt>   must be
+   present in argument list of <tt>send_data</tt>.
+   <br>
+<br>
+   The pair (<tt>module_name</tt>, <tt>fieldname</tt>) should be registered
+   only once or a FATAL error will occur. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>module_name&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>field_name&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>axes&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, DIMENSION(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>init_time&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>long_name&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>units&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>missing_value&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>range&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(2), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(2), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>mask_variant&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[Not Applicable]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>standard_name&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="send_tile_averaged_data"></a>
+<h4>send_tile_averaged_data</h4>
+<pre>LOGICAL <b>send_tile_averaged_data</b> (diag_field_id, field, area, time, mask)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+<tt>send_tile_averaged_data</tt>   is overloaded for 3D and 4D arrays. <tt>diag_field_id</tt>   corresponds to the ID returned by previous call
+   to <tt>register_diag_field</tt>. Logical masks can be used to mask out
+   undefined and/or unused values.  Note that the dimension of output field
+   is smaller by one than the dimension of the data, since averaging over
+   tiles (3D dimension) is performed. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>diag_field_id&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>field&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:,:)]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:,:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>area&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:,:)]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>mask&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, DIMENSION(:,:,:), OPTIONAL]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, DIMENSION(:,:,:), OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="register_static_field"></a>
+<h4>register_static_field</h4>
+<pre>INTEGER FUNCTION <b>register_static_field</b> (module_name, field_name, axes, long_name, units, missing_value, range, mask_variant, standard_name, dynamic, do_not_log, interp_method, tile_count)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return field index for subsequent call to send_data. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>module_name&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>field_name&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>axes&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, DIMENSION(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>long_name&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>units&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>missing_value&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>range&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(2), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>mask_variang&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, OPTIONAL]&nbsp;[Default: .FALSE.]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>standard_name&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dynamic&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, OPTIONAL]&nbsp;[Default: .FALSE.]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>do_not_log&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, OPTIONAL]&nbsp;[Default: .TRUE.]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>interp_method&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIOANL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tile_count&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="average_tiles"></a>
+<h4>average_tiles</h4>
+<pre>SUBROUTINE <b>average_tiles</b> (diag_field_id, x, area, mask, out)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+</dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>diag_field_id&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>x&nbsp;&nbsp;&nbsp;</tt></td><td>(lon, lat, tile) field to average<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>area&nbsp;&nbsp;&nbsp;</tt></td><td>(lon, lat, tile) fractional area<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>mask&nbsp;&nbsp;&nbsp;</tt></td><td>(lon, lat, tile) land mask<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, DIMENSION(:,:,:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>out&nbsp;&nbsp;&nbsp;</tt></td><td>(lon, lat) result of averaging<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diag_manager_end"></a>
+<h4>diag_manager_end</h4>
+<pre>SUBROUTINE <b>diag_manager_end</b> (time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Flushes diagnostic buffers where necessary. Close diagnostics files.
+   <br>
+<br>
+   A warning will be issued here if a field in diag_table is not registered </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>TIME&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="closing_file"></a>
+<h4>closing_file</h4>
+<pre>SUBROUTINE <b>closing_file</b> (file, time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+</dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>file&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tile&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diag_manager_init"></a>
+<h4>diag_manager_init</h4>
+<pre>SUBROUTINE <b>diag_manager_init</b> (diag_model_subset, err_msg)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Open and read diag_table. Select fields and files for diagnostic output. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>diag_model_subset&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_base_time"></a>
+<h4>get_base_time</h4>
+<pre>TYPE(time_type) FUNCTION <b>get_base_time</b> ()</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return base time for diagnostics (note: base time must be &gt;= model time). </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_base_date"></a>
+<h4>get_base_date</h4>
+<pre>SUBROUTINE <b>get_base_date</b> (year, month, day, hour, minute, second)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return date information for diagnostic reference time. </dd>
+<br>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>year&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>month&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>day&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>hour&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>minute&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>second&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="need_data"></a>
+<h4>need_data</h4>
+<pre>LOGICAL <b>need_data</b> (diag_field_id, next_model_time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Determine whether data is needed for the current model time step.
+   Since diagnostic data are buffered, the "next" model time is passed
+   instead of the current model time. This call can be used to minimize
+   overhead for complicated diagnostics. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>next_model_time&nbsp;&nbsp;&nbsp;</tt></td><td>   next_model_time = current model time + model time_step <br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>diag_field_id&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="set_diag_filename_appendix"></a>
+<h4>set_diag_filename_appendix</h4>
+<pre>SUBROUTINE <b>set_diag_filename_appendix</b> (string_in)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+</dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>string_in&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="init_diurnal_axis"></a>
+<h4>init_diurnal_axis</h4>
+<pre>INTEGER FUNCTION <b>init_diurnal_axis</b> (n_samples)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Given number of time intervals in the day, finds or initializes a diurnal time axis
+   and returns its ID. It uses get_base_date, so should be in the file where it's accessible.
+   The units are 'days since BASE_DATE', all diurnal axes belong to the set 'diurnal' </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>n_samples&nbsp;&nbsp;&nbsp;</tt></td><td>Number of intervals during the day<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<hr>
+<h4>NAMELIST</h4>
+<!-- BEGIN NAMELIST -->
+<div>
+<b>&amp;diag_manager_nml</b>
+<br>
+<br>
+<div>
+<dl>
+<dt>
+<tt>append_pelist_name</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL, default: .FALSE.]</span>
+</dl>
+<dt>
+<tt>mix_snapshot_average_fields</tt>
+</dt>
+<dl>   Set to .TRUE. to allow both time average and instantaneous fields in the same output file. <br>
+<span class="type">[LOGICAL, default: .FALSE.]</span>
+</dl>
+<dt>
+<tt>max_files</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER]</span>
+</dl>
+<dt>
+<tt>max_output_fields</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER, default: 300]</span>
+</dl>
+<dt>
+<tt>max_input_fields</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER, default: 300]</span>
+</dl>
+<dt>
+<tt>max_axes</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER, default: 60]</span>
+</dl>
+<dt>
+<tt>do_diag_field_log</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL, default: .FALSE.]</span>
+</dl>
+<dt>
+<tt>write_bytes_in_files</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL, default: .FALSE.]</span>
+</dl>
+<dt>
+<tt>debug_diag_manager</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[LOGICAL, default: .FALSE.]</span>
+</dl>
+<dt>
+<tt>max_num_axis_sets</tt>
+</dt>
+<dl> 
+<br>
+<span class="type">[INTEGER, default: 25]</span>
+</dl>
+<dt>
+<tt>use_cmor</tt>
+</dt>
+<dl>   Let the <tt>diag_manager</tt>   know if the missing value (if supplied) should be overridden to be the
+   CMOR standard value of -1.0e20. <br>
+<span class="type">[LOGICAL, default: .FALSE.]</span>
+</dl>
+<dt>
+<tt>issue_oor_warnings</tt>
+</dt>
+<dl>   If <tt>.TRUE.</tt>, then the <tt>diag_manager</tt>   will check for values outside the valid range.  This range is defined in
+   the model, and passed to the <tt>diag_manager_mod</tt>   via the OPTIONAL variable range in the <tt>register_diag_field</tt>   function. <br>
+<span class="type">[LOGICAL, default: .TRUE.]</span>
+</dl>
+<dt>
+<tt>oor_warnings_fatal</tt>
+</dt>
+<dl>   If <tt>.TRUE.</tt>   then <tt>diag_manager_mod</tt>   will issue a <tt>FATAL</tt>   error if any values for the output field are
+   outside the given range. <br>
+<span class="type">[LOGICAL, default: .FALSE.]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<!-- END NAMELIST -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<hr>
+<h4>ERROR MESSAGES</h4>
+<!-- BEGIN ERROR MESSAGES -->
+<div>
+<dl>
+<dt>
+<b>WARNING in register_diag_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   module/output_field &lt;module_name&gt;/&lt;field_name&gt; registered AFTER first
+   send_data call, TOO LATE </dd>
+<dt>
+<b>WARNING in register_diag_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   module/output_field &lt;modul_name&gt;/&lt;field_name&gt; NOT found in diag_table </dd>
+<dt>
+<b>FATAL in register_static_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>diag_manager has NOT been initialized</dd>
+<dt>
+<b>FATAL in register_static_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   module/output_field &lt;module_name&gt;/&lt;field_name&gt; is not registered for tile_count = 1,
+   should not register for tile_count &gt; 1 </dd>
+<dt>
+<b>FATAL in register_static_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   module/output_field &lt;module_name&gt;/&lt;field_name&gt; ALREADY Registered, should
+   not register twice </dd>
+<dt>
+<b>FATAL in register_static_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   when registering module/output_field &lt;module_name&gt;/&lt;field_name&gt; then optional
+   argument interp_method = &lt;interp_method&gt;, but it should be "conserve_order1" </dd>
+<dt>
+<b>FATAL in register_static_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   module/output_field &lt;module_name&gt;/&lt;field_name&gt; has non-positive axis_id </dd>
+<dt>
+<b>FATAL in register_static_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   output_field &lt;field_name&gt; has pack &gt;= 4, range is REQUIRED in register_diag_field </dd>
+<dt>
+<b>FATAL in register_static_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>axes of &lt;field_name&gt; must &gt;= 2 for local output</dd>
+<dt>
+<b>WARNING in register_static_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   module/field &lt;module_name&gt;/&lt;field_name&gt; is STATIC.
+   Cannot perform time operations average, maximum or
+   minimum on static fields.  Setting the time operation to 'NONE'
+   for this field. </dd>
+<dt>
+<b>WARNING/FATAL in send_data</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   A value for &lt;module_name&gt; in field &lt;field_name&gt; (Min: &lt;min_val&gt;, Max: &lt;max_val&gt;)
+   is outside the range [&lt;lower_val&gt;,&lt;upper_val&gt;] and not equal to the missing
+   value. </dd>
+<dt>
+<b>WARNING/FATAL in send_data</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   A value for &lt;module_name&gt; in field &lt;field_name&gt; (Min: &lt;min_val&gt;, Max: &lt;max_val&gt;)
+   is outside the range [&lt;lower_val&gt;,&lt;upper_val&gt;]. </dd>
+<dt>
+<b>WARNING in send_data</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Mask will be ignored since missing values were not specified </dd>
+<dt>
+<b>WARNING in closing_file</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   &lt;input_fields(input_num)%module_name&gt;/&lt;output_fields(i)%output_name&gt; skip one time
+   level, maybe send_data never called </dd>
+<dt>
+<b>NOTE in closing_file</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   &lt;output_fields(i)%output_name) NOT available, check if output interval &gt; runlength.
+   NetCDF fill_values are written </dd>
+<dt>
+<b>FATAL in get_base_time</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   MODULE has not been initialized </dd>
+<dt>
+<b>FATAL in get_base_date</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>module has not been initialized</dd>
+</dl>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<a name="COMPILER SPECIFICS"></a>
+<hr>
+<h4>COMPILER SPECIFICS</h4>
+<!-- BEGIN COMPILER SPECIFICS -->
+<div>
+<dl>
+<dt>PORTABILITY</dt>
+<dd> 
+<tt>diag_manager_mod</tt>   uses standard Fortran 90. </dd>
+<dt>ACQUIRING SOURCE</dt>
+<dd>   Use the following commands to check out the source at GFDL. <pre>       setenv CVSROOT '/home/fms/cvs'
+       cvs co diag_manager</pre> 
+</dd>
+<dt>COMPILING AND LINKING SOURCE</dt>
+<dd>   Any module or program unit using <tt>diag_manager_mod</tt>   must contain the line <pre>     use diag_manager_mod</pre>   If netCDF output is desired, the cpp flag <tt>-Duse_netCDF</tt>   must be turned on. </dd>
+</dl>
+</div>
+<br>
+<!-- END COMPILER SPECIFICS -->
+<a name="PRECOMPILER OPTIONS"></a>
+<hr>
+<h4>PRECOMPILER OPTIONS</h4>
+<!-- BEGIN PRECOMPILER OPTIONS -->
+<div>
+<dl>
+<dt>-D<b>use_netCDF</b>
+</dt>
+<dd>   Used to write out <a href="http://www.unidata.ucar.edu/software/netcdf">NetCDF</a>   files. </dd>
+<dt>-D<b>test_diag_manager</b>
+</dt>
+<dd>   Used to build the unit test suite for the <tt>diag_manager_mod</tt>. </dd>
+</dl>
+</div>
+<br>
+<!-- END PRECOMPILER OPTIONS -->
+<a name="LOADER OPTIONS"></a>
+<hr>
+<h4>LOADER OPTIONS</h4>
+<!-- BEGIN LOADER -->
+<div>
+<p>   Link in the NetCDF libraries. </p>
+<pre>        -lnetcdf</pre>
+</div>
+<br>
+<!-- END LOADER OPTIONS -->
+<a name="TEST PROGRAM"></a>
+<hr>
+<h4>TEST PROGRAM</h4>
+<!-- BEGIN TEST PROGRAM -->
+<div>
+<dl>
+<dt>test</dt>
+<dd>   Unit test for the <tt>diag_manager_mod</tt>.  Each test must be run separately, and ends with an intentional fatal error.
+   Each test has its own <tt>diag_table</tt>, see the source of <tt>diag_manager.F90</tt>   for the list of <tt>diag_tables</tt>   for the unit tests. </dd>
+</dl>
+</div>
+<br>
+<!-- END TEST PROGRAM -->
+<a name="FUTURE PLANS"></a>
+<hr>
+<h4>FUTURE PLANS</h4>
+<!-- BEGIN FUTURE PLANS -->
+<div>
+<ul>
+<li>   Regional output for the cubed-sphere grid. </li>
+</ul>
+</div>
+<br>
+<!-- END FUTURE PLANS -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

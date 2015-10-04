@@ -1,0 +1,486 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module diag_output_mod</title>
+<link type="text/css" href="http://data1.gfdl.noaa.gov/~fms/style/docbook.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>
+
+          ~ <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>
+	    ~ <a href="#ERROR MESSAGES">ERROR MESSAGES </a></font>
+<hr>
+<h2>Module diag_output_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:seth.underwood@noaa.gov">   Seth Underwood </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://cobweb.gfdl.noaa.gov/fms-cgi-bin/viewcvs/FMS/shared/diag_manager">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text"> 
+<tt>diag_output_mod</tt>   is an integral part of <tt>diag_manager_mod</tt>. Its function is to write axis-meta-data, 
+   field-meta-data and field data </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div></div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>      mpp_io_mod<br> mpp_domains_mod<br>         mpp_mod<br>   diag_axis_mod<br>   diag_data_mod<br>time_manager_mod<br>         fms_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#diag_output_init">diag_output_init</a>:</dt>
+<dd>   Registers the time axis and opens the output file. </dd>
+<dt>
+<a href="#write_axis_meta_data">write_axis_meta_data</a>:</dt>
+<dd>   Write the axes meta data to file. </dd>
+<dt>
+<a href="#write_field_meta_data">write_field_meta_data</a>:</dt>
+<dd>   Write the field meta data to file. </dd>
+<dt>
+<a href="#done_meta_data">done_meta_data</a>:</dt>
+<dd>   Writes axis data to file. </dd>
+<dt>
+<a href="#diag_field_out">diag_field_out</a>:</dt>
+<dd>   Writes field data to an output file. </dd>
+<dt>
+<a href="#diag_flush">diag_flush</a>:</dt>
+<dd>   Flush buffer and insure data is not lost. </dd>
+<dt>
+<a href="#get_axis_index">get_axis_index</a>:</dt>
+<dd>   Return the axis index number. </dd>
+<dt>
+<a href="#get_diag_global_att">get_diag_global_att</a>:</dt>
+<dd>   Return the global attribute type. </dd>
+<dt>
+<a href="#set_diag_global_att">set_diag_global_att</a>:</dt>
+<dd>   Set the global attribute type. </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="diag_output_init"></a>
+<h4>diag_output_init</h4>
+<pre>SUBROUTINE <b>diag_output_init</b> (file_name, format, file_title, file_unit, all_scalar_or_1d, domain)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Registers the time axis, and opens the file for output. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>file_name&nbsp;&nbsp;&nbsp;</tt></td><td>Output file name<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>format&nbsp;&nbsp;&nbsp;</tt></td><td>File format (Currently only 'NETCDF' is valid)<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>file_title&nbsp;&nbsp;&nbsp;</tt></td><td>Descriptive title for the file<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>all_scalar_or_1d&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>domain&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(domain2d)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>file_unit&nbsp;&nbsp;&nbsp;</tt></td><td>   File unit number assigned to the output file.  Needed for subsuquent calls to <tt>diag_output_mod</tt> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="write_axis_meta_data"></a>
+<h4>write_axis_meta_data</h4>
+<pre>SUBROUTINE <b>write_axis_meta_data</b> (file_unit, axes, time_ops)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd></dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>file_unit&nbsp;&nbsp;&nbsp;</tt></td><td>File unit number<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>axes&nbsp;&nbsp;&nbsp;</tt></td><td>Array of axis ID's, including the time axis<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, DIMENSION(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_ops&nbsp;&nbsp;&nbsp;</tt></td><td>   .TRUE. if this file contains any min, max, or time_average <br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="write_field_meta_data"></a>
+<h4>write_field_meta_data</h4>
+<pre>TYPE(diag_fieldtype) FUNCTION <b>write_field_meta_data</b> (file_unit, name, axes, units, long_name, rnage, pack, mval, avg_name, time_method, standard_name, interp_method)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   The meta data for the field is written to the file indicated by file_unit </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>file_unit&nbsp;&nbsp;&nbsp;</tt></td><td>Output file unit number<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>name&nbsp;&nbsp;&nbsp;</tt></td><td>Field name<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>axes&nbsp;&nbsp;&nbsp;</tt></td><td>Array of axis IDs<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, DIMENSION(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>units&nbsp;&nbsp;&nbsp;</tt></td><td>Field units<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>long_name&nbsp;&nbsp;&nbsp;</tt></td><td>Field's long name<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>range&nbsp;&nbsp;&nbsp;</tt></td><td>   Valid range (min, max).  If min &gt; max, the range will be ignored <br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(2), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>pack&nbsp;&nbsp;&nbsp;</tt></td><td>   Packing flag.  Only valid when range specified.  Valid values: <ul> 
+<li>   1 = 64bit </li> 
+<li>   2 = 32bit </li> 
+<li>   4 = 16bit </li> 
+<li>   8 =  8bit </li> 
+</ul> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]&nbsp;[Default: 2]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>mval&nbsp;&nbsp;&nbsp;</tt></td><td>Missing value, must be within valid range<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>avg_name&nbsp;&nbsp;&nbsp;</tt></td><td>   Name of variable containing time averaging info <br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_method&nbsp;&nbsp;&nbsp;</tt></td><td>   Name of transformation applied to the time-varying data, i.e. "avg", "min", "max" <br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>standard_name&nbsp;&nbsp;&nbsp;</tt></td><td>Standard name of field<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>interp_method&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="done_meta_data"></a>
+<h4>done_meta_data</h4>
+<pre>SUBROUTINE <b>done_meta_data</b> (file_unit)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Writes axis data to file.  This subroutine is to be called once per file
+   after all <tt>write_meta_data</tt>   calls, and before the first <tt>diag_field_out</tt>   call. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>file_unit&nbsp;&nbsp;&nbsp;</tt></td><td>Output file unit number<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diag_field_out"></a>
+<h4>diag_field_out</h4>
+<pre>SUBROUTINE <b>diag_field_out</b> (file_unit, field, data, time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Writes field data to an output file. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>file_unit&nbsp;&nbsp;&nbsp;</tt></td><td>Output file unit number<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>field&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(diag_fieldtype)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>data&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSIONS(:,:,:,:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diag_flush"></a>
+<h4>diag_flush</h4>
+<pre>
+<b>call diag_flush </b>(file_unit)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   This subroutine can be called periodically to flush the buffer, and
+   insure that data is not lost if the execution fails. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>file_unit&nbsp;&nbsp;&nbsp;</tt></td><td>Output file unit number to flush<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_axis_index"></a>
+<h4>get_axis_index</h4>
+<pre>INTEGER FUNCTION <b>get_axis_index</b> (num)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return the axis index number. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>num&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_diag_global_att"></a>
+<h4>get_diag_global_att</h4>
+<pre>
+<b>call get_diag_global_att </b>(gAtt)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return the global attribute type. </dd>
+<br>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>gAtt&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(diag_global_att_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="set_diag_global_att"></a>
+<h4>set_diag_global_att</h4>
+<pre>
+<b>call set_diag_global_att </b>(component, gridType, timeName)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Set the global attribute type. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>component&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>gridType&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tileName&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<hr>
+<h4>ERROR MESSAGES</h4>
+<!-- BEGIN ERROR MESSAGES -->
+<div>
+<dl>
+<dt>
+<b>FATAL in diag_output_init</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>invalid format</dd>
+<dt>
+<b>FATAL in write_axis_meta_data</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>number of axes &lt; 1 </dd>
+<dt>
+<b>FATAL in write_axis_meta_data</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>writing meta data out-of-order to different files.</dd>
+<dt>
+<b>FATAL in write_field_meta_data</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>number of axes &lt; 1</dd>
+<dt>
+<b>FATAL in write_field_meta_data</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>writing meta data out-of-order to different files</dd>
+<dt>
+<b>FATAL in write_field_meta_data</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>axis data not written for field</dd>
+</dl>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

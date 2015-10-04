@@ -1,0 +1,489 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module horiz_interp_mod</title>
+<link type="text/css" href="http://www.gfdl.noaa.gov/~fms/style/doc.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module horiz_interp_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:Zhi.Liang@noaa.gov">   Zhi Liang </a>,&nbsp;
+    <a href="mailto:Bruce.Wyman@noaa.gov">   Bruce Wyman </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/shared/horiz_interp">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   Performs spatial interpolation between grids. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div>   This module can interpolate data from rectangular/tripolar grid
+   to rectangular/tripolar grid. Three interpolation schems are used here.
+   when the source grid is tripolar grid, inverse of square distance weighted
+   scheme (spherical regrid) is used. When the source grid is rectangular 
+   longitude/latitude grid, any one of following three schemes can be applied: 
+   conservation scheme that conserves the area-weighed integral of the input field, 
+   bilinear interpolation that use the surround four source grid to interpolate onto
+   the destination grid, bicubic interpolation, which does the same with higher
+   order polynominals and spherical regrid that use thes inverse of square distance
+   as weight. User can choose the interpolation method in the horiz_interp_init.
+   The default method is conservative scheme. When the source grid is tripolar grid,
+   only spherical regrid is allowed. When destination grid is tripolar, conservative 
+   scheme can not be used. 
+   There is an optional mask field for missing input data.
+   An optional output mask field may be used in conjunction with
+   the input mask to show where output data exists. </div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>                   fms_mod<br>                   mpp_mod<br>             constants_mod<br>     horiz_interp_type_mod<br> horiz_interp_conserve_mod<br> horiz_interp_bilinear_mod<br>  horiz_interp_bicubic_mod<br>horiz_interp_spherical_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#horiz_interp_init">horiz_interp_init</a>:</dt>
+<dd>   Allocates space and initializes a derived-type variable
+   that contains pre-computed interpolation indices and weights. </dd>
+<dt>
+<a href="#horiz_interp">horiz_interp</a>:</dt>
+<dd>   Subroutine for performing the horizontal interpolation between two grids. </dd>
+<dt>
+<a href="#horiz_interp_end">horiz_interp_end</a>:</dt>
+<dd>   Deallocates memory used by "horiz_interp_type" variables.
+   Must be called before reinitializing with horiz_interp_init. </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>None.<br>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="horiz_interp_init"></a>
+<h4>horiz_interp_init</h4>
+<table cellspacing="0" CELLPADDING="2" BORDER="2">
+<tr>
+<td>
+<pre>  subroutine horiz_interp_init (Interp, lon_in, lat_in, lon_out, lat_out,  &amp;
+       verbose, interp_method, num_nbrs, max_dist, src_modulo, &amp;
+       grid_at_center)</pre>
+</td>
+</tr>
+</table>
+<br>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Allocates space and initializes a derived-type variable
+   that contains pre-computed interpolation indices and weights
+   for improved performance of multiple interpolations between
+   the same grids. This routine does not need to be called if you
+   are doing a single grid-to-grid interpolation. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lon_in&nbsp;&nbsp;&nbsp;</tt></td><td>   Longitude (in radians) for source data grid. when lon_in is 1D, it is the longitude
+   edges and its value are for adjacent grid boxes and must increase 
+   in value. When lon_in is 2D, there are two cases: one is the longitude edges stored as
+   pairs for each grid box (when interp_method is "conservative"), the other is the longitude
+   of the center of each grid box. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:),(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lat_in&nbsp;&nbsp;&nbsp;</tt></td><td>   Latitude (in radians) for source data grid. when lat_in is 1D, it is the latitude
+   edges and its value are for adjacent grid boxes and must increase 
+   in value. When lat_in is 2D, it is the longitude of the center of each grid box.
+   When interp_method is "conservative" or "bilinear", lon_in should be 1D. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:),(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon_out&nbsp;&nbsp;&nbsp;</tt></td><td>   Longitude (in radians) for destination data grid. when lon_out is 1D, it is the longitude
+   edges and its value are for adjacent grid boxes and must increase 
+   in value. When lon_out is 2D, there are two cases: one is the longitude edges stored as
+   pairs for each grid box (when interp_method is "conservative"), the other is the longitude
+   of the center of each grid box (when interp_method is "bilinear"). <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:),(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lat_out&nbsp;&nbsp;&nbsp;</tt></td><td>   Latitude (in radians) for destination data grid. when lat_out is 1D, it is the latitude
+   edges and its value are for adjacent grid boxes and must increase 
+   in value. When lat_out is 2D, there are two cases: one is the latitude edges stored as
+   pairs for each grid box (when interp_method is "conservative"), the other is the latitude
+   of the center of each grid box (when interp_method is "bilinear"). <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:),(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>verbose&nbsp;&nbsp;&nbsp;</tt></td><td>   Integer flag that controls the amount of printed output.
+   verbose = 0, no output; = 1, min,max,means; = 2, still more <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, optional]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>interp_method&nbsp;&nbsp;&nbsp;</tt></td><td>   interpolation method, = "conservative", using conservation scheme,
+   = "bilinear", using bilinear interpolation, = "spherical",using spherical regrid.
+   when source grid is 1d, default value is "conservative"; when source grid is 2d,
+   default value is "spherical". <br>&nbsp;&nbsp;&nbsp;<span class="type">[character(len=*),optional]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>src_modulo&nbsp;&nbsp;&nbsp;</tt></td><td>   Indicate the source data grid is cyclic or not. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, optional]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>grid_at_center&nbsp;&nbsp;&nbsp;</tt></td><td>   Indicate the data is on the center of grid box or the edge of grid box. 
+   When true, the data is on the center of grid box. default vaule is false. </td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>Interp&nbsp;&nbsp;&nbsp;</tt></td><td>   A derived-type variable containing indices and weights used for subsequent 
+   interpolations. To reinitialize this variable for a different grid-to-grid 
+   interpolation you must first use the "horiz_interp_end" interface. <br>&nbsp;&nbsp;&nbsp;<span class="type">[type(horiz_interp_type)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="horiz_interp"></a>
+<h4>horiz_interp</h4>
+<table cellspacing="0" CELLPADDING="2" BORDER="2">
+<tr>
+<td>
+<pre> subroutine horiz_interp ( Interp, data_in, data_out, verbose, &amp;
+                                   mask_in, mask_out, missing_value, missing_permit )</pre>
+</td>
+</tr>
+<tr>
+<td>
+<pre> subroutine horiz_interp ( data_in, lon_in, lat_in, lon_out, lat_out,    &amp;
+                                   data_out, verbose, mask_in, mask_out,         &amp;
+                                   interp_method, missing_value, missing_permit, &amp;
+                                   num_nbrs, max_dist,src_modulo, grid_at_center  )</pre>
+</td>
+</tr>
+</table>
+<br>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Subroutine for performing the horizontal interpolation between
+   two grids. There are two forms of this interface.
+   Form A requires first calling horiz_interp_init, while Form B
+   requires no initialization. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>Interp&nbsp;&nbsp;&nbsp;</tt></td><td>   Derived-type variable containing interpolation indices and weights.
+   Returned by a previous call to horiz_interp_init. <br>&nbsp;&nbsp;&nbsp;<span class="type">[type(horiz_interp_type)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>data_in&nbsp;&nbsp;&nbsp;</tt></td><td>   Input data on source grid. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:),(:,:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>verbose&nbsp;&nbsp;&nbsp;</tt></td><td>   flag for the amount of print output.
+   verbose = 0, no output; = 1, min,max,means; = 2, still more <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer,optional]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>mask_in&nbsp;&nbsp;&nbsp;</tt></td><td>   Input mask, must be the same size as the input data. The real value of
+   mask_in must be in the range (0.,1.). Set mask_in=0.0 for data points 
+   that should not be used or have missing data. It is Not needed for 
+   spherical regrid. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real,optional, dimension(:,:),(:,:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>missing_value&nbsp;&nbsp;&nbsp;</tt></td><td>   Use the missing_value to indicate missing data. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, optional]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>missing_permit&nbsp;&nbsp;&nbsp;</tt></td><td>   numbers of points allowed to miss for the bilinear interpolation. The value
+   should be between 0 and 3. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer,optional]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon_in, lat_in&nbsp;&nbsp;&nbsp;</tt></td><td>   longitude and latitude (in radians) of source grid. More explanation can 
+   be found in the documentation of horiz_interp_init. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:),(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon_out, lat_out&nbsp;&nbsp;&nbsp;</tt></td><td>   longitude and latitude (in radians) of destination grid. More explanation can 
+   be found in the documentation of horiz_interp_init. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:),(:,:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>data_out&nbsp;&nbsp;&nbsp;</tt></td><td>   Output data on destination grid. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:),(:,:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>mask_out&nbsp;&nbsp;&nbsp;</tt></td><td>   Output mask that specifies whether data was computed. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real,optional, dimension(:,:),(:,:,:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="horiz_interp_end"></a>
+<h4>horiz_interp_end</h4>
+<pre>
+<b>call horiz_interp_end </b>( Interp )</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Deallocates memory used by "horiz_interp_type" variables.
+   Must be called before reinitializing with horiz_interp_init. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>Interp&nbsp;&nbsp;&nbsp;</tt></td><td>   A derived-type variable returned by previous call
+   to horiz_interp_init. The input variable must have
+   allocated arrays. The returned variable will contain
+   deallocated arrays. <br>&nbsp;&nbsp;&nbsp;<span class="type">[horiz_interp_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<!-- END NAMELIST --><a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>
+<dl>
+<dt>
+<b>FATAL in horiz_interp</b>
+</dt>
+<dd>
+<span class="errmsg">size of input array incorrect</span>
+</dd>
+<dd>   The input data array does not match the size of the input grid edges
+   specified. If you are using the initialization interface make sure you
+   have the correct grid size. </dd>
+<dt>
+<b>FATAL in horiz_interp</b>
+</dt>
+<dd>
+<span class="errmsg">size of output array incorrect</span>
+</dd>
+<dd>   The output data array does not match the size of the input grid
+   edges specified. If you are using the initialization interface make
+   sure you have the correct grid size. </dd>
+</dl>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<a name="REFERENCES"></a>
+<hr>
+<h4>REFERENCES</h4>
+<!-- BEGIN REFERENCES -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END REFERENCES -->
+<a name="COMPILER SPECIFICS"></a>
+<hr>
+<h4>COMPILER SPECIFICS</h4>
+<!-- BEGIN COMPILER SPECIFICS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END COMPILER SPECIFICS -->
+<a name="PRECOMPILER OPTIONS"></a>
+<hr>
+<h4>PRECOMPILER OPTIONS</h4>
+<!-- BEGIN PRECOMPILER OPTIONS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END PRECOMPILER OPTIONS -->
+<a name="LOADER OPTIONS"></a>
+<hr>
+<h4>LOADER OPTIONS</h4>
+<!-- BEGIN LOADER -->
+<div>None.<br>
+<br>
+</div>
+<!-- END LOADER OPTIONS -->
+<a name="TEST PROGRAM"></a>
+<hr>
+<h4>TEST PROGRAM</h4>
+<!-- BEGIN TEST PROGRAM -->
+<div>
+<dl>
+<dt>INTERNAL</dt>
+<dd> 
+<pre>       program test
+       use horiz_interp_mod
+       implicit none
+       integer, parameter :: nxi=177, nyi=91, nxo=133, nyo=77 ! resolution
+       real :: zi(nxi,nyi), zo(nxo,nyo)                       ! data
+       real :: xi(nxi+1), yi(nyi+1), xo(nxo+1), yo(nyo+1)     ! grid edges
+       real :: pi, tpi, hpi, dx, dy
+     
+ constants
+         hpi = acos(0.0)
+          pi = hpi*2.0
+         tpi = hpi*4.0
+     
+ grid setup: west to east, south to north
+         dx = tpi/real(nxi); call setaxis (0.,dx,xi);   xi(nxi+1) = xi(1)+tpi
+         dx = tpi/real(nxo); call setaxis (0.,dx,xo);   xo(nxo+1) = xo(1)+tpi
+         dy =  pi/real(nyi); call setaxis (-hpi,dy,yi); yi(nyi+1) = hpi
+         dy =  pi/real(nyo); call setaxis (-hpi,dy,yo); yo(nyo+1) = hpi
+     
+ random data on the input grid
+         call random_number (zi)
+     
+ interpolate (flipping y-axis)
+         call horiz_interp (zi(:,1:nyi:+1), xi, yi(1:nyi+1:+1), xo, yo(1:nyo+1:+1), zo, verbose=2)
+         call horiz_interp (zi(:,nyi:1:-1), xi, yi(nyi+1:1:-1), xo, yo(1:nyo+1:+1), zo, verbose=2)
+         call horiz_interp (zi(:,nyi:1:-1), xi, yi(nyi+1:1:-1), xo, yo(nyo+1:1:-1), zo, verbose=2)
+         call horiz_interp (zi(:,1:nyi:+1), xi, yi(1:nyi+1:+1), xo, yo(nyo+1:1:-1), zo, verbose=2)
+     
+       contains
+ set up a sequence of numbers
+         subroutine setaxis (xo,dx,x)
+         real, intent(in)  :: xo, dx
+         real, intent(out) :: x(:)
+         integer :: i
+           x(1) = xo
+           do i=2,size(x(:))
+             x(i) = x(i-1)+dx
+           enddo
+         end subroutine setaxis
+     
+       end program test</pre> 
+</dd>
+</dl>
+</div>
+<br>
+<!-- END TEST PROGRAM -->
+<a name="KNOWN BUGS"></a>
+<hr>
+<h4>KNOWN BUGS</h4>
+<!-- BEGIN KNOWN BUGS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END KNOWN BUGS -->
+<a name="NOTES"></a>
+<hr>
+<h4>NOTES</h4>
+<!-- BEGIN NOTES -->
+<div>   Has not been checked with grids that do not cover the sphere.
+   <br>
+<br>
+   Has not been checked with the optional mask arguments.
+   <br>
+<br>
+   If a latitude or longitude index cannot be found the tolerance
+   used for making this determination may need to be increased.
+   This can be done by increasing the value of module variable
+   num_iters (default 4). </div>
+<br>
+<!-- END NOTES -->
+<a name="FUTURE PLANS"></a>
+<hr>
+<h4>FUTURE PLANS</h4>
+<!-- BEGIN FUTURE PLANS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END FUTURE PLANS -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

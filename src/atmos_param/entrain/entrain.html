@@ -1,0 +1,634 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module entrain_mod</title>
+<link type="text/css" href="http://www.gfdl.noaa.gov/~fms/style/doc.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module entrain_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:Stephen.Klein@noaa.gov">   Stephen Klein </a>
+<br>
+<b>Reviewers:&nbsp;</b><a href="mailto:reviewer_email@gfdl.noaa.gov">   none </a>
+<br>
+<b>Change History:&nbsp;</b><a href="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/atmos/param/entrain">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   K-PROFILE BOUNDARY LAYER SCHEME WITH CLOUD TOP ENTRAINMENT
+   <br>
+<br>
+   This routine calculates diffusivity coefficients for vertical
+   diffusion using a K-profile approach.  This scheme is modelled
+   after:
+   <br>
+<br>
+   Lock, A.P., A.R. Brown, M.R. Bush, G.M. Martin, and R.N.B. Smith, 
+   2000: A new boundary layer mixing scheme. Part I: Scheme 
+   description and single-column modeling tests. Mon. Wea. Rev.,
+   128, 3187-3199.
+   <br>
+<br> 
+</p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div>   The key part is the parameterization of entrainment at the top
+   convective layers. For an entrainment interface from surface
+   driven mixing, the entrainment rate, we, is parameterized as:
+   <br>
+<br>
+   we, surf =  A / B
+   <br>
+<br>
+   where A = ( beta_surf * (V_surf**3 + V_shear**3) / zsml )
+   and B = ( delta_b   + ((V_surf**3 + V_shear**3)**(2/3))/zsml )
+   <br>
+<br>
+   In this formula,
+   <br>
+<br>
+   zsml     =  depth of surface mixed layer
+   <br>
+<br>
+   V_surf   =  surface driven scaling velocity
+   =  (u_star*b_star*zsml)**(1/3)
+   <br>
+<br>
+   V_shear  =  surface driven shear velocity,
+   =  (Ashear**(1/3))*u_star
+   <br>
+<br>
+   delta_b  =  buoyancy jump at the entrainment interface(m/s2)
+   =  grav * delta_slv / slv
+   <br>
+<br>
+   If an entrainment interface is associated only with cloud top
+   radiative cooling, the entrainment rate is parameterized as:
+   <br>
+<br>
+   we, rad  =  ( A / B)
+   <br>
+<br>
+   where A = beta_rad  *  V_rad**3 /  zradml
+   and B = delta_b   +  V_rad**2 /  zradml
+   <br>
+<br>
+   where
+   <br>
+<br>
+   zradml   =  depth of radiatively driven layer
+   <br>
+<br>
+   V_rad    =  radiatively driven scaling velocity
+   =  (grav*delta-F*zradml/(rho*cp_air*T)) **(1/3)
+   <br>
+<br>
+   Note that the source of entrainment from cloud top buoyancy
+   reversal has been omitted in this implementation.
+   <br>
+<br>
+   If the entrainment interface for surface driven mixing coincides
+   with that for cloud top radiatively driven convection then the
+   following full entrainment rate:
+   <br>
+<br>
+   we, full =   A / B
+   <br>
+<br>
+   where A =   V_full**3 / zsml
+   and B =  delta_b+((V_surf**3+V_shear**3+V_rad**3)**(2/3))/zsml
+   and V_full**3 = beta_surf*(V_surf**3+V_shear**3) + beta_rad*V_rad**3
+   <br>
+<br> 
+</div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>     constants_mod<br>           fms_mod<br>  diag_manager_mod<br>  time_manager_mod<br>sat_vapor_pres_mod<br> monin_obukhov_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#entrain_init">entrain_init</a>:</dt>
+<dd> 
+</dd>
+<dt>
+<a href="#entrain">entrain</a>:</dt>
+<dd> 
+</dd>
+<dt>
+<a href="#pbl_depth">pbl_depth</a>:</dt>
+<dd> 
+</dd>
+<dt>
+<a href="#prof_recon">prof_recon</a>:</dt>
+<dd> 
+</dd>
+<dt>
+<a href="#radml_depth">radml_depth</a>:</dt>
+<dd> 
+</dd>
+<dt>
+<a href="#diffusivity_pbl">diffusivity_pbl</a>:</dt>
+<dd> 
+</dd>
+<dt>
+<a href="#entrain_end">entrain_end</a>:</dt>
+<dd> 
+</dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>None.<br>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="entrain_init"></a>
+<h4>entrain_init</h4>
+<pre>
+<b>call entrain_init </b>(lonb, latb, axes,time,idim,jdim,kdim)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   This subroutine reads the namelist file, sets up individual 
+   points diagnostics if desired, and initializes netcdf output. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lonb&nbsp;&nbsp;&nbsp;</tt></td><td>   Vector of model longitudes at cell boundaries (radians) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>latb&nbsp;&nbsp;&nbsp;</tt></td><td>   Vector of model latitudes at cell boundaries (radians) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>axes&nbsp;&nbsp;&nbsp;</tt></td><td>   Integer arrary for axes used needed for netcdf diagnostics <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   Time type variable used for netcdf diagnostics <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>idim&nbsp;&nbsp;&nbsp;</tt></td><td>   Size of first (longitude) array dimension <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>jdim&nbsp;&nbsp;&nbsp;</tt></td><td>   Size of second (latitude) array dimension <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>kdim&nbsp;&nbsp;&nbsp;</tt></td><td>   Size of third (vertical, full levels) array dimension <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="entrain"></a>
+<h4>entrain</h4>
+<pre>
+<b>call entrain </b>(is,ie,js,je,time, tdtlw_in, convect,u_star,b_star, &amp; t,qv,ql,qi,qa,u,v,zfull,pfull,zhalf,phalf, diff_m,diff_t,k_m_entr,k_t_entr,use_entr,zsml, vspblcap,kbot)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   This is the main subroutine which takes in the state of the
+   atmosphere and returns vertical diffusion coefficients for
+   convective turbulent layers.  (Stable turbulent layers are
+   handled by stable_bl_turb.f90 in AM2)
+   <br>
+<br> 
+</dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>is&nbsp;&nbsp;&nbsp;</tt></td><td>   Indice of starting point in the longitude direction of the slab being passed to entrain <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ie&nbsp;&nbsp;&nbsp;</tt></td><td>   Indice of ending point in the longitude direction of the slab being passed to entrain <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>js&nbsp;&nbsp;&nbsp;</tt></td><td>   Indice of starting point in the latitude direction of the slab being passed to entrain <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>je&nbsp;&nbsp;&nbsp;</tt></td><td>   Indice of ending point in the latitude direction of the slab being passed to entrain <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   Time of the model: used for netcdf diagnostics <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tdtlw_in&nbsp;&nbsp;&nbsp;</tt></td><td>   Longwave cooling rate (from the radiation scheme) (K/sec) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>convect&nbsp;&nbsp;&nbsp;</tt></td><td>   Is surface based convection occurring in this grid box at this time? (from convection scheme (or schemes)) <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>u_star&nbsp;&nbsp;&nbsp;</tt></td><td>   Friction velocity (m/s) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>b_star&nbsp;&nbsp;&nbsp;</tt></td><td>   Buoyancy scale (m/s2) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>t&nbsp;&nbsp;&nbsp;</tt></td><td>   Temperature (3d array) (K) <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>qv&nbsp;&nbsp;&nbsp;</tt></td><td>   Water vapor specific humidity (3d array) (kg/kg) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ql&nbsp;&nbsp;&nbsp;</tt></td><td>   Liquid water specific humidity (3d array) (kg/kg) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>qi&nbsp;&nbsp;&nbsp;</tt></td><td>   Ice water specific humidity (3d array) (kg/kg) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>qa&nbsp;&nbsp;&nbsp;</tt></td><td>   Cloud fraction (3d array) (fraction) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>u&nbsp;&nbsp;&nbsp;</tt></td><td>   Zonal wind velocity (3d array) (m/s) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>v&nbsp;&nbsp;&nbsp;</tt></td><td>   Meridional wind velocity (3d array) (m/s) <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>zfull&nbsp;&nbsp;&nbsp;</tt></td><td>   Geopotential height of full model levels (3d array) (m) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>pfull&nbsp;&nbsp;&nbsp;</tt></td><td>   Pressure of full model levels (3d array) (Pa) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>zhalf&nbsp;&nbsp;&nbsp;</tt></td><td>   Geopotential height of half model levels (3d array) (m) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>phalf&nbsp;&nbsp;&nbsp;</tt></td><td>   Pressure of half model levels (3d array) (Pa) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>kbot&nbsp;&nbsp;&nbsp;</tt></td><td>   Optional input integer indicating the lowest true layer of atmosphere (counting down from the top of the atmosphere).
+   This is used only for eta coordinate model. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>diff_m&nbsp;&nbsp;&nbsp;</tt></td><td>   Vertical momentum diffusion coefficient (3d array) (m2/s)
+   <br>
+<br>
+   Note that if apply_entrain = .true. then the output will be 
+   the diffusion coefficient diagnosed by entrain_mod (k_m_entr). 
+   If apply_entrain = .false. then the output will be identical to 
+   the input.  This permits one to run entrain_mod as a diagnostic 
+   module without using the diffusion coefficients determined by it. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>diff_t&nbsp;&nbsp;&nbsp;</tt></td><td>   Vertical heat and tracer diffusion coefficient (3d array) (m2/s) 
+   <br>
+<br>
+   The note for diff_m also applies here. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>k_m_entr&nbsp;&nbsp;&nbsp;</tt></td><td>   Vertical momentum diffusion coefficient diagnosed by entrain_mod (3d array) (m2/s) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>k_t_entr&nbsp;&nbsp;&nbsp;</tt></td><td>   Vertical heat and tracer diffusion coefficient diagnosed by entrain_mod (3d array) (m2/s) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>use_entr&nbsp;&nbsp;&nbsp;</tt></td><td>   Was a diffusion coefficient calculated for this level by entrain_mod?  (1.0 = yes, 0.0 = no) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>zsml&nbsp;&nbsp;&nbsp;</tt></td><td>   Height of surface based convective mixed layer (m)
+   This may be used by other routines, e.g. Steve Garner's gravity wave drag <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>vspblcap&nbsp;&nbsp;&nbsp;</tt></td><td>   Lowest height level for which entrain module calculated at diffusion coefficient (meters) 
+   (i.e. where use_entr = 1.0)
+   This is used by stable_bl_turb.f90 to limit the height of enhanced mixing in stable conditions. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="pbl_depth"></a>
+<h4>pbl_depth</h4>
+<pre>
+<b>call pbl_depth </b>(t, z, u_star, b_star, ipbl, h, parcelkick)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Calculates the depth of the surface based convective layer </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>t&nbsp;&nbsp;&nbsp;</tt></td><td>   Liquid water virtual static energy divided by cp (K) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>z&nbsp;&nbsp;&nbsp;</tt></td><td>   Geopoential height of levels t is defined on (m) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>u_star&nbsp;&nbsp;&nbsp;</tt></td><td>   Friction velocity (m/s) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>b_star&nbsp;&nbsp;&nbsp;</tt></td><td>   Buoyancy scale (m/s2) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>ipbl&nbsp;&nbsp;&nbsp;</tt></td><td>   Integer indicating the half model level which is the PBL top <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>h&nbsp;&nbsp;&nbsp;</tt></td><td>   PBL height (m) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>parcelkick&nbsp;&nbsp;&nbsp;</tt></td><td>   Surface parcel excess (K) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="prof_recon"></a>
+<h4>prof_recon</h4>
+<pre>
+<b>call prof_recon </b>(rho,t,pf,ph,zt,dt)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Subroutine to do profile reconstruction
+   <br>
+<br>
+   This is not turned on in the default version as I suspect there is a 
+   bug in this subroutine.
+   <br>
+<br> 
+</dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>rho&nbsp;&nbsp;&nbsp;</tt></td><td>   Air density (kg/m3) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>t&nbsp;&nbsp;&nbsp;</tt></td><td>   Liquid water virtual static energy divided by cp (K) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>pf&nbsp;&nbsp;&nbsp;</tt></td><td>   Full level pressures (Pa) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>ph&nbsp;&nbsp;&nbsp;</tt></td><td>   Half level pressures (pa) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>zt&nbsp;&nbsp;&nbsp;</tt></td><td>   Top of radiatively driven layer in distance relative to boundary between cloud top layer and the level below (m) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dt&nbsp;&nbsp;&nbsp;</tt></td><td>   Cloud top jump in liquid water virtual static energy divided by cp (K) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="radml_depth"></a>
+<h4>radml_depth</h4>
+<pre>
+<b>call radml_depth </b>(svp, zt, t, zf, zh, zb, zml)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Subroutine to calculate the depth of the the radiatively driven 
+   (i.e. stratocumulus) mixed layer </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>svp&nbsp;&nbsp;&nbsp;</tt></td><td>   Cloud top value of the liquid water virtual static energy divided by cp (K) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>zt&nbsp;&nbsp;&nbsp;</tt></td><td>   Top of radiatively driven layer (m) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>t&nbsp;&nbsp;&nbsp;</tt></td><td>   Liquid water virtual static energy divided by cp (vertical profile) (K) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>zf&nbsp;&nbsp;&nbsp;</tt></td><td>   Full level geopotential height relative to ground (vertical profile) (m) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>zh&nbsp;&nbsp;&nbsp;</tt></td><td>   Half level geopotential height relative to ground (vertical profile) (m) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>zb&nbsp;&nbsp;&nbsp;</tt></td><td>   Base of radiatively driven mixed layer (m) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>zml&nbsp;&nbsp;&nbsp;</tt></td><td>   Depth of radiatively driven mixed layer (m) (equals zt minus zb) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diffusivity_pbl"></a>
+<h4>diffusivity_pbl</h4>
+<pre>
+<b>call diffusivity_pbl </b>(h, u_star, b_star, t, zm, k_m, k_t)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Subroutine to return the vertical K-profile of diffusion 
+   coefficients for the surface driven convective mixed layer </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>h&nbsp;&nbsp;&nbsp;</tt></td><td>   Depth of surface driven mixed layer (m) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>u_star&nbsp;&nbsp;&nbsp;</tt></td><td>   Friction velocity (m/s) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>b_star&nbsp;&nbsp;&nbsp;</tt></td><td>   Buoyancy scale (m/s2) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>t&nbsp;&nbsp;&nbsp;</tt></td><td>   Liquid water virtual static energy divided by cp (K) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>zm&nbsp;&nbsp;&nbsp;</tt></td><td>   Half level heights relative to the ground (m) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>k_m&nbsp;&nbsp;&nbsp;</tt></td><td>   Momentum diffusion coefficient (m2/s) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>k_t&nbsp;&nbsp;&nbsp;</tt></td><td>   Heat and tracer diffusion coefficient (m2/s) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="entrain_end"></a>
+<h4>entrain_end</h4>
+<pre>
+<b>call entrain_end </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   All this module does is to set "module_is_initialized" to false. </dd>
+<br>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<!-- END NAMELIST --><a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

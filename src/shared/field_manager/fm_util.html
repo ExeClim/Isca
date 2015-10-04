@@ -1,0 +1,632 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module fm_util_mod</title>
+<link type="text/css" href="http://www.gfdl.noaa.gov/~fms/style/doc.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module fm_util_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:Richard.Slater@noaa.gov">   Richard D. Slater </a>
+<br>
+<b>Reviewers:&nbsp;</b><a href="mailto:John.Dunne@noaa.gov">   John P. Dunne </a>
+<br>
+<b>Change History:&nbsp;</b><a href="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/shared/field_manager">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   Utility routines for the field manager </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div>   This module provides utility routines for the field manager.
+   Basically, it provides for error catching, reporting and
+   termination while interfacing with the field manager. </div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>field_manager_mod<br>          fms_mod<br>          mpp_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#fm_util_set_caller">fm_util_set_caller</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_reset_caller">fm_util_reset_caller</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_set_good_name_list">fm_util_set_good_name_list</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_reset_good_name_list">fm_util_reset_good_name_list</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_set_no_overwrite">fm_util_set_no_overwrite</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_reset_no_overwrite">fm_util_reset_no_overwrite</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_check_for_bad_fields">fm_util_check_for_bad_fields</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_get_length">fm_util_get_length</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_get_index_string">fm_util_get_index_string</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_get_index_list">fm_util_get_index_list</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_get_integer_array">fm_util_get_integer_array</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_get_logical_array">fm_util_get_logical_array</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_get_real_array">fm_util_get_real_array</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_get_string_array">fm_util_get_string_array</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_get_integer">fm_util_get_integer</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_get_logical">fm_util_get_logical</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_get_real">fm_util_get_real</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_get_string">fm_util_get_string</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_set_value_integer_array">fm_util_set_value_integer_array</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_set_value_logical_array">fm_util_set_value_logical_array</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_set_value_real_array">fm_util_set_value_real_array</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_set_value_string_array">fm_util_set_value_string_array</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_set_value_integer">fm_util_set_value_integer</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_set_value_logical">fm_util_set_value_logical</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_set_value_real">fm_util_set_value_real</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_set_value_string">fm_util_set_value_string</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_start_namelist">fm_util_start_namelist</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#fm_util_end_namelist">fm_util_end_namelist</a>:</dt>
+<dd></dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>None.<br>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="fm_util_set_caller"></a>
+<h4>fm_util_set_caller</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Set the default value for the optional "caller" variable used in many of these
+   subroutines. If the argument is blank, then set the default to blank, otherwise
+   the deault will have brackets placed around the argument.
+   <br>
+<br> 
+</dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_reset_caller"></a>
+<h4>fm_util_reset_caller</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Reset the default value for the optional "caller" variable used in many of these
+   subroutines to blank.
+   <br>
+<br> 
+</dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_set_good_name_list"></a>
+<h4>fm_util_set_good_name_list</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Set the default value for the optional "good_name_list" variable used in many of these
+   subroutines.
+   <br>
+<br> 
+</dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_reset_good_name_list"></a>
+<h4>fm_util_reset_good_name_list</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Reset the default value for the optional "good_name_list" variable used in many of these
+   subroutines to the saved value.
+   <br>
+<br> 
+</dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_set_no_overwrite"></a>
+<h4>fm_util_set_no_overwrite</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Set the default value for the optional "no_overwrite" variable used in some of these
+   subroutines.
+   <br>
+<br> 
+</dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_reset_no_overwrite"></a>
+<h4>fm_util_reset_no_overwrite</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Reset the default value for the optional "no_overwrite" variable used in some of these
+   subroutines to false.
+   <br>
+<br> 
+</dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_check_for_bad_fields"></a>
+<h4>fm_util_check_for_bad_fields</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Check for unrecognized fields in a list
+   <br>
+<br> 
+</dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_get_length"></a>
+<h4>fm_util_get_length</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get the length of an element of the Field Manager tree </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_get_index_string"></a>
+<h4>fm_util_get_index_string</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get the length of an element of the Field Manager tree </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_get_index_list"></a>
+<h4>fm_util_get_index_list</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get the length of an element of the Field Manager tree </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_get_integer_array"></a>
+<h4>fm_util_get_integer_array</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get an integer value from the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_get_logical_array"></a>
+<h4>fm_util_get_logical_array</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get a logical value from the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_get_real_array"></a>
+<h4>fm_util_get_real_array</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get a real value from the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_get_string_array"></a>
+<h4>fm_util_get_string_array</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get a string value from the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_get_integer"></a>
+<h4>fm_util_get_integer</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get an integer value from the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_get_logical"></a>
+<h4>fm_util_get_logical</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get a logical value from the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_get_real"></a>
+<h4>fm_util_get_real</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get a real value from the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_get_string"></a>
+<h4>fm_util_get_string</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get a string value from the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_set_value_integer_array"></a>
+<h4>fm_util_set_value_integer_array</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Set an integer array in the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_set_value_logical_array"></a>
+<h4>fm_util_set_value_logical_array</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Set a logical array in the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_set_value_real_array"></a>
+<h4>fm_util_set_value_real_array</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Set a real array in the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_set_value_string_array"></a>
+<h4>fm_util_set_value_string_array</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Set a string array in the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_set_value_integer"></a>
+<h4>fm_util_set_value_integer</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Set an integer value in the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_set_value_logical"></a>
+<h4>fm_util_set_value_logical</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Set a logical value in the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_set_value_real"></a>
+<h4>fm_util_set_value_real</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Set a real value in the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_set_value_string"></a>
+<h4>fm_util_set_value_string</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Set a string value in the Field Manager tree. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_start_namelist"></a>
+<h4>fm_util_start_namelist</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Start processing a namelist </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fm_util_end_namelist"></a>
+<h4>fm_util_end_namelist</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Finish up processing a namelist </dd>
+<br>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<!-- END NAMELIST --><a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<a name="REFERENCES"></a>
+<hr>
+<h4>REFERENCES</h4>
+<!-- BEGIN REFERENCES -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END REFERENCES -->
+<a name="COMPILER SPECIFICS"></a>
+<hr>
+<h4>COMPILER SPECIFICS</h4>
+<!-- BEGIN COMPILER SPECIFICS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END COMPILER SPECIFICS -->
+<a name="PRECOMPILER OPTIONS"></a>
+<hr>
+<h4>PRECOMPILER OPTIONS</h4>
+<!-- BEGIN PRECOMPILER OPTIONS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END PRECOMPILER OPTIONS -->
+<a name="LOADER OPTIONS"></a>
+<hr>
+<h4>LOADER OPTIONS</h4>
+<!-- BEGIN LOADER -->
+<div>None.<br>
+<br>
+</div>
+<!-- END LOADER OPTIONS -->
+<a name="TEST PROGRAM"></a>
+<hr>
+<h4>TEST PROGRAM</h4>
+<!-- BEGIN TEST PROGRAM -->
+<div>None.<br>
+</div>
+<br>
+<!-- END TEST PROGRAM -->
+<a name="KNOWN BUGS"></a>
+<hr>
+<h4>KNOWN BUGS</h4>
+<!-- BEGIN KNOWN BUGS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END KNOWN BUGS -->
+<a name="NOTES"></a>
+<hr>
+<h4>NOTES</h4>
+<!-- BEGIN NOTES -->
+<div>None.<br>
+</div>
+<br>
+<!-- END NOTES -->
+<a name="FUTURE PLANS"></a>
+<hr>
+<h4>FUTURE PLANS</h4>
+<!-- BEGIN FUTURE PLANS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END FUTURE PLANS -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

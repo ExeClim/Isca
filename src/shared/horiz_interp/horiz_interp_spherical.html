@@ -1,0 +1,302 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module horiz_interp_spherical_mod</title>
+<link type="text/css" href="http://www.gfdl.noaa.gov/~fms/style/doc.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module horiz_interp_spherical_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:Matthew.Harrison@noaa.gov">   Matthew Harrison </a>,&nbsp;
+    <a href="mailto:Zhi.Liang@noaa.gov">   Zhi Liang </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/shared/horiz_interp">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   Performs spatial interpolation between grids using inverse-distance-weighted scheme. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div>   This module can interpolate data from rectangular/tripolar grid
+   to rectangular/tripolar grid. The interpolation scheme is inverse-distance-weighted 
+   scheme.    There is an optional mask field for missing input data.
+   An optional output mask field may be used in conjunction with
+   the input mask to show where output data exists. </div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>              mpp_mod<br>              fms_mod<br>        constants_mod<br>horiz_interp_type_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#horiz_interp_spherical_init">horiz_interp_spherical_init</a>:</dt>
+<dd>   Initialization routine. </dd>
+<dt>
+<a href="#horiz_interp_spherical">horiz_interp_spherical</a>:</dt>
+<dd>   Subroutine for performing the horizontal interpolation between two grids. </dd>
+<dt>
+<a href="#horiz_interp_spherical_end">horiz_interp_spherical_end</a>:</dt>
+<dd>   Deallocates memory used by "horiz_interp_type" variables.
+   Must be called before reinitializing with horiz_interp_init. </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>None.<br>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="horiz_interp_spherical_init"></a>
+<h4>horiz_interp_spherical_init</h4>
+<pre>
+<b>call horiz_interp_spherical_init </b>(Interp, lon_in,lat_in,lon_out,lat_out, num_nbrs, max_dist, src_modulo)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Allocates space and initializes a derived-type variable
+   that contains pre-computed interpolation indices and weights. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lon_in&nbsp;&nbsp;&nbsp;</tt></td><td>   Longitude (in radians) for source data grid. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lat_in&nbsp;&nbsp;&nbsp;</tt></td><td>   Latitude (in radians) for source data grid. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon_out&nbsp;&nbsp;&nbsp;</tt></td><td>   Longitude (in radians) for source data grid. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lat_out&nbsp;&nbsp;&nbsp;</tt></td><td>   Latitude (in radians) for source data grid. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>num_nbrs&nbsp;&nbsp;&nbsp;</tt></td><td>   Number of nearest neighbors for regridding. When number of neighbors within
+   the radius max_dist ( namelist variable) is less than num_nbrs, All the neighbors 
+   will be used to interpolate onto destination grid. when number of neighbors within
+   the radius max_dist ( namelist variable) is greater than num_nbrs, at least "num_nbrs"
+   neighbors will be used to remap onto destination grid. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, optional]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>max_dist&nbsp;&nbsp;&nbsp;</tt></td><td>   Maximum region of influence around destination grid points. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, optional]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>src_modulo&nbsp;&nbsp;&nbsp;</tt></td><td>   logical variable to indicate if the boundary condition along zonal boundary
+   is cyclic or not. When true, the zonal boundary condition is cyclic. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, optional]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>Interp&nbsp;&nbsp;&nbsp;</tt></td><td>   A derived-type variable containing indices and weights used for subsequent 
+   interpolations. To reinitialize this variable for a different grid-to-grid 
+   interpolation you must first use the "horiz_interp_end" interface. <br>&nbsp;&nbsp;&nbsp;<span class="type">[type(horiz_interp_type)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="horiz_interp_spherical"></a>
+<h4>horiz_interp_spherical</h4>
+<pre>
+<b>call horiz_interp_spherical </b>( Interp, data_in, data_out, verbose, mask_in, mask_out, missing_value)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Subroutine for performing the horizontal interpolation between two grids. 
+   horiz_interp_spherical_init must be called before calling this routine. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>Interp&nbsp;&nbsp;&nbsp;</tt></td><td>   Derived-type variable containing interpolation indices and weights.
+   Returned by a previous call to horiz_interp_init. <br>&nbsp;&nbsp;&nbsp;<span class="type">[type(horiz_interp_type)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>data_in&nbsp;&nbsp;&nbsp;</tt></td><td>   Input data on source grid. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>verbose&nbsp;&nbsp;&nbsp;</tt></td><td>   flag for the amount of print output.
+   verbose = 0, no output; = 1, min,max,means; = 2, still more <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, optional]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>mask_in&nbsp;&nbsp;&nbsp;</tt></td><td>   Input mask, must be the same size as the input data. The real value of
+   mask_in must be in the range (0.,1.). Set mask_in=0.0 for data points 
+   that should not be used or have missing data. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:),optional]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>missing_value&nbsp;&nbsp;&nbsp;</tt></td><td>   Use the missing_value to indicate missing data. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, optional]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>data_out&nbsp;&nbsp;&nbsp;</tt></td><td>   Output data on destination grid. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>mask_out&nbsp;&nbsp;&nbsp;</tt></td><td>   Output mask that specifies whether data was computed. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:),optional]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="horiz_interp_spherical_end"></a>
+<h4>horiz_interp_spherical_end</h4>
+<pre>
+<b>call horiz_interp_spherical_end </b>( Interp )</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Deallocates memory used by "horiz_interp_type" variables.
+   Must be called before reinitializing with horiz_interp_init. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>Interp&nbsp;&nbsp;&nbsp;</tt></td><td>   A derived-type variable returned by previous call
+   to horiz_interp_init. The input variable must have
+   allocated arrays. The returned variable will contain
+   deallocated arrays. <br>&nbsp;&nbsp;&nbsp;<span class="type">[horiz_interp_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<hr>
+<h4>NAMELIST</h4>
+<div>
+<b>&amp;horiz_interp_spherical_nml</b>
+<br>
+<br>
+<div>
+<dl>
+<dt>
+<tt>search_method</tt>
+</dt>
+<dl>   indicate the searching method to find the nearest neighbor points. Its value
+   can be "radial_search" and "full_search", with default value "radial_search".
+   when search_method is "radial_search", the search may be not quite accurate for some cases.
+   Normally the search will be ok if you chose suitable max_dist.  
+   When search_method is "full_search", it will be always accurate, but will be slower
+   comparing to "radial_search". Normally these two search algorithm will produce same 
+   results other than order of operation. "radial_search" are recommended to use. 
+   The purpose to add "full_search" is in case you think you interpolation results is 
+   not right, you have other option to verify. <br>
+<span class="type">[character(len=32)]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<!-- END NAMELIST -->
+<a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

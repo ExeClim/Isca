@@ -1,0 +1,345 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module time_interp_external_mod</title>
+<link type="text/css" href="http://www.gfdl.noaa.gov/~fms/style/doc.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module time_interp_external_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:Matthew.Harrison@noaa.gov">M.J. Harrison</a>
+<br>
+<b>Reviewers:&nbsp;</b><a href="mailto:hsimmons@iarc.uaf.edu">Harper Simmons</a>
+<br>
+<b>Change History:&nbsp;</b><a href="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/shared/time_interp">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   Perform I/O and time interpolation of external fields (contained in a file). </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div>   Perform I/O and time interpolation for external fields.
+   Uses udunits library to calculate calendar dates and
+   convert units.  Allows for reading data decomposed across
+   model horizontal grid using optional domain2d argument
+   <br>
+<br>
+   data are defined over data domain for domain2d data
+   (halo values are NOT updated by this module)
+   <br>
+<br> 
+</div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>         mpp_mod<br>      mpp_io_mod<br>time_manager_mod<br>get_cal_time_mod<br> mpp_domains_mod<br> time_interp_mod<br>  axis_utils_mod<br>         fms_mod<br>    platform_mod<br>horiz_interp_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#time_interp_external_init">time_interp_external_init</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#init_external_field">init_external_field</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#time_interp_external">time_interp_external</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#get_external_field_size">get_external_field_size</a>:</dt>
+<dd></dd>
+<dt>
+<a href="#time_interp_external_exit">time_interp_external_exit</a>:</dt>
+<dd></dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<!-- BEGIN PUBLIC DATA -->
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;err_field_not_found</tt></td><td> &nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>&nbsp;&nbsp;&nbsp;success</tt></td><td> &nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+(To be used in combination with optional argument ierr of function init_external_field)
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="time_interp_external_init"></a>
+<h4>time_interp_external_init</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Initialize the time_interp_external module </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="init_external_field"></a>
+<h4>init_external_field</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   initialize an external field.  Buffer entire field to memory (default) or
+   store "num_io_buffers" in memory to reduce memory allocations. 
+   distributed reads are supported using the optional "domain" flag.  
+   Units conversion via the optional "desired_units" flag using udunits_mod.
+   <br>
+<br>
+   Return integer id of field for future calls to time_interp_external.
+   <br>
+<br> 
+</dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>file&nbsp;&nbsp;&nbsp;</tt></td><td>   filename <br>&nbsp;&nbsp;&nbsp;<span class="type">[character(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>fieldname&nbsp;&nbsp;&nbsp;</tt></td><td>   fieldname (in file) <br>&nbsp;&nbsp;&nbsp;<span class="type">[character(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>format&nbsp;&nbsp;&nbsp;</tt></td><td>   mpp_io flag for format of file (optional). Currently only "MPP_NETCDF" supported <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>threading&nbsp;&nbsp;&nbsp;</tt></td><td>   mpp_io flag for threading (optional).  "MPP_SINGLE" means root pe reads global field and distributes to other PEs
+   "MPP_MULTI" means all PEs read data <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>domain&nbsp;&nbsp;&nbsp;</tt></td><td>   domain flag (optional) <br>&nbsp;&nbsp;&nbsp;<span class="type">[mpp_domains_mod:domain2d]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>desired_units&nbsp;&nbsp;&nbsp;</tt></td><td>   Target units for data (optional), e.g. convert from deg_K to deg_C.  
+   Failure to convert using udunits will result in failure of this module. <br>&nbsp;&nbsp;&nbsp;<span class="type">[character(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>verbose&nbsp;&nbsp;&nbsp;</tt></td><td>   verbose flag for debugging (optional). <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>axis_centers&nbsp;&nbsp;&nbsp;</tt></td><td>   MPP_IO axistype array for grid centers ordered X-Y-Z-T (optional). <br>&nbsp;&nbsp;&nbsp;<span class="type">[axistype, dimension(4)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>axis_sizes&nbsp;&nbsp;&nbsp;</tt></td><td>   array of axis lengths ordered X-Y-Z-T (optional). <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer, dimension(4)]</span></td>
+</tr>
+</table>
+</dd>
+
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>ierr&nbsp;&nbsp;&nbsp;</tt></td><td> returned value=err_field_not_found if field does not exist, returned value=success otherwise (optional).<br>Program will terminate fatally if field does not exist and ierr is not present.&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+</table>
+</dd>
+
+<br>
+</dl>
+</li>
+<li>
+<a name="time_interp_external"></a>
+<h4>time_interp_external</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Provide data from external file interpolated to current model time.
+   Data may be local to current processor or global, depending on 
+   "init_external_field" flags. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>index&nbsp;&nbsp;&nbsp;</tt></td><td>   index of external field from previous call to init_external_field <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   target time for data <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_manager_mod:time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>interp&nbsp;&nbsp;&nbsp;</tt></td><td>   time_interp_external defined interpolation method (optional).  Currently this module only supports
+   LINEAR_TIME_INTERP. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>verbose&nbsp;&nbsp;&nbsp;</tt></td><td>   verbose flag for debugging (optional). <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>data&nbsp;&nbsp;&nbsp;</tt></td><td>   global or local data array <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:,:),(:,:,:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_external_field_size"></a>
+<h4>get_external_field_size</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   return size of field after call to init_external_field.
+   Ordering is X/Y/Z/T.
+   This call only makes sense for non-distributed reads. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>index&nbsp;&nbsp;&nbsp;</tt></td><td>   returned from previous call to init_external_field. <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="time_interp_external_exit"></a>
+<h4>time_interp_external_exit</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   exit time_interp_external_mod.  Close all open files and
+   release storage </dd>
+<br>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<hr>
+<h4>NAMELIST</h4>
+<div>
+<b>&amp;time_interp_external_nml</b>
+<br>
+<br>
+<div>
+<dl>
+<dt>
+<tt>num_io_buffers</tt>
+</dt>
+<dl>   size of record dimension for internal buffer.  This is useful for tuning i/o performance
+   particularly for large datasets (e.g. daily flux fields) <br>
+<span class="type">[integer]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<!-- END NAMELIST -->
+<a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

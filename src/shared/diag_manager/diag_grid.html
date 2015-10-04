@@ -1,0 +1,332 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module diag_grid_mod</title>
+<link type="text/css" href="http://data1.gfdl.noaa.gov/~fms/style/docbook.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>
+
+          ~ <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a></font>
+<hr>
+<h2>Module diag_grid_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:seth.underwood@noaa.gov">   Seth Underwood </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://cobweb.gfdl.noaa.gov/fms-cgi-bin/viewcvs/FMS/shared/diag_manager">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text"> 
+<tt>diag_grid_mod</tt>   is a set of procedures to work with the
+   model's global grid to allow regional output. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div> 
+<tt>diag_grid_mod</tt>   contains useful utilities for dealing
+   with, mostly, regional output for grids other than the standard
+   lat/lon grid.  This module contains three public procedures <tt>   diag_grid_init</tt>, which is shared globably in the <tt>   diag_manager_mod</tt>, <tt>diag_grid_end</tt>   which will free
+   up memory used during the register field calls, and <tt>get_local_indexes</tt>.  The <tt>send_global_grid</tt>   procedure is called by the model that creates the global grid. <tt>send_global_grid</tt>   needs to be called before any fields
+   are registered that will output only regions. <tt>get_local_indexes</tt>   is to be called by the <tt>diag_manager_mod</tt>   to discover the
+   global indexes defining a subregion on the tile.
+   <br>
+<br> 
+<b>Change Log</b> 
+<dl> 
+<dt>September 2009</dt> 
+<dd> 
+<ul> 
+<li>Single point region in Cubed Sphere</li> 
+<li>Single tile regions in the cubed sphere</li> 
+</ul> 
+</dd> 
+</dl> 
+</div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>  constants_mod<br>        fms_mod<br>        mpp_mod<br>mpp_domains_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#diag_grid_init">diag_grid_init</a>:</dt>
+<dd>   Send the global grid to the <tt>diag_manager_mod</tt>   for
+   regional output. </dd>
+<dt>
+<a href="#diag_grid_end">diag_grid_end</a>:</dt>
+<dd>   Unallocate the diag_global_grid variable. </dd>
+<dt>
+<a href="#get_local_indexes">get_local_indexes</a>:</dt>
+<dd>   Find the local start and local end indexes on the local PE
+   for regional output. </dd>
+<dt>
+<a href="#get_local_indexes2">get_local_indexes2</a>:</dt>
+<dd>   Find the indices of the nearest grid point of the a-grid to the 
+   specified (lon,lat) location on the local PE. if desired point not 
+   within domain of local PE, return (0,0) as the indices. </dd>
+<dt>
+<a href="#gCirDistance">gCirDistance</a>:</dt>
+<dd>   Find the distance, along the geodesic, between two points. </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="diag_grid_init"></a>
+<h4>diag_grid_init</h4>
+<pre>SUBROUTINE <b>diag_grid_init</b> (domain, glo_lat, glo_lon, aglo_lat, aglo_lon)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   In order for the diag_manager to do regional output for grids
+   other than the standard lat/lon grid, the <tt>   diag_manager_mod</tt>   needs to know the the latitude and
+   longitude values for the entire global grid.  This procedure
+   is the mechanism the models will use to share their grid with
+   the diagnostic manager.
+   <br>
+<br>
+   This procedure needs to be called after the grid is created,
+   and before the first call to register the fields. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>domain&nbsp;&nbsp;&nbsp;</tt></td><td>   The domain to which the grid data corresponds. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>glo_lat&nbsp;&nbsp;&nbsp;</tt></td><td>   The latitude information for the grid tile. <br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>glo_lon&nbsp;&nbsp;&nbsp;</tt></td><td>   The longitude information for the grid tile. <br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>aglo_lat&nbsp;&nbsp;&nbsp;</tt></td><td>   The latitude information for the a-grid tile. <br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>aglo_lon&nbsp;&nbsp;&nbsp;</tt></td><td>   The longitude information for the a-grid tile. <br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diag_grid_end"></a>
+<h4>diag_grid_end</h4>
+<pre>SUBROUTINE <b>diag_grid_end</b> ()</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   The <tt>diag_global_grid</tt>   variable is only needed during
+   the register field calls, and then only if there are fields
+   requestion regional output.  Once all the register fields
+   calls are complete (before the first <tt>send_data</tt>   call
+   this procedure can be called to free up memory. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_local_indexes"></a>
+<h4>get_local_indexes</h4>
+<pre>SUBROUTINE <b>get_local_indexes</b> (latStart, latEnd, lonStart, lonEnd, istart, iend, jstart, jend)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Given a defined region, find the local indexes on the local
+   PE surrounding the region. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>latStart&nbsp;&nbsp;&nbsp;</tt></td><td>   The minimum latitude value defining the region.  This value
+   must be less than latEnd, and be in the range [-90,90] <br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>latEnd&nbsp;&nbsp;&nbsp;</tt></td><td>   The maximum latitude value defining the region.  This value
+   must be greater than latStart, and be in the range [-90,90] <br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lonStart&nbsp;&nbsp;&nbsp;</tt></td><td>   The western most longitude value defining the region.
+   Possible ranges are either [-180,180] or [0,360]. <br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lonEnd&nbsp;&nbsp;&nbsp;</tt></td><td>   The eastern most longitude value defining the region.
+   Possible ranges are either [-180,180] or [0,360]. <br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>istart&nbsp;&nbsp;&nbsp;</tt></td><td>   The local start index on the local PE in the 'i' direction. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>iend&nbsp;&nbsp;&nbsp;</tt></td><td>   The local end index on the local PE in the 'i' direction. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>jstart&nbsp;&nbsp;&nbsp;</tt></td><td>   The local start index on the local PE in the 'j' direction. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>jend&nbsp;&nbsp;&nbsp;</tt></td><td>   The local end index on the local PE in the 'j' direction. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_local_indexes2"></a>
+<h4>get_local_indexes2</h4>
+<pre>SUBROUTINE <b>get_local_indexes2</b> (lat, lon, iindex, jindex)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Given a specified location, find the nearest a-grid indices on 
+   the local PE. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   The requested latitude.  This value must be in the range [-90,90] <br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon&nbsp;&nbsp;&nbsp;</tt></td><td>   The requested longitude.
+   Possible ranges are either [-180,180] or [0,360]. <br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>iindex&nbsp;&nbsp;&nbsp;</tt></td><td>   The local index on the local PE in the 'i' direction. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>jindex&nbsp;&nbsp;&nbsp;</tt></td><td>   The local index on the local PE in the 'j' direction. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="gCirDistance"></a>
+<h4>gCirDistance</h4>
+<pre>PURE ELEMENTAL REAL FUNCTION <b>gCirDistance</b> (lat1, lon1, lat2, lon2)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+<tt>aCirDistance</tt>   will find the distance, along the geodesic, between two points defined by the (lat,lon) position of
+   each point. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat1&nbsp;&nbsp;&nbsp;</tt></td><td>Latitude of the first point<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon1&nbsp;&nbsp;&nbsp;</tt></td><td>Longitude of the first point<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lat2&nbsp;&nbsp;&nbsp;</tt></td><td>Latitude of the second point<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon2&nbsp;&nbsp;&nbsp;</tt></td><td>Longitude of the second point<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="FUTURE PLANS"></a>
+<hr>
+<h4>FUTURE PLANS</h4>
+<!-- BEGIN FUTURE PLANS -->
+<div>
+<ul>
+<li>   Multi-tile regional output in the cubed sphere. </li>
+<li>   Single grid in the tri-polar grid. </li>
+<li>   Multi-tile regional output in the tri-polar grid. </li>
+<li>   Regional output using array masking.  This should allow
+   regional output to work on any current or future grid. </li>
+</ul>
+</div>
+<br>
+<!-- END FUTURE PLANS -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

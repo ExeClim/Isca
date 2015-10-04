@@ -1,0 +1,377 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module surface_flux_mod</title>
+<link type="text/css" href="http://www.gfdl.noaa.gov/~fms/style/doc.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module surface_flux_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:Stephen.Klein@noaa.gov">Steve Klein </a>,&nbsp;
+    <a href="mailto:Isaac.Held@noaa.gov">   Isaac Held </a>,&nbsp;
+    <a href="mailto:Bruce.Wyman@noaa.gov">   Bruce Wyman </a>
+<br>
+<b>Reviewers:&nbsp;</b><a href="mailto:V.Balaji@noaa.gov">   V. Balaji </a>,&nbsp;
+    <a href="mailto:Sergey.Malyshev@noaa.gov">   Sergey Malyshev </a>,&nbsp;
+    <a href="mailto:Elena.Shevliakova@noaa.gov">   Elena Shevliakova </a>
+<br>
+<b>Change History:&nbsp;</b><a href="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/coupler">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   Driver program for the calculation of fluxes on the exchange grids. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div> 
+</div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>           fms_mod<br> monin_obukhov_mod<br>sat_vapor_pres_mod<br>     constants_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#surface_flux">surface_flux</a>:</dt>
+<dd>   For the calculation of fluxes on the exchange grids. </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>None.<br>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="surface_flux"></a>
+<h4>surface_flux</h4>
+<table cellspacing="0" CELLPADDING="2" BORDER="2">
+<tr>
+<td>
+<pre>subroutine surface_flux (                                           &amp;
+     t_atm,     q_atm_in,   u_atm,     v_atm,     p_atm,     z_atm,    &amp;
+     p_surf,    t_surf,     t_ca,      q_surf,                         &amp;
+     u_surf,    v_surf,                                                &amp;
+     rough_mom, rough_heat, rough_moist, rough_scale, gust,            &amp;
+     flux_t, flux_q, flux_r, flux_u, flux_v,                           &amp;
+     cd_m,      cd_t,       cd_q,                                      &amp;
+     w_atm,     u_star,     b_star,     q_star,                        &amp;
+     dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &amp;
+     dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &amp;
+     dt,        land,      seawater,     avail  )</pre>
+</td>
+</tr>
+</table>
+<br>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   For the calculation of fluxes on the exchange grids. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>t_atm&nbsp;&nbsp;&nbsp;</tt></td><td>   Air temp lowest atmospheric level. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>q_atm&nbsp;&nbsp;&nbsp;</tt></td><td>   Mixing ratio at lowest atmospheric level (kg/kg). <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>u_atm&nbsp;&nbsp;&nbsp;</tt></td><td>   Zonal wind velocity at lowest atmospheric level. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>v_atm&nbsp;&nbsp;&nbsp;</tt></td><td>   Meridional wind velocity at lowest atmospheric level. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>p_atm&nbsp;&nbsp;&nbsp;</tt></td><td>   Pressure lowest atmospheric level. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>z_atm&nbsp;&nbsp;&nbsp;</tt></td><td>   Height lowest atmospheric level. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>p_surf&nbsp;&nbsp;&nbsp;</tt></td><td>   Pressure at the earth's surface <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>t_surf&nbsp;&nbsp;&nbsp;</tt></td><td>   Temp at the earth's surface <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>t_ca&nbsp;&nbsp;&nbsp;</tt></td><td>   Air temp at the canopy <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>u_surf&nbsp;&nbsp;&nbsp;</tt></td><td>   Zonal wind velocity at earth surface. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>v_surf&nbsp;&nbsp;&nbsp;</tt></td><td>   Meridional wind velocity at earth surface. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rough_mom&nbsp;&nbsp;&nbsp;</tt></td><td>   Momentum roughness length <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rough_heat&nbsp;&nbsp;&nbsp;</tt></td><td>   Heat roughness length <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rough_moist&nbsp;&nbsp;&nbsp;</tt></td><td>   &lt;Moisture roughness length <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rough_scale&nbsp;&nbsp;&nbsp;</tt></td><td>   Scale factor used to topographic roughness calculation <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>gust&nbsp;&nbsp;&nbsp;</tt></td><td>   Gustiness factor <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>land&nbsp;&nbsp;&nbsp;</tt></td><td>   Indicates where land exists (true if exchange cell is on land). <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>seawater&nbsp;&nbsp;&nbsp;</tt></td><td>   Indicates where liquid ocean water exists 
+   (true if exchange cell is on liquid ocean water). <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>avail&nbsp;&nbsp;&nbsp;</tt></td><td>   True where the exchange cell is active. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, dimension(:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>q_surf&nbsp;&nbsp;&nbsp;</tt></td><td>   Mixing ratio at earth surface (kg/kg). <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>flux_t&nbsp;&nbsp;&nbsp;</tt></td><td>   Sensible heat flux <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>flux_q&nbsp;&nbsp;&nbsp;</tt></td><td>   Evaporative water flux <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>flux_r&nbsp;&nbsp;&nbsp;</tt></td><td>   Radiative energy flux <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>flux_u&nbsp;&nbsp;&nbsp;</tt></td><td>   Zonal momentum flux <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>flux_v&nbsp;&nbsp;&nbsp;</tt></td><td>   Meridional momentum flux <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>cd_m&nbsp;&nbsp;&nbsp;</tt></td><td>   Momentum exchange coefficient <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>cd_t&nbsp;&nbsp;&nbsp;</tt></td><td>   Heat exchange coefficient <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>cd_q&nbsp;&nbsp;&nbsp;</tt></td><td>   Moisture exchange coefficient <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>w_atm&nbsp;&nbsp;&nbsp;</tt></td><td>   Absolute wind at the lowest atmospheric level <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>u_star&nbsp;&nbsp;&nbsp;</tt></td><td>   Turbulent velocity scale <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>b_star&nbsp;&nbsp;&nbsp;</tt></td><td>   Turbulent buoyant scale <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>q_star&nbsp;&nbsp;&nbsp;</tt></td><td>   Turbulent moisture scale <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dhdt_surf&nbsp;&nbsp;&nbsp;</tt></td><td>   Sensible heat flux temperature sensitivity <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dedt_surf&nbsp;&nbsp;&nbsp;</tt></td><td>   Moisture flux temperature sensitivity <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dedq_surf&nbsp;&nbsp;&nbsp;</tt></td><td>   Moisture flux humidity sensitivity <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>drdt_surf&nbsp;&nbsp;&nbsp;</tt></td><td>   Radiative energy flux temperature sensitivity <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dhdt_atm&nbsp;&nbsp;&nbsp;</tt></td><td>   Derivative of sensible heat flux over temp at the lowest atmos level. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dedq_atm&nbsp;&nbsp;&nbsp;</tt></td><td>   Derivative of water vapor flux over temp at the lowest atmos level. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dtaudu_atm&nbsp;&nbsp;&nbsp;</tt></td><td>   Derivative of zonal wind stress w.r.t the lowest level zonal 
+   wind speed of the atmos <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dtaudv_atm&nbsp;&nbsp;&nbsp;</tt></td><td>   Derivative of meridional wind stress w.r.t the lowest level meridional 
+   wind speed of the atmos <br>&nbsp;&nbsp;&nbsp;<span class="type">[real, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dt&nbsp;&nbsp;&nbsp;</tt></td><td>   Time step (it is not used presently) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<hr>
+<h4>NAMELIST</h4>
+<div>
+<b>&amp;surface_flux_nml</b>
+<br>
+<br>
+<div>
+<dl>
+<dt>
+<tt>no_neg_q</tt>
+</dt>
+<dl>   If q_atm_in (specific humidity) is negative (because of numerical truncation),  
+   then override with 0. <br>
+<span class="type">[logical, default: .false.]</span>
+</dl>
+<dt>
+<tt>use_virtual_temp</tt>
+</dt>
+<dl>   If true, use virtual potential temp to calculate the stability of the surface layer.
+   if false, use potential temp. <br>
+<span class="type">[logical, default: .true.]</span>
+</dl>
+<dt>
+<tt>alt_gustiness</tt>
+</dt>
+<dl>   An alternative formulation for gustiness calculation. 
+   A minimum bound on the wind speed used influx calculations, with the bound 
+   equal to gust_const <br>
+<span class="type">[logical, default: .false.]</span>
+</dl>
+<dt>
+<tt>old_dtaudv</tt>
+</dt>
+<dl>   The derivative of surface wind stress w.r.t. the zonal wind and
+   meridional wind are approximated by the same tendency. <br>
+<span class="type">[logical, default: .false.]</span>
+</dl>
+<dt>
+<tt>use_mixing_ratio</tt>
+</dt>
+<dl>   An option to provide capability to run the Manabe Climate form of the 
+   surface flux (coded for legacy purposes). <br>
+<span class="type">[logical, default: .false.]</span>
+</dl>
+<dt>
+<tt>gust_const</tt>
+</dt>
+<dl>   Constant for alternative gustiness calculation. <br>
+<span class="type">[, default: 1.0]</span>
+</dl>
+<dt>
+<tt>gust_min</tt>
+</dt>
+<dl>   Minimum gustiness used when alt_gustiness = false. <br>
+<span class="type">[, default: 0.0]</span>
+</dl>
+<dt>
+<tt>ncar_ocean_flux</tt>
+</dt>
+<dl>   Use NCAR climate model turbulent flux calculation described by
+   Large and Yeager, NCAR Technical Document, 2004 <br>
+<span class="type">[logical, default: .false.]</span>
+</dl>
+<dt>
+<tt>ncar_ocean_flux_orig</tt>
+</dt>
+<dl>   Use NCAR climate model turbulent flux calculation described by
+   Large and Yeager, NCAR Technical Document, 2004, using the original
+   GFDL implementation, which contains a bug in the specification of 
+   the exchange coefficient for the sensible heat.  This option is available
+   for legacy purposes, and is not recommended for new experiments. <br>
+<span class="type">[logical, default: .false.]</span>
+</dl>
+<dt>
+<tt>raoult_sat_vap</tt>
+</dt>
+<dl>   Reduce saturation vapor pressures to account for seawater salinity. <br>
+<span class="type">[logical, default: .false.]</span>
+</dl>
+</dl>
+</div>
+</div>
+<br>
+<!-- END NAMELIST -->
+<a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

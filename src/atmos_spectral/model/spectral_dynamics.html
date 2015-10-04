@@ -1,0 +1,887 @@
+<HTML>
+<TITLE>module spectral_dynamics</TITLE>
+<BODY BGCOLOR="#CCDDEE" TEXT="#332211" >
+
+<DIV ALIGN="CENTER"> <FONT SIZE=1>
+<A HREF="#INTERFACE">PUBLIC INTERFACE</A> / 
+<A HREF="#ROUTINES">ROUTINES</A> / 
+<A HREF="#NAMELIST">NAMELIST</A> / 
+<A HREF="#FIELD_TABLE">FIELD_TABLE</A> /
+<A HREF="#DIAGNOSTICS">DIAGNOSTIC OUTPUT</A> /
+<A HREF="#DECOMPOSITION">DOMAIN DECOMPOSITION</A> / 
+<A HREF="#CHANGES">CHANGES</A> / 
+<A HREF="#ERRORS">ERRORS</A> / 
+<A HREF="#REFERENCES">REFERENCES</A> / 
+<A HREF="#NOTES">NOTES</A> 
+</FONT>
+<P><I>Last updated on <!--#exec cmd="echo $LAST_MODIFIED" -->.</I>
+<BR><BR></DIV><HR>
+
+
+<H2>Module spectral_dynamics_mod</H2>
+<A NAME="HEADER">
+<PRE>
+     <B>Contact:</B> Isaac Held, V. Balaji, Peter Phillips, Paul Kushner
+
+</PRE>
+</A><!-- END HEADER -->
+</PRE>
+<!-------------------------------------------------------------------------------->
+<A NAME="OVERVIEW">
+<HR>
+<H4>OVERVIEW</H4>
+<!-- BEGIN OVERVIEW -->
+<PRE>
+
+     The dynamical core of the spectral atmospheric model -- updates the 
+     spectral and physical space atmospheric fields
+
+</PRE>
+</A><!-- END OVERVIEW -->
+<!-------------------------------------------------------------------------------->
+<A NAME="DESCRIPTION">
+<!-- BEGIN DESCRIPTION -->
+<PRE>
+
+
+</PRE>
+</A><!-- END DESCRIPTION -->
+<!-------------------------------------------------------------------------------->
+<A NAME="MODULES_USED">
+<HR>
+<H4>OTHER MODULES USED</H4>
+<!-- BEGIN MODULES_USED -->
+<PRE>
+
+                fms_mod
+          constants_mod
+       time_manager_mod
+      field_manager_mod
+     tracer_manager_mod
+       diag_manager_mod
+         transforms_mod
+     vert_advection_mod
+           implicit_mod
+   press_and_geopot_mod
+   spectral_damping_mod
+           leapfrog_mod
+       fv_advection_mod
+    water_borrowing_mod
+    global_integral_mod
+ spectral_init_cond_mod
+        tracer_type_mod
+
+</PRE>
+</A><!-- END MODULES_USED -->
+<!-------------------------------------------------------------------------------->
+<A NAME="INTERFACE">
+<HR>
+<H4>PUBLIC INTERFACE</H4>
+<!-- BEGIN INTERFACE -->
+<PRE>
+
+use spectral_dynamics_mod [,only: spectral_dynamics_init,        &
+                                  spectral_dynamics,             &
+                                  spectral_dynamics_end,         &
+                                  get_num_levels,                &
+                                  get_use_virtual_temperature,   &
+                                  get_reference_sea_level_press, &
+                                  get_surf_geopotential,         &
+                                  get_pk_bk,                     &
+                                  get_axis_id,                   &
+                                  complete_robert_filter,        &
+                                  complete_update_of_future,     &
+                                  complete_init_of_tracers,      &
+                                  spectral_diagnostics
+
+spectral_dynamics_init : Initializes module
+
+spectral_dynamics      : Updates atmospheric state
+
+spectral_dynamics_end  : Releases array space allocated for use by this module.
+                         calls termination routines of modules used.
+
+get_*                  : Provides for the retrieval of selected variables by host modules.
+
+complete_update_of_future: Transforms updated fields to spectral representation.
+                           Must be called at end of atmospheric time step if fields
+                           are modified after the call to subroutine spectral_dynamics.
+
+complete_robert_filter : Uses spectral representation of updated fields to complete
+                         the robert filter of the fields at the previous time step.
+                         Must be called at end of atmospheric time step.
+                         (After fields are fully updated in grid representation.)
+
+complete_init_of_tracers: Tracer values may be initialized elsewhere in the model
+                          besides spectral_dynamics_init. This subroutine allows 
+                          those values to be known by spectral_dynamics_mod.
+                          (Should be called near the end of the atmospheric initialization)
+
+spectral_diagnostics : Writes diagnostic fields of dynamical variables in netcdf format.
+                       (Should be called near the end of the atmospheric time step.)
+
+</PRE>
+</A><!-- END INTERFACE -->
+<!-------------------------------------------------------------------------------->
+<A NAME="ROUTINES">
+<HR>
+<H4>PUBLIC ROUTINES</H4>
+<!-- BEGIN ROUTINES -->
+<PRE>
+
+  call spectral_dynamics_init(Time, Time_step, tracer_attributes, dry_model, nhum, ocean_mask)
+
+input:
+
+  type(time_type) :: Time , The model time corresponding to the most recent time step.
+
+  type(time_type) :: Time_step , The model time step. i.e., the difference between the model time of
+                                 the most recent time step and the next.
+
+output:
+
+  type(tracer_type) :: tracer_attributes
+
+  logical :: dry_model -- .true. when water vapor does not appear in the field table
+
+  integer :: nhum -- The tracer index of water vapor.
+                     Zero when water vapor does not appear in the field table
+
+  optional, logical, dimension(:,:) :: ocean_mask -- If present, used 
+                    for the smoothing of topography when the computed
+                    topography option is chosen. See <A HREF="#topography_option">topography_option</A>
+                    Ocean points are .true., land points .false.
+
+------------------------------------------------------------------------------------
+  call spectral_dynamics(Time, &
+                         psg, ug, vg, tg, tracer_attributes, tracers, time_level, &
+                         dt_psg, dt_ug, dt_vg, dt_tg, dt_tracers, &
+                         wg_full, p_full, p_half, z_full)
+
+intent(in):
+
+ type(time_type) :: Time -- Model time of the current time step.
+
+ real :: dt_psg, dt_ug, dt_vg, dt_tg, dt_tracers -- Tendencies of the
+         atmospheric fields due to whatever atmospheric physics calculations
+         may have been done prior to calling spectral_dynamics.
+         The dynamical tendencies are added to the input tendencies,
+         and the fields are updated.
+
+ integer :: time_level -- In order to prevent a copy in/copy out condition in the call
+                          to spectral_dynamics, a time slice of tracers cannot be passed.
+                          To get around this problem the entire tracer array is passed and
+                          the time level to operate on (the 4'th dimension) is also passed.
+
+ real, dimension(is:ie, js:je) :: dt_psg
+
+ real, dimension(is:ie, js:je, num_levels) :: dt_ug, dt_vg, dt_tg
+
+ real, dimension (is:ie, js:je, num_levels, num_tracers) :: dt_tracers
+
+intent(out):
+
+ psg, ug, vg, tg, tracers -- Updated atmospheric fields, corresponding
+                             to the model time  Time + Time_step
+
+ real, dimension(is:ie, js:je) :: psg -- Surface pressure (Pa)
+
+ real, dimension(is:ie, js:je, num_levels) :: ug -- Zonal wind component (m/sec)
+
+ real, dimension(is:ie, js:je, num_levels) :: vg -- Meridional wind component (m/sec)
+
+ real, dimension(is:ie, js:je, num_levels) :: tg -- Temperature (deg K)
+
+ real, dimension (is:ie, js:je, num_levels, num_time_levels, num_tracers) :: tracers --
+                   Any fields to be treated as passive tracers by the dynamics.
+
+ wg_full -- real, dimension(is:ie, js:je, num_levels)
+    Pressure vertical velocity = Dp/Dt
+
+ p_full -- real, dimension(is:ie, js:je, num_levels) 
+    Pressure at model full levels
+
+ p_half -- real, dimension(is:ie, js:je, num_levels+1) 
+    Pressure at model half levels
+
+ z_full -- real, dimension(is:ie, js:je, num_levels) 
+    Geopotential height at model full levels
+
+------------------------------------------------------------------------------------
+
+ call spectral_dynamics_end(tracer_attributes, Time)
+
+ type(tracer_type), intent(in), dimension(:)  :: tracer_attributes
+
+ type(time_type), intent(in), optional :: Time -- Model time of the current time step.
+                      Omission of Time in the argument list has no adverse consequences,
+                      it exists as an optional argument only to satify certain host modules.
+
+ Writes fields to restart file: RESTART/spectral_dynamics.res.nc
+ Deallocates module arrays, which includes all those of intent(inout).
+ Calls destructors of modules initialized by spectral_dynamics_init.
+
+------------------------------------------------------------------------------------
+call get_num_levels(num_levels)
+
+integer, intent(out) :: num_levels
+------------------------------------------------------------------------------------
+call get_use_virtual_temperature(use_virtual_temperature)
+
+logical, intent(out) :: use_virtual_temperature
+------------------------------------------------------------------------------------
+call get_reference_sea_level_press(reference_sea_level_press)
+
+real, intent(out) :: reference_sea_level_press
+------------------------------------------------------------------------------------
+call get_surf_geopotential(surf_geopotential)
+
+real, intent(out), dimension(:,:) :: surf_geopotential
+------------------------------------------------------------------------------------
+call get_pk_bk(pk, bk)
+
+real, intent(out), dimension(num_levels+1) :: pk, bk
+------------------------------------------------------------------------------------
+function get_axis_id()
+
+integer, dimension(4) :: get_axis_id
+
+  Returns the axis id numbers for the longitude, latitude, full pressure, and half pressure axes.
+  These are netcdf id numbers and are assigned by the diagnostic manager.
+  They can be used throughout the atmospheric model wherever diagnostic fields are saved (e.g., the physics).
+
+------------------------------------------------------------------------------------
+call complete_robert_filter(tracer_attributes)
+
+type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
+
+  Uses spectral representation of updated fields to complete
+  the robert filter of the fields at the previous time step.
+  Must be called at end of atmospheric time step.
+  (After fields are fully updated in grid representation.)
+------------------------------------------------------------------------------------
+call complete_update_of_future(psg, ug, vg, tg, tracer_attributes, grid_tracers)
+
+real,              intent(inout), dimension(:,:      ) :: psg
+real,              intent(inout), dimension(:,:,:    ) :: ug, vg, tg
+type(tracer_type), intent(inout), dimension(:        ) :: tracer_attributes
+real,              intent(inout), dimension(:,:,:,:,:) :: grid_tracers
+
+  Transforms updated fields to spectral representation.
+  Must be called at end of atmospheric time step if fields
+  are modified after the call to subroutine spectral_dynamics.
+
+------------------------------------------------------------------------------------
+</PRE>
+</A><!-- END ROUTINES -->
+<!-------------------------------------------------------------------------------->
+<A NAME="NAMELIST">
+<HR>
+<H4>NAMELIST</H4>
+<!-- BEGIN NAMELIST -->
+<PRE>
+
+<b>&spectral_dynamics_nml</b>
+
+  initial_state_option -- character
+
+    If INPUT/spectral_dynamics.res.nc does not exist then the initial state
+    of the model's fields will be determined by initial_state_option.
+
+    initial_state_option = 'quiescent': No winds or horizontal pressure gradients.
+                           Surface pressure a function of surface height.
+                           This is the only option that allows user specified surface hieght.
+                           This option allows the initial temperature to be specified.
+                           See <A HREF="#SPECTRAL_INIT_COND_NML">SPECTRAL_INIT_COND_NML</A>
+
+    initial_state_option = 'input': The initial conditions are read from an external file.
+                           See <A HREF="#ic_from_external_file_nml">ic_from_external_file_nml</A>
+
+    initial_state_option = 'polvani_2004': A description of this initial condition can be found in:
+                           Polvani, L. M., R. K. Scott, and S. J. Thomas, 2004:
+                           Numerically Converged Solutions of the Global Primitive Equations
+                           for Testing the Dynamical Core of Atmospheric GCMs.
+                           Monthly Weather Review, 132, 2539-2552.
+
+    initial_state_option = 'polvani_2007': A description of this initial condition can be found in:
+                           Lorenzo Polvani, and J. Esler:
+                           Transport and mixing of chemical airmasses in idealized baroclinic life cycles
+                           J. Geophys. Res., 112, D23102, 10.1029/2007JD008555, 2007.
+
+    initial_state_option = 'jablonowski_2006': A description of this initial condition can be found in:
+                           Christiane Jablonwoski and David Williamson, 2006:
+                           A baroclinic instability test case for atmospheric model dynamical cores
+                           Quarterly J. Roy. Met. Soc., Vol. 132, October Part C, No. 621C, 2943-2975
+
+    NOTES: 'quiescent' and 'input' are the only options that allow user specified surface topography or
+            vertical coordinate. For other options the surface topography will be determined by the particular
+            initialization chosen. <A HREF="#topography_option">topography_option</A> and <A HREF="#VERT_COORDINATE_NML">vert_coordinate_nml</A> will be ignored.
+    
+  damping_option -- character
+
+        parameters that define the sub-grid (hyper-)diffusion
+        the diffusion operator is the Laplacian raised to the n'th power
+        where n = damping_order (so  damping_order = 2 is biharmonic etc)
+
+        damping_coeff controls the strength of the damping, but has different
+          meaning depending on whether damping_option = resolution_depenent or resolution_indepenent
+
+        damping_option = 'resolution_dependent': The damping coefficient has units of 1/s,
+            and is the inverse of the damping time scale of wavenumber num_spherical-1.
+            For example, if it is desired to damp wavenumber  num_spherical-1 with a
+            time scale of 0.1 days then set damping_coeff=1./(0.1*86400.)
+
+        damping_option = 'resolution_independent': The damping coefficient has units of 
+           (meters**(2*damping_order))/seconds -- damping operator is 
+                damping_coeff*(-1^(n-1))*laplacian^n
+
+        defaults: damping_option = 'resolution_dependent'
+                  damping_coeff  = 1.15740741e-4 (one tenth day)
+
+ ---------------------------------------------------------------------------------------------
+
+ damping_coeff_vor  -- real
+ damping_order_vor  -- integer
+ damping_coeff_div  -- real
+ damping_order_div  -- integer
+        
+        Use these if it is desired to diffuse vorticity and divergence
+        differently than the scalar fields.
+
+        default: If not specified then values will be the same as those
+                 specified for the scalar fields.
+
+ ---------------------------------------------------------------------------------------------
+ 
+ Additional horizontal diffusion may optionally be applied at the model top level.
+ This additional diffusion is refered to as the "sponge".
+ The sponge is always resolution independent and del-sqaured.
+ (There is no equivalent of damping_option or damping_order)
+ The sponge is applied separately to the eddy, zonal, and meridional winds.
+ 
+ eddy_sponge_coeff -- sponge coefficient for eddy wind
+ zmu_sponge_coeff  -- sponge coefficient for zonal wind
+ zmv_sponge_coeff  -- sponge coefficient for meridional wind
+
+ By default the sponge is off, that is, default for all = 0.0
+ 
+ ---------------------------------------------------------------------------------------------
+
+ initial_sphum = Cold start initial value of specific humidity.
+                 Ignored if model is dry and/or when model is warm started.
+                 default = 0.0
+
+ ---------------------------------------------------------------------------------------------
+
+ use_virtual_temperature = .true.  Virtual temperature is used in computation of geopotential.
+                         = .false. Moisture is ignored in computation of geopotential.
+                            default = .false.
+
+ ---------------------------------------------------------------------------------------------
+
+ do_mass_correction = .true. Surface pressure corrected by multiplicative constant
+                             to prevent spectral_dynmaics from changing mean surface pressure.
+                           default = .true.
+
+ ---------------------------------------------------------------------------------------------
+
+ do_water_correction = .true. Specific humidity corrected by multiplicative constant
+                              to prevent spectral_dynmaics from changing glboal mean water vapor.
+                            default = .true.
+
+ ---------------------------------------------------------------------------------------------
+
+ do_energy_correction = .true. Temperatures corrected by additive constant to prevent
+                               spectral_dynamics from changing global mean energy.
+                               (enthalpy plus kinetic energy; vertically integrated enthalpy
+                               equals vertically integrated internal plus potential energy)
+                             default = .true.
+
+ ---------------------------------------------------------------------------------------------
+
+ vert_advect_uv: Character string  specifying vertical advection scheme for wind components
+
+ vert_advect_t : Character string  specifying vertical advection scheme for temperature
+
+                 The vertical advection schemes are:
+                 'second_centered':  centered second-order vertical advection
+                 'fourth_centered':  centered fourth-order vertical advection
+                 'van_leer_linear':  piecewise linear Van Leer in vertical
+		 'finite_volume_parabolic': piecewise parabolic, finite volume
+
+		 default for all three = 'second_centered'
+
+ ---------------------------------------------------------------------------------------------
+
+ use_implicit = .true. : Implicit time step is used.
+              = .false.: Explicit time step is used.
+              default = .true.
+
+ ---------------------------------------------------------------------------------------------
+
+ longitude_origin = The longitude of the first grid point in the global domain.
+              default = 0.0
+
+ ---------------------------------------------------------------------------------------------
+
+ <A NAME="robert_coeff">
+ robert_coeff = Coefficient of the robert filter.
+              default = .04
+
+	      Note: The robert coefficient for any tracer can optionally be set to
+	            a different value. This is done in the <A HREF="#FIELD_TABLE">field table.</A>
+		    The value specified in the namelist applies to surface pressure,
+		    vorticity, divergence, temperature and any tracer for which an
+		    overriding value is not specified in the field table.
+
+ ---------------------------------------------------------------------------------------------
+
+ alpha_implicit = 0.5 : centered  implicit gravity wave scheme
+                = 1.0 : backwards implicit gravity wave scheme
+              default = 0.5
+
+ ---------------------------------------------------------------------------------------------
+
+ vert_difference_option='simmons_and_burridge' : Full levels computed according to the scheme of Simmons and Burridge.
+                            See Mon. Weather Review: Vol. 109, No. 4, pp. 758-766
+
+                       ='mcm' : Full levels at arithmetic mean of half levels.
+                                This vertical differencing is used by the
+                                Manabe Climate Model, hence the acronym "mcm".
+
+                        default = 'simmons_and_burridge'
+
+ ---------------------------------------------------------------------------------------------
+
+ triang_trunc = .true.  for triangular truncation,
+              = .false. for rhomboidal truncation.
+                default = .true.
+
+ -----------------------------------------------------------------------------------------------------
+
+ ocean_topog_smoothing = The fractional smoothing of topography over the ocean.
+                         Used only when <A HREF="#topography_option">topography_option</A> = 'interpolated'
+
+       When ocean_topog_smoothing = 0. the topography is spectrally truncated but not regularized.
+       For regularized topography, a value of about .93 has traditionally been used.
+       A land-sea mask is required for topography regularization. This may be supplied as optional
+       argument "ocean_mask" of spectral_dynamics_init.  If it is not, then an ocean mask will be
+       computed by interpolating Navy water data to the model's grid. The raw water data must exist
+       as ./DATA/navy_pctwater.data. Like the raw topography data, it must be a single record of
+       32-bit ieee data and be on a one-sixth degree lat-lon grid.
+
+       default = .93
+
+ -----------------------------------------------------------------------------------------------------
+                           
+ num_fourier = number of fourier waves retained (zonal direction)
+       default = 42
+
+ ---------------------------------------------------------------------------------------------
+
+ num_spherical = number of meridional waves retained.
+       default = 43
+
+ ---------------------------------------------------------------------------------------------
+
+ fourier_inc   = number of "sectors"
+                 If fourier_inc > 1, creates sector model in which all fields have
+                 fourier_inc-fold symmetry around latitude circles.
+       default = 1
+
+ ---------------------------------------------------------------------------------------------
+
+ num_levels = number of vertical levels
+       default = 18
+
+ ---------------------------------------------------------------------------------------------
+
+ lon_max = number of longitude points
+       default = 128
+
+ ---------------------------------------------------------------------------------------------
+
+ lat_max = number of latitude points
+       default = 64
+
+ ---------------------------------------------------------------------------------------------
+
+<A NAME="REF_PRESS">
+ reference_sea_level_press: Used for three different purposes.
+             1) It is used to compute initial sea level pressure for a "cold start"
+             2) It is passed to the modular physics where it is used only for diagnostics.
+             3) It is passed to implict to use as a reference pressure for the implicit scheme.
+
+      default = 101325.
+
+ ---------------------------------------------------------------------------------------------
+
+ scale_heights:  See vert_coord_option, uneven_sigma and hybrid options
+ surf_res:       See vert_coord_option, uneven_sigma and hybrid options
+ exponent:       See vert_coord_option, uneven_sigma and hybrid options
+ p_press:        See vert_coord_option, hybrid option
+ p_sigma:        See vert_coord_option, hybrid option
+
+      defaults: scale_heights = 4.0
+                surf_res = 0.1
+                exponent = 2.5
+                p_press  = 0.1
+                p_sigma  = 0.3
+
+ -----------------------------------------------------------------------------------------------------
+
+ vert_coord_option = 'input': Vertical coordinate specified on namelist <A HREF="#VERT_COORDINATE_NML">vert_coordinate_nml</A>
+ 
+                   = 'even_sigma': Equally-spaced sigma coordinate.
+                   
+                   = 'uneven_sigma': Unequally-spaced sigma-coordinates obtained by assuming
+                        equal spacing in zeta in the interval [0,1]
+                        where:
+                        zeta = (1.-(float(k-1)/float(num_levels)))
+                        Z = surf_res*zeta + (1 - surf_res)*(zeta**exponent)
+                        p = exp(-Z*scale_heights),
+                        except for the top level, which is always at p = 0
+
+                   = 'hybrid': Unequally spaced generalized coordinate making a smooth
+                        transition from the unequally spaced sigma coordinates as
+                        described above to pressure coordinates between the pressures.
+                        p_sigma must be greater than p_press
+
+                   = 'mcm': Unequally-spaced sigma-coordinates of the Manabe Climate Model.
+                            num_levels must be 14
+
+                   = 'v197': Standard v197 sigma levels.  num_levels must be 18
+
+ NOTE: vert_coord_option and the various parameters for the uneven_sigma and hybrid vertical coordinates
+       are ignored unles 'quiescent' or 'input' is specified for <A HREF="#NAMELIST`">initial_state_option.</A>
+       The vertical coordinate for the polvani and jablonowski initializations are hard wired.
+
+ -----------------------------------------------------------------------------------------------------
+
+ valid_range_t : Two element array for the min and max allowable temperatures.
+                 Allows for a check that model solution is not blowing up.
+
+                 default = 100., 500.
+
+ -----------------------------------------------------------------------------------------------------
+
+ print_interval :  Two element integer array specifying the interval to print global integrals.
+                   First element is days, second element is seconds.
+                   For example: print_interval=1,43200 specifies output every 1.5 days
+ -----------------------------------------------------------------------------------------------------
+
+<A NAME="VERT_COORDINATE_NML">
+
+&vert_coordinate_nml
+
+   pk = An array of pressures used for the hybrid vertical coordinate.
+
+   bk = An array of constants, in the range zero to one, defining the sigma levels.
+
+   bk(num_levels) must equal 1.0
+
+   The pressures at the interfaces of the model levels are given by:
+   p = pk + bk*p_surf
+
+ -----------------------------------------------------------------------------------------------------
+
+<A NAME="SPECTRAL_INIT_COND_NML">
+
+&spectral_init_cond_nml
+
+ <A NAME="topography_option">
+ topography_option = 'flat': surface height = 0 everywhere
+
+                   = 'input': Topography is read from a netcdf file.
+                        The data is assumed to be on the gaussian grid. The topography is
+                        transformed to spherical coefficients and back to the grid again
+                        to ensure that it is spectrally truncated.
+                        The file and field names are specified by setting topog_file_name and topog_field_name.
+
+                   = 'interpolated': Realistic topography is interpolated to the atmopheric model's grid
+                        A file of raw topography must exist as ./DATA/navy_topography.data
+                        Where "." is the directory where the model is executed.
+                        The topography file must contain a single record of 32-bit ieee data.
+                        topography.f90 expects the raw topography to be on a one-sixth degree
+                        lat-lon grid.  (The option to regularize the topography is controlled by
+                        namelist variable "ocean_topog_smoothing" See below)
+
+                   = 'gaussian': Idealized gaussian moutains.
+
+                     default = 'flat'
+
+
+ topog_file_name  = path name (relative to the working directory) to a file containing the surface topography.
+ topog_field_name = The field name within the file.
+
+ topog_file_name and topog_field_name may be specified when topography_option='input', but are otherwise ignored.
+ -----------------------------------------------------------------------------------------------------
+
+   initial_temperature = Initial temperature of the quiescent, isothermal atmosphere. (degrees K)
+                         Used only when initial_state_option='quiescent'
+
+ -----------------------------------------------------------------------------------------------------
+ <A NAME="ic_from_external_file_nml">
+
+&ic_from_external_file_nml
+
+  All variables are type character
+
+  file_name = The path name of the external file.
+
+  u_name  = The name of the zonal wind field within the file.
+
+  v_name  = The name of the meridional wind field within the file.
+
+  t_name  = The name of the temperature field within the file.
+
+  ps_name = The name of the surface pressure field within the file.
+
+  NOTE: Surface geopotential can also be read from an external file, and it may be the same file.
+        See: <A HREF="#topography_option">topography_option</A>
+
+</PRE>
+</A><!-- END NAMELIST -->
+<!--------------------------------------------------------------------->
+<A NAME="FIELD_TABLE">
+<HR>
+<H4>FIELD_TABLE</H4>
+<PRE> 
+
+  Attributes of tracers are specified in field_table.
+  For a description of the field_table see <A HREF="../../shared/tracer_manager/tracer_manager.html">tracer_manager.html</A>
+
+  Note that water vapor is a tracer. If water vapor does
+  not appear in the field table then the model will be dry.
+
+  The tracer attributes are must appear as the method field in the field table.
+  An option for each attribute must appear as the scheme field in the field table.
+  
+  The attributes and there options are:
+
+  numerical_representation: "spectral" or "grid"
+
+                      spectral: Tracer is represented by spherical coefficients.
+                                Grid values are computed and used for grid based computations,
+				but it is the spherical field that is prognostic.
+
+                      grid:  Tracer is represented as grid point values.
+                             Spherical coefficients are not used.
+
+                      default = "spectral"
+
+               -------------------------------------------
+
+  advect_vert: One of several character strings that specify a vertical advection scheme.
+               See <A HREF="../../atmos_shared/vert_advection/vert_advection.html">vert_advection.html</A>
+               As of the havana release the options are:
+	       "second_centered", "fourth_centered", "van_leer_linear", "finite_volume_parabolic"
+
+	       default = "second_centered"
+
+               -------------------------------------------
+
+  hole_filling: "on" or "off"
+
+              on: When numerical_representation = "spectral", an attempt is made to fill
+ 	          negative values by borrowing from neighboring points above, below,
+		  to the east and west. Borrowing is not done in the meridional direction.
+		  Borrowing does not guarantee that negative values will be eliminated,
+		  only they they will be reduced.
+		  When numerical_representation = "grid", hole_filling is always off, so
+		  that specifying "on" will have no effect.
+
+             off: Borrowing is not done.
+
+	     default = "off"
+
+               -------------------------------------------
+
+  robert_filter: "on" or "off"
+
+              on: Current values will be robert filtered when future values are computed.
+                  The value of the robert coefficient can be set to a value other than
+		  what is specified in spectral_dynamics_nml. See <A HREF="#robert_coeff">robert_coeff</A>
+		  This is done by including a parameter field in the field table. See example below.
+
+             off: Robert filtering is not done.
+
+	     default = "on" with value of robert coefficient specified in namelist.
+
+               -------------------------------------------
+
+   As an example, the field table entry for water vapor might look like this:
+
+   "TRACER", "atmos_mod",                "sphum"
+             "longname",                 "specific humidity"
+             "units",                    "kg/kg"
+             "numerical_representation", "grid"
+             "advect_vert",              "van_leer_linear"
+             "holefilling"               "off",
+             "robert_filter",            "on",       "robert_coeff=.03" /
+
+</PRE>
+</A><!-- END FIELD_TABLE -->
+<!--------------------------------------------------------------------->
+<A NAME="DIAGNOSTICS">
+<HR>
+<H4>DIAGNOSTIC OUTPUT</H4>
+<PRE>
+
+  The fields that may be output are:
+
+             bk  vertical coordinate sigma values (dimensionless)
+             pk  vertical coordinate pressure values (pascals)
+           surf  height of the surface (meters)
+             ps  surface pressure (pascals)
+      pres_full  pressure at model full levels (pascals)
+      pres_half  pressure at model half levels (pascals)
+         height  geopotential height at model full levels (meters)
+    height_half  geopotential height at model half levels (meters)
+          ucomp  zonal wind component (m/sec)
+          vcomp  meridional wind component (m/sec)
+           temp  temperature (deg_k)
+          omega  omega vertical velocity (pascals/sec)
+        tracers  multiple number of tracers fields
+       ucomp_sq  zonal wind component sqared (m/sec)**2
+       vcomp_sq  meridional wind component sqared (m/sec)**2
+       omega_sq  omega vertical velocity sqared (pascal/sec)**2
+        temp_sq  temperature sqared (deg_k**2)
+    ucomp_vcomp  zonal wind times meridional wind (m/sec)**2
+     omega_temp  omega vertical velocity times temperature (deg_k*pascals/sec)
+           wspd  wind speed (m/s)
+            div  divergence (1/s)
+            vor  relative vorticity (1/s)
+            slp  sea level pressure (pascals)
+
+  Notes:
+      The diag_table module name for these fields is: 'dynamics'
+      bk, pk and zsurf are static.
+      They are written once and have no time axis.
+
+      Diagnostic output is controlled through the diag_table.
+      For a description of the diag_table see: <A HREF="../../shared/diag_manager/diag_table_tk.html">diag_table_tk</A>
+
+    ----------------------------------------------------------------------------------
+
+      To facilitate code development, it is sometimes desirable to see the intermediate
+      values of the dynamical variables. That is, the values that are computed before
+      completion of the time step. When a split time step is used, these are computed
+      at a higher frequency than the physics time step.
+
+      These values may be output by including one or more of the following in the diag_table:
+      ps_every 
+      u_every
+      v_every
+      t_every
+      {tracer_name}_every
+
+      The diag_table module name for these fields is: 'dynamics_every'
+   <font color=dd0000>
+  NOTE:
+      It is recommended that these fields be written to a
+      different file than the standard dynamical fields.</font>
+</A><!-- END DIAGNOSTICS -->
+<!--------------------------------------------------------------------->
+<A NAME="DECOMPOSITION">
+<HR>
+<H4>DOMAIN DECOMPOSITION</H4>
+<PRE>
+  There a number of constraints on the decompostion of the global domain across processors.
+  These constraints reduces the allowable choices for the number of processors on which the spectral model can be run.
+  The constraints are:
+
+  1) The decompostion is in the meridional direction only.
+     Two dimensional decompostion is not an option.
+ 
+  2) All processors must have an equal number of latitude rows.
+
+  3) Number of processors must not be greater than num_fourier+1.
+
+</PRE>
+</A><!-- END DOMAIN DECOMPOSITION -->
+<!--------------------------------------------------------------------->
+<A NAME="CHANGES">
+<HR>
+<H4>CHANGE HISTORY</H4>
+<!-- BEGIN CHANGES -->
+<PRE>
+
+   Modifications between inchon and jakarta include:
+
+   (1) Public interface complete_leapfrog_tg replaced by complete_robert_filter
+       and complete_update_of_future.
+
+   (2) Addition of public interface spectral_diagnostics.
+
+   (3) Addition of top level sponge.
+
+
+</PRE>
+</A><!-- END CHANGES -->
+<!--------------------------------------------------------------------->
+<A NAME="ERRORS">
+<HR>
+<H4>ERROR MESSAGES</H4>
+<!-- BEGIN ERRORS -->
+<PRE>
+
+<b>A fatal error message will be issued when any of the following conditions is detected.</b>
+
+  1) Water or energy correction is specified without mass correction.
+
+  2) Water correction is specified when a humidity variable does not exist in the field_table.
+
+  3) Any namelist variables are given invalid values.
+
+  4) Either numerical_representation or advect_vert is given an invalid value in the field_table.
+
+  5) Both sphum and mix_rat appear in the field_table at the same time.
+
+  6) Atmospheric temperature out of valid range.
+
+  7) Resolution of restart data does not match resolution specified on namelist.
+
+  8) Any public interfaces are called prior to calling subroutine spectral_dynamics_init.
+
+</PRE>
+</A><!-- END ERRORS -->
+<!--------------------------------------------------------------------->
+<A NAME="REFERENCES">
+<HR>
+<H4>REFERENCES</H4>
+<!-- BEGIN REFERENCES -->
+<PRE>
+
+     See <A HREF="spectral_atmosphere.tech.ps">technical documention
+     (not yet available)</A>.
+
+</PRE>
+</A><!-- END REFERENCES -->
+<!--------------------------------------------------------------------->
+<A NAME="NOTES">
+<HR>
+<H4>NOTES</H4>
+<!-- BEGIN NOTES -->
+<PRE>
+
+    None.
+
+</PRE>
+</A><!-- END NOTES -->
+<!--------------------------------------------------------------------->
+<A NAME="PLANS">
+<HR>
+<H4>FUTURE PLANS</H4>
+<!-- BEGIN PLANS -->
+<PRE>
+
+    Provide technical documentation.
+
+</PRE>
+</A><!-- END PLANS -->
+<!--------------------------------------------------------------------->
+
+<HR>
+</BODY>
+</HTML>

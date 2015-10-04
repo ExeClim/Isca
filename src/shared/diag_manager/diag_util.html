@@ -1,0 +1,1047 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module diag_util_mod</title>
+<link type="text/css" href="http://data1.gfdl.noaa.gov/~fms/style/docbook.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>
+
+          ~ <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>
+	    ~ <a href="#ERROR MESSAGES">ERROR MESSAGES </a></font>
+<hr>
+<h2>Module diag_util_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:seth.underwood@noaa.gov">   Seth Underwood </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://cobweb.gfdl.noaa.gov/fms-cgi-bin/viewcvs/FMS/shared/diag_manager">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   Functions and subroutines necessary for the <tt>diag_manager_mod</tt>. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div> 
+<tt>diag_util_mod</tt>   is a set of Fortran functions and subroutines used by the <tt>diag_manager_mod</tt>. </div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>   diag_data_mod<br>   diag_axis_mod<br> diag_output_mod<br>   diag_grid_mod<br>         fms_mod<br>      fms_io_mod<br> mpp_domains_mod<br>time_manager_mod<br>      mpp_io_mod<br>         mpp_mod<br>   constants_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#get_subfield_size">get_subfield_size</a>:</dt>
+<dd>   Get the size, start, and end indices for output fields. </dd>
+<dt>
+<a href="#get_subfield_vert_size">get_subfield_vert_size</a>:</dt>
+<dd>   Get size, start and end indices for output fields. </dd>
+<dt>
+<a href="#log_diag_field_info">log_diag_field_info</a>:</dt>
+<dd>   Writes brief diagnostic field info to the log file. </dd>
+<dt>
+<a href="#update_bounds">update_bounds</a>:</dt>
+<dd>   Update the <tt>output_fields</tt>   min and max boundaries. </dd>
+<dt>
+<a href="#check_out_of_bounds">check_out_of_bounds</a>:</dt>
+<dd>   Checks if the array indices for <tt>output_fields(out_num)</tt>   are outside the <tt>output_fields(out_num)%buffer</tt>   upper
+   and lower bounds. </dd>
+<dt>
+<a href="#check_bounds_are_exact_dynamic">check_bounds_are_exact_dynamic</a>:</dt>
+<dd>   Check if the array indices for <tt>output_fields(out_num)</tt>   are equal to the <tt>output_fields(out_num)%buffer</tt>   upper and lower bounds. </dd>
+<dt>
+<a href="#check_bounds_are_exact_static">check_bounds_are_exact_static</a>:</dt>
+<dd>   Check if the array indices for <tt>output_fields(out_num)</tt>   are equal to the <tt>output_fields(out_num)%buffer</tt>   upper and lower bounds. </dd>
+<dt>
+<a href="#init_file">init_file</a>:</dt>
+<dd>   Initialize the output file. </dd>
+<dt>
+<a href="#sync_file_times">sync_file_times</a>:</dt>
+<dd>   Synchronize the file's start and close times with the model start and end times. </dd>
+<dt>
+<a href="#diag_time_inc">diag_time_inc</a>:</dt>
+<dd>   Return the next time data/file is to be written based on the frequency and units. </dd>
+<dt>
+<a href="#find_input_field">find_input_field</a>:</dt>
+<dd>   Return the field number for the given module name, field name, and tile number. </dd>
+<dt>
+<a href="#init_input_field">init_input_field</a>:</dt>
+<dd>   Initialize the input field. </dd>
+<dt>
+<a href="#init_output_field">init_output_field</a>:</dt>
+<dd>   Initialize the output field. </dd>
+<dt>
+<a href="#get_date_dif">get_date_dif</a>:</dt>
+<dd>   Return the difference between two times in units. </dd>
+<dt>
+<a href="#diag_data_out">diag_data_out</a>:</dt>
+<dd>   Write data out to file. </dd>
+<dt>
+<a href="#write_static">write_static</a>:</dt>
+<dd>   Output all static fields in this file </dd>
+<dt>
+<a href="#check_duplicate_output_fields">check_duplicate_output_fields</a>:</dt>
+<dd>   Checks to see if <tt>output_name</tt>   and <tt>output_file</tt>   are unique in <tt>output_fields</tt>. </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="get_subfield_size"></a>
+<h4>get_subfield_size</h4>
+<pre>SUBROUTINE <b>get_subfield_size</b> (axes, outnum)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get the size, start and end indices for <tt>output_fields(outnum)</tt>, then  
+   fill in <tt>output_fields(outnum)%output_grid%(start_indx, end_indx)</tt> 
+</dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>axes&nbsp;&nbsp;&nbsp;</tt></td><td>Axes of the <tt>input_field</tt>.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, DIMENSION(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>outnum&nbsp;&nbsp;&nbsp;</tt></td><td>Position in array <tt>output_fields</tt>.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_subfield_vert_size"></a>
+<h4>get_subfield_vert_size</h4>
+<pre>SUBROUTINE <b>get_subfield_vert_size</b> (axes, outnum)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Get size, start and end indices for <tt>output_fields(outnum)</tt>, fill in <tt>output_fields(outnum)%output_grid%(start_indx, end_indx)</tt>. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>axes&nbsp;&nbsp;&nbsp;</tt></td><td>Axes of the <tt>input_field</tt>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, DIMENSION(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>outnum&nbsp;&nbsp;&nbsp;</tt></td><td>Position in array <tt>output_fields</tt>.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="log_diag_field_info"></a>
+<h4>log_diag_field_info</h4>
+<pre>SUBROUTINE <b>log_diag_field_info</b> (module_name, field_name, axes, long_name, units, missing_value, range, dynamic)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   If the <tt>do_diag_field_log</tt>   namelist parameter is .TRUE.,
+   then a line briefly describing diagnostic field is added to
+   the log file.  Normally users should not call this subroutine
+   directly, since it is called by register_static_field and
+   register_diag_field if do_not_log is not set to .TRUE..  It is
+   used, however, in LM3 to avoid excessive logs due to the
+   number of fields registered for each of the tile types.  LM3
+   code uses a do_not_log parameter in the registration calls,
+   and subsequently calls this subroutine to log field information
+   under a generic name. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>module_name&nbsp;&nbsp;&nbsp;</tt></td><td>Module name.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>field_name&nbsp;&nbsp;&nbsp;</tt></td><td>Field name.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>axes&nbsp;&nbsp;&nbsp;</tt></td><td>Axis IDs.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, DIMENSION(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>long_name&nbsp;&nbsp;&nbsp;</tt></td><td>Long name for field.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>units&nbsp;&nbsp;&nbsp;</tt></td><td>Unit of field.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>missing_value&nbsp;&nbsp;&nbsp;</tt></td><td>Missing value value.<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>range&nbsp;&nbsp;&nbsp;</tt></td><td>Valid range of values for field.<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(2), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dynamic&nbsp;&nbsp;&nbsp;</tt></td><td><tt>.TRUE.</tt>   if field is not static.<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="update_bounds"></a>
+<h4>update_bounds</h4>
+<pre>SUBROUTINE <b>update_bounds</b> (out_num, lower_i, upper_i, lower_j, upper_j, lower_k, upper_k)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Update the <tt>output_fields</tt>   x, y, and z min and max boundaries (array indices). </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>out_num&nbsp;&nbsp;&nbsp;</tt></td><td><tt>output_field</tt>   ID.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lower_i&nbsp;&nbsp;&nbsp;</tt></td><td>Lower <tt>i</tt>   bound.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>upper_i&nbsp;&nbsp;&nbsp;</tt></td><td>Upper <tt>i</tt>   bound.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lower_j&nbsp;&nbsp;&nbsp;</tt></td><td>Lower <tt>j</tt>   bound.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>upper_j&nbsp;&nbsp;&nbsp;</tt></td><td>Upper <tt>j</tt>   bound.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lower_k&nbsp;&nbsp;&nbsp;</tt></td><td>Lower <tt>k</tt>   bound.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>upper_k&nbsp;&nbsp;&nbsp;</tt></td><td>Upper <tt>k</tt>   bound.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="check_out_of_bounds"></a>
+<h4>check_out_of_bounds</h4>
+<pre>SUBROUTINE <b>check_out_of_bounds</b> (out_num, diag_field_id, err_msg)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+<tt>check_out_of_bounds</tt>   verifies the array min and max indices in the x, y, and z directions of <tt>   output_fields(out_num)</tt>   are not outside the upper and lower array boundaries of <tt>output_fields(out_num)%buffer</tt>.  If the min and max indices are outside the upper and lower bounds of the buffer
+   array, then <tt>check_out_of_bounds</tt>   returns an error string. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>out_num&nbsp;&nbsp;&nbsp;</tt></td><td>   Output field ID number. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>diag_field_id&nbsp;&nbsp;&nbsp;</tt></td><td>   Input field ID number. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   Return status of <tt>check_out_of_bounds</tt>.  An empty error string indicates the x, y, and z indices are not outside the
+   buffer array boundaries. <br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="check_bounds_are_exact_dynamic"></a>
+<h4>check_bounds_are_exact_dynamic</h4>
+<pre>SUBROUTINE <b>check_bounds_are_exact_dynamic</b> (out_num, diag_field_id, Time, err_msg)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+<tt>check_bounds_are_exact_dynamic</tt>   checks if the min and max array indices for <tt>output_fields(out_num)</tt>   are
+   equal to the upper and lower bounds of <tt>output_fields(out_num)%buffer</tt>.  This check is only performed if <tt>output_fields(out_num)%Time_of_prev_field_data</tt>   doesn't equal <tt>Time</tt>   or <tt>Time_zero</tt>. <tt>check_bounds_are_exact_dynamic</tt>   returns an error string if the array indices do not match the buffer bounds. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>out_num&nbsp;&nbsp;&nbsp;</tt></td><td>   Output field ID number. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>diag_field_id&nbsp;&nbsp;&nbsp;</tt></td><td>   Input field ID number. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>Time&nbsp;&nbsp;&nbsp;</tt></td><td>   Time to use in check.  The check is only performed if <tt>output_fields(out_num)%Time_of_prev_field_data</tt>   is not
+   equal to <tt>Time</tt>   or <tt>Time_zero</tt>. <br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   Return status of <tt>check_bounds_are_exact_dynamic</tt>.  An empty error string indicates the x, y, and z indices are
+   equal to the buffer array boundaries. <br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="check_bounds_are_exact_static"></a>
+<h4>check_bounds_are_exact_static</h4>
+<pre>SUBROUTINE <b>check_bounds_are_exact_static</b> (out_num, diag_field_id, err_msg)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+</dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>out_num&nbsp;&nbsp;&nbsp;</tt></td><td>Output field ID<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>diag_field_id&nbsp;&nbsp;&nbsp;</tt></td><td>Input field ID.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="init_file"></a>
+<h4>init_file</h4>
+<pre>SUBROUTINE <b>init_file</b> (name, output_freq, output_units, format, time_units long_name, tile_count, new_file_freq, new_file_freq_units, start_time, file_duration, file_duration_units)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Initialize the output file. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>name&nbsp;&nbsp;&nbsp;</tt></td><td>File name.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>output_freq&nbsp;&nbsp;&nbsp;</tt></td><td>How often data is to be written to the file.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>output_units&nbsp;&nbsp;&nbsp;</tt></td><td>The output frequency unit.  (MIN, HOURS, DAYS, etc.)<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>format&nbsp;&nbsp;&nbsp;</tt></td><td>Number type/kind the data is to be written out to the file.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_units&nbsp;&nbsp;&nbsp;</tt></td><td>Time axis units.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>log_name&nbsp;&nbsp;&nbsp;</tt></td><td>Long name for time axis.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tile_count&nbsp;&nbsp;&nbsp;</tt></td><td>Tile number.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>new_file_freq&nbsp;&nbsp;&nbsp;</tt></td><td>How often a new file is to be created.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>new_file_freq_units&nbsp;&nbsp;&nbsp;</tt></td><td>The new file frequency unit.  (MIN, HOURS, DAYS, etc.)<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>start_time&nbsp;&nbsp;&nbsp;</tt></td><td>Time when the file is to start <br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type), OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>file_duration&nbsp;&nbsp;&nbsp;</tt></td><td>How long file is to be used.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>file_duration_units&nbsp;&nbsp;&nbsp;</tt></td><td>File duration unit.  (MIN, HOURS, DAYS, etc.)<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="sync_file_times"></a>
+<h4>sync_file_times</h4>
+<pre>SUBROUTINE <b>sync_file_times</b> (init_time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+<tt>sync_file_times</tt>   checks to see if the file start time is less than the
+   model's init time (passed in as the only argument).  If it is less, then the
+   both the file start time and end time are synchronized using the passed in initial time
+   and the duration as calculated by the <tt>diag_time_inc</tt>   function. <tt>sync_file_times</tt>   will also increase the <tt>next_open</tt>   until it is greater than the init_time. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>file_id&nbsp;&nbsp;&nbsp;</tt></td><td>The file ID<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>init_time&nbsp;&nbsp;&nbsp;</tt></td><td>Initial time use for the synchronization.<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>Return error message<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diag_time_inc"></a>
+<h4>diag_time_inc</h4>
+<pre>TYPE(time_type) FUNCTION <b>diag_time_inc</b> (time, output_freq, output_units, err_msg)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return the next time data/file is to be written.  This value is based on the current time and the frequency and units.
+   Function completed successful if the optional <tt>err_msg</tt>   is empty. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>Current model time.<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>output_freq&nbsp;&nbsp;&nbsp;</tt></td><td>Output frequency number value.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>output_units&nbsp;&nbsp;&nbsp;</tt></td><td>Output frequency unit.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   Function error message.  An empty string indicates the next output time was found successfully. <br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER, OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="find_input_field"></a>
+<h4>find_input_field</h4>
+<pre>INTEGER FUNCTION <b>find_input_field</b> (module_name, field_name, tile_count)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Return the field number for the given module name, field name and tile number.  A return value of <tt>-1</tt>   indicates
+   the field was not found. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>module_name&nbsp;&nbsp;&nbsp;</tt></td><td>Module name.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>field_name&nbsp;&nbsp;&nbsp;</tt></td><td>field name.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tile_count&nbsp;&nbsp;&nbsp;</tt></td><td>Tile number.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="init_input_field"></a>
+<h4>init_input_field</h4>
+<pre>SUBROUTINE <b>init_input_field</b> (module_name, field_name, tile_count)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+</dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>module_name&nbsp;&nbsp;&nbsp;</tt></td><td>Module name.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>field_name&nbsp;&nbsp;&nbsp;</tt></td><td>Input field name.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tile_count&nbsp;&nbsp;&nbsp;</tt></td><td>Tile number.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="init_output_field"></a>
+<h4>init_output_field</h4>
+<pre>SUBROUTINE <b>init_output_field</b> (module_name, field_name, output_name, output_file time_method, pack, tile_count, local_coord)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Initialize the output field. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>module_name&nbsp;&nbsp;&nbsp;</tt></td><td>Module name.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>field_name&nbsp;&nbsp;&nbsp;</tt></td><td>Output field name.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>output_name&nbsp;&nbsp;&nbsp;</tt></td><td>Output name written to file.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>output_file&nbsp;&nbsp;&nbsp;</tt></td><td>File where field should be written.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_method&nbsp;&nbsp;&nbsp;</tt></td><td>   Data reduction method.  See <a href="diag_manager.html">diag_manager_mod</a>   for valid methods.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>pack&nbsp;&nbsp;&nbsp;</tt></td><td>Packing method.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>tile_count&nbsp;&nbsp;&nbsp;</tt></td><td>Tile number.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>local_coord&nbsp;&nbsp;&nbsp;</tt></td><td>Region to be written.  If missing, then all data to be written.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_date_dif"></a>
+<h4>get_date_dif</h4>
+<pre>REAL FUNCTION <b>get_date_dif</b> (t2, t1, units)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Calculate and return the difference between the two times given in the unit given using the function <tt>t2 - t1</tt>. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>t2&nbsp;&nbsp;&nbsp;</tt></td><td>Most recent time.<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>t1&nbsp;&nbsp;&nbsp;</tt></td><td>Most distant time.<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>units&nbsp;&nbsp;&nbsp;</tt></td><td>Unit of return value.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diag_data_out"></a>
+<h4>diag_data_out</h4>
+<pre>SUBROUTINE <b>diag_data_out</b> (file, field, dat, time, fianl_call_in, static_write_in)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Write data out to file, and if necessary flush the buffers. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>file&nbsp;&nbsp;&nbsp;</tt></td><td>File ID.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>field&nbsp;&nbsp;&nbsp;</tt></td><td>Field ID.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>Current model time.<br>&nbsp;&nbsp;&nbsp;<span class="type">[TYPE(time_type)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>final_call_in&nbsp;&nbsp;&nbsp;</tt></td><td><tt>.TRUE.</tt>   if this is the last write for file.<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>static_write_in&nbsp;&nbsp;&nbsp;</tt></td><td><tt>.TRUE.</tt>   if static fields are to be written to file.<br>&nbsp;&nbsp;&nbsp;<span class="type">[LOGICAL, OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>INPUT/OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>dat&nbsp;&nbsp;&nbsp;</tt></td><td>Data to write out.<br>&nbsp;&nbsp;&nbsp;<span class="type">[REAL, DIMENSION(:,:,:,:)]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="write_static"></a>
+<h4>write_static</h4>
+<pre>SUBROUTINE <b>write_static</b> (file)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Write the static data to the file. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>file&nbsp;&nbsp;&nbsp;</tt></td><td>File ID.<br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="check_duplicate_output_fields"></a>
+<h4>check_duplicate_output_fields</h4>
+<pre>SUBROUTINE <b>check_duplicate_output_fields</b> (err_msg)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Check to see if <tt>output_name</tt>   and <tt>output_file</tt>   are unique in <tt>output_fields</tt>.  An empty <tt>err_msg</tt>   indicates no duplicates found. </dd>
+<br>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>Error message.  If empty, then no duplicates found.<br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<hr>
+<h4>ERROR MESSAGES</h4>
+<!-- BEGIN ERROR MESSAGES -->
+<div>
+<dl>
+<dt>
+<b>FATAL in get_subfield_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>wrong order of axes.  X should come first.</dd>
+<dt>
+<b>FATAL in get_subfield_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>wrong order of axes, Y should come second.</dd>
+<dt>
+<b>FATAL in get_subfield_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>wrong values in vertical axis of region</dd>
+<dt>
+<b>FATAL in get_subfield_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>i should equal 3 for z axis</dd>
+<dt>
+<b>FATAL in get_subfield_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>Wrong axis_cart</dd>
+<dt>
+<b>FATAL in get_subfield_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   can not find gstart_indx/gend_indx for &lt;output_fields(outnum)%output_name&gt;,
+   check region bounds for axis &lt;i&gt;. </dd>
+<dt>
+<b>FATAL in get_subfield_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   axis(3) should be Z-axis </dd>
+<dt>
+<b>FATAL in get_subfield_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   wrong values in vertical axis of region </dd>
+<dt>
+<b>FATAL in get_subfield_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>No domain available</dd>
+<dt>
+<b>FATAL in get_subfield_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>wrong compute domain indices</dd>
+<dt>
+<b>FATAL in get_subfield_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   &lt;output_fields(outnum)%output_name&gt; error at i = &lt;i&gt; </dd>
+<dt>
+<b>FATAL in get_subfield_vert_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>wrong order of axes, X should come first</dd>
+<dt>
+<b>FATAL in get_subfield_vert_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>wrong order of axes, Y should come second</dd>
+<dt>
+<b>FATAL in get_subfield_vert_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>wrong values in vertical axis of region</dd>
+<dt>
+<b>FATAL in get_subfield_vert_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>i should equal 3 for z axis</dd>
+<dt>
+<b>FATAL in get_subfield_vert_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>Wrong axis_cart</dd>
+<dt>
+<b>FATAL in get_subfield_vert_size</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   can not find gstart_indx/gend_indx for &lt;output_fields(outnum)%output_name&gt;
+   check region bounds for axis </dd>
+<dt>
+<b>FATAL in init_file</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   max_files exceeded, increase max_files via the max_files variable
+   in the namelist diag_manager_nml. </dd>
+<dt>
+<b>FATAL in init_file</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   close time GREATER than next_open time, check file duration,
+   file frequency in &lt;files(num_files)%name&gt; </dd>
+<dt>
+<b>FATAL in init_input_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>max_input_fields exceeded, increase it via diag_manager_nml</dd>
+<dt>
+<b>FATAL in init_output_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>max_output_fields = &lt;max_output_fields&gt; exceeded.  Increase via diag_manager_nml</dd>
+<dt>
+<b>FATAL in init_output_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>module_name/field_name &lt;module_name&gt;/&lt;field_name&gt;[/tile_count=&lt;tile_count&gt;] NOT registered</dd>
+<dt>
+<b>FATAL in init_output_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   MAX_OUT_PER_IN_FIELD = &lt;MAX_OUT_PER_IN_FIELD&gt; exceeded for &lt;module_name&gt;/&lt;field_name&gt;, increase MAX_OUT_PER_IN_FIELD
+   in diag_data.F90. </dd>
+<dt>
+<b>FATAL in init_output_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   file &lt;file_name&gt; is NOT found in the diag_table. </dd>
+<dt>
+<b>FATAL in init_output_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   file &lt;output_file&gt; is not initialized for tile_count = &lt;tile_count&gt; </dd>
+<dt>
+<b>FATAL in init_output_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   MAX_FIELDS_PER_FILE = &lt;MAX_FIELDS_PER_FILE&gt; exceeded.  Increase MAX_FIELDS_PER_FILE in diag_data.F90. </dd>
+<dt>
+<b>FATAL in init_output_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   could not find integer number of diurnal samples in string "&lt;t_method&gt;" </dd>
+<dt>
+<b>FATAL in init_output_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   The integer value of diurnal samples must be greater than zero. </dd>
+<dt>
+<b>FATAL in init_output_field</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   improper time method in diag_table for output field &lt;output_name&gt; </dd>
+<dt>
+<b>FATAL in get_date_dif</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   variable t2 is less than in variable t1 </dd>
+<dt>
+<b>FATAL in get_date_dif</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   months not supported as output units </dd>
+<dt>
+<b>FATAL in get_date_dif</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   years not suppored as output units </dd>
+<dt>
+<b>FATAL in get_date_dif</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   illegal time units </dd>
+</dl>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<a name="FUTURE PLANS"></a>
+<hr>
+<h4>FUTURE PLANS</h4>
+<!-- BEGIN FUTURE PLANS -->
+<div>
+<ul>
+<li>   Make an interface <tt>check_bounds_are_exact</tt>   for the subroutines <tt>check_bounds_are_exact_static</tt>   and <tt>check_bounds_are_exact_dynamic</tt>. <pre>       INTERFACE check_bounds_are_exact
+         MODULE PROCEDURE check_bounds_are_exact_static
+         MODULE PROCEDURE check_bounds_are_exact_dynamic
+       END INTERFACE check_bounds_are_exact</pre> 
+</li>
+</ul>
+</div>
+<br>
+<!-- END FUTURE PLANS -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>

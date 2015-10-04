@@ -1,0 +1,449 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module time_interp_mod</title>
+<link type="text/css" href="http://www.gfdl.noaa.gov/~fms/style/doc.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module time_interp_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:Bruce.Wyman@noaa.gov">   Bruce Wyman </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/shared/time_interp">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   Computes a weight and dates/indices for linearly interpolating between two dates. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div>   A time type is converted into two consecutive dates plus
+   a fraction representing the distance between the dates.
+   This information can be used to interpolate between the dates.
+   The dates may be expressed as years, months, or days or
+   as indices in an array. </div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>time_manager_mod<br>         fms_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>   Description summarizing public interface. <dl>
+<dt>
+<a href="#time_interp">time_interp</a>:</dt>
+<dd>   Returns a weight and dates or indices for interpolating between two dates. The
+   interface fraction_of_year is provided for backward compatibility with the
+   previous version. </dd>
+<dt>
+<a href="#fraction_of_year">fraction_of_year</a>:</dt>
+<dd>   Wrapper for backward compatibility </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>None.<br>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="time_interp"></a>
+<h4>time_interp</h4>
+<pre>1. call <b>time_interp</b> ( Time, weight )</pre>
+<pre>2. call <b>time_interp</b> ( Time, weight, year1, year2 )</pre>
+<pre>3. call <b>time_interp</b> ( Time, weight, year1, year2, month1, month2 )</pre>
+<pre>4. call <b>time_interp</b> ( Time, weight, year1, year2, month1, month2, day1, day2 )</pre>
+<pre>5. call <b>time_interp</b> ( Time, Timelist, weight, index1, index2 [, modtime] )</pre>
+<pre>6. call <b>time_interp</b> ( Time, Time_beg, Time_end, Timelist, weight, index1, index2 [,correct_leap_year_inconsistency])</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   Returns weight by interpolating Time between Time1 and Time2.
+   i.e. weight = (Time-Time1)/(Time2-Time1)
+   Time1 and Time2 may be specified by any of several different ways,
+   which is the reason for multiple interfaces.
+   If Time1 and Time2 are the begining and end of the year in which
+   Time falls, use first interface.
+   If Time1 and Time2 fall on year boundaries, use second interface.
+   If Time1 and Time2 fall on month boundaries, use third.
+   If Time1 and Time2 fall on day boundaries, use fourth.
+   If Time1 and Time2 are consecutive elements of an assending list, use fifth.
+   The fifth also returns the indices of Timelist between which Time falls.
+   The sixth interface is for cyclical data. Time_beg and Time_end specify the
+   begining and end of a repeating period. In this case:
+   weight = (Time_adjusted - Time1) / (Time2 - Time1)
+   Where:
+   Time1 = Timelist(index1)
+   Time2 = Timelist(index2)
+   Time_adjusted = Time - N*Period
+   Period = Time_end-Time_beg
+   N is between (Time-Time_end)/Period and (Time-Time_beg)/Period
+   That is, N is the integer that results in Time_adjusted that is between Time_beg and Time_end.
+   <br>
+<br> 
+</dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>Time&nbsp;&nbsp;&nbsp;</tt></td><td>   The time at which the the weight is computed. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>Time_beg&nbsp;&nbsp;&nbsp;</tt></td><td>   For cyclical interpolation: Time_beg specifies the begining time of a cycle. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>Time_end&nbsp;&nbsp;&nbsp;</tt></td><td>   For cyclical interpolation: Time_end specifies the ending time of a cycle. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>Timelist&nbsp;&nbsp;&nbsp;</tt></td><td>   For cyclical interpolation: Timelist is an array of times between Time_beg and Time_end.
+   Must be monotonically increasing. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension(:)]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type, dimension(:)]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>modtime&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>index1&nbsp;&nbsp;&nbsp;</tt></td><td>   Timelist(index1) = The largest value of Timelist which is less than mod(Time,Time_end-Time_beg) </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>index2&nbsp;&nbsp;&nbsp;</tt></td><td>   Timelist(index2) = The smallest value of Timelist which is greater than mod(Time,Time_end-Time_beg) </td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>correct_leap_year_inconsistency&nbsp;&nbsp;&nbsp;</tt></td><td>   Turns on a kluge for an inconsistency which may occur in a special case.
+   When the modulo time period (i.e. Time_end - Time_beg) is a whole number of years
+   and is not a multiple of 4, and the calendar in use has leap years, then it is
+   likely that the interpolation will involve mapping a common year onto a leap year.
+   In this case it is often desirable, but not absolutely necessary, to use data for
+   Feb 28 of the leap year when it is mapped onto a common year.
+   To turn this on, set correct_leap_year_inconsistency=.true. <br>&nbsp;&nbsp;&nbsp;<span class="type">[logical, optional]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>weight&nbsp;&nbsp;&nbsp;</tt></td><td>   weight = (mod(Time,Time_end-Time_beg) - Timelist(index1)) / (Timelist(index2) - Timelist(index1)) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>year1&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>year2&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>month1&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>month2&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>day1&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>day2&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>index1&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>index2&nbsp;&nbsp;&nbsp;</tt></td><td> 
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span>
+<br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>NOTE</b>
+</dt>
+<dd>   Examples: <pre>       Time: Jan 01 00z    weight = 0.0 
+       Time: Jul 01        weight ~ 0.5 
+       Time: Dec 31 23z    weight ~ 1.0</pre> 
+</dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="fraction_of_year"></a>
+<h4>fraction_of_year</h4>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd></dd>
+<br>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<!-- END NAMELIST --><a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>
+<dl>
+<dt>
+<b>ERROR in time_interp</b>
+</dt>
+<dd>
+<span class="errmsg">input time list not ascending order</span>
+</dd>
+<dd>   The list of input time types must have ascending dates. </dd>
+<dt>
+<b>ERROR in time_interp</b>
+</dt>
+<dd>
+<span class="errmsg">modulo months must have same length</span>
+</dd>
+<dd>   The length of the current month for input Time and Time_list
+   must be the same when using the modulo month option. The
+   modulo month option is available but not supported. </dd>
+<dt>
+<b>ERROR in time_interp</b>
+</dt>
+<dd>
+<span class="errmsg">invalid value for argument modtime</span>
+</dd>
+<dd>   The optional argument modtime must have a value set by one
+   of the public parameters: NONE, YEAR, MONTH, DAY. The
+   MONTH and DAY options are available but not supported. </dd>
+<dt>
+<b>ERROR in time_interp</b>
+</dt>
+<dd>
+<span class="errmsg">period of list exceeds modulo period</span>
+</dd>
+<dd>   The difference between the last and first values in the input
+   Time list/array exceeds the length of the modulo period. </dd>
+<dt>
+<b>ERROR in time_interp</b>
+</dt>
+<dd>
+<span class="errmsg">time before range of list or time after range of list</span>
+</dd>
+<dd>   The difference between the last and first values in the input
+   These errors occur when you are not using a modulo axis and
+   the input Time occurs before the first value in the Time
+   list/array or after the last value in the Time list/array. </dd>
+<dt>
+<b> error during execution of module time_interp_mod</b>
+</dt>
+<dd>
+<span class="errmsg">input time list not ascending order</span>
+</dd>
+<dd>   The list of input time types must have ascending dates. </dd>
+<dt>
+<b> error during execution of module time_interp_mod</b>
+</dt>
+<dd>
+<span class="errmsg">modulo months must have same length</span>
+</dd>
+<dd>   The length of the current month for input Time and Time_list
+   must be the same when using the modulo month option.
+   The modulo month option is available but not supported. </dd>
+<dt>
+<b> error during execution of module time_interp_mod</b>
+</dt>
+<dd>
+<span class="errmsg">invalid value for argument modtime</span>
+</dd>
+<dd>   The optional argument modtime must have a value set by one
+   of the public parameters: NONE, YEAR, MONTH, DAY.
+   The MONTH and DAY options are available but not supported. </dd>
+<dt>
+<b> error during execution of module time_interp_mod</b>
+</dt>
+<dd>
+<span class="errmsg">period of list exceeds modulo period</span>
+</dd>
+<dd>   The difference between the last and first values in the
+   input Time list/array exceeds the length of the modulo period. </dd>
+<dt>
+<b> error during execution of module time_interp_mod</b>
+</dt>
+<dd>
+<span class="errmsg">time before range of list or time after range of list</span>
+</dd>
+<dd>   These errors occur when you are not using a modulo axis and the
+   input Time occurs before the first value in the Time list/array
+   or after the last value in the Time list/array. </dd>
+</dl>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<a name="REFERENCES"></a>
+<hr>
+<h4>REFERENCES</h4>
+<!-- BEGIN REFERENCES -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END REFERENCES -->
+<a name="COMPILER SPECIFICS"></a>
+<hr>
+<h4>COMPILER SPECIFICS</h4>
+<!-- BEGIN COMPILER SPECIFICS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END COMPILER SPECIFICS -->
+<a name="PRECOMPILER OPTIONS"></a>
+<hr>
+<h4>PRECOMPILER OPTIONS</h4>
+<!-- BEGIN PRECOMPILER OPTIONS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END PRECOMPILER OPTIONS -->
+<a name="LOADER OPTIONS"></a>
+<hr>
+<h4>LOADER OPTIONS</h4>
+<!-- BEGIN LOADER -->
+<div>None.<br>
+<br>
+</div>
+<!-- END LOADER OPTIONS -->
+<a name="TEST PROGRAM"></a>
+<hr>
+<h4>TEST PROGRAM</h4>
+<!-- BEGIN TEST PROGRAM -->
+<div>None.<br>
+</div>
+<br>
+<!-- END TEST PROGRAM -->
+<a name="KNOWN BUGS"></a>
+<hr>
+<h4>KNOWN BUGS</h4>
+<!-- BEGIN KNOWN BUGS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END KNOWN BUGS -->
+<a name="NOTES"></a>
+<hr>
+<h4>NOTES</h4>
+<!-- BEGIN NOTES -->
+<div>   For all routines in this module the calendar type in module
+   time_manager must be set. <br>
+<br>   The following private parameters are set by this module: <pre>           seconds per minute = 60
+           minutes per hour   = 60
+           hours   per day    = 24
+           months  per year   = 12</pre> 
+</div>
+<br>
+<!-- END NOTES -->
+<a name="FUTURE PLANS"></a>
+<hr>
+<h4>FUTURE PLANS</h4>
+<!-- BEGIN FUTURE PLANS -->
+<div>
+        None.
+      </div>
+<br>
+<!-- END FUTURE PLANS -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>
