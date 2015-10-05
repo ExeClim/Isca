@@ -8,11 +8,11 @@
 #$ -r n
 #####
 
-  set timestamp
-#  set echo timestamp
+  #set timestamp
+  set echo timestamp
   set machine          = `hostname`
 
-  set do_compile       = true	#compile before running (true for development)
+  set do_compile       = false	#compile before running (true for development)
   set in               = $1	#this is the input from runjob and corresponds to the restart month
 
   set npes             = 8	#number of processes WARNING: can only use the restart files from 8 cpu's if restart was made from a run using 8 cps
@@ -38,7 +38,7 @@
   set run_idb_serial	= false     #default should be false
   set run_mpi		= true      #default should be true
   set run_serial	= false     #default should be false
-  set write_over_data 	= false     #default should be false
+  set write_over_data 	= True     #default should be false
 
 set out = $in				#assign the input to output and add 1.
 @ out ++			     
@@ -180,14 +180,11 @@ if ($in > 0) then
 	cpio -iv < res	
 endif
 
-  echo 'stephen_1'
 
 if ($in > 13) then
 	cp $arc/restarts/res_$in.cpio res
 	cpio -iv < res	
-	echo "stephen_2"
 endif
-	echo "stephen_3"
 
 #join namelists into input.nml	
   cd  $workdir
@@ -200,7 +197,7 @@ endif
 
 #run and determine what type of machine the script is run on. npes->number of processes and $executable:t program name and arguments
 if ($run_gdb_parallel == true) then
-	ps ax | grep FMS.exe
+	ps ax | grep fms_moist.x
 	mpirun -np $npes  xterm -e gdb $executable:t
 # 	mpirun -dgb=idb -np $npes  $executable:t
 endif
@@ -221,7 +218,7 @@ endif
 #if using multiple processors then join the output files created into the file runX
   if ($npes > 1) then
      foreach ncfile (`/bin/ls *.nc.0000`)	#ncfile = i, for each i(`/bin/ls *.nc.0000`)
-        $source_dir/extra/mppnccombine.ia64 $ncfile:r				
+        $dir_base/postprocessing/mppnccombine.x $ncfile:r				
         if ($status == 0) rm -f $ncfile:r.????  #r.???? eg nc.0003
      end
   endif
@@ -236,16 +233,15 @@ cp ./*.nc $arc/run$out/		#move the model output to archive
 #  /bin/ls *.nc | cpio -ovK > nc_$out.cpio
 #  cp nc_$out.cpio $arc/nc_$out.cpio
 
-
-#creates the new restart files res_X.cpio
-cd RESTART			
-if ($npes > 1) then
-    foreach ncfile (`/bin/ls *.nc.0000`)
-        $source_dir/extra/mppnccombine.ia64 $ncfile:r	
-        if ($status == 0) rm -f $ncfile:r.????
-    end
-endif
-/bin/ls *.res *.res.nc | cpio -ov > res_$out.cpio	#compress the restart then copy from run location to data stroage location
+# #creates the new restart files res_X.cpio #s It would appear this is unecessary in 2013 FMS as new mppncombine.x does the restart part and the other nc file work in one move.
+ cd RESTART			
+# if ($npes > 1) then
+#     foreach ncfile (`/bin/ls *.nc.0000`)
+#         $dir_base/postprocessing/mppnccombine.x $ncfile:r	
+#         if ($status == 0) rm -f $ncfile:r.????
+#     end
+# endif
+ /bin/ls *.res *.res.nc | cpio -ov > res_$out.cpio	#compress the restart then copy from run location to data stroage location
 cp res_$out.cpio $arc/restarts/			
 
 cd  $workdir

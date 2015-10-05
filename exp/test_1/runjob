@@ -23,7 +23,7 @@ ulimit -s unlimited
 
 #i=0 (from 0-11) for a spin up. Start at i=12 or greater for an experiment
 
-for ((i=0; i < 1; i++))	
+for ((i=0; i < 5; i++))	
 	
 do
 	./runscript $i 

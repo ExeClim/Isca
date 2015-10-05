@@ -3,3 +3,4 @@ compilation*/
 *.x
 *.o
 *~
+spin_up_restart/
