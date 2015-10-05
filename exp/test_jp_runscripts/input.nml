@@ -1,0 +1,122 @@
+ &main_nml
+    days = 20,
+    dt_atmos = 600 /
+
+# Note: damping_order = 4 specifies del 8'th diffusion
+
+ &spectral_dynamics_nml
+    damping_option          = 'resolution_dependent',
+    damping_order           = 4,
+    damping_coeff           = 2.3148148e-05,
+    do_mass_correction      =.true.,
+    do_energy_correction    =.true.,
+    do_water_correction     =.true.,
+    use_virtual_temperature =.true.,
+    vert_advect_uv          = 'second_centered',
+    vert_advect_t           = 'second_centered',
+    longitude_origin        = 0.,
+    robert_coeff            = .04,
+    alpha_implicit          = .5,
+    reference_sea_level_press=1.e5,
+    lon_max                 = 128,
+    lat_max                 = 64,
+    num_levels              = 30,
+    num_fourier             = 42,
+    num_spherical           = 43,
+    fourier_inc             = 1,
+    triang_trunc            =.true.,
+    valid_range_t 	    = 100. 800.,
+    vert_coord_option       = 'uneven_sigma',
+    surf_res                = 0.1,
+    scale_heights           = 5.0,
+    exponent                = 2.0 /
+
+# Empty namelist causes all values to take on default values.
+# The default values for hs_forcing_nml are as described in:
+# Held, I. M., and M. J. Suarez, 1994: A proposal for the intercomparison
+# of the dynamical cores of atmospheric general circulation models.
+# Bulletin of the American Meteorological Society, 75(10), 1825-1830.
+
+ &hs_forcing_nml /
+
+ &diag_manager_nml
+   mix_snapshot_average_fields = .true. /
+
+# domains_stack_size will vary for different model resolutions,
+# domain decompositions, and number of processors used.
+
+ &fms_nml
+   domains_stack_size = 600000 /
+
+ &fms_io_nml
+   threading_write = 'single',
+   fileset_write = 'single' /
+
+ &vert_turb_driver_nml
+   do_mellor_yamada       = .false.,
+   do_diffusivity         = .true.,
+   do_shallow_conv        = .false.,
+   gust_scheme            = 'constant',
+   constant_gust          = 1.0,
+   use_tau                = .true.,
+   do_molecular_diffusion = .false./
+
+ &diffusivity_nml
+    pbl_mcm            = .false.,
+    free_atm_diff      = .false.,
+    entr_ratio         = 0.0,
+    parcel_buoy        = 0.0,
+    fixed_depth        = .false.,
+    frac_inner         = 0.1/
+
+ &monin_obukhov_nml
+    neutral          = .false.,
+    rich_crit        = 2.0,
+    stable_option    = 1 /
+
+ &surface_flux_nml
+    use_virtual_temp = .true.,
+    old_dtaudv = .true. /
+
+ &atmosphere_nml
+    idealized_moist_model = .true. /
+
+ &idealized_moist_phys_nml
+    two_stream      = .true.,
+    turb            = .true.,
+    lwet_convection = .true.,
+    mixed_layer_bc  = .true.,
+    do_virtual      = .true.,
+    roughness_mom   = 5e-03,
+    roughness_heat  = 1e-05,
+    roughness_moist = 1e-05 /
+
+ &spectral_init_cond_nml
+    initial_temperature  = 280.0 /
+
+ &two_stream_gray_rad_nml
+    albedo_value   = 0.38,  
+    linear_tau     = 0.2,
+    solar_constant = 1360.,
+    solar_exponent = 2.0,
+    ir_tau_pole    = 1.8,
+    ir_tau_eq      = 7.2,
+    del_sol        = 1.2,
+    atm_abs        = 0.22 /
+      
+ &mixed_layer_nml
+    depth       = 1.0,
+    evaporation = .true. /
+
+ &qe_moist_convection_nml
+    tau_bm  = 7200.0,
+    rhbm    = 0.7,
+    val_inc = 0.01,
+    Tmin    = 160.,
+    Tmax    = 350. /
+
+ &lscale_cond_nml
+    do_evap = .false./
+
+ &sat_vapor_pres_nml
+    do_simple = .true. /

@@ -21,7 +21,7 @@
   set exp_name         	= test_1 			#control run of code - for each experiment have a new experiment name
   set workdir           = /scratch/sit204/workdir_2013/$exp_name/np$npes	#base working directory
   set base_arc        	= /scratch/sit204/Data_2013/$exp_name/np$npes	#storing data in location other than workdir (eg archived data) 
-  set dir_base		    = /scratch/sit204/FMS2013/GFDLmoistModel/
+  set dir_base		= /scratch/sit204/FMS2013/GFDLmoistModel
   set source_dir       	= $dir_base/src
   set exp_dir          	= $dir_base/exp/$exp_name			
   set spin_up_restarts  = $dir_base/spin_up_restart/$exp_name/np$npes	
@@ -30,7 +30,7 @@
   set diag_table       	= $exp_dir/diag_table				#vars to output
   set field_table       = $exp_dir/field_table										
   set compile_dir       = $dir_base/compilation_parallel		#compiled code location
-  set executable        = $compile_dir/FMS.exe				#compiled executable
+  set executable        = $compile_dir/fms_moist.x			#compiled executable
   set path_names        = path_names 					#s Uses the file `path_names' that's in source_dir, i.e. /src/path_names
 
   #run in serial or parallel?
@@ -122,7 +122,7 @@ if($do_compile == true) then
 
   if ($run_mpi == true) then
     echo "Run in parallel mode"
-    $source_dir/extra/mkmf -d -a $source_dir  -p FMS.exe -t   $source_dir/extra/mkmf.template.ia64 \
+    $dir_base/bin/mkmf -d -a $source_dir  -p fms_moist.x -t   $dir_base/bin/mkmf.template.ia64 \
     -c "-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8" $path_names $source_dir/shared/mpp/include $source_dir/shared/constants $source_dir/include  
     cp Makefile $compile_dir		#copy the mf 
     cd $compile_dir    
@@ -131,7 +131,7 @@ if($do_compile == true) then
   if ($run_idb_serial == true || $run_serial == true)   then #|| means logical or
     #only run in serial when debugging using idb
     echo "Run in serial mode"
-    $source_dir/extra/mkmf -d -a $source_dir  -p FMS.exe -t   $exp_dir/mkmf.template.debug\
+    bin/mkmf -d -a $source_dir  -p fms_moist.x -t   $exp_dir/mkmf.template.debug\
     -c "-Duse_netCDF" $path_names $source_dir/shared/mpp/include $source_dir/shared/constants $source_dir/include  
     cp Makefile $compile_dir		
     cd $compile_dir    

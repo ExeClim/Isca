@@ -287,7 +287,7 @@ contains
 !-----------------------------------------------------------------------
 !------ initialize atmospheric model ------
 
-      call omp_set_num_threads(atmos_nthreads)
+!      call omp_set_num_threads(atmos_nthreads)
       if (mpp_pe() .eq. mpp_root_pe()) then
         unit=stdout()
         write(unit,*) ' starting ',atmos_nthreads,' OpenMP threads per MPI-task'
@@ -295,7 +295,7 @@ contains
       endif
       base_cpu = get_cpu_affinity()
 !$OMP PARALLEL
-      call set_cpu_affinity(base_cpu + omp_get_thread_num())
+!      call set_cpu_affinity(base_cpu + omp_get_thread_num())
 #ifdef DEBUG
       write(6,*) 'PE: ',mpp_pe(),'  thread_num', omp_get_thread_num(),'  affinity:',get_cpu_affinity()
       call flush(6) 

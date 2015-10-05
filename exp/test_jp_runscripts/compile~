@@ -24,11 +24,11 @@ platform=ia64                                       # A unique identifier for yo
 template=$GFDL_BASE/bin/mkmf.template.$platform     # path to template for your platform
 mkmf=$GFDL_BASE/bin/mkmf                        # path to executable mkmf
 sourcedir=$GFDL_BASE/src                             # path to directory containing model source code
-pathnames=$GFDL_BASE/input/path_names                         # path to file containing list of source paths
+pathnames=$GFDL_BASE/input/path_names                # path to file containing list of source paths
 ppdir=$GFDL_BASE/postprocessing                  # path to directory containing the tool for combining distributed diagnostic output files
 #-----------------------------------------------------------------------------------------------------
 execdir=$exp_path/exec.$platform  # where code is compiled and executable is created
-executable=$execdir/full_dynamics.x
+executable=$execdir/fms_moist.x
 
 netcdf_flags=`nf-config --fflags --flibs`
 
@@ -63,7 +63,7 @@ cd $execdir
 cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8"
 $mkmf -a $sourcedir -t $template -p `basename $executable` -c "$cppDefs" $pathnames $sourcedir/shared/include $sourcedir/shared/mpp/include
 if [ $? != 0 ]; then
-   echo "ERROR: mkmf failed for full_dynamics" 
+   echo "ERROR: mkmf failed for fms_moist" 
    exit 1
 fi
 

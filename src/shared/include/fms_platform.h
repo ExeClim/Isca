@@ -1,5 +1,5 @@
-#ifndef__FMS_PLATFORM_
-#define__FMS_PLATFORM_
+#ifndef __FMS_PLATFORM_
+#define __FMS_PLATFORM_
 
 !-*-f90-*-*
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

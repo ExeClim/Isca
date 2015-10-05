@@ -1,0 +1,5 @@
+exec.*/
+compilation*/
+*.x
+*.o
+*~

@@ -28,7 +28,7 @@ pathnames=$GFDL_BASE/input/path_names                # path to file containing l
 ppdir=$GFDL_BASE/postprocessing                  # path to directory containing the tool for combining distributed diagnostic output files
 #-----------------------------------------------------------------------------------------------------
 execdir=$exp_path/exec.$platform  # where code is compiled and executable is created
-executable=$execdir/full_dynamics.x
+executable=$execdir/fms_moist.x
 
 netcdf_flags=`nf-config --fflags --flibs`
 
@@ -63,7 +63,7 @@ cd $execdir
 cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8"
 $mkmf -a $sourcedir -t $template -p `basename $executable` -c "$cppDefs" $pathnames $sourcedir/shared/include $sourcedir/shared/mpp/include
 if [ $? != 0 ]; then
-   echo "ERROR: mkmf failed for full_dynamics" 
+   echo "ERROR: mkmf failed for fms_moist" 
    exit 1
 fi
 
@@ -71,6 +71,6 @@ fi
 make `basename $executable`
 if [ $? != 0 ]; then
    unset echo
-   echo "ERROR: make failed for full_dynamics" 
+   echo "ERROR: make failed for fms_moist" 
    exit 1
 fi
