@@ -1,0 +1,13 @@
+prefix=/sw/netcdf-4.3.0
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+ccompiler=gcc
+
+Name: netcdf
+Description: NetCDF Client Library for C
+URL: http://www.unidata.ucar.edu/netcdf
+Version: 4.3.0
+Libs: -L${libdir} -lnetcdf
+Cflags: -I${includedir}
+

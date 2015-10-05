@@ -1,0 +1,159 @@
+This is netcdf-f77.info, produced by makeinfo version 4.13 from
+/home/ed/netcdf/netcdf_fortran_3/man4//defines.texi.
+
+Copyright (C) 2005-2009 University Corporation for Atmospheric Research
+
+
+
+   Permission is granted to make and distribute verbatim copies of this
+manual provided that the copyright notice and these paragraphs are
+preserved on all copies.  The software and any accompanying written
+materials are provided "as is" without warranty of any kind.  UCAR
+expressly disclaims all warranties of any kind, either expressed or
+implied, including but not limited to the implied warranties of
+merchantability and fitness for a particular purpose.
+
+   The Unidata Program Center is managed by the University Corporation
+for Atmospheric Research and sponsored by the National Science
+Foundation.  Any opinions, findings, conclusions, or recommendations
+expressed in this publication are those of the author(s) and do not
+necessarily reflect the views of the National Science Foundation.
+
+   Mention of any commercial company or product in this document does
+not constitute an endorsement by the Unidata Program Center.  Unidata
+does not authorize any use of information from this publication for
+advertising or publicity purposes.
+
+INFO-DIR-SECTION netCDF scientific data format
+START-INFO-DIR-ENTRY
+* netcdf-f77: (netcdf-f77).         The NetCDF Fortran 77 Interface Guide
+END-INFO-DIR-ENTRY
+
+
+Indirect:
+netcdf-f77.info-1: 1398
+netcdf-f77.info-2: 292059
+
+Tag Table:
+(Indirect)
+Node: Top1398
+Node: Use of the NetCDF Library4996
+Node: Creating a NetCDF Dataset6586
+Node: Reading a NetCDF Dataset with Known Names9575
+Node: Reading a netCDF Dataset with Unknown Names11627
+Node: Adding New Dimensions14918
+Node: Error Handling18021
+Node: Compiling and Linking with the NetCDF Library19167
+Node: Datasets20880
+Node: Datasets Introduction21482
+Node: NetCDF Library Interface Descriptions23484
+Node: NF_STRERROR24519
+Node: NF_INQ_LIBVERS25897
+Node: NF_CREATE26573
+Node: NF__CREATE30244
+Node: NF_CREATE_PAR35377
+Node: NF_OPEN38273
+Node: NF__OPEN40197
+Node: NF_OPEN_PAR43079
+Node: NF_REDEF45696
+Node: NF_ENDDEF46933
+Node: NF__ENDDEF48662
+Node: NF_CLOSE53065
+Node: NF_INQ Family54532
+Node: NF_SYNC57367
+Node: NF_ABORT61489
+Node: NF_SET_FILL63259
+Node: NF_SET_DEFAULT_FORMAT67643
+Node: NF_SET_CHUNK_CACHE69947
+Node: NF_GET_CHUNK_CACHE71651
+Node: Groups73076
+Node: NF_INQ_NCID74735
+Node: NF_INQ_GRPS76000
+Node: NF_INQ_VARIDS77323
+Node: NF_INQ_DIMIDS78567
+Node: NF_INQ_GRPNAME_LEN80217
+Node: NF_INQ_GRPNAME81434
+Node: NF_INQ_GRPNAME_FULL82947
+Node: NF_INQ_GRP_PARENT84537
+Node: NF_INQ_GRP_NCID85867
+Node: NF_INQ_GRP_FULL_NCID87314
+Node: NF_DEF_GRP88823
+Node: Dimensions90757
+Node: Dimensions Introduction91031
+Node: NF_DEF_DIM92884
+Node: NF_INQ_DIMID94978
+Node: NF_INQ_DIM Family96450
+Node: NF_RENAME_DIM99332
+Node: User Defined Data Types101285
+Node: User Defined Types101624
+Node: NF_INQ_TYPEIDS103038
+Node: NF_INQ_TYPEID103964
+Node: NF_INQ_TYPE105079
+Node: NF_INQ_USER_TYPE107666
+Node: Compound Types109423
+Node: NF_DEF_COMPOUND110657
+Node: NF_INSERT_COMPOUND112844
+Node: NF_INSERT_ARRAY_COMPOUND114856
+Node: NF_INQ_COMPOUND117480
+Node: NF_INQ_COMPOUND_FIELD120243
+Node: Variable Length Array123561
+Node: NF_DEF_VLEN125599
+Node: NF_INQ_VLEN126950
+Node: NF_FREE_VLEN128357
+Node: NF_PUT_VLEN_ELEMENT129355
+Node: NF_GET_VLEN_ELEMENT130655
+Node: Opaque Type132121
+Node: NF_DEF_OPAQUE132865
+Node: NF_INQ_OPAQUE134112
+Node: Enum Type135295
+Node: NF_DEF_ENUM135649
+Node: NF_INSERT_ENUM137590
+Node: NF_INQ_ENUM139353
+Node: NF_INQ_ENUM_MEMBER140841
+Node: NF_INQ_ENUM_IDENT142419
+Node: Variables143954
+Node: Variables Introduction144965
+Node: Variable Types147239
+Node: NF_DEF_VAR148615
+Node: NF_DEF_VAR_CHUNKING152505
+Node: NF_INQ_VAR_CHUNKING157230
+Node: NF_SET_VAR_CHUNK_CACHE158891
+Node: NF_GET_VAR_CHUNK_CACHE161318
+Node: NF_DEF_VAR_FILL163668
+Node: NF_INQ_VAR_FILL165782
+Node: NF_DEF_VAR_DEFLATE166737
+Node: NF_INQ_VAR_DEFLATE170735
+Node: NF_INQ_VAR_SZIP172631
+Node: NF_DEF_VAR_FLETCHER32173800
+Node: NF_INQ_VAR_FLETCHER32176738
+Node: NF_DEF_VAR_ENDIAN178160
+Node: NF_INQ_VAR_ENDIAN181359
+Node: NF_INQ_VARID182791
+Node: NF_INQ_VAR family184168
+Node: NF_PUT_VAR1_ type188321
+Node: NF_PUT_VAR_ type192316
+Node: NF_PUT_VARA_ type197053
+Node: NF_PUT_VARS_ type203199
+Node: NF_PUT_VARM_ type209217
+Node: NF_GET_VAR1_ type218471
+Node: NF_GET_VAR_ type222474
+Node: NF_GET_VARA_ type226365
+Node: NF_GET_VARS_ type231971
+Node: NF_GET_VARM_ type237611
+Node: Reading and Writing Character String Values246933
+Node: Fill Values252354
+Node: NF_RENAME_VAR254770
+Node: NF_VAR_PAR_ACCESS256629
+Node: Attributes258760
+Node: Attributes Introduction259116
+Node: NF_PUT_ATT_ type261247
+Node: NF_INQ_ATT Family266497
+Node: NF_GET_ATT_ type270909
+Node: NF_COPY_ATT275741
+Node: NF_RENAME_ATT279454
+Node: NF_DEL_ATT281634
+Node: V2 FORTRAN Transition283476
+Node: Summary of FORTRAN 77 Interface292059
+Node: Combined Index305435
+
+End Tag Table
