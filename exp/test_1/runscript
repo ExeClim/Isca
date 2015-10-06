@@ -8,8 +8,8 @@
 #$ -r n
 #####
 
-  #set timestamp
-  set echo timestamp
+  set timestamp
+#   set echo timestamp
   set machine          = `hostname`
 
   set do_compile       = false	#compile before running (true for development)
@@ -25,13 +25,13 @@
   set source_dir       	= $dir_base/src
   set exp_dir          	= $dir_base/exp/$exp_name			
   set spin_up_restarts  = $dir_base/spin_up_restart/$exp_name/np$npes	
-#   set core_namelist    	= $exp_dir/core.nml				#dynamis namelist
-  set phys_namelist    	= $dir_base/input/input.nml				#physic namelist - both now in input.nml already - will sort later
+  set core_namelist    	= $exp_dir/core.nml				#dynamis namelist
+  set phys_namelist    	= $exp_dir/phys.nml				#physic namelist
   set diag_table       	= $exp_dir/diag_table				#vars to output
   set field_table       = $exp_dir/field_table										
   set compile_dir       = $dir_base/compilation_parallel		#compiled code location
   set executable        = $compile_dir/fms_moist.x			#compiled executable
-  set path_names        = path_names 					#s Uses the file `path_names' that's in source_dir, i.e. /src/path_names
+  set path_names        = $exp_dir/path_names 					#s Uses the file `path_names' that's in the exp directory /path_names
 
   #run in serial or parallel?
   set run_gdb_parallel	= false     #default should be false
@@ -83,17 +83,6 @@ if ( -d $arc'/run'$out ) then
      exit  
   endif
 endif
-
-
-# alias time_stamp       /home/bw/bin/time_stamp.csh
-# alias runexe           /home/bw/bin/runexe.csh
-# setenv FMSPP_PATH      /home/bw/bin/fms
-# alias combine_ncfiles  $FMSPP_PATH/combine_script.csh
-# alias get_fms_data "/home/fms/bin/get_fms_data -r lima -m ia64"
-# get_fms_data topog pctwater
-# source /opt/modules/default/init/tcsh
-# module switch ifort.8.0.044 ifort.8.1.023
-# module switch mpt-1.0-0 mpt-1.11-1
 
 setenv MALLOC_CHECK_ 0
 
@@ -150,17 +139,17 @@ echo "Compilation done"
 #convection is given 7200 is resolve i.e. 2 hours
 
 cat > input.nml <<EOF
- &coupler_nml		 			
-     months = 1,
-     days   = 0,	
+ &main_nml		 			
+     days   = 30,	
      hours  = 0,
      minutes = 0,
      seconds = 0,			
      dt_atmos = 900,
-     current_date = 1982,1,1,0,0,0,
-     calendar = 'thirty_day'/
 EOF
 
+#     months = 1, FMS 2013 doesn't appear to use calendar or other such options that were present in 2006 version.
+#     current_date = 1982,1,1,0,0,0,
+#     calendar = 'thirty_day'/
 
 
 # No restarts when $in=0 and it means start model from initial state  
@@ -172,10 +161,8 @@ if ($in > 0) then
 	cd INPUT
 	if ($in == 12) then
 		cp $spin_up_restarts/restarts/res_$in.cpio res
-		echo stephen_4
 	else
 		cp $arc/restarts/res_$in.cpio res
-		echo stephen_5		
 	endif
 	cpio -iv < res	
 endif
@@ -188,7 +175,7 @@ endif
 
 #join namelists into input.nml	
   cd  $workdir
-#   cat $core_namelist >> input.nml		
+  cat $core_namelist >> input.nml		
   cat $phys_namelist >> input.nml
   cp  $diag_table diag_table
   cp  $field_table field_table
