@@ -27,6 +27,12 @@ for ((i=0; i < 2; i++))
 	
 do
 	./runscript $i 
+	error_code=$?
+	if [ $error_code != 0 ]; then
+		echo 'error somewhere in runscript'
+		echo $error_code
+		exit
+        fi
 	#mv terminal.log log_files/terminal.log.run$i 
 done
 
