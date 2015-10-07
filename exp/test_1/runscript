@@ -32,6 +32,7 @@
   set compile_dir       = $dir_base/compilation_parallel		#compiled code location
   set executable        = $compile_dir/fms_moist.x			#compiled executable
   set path_names        = $exp_dir/path_names 					#s Uses the file `path_names' that's in the exp directory /path_names
+  set make_flags        =                                                # set to -d for DEBUG messages
 
   #run in serial or parallel?
   set run_gdb_parallel	= false     #default should be false
@@ -111,7 +112,7 @@ if($do_compile == true) then
 
   if ($run_mpi == true) then
     echo "Run in parallel mode"
-    $dir_base/bin/mkmf -d -a $source_dir  -p fms_moist.x -t   $dir_base/bin/mkmf.template.ia64 \
+    $dir_base/bin/mkmf $make_flags -a $source_dir  -p fms_moist.x -t   $dir_base/bin/mkmf.template.ia64 \
     -c "-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8" $path_names $source_dir/shared/mpp/include $source_dir/shared/constants $source_dir/include  
     cp Makefile $compile_dir		#copy the mf 
     cd $compile_dir    
@@ -120,7 +121,7 @@ if($do_compile == true) then
   if ($run_idb_serial == true || $run_serial == true)   then #|| means logical or
     #only run in serial when debugging using idb
     echo "Run in serial mode"
-    bin/mkmf -d -a $source_dir  -p fms_moist.x -t   $exp_dir/mkmf.template.debug\
+    $dir_base/bin/mkmf $make_flags -a $source_dir  -p fms_moist.x -t   $exp_dir/mkmf.template.debug\
     -c "-Duse_netCDF" $path_names $source_dir/shared/mpp/include $source_dir/shared/constants $source_dir/include  
     cp Makefile $compile_dir		
     cd $compile_dir    
