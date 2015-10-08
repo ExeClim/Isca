@@ -313,7 +313,7 @@ endif
 !
 ! Now update the mixed layer surface temperature using an implicit step
 !
-eff_heat_capacity = depth * RHO_CP + t_surf_dependence * dt
+eff_heat_capacity = depth * RHO_CP + t_surf_dependence * dt !s need to investigate how this works
 
 if (any(eff_heat_capacity .eq. 0.0))  then 
   write(*,*) 'mixed_layer: error', eff_heat_capacity

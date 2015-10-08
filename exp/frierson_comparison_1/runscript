@@ -141,7 +141,7 @@ echo "Compilation done"
 
 cat > input.nml <<EOF
  &main_nml		 			
-     days   = 5,	
+     days   = 30,	
      hours  = 0,
      minutes = 0,
      seconds = 0,			
@@ -169,10 +169,10 @@ if ($in > 0) then
 endif
 
 
-if ($in > 13) then
-	cp $arc/restarts/res_$in.cpio res
-	cpio -iv < res	
-endif
+#if ($in > 13) then
+#	cp $arc/restarts/res_$in.cpio res
+#	cpio -iv < res	
+#endif
 
 #join namelists into input.nml	
   cd  $workdir

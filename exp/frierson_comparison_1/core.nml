@@ -28,7 +28,7 @@
 # Note: damping_order = 4 specifies del 8'th diffusion
 
  &diag_manager_nml
-   mix_snapshot_average_fields = .true. /
+   mix_snapshot_average_fields = .false. /
 
 # domains_stack_size will vary for different model resolutions,
 # domain decompositions, and number of processors used.

@@ -62,7 +62,7 @@
     tconst      = 305.,
     delta_T     = 40.,
     prescribe_initial_dist = .true.,
-    evaporation = .false. /
+    evaporation = .true. /
 
  &qe_moist_convection_nml
     tau_bm  = 7200.0,
@@ -73,7 +73,7 @@
 
  &lscale_cond_nml
     do_simple=.true.,
-    do_evap = .false./
+    do_evap = .true./
 
  &sat_vapor_pres_nml
     do_simple = .true. /
