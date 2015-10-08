@@ -4,3 +4,4 @@ compilation*/
 *.o
 *~
 spin_up_restart/
+nohup.out

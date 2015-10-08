@@ -69,9 +69,11 @@ real    :: qflux_amp = 0.0
 real    :: qflux_width = 16.0  ! width of qflux region in degrees
 real    :: depth = 40.0
 logical :: load_qflux = .false.
+real    :: tconst = 305.0
+real    :: delta_T = 40.0
+logical :: prescribe_initial_dist = .false.
 
-
-namelist/mixed_layer_nml/ evaporation, qflux_amp, depth, qflux_width, load_qflux
+namelist/mixed_layer_nml/ evaporation, qflux_amp, depth, qflux_width, load_qflux, tconst, delta_T, prescribe_initial_dist
 
 !=================================================================================================================================
 
@@ -173,6 +175,16 @@ allocate(t_surf_dependence       (is:ie, js:je))
 !
 !see if restart file exists for the surface temperature
 !
+
+
+! latitude will be needed for oceanic q flux
+!s Moved up slightly so that rad_lat_2d can be used in initial temperature distribution if necessary.
+
+call get_deg_lat(deg_lat)
+do j=js,je
+  rad_lat_2d(:,j) = deg_lat(j)*PI/180.
+enddo
+
 if (file_exist('INPUT/mixed_layer.res.nc')) then
 
    call nullify_domain()
@@ -184,8 +196,15 @@ else if (file_exist('INPUT/swamp.res')) then
          call read_data (unit, t_surf)
          call close_file (unit)
   call error_mesg('mixed_layer','mixed_layer restart file not found, using swamp restart file', WARNING)
+elseif (prescribe_initial_dist) then
+!  call error_mesg('mixed_layer','mixed_layer restart file not found - initializing from prescribed distribution', WARNING)
+
+    t_surf(:,:) = tconst - delta_T*((3.*sin(rad_lat_2d)**2.)-1.)/3. 
+
 else
-  call error_mesg('mixed_layer','mixed_layer restart file not found', WARNING)
+
+  call error_mesg('mixed_layer','mixed_layer restart file not found - initializing from lowest model level temp', WARNING)
+
 endif
 
 id_t_surf = register_diag_field(mod_name, 't_surf',        &
@@ -197,11 +216,7 @@ id_flux_lhe = register_diag_field(mod_name, 'flux_lhe',        &
 id_flux_oceanq = register_diag_field(mod_name, 'flux_oceanq',        &
                                  axes(1:2), Time, 'oceanic Q-flux','watts/m2')
 
-! latitude will be needed for oceanic q flux
-call get_deg_lat(deg_lat)
-do j=js,je
-  rad_lat_2d(:,j) = deg_lat(j)*PI/180.
-enddo
+
 
 ! calculate ocean Q flux
 rad_qwidth = qflux_width*PI/180.
@@ -298,7 +313,7 @@ endif
 !
 ! Now update the mixed layer surface temperature using an implicit step
 !
-eff_heat_capacity = depth * RHO_CP + t_surf_dependence * dt
+eff_heat_capacity = depth * RHO_CP + t_surf_dependence * dt !s need to investigate how this works
 
 if (any(eff_heat_capacity .eq. 0.0))  then 
   write(*,*) 'mixed_layer: error', eff_heat_capacity
