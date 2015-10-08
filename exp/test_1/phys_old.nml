@@ -10,7 +10,6 @@
    do_mellor_yamada       = .false.,
    do_diffusivity         = .true.,
    do_shallow_conv        = .false.,
-   do_simple              = .true.,
    gust_scheme            = 'constant',
    constant_gust          = 1.0,
    use_tau                = .true.,
@@ -22,7 +21,6 @@
     entr_ratio         = 0.0,
     parcel_buoy        = 0.0,
     fixed_depth        = .false.,
-   do_simple              = .true.,
     frac_inner         = 0.1/
 
  &monin_obukhov_nml
@@ -32,7 +30,6 @@
 
  &surface_flux_nml
     use_virtual_temp = .true.,
-   do_simple              = .true.,
     old_dtaudv = .true. /
 
  &atmosphere_nml
@@ -73,7 +70,6 @@
     Tmax    = 350. /
 
  &lscale_cond_nml
-   do_simple              = .true.,
     do_evap = .false./
 
  &sat_vapor_pres_nml

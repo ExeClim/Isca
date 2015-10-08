@@ -255,6 +255,7 @@ do k = 1, n+1
        + (1.0 - linear_tau) * (p_half(:,:,k)/pstd_mks)**wv_exponent )
 
   sw_tau(:,:,k) = sw_tau_0 * (p_half(:,:,k)/pstd_mks)**solar_exponent
+!  sw_tau(:,:,k) = sw_tau_0 * (p_half(:,:,k)/p_half(:,:,n+1))**solar_exponent !s old code used actual surface pressure, rather than pstd_mks here. 
 
 end do
 
