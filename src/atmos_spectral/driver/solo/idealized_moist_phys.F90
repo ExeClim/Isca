@@ -8,7 +8,7 @@ module idealized_moist_phys_mod
 
 use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, FATAL
 
-use           constants_mod, only: grav
+use           constants_mod, only: grav, rdgas, rvgas
 
 use        time_manager_mod, only: time_type, get_time, operator( + )
 
@@ -32,6 +32,8 @@ use   spectral_dynamics_mod, only: get_axis_id, get_num_levels, get_surf_geopote
 
 use        surface_flux_mod, only: surface_flux
 
+use      sat_vapor_pres_mod, only: lookup_es !s Have added this to allow relative humdity to be calculated in a consistent way.
+
 implicit none
 private
 !=================================================================================================================================
@@ -53,11 +55,12 @@ logical :: do_virtual = .false. ! whether virtual temp used in gcm_vert_diff
 logical :: lwet_convection = .false.
 logical :: two_stream = .true.
 logical :: mixed_layer_bc = .false.
+logical :: do_simple = .false. !s Have added this to enable relative humidity to be calculated correctly below.
 real :: roughness_heat = 0.05
 real :: roughness_moist = 0.05
 real :: roughness_mom = 0.05
 
-namelist / idealized_moist_phys_nml / turb, lwet_convection, roughness_heat, two_stream, mixed_layer_bc, &
+namelist / idealized_moist_phys_nml / turb, lwet_convection, roughness_heat, two_stream, mixed_layer_bc, do_simple, &
                                       roughness_moist, roughness_mom, do_virtual
 
 real, allocatable, dimension(:,:)   ::                                        &
@@ -143,7 +146,8 @@ integer ::           &
      id_conv_dt_tg,  &   ! temperature tendency from convection
      id_conv_dt_qg,  &   ! temperature tendency from convection
      id_cond_dt_tg,  &   ! temperature tendency from convection
-     id_cond_dt_qg       ! temperature tendency from convection
+     id_cond_dt_qg,  &   ! temperature tendency from convection
+     id_rh       	 ! Relative humidity
 
 integer, allocatable, dimension(:,:) :: & convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat   
@@ -315,6 +319,9 @@ if(turb) then
         axes(1:3), Time, 'moisture diffusion tendency','T/s')
 endif
 
+   id_rh = register_diag_field ( mod_name, 'rh', &
+	axes(1:3), Time, 'relative humidity', 'percent')
+
 end subroutine idealized_moist_phys_init
 !=================================================================================================================================
 subroutine idealized_moist_phys(Time, p_half, p_full, z_half, z_full, ug, vg, tg, grid_tracers, &
@@ -328,7 +335,7 @@ real, dimension(:,:,:),     intent(inout) :: dt_ug, dt_vg, dt_tg
 real, dimension(:,:,:,:),   intent(inout) :: dt_tracers
 
 real :: delta_t
-real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp
+real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH
 
 if(current == previous) then
    delta_t = dt_real
@@ -557,6 +564,11 @@ if(turb) then
 
 endif ! if(turb) then
 
+!s Adding relative humidity calculation so as to allow comparison with Frierson's thesis.
+   call rh_calc (p_full(:,:,:,previous),tg_tmp,qg_tmp,RH)
+   if(id_rh >0) used = send_data(id_rh, RH*100., Time)
+
+
 end subroutine idealized_moist_phys
 !=================================================================================================================================
 subroutine idealized_moist_phys_end
@@ -571,6 +583,60 @@ call lscale_cond_end
 if(mixed_layer_bc)  call mixed_layer_end(t_surf)
 
 end subroutine idealized_moist_phys_end
+!=================================================================================================================================
+
+subroutine rh_calc(pfull,T,qv,RH) !s subroutine copied from 2006 FMS MoistModel file moist_processes.f90 (v14 2012/06/22 14:50:00). 
+
+        IMPLICIT NONE
+
+
+        REAL, INTENT (IN),    DIMENSION(:,:,:) :: pfull,T,qv
+        REAL, INTENT (OUT),   DIMENSION(:,:,:) :: RH
+
+        REAL, DIMENSION(SIZE(T,1),SIZE(T,2),SIZE(T,3)) :: esat
+
+	real, parameter :: d622 = rdgas/rvgas
+	real, parameter :: d378 = 1.-d622
+        
+!-----------------------------------------------------------------------
+!       Calculate RELATIVE humidity.
+!       This is calculated according to the formula:
+!
+!       RH   = qv / (epsilon*esat/ [pfull  -  (1.-epsilon)*esat])
+!
+!       Where epsilon = RDGAS/RVGAS = d622
+!
+!       and where 1- epsilon = d378
+!
+!       Note that RH does not have its proper value
+!       until all of the following code has been executed.  That
+!       is, RH is used to store intermediary results
+!       in forming the full solution.
+
+        !calculate water saturated vapor pressure from table
+        !and store temporarily in the variable esat
+        CALL LOOKUP_ES(T,esat)						!same as escomp
+        
+        !calculate denominator in qsat formula
+        if(do_simple) then
+          RH(:,:,:) = pfull(:,:,:)
+        else
+          RH(:,:,:) = pfull(:,:,:)-d378*esat(:,:,:)
+        endif
+     
+        !limit denominator to esat, and thus qs to epsilon
+        !this is done to avoid blow up in the upper stratosphere
+        !where pfull ~ esat
+        RH(:,:,:) = MAX(RH(:,:,:),esat(:,:,:)) 
+        
+        !calculate RH
+        RH(:,:,:)=qv(:,:,:)/(d622*esat(:,:,:)/RH(:,:,:))
+      
+        !IF MASK is present set RH to zero
+!        IF (present(MASK)) RH(:,:,:)=MASK(:,:,:)*RH(:,:,:)
+
+END SUBROUTINE rh_calc
+
 !=================================================================================================================================
 
 end module idealized_moist_phys_mod
