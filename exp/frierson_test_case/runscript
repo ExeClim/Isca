@@ -18,7 +18,7 @@
   set npes             = 8	#number of processes WARNING: can only use the restart files from 8 cpu's if restart was made from a run using 8 cps
   
   #begin personalisations for running at exeter:
-  set exp_name         	= frierson_comparison_1			#control run of code - for each experiment have a new experiment name
+  set exp_name         	= frierson_test_case		#control run of code - for each experiment have a new experiment name
   set workdir           = /scratch/sit204/workdir_2013/$exp_name/np$npes	#base working directory
   set base_arc        	= /scratch/sit204/Data_2013/$exp_name/np$npes	#storing data in location other than workdir (eg archived data) 
   set dir_base		= /scratch/sit204/FMS2013/GFDLmoistModel
@@ -39,7 +39,7 @@
   set run_idb_serial	= false     #default should be false
   set run_mpi		= true      #default should be true
   set run_serial	= false     #default should be false
-  set write_over_data 	= true     #default should be false
+  set write_over_data 	= false     #default should be false
 
 set out = $in				#assign the input to output and add 1.
 @ out ++			     

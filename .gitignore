@@ -5,3 +5,6 @@ compilation*/
 *~
 spin_up_restart/
 nohup.out
+Makefile
+old_exps
+frierson_comparison_*old*

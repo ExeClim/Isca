@@ -3,9 +3,7 @@ atmos_param/edt/edt.F90
 atmos_param/entrain/entrain.F90
 atmos_param/hs_forcing/hs_forcing.F90
 atmos_param/lscale_cond/lscale_cond.F90
-atmos_param/monin_obukhov/monin_obukhov.F90
-atmos_param/monin_obukhov/monin_obukhov_interfaces.h
-atmos_param/monin_obukhov/monin_obukhov_kernel.F90
+/scratch/sit204/old_FMS_model_work/FMS2006/MoistModel/src/atmos_param/monin_obukhov/monin_obukhov.f90
 atmos_param/my25_turb/my25_turb.F90
 atmos_param/qe_moist_convection/qe_moist_convection.F90
 atmos_param/sea_esf_rad/null/rad_utilities.F90

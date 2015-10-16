@@ -76,7 +76,7 @@ real :: realnumber
 !   (kg/m^3)*(cal/kg/deg C)(joules/cal) = (joules/m^3/deg C)
 ! </DATA>
 
-real, public, parameter :: RADIUS = 6371.0e3   
+real, public, parameter :: RADIUS = 6376.0e3   
 real, public, parameter :: OMEGA  = 7.292e-5 
 real, public, parameter :: GRAV   = 9.80    
 real, public, parameter :: RDGAS  = 287.04 
