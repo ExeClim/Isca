@@ -31,7 +31,6 @@
  "two_stream",      "olr",                 "olr",                "1x30days",          "all", .true.,  "none", 2,
  "mixed_layer",     "flux_t",              "flux_t",             "1x30days",          "all", .true.,  "none", 2,
  "mixed_layer",     "flux_lhe",            "flux_lhe",           "1x30days",          "all", .true.,  "none", 2,
- "mixed_layer",     "flux_oceanq",         "flux_oceanq",        "1x30days",          "all", .true.,  "none", 2,
  "vert_turb",       "z_pbl",               "z_pbl", 	         "1x30days",          "all", .true.,  "none", 2,
  "dynamics",        "ucomp",               "ucomp",              "1x30days",          "all", .true., "none", 2,
  "dynamics",        "vcomp",               "vcomp",              "1x30days",          "all", .true., "none", 2,
