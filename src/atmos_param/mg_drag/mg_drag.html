@@ -1,0 +1,348 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Mozilla/4.7 [en] (X11; U; IRIX 6.5 IP22) [Netscape]">
+   <title>module mg_drag_mod</title>
+</head>
+<body text="#332211" bgcolor="#AABBCC">
+
+<center><font size=-2><a href="#INTERFACE">PUBLIC INTERFACE</a> / <a href="#ROUTINES">ROUTINES</a>
+/ <a href="#NAMELIST">NAMELIST</a> / <a href="#CHANGES">CHANGES</a> / <a href="#ERRORS">ERRORS</a>
+/ <a href="#REFERENCES">REFERENCES</a> / <a href="#NOTES">NOTES</a></font></center>
+
+<p>
+<hr>
+<h2>
+module mg_drag_mod</h2>
+<a NAME="HEADER"></a>
+<PRE>
+     <B>Contact:</B>   Bill Stern
+     <B>Reviewers:</B>
+
+</PRE>
+<!-- END HEADER -->
+<!---------------------------------------------------------------------><a NAME="OVERVIEW"></a>
+<hr>
+<h4>
+OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+&nbsp;&nbsp;&nbsp;&nbsp; <b>MG_DRAG - MOUNTAIN GRAVITY
+WAVE DRAG</b> - PIerrehumbert (1986)
+<blockquote>Calculates partial tendencies
+for the zonal and meridional winds due to the effect of mountain gravity
+wave drag.</blockquote>
+<!-- END OVERVIEW -->
+<!---------------------------------------------------------------------><a NAME="DESCRIPTION"></a><!-- BEGIN DESCRIPTION -->
+<blockquote>Given temperature and wind
+profiles at the model's pressure levels, this module returns tendencies
+of wind due to orographically induced gravity wave drag.
+<br><br>This parameterization was developed by Pierrehumbert (see reference)
+and implemented by Bill Stern. This parameterization develops a saturation
+flux profile which s defined as a limiting amount of momentum flux, above
+which wave breaking will take place and flux absorption will take place
+(i.e., wave drag). A key feature of this scheme is that the base momentum
+flux will obey linear theory for small Froude number (Fr), but for large
+Fr it attempts to incorporate nonlinear effects which will act to limit
+the growth of the flux. A second significant distinction in this scheme
+is the separation of a low-level region (which may involve a strong nonlinear
+drag enhancement that is not part of this parameterization) from upper
+atmospheric flux absorption, which is the focus of this scheme.</blockquote>
+<!-- END DESCRIPTION --><!---------------------------------------------------------------------><a NAME="MODULES_USED"></a>
+<hr>
+<h4>
+OTHER MODULES USED</h4>
+<!-- BEGIN MODULES_USED -->
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+constants_mod
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; utilities_mod
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; topography_mod
+<br>&nbsp;
+<br>&nbsp;
+<br>&nbsp;
+<p><!-- END MODULES_USED --><!---------------------------------------------------------------------><a NAME="INTERFACE"></a>
+<hr>
+<h4>
+PUBLIC INTERFACE</h4>
+<!-- BEGIN INTERFACE -->
+use mg_drag_mod [,only: mg_drag_init, mg_drag,
+mg_drag_end]
+<p>mg_drag_init&nbsp; - Called once to initialize mg_drag - read in subgrid
+mountains as a restart file. Also reads namelist. Must be called before
+mg_drag.
+<p>mg_drag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - Driver for mountain gravity
+wave drag module
+<p>mg_drag_end&nbsp; - Writes out subgrid mountains as a restart file..
+<p>Notes:
+<br>&nbsp;* A namelist interface ( &amp;mg_drag_nml ) controls runtime
+options.
+<br>&nbsp;
+<br>&nbsp;
+<p><!-- END INTERFACE --><!---------------------------------------------------------------------><a NAME="ROUTINES"></a>
+<hr>
+<h4>
+PUBLIC ROUTINES</h4>
+<!-- BEGIN ROUTINES -->
+<B>call mg_drag_init</B> (lonb,latb,hprime)
+<p>!--------------------------------------------------------------
+<br>! Input Arguments
+<br>!&nbsp;&nbsp;&nbsp;&nbsp; lonb&nbsp; - longitude in radians of the grid box edges
+<br>!&nbsp;&nbsp;&nbsp;&nbsp; latb&nbsp; - latitude  in radians of the grid box edges
+<br>!---------------------------------------------------------------------
+<br>&nbsp;real, intent(in), dimension(:) :: lonb,latb
+<p>!---------------------------------------------------------------------
+<br>! Optional Output Argument
+<br>!&nbsp;&nbsp;&nbsp; hprime - array of sub-grid scale mountain heights (in meters)
+<br>!---------------------------------------------------------------------
+<br>&nbsp;real, intent(out), dimension(:,:), optional :: hprime
+<br>!--------------------------------------------------------------
+<br>&nbsp;
+<p>&nbsp; <B>call mg_drag</B> (is,js,delt,uwnd,vwnd,temp,pfull,phalf,&nbsp;&nbsp; &amp;
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+zfull,zhalf,dtaux,dtauy,dtemp,taub,kbot)
+<p>!--------------------------------------------------------------
+<br>! Input Arguments
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; IS,JS&nbsp;&nbsp; - integers containing
+the starting
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+i,j indices from the full horizontal grid
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; delt&nbsp;&nbsp;&nbsp; - time step in seconds (real)
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; UWND&nbsp;&nbsp;&nbsp;&nbsp; Zonal
+wind (dimensioned IDIM x JDIM x KDIM)
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; VWND&nbsp;&nbsp;&nbsp;&nbsp; Meridional
+wind (dimensioned IDIM x JDIM x KDIM)
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TEMP&nbsp;&nbsp;&nbsp;&nbsp; Temperature
+at full model levels
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(dimensioned IDIM x JDIM x KDIM)
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PFULL&nbsp;&nbsp;&nbsp; Pressure at
+full model levels
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(dimensioned IDIM x JDIM x KDIM)
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PHALF&nbsp;&nbsp;&nbsp; Pressure at
+half model levels
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(dimensioned IDIM x JDIM x KDIM+1)
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ZHALF&nbsp;&nbsp;&nbsp; Height at half
+model levels
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(dimensioned IDIM x JDIM x KDIM+1)
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ZFULL&nbsp;&nbsp;&nbsp; Height at full
+model levels
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(dimensioned IDIM x JDIM x KDIM+1)
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; KBOT&nbsp;&nbsp;&nbsp;&nbsp; OPTIONAL;lowest
+model level index (integer)
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(dimensioned IDIM x JDIM)
+<br>!--------------------------------------------------------------
+<br>&nbsp;integer, intent(in) :: is,js
+<br>&nbsp;real, intent(in), dimension (:,:,:) ::&nbsp; uwnd, vwnd, temp,
+pfull, phalf, zfull, zhalf
+<br>&nbsp;integer, intent(in), OPTIONAL, dimension(:,:)&nbsp;&nbsp; ::
+kbot
+<p>!---------------------------------------------------------------------
+<br>! Output Arguments
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TAUB&nbsp;&nbsp;&nbsp; base momentum
+flux - output for diagnostics
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(dimensioned IDIM x JDIM)-kg/m/s**2
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+= -(RHO*U**3/(N*XL))*G(FR) FOR N**2 > 0
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+=&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+FOR N**2 &lt;=0
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DTAUX&nbsp;&nbsp;&nbsp; Tendency of
+the zonal wind component deceleration
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(dimensioned IDIM x JDIM x KDIM)
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DTAUY&nbsp;&nbsp;&nbsp; Tendency of
+the meridional wind component deceleration
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(dimensioned IDIM x JDIM x KDIM)
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DTEMP&nbsp;&nbsp;&nbsp; Tendency of
+the temperature due to the dissipation of momentum
+<br>!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<br>!---------------------------------------------------------------------
+<br>&nbsp;real, intent(out), dimension (:,:) :: taub
+<br>&nbsp;real, intent(out), dimension (:,:,:) :: dtaux, dtauy
+<br>!-----------------------------------------------------------------------
+<br>&nbsp;
+<p><B>call mg_drag_end</B> ()
+<br>there are no arguments to this routine
+<br><!-- END ROUTINES --><!---------------------------------------------------------------------><a NAME="NAMELIST"></a>
+<hr>
+<h4>
+NAMELIST</h4>
+<!-- BEGIN NAMELIST -->
+<pre>&amp;mg_drag_nml</pre>
+
+<pre>&nbsp; xl_mtn&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Effective mountain length ( set currently to 100km)
+
+&nbsp; acoef&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Order unity "tunable" parameter (may have nonlinear impact)
+
+&nbsp; gmax&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Order unity "tunable" parameter&nbsp; (may be enhanced to increase drag)
+
+&nbsp; rho&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Stand value for density of the air at sea-level (1.13 KG/M**3)
+
+&nbsp; low_lev_frac&nbsp; Fraction of atmosphere (from bottom up) considered to be&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "low-level-layer" for base flux calc. and where no
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; wave breaking is allowed.
+
+&nbsp; do_conserve_energy&nbsp; If TRUE the heating due to the dissipation of kinetic energy
+                      by Rayleigh damping will be computed (default is FALSE).
+
+&nbsp; source_of_sgsmtn&nbsp; ='computed': The topography sub-grid scale variance is
+                                 computed from the navy 1/6'th degree topography data.
+                    =   'input': The topography sub-grid scale variance is read
+                                 from a netcdf data file (INPUT/mg_drag.data.nc).
+                                 The field name in this file must be "sgsmtn".
+                                 A check exists that the resolution the model and data match.
+				 A previously generated output file containing "sgsmtn" may
+                                 be used, but the result may not reproduce exactly if the
+                                 data is not 8 byte.
+
+&nbsp; do_mcm_mg_drag&nbsp; If TRUE the gravity wave drag calculation mimics Manabe Climate Model.
+                       (default is FALSE).</pre>
+<!-- END NAMELIST --><!---------------------------------------------------------------------><a NAME="CHANGES"></a>
+<hr>
+<h4>
+CHANGE HISTORY</h4>
+<!-- BEGIN CHANGES -->
+<pre>
+
+
+&nbsp;&nbsp;&nbsp;&nbsp; MPP version created. Minor changes for open_file, error_mesg,
+&nbsp;&nbsp;&nbsp;&nbsp; and Fortran write statements.</pre>
+<!-- END CHANGES --><!---------------------------------------------------------------------><a NAME="ERRORS"></a>
+<hr>
+<h4>
+ERROR MESSAGES</h4>
+<!-- BEGIN ERRORS -->
+<pre><b>Fatal error in mg_drag_init:
+
+</b>&nbsp;&nbsp;&nbsp; No sub-grid orography restart file specified</pre>
+<!-- END ERRORS --><!---------------------------------------------------------------------><a NAME="REFERENCES"></a>
+<hr>
+<h4>
+REFERENCES</h4>
+<!-- BEGIN REFERENCES -->
+Pierrehumbert, R.T., 1986. An essay on the parameterization
+of orographic gravity wave drag.
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Published in the Proceedings from ECMWF 1986 Seminar, Vol. I, 251-282.
+<br>Stern, W.F., 1987. Parameterization of gravity wave drag - a techinical
+description.
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Unpublished, GFDL&nbsp; Exp. Prediction Group technical document. 10 pp.
+<br>&nbsp;
+<br>&nbsp;
+<br>&nbsp;
+<br>&nbsp;
+<p><!-- END REFERENCES --><!---------------------------------------------------------------------><a NAME="BUGS"></a>
+<hr>
+<h4>
+KNOWN BUGS</h4>
+<!-- BEGIN BUGS -->
+<pre>&nbsp;&nbsp;&nbsp;&nbsp; There are no known bugs.
+
+</pre>
+<!-- END BUGS --><!---------------------------------------------------------------------><a NAME="NOTES"></a>
+<hr>
+<h4>
+NOTES</h4>
+<!-- BEGIN NOTES -->
+<pre>&nbsp;&nbsp; Code developed by Bill Stern &amp; Ray Pierrehumbert
+&nbsp;&nbsp; Original code ~ Summer 1986.
+&nbsp;&nbsp; First Fortran 90 version created by Bill Stern in June 1999.
+&nbsp;&nbsp; 
+
+   -------------------------------------------------------------------
+<B>   Important Note:</B>
+
+   The subgrid scale topography is now generated automatically
+   (using topograpy_mod) when mg_drag_init is called and the navy
+   hires-topography file is present.
+
+   Users can still read their own subgrid scale topography from file
+   INPUT/mg_drag.res if they remove the navy hires-topography file.
+
+   Refer to module topograpy_mod for details on how the subgrid scale
+   topography is computed.
+
+   -------------------------------------------------------------------
+
+<br>&nbsp;
+<p>
+Code for calculating subgrid-scale mountains was developed by Bruce Wyman. 
+Subgrid-scale mountains are available for a number of resolutions including:
+N30, N45, T30, T42, T63, R15, R30. 
+Subgrid-scale orography is computed from the Navy 1/6 degree dataset
+which may be found at: 
+       /archive/bw/HiresNavyTape/Zmean
+The following sample code may be used to create subgrid-scale orography for 
+other resolutions:
+
+integer, parameter :: nlon = 2160, nlat = 1080
+real, dimension :: data(nlon,nlat)
+
+real :: hpie, wb, sb, dlat, dlon
+
+!   INPUT:  unit = unit number of topography file
+!           lon  = longitude (in radians) of grid box boundaries
+!           lat  = latitude (in radians) of grid box boundaries
+!   OUTPUT: zsurf = height of topography (in meters)
+!           stdev = standard deviation of height (m) within grid-box
+!
+!      (zsurf and stdev must be dimensioned size(lon)-1 by size(lat)-1)
+
+   integer, intent(in)                  :: unit
+      real, intent(in),  dimension(:)   :: lon,lat
+      real, intent(out), dimension(:,:) :: zsurf, stdev
+
+!   --- input (hires) grid resolution ---
+      hpie = acos(0.0)
+      wb = 0.0; sb = -hpie
+      dlat = 2.0*hpie/float(nlat)
+      dlon = 4.0*hpie/float(nlon)
+
+!  --- Read global 10 minute files ---
+
+      open (unit, file='Zmean', form='unformatted')
+
+      read  (unit) data
+      close (unit)
+
+
+!     --- convert topog from cm to m ---
+         data(:,:)=data(:,:)*0.01
+         call horiz_interp (data, wb, sb, dlon, dlat,   &
+                            lon, lat, zsurf)
+
+!     --- compute standard deviation of topography ---
+         data(:,:)=data(:,:)*data(:,:)
+         call horiz_interp (data, wb, sb, dlon, dlat,   &
+                            lon, lat, stdev)
+
+         stdev = stdev - zsurf*zsurf
+         where (stdev > 0.0)
+            stdev = sqrt ( stdev )
+         elsewhere
+            stdev = 0.0
+         endwhere
+
+
+</pre>
+<!-- END NOTES --><!---------------------------------------------------------------------><a NAME="PLANS"></a>
+<hr>
+<h4>
+FUTURE PLANS</h4>
+<!-- BEGIN PLANS -->
+<pre>&nbsp;&nbsp;&nbsp;&nbsp; none at this time
+
+</pre>
+<!-- END PLANS --><!--------------------------------------------------------------------->
+<hr>
+<br><i></i>&nbsp;
+</body>
+</html>
