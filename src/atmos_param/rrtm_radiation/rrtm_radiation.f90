@@ -168,7 +168,7 @@
 !-------------------- diagnostics fields -------------------------------
 
         integer :: id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,id_flux_sw,id_flux_lw,id_albedo,id_ozone
-        character(len=14), parameter :: mod_name = 'rrtm_radiation'
+        character(len=14), parameter :: mod_name_rad = 'rrtm_radiation' !s changed parameter name from mod_name to mod_name_rad as compiler objected, presumably because mod_name also defined in idealized_moist_physics.F90 after use rrtm_vars is included. 
         real :: missing_value = -999.
 
 !---------------------------------------------------------------------------------------------------------------
@@ -218,7 +218,7 @@
           integer, intent(in), dimension(4) :: axes
           type(time_type), intent(in)       :: Time
           integer(kind=im),intent(in)       :: ncols,nlay
-          real(kind=rb),dimension(:),intent(in),optional :: lonb,latb
+          real(kind=rb),dimension(:,:),intent(in),optional :: lonb,latb !s Changed to 2d arrays as 2013 interpolator expects this. 
 
           integer :: i,k,seconds
 
@@ -243,35 +243,35 @@
 !------------ initialize diagnostic fields ---------------
 
           id_tdt_rad = &
-               register_diag_field ( mod_name, 'tdt_rad', axes(1:3), Time, &
+               register_diag_field ( mod_name_rad, 'tdt_rad', axes(1:3), Time, &
                  'Temperature tendency due to radiation', &
                  'K/s', missing_value=missing_value               )
           id_tdt_sw = &
-               register_diag_field ( mod_name, 'tdt_sw', axes(1:3), Time, &
+               register_diag_field ( mod_name_rad, 'tdt_sw', axes(1:3), Time, &
                  'Temperature tendency due to SW radiation', &
                  'K/s', missing_value=missing_value               )
           id_tdt_lw = &
-               register_diag_field ( mod_name, 'tdt_lw', axes(1:3), Time, &
+               register_diag_field ( mod_name_rad, 'tdt_lw', axes(1:3), Time, &
                  'Temperature tendency due to LW radiation', &
                  'K/s', missing_value=missing_value               )
           id_coszen  = &
-               register_diag_field ( mod_name, 'coszen', axes(1:2), Time, &
+               register_diag_field ( mod_name_rad, 'coszen', axes(1:2), Time, &
                  'cosine of zenith angle', &
                  'none', missing_value=missing_value               )
           id_flux_sw = &
-               register_diag_field ( mod_name, 'flux_sw', axes(1:2), Time, &
+               register_diag_field ( mod_name_rad, 'flux_sw', axes(1:2), Time, &
                  'Net SW surface flux', &
                  'W/m2', missing_value=missing_value               )
           id_flux_lw = &
-               register_diag_field ( mod_name, 'flux_lw', axes(1:2), Time, &
+               register_diag_field ( mod_name_rad, 'flux_lw', axes(1:2), Time, &
                  'LW surface flux', &
                  'W/m2', missing_value=missing_value               )
           id_albedo  = &
-               register_diag_field ( mod_name, 'rrtm_albedo', axes(1:2), Time, &
+               register_diag_field ( mod_name_rad, 'rrtm_albedo', axes(1:2), Time, &
                  'Interactive albedo', &
                  'none', missing_value=missing_value               )
           id_ozone   = &
-               register_diag_field ( mod_name, 'ozone', axes(1:3), Time, &
+               register_diag_field ( mod_name_rad, 'ozone', axes(1:3), Time, &
                  'Ozone', &
                  'mmr', missing_value=missing_value               )
 ! 
@@ -313,7 +313,7 @@
           if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
 
 !------------ allocate arrays to be used later  -------
-          allocate(t_half(size(lonb,1)-1,size(latb)-1,nlay+1))
+          allocate(t_half(size(lonb,1)-1,size(latb,2)-1,nlay+1)) !s changed all size(latb) to size(latb,2) as latb now 2d in 2013, where it was 1d in MiMA. 
           
           if(.not. do_read_radiation .or. .not. do_read_sw_flux .and. .not. do_read_lw_flux)then
              allocate(h2o(ncols_rrt,nlay_rrt),o3(ncols_rrt,nlay_rrt), &
@@ -325,7 +325,7 @@
                   tauaer(ncols_rrt,nlay_rrt,nbndlw))
              allocate(sw_zro(nbndsw,ncols_rrt,nlay_rrt), &
                   zro_sw(ncols_rrt,nlay_rrt,nbndsw))
-             if(id_coszen > 0)allocate(zencos (size(lonb,1)-1,size(latb,1)-1))
+             if(id_coszen > 0)allocate(zencos (size(lonb,1)-1,size(latb,2)-1))
              
              ! gases
              h2o   = 0. !this will be set by the water vapor tracer
@@ -365,14 +365,14 @@
           endif
 
           if(store_intermediate_rad .or. id_flux_sw > 0) &
-               allocate(sw_flux(size(lonb,1)-1,size(latb,1)-1))
+               allocate(sw_flux(size(lonb,1)-1,size(latb,2)-1))
           if(store_intermediate_rad .or. id_flux_lw > 0) &
-               allocate(lw_flux(size(lonb,1)-1,size(latb,1)-1))
-          if(do_precip_albedo)allocate(rrtm_precip(size(lonb,1)-1,size(latb,1)-1))
+               allocate(lw_flux(size(lonb,1)-1,size(latb,2)-1))
+          if(do_precip_albedo)allocate(rrtm_precip(size(lonb,1)-1,size(latb,2)-1))
           if(store_intermediate_rad .or. id_tdt_rad > 0)&
-               allocate(tdt_rad(size(lonb,1)-1,size(latb,1)-1,nlay))
-          if(id_tdt_sw > 0)allocate(tdt_sw_rad(size(lonb,1)-1,size(latb,1)-1,nlay)) 
-          if(id_tdt_lw > 0)allocate(tdt_lw_rad(size(lonb,1)-1,size(latb,1)-1,nlay)) 
+               allocate(tdt_rad(size(lonb,1)-1,size(latb,2)-1,nlay))
+          if(id_tdt_sw > 0)allocate(tdt_sw_rad(size(lonb,1)-1,size(latb,2)-1,nlay)) 
+          if(id_tdt_lw > 0)allocate(tdt_lw_rad(size(lonb,1)-1,size(latb,2)-1,nlay)) 
 
           if(do_precip_albedo)then
              rrtm_precip = 0.
@@ -382,7 +382,7 @@
           call astro_init
 
           if(solday .gt. 0)then
-             call error_mesg( mod_name, &
+             call error_mesg( mod_name_rad, &
                   ' running perpetual simulation', NOTE)
           endif
 

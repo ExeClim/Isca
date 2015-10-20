@@ -8,7 +8,7 @@ module idealized_moist_phys_mod
 
 use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, FATAL
 
-use           constants_mod, only: grav, rdgas, rvgas
+use           constants_mod, only: grav, rdgas, rvgas, cp_air !mj cp_air needed for rrtmg
 
 use        time_manager_mod, only: time_type, get_time, operator( + )
 
@@ -34,6 +34,14 @@ use        surface_flux_mod, only: surface_flux
 
 use      sat_vapor_pres_mod, only: lookup_es !s Have added this to allow relative humdity to be calculated in a consistent way.
 
+!mj: RRTM radiative scheme
+use rrtmg_lw_init
+use rrtmg_lw_rad
+use rrtmg_sw_init
+use rrtmg_sw_rad
+use rrtm_radiation
+use rrtm_vars
+
 implicit none
 private
 !=================================================================================================================================
@@ -53,14 +61,23 @@ logical :: module_is_initialized =.false.
 logical :: turb = .false.
 logical :: do_virtual = .false. ! whether virtual temp used in gcm_vert_diff
 logical :: lwet_convection = .false.
-logical :: two_stream = .true.
+
+!s Radiation options
+logical :: two_stream_gray = .true.
+
+logical :: do_rrtm_radiation = .false.
+
+!s MiMA uses damping 
+logical :: do_damping = .false.
+
+
 logical :: mixed_layer_bc = .false.
 logical :: do_simple = .false. !s Have added this to enable relative humidity to be calculated correctly below.
 real :: roughness_heat = 0.05
 real :: roughness_moist = 0.05
 real :: roughness_mom = 0.05
 
-namelist / idealized_moist_phys_nml / turb, lwet_convection, roughness_heat, two_stream, mixed_layer_bc, do_simple, &
+namelist / idealized_moist_phys_nml / turb, lwet_convection, roughness_heat, two_stream_gray, do_rrtm_radiation, do_damping, mixed_layer_bc, do_simple, &
                                       roughness_moist, roughness_mom, do_virtual
 
 real, allocatable, dimension(:,:)   ::                                        &
@@ -187,6 +204,10 @@ call write_version_number(version, tagname)
 stdlog_unit = stdlog()
 write(stdlog_unit, idealized_moist_phys_nml)
 
+!s need to make sure that gray radiation and rrtm radiation are not both called.
+if(two_stream_gray .and. do_rrtm_radiation) &
+   call error_mesg('physics_driver_init','do_grey_radiation and do_rrtm_radiation cannot both be .true.',FATAL)
+
 nsphum = nhum
 Time_step = Time_step_in
 call get_time(Time_step, seconds, days)
@@ -265,6 +286,11 @@ allocate(q_ref (is:ie, js:je, num_levels)); q_ref = 0.0
 call get_surf_geopotential(z_surf)
 z_surf = z_surf/grav
 
+!    initialize damping_driver_mod.
+!      if(do_damping) &
+!      call damping_driver_init (lonb, latb, pref(:,1), axes, Time, &
+!                                sgsmtn)
+
 if(mixed_layer_bc) then
   ! need an initial condition for the mixed layer temperature
   ! may be overwritten by restart file
@@ -302,7 +328,13 @@ if(lwet_convection) then
         axes(1:2), Time, 'Rain from convection','kg/m/m/s')
 endif
 
-if(two_stream) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time)
+if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time)
+
+!if(do_rrtm_radiation) then
+!   call rrtmg_lw_ini(cp_air)
+!   call rrtmg_sw_ini(cp_air)
+!   call rrtm_radiation_init(axes,Time,id*jd,kd,lonb,latb)
+!endif
 
 if(turb) then
    call vert_turb_driver_init (rad_lonb_2d, rad_latb_2d, ie-is+1,je-js+1, &
@@ -398,7 +430,7 @@ if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
 
-if(two_stream) then
+if(two_stream_gray) then
    call two_stream_gray_rad_down(is, js, Time, &
                        rad_lat(:,:),           &
                        p_half(:,:,:,current),  &
@@ -463,7 +495,7 @@ call surface_flux(                                                          &
 
 ! Now complete the radiation calculation by computing the upward and net fluxes.
 
-if(two_stream) then
+if(two_stream_gray) then
    call two_stream_gray_rad_up(is, js, Time, &
                      rad_lat(:,:),           &
                      p_half(:,:,:,current),  &
@@ -573,7 +605,7 @@ end subroutine idealized_moist_phys
 !=================================================================================================================================
 subroutine idealized_moist_phys_end
 
-if(two_stream)      call two_stream_gray_rad_end
+if(two_stream_gray)      call two_stream_gray_rad_end
 if(lwet_convection) call qe_moist_convection_end
 if(turb) then
    call vert_diff_end
