@@ -112,8 +112,9 @@ real, allocatable, dimension(:,:)   ::                                        &
      dtaudv_atm,           &   ! d(stress component)/d(atmos wind)
      dtaudu_atm,           &   ! d(stress component)/d(atmos wind)
      fracland,             &   ! fraction of land in gridbox
-     rough                     ! roughness for vert_turb_driver
-
+     rough,                &   ! roughness for vert_turb_driver
+     albedo,               &   !s albedo now defined in mixed_layer_init
+     coszen                    !s make sure this is ready for assignment in run_rrtmg
 
 real, allocatable, dimension(:,:,:) ::                                        &
      diff_m,               &   ! momentum diffusion coeff.
@@ -167,7 +168,7 @@ integer ::           &
      id_rh       	 ! Relative humidity
 
 integer, allocatable, dimension(:,:) :: & convflag ! indicates which qe convection subroutines are used
-real,    allocatable, dimension(:,:) :: rad_lat   
+real,    allocatable, dimension(:,:) :: rad_lat, rad_lon   
 
 type(surf_diff_type) :: Tri_surf ! used by gcm_vert_diff
 
@@ -181,12 +182,12 @@ type(time_type) :: Time_step
 contains
 !=================================================================================================================================
 
-subroutine idealized_moist_phys_init(Time, Time_step_in, nhum, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init)
+subroutine idealized_moist_phys_init(Time, Time_step_in, nhum, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init)
 type(time_type), intent(in) :: Time, Time_step_in
 integer, intent(in) :: nhum
-real, intent(in), dimension(:,:) :: rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init
+real, intent(in), dimension(:,:) :: rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init
 
-integer :: io, nml_unit, stdlog_unit, seconds, days
+integer :: io, nml_unit, stdlog_unit, seconds, days, id, jd, kd
 
 if(module_is_initialized) return
 
@@ -218,6 +219,7 @@ call get_grid_domain(is, ie, js, je)
 call get_num_levels(num_levels)
 
 allocate(rad_lat     (is:ie, js:je)); rad_lat = rad_lat_2d
+allocate(rad_lon     (is:ie, js:je)); rad_lon = rad_lon_2d
 allocate(z_surf      (is:ie, js:je))
 allocate(t_surf      (is:ie, js:je))
 allocate(q_surf      (is:ie, js:je)); q_surf = 0.0
@@ -283,6 +285,9 @@ allocate(convect      (is:ie, js:je)); convect = .false.
 allocate(t_ref (is:ie, js:je, num_levels)); t_ref = 0.0
 allocate(q_ref (is:ie, js:je, num_levels)); q_ref = 0.0
 
+allocate (albedo                 (ie-is+1, je-js+1)) !s allocate for albedo, to be set in mixed_layer_init.
+allocate(coszen       (is:ie, js:je)) !s allocate coszen to be set in run_rrtmg
+
 call get_surf_geopotential(z_surf)
 z_surf = z_surf/grav
 
@@ -297,7 +302,7 @@ if(mixed_layer_bc) then
   ! choose an unstable initial condition to allow moisture
   ! to quickly enter the atmosphere avoiding problems with the convection scheme
   t_surf = t_surf_init + 1.0
-  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, get_axis_id(), Time) ! t_surf is intent(inout)
+  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, get_axis_id(), Time, albedo) ! t_surf is intent(inout) !s albedo distribution set here.
 endif
 
 if(turb) then
@@ -330,11 +335,14 @@ endif
 
 if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time)
 
-!if(do_rrtm_radiation) then
-!   call rrtmg_lw_ini(cp_air)
-!   call rrtmg_sw_ini(cp_air)
-!   call rrtm_radiation_init(axes,Time,id*jd,kd,lonb,latb)
-!endif
+if(do_rrtm_radiation) then
+   id=ie-is+1 !s Taking dimensions from equivalend calls in vert_turb_driver_init
+   jd=je-js+1
+   kd=num_levels
+   call rrtmg_lw_ini(cp_air)
+   call rrtmg_sw_ini(cp_air)
+   call rrtm_radiation_init(axes,Time,id*jd,kd,rad_lonb_2d,rad_latb_2d)
+endif
 
 if(turb) then
    call vert_turb_driver_init (rad_lonb_2d, rad_latb_2d, ie-is+1,je-js+1, &
@@ -436,7 +444,7 @@ if(two_stream_gray) then
                        p_half(:,:,:,current),  &
                        tg(:,:,:,previous),     &
                        net_surf_sw_down(:,:),  &
-                       surf_lw_down(:,:))
+                       surf_lw_down(:,:), albedo)
 end if
 
 if(.not.mixed_layer_bc) then
@@ -501,8 +509,15 @@ if(two_stream_gray) then
                      p_half(:,:,:,current),  &
                      t_surf(:,:),            &
                      tg(:,:,:,previous),     &
-                     dt_tg(:,:,:))
+                     dt_tg(:,:,:), albedo)
 end if
+
+if(do_rrtm_radiation) then
+   !need t at half grid
+   call interp_temp(z_full(:,:,:,current),z_half(:,:,:,current),tg(:,:,:,previous))
+   call run_rrtmg(is,js,Time,rad_lat,rad_lon,p_full(:,:,:,current),p_half(:,:,:,current),albedo,grid_tracers(:,:,:,previous,nsphum),tg(:,:,:,previous),t_surf(:,:),dt_tg(:,:,:),coszen)
+endif
+
 
 if(turb) then
 

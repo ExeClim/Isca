@@ -62,11 +62,10 @@ real    :: ir_tau_pole     = 1.5
 real    :: atm_abs         = 0.0
 real    :: sw_diff         = 0.0
 real    :: linear_tau      = 0.1
-real    :: albedo_value    = 0.06
 real    :: wv_exponent     = 4.0 
 real    :: solar_exponent  = 4.0 
 
-real, allocatable, dimension(:,:)   :: insolation, p2, albedo, lw_tau_0, sw_tau_0
+real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 !s albedo now defined in mixed_layer_init
 real, allocatable, dimension(:,:)   :: b_surf
 real, allocatable, dimension(:,:,:) :: b, tdt_rad, tdt_solar
 real, allocatable, dimension(:,:,:) :: lw_up, lw_down, lw_flux, sw_up, sw_down, sw_flux, rad_flux 
@@ -77,7 +76,7 @@ real, save :: pi, deg_to_rad , rad_to_deg
 
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            ir_tau_eq, ir_tau_pole, atm_abs, sw_diff, &
-           linear_tau, del_sw, albedo_value, wv_exponent, &
+           linear_tau, del_sw, wv_exponent, &
            solar_exponent
         
 !==================================================================================
@@ -154,7 +153,7 @@ allocate (net_lw_surf      (ie-is+1, je-js+1))
 allocate (toa_sw_in        (ie-is+1, je-js+1))
 
 allocate (insolation       (ie-is+1, je-js+1))
-allocate (albedo           (ie-is+1, je-js+1))
+!allocate (albedo           (ie-is+1, je-js+1)) !s albedo now set in mixed_layer_init
 allocate (p2               (ie-is+1, je-js+1))
 
 
@@ -217,14 +216,14 @@ end subroutine two_stream_gray_rad_init
 ! ==================================================================================
 
 subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, p_half, t,         &
-                           net_surf_sw_down, surf_lw_down)
+                           net_surf_sw_down, surf_lw_down, albedo)
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
 
 integer, intent(in)                 :: is, js
 type(time_type), intent(in)         :: Time_diag
-real, intent(in), dimension(:,:)    :: lat
+real, intent(in), dimension(:,:)    :: lat, albedo
 real, intent(out), dimension(:,:)   :: net_surf_sw_down
 real, intent(out), dimension(:,:)   :: surf_lw_down
 real, intent(in), dimension(:,:,:)  :: t, p_half
@@ -246,7 +245,7 @@ lw_tau_0    = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
 sw_tau_0    = (1.0 - sw_diff*sin(lat)**2)*atm_abs
 
 ! constant albedo 
-albedo(:,:) = albedo_value
+!albedo(:,:) = albedo_value !s albedo now set in mixed_layer_init.
 
 ! compute optical depths for each model level
 do k = 1, n+1
@@ -301,13 +300,13 @@ end subroutine two_stream_gray_rad_down
 
 ! ==================================================================================
 
-subroutine two_stream_gray_rad_up (is, js, Time_diag, lat, p_half, t_surf, t, tdt)
+subroutine two_stream_gray_rad_up (is, js, Time_diag, lat, p_half, t_surf, t, tdt, albedo)
 
 ! Now complete the radiation calculation by computing the upward and net fluxes.
 
 integer, intent(in)                 :: is, js
 type(time_type), intent(in)         :: Time_diag
-real, intent(in) , dimension(:,:)   :: lat
+real, intent(in) , dimension(:,:)   :: lat, albedo
 real, intent(in) , dimension(:,:)   :: t_surf
 real, intent(in) , dimension(:,:,:) :: t, p_half
 real, intent(inout), dimension(:,:,:) :: tdt
@@ -393,7 +392,7 @@ deallocate (b, tdt_rad, tdt_solar)
 deallocate (lw_up, lw_down, lw_flux, sw_up, sw_down, sw_flux, rad_flux)
 deallocate (b_surf, olr, net_lw_surf, toa_sw_in, lw_tau_0, sw_tau_0)
 deallocate (lw_dtrans, lw_tau, sw_tau)
-deallocate (insolation, p2, albedo)
+deallocate (insolation, p2) !s albedo
 
 end subroutine two_stream_gray_rad_end
 

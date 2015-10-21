@@ -72,8 +72,9 @@ logical :: load_qflux = .false.
 real    :: tconst = 305.0
 real    :: delta_T = 40.0
 logical :: prescribe_initial_dist = .false.
+real    :: albedo_value    = 0.06
 
-namelist/mixed_layer_nml/ evaporation, qflux_amp, depth, qflux_width, load_qflux, tconst, delta_T, prescribe_initial_dist
+namelist/mixed_layer_nml/ evaporation, qflux_amp, depth, qflux_width, load_qflux, tconst, delta_T, prescribe_initial_dist,albedo_value
 
 !=================================================================================================================================
 
@@ -119,10 +120,10 @@ real inv_cp_air
 contains
 !=================================================================================================================================
 
-subroutine mixed_layer_init(is, ie, js, je, num_levels, t_surf, axes, Time)
+subroutine mixed_layer_init(is, ie, js, je, num_levels, t_surf, axes, Time, albedo)
 
 type(time_type), intent(in)       :: Time
-real, intent(out), dimension(:,:) :: t_surf
+real, intent(out), dimension(:,:) :: t_surf, albedo
 integer, intent(in), dimension(4) :: axes
 integer, intent(in) :: is, ie, js, je, num_levels 
 
@@ -172,6 +173,7 @@ allocate(delta_t_surf            (is:ie, js:je))
 allocate(eff_heat_capacity       (is:ie, js:je))
 allocate(corrected_flux          (is:ie, js:je))
 allocate(t_surf_dependence       (is:ie, js:je))
+!allocate (albedo                 (ie-is+1, je-js+1))
 !
 !see if restart file exists for the surface temperature
 !
@@ -229,6 +231,15 @@ if (load_qflux) then
 endif
 
 inv_cp_air = 1.0 / CP_AIR 
+
+!s Prescribe albedo distribution here so that it will be the same in both two_stream_gray later and rrtmg radiation. 
+
+albedo(:,:) = albedo_value
+
+!s Add more options here from MiMA to prescribe different distributions of albedo.
+
+
+
 
 module_is_initialized = .true.
 

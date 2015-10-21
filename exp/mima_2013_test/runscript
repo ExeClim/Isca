@@ -130,7 +130,6 @@ if($do_compile == true) then
 endif
 echo "Compilation done"
 
-exit
 
   cd $workdir
   mkdir INPUT RESTART				
