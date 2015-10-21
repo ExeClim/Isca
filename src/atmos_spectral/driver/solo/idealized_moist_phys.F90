@@ -285,7 +285,7 @@ allocate(convect      (is:ie, js:je)); convect = .false.
 allocate(t_ref (is:ie, js:je, num_levels)); t_ref = 0.0
 allocate(q_ref (is:ie, js:je, num_levels)); q_ref = 0.0
 
-allocate (albedo                 (ie-is+1, je-js+1)) !s allocate for albedo, to be set in mixed_layer_init.
+allocate (albedo      (ie-is+1, je-js+1)) !s allocate for albedo, to be set in mixed_layer_init.
 allocate(coszen       (is:ie, js:je)) !s allocate coszen to be set in run_rrtmg
 
 call get_surf_geopotential(z_surf)
