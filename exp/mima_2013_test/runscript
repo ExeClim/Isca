@@ -39,7 +39,7 @@
   set run_idb_serial	= false     #default should be false
   set run_mpi		= true      #default should be true
   set run_serial	= false     #default should be false
-  set write_over_data 	= false     #default should be false
+  set write_over_data 	= true     #default should be false
 
 set out = $in				#assign the input to output and add 1.
 @ out ++			     
