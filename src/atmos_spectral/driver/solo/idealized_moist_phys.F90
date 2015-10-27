@@ -34,6 +34,8 @@ use        surface_flux_mod, only: surface_flux
 
 use      sat_vapor_pres_mod, only: lookup_es !s Have added this to allow relative humdity to be calculated in a consistent way.
 
+use      damping_driver_mod, only: damping_driver, damping_driver_init, damping_driver_end !s MiMA uses damping
+
 !mj: RRTM radiative scheme
 use rrtmg_lw_init
 use rrtmg_lw_rad
@@ -114,7 +116,8 @@ real, allocatable, dimension(:,:)   ::                                        &
      fracland,             &   ! fraction of land in gridbox
      rough,                &   ! roughness for vert_turb_driver
      albedo,               &   !s albedo now defined in mixed_layer_init
-     coszen                    !s make sure this is ready for assignment in run_rrtmg
+     coszen,               &   !s make sure this is ready for assignment in run_rrtmg
+     pbltop                    !s Used as an input to damping_driver, outputted from vert_turb_driver
 
 real, allocatable, dimension(:,:,:) ::                                        &
      diff_m,               &   ! momentum diffusion coeff.
@@ -188,6 +191,8 @@ integer, intent(in) :: nhum
 real, intent(in), dimension(:,:) :: rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init
 
 integer :: io, nml_unit, stdlog_unit, seconds, days, id, jd, kd
+real, dimension (size(rad_lonb_2d,1)-1, size(rad_latb_2d,2)-1) :: sgsmtn !s added for damping_driver
+
 
 if(module_is_initialized) return
 
@@ -287,14 +292,16 @@ allocate(q_ref (is:ie, js:je, num_levels)); q_ref = 0.0
 
 allocate (albedo      (ie-is+1, je-js+1)) !s allocate for albedo, to be set in mixed_layer_init.
 allocate(coszen       (is:ie, js:je)) !s allocate coszen to be set in run_rrtmg
+allocate(pbltop       (is:ie, js:je)) !s allocate coszen to be set in run_rrtmg
+
 
 call get_surf_geopotential(z_surf)
 z_surf = z_surf/grav
 
 !    initialize damping_driver_mod.
-!      if(do_damping) &
-!      call damping_driver_init (lonb, latb, pref(:,1), axes, Time, &
-!                                sgsmtn)
+      if(do_damping) &
+      call damping_driver_init (rad_lonb_2d(:,js),rad_latb_2d(is,:), pref(:,1), axes, Time, &
+                                sgsmtn)
 
 if(mixed_layer_bc) then
   ! need an initial condition for the mixed layer temperature
@@ -519,6 +526,27 @@ if(do_rrtm_radiation) then
 endif
 
 
+!----------------------------------------------------------------------
+!    Copied from MiMA physics_driver.f90
+!    call damping_driver to calculate the various model dampings that
+!    are desired. 
+!----------------------------------------------------------------------
+z_pbl(:,:) = pbltop(is:ie,js:je) 
+if(do_damping) then
+     call damping_driver (is, js, rad_lat, Time_next, dt,                               &
+                             p_full(:,:,:,current), p_half(:,:,:,current),              &
+                             z_full(:,:,:,current), z_half(:,:,:,current),              &
+                             ug(:,:,:,previous), vg(:,:,:,previous),                    &
+                             tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum),   &
+                             grid_tracers(:,:,:,previous,:),                            &
+                             dt_ug(:,:,:), dt_vg(:,:,:), dt_tg(:,:,:),                  &
+                             dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:),&            &
+                             z_pbl , mask=mask, kbot=kbot) !s have taken the names of arrays etc from vert_turb_driver below. Watch ntp? 
+endif
+
+
+
+
 if(turb) then
 
    call vert_turb_driver(            1,                              1, &
@@ -540,6 +568,9 @@ if(turb) then
                    dt_tracers(:,:,:,:),                  diff_t(:,:,:), &
                          diff_m(:,:,:),                      gust(:,:), &
                             z_pbl(:,:) )
+
+      pbltop(is:ie,js:je) = z_pbl(:,:) !s added so that z_pbl can be used subsequently by damping_driver.
+
 !
 !! Don't zero these derivatives as the surface flux depends implicitly
 !! on the lowest level values
