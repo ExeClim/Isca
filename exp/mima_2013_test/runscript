@@ -144,7 +144,7 @@ cat > input.nml <<EOF
      hours  = 0,
      minutes = 0,
      seconds = 0,			
-     dt_atmos = 900,
+     dt_atmos = 900
 EOF
 
 #     months = 1, FMS 2013 doesn't appear to use calendar or other such options that were present in 2006 version.

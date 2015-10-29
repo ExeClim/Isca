@@ -8,7 +8,7 @@ module idealized_moist_phys_mod
 
 use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, FATAL
 
-use           constants_mod, only: grav, rdgas, rvgas, cp_air !mj cp_air needed for rrtmg
+use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS !mj cp_air needed for rrtmg !s pstd_mks needed for pref calculation
 
 use        time_manager_mod, only: time_type, get_time, operator( + )
 
@@ -24,6 +24,8 @@ use         lscale_cond_mod, only: lscale_cond_init, lscale_cond, lscale_cond_en
 
 use qe_moist_convection_mod, only: qe_moist_convection_init, qe_moist_convection, qe_moist_convection_end
 
+use        betts_miller_mod, only: betts_miller, betts_miller_init
+
 use        diag_manager_mod, only: register_diag_field, send_data
 
 use          transforms_mod, only: get_grid_domain
@@ -35,6 +37,8 @@ use        surface_flux_mod, only: surface_flux
 use      sat_vapor_pres_mod, only: lookup_es !s Have added this to allow relative humdity to be calculated in a consistent way.
 
 use      damping_driver_mod, only: damping_driver, damping_driver_init, damping_driver_end !s MiMA uses damping
+
+use    press_and_geopot_mod, only: pressure_variables
 
 !mj: RRTM radiative scheme
 use rrtmg_lw_init
@@ -62,7 +66,10 @@ public :: idealized_moist_phys_init , idealized_moist_phys , idealized_moist_phy
 logical :: module_is_initialized =.false.
 logical :: turb = .false.
 logical :: do_virtual = .false. ! whether virtual temp used in gcm_vert_diff
+
+!s Convection scheme options
 logical :: lwet_convection = .false.
+logical :: do_bm = .false.
 
 !s Radiation options
 logical :: two_stream_gray = .true.
@@ -79,7 +86,7 @@ real :: roughness_heat = 0.05
 real :: roughness_moist = 0.05
 real :: roughness_mom = 0.05
 
-namelist / idealized_moist_phys_nml / turb, lwet_convection, roughness_heat, two_stream_gray, do_rrtm_radiation, do_damping, mixed_layer_bc, do_simple, &
+namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, roughness_heat, two_stream_gray, do_rrtm_radiation, do_damping, mixed_layer_bc, do_simple, &
                                       roughness_moist, roughness_mom, do_virtual
 
 real, allocatable, dimension(:,:)   ::                                        &
@@ -172,6 +179,8 @@ integer ::           &
 
 integer, allocatable, dimension(:,:) :: & convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon   
+real,    allocatable, dimension(:) :: pref, p_half_1d, ln_p_half_1d, p_full_1d,ln_p_full_1d !s pref is a reference pressure profile, which in 2006 MiMA is just the initial full pressure levels, and an extra level with the reference surface pressure. Others are only necessary to calculate pref.
+real,    allocatable, dimension(:,:) :: capeflag !s Added for Betts Miller scheme (rather than the simplified Betts Miller scheme).
 
 type(surf_diff_type) :: Tri_surf ! used by gcm_vert_diff
 
@@ -213,6 +222,9 @@ write(stdlog_unit, idealized_moist_phys_nml)
 !s need to make sure that gray radiation and rrtm radiation are not both called.
 if(two_stream_gray .and. do_rrtm_radiation) &
    call error_mesg('physics_driver_init','do_grey_radiation and do_rrtm_radiation cannot both be .true.',FATAL)
+
+if(lwet_convection .and. do_bm) &
+   call error_mesg('physics_driver_init','lwet_convection and do_bm cannot both be .true.',FATAL)
 
 nsphum = nhum
 Time_step = Time_step_in
@@ -294,14 +306,22 @@ allocate (albedo      (ie-is+1, je-js+1)) !s allocate for albedo, to be set in m
 allocate(coszen       (is:ie, js:je)) !s allocate coszen to be set in run_rrtmg
 allocate(pbltop       (is:ie, js:je)) !s allocate coszen to be set in run_rrtmg
 
+allocate(pref(num_levels+1)) !s reference pressure profile, as in spectral_physics.f90 in FMS 2006 and original MiMA.
+allocate(p_half_1d(num_levels+1), ln_p_half_1d(num_levels+1))
+allocate(p_full_1d(num_levels  ), ln_p_full_1d(num_levels  ))
+allocate(capeflag     (is:ie, js:je))
 
 call get_surf_geopotential(z_surf)
 z_surf = z_surf/grav
 
 !    initialize damping_driver_mod.
-      if(do_damping) &
-      call damping_driver_init (rad_lonb_2d(:,js),rad_latb_2d(is,:), pref(:,1), axes, Time, &
+      if(do_damping) then
+         call pressure_variables(p_half_1d,ln_p_half_1d,pref(1:num_levels),ln_p_full_1d,PSTD_MKS)
+	 pref(num_levels+1) = PSTD_MKS
+         call damping_driver_init (rad_lonb_2d(:,js),rad_latb_2d(is,:), pref(:), axes, Time, & !s note that in the original this is pref(:,1), which is the full model pressure levels and the surface pressure at the bottom. There is pref(:2) in this version with 81060 as surface pressure??
                                 sgsmtn)
+
+      endif
 
 if(mixed_layer_bc) then
   ! need an initial condition for the mixed layer temperature
@@ -309,7 +329,7 @@ if(mixed_layer_bc) then
   ! choose an unstable initial condition to allow moisture
   ! to quickly enter the atmosphere avoiding problems with the convection scheme
   t_surf = t_surf_init + 1.0
-  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, get_axis_id(), Time, albedo) ! t_surf is intent(inout) !s albedo distribution set here.
+  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, get_axis_id(), Time, albedo, rad_lonb_2d(:,:), rad_latb_2d(:,:)) ! t_surf is intent(inout) !s albedo distribution set here.
 endif
 
 if(turb) then
@@ -332,6 +352,14 @@ id_cond_rain = register_diag_field(mod_name, 'condensation_rain',          &
 
 if(lwet_convection) then
    call qe_moist_convection_init()
+endif
+
+if(do_bm) then
+    call betts_miller_init()
+    !s Think about what fields you still need to register here.
+endif
+
+if(lwet_convection .or. do_bm) then
    id_conv_dt_qg = register_diag_field(mod_name, 'dt_qg_convection',          &
         axes(1:3), Time, 'Moisture tendency from convection','kg/kg/s')
    id_conv_dt_tg = register_diag_field(mod_name, 'dt_tg_convection',          &
@@ -339,6 +367,7 @@ if(lwet_convection) then
    id_conv_rain = register_diag_field(mod_name, 'convection_rain',            &
         axes(1:2), Time, 'Rain from convection','kg/m/m/s')
 endif
+
 
 if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time)
 
@@ -416,6 +445,35 @@ if (lwet_convection) then
    if(id_conv_dt_qg > 0) used = send_data(id_conv_dt_qg, conv_dt_qg, Time)
    if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
    if(id_conv_rain  > 0) used = send_data(id_conv_rain, rain, Time)
+
+else if (do_bm) then
+
+   call betts_miller (          delta_t,           tg(:,:,:,previous),       &
+    grid_tracers(:,:,:,previous,nsphum),       p_full(:,:,:,previous),       &
+                 p_half(:,:,:,previous),                        coldT,       &
+                                   rain,                         snow,       &
+                             conv_dt_tg,                   conv_dt_qg,       &
+                                  q_ref,                     convflag,       &
+                                  klzbs,                         cape,       &
+                                    cin,                        t_ref,       &
+                    invtau_t_relaxation,          invtau_q_relaxation,       &
+                               capeflag)
+
+   tg_tmp = conv_dt_tg + tg(:,:,:,previous)
+   qg_tmp = conv_dt_qg + grid_tracers(:,:,:,previous,nsphum)
+!  note the delta's are returned rather than the time derivatives
+
+   conv_dt_tg = conv_dt_tg/delta_t
+   conv_dt_qg = conv_dt_qg/delta_t
+   rain       = rain/delta_t
+
+   dt_tg = dt_tg + conv_dt_tg
+   dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
+
+   if(id_conv_dt_qg > 0) used = send_data(id_conv_dt_qg, conv_dt_qg, Time)
+   if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
+   if(id_conv_rain  > 0) used = send_data(id_conv_rain, rain, Time)
+
 
 else
 
@@ -533,15 +591,15 @@ endif
 !----------------------------------------------------------------------
 z_pbl(:,:) = pbltop(is:ie,js:je) 
 if(do_damping) then
-     call damping_driver (is, js, rad_lat, Time_next, dt,                               &
+     call damping_driver (is, js, rad_lat, Time+Time_step, delta_t,                               &
                              p_full(:,:,:,current), p_half(:,:,:,current),              &
                              z_full(:,:,:,current), z_half(:,:,:,current),              &
                              ug(:,:,:,previous), vg(:,:,:,previous),                    &
                              tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum),   &
                              grid_tracers(:,:,:,previous,:),                            &
                              dt_ug(:,:,:), dt_vg(:,:,:), dt_tg(:,:,:),                  &
-                             dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:),&            &
-                             z_pbl , mask=mask, kbot=kbot) !s have taken the names of arrays etc from vert_turb_driver below. Watch ntp? 
+                             dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:),             &
+                             z_pbl) !s have taken the names of arrays etc from vert_turb_driver below. Watch ntp from 2006 call to this routine? 
 endif
 
 
@@ -659,6 +717,7 @@ if(turb) then
 endif
 call lscale_cond_end
 if(mixed_layer_bc)  call mixed_layer_end(t_surf)
+if(do_damping) call damping_driver_end
 
 end subroutine idealized_moist_phys_end
 !=================================================================================================================================

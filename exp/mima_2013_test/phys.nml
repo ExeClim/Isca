@@ -35,10 +35,12 @@
     idealized_moist_model = .true. /
 
  &idealized_moist_phys_nml
-    two_stream_gray      = .true.,
+    two_stream_gray = .true.,
     do_rrtm_radiation = .false.,
+    do_damping      = .false.,
     turb            = .true.,
     lwet_convection = .true.,
+    do_bm           = .false.,
     mixed_layer_bc  = .true.,
     do_virtual      = .false.,
     do_simple       = .true.,
@@ -64,7 +66,8 @@
     tconst      = 305.,
     delta_T     = 40.,
     prescribe_initial_dist = .true.,
-    evaporation = .true. /
+    evaporation = .true.,
+    do_qflux         = .false. /
 
  &qe_moist_convection_nml
     tau_bm  = 7200.0,
@@ -79,3 +82,31 @@
 
  &sat_vapor_pres_nml
     do_simple = .true. /
+
+ &damping_driver_nml
+     do_rayleigh   = .true.,
+     trayfric      = -0.5,
+     sponge_pbottom=  50.,
+     do_conserve_energy = .true.,
+     do_cg_drag    = .false. /
+
+ &rrtm_radiation_nml
+     h2o_lower_limit        = 2.e-07,
+     co2ppmv                = 300.,
+     do_read_ozone          = .true.,
+     ozone_file             = 'ozone_1990',
+     dt_rad                 =  4500/
+
+ &betts_miller_nml
+       tau_bm = 7200.,
+       rhbm   = .7   , 
+       do_simp = .false., 
+       do_shallower = .true., 
+       do_changeqref = .false.,
+       do_envsat = .false., 
+       do_taucape = .false., 
+       capetaubm = 900., 
+       tau_min = 2400./
+
+ &qflux_nml
+     qflux_amp        = 30. /
