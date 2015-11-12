@@ -37,7 +37,9 @@ use   atmosphere_mod, only: atmosphere_init, atmosphere_end, atmosphere, atmosph
 
 use time_manager_mod, only: time_type, set_time, get_time,  &
                             operator(+), operator (<), operator (>), &
-                            operator (/=), operator (/), operator (*)
+                            operator (/=), operator (/), operator (*),&
+			    THIRTY_DAY_MONTHS, JULIAN,                &
+                            NOLEAP, NO_CALENDAR, set_calendar_type
 
 use          fms_mod, only: file_exist, check_nml_error,                &
                             error_mesg, FATAL, WARNING,                 &
@@ -45,7 +47,8 @@ use          fms_mod, only: file_exist, check_nml_error,                &
                             stdlog, stdout, write_version_number,       &
                             open_restart_file,                          &
                             mpp_clock_id, mpp_clock_begin,              &
-                            mpp_clock_end, CLOCK_COMPONENT, set_domain, nullify_domain
+                            mpp_clock_end, CLOCK_COMPONENT, set_domain, &
+                            nullify_domain, uppercase
 use       fms_io_mod, only: fms_io_exit
 
 use  mpp_mod,         only: mpp_set_current_pelist
@@ -74,6 +77,7 @@ character(len=128), parameter :: tag = &
 !       ----- model time -----
 ! there is no calendar associated with model of this type
 ! therefore, year=0, month=0 are assumed
+!s Mima 2013 has changed this - a calendar is required to run the rrtm radiation properly.
 
    type (time_type) :: Time, Time_init, Time_end, Time_step_atmos
    integer :: num_atmos_calls, na
@@ -81,6 +85,7 @@ character(len=128), parameter :: tag = &
 ! ----- model initial date -----
 
    integer :: date_init(6) ! note: year=month=0
+   integer :: calendar_type = 0
 
 ! ----- timing flags -----
 
@@ -93,14 +98,16 @@ character(len=128), parameter :: tag = &
    type(domain2d), save :: atmos_domain  ! This variable must be treated as read-only
 !-----------------------------------------------------------------------
 
-      integer, dimension(4) :: current_time = (/ 0, 0, 0, 0 /)
+!      integer, dimension(4) :: current_time = (/ 0, 0, 0, 0 /)
       integer :: days=0, hours=0, minutes=0, seconds=0
       integer :: dt_atmos = 0
       integer :: memuse_interval = 72
       integer :: atmos_nthreads = 1
+      character(len=17) :: calendar = '                 '
+      integer, dimension(6) :: current_date = (/ 0, 0, 0, 0, 0, 0 /)
 
-      namelist /main_nml/ current_time, dt_atmos,  &
-                          days, hours, minutes, seconds, memuse_interval, atmos_nthreads
+      namelist /main_nml/ current_date, dt_atmos,  &
+                          days, hours, minutes, seconds, memuse_interval, atmos_nthreads, calendar
 
 !#######################################################################
 
@@ -189,12 +196,31 @@ contains
    if (file_exist('INPUT/atmos_model.res')) then
        call mpp_open (unit, 'INPUT/atmos_model.res', action=MPP_RDONLY, nohdrs=.true.)
        read  (unit,*) date
+       read  (unit,*) calendar_type
        call mpp_close (unit)
    else
     ! use namelist time if restart file does not exist
-      date(1:2) = 0
-      date(3:6) = current_time
+!      date(1:2) = 0
+!      date(3:6) = current_time
+       date = current_date
+       date_init = current_date
+
+        select case( uppercase(trim(calendar)) )
+        case( 'JULIAN' )
+            calendar_type = JULIAN
+        case( 'NOLEAP' )
+            calendar_type = NOLEAP
+        case( 'THIRTY_DAY' )
+            calendar_type = THIRTY_DAY_MONTHS
+        case( 'NO_CALENDAR' )
+            calendar_type = NO_CALENDAR
+        case default
+            call error_mesg( 'program atmos_model', 'main_nml entry calendar must be one of JULIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.', FATAL )
+        end select
+
    endif
+
+   call set_calendar_type (calendar_type)
 
 !----- write current/initial date actually used to logfile file -----
 
@@ -226,10 +252,11 @@ contains
                          date_init(4), date_init(5), date_init(6)  )
 
   ! make sure base date does not have a year or month specified
-    if ( date_init(1)+date_init(2) /= 0 ) then
-         call error_mesg ('program atmos_model', 'invalid base base - &
-                          &must have year = month = 0', FATAL)
-    endif
+  !s no longer reuqired as we DO want a year or month specified for MiMA.
+!    if ( date_init(1)+date_init(2) /= 0 ) then
+!         call error_mesg ('program atmos_model', 'invalid base base - &
+!                          &must have year = month = 0', FATAL)
+!    endif
 
 !----- set initial and current time types ------
 !----- set run length and compute ending time -----
@@ -352,6 +379,8 @@ contains
                           access=MPP_SEQUENTIAL, threading=MPP_SINGLE, nohdrs=.true. )
            write (unit,'(6i6,8x,a)') date, &
                  'Current model time: year, month, day, hour, minute, second'
+           write (unit,'(i6,8x,a)') calendar_type, &
+                 '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
            call mpp_close (unit)
       endif
 

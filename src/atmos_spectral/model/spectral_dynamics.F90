@@ -192,7 +192,7 @@ real    :: damping_coeff       = 1.15740741e-4, & ! (one tenth day)**-1
          ocean_topog_smoothing = .93, &
            initial_sphum       = 0.0, &
      reference_sea_level_press =  101325.,&
-        water_correction_limit = 0.e2 !mj
+        water_correction_limit = 0.0 !mj
 !===============================================================================================
 
 real, dimension(2) :: valid_range_t = (/100.,500./)
@@ -1150,7 +1150,8 @@ real :: mass_correction_factor, temperature_correction, water_correction_factor
 real :: mean_surf_press_tmp,    mean_energy_tmp,        mean_water_tmp
 !mj selective water correction
 real :: corr_water_tmp, not_corr_water_tmp
-integer,dimension(size(grid_tracers,1),size(grid_tracers,2),size(grid_tracers,3)) :: water_mask
+integer,dimension(size(grid_tracers,1),size(grid_tracers,2),size(grid_tracers,3)) :: water_mask, water_mask_not_corr
+integer :: iw,jw,kw
 
 if(do_mass_correction) then
   mean_surf_press_tmp = area_weighted_global_mean(psg(:,:,future))
@@ -1184,26 +1185,50 @@ if(do_water_correction) then
        water_mask = 1
     endwhere
     corr_water_tmp    = mass_weighted_global_integral(grid_tracers(:,:,:,future,nhum)*water_mask, psg(:,:,future))
-    water_mask = 0
+    water_mask_not_corr = 0
     where ( p_full < water_correction_limit )
-       water_mask = 1
+       water_mask_not_corr = 1
     endwhere
-    not_corr_water_tmp= mass_weighted_global_integral(grid_tracers(:,:,:,future,nhum)*water_mask, psg(:,:,future))
+    not_corr_water_tmp= mass_weighted_global_integral(grid_tracers(:,:,:,future,nhum)*water_mask_not_corr, psg(:,:,future))
 !s end of first part of mj extra code.
 
-	if(not_corr_water_tmp.gt.0.) write(6,*) corr_water_tmp, not_corr_water_tmp
+!	if(not_corr_water_tmp.ne.0.) then
+!        write(6,*) corr_water_tmp, not_corr_water_tmp
+!        endif
+
+!	if(maxval(water_mask_not_corr).gt.0.) then
+ !        write(6,*) maxval(water_mask_not_corr), minval(water_mask_not_corr)
+!        endif
+! 	write(6,*) water_correction_limit, minval(p_full),maxval(p_full)
+!	write(6,*) size(p_full,1), size(p_full,2), size(p_full,3), size(grid_tracers,1), size(grid_tracers,2), size(grid_tracers,3)
 
     if(mean_water_tmp > 0.) then
       water_correction_factor = mean_water_previous/mean_water_tmp
 
 !s Begin second part of mj's extra code.
 !mj add water correction upper limit
-      water_correction_factor = water_correction_factor*(1.+not_corr_water_tmp/corr_water_tmp) - not_corr_water_tmp/corr_water_tmp
+!      water_correction_factor = water_correction_factor!*(1.+not_corr_water_tmp/corr_water_tmp) - not_corr_water_tmp/corr_water_tmp
 !      water_correction = 0.
-      where ( p_full >= water_correction_limit )
+       where ( p_full >= water_correction_limit )
+! 	where( water_mask == 1)
  !        water_correction = (water_correction_factor-1.)*grid_tracers(:,:,:,future,nhum)/delta_t
-          grid_tracers(:,:,:,future,nhum) = water_correction_factor*grid_tracers(:,:,:,future,nhum)
-      endwhere
+!	  do iw=1,size(grid_tracers,1)
+!	    do jw=js,je
+!	      do kw=1,size(grid_tracers,3)
+           grid_tracers(:,:,:,future,nhum) = water_correction_factor*grid_tracers(:,:,:,future,nhum)
+!		if(p_full(iw,jw,kw).ge. water_correction_limit) then
+!		  grid_tracers(iw,jw,kw,future,nhum) = water_correction_factor*grid_tracers(iw,jw,kw,future,nhum)
+!		  water_mask(iw,jw,kw) = 2*water_mask(iw,jw,kw)
+!		endif
+!	      enddo
+!	    enddo
+!	  enddo
+
+
+         endwhere
+
+!     if(minval(water_mask).lt.2) write(6,*) 'found error'
+
 !s End second part of mj's extra code.
 
       if(tracer_attributes(nhum)%numerical_representation == 'spectral') then
@@ -1212,9 +1237,11 @@ if(do_water_correction) then
        endwhere !s the endwhere to mj's additional where.
       endif
     endif
+  endif
+endif
 
-!s Original FMS 2013 code
-!if(do_water_correction) then
+! !s Original FMS 2013 code
+! if(do_water_correction) then
 !  if(dry_model) then
 !    call error_mesg('compute_corrections','do_water_correction must be .false. in a dry model (default is .true.)', FATAL)
 !  else
@@ -1226,8 +1253,8 @@ if(do_water_correction) then
 !        spec_tracers(:,:,:,future,nhum) = water_correction_factor*spec_tracers(:,:,:,future,nhum)
 !      endif
 !    endif
-  endif
-endif
+!   endif
+! endif
 
 return
 end subroutine compute_corrections 

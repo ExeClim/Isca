@@ -172,10 +172,12 @@ integer:: ierr, io, unit, num_tr, n
 character(32) :: tr_name
 
 ! mj shallower ocean in tropics, land-sea contrast
- real :: lon,lat,pi
+ real :: lon,lat
+!,pi
  integer :: i,k
 
-   pi = 4.*atan(1.)
+
+!   pi = 4.*atan(1.)
 
 if(module_is_initialized) return
 

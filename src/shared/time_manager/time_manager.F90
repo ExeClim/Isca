@@ -2879,6 +2879,7 @@ case(JULIAN)
 case(NOLEAP)
    length_of_year = length_of_year_no_leap()
 case default
+   write(6,*) calendar_type
    call error_mesg('length_of_year','Invalid calendar type in length_of_year',FATAL)
 end select
 end function length_of_year
