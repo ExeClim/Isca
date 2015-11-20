@@ -45,8 +45,6 @@ set out = $in				#assign the input to output and add 1.
 @ out ++			     
 echo $out
 
-
-
 #use restart files from spin_up
 if ($out > 12) then
   #if true use experiment restarts else use the spin_up data
@@ -110,10 +108,22 @@ if($do_compile == true) then
 
   cd $source_dir
 
+  # JP [20/11/15]
+  # Taken from https://github.com/tapios/fms-idealized runscripts
+  # Prepend fortran files in srcmods directory to pathnames. 
+  # Use 'find' to make list of srcmod/*.f90 files. mkmf uses only the first instance of any file name.
+  cd $source_dir
+  find $exp_home/srcmods/ -maxdepth 1 -iname "*.f90" -o -iname "*.inc" -o -iname "*.c" -o -iname "*.h" > $workdir/tmp_pathnames
+  echo "Using the following sourcecode modifications:"
+  cat $workdir/tmp_pathnames
+  cat $path_names >> $workdir/tmp_pathnames
+
+
+
   if ($run_mpi == true) then
     echo "Run in parallel mode"
     $dir_base/bin/mkmf $make_flags -a $source_dir  -p fms_moist.x -t   $dir_base/bin/mkmf.template.ia64 \
-    -c "-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8" $path_names $source_dir/shared/mpp/include $source_dir/shared/constants $source_dir/include  
+    -c "-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8" $workdir/tmp_pathnames $source_dir/shared/mpp/include $source_dir/shared/constants $source_dir/include  
     cp Makefile $compile_dir		#copy the mf 
     cd $compile_dir    
     make
@@ -122,7 +132,7 @@ if($do_compile == true) then
     #only run in serial when debugging using idb
     echo "Run in serial mode"
     $dir_base/bin/mkmf $make_flags -a $source_dir  -p fms_moist.x -t   $exp_dir/mkmf.template.debug\
-    -c "-Duse_netCDF" $path_names $source_dir/shared/mpp/include $source_dir/shared/constants $source_dir/include  
+    -c "-Duse_netCDF" $workdir/tmp_pathnames $source_dir/shared/mpp/include $source_dir/shared/constants $source_dir/include  
     cp Makefile $compile_dir		
     cd $compile_dir    
     make
