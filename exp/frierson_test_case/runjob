@@ -7,8 +7,11 @@
 
 
 #load appropriate modules
+: ${GFDL_BASE?"GFDL_BASE location needs to be set."}
+: ${GFDL_WORK?"GFDL_WORK location needs to be set."}
+: ${GFDL_DATA?"GFDL_DATA location needs to be set."}
 
-dir_path=/scratch/sit204/FMS2013/GFDLmoistModel/src/extra
+dir_path=$GFDL_BASE/src/extra
 source $dir_path/loadmodule	
 module list
 
