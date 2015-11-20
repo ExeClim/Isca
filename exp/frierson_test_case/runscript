@@ -19,9 +19,9 @@
   
   #begin personalisations for running at exeter:
   set exp_name         	= frierson_test_case		#control run of code - for each experiment have a new experiment name
-  set workdir           = /scratch/sit204/workdir_2013/$exp_name/np$npes	#base working directory
-  set base_arc        	= /scratch/sit204/Data_2013/$exp_name/np$npes	#storing data in location other than workdir (eg archived data) 
-  set dir_base		= /scratch/sit204/FMS2013/GFDLmoistModel
+  set workdir           = $GFDL_WORK/$exp_name/np$npes	#base working directory
+  set base_arc        	= $GFDL_DATA/$exp_name/np$npes	#storing data in location other than workdir (eg archived data) 
+  set dir_base		=       $GFDL_BASE
   set source_dir       	= $dir_base/src
   set exp_dir          	= $dir_base/exp/$exp_name			
   set spin_up_restarts  = $dir_base/spin_up_restart/$exp_name/np$npes	
@@ -113,7 +113,7 @@ if($do_compile == true) then
   # Prepend fortran files in srcmods directory to pathnames. 
   # Use 'find' to make list of srcmod/*.f90 files. mkmf uses only the first instance of any file name.
   cd $source_dir
-  find $exp_home/srcmods/ -maxdepth 1 -iname "*.f90" -o -iname "*.inc" -o -iname "*.c" -o -iname "*.h" > $workdir/tmp_pathnames
+  find $exp_dir/srcmods/ -maxdepth 1 -iname "*.f90" -o -iname "*.inc" -o -iname "*.c" -o -iname "*.h" > $workdir/tmp_pathnames
   echo "Using the following sourcecode modifications:"
   cat $workdir/tmp_pathnames
   cat $path_names >> $workdir/tmp_pathnames

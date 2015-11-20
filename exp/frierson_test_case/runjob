@@ -8,7 +8,7 @@
 
 #load appropriate modules
 
-dir_path=/scratch/sit204/FMS2013/GFDLmoistModel/src/extra
+dir_path=$GFDL_BASE/src/extra
 source $dir_path/loadmodule	
 module list
 
