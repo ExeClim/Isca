@@ -1192,43 +1192,15 @@ if(do_water_correction) then
     not_corr_water_tmp= mass_weighted_global_integral(grid_tracers(:,:,:,future,nhum)*water_mask_not_corr, psg(:,:,future))
 !s end of first part of mj extra code.
 
-!	if(not_corr_water_tmp.ne.0.) then
-!        write(6,*) corr_water_tmp, not_corr_water_tmp
-!        endif
-
-!	if(maxval(water_mask_not_corr).gt.0.) then
- !        write(6,*) maxval(water_mask_not_corr), minval(water_mask_not_corr)
-!        endif
-! 	write(6,*) water_correction_limit, minval(p_full),maxval(p_full)
-!	write(6,*) size(p_full,1), size(p_full,2), size(p_full,3), size(grid_tracers,1), size(grid_tracers,2), size(grid_tracers,3)
-
     if(mean_water_tmp > 0.) then
       water_correction_factor = mean_water_previous/mean_water_tmp
 
 !s Begin second part of mj's extra code.
 !mj add water correction upper limit
-!      water_correction_factor = water_correction_factor!*(1.+not_corr_water_tmp/corr_water_tmp) - not_corr_water_tmp/corr_water_tmp
-!      water_correction = 0.
+      water_correction_factor = water_correction_factor*(1.+not_corr_water_tmp/corr_water_tmp) - not_corr_water_tmp/corr_water_tmp
        where ( p_full >= water_correction_limit )
-! 	where( water_mask == 1)
- !        water_correction = (water_correction_factor-1.)*grid_tracers(:,:,:,future,nhum)/delta_t
-!	  do iw=1,size(grid_tracers,1)
-!	    do jw=js,je
-!	      do kw=1,size(grid_tracers,3)
            grid_tracers(:,:,:,future,nhum) = water_correction_factor*grid_tracers(:,:,:,future,nhum)
-!		if(p_full(iw,jw,kw).ge. water_correction_limit) then
-!		  grid_tracers(iw,jw,kw,future,nhum) = water_correction_factor*grid_tracers(iw,jw,kw,future,nhum)
-!		  water_mask(iw,jw,kw) = 2*water_mask(iw,jw,kw)
-!		endif
-!	      enddo
-!	    enddo
-!	  enddo
-
-
-         endwhere
-
-!     if(minval(water_mask).lt.2) write(6,*) 'found error'
-
+       endwhere
 !s End second part of mj's extra code.
 
       if(tracer_attributes(nhum)%numerical_representation == 'spectral') then

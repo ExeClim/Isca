@@ -7,4 +7,5 @@ spin_up_restart/
 nohup.out
 Makefile
 old_exps
+opt_exps
 frierson_comparison_*old*
