@@ -87,6 +87,9 @@
                                                                             ! dimension (lon x lat x pfull)
         real(kind=rb),allocatable,dimension(:,:,:) :: t_half                ! temperature at half levels [K]
                                                                             ! dimension (lon x lat x phalf)
+        real(kind=rb),allocatable,dimension(:,:,:) :: t_half_add_tw         ! Penny added please delete after debugging
+                                                                            
+
         real(kind=rb),allocatable,dimension(:,:)   :: rrtm_precip           ! total time of precipitation
                                                                             ! between radiation steps to
                                                                             ! determine precip_albedo
@@ -167,7 +170,7 @@
 !
 !-------------------- diagnostics fields -------------------------------
 
-        integer :: id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,id_flux_sw,id_flux_lw,id_albedo,id_ozone
+        integer :: id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_z_thalf
         character(len=14), parameter :: mod_name_rad = 'rrtm_radiation' !s changed parameter name from mod_name to mod_name_rad as compiler objected, presumably because mod_name also defined in idealized_moist_physics.F90 after use rrtm_vars is included. 
         real :: missing_value = -999.
 
@@ -212,6 +215,7 @@
                                       &write_version_number, stdlog, &
                                       &error_mesg, NOTE, WARNING
           use time_manager_mod, only: time_type
+	  use transforms_mod,   only: get_grid_domain
 ! Local variables
           implicit none
           
@@ -222,7 +226,7 @@
 
           integer :: i,k,seconds
 
-          integer :: ierr, io, unit
+          integer :: ierr, io, unit, is, ie, js, je
 
 
 ! read namelist and copy to logfile
@@ -274,6 +278,11 @@
                register_diag_field ( mod_name_rad, 'ozone', axes(1:3), Time, &
                  'Ozone', &
                  'mmr', missing_value=missing_value               )
+          id_z_thalf = &
+               register_diag_field ( mod_name_rad, 'z_thalf', axes(1:3), Time, &
+                 'Temperature tendency due to radiation', &
+                 'K/s', missing_value=missing_value               ) !DELETE AFTER DEBUG
+
 ! 
 !------------ make sure namelist choices are consistent -------
 ! this does not work at the moment, as dt_atmos from coupler_mod induces a circular dependency at compilation
@@ -313,8 +322,12 @@
           if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
 
 !------------ allocate arrays to be used later  -------
-          allocate(t_half(size(lonb,1)-1,size(latb,2)-1,nlay+1)) !s changed all size(latb) to size(latb,2) as latb now 2d in 2013, where it was 1d in MiMA. 
-          
+call get_grid_domain(is, ie, js, je)
+!          allocate(t_half(is:ie,js:je,nlay+1)) !s changed all size(latb) to size(latb,2) as latb now 2d in 2013, where it was 1d in MiMA.
+          allocate(t_half(size(lonb,1)-1,size(latb,2)-1,nlay+1)) !s changed all size(latb) to size(latb,2) as latb now 2d in 2013, where it was 1d in MiMA.
+!          allocate(t_half_add_tw(is:ie,js:je,nlay+1)) !s changed all size(latb) to size(latb,2) as latb now 2d in 2013, where it was 1d in MiMA.
+ 
+!          write(6,*) 'sizes', size(lonb,1), size(lonb,2), size(latb,1), size(latb,2), size(t_half,1), size(t_half, 2), size(t_half,3)
           if(.not. do_read_radiation .or. .not. do_read_sw_flux .and. .not. do_read_lw_flux)then
              allocate(h2o(ncols_rrt,nlay_rrt),o3(ncols_rrt,nlay_rrt), &
                   co2(ncols_rrt,nlay_rrt))
@@ -390,8 +403,12 @@
 
         end subroutine rrtm_radiation_init
 !*****************************************************************************************
-        subroutine interp_temp(z_full,z_half,t)
+        subroutine interp_temp(z_full,z_half,t, Time)
           use rrtm_vars
+
+          use diag_manager_mod, only: register_diag_field, send_data
+          use time_manager_mod,only:  time_type
+
           implicit none
 
           real(kind=rb),dimension(:,:,:),intent(in)  :: z_full,z_half,t
@@ -399,6 +416,11 @@
           integer i,j,k,kend
           real dzk,dzk1,dzk2
 
+          logical :: used
+
+!! Input variables
+          type(time_type)               ,intent(in)          :: Time
+          
 ! note: z_full(kend) = z_half(kend), so there's something fishy
 ! also, for some reason, z_half(k=1)=0. so we need to deal with k=1 separately
           kend=size(z_full,3)
@@ -425,7 +447,11 @@
                      / (z_full(i,j,kend  ) - z_full(i,j,kend-1))
              enddo
           enddo
-          
+
+		t_half=100.5
+!		write(6,*) maxval(t_half), minval(t_half)
+          if ( id_z_thalf > 0 ) used = send_data ( id_z_thalf, t_half(:,:,1:25), Time)
+       
 
         end subroutine interp_temp
 !*****************************************************************************************
@@ -446,6 +472,9 @@
           use rrtm_vars
           use time_manager_mod,only: time_type,get_time,set_time
           use interpolator_mod,only: interpolator
+
+          use diag_manager_mod, only: register_diag_field, send_data
+          use time_manager_mod,only:  time_type
 !---------------------------------------------------------------------------------------------------------------
 ! In/Out variables
           implicit none
@@ -491,6 +520,7 @@
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: q_tmp
 ! debug
           integer :: indx2(2),indx(3),ii,ji,ki
+          logical :: used
 !---------------------------------------------------------------------------------------------------------------
 
           if(.not. rrtm_init)&
@@ -826,35 +856,43 @@
 
 !------- temperature tendency due to radiation ------------
           if ( id_tdt_rad > 0 ) then
-             used = send_data ( id_tdt_rad, tdt_rad, Time, is, js, 1 )
+!             used = send_data ( id_tdt_rad, tdt_rad, Time, is, js, 1 )
+             used = send_data ( id_tdt_rad, tdt_rad, Time)
           endif
 !------- temperature tendency due to SW radiation ---------
           if ( id_tdt_sw > 0 ) then
-             used = send_data ( id_tdt_sw, tdt_sw_rad, Time, is, js, 1 )
+!             used = send_data ( id_tdt_sw, tdt_sw_rad, Time, is, js, 1 )
+             used = send_data ( id_tdt_sw, tdt_sw_rad, Time)
           endif
 !------- temperature tendency due to LW radiation ---------
           if ( id_tdt_lw > 0 ) then
-             used = send_data ( id_tdt_lw, tdt_lw_rad, Time, is, js, 1 )
+!             used = send_data ( id_tdt_lw, tdt_lw_rad, Time, is, js, 1 )
+             used = send_data ( id_tdt_lw, tdt_lw_rad, Time)
           endif
 !------- cosine of zenith angle                ------------
           if ( id_coszen > 0 ) then
-             used = send_data ( id_coszen, zencos, Time, is, js )
+!             used = send_data ( id_coszen, zencos, Time, is, js )
+             used = send_data ( id_coszen, zencos, Time)
           endif
 !------- Net SW surface flux                   ------------
           if ( id_flux_sw > 0 ) then
-             used = send_data ( id_flux_sw, sw_flux, Time, is, js )
+!             used = send_data ( id_flux_sw, sw_flux, Time, is, js )
+             used = send_data ( id_flux_sw, sw_flux, Time)
           endif
 !------- Net LW surface flux                   ------------
           if ( id_flux_lw > 0 ) then
-             used = send_data ( id_flux_lw, lw_flux, Time, is, js )
+!             used = send_data ( id_flux_lw, lw_flux, Time, is, js )
+             used = send_data ( id_flux_lw, lw_flux, Time)
           endif
 !------- Interactive albedo                    ------------
           if ( present(albedo_loc)) then
-             used = send_data ( id_albedo, albedo_loc, Time, is, js )
+!             used = send_data ( id_albedo, albedo_loc, Time, is, js )
+             used = send_data ( id_albedo, albedo_loc, Time)
           endif
 !------- Ozone                                 ------------
           if ( present(ozone) .and. id_ozone > 0 ) then
-             used = send_data ( id_ozone, ozone, Time, is, js, 1 )
+!             used = send_data ( id_ozone, ozone, Time, is, js, 1 )
+             used = send_data ( id_ozone, ozone, Time)
           endif
         end subroutine write_diag_rrtm
 !*****************************************************************************************

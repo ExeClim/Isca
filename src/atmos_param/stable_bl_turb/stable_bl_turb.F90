@@ -456,10 +456,12 @@ real :: missing_value = -999.
   endwhere
   
   if ( id_z_sbl > 0 ) then
-     used = send_data ( id_z_sbl, z_sbl, Time, is, js )
+!     used = send_data ( id_z_sbl, z_sbl, Time, is, js )
+     used = send_data ( id_z_sbl, z_sbl, Time)
   endif
   if ( id_f_sbl > 0 ) then
-     used = send_data ( id_f_sbl, f_sbl, Time, is, js )
+!     used = send_data ( id_f_sbl, f_sbl, Time, is, js )
+     used = send_data ( id_f_sbl, f_sbl, Time)
   endif
   
 !=======================================================================

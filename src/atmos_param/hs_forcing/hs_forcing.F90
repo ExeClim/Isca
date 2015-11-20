@@ -176,38 +176,46 @@ contains
       if (do_conserve_energy) then
          ttnd = -((um+.5*utnd*dt)*utnd + (vm+.5*vtnd*dt)*vtnd)/CP_AIR
          tdt = tdt + ttnd
-         if (id_tdt_diss > 0) used = send_data ( id_tdt_diss, ttnd, Time, is, js)
+!         if (id_tdt_diss > 0) used = send_data ( id_tdt_diss, ttnd, Time, is, js)
+         if (id_tdt_diss > 0) used = send_data ( id_tdt_diss, ttnd, Time) !st 2013 FMS seems to have paralelisation issues when called with ..., Time, is, js)
        ! vertical integral of ke dissipation
          if ( id_diss_heat > 0 ) then
           do k = 1, size(t,3)
             pmass(:,:,k) = p_half(:,:,k+1)-p_half(:,:,k)
           enddo
           diss_heat = CP_AIR/GRAV * sum( ttnd*pmass, 3)
-          used = send_data ( id_diss_heat, diss_heat, Time, is, js)
+!          used = send_data ( id_diss_heat, diss_heat, Time, is, js)
+          used = send_data ( id_diss_heat, diss_heat, Time)
          endif
       endif
 
       udt = udt + utnd
       vdt = vdt + vtnd
 
-      if (id_udt > 0) used = send_data ( id_udt, utnd, Time, is, js)
-      if (id_vdt > 0) used = send_data ( id_vdt, vtnd, Time, is, js)
+!     if (id_udt > 0) used = send_data ( id_udt, utnd, Time, is, js)
+      if (id_udt > 0) used = send_data ( id_udt, utnd, Time)
+!      if (id_vdt > 0) used = send_data ( id_vdt, vtnd, Time, is, js)
+      if (id_vdt > 0) used = send_data ( id_vdt, vtnd, Time)
 
 !-----------------------------------------------------------------------
 !     thermal forcing for held & suarez (1994) benchmark calculation
 
       call newtonian_damping ( Time, lat, ps, p_full, p_half, t, ttnd, teq, mask )
       tdt = tdt + ttnd
-      if (id_newtonian_damping > 0) used = send_data(id_newtonian_damping, ttnd, Time, is, js)
+!      if (id_newtonian_damping > 0) used = send_data(id_newtonian_damping, ttnd, Time, is, js)
+      if (id_newtonian_damping > 0) used = send_data(id_newtonian_damping, ttnd, Time)
 
       if(trim(local_heating_option) /= '') then
         call local_heating ( Time, is, js, lon, lat, ps, p_full, p_half, ttnd )
         tdt = tdt + ttnd
-        if (id_local_heating > 0) used = send_data ( id_local_heating, ttnd, Time, is, js)
+!        if (id_local_heating > 0) used = send_data ( id_local_heating, ttnd, Time, is, js)
+        if (id_local_heating > 0) used = send_data ( id_local_heating, ttnd, Time)
       endif
 
-      if (id_tdt > 0) used = send_data ( id_tdt, tdt, Time, is, js)
-      if (id_teq > 0) used = send_data ( id_teq, teq, Time, is, js)
+!      if (id_tdt > 0) used = send_data ( id_tdt, tdt, Time, is, js)
+      if (id_tdt > 0) used = send_data ( id_tdt, tdt, Time)
+!      if (id_teq > 0) used = send_data ( id_teq, teq, Time, is, js)
+      if (id_teq > 0) used = send_data ( id_teq, teq, Time)
 
 !-----------------------------------------------------------------------
 !     -------- tracers -------

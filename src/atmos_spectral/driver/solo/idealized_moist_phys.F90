@@ -175,7 +175,8 @@ integer ::           &
      id_conv_dt_qg,  &   ! temperature tendency from convection
      id_cond_dt_tg,  &   ! temperature tendency from convection
      id_cond_dt_qg,  &   ! temperature tendency from convection
-     id_rh       	 ! Relative humidity
+     id_rh,          & 	 ! Relative humidity
+     id_z_tg       	 ! Relative humidity
 
 integer, allocatable, dimension(:,:) :: & convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon   
@@ -302,7 +303,8 @@ allocate(convect      (is:ie, js:je)); convect = .false.
 allocate(t_ref (is:ie, js:je, num_levels)); t_ref = 0.0
 allocate(q_ref (is:ie, js:je, num_levels)); q_ref = 0.0
 
-allocate (albedo      (ie-is+1, je-js+1)) !s allocate for albedo, to be set in mixed_layer_init.
+!allocate (albedo      (ie-is+1, je-js+1)) !s allocate for albedo, to be set in mixed_layer_init.
+allocate (albedo      (is:ie, js:je)) !s allocate for albedo, to be set in mixed_layer_init.
 allocate(coszen       (is:ie, js:je)) !s allocate coszen to be set in run_rrtmg
 allocate(pbltop       (is:ie, js:je)) !s allocate coszen to be set in run_rrtmg
 
@@ -318,7 +320,7 @@ z_surf = z_surf/grav
       if(do_damping) then
          call pressure_variables(p_half_1d,ln_p_half_1d,pref(1:num_levels),ln_p_full_1d,PSTD_MKS)
 	 pref(num_levels+1) = PSTD_MKS
-         call damping_driver_init (rad_lonb_2d(:,js),rad_latb_2d(is,:), pref(:), axes, Time, & !s note that in the original this is pref(:,1), which is the full model pressure levels and the surface pressure at the bottom. There is pref(:2) in this version with 81060 as surface pressure??
+         call damping_driver_init (rad_lonb_2d(:,js),rad_latb_2d(is,:), pref(:), get_axis_id(), Time, & !s note that in the original this is pref(:,1), which is the full model pressure levels and the surface pressure at the bottom. There is pref(:2) in this version with 81060 as surface pressure??
                                 sgsmtn)
 
       endif
@@ -336,7 +338,7 @@ if(turb) then
 ! need to call vert_diff_init even if using gcm_vert_diff (rather than
 ! gcm_vert_diff_down) because the variable sphum is not initialized
 ! otherwise in the vert_diff module
-   call vert_diff_init (Tri_surf, ie-is+1, je-js+1, num_levels, .true., do_virtual)
+   call vert_diff_init (Tri_surf, ie-is+1, je-js+1, num_levels, .true., do_virtual) !s do_conserve_energy is hard-coded in.
 end if
 
 call lscale_cond_init()
@@ -356,7 +358,7 @@ endif
 
 if(do_bm) then
     call betts_miller_init()
-    !s Think about what fields you still need to register here.
+    !s TODO Think about what fields you still need to register here.
 endif
 
 if(lwet_convection .or. do_bm) then
@@ -378,6 +380,8 @@ if(do_rrtm_radiation) then
    call rrtmg_lw_ini(cp_air)
    call rrtmg_sw_ini(cp_air)
    call rrtm_radiation_init(axes,Time,id*jd,kd,rad_lonb_2d,rad_latb_2d)
+   id_z_tg = register_diag_field(mod_name, 'interp_t',        &
+        axes(1:3), Time, 'temperature interp','T/s')
 endif
 
 if(turb) then
@@ -411,7 +415,7 @@ real, dimension(:,:,:),     intent(inout) :: dt_ug, dt_vg, dt_tg
 real, dimension(:,:,:,:),   intent(inout) :: dt_tracers
 
 real :: delta_t
-real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH
+real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp
 
 if(current == previous) then
    delta_t = dt_real
@@ -579,8 +583,9 @@ end if
 
 if(do_rrtm_radiation) then
    !need t at half grid
-   call interp_temp(z_full(:,:,:,current),z_half(:,:,:,current),tg(:,:,:,previous))
-   call run_rrtmg(is,js,Time,rad_lat,rad_lon,p_full(:,:,:,current),p_half(:,:,:,current),albedo,grid_tracers(:,:,:,previous,nsphum),tg(:,:,:,previous),t_surf(:,:),dt_tg(:,:,:),coszen,net_surf_sw_down(:,:),surf_lw_down(:,:))
+	tg_interp=tg(:,:,:,previous)
+   call interp_temp(z_full(:,:,:,current),z_half(:,:,:,current),tg_interp, Time)
+   call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),coszen,net_surf_sw_down(:,:),surf_lw_down(:,:))
 endif
 
 

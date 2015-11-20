@@ -173,18 +173,21 @@ contains
 !----- diagnostics -----
 
        if ( id_udt_rdamp > 0 ) then
-            used = send_data ( id_udt_rdamp, utnd, Time, is, js, 1, &
-                               rmask=mask )
+!            used = send_data ( id_udt_rdamp, utnd, Time, is, js, 1, &
+!                               rmask=mask )
+            used = send_data ( id_udt_rdamp, utnd, Time, rmask=mask )
        endif
 
        if ( id_vdt_rdamp > 0 ) then
-            used = send_data ( id_vdt_rdamp, vtnd, Time, is, js, 1, &
-                               rmask=mask )
+!            used = send_data ( id_vdt_rdamp, vtnd, Time, is, js, 1, &
+!                               rmask=mask )
+            used = send_data ( id_vdt_rdamp, vtnd, Time, rmask=mask )
        endif
 
        if ( id_tdt_diss_rdamp > 0 ) then
-            used = send_data ( id_tdt_diss_rdamp, ttnd, Time, is, js, 1, &
-                               rmask=mask )
+!            used = send_data ( id_tdt_diss_rdamp, ttnd, Time, is, js, 1, &
+!                               rmask=mask )
+            used = send_data ( id_tdt_diss_rdamp, ttnd, Time, rmask=mask )
        endif
 
        if ( id_diss_heat_rdamp > 0 ) then
@@ -192,7 +195,8 @@ contains
               pmass(:,:,k) = phalf(:,:,k+1)-phalf(:,:,k)
             enddo
             diag2 = cp_air/grav * sum(ttnd*pmass,3)
-            used = send_data ( id_diss_heat_rdamp, diag2, Time, is, js )
+!            used = send_data ( id_diss_heat_rdamp, diag2, Time, is, js )
+            used = send_data ( id_diss_heat_rdamp, diag2, Time)
        endif
 
    endif
@@ -211,31 +215,37 @@ contains
 !----- diagnostics -----
 
        if ( id_udt_gwd > 0 ) then
-            used = send_data ( id_udt_gwd, utnd, Time, is, js, 1, &
-                               rmask=mask )
+!            used = send_data ( id_udt_gwd, utnd, Time, is, js, 1, &
+!                               rmask=mask )
+            used = send_data ( id_udt_gwd, utnd, Time, rmask=mask )
        endif
 
        if ( id_vdt_gwd > 0 ) then
-            used = send_data ( id_vdt_gwd, vtnd, Time, is, js, 1, &
-                               rmask=mask )
+!            used = send_data ( id_vdt_gwd, vtnd, Time, is, js, 1, &
+!                               rmask=mask )
+            used = send_data ( id_vdt_gwd, vtnd, Time, rmask=mask )
        endif
 
        if ( id_taubx > 0 ) then
-            used = send_data ( id_taubx, taubx, Time, is, js )
+!            used = send_data ( id_taubx, taubx, Time, is, js )
+            used = send_data ( id_taubx, taubx, Time)
        endif
 
        if ( id_tauby > 0 ) then
-            used = send_data ( id_tauby, tauby, Time, is, js )
+!            used = send_data ( id_tauby, tauby, Time, is, js )
+            used = send_data ( id_tauby, tauby, Time)
        endif
 
        if ( id_taus > 0 ) then
-           used = send_data ( id_taus, taus, Time, is, js, 1, &
-                              rmask=mask )
+!           used = send_data ( id_taus, taus, Time, is, js, 1, &
+!                              rmask=mask )
+           used = send_data ( id_taus, taus, Time, rmask=mask )
        endif
 
        if ( id_tdt_diss_gwd > 0 ) then
-            used = send_data ( id_tdt_diss_gwd, ttnd, Time, is, js, 1, &
-                               rmask=mask )
+!            used = send_data ( id_tdt_diss_gwd, ttnd, Time, is, js, 1, &
+!                               rmask=mask )
+            used = send_data ( id_tdt_diss_gwd, ttnd, Time, rmask=mask )
        endif
 
        if ( id_diss_heat_gwd > 0 ) then
@@ -243,7 +253,8 @@ contains
               pmass(:,:,k) = phalf(:,:,k+1)-phalf(:,:,k)
             enddo
             diag2 = cp_air/grav * sum(ttnd*pmass,3)
-            used = send_data ( id_diss_heat_gwd, diag2, Time, is, js )
+!            used = send_data ( id_diss_heat_gwd, diag2, Time, is, js )
+            used = send_data ( id_diss_heat_gwd, diag2, Time )
        endif
 
    endif
@@ -261,8 +272,9 @@ contains
 !----- diagnostics -----
 
      if ( id_udt_cgwd > 0 ) then
-        used = send_data ( id_udt_cgwd, utnd, Time, is, js, 1, &
-                          rmask=mask )
+!        used = send_data ( id_udt_cgwd, utnd, Time, is, js, 1, &
+!                          rmask=mask )
+        used = send_data ( id_udt_cgwd, utnd, Time, rmask=mask )
      endif
  
    endif
@@ -291,8 +303,9 @@ contains
 !----- diagnostics -----
 
      if ( id_udt_cnstd > 0 ) then
-        used = send_data ( id_udt_cnstd, utnd, Time, is, js, 1, &
-                          rmask=mask )
+!        used = send_data ( id_udt_cnstd, utnd, Time, is, js, 1, &
+!                          rmask=mask )
+        used = send_data ( id_udt_cnstd, utnd, Time, rmask=mask )
      endif
    endif
 
@@ -316,26 +329,31 @@ contains
 !----- diagnostics -----
 
     if ( id_udt_topo > 0 ) then
-       used = send_data ( id_udt_topo, utnd, Time, is, js, 1, &
-                          rmask=mask )
+!       used = send_data ( id_udt_topo, utnd, Time, is, js, 1, &
+!                          rmask=mask )
+       used = send_data ( id_udt_topo, utnd, Time, rmask=mask )
     endif
 
     if ( id_vdt_topo > 0 ) then
-         used = send_data ( id_vdt_topo, vtnd, Time, is, js, 1, &
-                         rmask=mask )
+!         used = send_data ( id_vdt_topo, vtnd, Time, is, js, 1, &
+!                         rmask=mask )
+         used = send_data ( id_vdt_topo, vtnd, Time, rmask=mask )
    endif
 
      if ( id_taubx > 0 ) then
-       used = send_data ( id_taubx, taubx, Time, is, js )
+!       used = send_data ( id_taubx, taubx, Time, is, js )
+       used = send_data ( id_taubx, taubx, Time)
      endif
 
      if ( id_tauby > 0 ) then
-        used = send_data ( id_tauby, tauby, Time, is, js )
+!        used = send_data ( id_tauby, tauby, Time, is, js )
+        used = send_data ( id_tauby, tauby, Time)
       endif
 
      if ( id_taus > 0 ) then
-      used = send_data ( id_taus, taus, Time, is, js, 1, &
-                          rmask=mask )
+!      used = send_data ( id_taus, taus, Time, is, js, 1, &
+!                          rmask=mask )
+      used = send_data ( id_taus, taus, Time, rmask=mask )
      endif
 
 

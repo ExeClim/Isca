@@ -820,11 +820,13 @@ real, dimension(:,:,:), intent(out)     :: gwfcng_x, gwfcng_y
 !-------------------------------------------------------------------
 
           if (id_kedx_cgwd > 0) then
-            used = send_data (id_kedx_cgwd, ked_gwfc_x, Time, is, js, 1)
+!            used = send_data (id_kedx_cgwd, ked_gwfc_x, Time, is, js, 1)
+            used = send_data (id_kedx_cgwd, ked_gwfc_x, Time) !st 2013 FMS seems to have paralelisation issues when called with ...Time, is, js, 1).
           endif
 
           if (id_kedy_cgwd > 0) then
-            used = send_data (id_kedy_cgwd, ked_gwfc_y, Time, is, js, 1)
+!            used = send_data (id_kedy_cgwd, ked_gwfc_y, Time, is, js, 1)
+            used = send_data (id_kedy_cgwd, ked_gwfc_y, Time)
           endif
 
 
@@ -833,14 +835,17 @@ real, dimension(:,:,:), intent(out)     :: gwfcng_x, gwfcng_y
 !    save any other netcdf file diagnostics that are desired.
 !--------------------------------------------------------------------
         if (id_bf_cgwd > 0) then
-          used = send_data (id_bf_cgwd,  zbf(:,:,1:), Time, is, js )
+!          used = send_data (id_bf_cgwd,  zbf(:,:,1:), Time, is, js )
+          used = send_data (id_bf_cgwd,  zbf(:,:,1:), Time)
         endif
 
         if (id_gwfx_cgwd > 0) then
-          used = send_data (id_gwfx_cgwd, gwfcng_x, Time, is, js, 1)
+!          used = send_data (id_gwfx_cgwd, gwfcng_x, Time, is, js, 1)
+          used = send_data (id_gwfx_cgwd, gwfcng_x, Time)
         endif
         if (id_gwfy_cgwd > 0) then
-          used = send_data (id_gwfy_cgwd, gwfcng_y, Time, is, js, 1)
+!          used = send_data (id_gwfy_cgwd, gwfcng_y, Time, is, js, 1)
+          used = send_data (id_gwfy_cgwd, gwfcng_y, Time)
         endif
 
 
