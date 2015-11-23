@@ -405,21 +405,17 @@ call get_grid_domain(is, ie, js, je)
 !*****************************************************************************************
         subroutine interp_temp(z_full,z_half,t, Time)
           use rrtm_vars
-
-          use diag_manager_mod, only: register_diag_field, send_data
+          use diag_manager_mod, only: send_data
           use time_manager_mod,only:  time_type
-
           implicit none
 
           real(kind=rb),dimension(:,:,:),intent(in)  :: z_full,z_half,t
+          type(time_type)               ,intent(in)          :: Time
 
           integer i,j,k,kend
           real dzk,dzk1,dzk2
-
           logical :: used
 
-!! Input variables
-          type(time_type)               ,intent(in)          :: Time
           
 ! note: z_full(kend) = z_half(kend), so there's something fishy
 ! also, for some reason, z_half(k=1)=0. so we need to deal with k=1 separately
@@ -448,9 +444,9 @@ call get_grid_domain(is, ie, js, je)
              enddo
           enddo
 
-		t_half=100.5
+
 !		write(6,*) maxval(t_half), minval(t_half)
-          if ( id_z_thalf > 0 ) used = send_data ( id_z_thalf, t_half(:,:,1:25), Time)
+          if ( id_z_thalf > 0 ) used = send_data ( id_z_thalf, t_half(:,:,1:kend), Time)
        
 
         end subroutine interp_temp
