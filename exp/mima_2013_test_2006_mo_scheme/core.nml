@@ -22,7 +22,7 @@
     valid_range_t 	    = 100. 800.,
     initial_sphum           = 2.e-6,
     vert_coord_option       = 'uneven_sigma',
-    surf_res                = 0.1,
+    surf_res                = 0.5,
     scale_heights           = 11.0,
     exponent                = 7.0 /
 
