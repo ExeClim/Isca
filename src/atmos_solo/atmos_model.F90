@@ -279,8 +279,6 @@ contains
     Run_length = set_time(       hours*int(SECONDS_PER_HOUR)+     minutes*int(SECONDS_PER_MINUTE)+     seconds,days        )
     Time_end   = Time + Run_length
 	
-	write(6,*) Time_init, Time, Run_length, Time_end
-
 !-----------------------------------------------------------------------
 !----- write time stamps (for start time and end time) ------
 
