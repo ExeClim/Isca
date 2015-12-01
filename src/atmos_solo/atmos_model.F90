@@ -39,7 +39,8 @@ use time_manager_mod, only: time_type, set_time, get_time,  &
                             operator(+), operator (<), operator (>), &
                             operator (/=), operator (/), operator (*),&
 			    THIRTY_DAY_MONTHS, JULIAN,                &
-                            NOLEAP, NO_CALENDAR, set_calendar_type
+                            NOLEAP, NO_CALENDAR, set_calendar_type, &
+			    set_date
 
 use          fms_mod, only: file_exist, check_nml_error,                &
                             error_mesg, FATAL, WARNING,                 &
@@ -203,7 +204,7 @@ contains
 !      date(1:2) = 0
 !      date(3:6) = current_time
        date = current_date
-       date_init = current_date
+!       date_init = current_date
 
         select case( uppercase(trim(calendar)) )
         case( 'JULIAN' )
@@ -252,7 +253,7 @@ contains
                          date_init(4), date_init(5), date_init(6)  )
 
   ! make sure base date does not have a year or month specified
-  !s no longer reuqired as we DO want a year or month specified for MiMA.
+  !s no longer required as we DO want a year or month specified for MiMA.
 !    if ( date_init(1)+date_init(2) /= 0 ) then
 !         call error_mesg ('program atmos_model', 'invalid base base - &
 !                          &must have year = month = 0', FATAL)
@@ -264,10 +265,21 @@ contains
 !               Dont allow minutes in the Mars model
     date_init(5)= 0.0
 #endif MARS_GCM
-    Time_init  = set_time(date_init(4)*int(SECONDS_PER_HOUR)+date_init(5)*int(SECONDS_PER_MINUTE)+date_init(6),date_init(3))
-    Time       = set_time(date     (4)*int(SECONDS_PER_HOUR)+date     (5)*int(SECONDS_PER_MINUTE)+date     (6),date     (3))
+!s   Old way of setting Time_init lead to first day being date_init+1. This didn't work well with dividing files up by months.
+!    Time_init  = set_time(date_init(4)*int(SECONDS_PER_HOUR)+date_init(5)*int(SECONDS_PER_MINUTE)+date_init(6),date_init(3))
+!    Time       = set_time(date     (4)*int(SECONDS_PER_HOUR)+date     (5)*int(SECONDS_PER_MINUTE)+date     (6),date     (3))
+
+!s New way of setting Time_init and Time uses set_date, which subtracts 1 from date_init(3) and date(3) when calculating dates. Leads to correct start date.
+    Time_init = set_date (date_init(1), date_init(2), date_init(3), &
+         date_init(4), date_init(5), date_init(6))
+
+    Time      = set_date (date(1), date(2), date(3),  &
+         date(4), date(5), date(6))
+
     Run_length = set_time(       hours*int(SECONDS_PER_HOUR)+     minutes*int(SECONDS_PER_MINUTE)+     seconds,days        )
     Time_end   = Time + Run_length
+	
+	write(6,*) Time_init, Time, Run_length, Time_end
 
 !-----------------------------------------------------------------------
 !----- write time stamps (for start time and end time) ------
