@@ -40,7 +40,7 @@ use time_manager_mod, only: time_type, set_time, get_time,  &
                             operator (/=), operator (/), operator (*),&
 			    THIRTY_DAY_MONTHS, JULIAN,                &
                             NOLEAP, NO_CALENDAR, set_calendar_type, &
-			    set_date
+			    set_date, get_date
 
 use          fms_mod, only: file_exist, check_nml_error,                &
                             error_mesg, FATAL, WARNING,                 &
@@ -270,6 +270,7 @@ contains
 !    Time       = set_time(date     (4)*int(SECONDS_PER_HOUR)+date     (5)*int(SECONDS_PER_MINUTE)+date     (6),date     (3))
 
 !s New way of setting Time_init and Time uses set_date, which subtracts 1 from date_init(3) and date(3) when calculating dates. Leads to correct start date.
+
     Time_init = set_date (date_init(1), date_init(2), date_init(3), &
          date_init(4), date_init(5), date_init(6))
 
@@ -368,13 +369,17 @@ contains
 
 !----- compute current time in days,hours,minutes,seconds -----
 
-      date(1:2) = 0
-      call get_time ( Time, date(6), date(3) )
-      date(4) = date(6)/int(SECONDS_PER_HOUR); date(6) = date(6) - date(4)*int(SECONDS_PER_HOUR)
+!s Updated call to get final date in line with updating initial date setting above. 
+    call get_date (Time, date(1), date(2), date(3),  &
+         date(4), date(5), date(6))
+
+!      date(1:2) = 0
+!      call get_time ( Time, date(6), date(3) )
+!      date(4) = date(6)/int(SECONDS_PER_HOUR); date(6) = date(6) - date(4)*int(SECONDS_PER_HOUR)
 #ifdef MARS_GCM
       date(5) = 0                              ; date(6) = date(6) - date(5)*int(SECONDS_PER_MINUTE)
-#else
-      date(5) = date(6)/int(SECONDS_PER_MINUTE); date(6) = date(6) - date(5)*int(SECONDS_PER_MINUTE)
+!#else
+!      date(5) = date(6)/int(SECONDS_PER_MINUTE); date(6) = date(6) - date(5)*int(SECONDS_PER_MINUTE)
 #endif MARS_GCM
 
 !----- check time versus expected ending time ----
