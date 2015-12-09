@@ -427,9 +427,8 @@ beta_lw = drdt_surf
 !
 ! Implement mixed layer surface boundary condition
 !
-corrected_flux = - net_surf_sw_down - surf_lw_down + alpha_t * CP_AIR + alpha_lw + ocean_qflux
+corrected_flux = - net_surf_sw_down - surf_lw_down + alpha_t * CP_AIR + alpha_lw - ocean_qflux
 t_surf_dependence = beta_t * CP_AIR + beta_lw
-
 
 if (evaporation) then
   corrected_flux = corrected_flux + alpha_q * HLV
