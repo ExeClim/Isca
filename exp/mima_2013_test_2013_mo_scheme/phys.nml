@@ -37,6 +37,7 @@
  &idealized_moist_phys_nml
     two_stream_gray = .false.,
     do_rrtm_radiation = .true.,
+    do_seasonal     =  .true.,
     do_damping      = .true.,
     turb            = .true.,
     lwet_convection = .false.,

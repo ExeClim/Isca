@@ -19,7 +19,7 @@
     num_spherical           = 43,
     fourier_inc             = 1,
     triang_trunc            =.true.,
-    valid_range_t 	    = 100. 800.,
+    valid_range_t 	        = 100. 800.,
     initial_sphum           = 2.e-6,
     vert_coord_option       = 'uneven_sigma',
     surf_res                = 0.5,

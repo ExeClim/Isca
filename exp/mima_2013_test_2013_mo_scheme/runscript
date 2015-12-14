@@ -21,10 +21,10 @@
   set exp_name         	= mima_2013_test_2013_mo_scheme	#control run of code - for each experiment have a new experiment name
   set workdir           = $GFDL_WORK/$exp_name/np$npes	#base working directory
   set base_arc        	= $GFDL_DATA/$exp_name/np$npes	#storing data in location other than workdir (eg archived data) 
-  set dir_base		= $GFDL_BASE
+  set dir_base	       	= $GFDL_BASE
   set source_dir       	= $dir_base/src
   set exp_dir          	= $dir_base/exp/$exp_name			
-  set spin_up_restarts  = $dir_base/spin_up_restart/$exp_name/np$npes	
+  set spin_up_restarts  = $dir_base/spin_up_restart/$exp_name/np$npes
   set core_namelist    	= $exp_dir/core.nml				#dynamis namelist
   set phys_namelist    	= $exp_dir/phys.nml				#physic namelist
   set diag_table       	= $exp_dir/diag_table				#vars to output
@@ -33,13 +33,14 @@
   set executable        = $compile_dir/fms_moist.x			#compiled executable
   set path_names        = $exp_dir/path_names 					#s Uses the file `path_names' that's in the exp directory /path_names
   set make_flags        =                                                # set to -d for DEBUG messages
+  set details_file      = $exp_dir/details.txt
 
   #run in serial or parallel?
   set run_gdb_parallel	= false     #default should be false
-  set run_idb_serial	= false     #default should be false
-  set run_mpi		= true      #default should be true
-  set run_serial	= false     #default should be false
-  set write_over_data 	= false     #default should be false
+  set run_idb_serial	= false       #default should be false
+  set run_mpi		= true              #default should be true
+  set run_serial	= false           #default should be false
+  set write_over_data 	= true      #default should be false
 
   #MiMA options
   set ozone_nc_file     = ozone_1990.nc #default for test case should be ozone_1990.nc
@@ -183,6 +184,17 @@ endif
 #	cpio -iv < res	
 #endif
 
+
+# get the HEAD git commit and add it to the details of the run
+  cd $exp_dir
+  set git_branch = `git symbolic-ref HEAD`
+  echo Version Control: > $workdir/details.txt
+  echo branch: $git_branch >> $workdir/details.txt
+  git log -1 >> $workdir/details.txt
+  echo >> $workdir/details.txt
+  cat $details_file >> $workdir/details.txt
+
+
 #join namelists into input.nml	
   cd  $workdir
   cat $core_namelist >> input.nml		
@@ -190,6 +202,7 @@ endif
   cp  $diag_table diag_table
   cp  $field_table field_table
   cp  $executable $executable:t
+  cp  $path_names path_names.txt
 
 
 #run and determine what type of machine the script is run on. npes->number of processes and $executable:t program name and arguments
@@ -243,6 +256,7 @@ cp res_$out.cpio $arc/restarts/
 
 cd  $workdir
 cp input.nml $arc #save the namelist record of the run
+cp *.txt     $arc # move any text files to archive too
 
 unset timestamp
 #unset echo timestamp
