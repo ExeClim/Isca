@@ -215,7 +215,7 @@ end subroutine two_stream_gray_rad_init
 
 ! ==================================================================================
 
-subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, p_half, t,         &
+subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, lon, p_half, t,         &
                            net_surf_sw_down, surf_lw_down, albedo)
 
 ! Begin the radiation calculation by computing downward fluxes.
@@ -223,7 +223,7 @@ subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, p_half, t,         
 
 integer, intent(in)                 :: is, js
 type(time_type), intent(in)         :: Time_diag
-real, intent(in), dimension(:,:)    :: lat, albedo
+real, intent(in), dimension(:,:)    :: lat, lon, albedo
 real, intent(out), dimension(:,:)   :: net_surf_sw_down
 real, intent(out), dimension(:,:)   :: surf_lw_down
 real, intent(in), dimension(:,:,:)  :: t, p_half
