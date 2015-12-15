@@ -803,7 +803,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_tmp,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es22_3d',err_msg_tmp,err_msg)) return
+     if(fms_error_handler('lookup_es2_3d',err_msg_tmp,err_msg)) return
    endif
 
  end subroutine lookup_es2_3d
@@ -833,7 +833,7 @@ contains
    else
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es33_0d',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es3_0d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es3_0d
@@ -865,7 +865,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es33_1d',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es3_1d',err_msg_local,err_msg)) return
    endif
 
 !-----------------------------------------------
@@ -899,7 +899,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es33_2d',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es3_2d',err_msg_local,err_msg)) return
    endif
 
 !-----------------------------------------------
@@ -932,7 +932,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_tmp,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es33_3d',err_msg_tmp,err_msg)) return
+     if(fms_error_handler('lookup_es3_3d',err_msg_tmp,err_msg)) return
    endif
 
  end subroutine lookup_es3_3d
@@ -965,7 +965,7 @@ contains
    else
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_des',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_des_0d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_des_0d
@@ -998,7 +998,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es_1d',err_msg_local,err_msg)) return
    endif
 !-----------------------------------------------
 
@@ -1031,7 +1031,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es_2d',err_msg_local,err_msg)) return
    endif
 !-----------------------------------------------
 
@@ -1062,7 +1062,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_tmp,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_des',err_msg_tmp,err_msg)) return
+     if(fms_error_handler('lookup_des_3d',err_msg_tmp,err_msg)) return
    endif
 
  end subroutine lookup_des_3d
@@ -1091,7 +1091,7 @@ contains
    else
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_des2',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_des2_0d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_des2_0d
@@ -1124,7 +1124,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_des2',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_des2_1d',err_msg_local,err_msg)) return
    endif
 !-----------------------------------------------
 
@@ -1157,7 +1157,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_des2',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_des2_2d',err_msg_local,err_msg)) return
    endif
 !-----------------------------------------------
 
@@ -1188,7 +1188,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_tmp,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_des2',err_msg_tmp,err_msg)) return
+     if(fms_error_handler('lookup_des2_3d',err_msg_tmp,err_msg)) return
    endif
 
  end subroutine lookup_des2_3d
@@ -1217,7 +1217,7 @@ contains
    else
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_des3',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_des3_0d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_des3_0d
@@ -1250,7 +1250,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_des3',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_des3_1d',err_msg_local,err_msg)) return
    endif
 !-----------------------------------------------
 
@@ -1283,7 +1283,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_des3',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_des3_2d',err_msg_local,err_msg)) return
    endif
 !-----------------------------------------------
 
@@ -1314,7 +1314,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_tmp,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_des3',err_msg_tmp,err_msg)) return
+     if(fms_error_handler('lookup_des3_3d',err_msg_tmp,err_msg)) return
    endif
 
  end subroutine lookup_des3_3d
