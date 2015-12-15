@@ -557,7 +557,7 @@ contains
 !   <OUT NAME="esat" UNITS="pascal" TYPE="real" DIM="(scalar)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es_0d ( temp, esat, err_msg )
+ subroutine lookup_es_0d   ( temp, esat, err_msg )
 
  real, intent(in)  :: temp
  real, intent(out) :: esat
@@ -575,7 +575,7 @@ contains
    else
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es_0d_0d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es_0d
@@ -587,7 +587,7 @@ contains
 !   <OUT NAME="esat" UNITS="pascal" TYPE="real" DIM="(:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es_1d ( temp, esat, err_msg )
+ subroutine lookup_es_1d  ( temp, esat, err_msg )
 
  real, intent(in)  :: temp(:)
  real, intent(out) :: esat(:)
@@ -607,7 +607,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es_1d',err_msg_local,err_msg)) return
    endif
 
 !-----------------------------------------------
@@ -621,7 +621,7 @@ contains
 !   <OUT NAME="esat" UNITS="pascal" TYPE="real" DIM="(:,:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es_2d ( temp, esat, err_msg )
+ subroutine lookup_es_2d  ( temp, esat, err_msg )
 
  real, intent(in)  :: temp(:,:)
  real, intent(out) :: esat(:,:)
@@ -641,7 +641,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es_2d',err_msg_local,err_msg)) return
    endif
 
 !-----------------------------------------------
@@ -655,7 +655,7 @@ contains
 !   <OUT NAME="esat" UNITS="pascal" TYPE="real" DIM="(:,:,:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es_3d ( temp, esat, err_msg )
+ subroutine lookup_es_3d  ( temp, esat, err_msg )
 
  real, intent(in)  :: temp(:,:,:)
  real, intent(out) :: esat(:,:,:)
@@ -674,7 +674,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_tmp,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es',err_msg_tmp,err_msg)) return
+     if(fms_error_handler('lookup_es_3d',err_msg_tmp,err_msg)) return
    endif
 
  end subroutine lookup_es_3d
@@ -686,7 +686,7 @@ contains
 !   <OUT NAME="esat" UNITS="pascal" TYPE="real" DIM="(scalar)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es2_0d ( temp, esat, err_msg )
+ subroutine lookup_es2_0d  ( temp, esat, err_msg )
 
  real, intent(in)  :: temp
  real, intent(out) :: esat
@@ -704,7 +704,7 @@ contains
    else
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es2',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es22_0d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es2_0d
@@ -716,7 +716,7 @@ contains
 !   <OUT NAME="esat" UNITS="pascal" TYPE="real" DIM="(:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es2_1d ( temp, esat, err_msg )
+ subroutine lookup_es2_1d  ( temp, esat, err_msg )
 
  real, intent(in)  :: temp(:)
  real, intent(out) :: esat(:)
@@ -736,7 +736,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es2',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es22_1d',err_msg_local,err_msg)) return
    endif
 
 !-----------------------------------------------
@@ -750,7 +750,7 @@ contains
 !   <OUT NAME="esat" UNITS="pascal" TYPE="real" DIM="(:,:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es2_2d ( temp, esat, err_msg )
+ subroutine lookup_es2_2d  ( temp, esat, err_msg )
 
  real, intent(in)  :: temp(:,:)
  real, intent(out) :: esat(:,:)
@@ -770,7 +770,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es2',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es22_2d',err_msg_local,err_msg)) return
    endif
 
 !-----------------------------------------------
@@ -784,7 +784,7 @@ contains
 !   <OUT NAME="esat" UNITS="pascal" TYPE="real" DIM="(:,:,:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es2_3d ( temp, esat, err_msg )
+ subroutine lookup_es2_3d  ( temp, esat, err_msg )
 
  real, intent(in)  :: temp(:,:,:)
  real, intent(out) :: esat(:,:,:)
@@ -803,7 +803,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_tmp,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es2',err_msg_tmp,err_msg)) return
+     if(fms_error_handler('lookup_es22_3d',err_msg_tmp,err_msg)) return
    endif
 
  end subroutine lookup_es2_3d
@@ -815,7 +815,7 @@ contains
 !   <OUT NAME="esat" UNITS="pascal" TYPE="real" DIM="(scalar)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es3_0d ( temp, esat, err_msg )
+ subroutine lookup_es3_0d  ( temp, esat, err_msg )
 
  real, intent(in)  :: temp
  real, intent(out) :: esat
@@ -833,7 +833,7 @@ contains
    else
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es3',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es33_0d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es3_0d
@@ -845,7 +845,7 @@ contains
 !   <OUT NAME="esat" UNITS="pascal" TYPE="real" DIM="(:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es3_1d ( temp, esat, err_msg )
+ subroutine lookup_es3_1d  ( temp, esat, err_msg )
 
  real, intent(in)  :: temp(:)
  real, intent(out) :: esat(:)
@@ -865,7 +865,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es3',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es33_1d',err_msg_local,err_msg)) return
    endif
 
 !-----------------------------------------------
@@ -879,7 +879,7 @@ contains
 !   <OUT NAME="esat" UNITS="pascal" TYPE="real" DIM="(:,:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es3_2d ( temp, esat, err_msg )
+ subroutine lookup_es3_2d  ( temp, esat, err_msg )
 
  real, intent(in)  :: temp(:,:)
  real, intent(out) :: esat(:,:)
@@ -899,7 +899,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es3',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es33_2d',err_msg_local,err_msg)) return
    endif
 
 !-----------------------------------------------
@@ -913,7 +913,7 @@ contains
 !   <OUT NAME="esat" UNITS="pascal" TYPE="real" DIM="(:,:,:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es3_3d ( temp, esat, err_msg )
+ subroutine lookup_es3_3d  ( temp, esat, err_msg )
 
  real, intent(in)  :: temp(:,:,:)
  real, intent(out) :: esat(:,:,:)
@@ -932,7 +932,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_tmp,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es3',err_msg_tmp,err_msg)) return
+     if(fms_error_handler('lookup_es33_3d',err_msg_tmp,err_msg)) return
    endif
 
  end subroutine lookup_es3_3d
@@ -1329,7 +1329,7 @@ contains
 !   <OUT NAME="desat" UNITS="pascal / degree" TYPE="real" DIM="(scalar)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es_des_0d ( temp, esat, desat, err_msg )
+ subroutine lookup_es_des_0d  ( temp, esat, desat, err_msg )
 
  real, intent(in)  :: temp
  real, intent(out) :: esat, desat
@@ -1347,7 +1347,7 @@ contains
    else
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es_des_0d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es_des_0d
@@ -1360,7 +1360,7 @@ contains
 !   <OUT NAME="desat" UNITS="pascal / degree" TYPE="real" DIM="(:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es_des_1d ( temp, esat, desat, err_msg )
+ subroutine lookup_es_des_1d  ( temp, esat, desat, err_msg )
 
  real, dimension(:), intent(in)  :: temp
  real, dimension(:), intent(out) :: esat, desat
@@ -1379,7 +1379,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es_des_1d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es_des_1d
@@ -1392,7 +1392,7 @@ contains
 !   <OUT NAME="desat" UNITS="pascal / degree" TYPE="real" DIM="(:,:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es_des_2d ( temp, esat, desat, err_msg )
+ subroutine lookup_es_des_2d  ( temp, esat, desat, err_msg )
 
  real, dimension(:,:), intent(in)  :: temp
  real, dimension(:,:), intent(out) :: esat, desat
@@ -1411,7 +1411,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es_des_2d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es_des_2d
@@ -1424,7 +1424,7 @@ contains
 !   <OUT NAME="desat" UNITS="pascal / degree" TYPE="real" DIM="(:,:,:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es_des_3d ( temp, esat, desat, err_msg )
+ subroutine lookup_es_des_3d  ( temp, esat, desat, err_msg )
 
  real, dimension(:,:,:), intent(in)  :: temp
  real, dimension(:,:,:), intent(out) :: esat, desat
@@ -1443,7 +1443,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es_des_3d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es_des_3d
@@ -1457,7 +1457,7 @@ contains
 !   <OUT NAME="desat" UNITS="pascal / degree" TYPE="real" DIM="(scalar)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es2_des2_0d ( temp, esat, desat, err_msg )
+ subroutine lookup_es2_des2_0d  ( temp, esat, desat, err_msg )
 
  real, intent(in)  :: temp
  real, intent(out) :: esat, desat
@@ -1475,7 +1475,7 @@ contains
    else
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es2_des2',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es2_des22_des2_0d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es2_des2_0d
@@ -1488,7 +1488,7 @@ contains
 !   <OUT NAME="desat" UNITS="pascal / degree" TYPE="real" DIM="(:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es2_des2_1d ( temp, esat, desat, err_msg )
+ subroutine lookup_es2_des2_1d  ( temp, esat, desat, err_msg )
 
  real, dimension(:), intent(in)  :: temp
  real, dimension(:), intent(out) :: esat, desat
@@ -1507,7 +1507,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es2_des2',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es2_des22_des2_1d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es2_des2_1d
@@ -1520,7 +1520,7 @@ contains
 !   <OUT NAME="desat" UNITS="pascal / degree" TYPE="real" DIM="(:,:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es2_des2_2d ( temp, esat, desat, err_msg )
+ subroutine lookup_es2_des2_2d  ( temp, esat, desat, err_msg )
 
  real, dimension(:,:), intent(in)  :: temp
  real, dimension(:,:), intent(out) :: esat, desat
@@ -1539,7 +1539,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es2_des2',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es2_des22_des2_2d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es2_des2_2d
@@ -1552,7 +1552,7 @@ contains
 !   <OUT NAME="desat" UNITS="pascal / degree" TYPE="real" DIM="(:,:,:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es2_des2_3d ( temp, esat, desat, err_msg )
+ subroutine lookup_es2_des2_3d  ( temp, esat, desat, err_msg )
 
  real, dimension(:,:,:), intent(in)  :: temp
  real, dimension(:,:,:), intent(out) :: esat, desat
@@ -1571,7 +1571,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es2_des2',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es2_des22_des2_3d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es2_des2_3d
@@ -1586,7 +1586,7 @@ contains
 !   <OUT NAME="desat" UNITS="pascal / degree" TYPE="real" DIM="(scalar)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es3_des3_0d ( temp, esat, desat, err_msg )
+ subroutine lookup_es3_des3_0d  ( temp, esat, desat, err_msg )
 
  real, intent(in)  :: temp
  real, intent(out) :: esat, desat
@@ -1604,7 +1604,7 @@ contains
    else
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es3_des3',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es3_des33_des3_0d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es3_des3_0d
@@ -1617,7 +1617,7 @@ contains
 !   <OUT NAME="desat" UNITS="pascal / degree" TYPE="real" DIM="(:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es3_des3_1d ( temp, esat, desat, err_msg )
+ subroutine lookup_es3_des3_1d  ( temp, esat, desat, err_msg )
 
  real, dimension(:), intent(in)  :: temp
  real, dimension(:), intent(out) :: esat, desat
@@ -1636,7 +1636,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es3_des3',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es3_des33_des3_1d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es3_des3_1d
@@ -1649,7 +1649,7 @@ contains
 !   <OUT NAME="desat" UNITS="pascal / degree" TYPE="real" DIM="(:,:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es3_des3_2d ( temp, esat, desat, err_msg )
+ subroutine lookup_es3_des3_2d  ( temp, esat, desat, err_msg )
 
  real, dimension(:,:), intent(in)  :: temp
  real, dimension(:,:), intent(out) :: esat, desat
@@ -1668,7 +1668,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es3_des3',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es3_des33_des3_2d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es3_des3_2d
@@ -1681,7 +1681,7 @@ contains
 !   <OUT NAME="desat" UNITS="pascal / degree" TYPE="real" DIM="(:,:,:)"></OUT>
 !   <OUT NAME="err_msg" TYPE="character">  </OUT>
 ! </SUBROUTINE>
- subroutine lookup_es3_des3_3d ( temp, esat, desat, err_msg )
+ subroutine lookup_es3_des3_3d  ( temp, esat, desat, err_msg )
 
  real, dimension(:,:,:), intent(in)  :: temp
  real, dimension(:,:,:), intent(out) :: esat, desat
@@ -1700,7 +1700,7 @@ contains
      if(show_bad_value_count_by_slice) call temp_check ( temp )
      if(show_all_bad_values) call show_all_bad ( temp )
      write(err_msg_local,'(a47,i7)') 'saturation vapor pressure table overflow, nbad=', nbad
-     if(fms_error_handler('lookup_es3_des3',err_msg_local,err_msg)) return
+     if(fms_error_handler('lookup_es3_des33_des3_3d',err_msg_local,err_msg)) return
    endif
 
  end subroutine lookup_es3_des3_3d

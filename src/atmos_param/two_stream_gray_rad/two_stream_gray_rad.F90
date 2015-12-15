@@ -25,7 +25,7 @@ module two_stream_gray_rad_mod
 ! ==================================================================================
 
    use fms_mod,               only: open_file, check_nml_error, &
-                                    mpp_pe, close_file
+                                    mpp_pe, close_file, error_mesg, NOTE
 
    use constants_mod,         only: stefan, cp_air, grav, pstd_mks
 
@@ -33,7 +33,7 @@ module two_stream_gray_rad_mod
 
    use    time_manager_mod,   only: time_type, &
                                     operator(+), operator(-), operator(/=)
-   use rrtm_astro,            only: compute_zenith, astro_init
+   use rrtm_astro,            only: compute_zenith, astro_init, solday
 
 !==================================================================================
 implicit none
@@ -65,13 +65,14 @@ real    :: sw_diff         = 0.0
 real    :: linear_tau      = 0.1
 real    :: wv_exponent     = 4.0
 real    :: solar_exponent  = 4.0
+logical :: do_seasonal     = .false.
 
 real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 !s albedo now defined in mixed_layer_init
 real, allocatable, dimension(:,:)   :: b_surf
 real, allocatable, dimension(:,:,:) :: b, tdt_rad, tdt_solar
 real, allocatable, dimension(:,:,:) :: lw_up, lw_down, lw_flux, sw_up, sw_down, sw_flux, rad_flux
 real, allocatable, dimension(:,:,:) :: lw_tau, sw_tau, lw_dtrans
-real, allocatable, dimension(:,:)   :: olr, net_lw_surf, toa_sw_in
+real, allocatable, dimension(:,:)   :: olr, net_lw_surf, toa_sw_in, coszen
 
 real, save :: pi, deg_to_rad , rad_to_deg
 
@@ -84,7 +85,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 !-------------------- diagnostics fields -------------------------------
 
 integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
-           id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw
+           id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen
 
 character(len=10), parameter :: mod_name = 'two_stream'
 
@@ -131,6 +132,12 @@ rad_to_deg = 180./pi
 
 call astro_init
 
+if(solday .gt. 0)then
+   call error_mesg( tag, ' running perpetual simulation', NOTE)
+endif
+
+
+
 initialized = .true.
 
 allocate (b                (ie-is+1, je-js+1, num_levels))
@@ -158,6 +165,7 @@ allocate (toa_sw_in        (ie-is+1, je-js+1))
 allocate (insolation       (ie-is+1, je-js+1))
 !allocate (albedo           (ie-is+1, je-js+1)) !s albedo now set in mixed_layer_init
 allocate (p2               (ie-is+1, je-js+1))
+allocate (coszen           (ie-is+1, je-js+1))
 
 
 !-----------------------------------------------------------------------
@@ -213,6 +221,10 @@ allocate (p2               (ie-is+1, je-js+1))
                'Net shortwave radiative flux (positive up)', &
                'W/m^2', missing_value=missing_value               )
 
+    id_coszen  = &
+               register_diag_field ( mod_name, 'coszen', axes(1:2), Time, &
+                 'cosine of zenith angle', &
+                 'none', missing_value=missing_value      )
 return
 end subroutine two_stream_gray_rad_init
 
@@ -220,6 +232,9 @@ end subroutine two_stream_gray_rad_init
 
 subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, lon, p_half, t,         &
                            net_surf_sw_down, surf_lw_down, albedo)
+
+  use rrtm_astro, only:      compute_zenith,use_dyofyr,solr_cnst,&
+                             solrad,solday,equinox_day
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
@@ -231,15 +246,30 @@ real, intent(out), dimension(:,:)   :: net_surf_sw_down
 real, intent(out), dimension(:,:)   :: surf_lw_down
 real, intent(in), dimension(:,:,:)  :: t, p_half
 
-integer :: i, j, k, n
+integer :: i, j, k, n, dyofyr
 
 logical :: used
 
 n = size(t,3)
 
 ! insolation at TOA
-p2          = (1. - 3.*sin(lat)**2)/4.
-insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
+if (do_seasonal) then
+    !   if(do_rad_time_avg) then
+    !    call compute_zenith(Time_loc,equinox_day,dt_rad_avg,lat,lon,coszen,dyofyr)
+    ! else
+    !    call compute_zenith(Time_loc,equinox_day,0     ,lat,lon,coszen,dyofyr)
+    ! end if
+
+    !JP first version, don't do time averaging for now
+    call compute_zenith(Time_diag,equinox_day,0     ,lat,lon,coszen,dyofyr)
+    where(coszen < 1.e-2)coszen=0.
+    !insolation = solar_constant * coszen
+      p2          = (1. - 3.*sin(lat)**2)/4.
+  insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
+else
+  p2          = (1. - 3.*sin(lat)**2)/4.
+  insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
+end if
 
 ! LW optical thickness
 lw_tau_0    = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
@@ -296,6 +326,11 @@ endif
 !------- downward sw flux surface -------
 if ( id_swdn_sfc > 0 ) then
    used = send_data ( id_swdn_sfc, net_surf_sw_down, Time_diag)
+endif
+
+!------- cosine of zenith angle                ------------
+if ( id_coszen > 0 ) then
+   used = send_data ( id_coszen, coszen, Time_diag)
 endif
 
 return
