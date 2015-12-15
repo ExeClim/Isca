@@ -79,7 +79,7 @@ real, save :: pi, deg_to_rad , rad_to_deg
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            ir_tau_eq, ir_tau_pole, atm_abs, sw_diff, &
            linear_tau, del_sw, wv_exponent, &
-           solar_exponent
+           solar_exponent, do_seasonal
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -259,7 +259,6 @@ if (do_seasonal) then
     ! else
     !    call compute_zenith(Time_loc,equinox_day,0     ,lat,lon,coszen,dyofyr)
     ! end if
-
     !JP first version, don't do time averaging for now
     call compute_zenith(Time_diag,equinox_day,0     ,lat,lon,coszen,dyofyr)
     where(coszen < 1.e-2)coszen=0.

@@ -52,6 +52,7 @@
     initial_temperature  = 264.0 /
 
  &two_stream_gray_rad_nml
+    do_seasonal     = .true.,
     linear_tau     = 0.1,
     solar_constant = 1360.,
     solar_exponent = 4.0,
