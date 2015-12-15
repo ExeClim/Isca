@@ -262,9 +262,7 @@ if (do_seasonal) then
     !JP first version, don't do time averaging for now
     call compute_zenith(Time_diag,equinox_day,0     ,lat,lon,coszen,dyofyr)
     where(coszen < 1.e-2)coszen=0.
-    !insolation = solar_constant * coszen
-      p2          = (1. - 3.*sin(lat)**2)/4.
-  insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
+    insolation = solar_constant * coszen
 else
   p2          = (1. - 3.*sin(lat)**2)/4.
   insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
