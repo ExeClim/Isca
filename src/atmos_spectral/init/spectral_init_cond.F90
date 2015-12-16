@@ -203,7 +203,7 @@ else if(trim(topography_option) == 'input') then
      surf_geopotential = grav*surf_height
    else
      call error_mesg('get_topography','topography_option="'//trim(topography_option)//'"'// &
-                     ' but trim(topog_file_name) does not exist', FATAL)
+                     ' but '//trim(topog_file_name)//' does not exist', FATAL)
    endif
 
 else if(trim(topography_option) == 'interpolated') then
