@@ -367,7 +367,7 @@ if(trim(land_option) .eq. 'input')then
 
 elseif(trim(land_option) .eq. 'zsurf')then
 	!s wherever zsurf is greater than some threshold height then make land = .true.
-	where ( z_surf*grav > 10. ) land = .true.
+	where ( z_surf > 10. ) land = .true.
 endif
 
 
