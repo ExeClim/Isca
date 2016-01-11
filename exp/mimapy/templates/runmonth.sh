@@ -1,4 +1,4 @@
-#!/usr/bin/env csh
+#!/usr/bin/env bash
 # Run a single month
 
 
@@ -22,6 +22,7 @@ EOF
 cd INPUT
 cp {{ restart_file }} res
 cpio -iv < res
+echo `ls INPUT/*`
 cd {{ workdir }}
 {% endif %}
 
@@ -32,9 +33,15 @@ mpirun  -np {{ num_cores }} fms_moist.x
 
 
 # combine output files
-foreach ncfile (`/bin/ls *.nc.0000`) #ncfile = i, for each i(`/bin/ls *.nc.0000`)
-  {{ GFDL_BASE }}/postprocessing/mppnccombine.x $ncfile:r
-  if ($status == 0) rm -f $ncfile:r.????  #r.???? eg nc.0003
-end
+echo Month {{ month }} complete, combining nc files
+
+if [ {{ num_cores }} > 1 ]; then
+ for ncfile in `/bin/ls *.nc.0000`; do
+    $GFDL_BASE/postprocessing/mppnccombine.x $ncfile
+    if [ $? == 0 ]; then
+        rm -f "${ncfile%.*}".????
+    fi
+ done
+fi
 
 

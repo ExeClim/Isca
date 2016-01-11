@@ -1,6 +1,6 @@
 import mima
 
-exp = mima.Experiment('grey_nonseasonal2')
+exp = mima.Experiment('grey_nonseasonal')
 
 exp.clear_workdir()
 exp.compile()
@@ -16,4 +16,6 @@ exp.namelist.update({
     },
 })
 
-exp.runmonth(1, num_cores=8)
+exp.runmonth(1, use_restart=False)
+for i in range(2, 80):
+    exp.runmonth(i, num_cores=8)

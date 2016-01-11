@@ -37,6 +37,7 @@ mimapy_dir = P(GFDL_BASE, 'exp', 'mimapy')
 mimapy_workdir = P(GFDL_WORK, 'mimapy')
 
 mkdir(P(mimapy_workdir, 'exec'))
+mkdir(P(mimapy_workdir, 'restarts'))
 
 templates = Environment(loader=PackageLoader('mima', 'templates'))
 
@@ -85,6 +86,9 @@ class Experiment(object):
         "Directory where completed run data is stored."
         return P(GFDL_DATA, self.name)
 
+    @property
+    def restartdir(self):
+        return P(mimapy_workdir, 'restarts', self.name)
 
     def clear_workdir(self):
         sh.rm(['-r', self.workdir])
@@ -148,7 +152,7 @@ class Experiment(object):
         log.debug('Compilation complete.')
 
 
-    def runmonth(self, month, restart=None, use_restart=True, num_cores=8):
+    def runmonth(self, month, restart_file=None, use_restart=True, num_cores=8):
         indir = P(self.workdir, 'INPUT')
         outdir = P(self.datadir, 'run%d' % month)
 
@@ -157,13 +161,18 @@ class Experiment(object):
         self.write_diag_table(self.workdir)
 
         # make the output run folder and copy over the input files
-        mkdir([indir, outdir, P(self.workdir, 'RESTART')])
+        mkdir([indir, outdir, P(self.workdir, 'RESTART'), self.restartdir])
         for filename in self.inputfiles:
             sh.cp([filename, P(indir, os.split(filename)[1])])
 
 
         if use_restart:
-            restart_file = restart
+            if not restart_file:
+                # get the restart from previous month
+                restart_file = P(self.restartdir, 'res_%d.cpio' % (month - 1))
+            if not os.path.isfile(restart_file):
+                log.error('Restart file not found, expecting file %r' % restart_file)
+                exit(2)
         else:
             log.info('Running month %r without restart file' % month)
             restart_file = None
@@ -186,4 +195,14 @@ class Experiment(object):
         sh.bash(P(self.workdir, 'runmonth.sh'), _out=clean_log_info)
         log.debug("Run for month %r complete" % month)
 
-        sh.cp(['-r', self.workdir, outdir])
+        #restart_file = P(self.restartdir, 'res_%d.tar.gz' % month)
+        #sh.tar('zcvf', restart_file, 'RESTART')
+        restart_file = P(self.restartdir, 'res_%d.cpio' % month)
+        sh.cd(P(self.workdir, 'RESTART'))
+        state_files = sh.glob('*.res*')
+        sh.cpio('-ov', _in='\n'.join(state_files), _out=restart_file)
+        log.debug("Saved restart file %r" % restart_file)
+        sh.rm('-r', P(self.workdir, 'RESTART'))
+
+        sh.cp(['-a', self.workdir+'/.', outdir])
+        self.clear_workdir()
