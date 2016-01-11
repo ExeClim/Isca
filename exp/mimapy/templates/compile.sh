@@ -4,8 +4,7 @@
 
 #-----------------------------------------------------------------------------------------------------
 hostname=`hostname`
-platform=ia64                                             # A unique identifier for your platform
-template={{ GFDL_BASE }}/bin/mkmf.template.$platform      # path to template for your platform
+template={{ mimapy_dir }}/mkmf.template.ia64
 mkmf={{ GFDL_BASE }}/bin/mkmf                             # path to executable mkmf
 sourcedir={{ GFDL_BASE }}/src                             # path to directory containing model source code
 pathnames={{ workdir }}/path_names                        # path to file containing list of source paths
@@ -20,6 +19,7 @@ netcdf_flags=`nf-config --fflags --flibs`
 source {{ GFDL_BASE }}/src/extra/loadmodule
 module list
 ulimit -s unlimited # Set stack size to unlimited
+export MALLOC_CHECK_=0
 
 #--------------------------------------------------------------------------------------------------------
 # compile combine tool
@@ -38,16 +38,18 @@ fi
 
 
 #--------------------------------------------------------------------------------------------------------
-# setup directory structure
-if [ ! -d $execdir ]; then
-    echo "Creating exec directory $execdir"
-    mkdir -p $execdir
-fi
-cd $execdir
 
+cd $execdir
 # execute mkmf to create makefile
 cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8"
 $mkmf -a $sourcedir -t $template -p `basename $executable` -c "$cppDefs" $pathnames $sourcedir/shared/include $sourcedir/shared/mpp/include
+
+make
+
+# $mkmf $make_flags -a $source_dir  -p fms_moist.x -t   $template \
+#     -c "-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8" $pathnames $sourcedir/shared/mpp/include $sourcedir/shared/constants $sourcedir/include
+#     make
+
 if [ $? != 0 ]; then
    echo "ERROR: mkmf failed for fms_moist"
    exit 1

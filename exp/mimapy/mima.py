@@ -13,15 +13,17 @@ mkdir = sh.mkdir.bake('-p')
 
 
 
-
-
-
 log = logging.getLogger('mima')
 log.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 log.addHandler(ch)
+
+def clean_log_info(s):
+    if s.strip():
+       log.info(s.strip())
+
 
 try:
     GFDL_BASE = os.environ['GFDL_BASE']
@@ -117,6 +119,9 @@ class Experiment(object):
         log.debug('Writing field_table to %r' % P(outdir, 'field_table'))
         sh.cp(P(mimapy_dir, 'field_table'), P(outdir, 'field_table'))
 
+    def write_details_file(self, outdir):
+        info = self.get_info()
+
 
     def get_info(self):
         git_commit = sh.git(['rev-parse', 'HEAD'])
@@ -138,11 +143,12 @@ class Experiment(object):
 
         templates.get_template('compile.sh').stream(**vars).dump(P(self.workdir, 'compile.sh'))
         log.debug('Running compiler')
-        sh.bash(P(self.workdir, 'compile.sh'), _out=log.info)
+
+        sh.bash(P(self.workdir, 'compile.sh'), _out=clean_log_info)
         log.debug('Compilation complete.')
 
 
-    def runmonth(self, month, restart=None, use_restart=True):
+    def runmonth(self, month, restart=None, use_restart=True, num_cores=8):
         indir = P(self.workdir, 'INPUT')
         outdir = P(self.datadir, 'run%d' % month)
 
@@ -157,7 +163,7 @@ class Experiment(object):
 
 
         if use_restart:
-
+            restart_file = restart
         else:
             log.info('Running month %r without restart file' % month)
             restart_file = None
@@ -169,6 +175,7 @@ class Experiment(object):
             'workdir': self.workdir,
             'execdir': self.execdir,
             'restart_file': restart_file,
+            'num_cores': num_cores
             })
         runmonth = templates.get_template('runmonth.sh')
 
@@ -176,7 +183,7 @@ class Experiment(object):
         t = runmonth.stream(**vars).dump(P(self.workdir, 'runmonth.sh'))
 
         log.debug("Running GFDL for month %r" % month)
-        sh.bash(P(self.workdir, 'runmonth.sh'), _out=log.info)
+        sh.bash(P(self.workdir, 'runmonth.sh'), _out=clean_log_info)
         log.debug("Run for month %r complete" % month)
 
         sh.cp(['-r', self.workdir, outdir])

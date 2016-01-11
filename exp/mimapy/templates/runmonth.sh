@@ -1,7 +1,6 @@
 #!/usr/bin/env csh
 # Run a single month
 
-set npes             = 8
 
 
 cd {{ workdir }}
@@ -26,8 +25,10 @@ cpio -iv < res
 cd {{ workdir }}
 {% endif %}
 
+export MALLOC_CHECK_=0
+
 cp {{ execdir }}/fms_moist.x fms_moist.x
-mpirun  -np $npes fms_moist.x
+mpirun  -np {{ num_cores }} fms_moist.x
 
 
 # combine output files
