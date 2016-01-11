@@ -1,0 +1,155 @@
+&spectral_dynamics_nml
+    damping_option = 'none'
+/
+
+&vert_coordinate_nml
+    bk = 0.0, 0.0117665, 0.0196679, 0.0315244, 0.0485411, 0.0719344, 0.1027829,
+         0.1418581, 0.1894648, 0.2453219, 0.3085103, 0.3775033, 0.4502789,
+         0.5244989, 0.5977253, 0.6676441, 0.7322627, 0.7900587, 0.8400683,
+         0.8819111, 0.9157609, 0.942277, 0.9625127, 0.9778177, 0.9897489,
+         1.0
+    pk = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+/
+
+&diag_manager_nml
+    mix_snapshot_average_fields = .false.
+/
+
+&fms_nml
+    domains_stack_size = 600000
+/
+
+&fms_io_nml
+    threading_write = 'single'
+    fileset_write = 'single'
+/
+
+&hs_forcing_nml
+/
+
+&vert_turb_driver_nml
+    do_mellor_yamada = .false.
+    do_diffusivity = .true.
+    do_simple = .true.
+    do_shallow_conv = .false.
+    gust_scheme = 'constant'
+    constant_gust = 0.0
+    use_tau = .false.
+/
+
+&diffusivity_nml
+    do_entrain = .false.
+    do_simple = .true.
+    frac_inner = 0.1
+    rich_crit_pbl = 1.0
+/
+
+&monin_obukhov_nml
+    neutral = .false.
+    rich_crit = 2.0
+    stable_option = 1
+/
+
+&surface_flux_nml
+    use_virtual_temp = .false.
+    do_simple = .true.
+    old_dtaudv = .true.
+/
+
+&atmosphere_nml
+    idealized_moist_model = .true.
+/
+
+&idealized_moist_phys_nml
+    two_stream_gray = .true.
+    do_rrtm_radiation = .false.
+    do_damping = .true.
+    turb = .true.
+    lwet_convection = .false.
+    do_bm = .true.
+    mixed_layer_bc = .true.
+    do_virtual = .false.
+    do_simple = .true.
+    roughness_mom = 3.21e-05
+    roughness_heat = 3.21e-05
+    roughness_moist = 3.21e-05
+/
+
+&spectral_init_cond_nml
+    initial_temperature = 264.0
+/
+
+&two_stream_gray_rad_nml
+    do_seasonal = .true.
+    linear_tau = 0.1
+    solar_constant = 1360.0
+    solar_exponent = 4.0
+    ir_tau_pole = 1.5
+    ir_tau_eq = 6.0
+    del_sol = 1.4
+    atm_abs = 0.2
+/
+
+&mixed_layer_nml
+    albedo_value = 0.27
+    depth = 96.87
+    tconst = 285.0
+    delta_t = 40.0
+    prescribe_initial_dist = .true.
+    evaporation = .true.
+    do_qflux = .true.
+/
+
+&qe_moist_convection_nml
+    tau_bm = 7200.0
+    rhbm = 0.7
+    val_inc = 0.01
+    tmin = 160.0
+    tmax = 350.0
+/
+
+&lscale_cond_nml
+    do_simple = .true.
+    do_evap = .true.
+/
+
+&sat_vapor_pres_nml
+    do_simple = .true.
+/
+
+&damping_driver_nml
+    do_rayleigh = .true.
+    trayfric = -0.5
+    sponge_pbottom = 50.0
+    do_conserve_energy = .true.
+    do_cg_drag = .false.
+/
+
+&rrtm_radiation_nml
+    h2o_lower_limit = 2e-07
+    co2ppmv = 300.0
+    do_read_ozone = .true.
+    ozone_file = 'ozone_1990'
+    dt_rad = 4500
+/
+
+&astro_nml
+    solr_cnst = 1360.0
+/
+
+&betts_miller_nml
+    tau_bm = 7200.0
+    rhbm = 0.7
+    do_simp = .false.
+    do_shallower = .true.
+    do_changeqref = .false.
+    do_envsat = .false.
+    do_taucape = .false.
+    capetaubm = 900.0
+    tau_min = 2400.0
+/
+
+&qflux_nml
+    qflux_amp = 30.0
+/

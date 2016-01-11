@@ -9,3 +9,4 @@ Makefile
 old_exps
 opt_exps
 frierson_comparison_*old*
+*.pyc
