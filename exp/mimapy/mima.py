@@ -50,9 +50,21 @@ variables = {
 
 class Experiment(object):
     """A basic MiMA experiment"""
-    def __init__(self, name):
+    def __init__(self, name, overwrite_data=False):
         super(Experiment, self).__init__()
         self.name = name
+
+        # set the default locations of working directory,
+        # executable directory, restart file storage and
+        # data directory.
+        # These can be overridden e.g. if an experiment is to use
+        # the same executable as another
+        self.workdir = P(mimapy_workdir, self.name)
+        self.execdir = P(mimapy_workdir, 'exec', self.name)
+        self.restartdir = P(mimapy_workdir, 'restarts', self.name)
+        self.datadir = P(GFDL_DATA, self.name)
+
+
         if os.path.isdir(self.workdir):
             log.warning('Working directory for exp %r already exists' % self.name)
         else:
@@ -71,24 +83,10 @@ class Experiment(object):
         self.namelist = self._get_default_namelist()
         self.inputfiles = []
 
-    @property
-    def workdir(self):
-        "Base working directory"
-        return P(mimapy_workdir, self.name)
+        self.overwrite_data = overwrite_data
 
-    @property
-    def execdir(self):
-        "The directory where executables are compiled"
-        return P(mimapy_workdir, 'exec', self.name)
 
-    @property
-    def datadir(self):
-        "Directory where completed run data is stored."
-        return P(GFDL_DATA, self.name)
 
-    @property
-    def restartdir(self):
-        return P(mimapy_workdir, 'restarts', self.name)
 
     def clear_workdir(self):
         sh.rm(['-r', self.workdir])
@@ -105,6 +103,9 @@ class Experiment(object):
             filename = P(mimapy_dir, nl)
             namelist.update(f90nml.read(filename))
         return namelist
+
+    def get_restart_file(self, month):
+        return P(self.restartdir, 'res_%d.cpio' % (month))
 
     def write_path_names(self, outdir):
         log.debug('Writing path_names to %r' % P(outdir, 'path_names'))
@@ -152,9 +153,18 @@ class Experiment(object):
         log.debug('Compilation complete.')
 
 
-    def runmonth(self, month, restart_file=None, use_restart=True, num_cores=8):
+    def runmonth(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False):
         indir = P(self.workdir, 'INPUT')
         outdir = P(self.datadir, 'run%d' % month)
+
+        if os.path.isdir(outdir):
+            if self.overwrite_data or overwrite_data:
+                log.debug('Data for month %d already exists and overwrite_data is True. Overwriting.' % month)
+                sh.rm('-r', outdir)
+            else:
+                log.error('Data for month %d already exists but overwrite_data is False. Stopping.' % month)
+                # exit(4)
+                return False
 
         self.write_namelist(self.workdir)
         self.write_field_table(self.workdir)
@@ -169,7 +179,7 @@ class Experiment(object):
         if use_restart:
             if not restart_file:
                 # get the restart from previous month
-                restart_file = P(self.restartdir, 'res_%d.cpio' % (month - 1))
+                restart_file = self.get_restart_file(month - 1)
             if not os.path.isfile(restart_file):
                 log.error('Restart file not found, expecting file %r' % restart_file)
                 exit(2)
@@ -208,3 +218,4 @@ class Experiment(object):
 
         sh.cp(['-a', self.workdir+'/.', outdir])
         self.clear_workdir()
+        return True

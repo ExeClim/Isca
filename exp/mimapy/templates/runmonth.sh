@@ -22,7 +22,6 @@ EOF
 cd INPUT
 cp {{ restart_file }} res
 cpio -iv < res
-echo `ls INPUT/*`
 cd {{ workdir }}
 {% endif %}
 

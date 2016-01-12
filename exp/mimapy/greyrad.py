@@ -1,23 +1,41 @@
 import mima
+import os
 
-exp = mima.Experiment('grey_nonseasonal')
+nonseasonal = mima.Experiment('grey_nonseasonal')
 
-exp.clear_workdir()
-exp.compile()
+nonseasonal.clear_workdir()
+nonseasonal.compile()
 
-exp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
-exp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
-exp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False
+nonseasonal.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
+nonseasonal.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
+nonseasonal.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False
+
+# nonseasonal.namelist.update({
+#     'spectral_dynamics_nml': {
+#         'num_levels': 40
+#     },
+# })
+
+nonseasonal.runmonth(1, use_restart=False)
+for i in range(2, 82):
+    nonseasonal.runmonth(i)
+
+#nonseasonal.runmonth(81, overwrite_data=True)
 
 
-exp.namelist.update({
-    'spectral_dynamics_nml': {
-        'num_levels': 40
-    },
-})
+# Create the same experiment, but with the seasonal cycle switched on
+seasonal = mima.Experiment('grey_seasonal')
+seasonal.clear_workdir()
+seasonal.execdir = nonseasonal.execdir  # use the same executable as above
 
-# exp.runmonth(1, use_restart=False)
-# for i in range(2, 80):
-#     exp.runmonth(i, num_cores=8)
+seasonal.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
+seasonal.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
+seasonal.namelist['two_stream_gray_rad_nml']['do_seasonal'] = True
 
-exp.runmonth(81)
+seasonal.runmonth(1, restart_file=nonseasonal.get_restart_file(60))
+for i in range(2, 40):
+	seasonal.runmonth(i)
+
+
+
+
