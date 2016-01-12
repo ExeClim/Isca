@@ -28,9 +28,8 @@ cd {{ workdir }}
 
 export MALLOC_CHECK_=0
 
-cp {{ execdir }}/fms_moist.x fms_moist.x
+ln -s {{ execdir }}/fms_moist.x fms_moist.x
 mpirun  -np {{ num_cores }} fms_moist.x
-
 
 # combine output files
 echo Month {{ month }} complete, combining nc files

@@ -173,8 +173,10 @@ class Experiment(object):
             if not os.path.isfile(restart_file):
                 log.error('Restart file not found, expecting file %r' % restart_file)
                 exit(2)
+            else:
+                log.debug('Using restart file %r' % restart_file)
         else:
-            log.info('Running month %r without restart file' % month)
+            log.debug('Running month %r without restart file' % month)
             restart_file = None
 
         vars = self.variables.copy()

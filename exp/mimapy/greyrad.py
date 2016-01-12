@@ -16,6 +16,8 @@ exp.namelist.update({
     },
 })
 
-exp.runmonth(1, use_restart=False)
-for i in range(2, 80):
-    exp.runmonth(i, num_cores=8)
+# exp.runmonth(1, use_restart=False)
+# for i in range(2, 80):
+#     exp.runmonth(i, num_cores=8)
+
+exp.runmonth(81)
