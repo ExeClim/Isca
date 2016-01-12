@@ -39,7 +39,7 @@ mimapy_workdir = P(GFDL_WORK, 'mimapy')
 mkdir(P(mimapy_workdir, 'exec'))
 mkdir(P(mimapy_workdir, 'restarts'))
 
-templates = Environment(loader=PackageLoader('mima', 'templates'))
+templates = Environment(loader=PackageLoader('mima', P(mimapy_dir, 'templates')))
 
 variables = {
     'GFDL_BASE': GFDL_BASE,
@@ -85,7 +85,11 @@ class Experiment(object):
 
         self.overwrite_data = overwrite_data
 
-
+    def use_template_file(self, filename, values):
+        """Use a template file for compilation of the code"""
+        temp_pathname = P(self.workdir, filename)
+        templates.get_template(filename).stream(values).dump(temp_pathname)
+        self.path_names.insert(0, temp_pathname)
 
 
     def clear_workdir(self):
