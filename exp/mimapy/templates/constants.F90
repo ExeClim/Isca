@@ -77,7 +77,7 @@ real :: realnumber
 ! </DATA>
 
 real, public, parameter :: RADIUS = 6376.0e3
-real, public, parameter :: OMEGA  = {{ omega | default(7.292e-5)}}
+real, public, parameter :: OMEGA  = {{ omega | default(0.00007292)}}
 real, public, parameter :: GRAV   = 9.80
 real, public, parameter :: RDGAS  = 287.04
 real, public, parameter :: KAPPA  = 2./7.

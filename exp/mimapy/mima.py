@@ -4,7 +4,7 @@ import logging
 import os
 
 import f90nml
-from jinja2 import Environment, PackageLoader
+from jinja2 import Environment, FileSystemLoader
 import sh
 
 P = os.path.join
@@ -39,7 +39,7 @@ mimapy_workdir = P(GFDL_WORK, 'mimapy')
 mkdir(P(mimapy_workdir, 'exec'))
 mkdir(P(mimapy_workdir, 'restarts'))
 
-templates = Environment(loader=PackageLoader('mima', P(mimapy_dir, 'templates')))
+templates = Environment(loader=FileSystemLoader(P(mimapy_dir, 'templates')))
 
 variables = {
     'GFDL_BASE': GFDL_BASE,

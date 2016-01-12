@@ -5,7 +5,7 @@ import mima
 orbit_rate = (2*np.pi) / (360*86400)
 
 for i, omega in enumerate(orbit_rate*np.array([1, 2, 10, 50, 360, 720])):
-	exp = mima.Experiment('greyrot_omega_%d' % i+1)
+	exp = mima.Experiment('greyrot_omega_%d' % (i+1))
 
 	# use the templated constants.F90 and change omega
 	exp.use_template_file('constants.F90', {'omega': omega})
