@@ -266,6 +266,7 @@ logical :: ncar_ocean_flux_orig  = .false. ! for backwards compatibility
 logical :: raoult_sat_vap        = .false.
 logical :: do_simple             = .false.
 
+real    :: land_humidity_prefactor  =  1.0    !s Default is that land makes no difference to evaporative fluxes
 
 namelist /surface_flux_nml/ no_neg_q,             &
                             use_virtual_temp,     &
@@ -277,7 +278,8 @@ namelist /surface_flux_nml/ no_neg_q,             &
                             ncar_ocean_flux,      &
                             ncar_ocean_flux_orig, &
                             raoult_sat_vap,       &
-                            do_simple       
+                            do_simple,            &
+                            land_humidity_prefactor !s Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.       
    
 
 
@@ -408,7 +410,8 @@ subroutine surface_flux_1d (                                           &
 
   ! initilaize surface air humidity according to surface type
   where (land)
-     q_surf0 = q_surf ! land calculates it
+!     q_surf0 = q_surf ! land calculates it
+     q_surf0 = q_sat !s our simplified land evaporation model does not calculate q_surf, so we specify it as q_sat.
   elsewhere
      q_surf0 = q_sat  ! everything else assumes saturated sfc humidity
   endwhere
@@ -497,12 +500,18 @@ subroutine surface_flux_1d (                                           &
 
      ! evaporation
      rho_drag  =  drag_q * rho
-     flux_q    =  rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
+!s   Have moved flux_q calculation to within the where(land) section, in order that we can include a land_humidity_prefactor. 
+!     flux_q    =  rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
 
      where (land)
-        dedq_surf = rho_drag
-        dedt_surf = 0
+!s      Simplified land model uses simple prefactor in front of qsurf0. Land is therefore basically the same as sea, but with this prefactor, hence the changes to dedq_surf and dedt_surf also. 
+        flux_q    =  rho_drag * (land_humidity_prefactor*q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
+        dedq_surf = 0
+        dedt_surf =  rho_drag * (land_humidity_prefactor*q_sat1 - q_sat) *del_temp_inv
+!        dedq_surf = rho_drag
+!        dedt_surf = 0
      elsewhere
+        flux_q    =  rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
         dedq_surf = 0
         dedt_surf =  rho_drag * (q_sat1 - q_sat) *del_temp_inv
      endwhere

@@ -6,7 +6,7 @@ module idealized_moist_phys_mod
   use fms_mod, only: open_namelist_file, close_file
 #endif
 
-use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, FATAL
+use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, FATAL, read_data, field_size
 
 use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS !mj cp_air needed for rrtmg !s pstd_mks needed for pref calculation
 
@@ -39,6 +39,10 @@ use      sat_vapor_pres_mod, only: lookup_es !s Have added this to allow relativ
 use      damping_driver_mod, only: damping_driver, damping_driver_init, damping_driver_end !s MiMA uses damping
 
 use    press_and_geopot_mod, only: pressure_variables
+
+use         mpp_domains_mod, only: mpp_get_global_domain !s added to enable land reading
+
+use          transforms_mod, only: grid_domain
 
 !mj: RRTM radiative scheme
 use rrtmg_lw_init
@@ -86,8 +90,17 @@ real :: roughness_heat = 0.05
 real :: roughness_moist = 0.05
 real :: roughness_mom = 0.05
 
-namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, roughness_heat, two_stream_gray, do_rrtm_radiation, do_damping, mixed_layer_bc, do_simple, &
-                                      roughness_moist, roughness_mom, do_virtual
+!s options for adding idealised land
+
+character(len=256) :: land_option = 'none'
+character(len=256) :: land_file_name  = 'INPUT/land.nc'
+character(len=256) :: land_field_name = 'land_mask'
+
+namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, roughness_heat,  &
+                                      two_stream_gray, do_rrtm_radiation, do_damping,&
+                                      mixed_layer_bc, do_simple,                     &
+                                      roughness_moist, roughness_mom, do_virtual,    &
+                                      land_option, land_file_name, land_field_name    !s options for idealised land
 
 real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
@@ -148,6 +161,9 @@ logical, allocatable, dimension(:,:) ::                                       &
      convect                   ! place holder. appears in calling arguments of vert_turb_driver but not used unless do_entrain=.true. -- pjp
 
 real, allocatable, dimension(:,:) ::                                          &
+     land_ones                 ! land points (all zeros)
+
+real, allocatable, dimension(:,:) ::                                          &
      klzbs,                &   ! stored level of zero buoyancy values
      cape,                 &   ! convectively available potential energy
      cin,                  &   ! convective inhibition (this and the above are before the adjustment)
@@ -203,6 +219,11 @@ real, intent(in), dimension(:,:) :: rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_lat
 integer :: io, nml_unit, stdlog_unit, seconds, days, id, jd, kd
 real, dimension (size(rad_lonb_2d,1)-1, size(rad_latb_2d,2)-1) :: sgsmtn !s added for damping_driver
 
+!s added for land reading
+integer, dimension(4) :: siz 
+integer :: global_num_lon, global_num_lat
+character(len=12) :: ctmp1='     by     ', ctmp2='     by     '
+!s end added for land reading
 
 if(module_is_initialized) return
 
@@ -269,6 +290,7 @@ allocate(dedq_atm    (is:ie, js:je))
 allocate(dtaudv_atm  (is:ie, js:je))
 allocate(dtaudu_atm  (is:ie, js:je))
 allocate(land        (is:ie, js:je)); land = .false.
+allocate(land_ones   (is:ie, js:je)); land_ones = 0.0
 allocate(avail       (is:ie, js:je)); avail = .true.
 allocate(fracland    (is:ie, js:je)); fracland = 0.0
 allocate(rough       (is:ie, js:je))
@@ -316,6 +338,39 @@ allocate(capeflag     (is:ie, js:je))
 call get_surf_geopotential(z_surf)
 z_surf = z_surf/grav
 
+!s initialise the land area
+if(trim(land_option) .eq. 'input')then
+!s read in land nc file
+!s adapted from spectral_init_cond.F90
+
+	   if(file_exist(trim(land_file_name))) then
+	     call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat) 
+	     call field_size(trim(land_file_name), trim(land_field_name), siz)
+	     if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
+	       call read_data(trim(land_file_name), trim(land_field_name), land_ones, grid_domain)
+	       !s write something to screen to let the user know what's happening.
+	     else
+	       write(ctmp1(1: 4),'(i4)') siz(1)
+	       write(ctmp1(9:12),'(i4)') siz(2)
+	       write(ctmp2(1: 4),'(i4)') global_num_lon
+	       write(ctmp2(9:12),'(i4)') global_num_lat
+	       call error_mesg ('get_land','Land file contains data on a '// &
+	              ctmp1//' grid, but atmos model grid is '//ctmp2, FATAL)
+	     endif
+	   else
+	     call error_mesg('get_land','land_option="'//trim(land_option)//'"'// &
+	                     ' but '//trim(land_file_name)//' does not exist', FATAL)
+	   endif
+
+	!s convert data in land nc file to land logical array
+	where(land_ones > 0.) land = .true.
+
+elseif(trim(land_option) .eq. 'zsurf')then
+	!s wherever zsurf is greater than some threshold height then make land = .true.
+	where ( z_surf > 10. ) land = .true.
+endif
+
+
 !    initialize damping_driver_mod.
       if(do_damping) then
          call pressure_variables(p_half_1d,ln_p_half_1d,pref(1:num_levels),ln_p_full_1d,PSTD_MKS)
@@ -331,7 +386,7 @@ if(mixed_layer_bc) then
   ! choose an unstable initial condition to allow moisture
   ! to quickly enter the atmosphere avoiding problems with the convection scheme
   t_surf = t_surf_init + 1.0
-  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, get_axis_id(), Time, albedo, rad_lonb_2d(:,:), rad_latb_2d(:,:)) ! t_surf is intent(inout) !s albedo distribution set here.
+  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, get_axis_id(), Time, albedo, rad_lonb_2d(:,:), rad_latb_2d(:,:), land) ! t_surf is intent(inout) !s albedo distribution set here.
 endif
 
 if(turb) then

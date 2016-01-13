@@ -86,7 +86,11 @@ real    :: depth = 40.0,      &          !s 2013 implementation
            land_capacity   = -1.,      & !mj
            trop_capacity   = -1.,      & !mj
            trop_cap_limit  = 15.,      & !mj
-           heat_cap_limit  = 60.         !mj
+           heat_cap_limit  = 60.,      & !mj
+           land_h_capacity_prefactor = 1.0 !s where(land) heat_capcity = land_h_capacity_prefactor * depth * rho_cp
+
+!s Surface albedo options
+real    :: land_albedo_prefactor = 1.0 !s where(land) albedo = land_albedo_prefactor * albedo_value
 
 !s Begin mj extra options
 logical :: do_qflux         = .false. !mj
@@ -104,7 +108,11 @@ namelist/mixed_layer_nml/ evaporation, qflux_amp, depth, qflux_width, load_qflux
 			      do_qflux,do_warmpool,              &  !mj
                               do_read_sst,do_sc_sst,sst_file,    &  !mj
                               land_option,slandlon,slandlat,     &  !mj
-                              elandlon,elandlat!,albedo_exp          !mj
+                              elandlon,elandlat,                 &  !mj
+                              land_h_capacity_prefactor,         &  !s 
+                              land_albedo_prefactor                 !s 
+
+!,albedo_exp          !mj
 
 !=================================================================================================================================
 
@@ -158,13 +166,15 @@ real inv_cp_air
 contains
 !=================================================================================================================================
 
-subroutine mixed_layer_init(is, ie, js, je, num_levels, t_surf, axes, Time, albedo, rad_lonb_2d,rad_latb_2d)
+subroutine mixed_layer_init(is, ie, js, je, num_levels, t_surf, axes, Time, albedo, rad_lonb_2d,rad_latb_2d, land)
 
 type(time_type), intent(in)       :: Time
 real, intent(out), dimension(:,:) :: t_surf, albedo
 integer, intent(in), dimension(4) :: axes
 real, intent(in), dimension(:,:) :: rad_lonb_2d, rad_latb_2d
 integer, intent(in) :: is, ie, js, je, num_levels 
+
+logical, intent(in), dimension(:,:) :: land
 
 integer :: j
 real    :: rad_qwidth
@@ -311,7 +321,13 @@ inv_cp_air = 1.0 / CP_AIR
 
 albedo(:,:) = albedo_value
 
-!s Add more options here from MiMA to prescribe different distributions of albedo.
+!s TODO: Add more options here from MiMA to prescribe different distributions of albedo.
+if(trim(land_option) .eq. 'input') then
+
+where(land) albedo = land_albedo_prefactor * albedo
+
+endif
+
 
 !mj read fixed SSTs
 if( do_read_sst ) then
@@ -321,6 +337,7 @@ endif
 !s begin surface heat capacity calculation
    if(.not.do_sc_sst) then
          land_sea_heat_capacity = depth*RHO_CP
+	if(trim(land_option) .eq. 'mjtrop') then
          if ( trop_capacity .ne. depth*RHO_CP ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0. 
             do j=1,size(t_surf,2)
                lat = 0.5*180/pi*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j) )
@@ -331,6 +348,7 @@ endif
                end if
             enddo
          endif
+	endif
 ! mj land heat capacity function of surface topography
          if(trim(land_option) .eq. 'zsurf')then
             call get_surf_geopotential(zsurf)
@@ -351,6 +369,9 @@ endif
                enddo
             enddo
          endif
+	if(trim(land_option) .eq. 'input') then
+		where(land) land_sea_heat_capacity = land_h_capacity_prefactor*land_sea_heat_capacity
+	endif
     endif !end of if(.not.do_sc_sst)
 
 !s end surface heat capacity calculation
