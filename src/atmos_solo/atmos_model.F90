@@ -99,7 +99,7 @@ character(len=128), parameter :: tag = &
    type(domain2d), save :: atmos_domain  ! This variable must be treated as read-only
 !-----------------------------------------------------------------------
 
-!      integer, dimension(4) :: current_time = (/ 0, 0, 0, 0 /)
+      integer, dimension(4) :: current_time = (/ 0, 0, 0, 0 /)
       integer :: days=0, hours=0, minutes=0, seconds=0
       integer :: dt_atmos = 0
       integer :: memuse_interval = 72
@@ -108,7 +108,7 @@ character(len=128), parameter :: tag = &
       integer, dimension(6) :: current_date = (/ 0, 0, 0, 0, 0, 0 /)
 
       namelist /main_nml/ current_date, dt_atmos,  &
-                          days, hours, minutes, seconds, memuse_interval, atmos_nthreads, calendar
+                          days, hours, minutes, seconds, memuse_interval, atmos_nthreads, calendar, current_time
 
 !#######################################################################
 
@@ -201,11 +201,6 @@ contains
        call mpp_close (unit)
    else
     ! use namelist time if restart file does not exist
-!      date(1:2) = 0
-!      date(3:6) = current_time
-       date = current_date
-!       date_init = current_date
-
         select case( uppercase(trim(calendar)) )
         case( 'JULIAN' )
             calendar_type = JULIAN
@@ -218,6 +213,13 @@ contains
         case default
             call error_mesg( 'program atmos_model', 'main_nml entry calendar must be one of JULIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.', FATAL )
         end select
+
+       if(calendar_type /= NO_CALENDAR) then !s If using no_calendar we need to set the date using the current time only.
+            date = current_date
+       else
+            date(1:2) = 0
+            date(3:6) = current_time
+       endif
 
    endif
 
@@ -252,12 +254,11 @@ contains
     call get_base_date ( date_init(1), date_init(2), date_init(3), &
                          date_init(4), date_init(5), date_init(6)  )
 
-  ! make sure base date does not have a year or month specified
-  !s no longer required as we DO want a year or month specified for MiMA.
-!    if ( date_init(1)+date_init(2) /= 0 ) then
-!         call error_mesg ('program atmos_model', 'invalid base base - &
-!                          &must have year = month = 0', FATAL)
-!    endif
+  ! make sure base date does not have a year or month specified !s but only with NO_CALENDAR as we DO want a year or month specified for MiMA.
+    if ( calendar_type == NO_CALENDAR .and. date_init(1)+date_init(2) /= 0 ) then
+         call error_mesg ('program atmos_model', 'invalid base base - &
+                          &must have year = month = 0', FATAL)
+    endif
 
 !----- set initial and current time types ------
 !----- set run length and compute ending time -----
@@ -265,17 +266,19 @@ contains
 !               Dont allow minutes in the Mars model
     date_init(5)= 0.0
 #endif MARS_GCM
-!s   Old way of setting Time_init lead to first day being date_init+1. This didn't work well with dividing files up by months.
-!    Time_init  = set_time(date_init(4)*int(SECONDS_PER_HOUR)+date_init(5)*int(SECONDS_PER_MINUTE)+date_init(6),date_init(3))
-!    Time       = set_time(date     (4)*int(SECONDS_PER_HOUR)+date     (5)*int(SECONDS_PER_MINUTE)+date     (6),date     (3))
 
-!s New way of setting Time_init and Time uses set_date, which subtracts 1 from date_init(3) and date(3) when calculating dates. Leads to correct start date.
+     if ( calendar_type /= NO_CALENDAR) then
+!s New way of setting Time_init and Time uses set_date, which subtracts 1 from date_init(3) and date(3) when calculating dates. Leads to correct start date when calendar /= NO_CALENDAR
+         Time_init = set_date (date_init(1), date_init(2), date_init(3), &
+              date_init(4), date_init(5), date_init(6))
 
-    Time_init = set_date (date_init(1), date_init(2), date_init(3), &
-         date_init(4), date_init(5), date_init(6))
-
-    Time      = set_date (date(1), date(2), date(3),  &
-         date(4), date(5), date(6))
+         Time      = set_date (date(1), date(2), date(3),  &
+              date(4), date(5), date(6))
+     else
+!s Works with NO_CALENDAR
+         Time_init  = set_time(date_init(4)*int(SECONDS_PER_HOUR)+date_init(5)*int(SECONDS_PER_MINUTE)+date_init(6),date_init(3))
+         Time       = set_time(date     (4)*int(SECONDS_PER_HOUR)+date     (5)*int(SECONDS_PER_MINUTE)+date     (6),date     (3))
+     endif
 
     Run_length = set_time(       hours*int(SECONDS_PER_HOUR)+     minutes*int(SECONDS_PER_MINUTE)+     seconds,days        )
     Time_end   = Time + Run_length
@@ -369,13 +372,15 @@ contains
 
 !----- compute current time in days,hours,minutes,seconds -----
 
+     if( calendar_type /= NO_CALENDAR) then
 !s Updated call to get final date in line with updating initial date setting above. 
-    call get_date (Time, date(1), date(2), date(3),  &
-         date(4), date(5), date(6))
-
-!      date(1:2) = 0
-!      call get_time ( Time, date(6), date(3) )
-!      date(4) = date(6)/int(SECONDS_PER_HOUR); date(6) = date(6) - date(4)*int(SECONDS_PER_HOUR)
+         call get_date (Time, date(1), date(2), date(3),  &
+              date(4), date(5), date(6))
+     else
+         date(1:2) = 0
+         call get_time ( Time, date(6), date(3) )
+         date(4) = date(6)/int(SECONDS_PER_HOUR); date(6) = date(6) - date(4)*int(SECONDS_PER_HOUR)
+     endif
 #ifdef MARS_GCM
       date(5) = 0                              ; date(6) = date(6) - date(5)*int(SECONDS_PER_MINUTE)
 !#else
