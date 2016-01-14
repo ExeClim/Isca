@@ -3,7 +3,7 @@
 
 
 
-cd {{ workdir }}
+cd {{ rundir }}
 
 cat >> input.nml <<EOF
  &main_nml
@@ -22,7 +22,7 @@ EOF
 cd INPUT
 cp {{ restart_file }} res
 cpio -iv < res
-cd {{ workdir }}
+cd {{ rundir }}
 {% endif %}
 
 export MALLOC_CHECK_=0
@@ -35,7 +35,7 @@ echo Month {{ month }} complete, combining nc files
 
 if [ {{ num_cores }} > 1 ]; then
  for ncfile in `/bin/ls *.nc.0000`; do
-    $GFDL_BASE/postprocessing/mppnccombine.x $ncfile
+    {{ execdir }}/mppnccombine.x $ncfile
     if [ $? == 0 ]; then
         rm -f "${ncfile%.*}".????
     fi

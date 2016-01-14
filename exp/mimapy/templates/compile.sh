@@ -5,18 +5,18 @@
 #-----------------------------------------------------------------------------------------------------
 hostname=`hostname`
 template={{ mimapy_dir }}/mkmf.template.ia64
-mkmf={{ GFDL_BASE }}/bin/mkmf                             # path to executable mkmf
-sourcedir={{ GFDL_BASE }}/src                             # path to directory containing model source code
+mkmf={{ srcdir }}/bin/mkmf                             # path to executable mkmf
+sourcedir={{ srcdir }}/src                             # path to directory containing model source code
 pathnames={{ workdir }}/path_names                        # path to file containing list of source paths
-ppdir={{ GFDL_BASE }}/postprocessing                      # path to directory containing the tool for combining distributed diagnostic output files
+ppdir={{ srcdir }}/postprocessing                      # path to directory containing the tool for combining distributed diagnostic output files
 #-----------------------------------------------------------------------------------------------------
-execdir={{ compile_dir }}        # where code is compiled and executable is created
+execdir={{ execdir }}        # where code is compiled and executable is created
 executable=$execdir/fms_moist.x
 
 netcdf_flags=`nf-config --fflags --flibs`
 
 # 2. Load the necessary tools into the environment
-source {{ GFDL_BASE }}/src/extra/loadmodule
+source {{ srcdir }}/src/extra/loadmodule
 module list
 ulimit -s unlimited # Set stack size to unlimited
 export MALLOC_CHECK_=0
@@ -34,6 +34,8 @@ if [ $? != 0 ]; then
     echo "ERROR: could not compile combine tool"
     exit 1
 fi
+
+ln -s $ppdir/mppnccombine.x {{ execdir }}/mppnccombine.x
 #--------------------------------------------------------------------------------------------------------
 
 

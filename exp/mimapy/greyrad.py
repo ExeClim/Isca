@@ -3,7 +3,6 @@ import os
 
 nonseasonal = mima.Experiment('grey_nonseasonal')
 
-nonseasonal.clear_workdir()
 nonseasonal.compile()
 
 nonseasonal.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
@@ -16,6 +15,7 @@ nonseasonal.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False
 #     },
 # })
 
+nonseasonal.clear_rundir()
 nonseasonal.runmonth(1, use_restart=False)
 for i in range(2, 82):
     nonseasonal.runmonth(i)
@@ -25,7 +25,7 @@ for i in range(2, 82):
 
 # Create the same experiment, but with the seasonal cycle switched on
 seasonal = mima.Experiment('grey_seasonal')
-seasonal.clear_workdir()
+#seasonal.clear_workdir()
 seasonal.execdir = nonseasonal.execdir  # use the same executable as above
 
 seasonal.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
