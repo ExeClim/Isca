@@ -5,19 +5,7 @@
 
 cd {{ rundir }}
 
-cat >> input.nml <<EOF
- &main_nml
-     days   = 30,
-     hours  = 0,
-     minutes = 0,
-     seconds = 0,
-     dt_atmos = 900,
-     current_date = 0001,1,1,0,0,0
-     calendar = 'thirty_day' /
-EOF
-
 # copy and extract the restart information
-
 {% if restart_file %}
 cd INPUT
 cp {{ restart_file }} res
