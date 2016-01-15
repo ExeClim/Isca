@@ -59,3 +59,48 @@ were produced in the experiment above, but this time change the namelist.  A sec
 	exp2.runmonth(21, restart_file=exp.get_restart_file(20))
 	for i in range(22, 60):
 		exp2.runmonth(i)
+
+
+
+A note on running on exeter gv* servers
+---------------------------------------
+
+mimapy depends on a couple of Python modules that are not installed with
+the default Python installation.
+
+- `jinja2` for using file templates.
+- `f90nml` for read/write namelists.
+
+To install new modules without root permission on the server you will
+need to create your own local Python environment.  The easiest way to do
+this is with Ananconda:
+
+1. Load the Anaconda module.
+
+	jp492@emps-gv4:~$ module load python/anaconda
+
+2. Add a default location for your environments to be saved.  This needs
+   to be somewhere you have write access to.  For example, I use
+   `/scratch/jp492/envs`.  Add this to your `~/.condarc` file:
+
+   	env_dirs:
+   		- /scratch/jp492/envs
+
+3. Create a new environment.  This command will create a new environment
+   called "gfdl" and will install into it the modules `ipython`, `notebook`
+   and `numpy`.  Further modules can easily be installed later once the
+   environment has been created and activated.
+
+	jp492@emps-gv4:~$ conda create -n gfdl ipython notebook numpy
+
+4. Activate the new environment.
+
+	jp492@emps-gv4:~$ source activate gfdl
+	(gfdl)jp492@emps-gv4:~$
+
+5. Now that the environment is active, you can easily add any modules you
+   would like using either `conda install` or `pip install`.  To get the
+   necessary components for running mimapy:
+
+    (gfdl)jp492@emps-gv4:~$ conda install flask
+    (gfdl)jp492@emps-gv4:~$ pip install f90nml
