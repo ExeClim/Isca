@@ -18,7 +18,7 @@
   set npes             = 8	#number of processes WARNING: can only use the restart files from 8 cpu's if restart was made from a run using 8 cps
   
   #begin personalisations for running at exeter:
-  set exp_name         	= ruth_introduction_exp 	#control run of code - for each experiment have a new experiment name
+  set exp_name         	= land_test 	#control run of code - for each experiment have a new experiment name
   set workdir           = $GFDL_WORK/$exp_name/np$npes	#base working directory
   set base_arc        	= $GFDL_DATA/$exp_name/np$npes	#storing data in location other than workdir (eg archived data) 
   set dir_base		= $GFDL_BASE
