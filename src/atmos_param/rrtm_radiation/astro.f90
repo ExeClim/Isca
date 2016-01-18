@@ -25,10 +25,10 @@ module rrtm_astro
                                                               !  this is done within RRTM, and assumes 365days/year!
         real(kind=rb)      :: solr_cnst= 1368.22              ! solar constant [W/m2]
         real(kind=rb)      :: solrad=1.0                      ! distance Earth-Sun [AU] if use_dyofyr=.false.
-        integer(kind=im)   :: solday=0                        ! if >0, do perpetual run corresponding to 
+        integer(kind=im)   :: solday=0                        ! if >0, do perpetual run corresponding to
                                                               !  day of the year = solday \in [0,days per year]
         real(kind=rb)      :: equinox_day=0.25                ! fraction of the year defining March equinox \in [0,1]
-        
+
 
         namelist /astro_nml/ obliq,use_dyofyr,solr_cnst,solrad,solday,equinox_day
 
@@ -40,22 +40,24 @@ module rrtm_astro
             implicit none
             integer :: unit, ierr, io
 
+            if (astro_initialized) return
+
             if ( file_exist('input.nml') )then
                unit = open_namelist_file()
-               ierr=1; 
+               ierr=1;
                do while (ierr /= 0)
                   read( unit, nml=astro_nml, iostat=io, end=10 )
                   ierr = check_nml_error(io,'astro_nml')
                enddo
 10             call close_file(unit)
             endif
-    
+
             astro_initialized = .true.
-            
-            
+
+
           end subroutine astro_init
 !--------------------------------------------------------------------------------------
-! parts of this are taken from GFDL's astronomy.f90      
+! parts of this are taken from GFDL's astronomy.f90
           subroutine compute_zenith(Time, equinox_day, dt, lat, lon, cosz, dyofyr)
 !
 ! Computes the zenith angle for RRTM SW radiation
@@ -86,7 +88,7 @@ module rrtm_astro
             integer  :: i,j
 ! Constants
             real     :: radpersec, radperday
-            real     :: eps=1.0E-05,deg2rad 
+            real     :: eps=1.0E-05,deg2rad
 !--------------------------------------------------------------------------------------
             deg2rad = PI/180.
             twopi = 2*PI
@@ -111,18 +113,18 @@ module rrtm_astro
             !convert into radians
             radsec = seconds*radpersec
             dt_pi  = dt*radpersec
-            
+
             !set local time throughout the globe
             do i=1,size(lon,1)
                !move it into interval [-PI,PI]
                time_pi(i,:) = modulo(radsec + lon(i,:),2*PI) - PI
             enddo
             where(time_pi >= PI) time_pi = time_pi - twopi
-            where(time_pi < -PI) time_pi = time_pi + twopi 
+            where(time_pi < -PI) time_pi = time_pi + twopi
             !time_pi now contains local time at each grid point
             !get day of the year relative to equinox. We set equinox at (equinox_day,equinox_day+0.5)*daysperyear
             days = days - int(equinox_day*daysperyear)
-            dyofyr   = modulo(days,daysperyear) 
+            dyofyr   = modulo(days,daysperyear)
             !convert into radians
             radday = dyofyr*radperday
             !get declination
@@ -166,8 +168,8 @@ module rrtm_astro
                     cosz = aa + bb*(stt + sh)/ (tt + h)
 !-------------------------------------------------------------------
 !    case 3: averaging period begins before sunrise, ends after sunset,
-!    but before the next sunrise. modify if averaging period extends 
-!    past the next day's sunrise, but if averaging period is less than 
+!    but before the next sunrise. modify if averaging period extends
+!    past the next day's sunrise, but if averaging period is less than
 !    a half- day (pi) that circumstance will never occur.
 !-------------------------------------------------------------------
                where (time_pi < -h .and. h /= 0.0 .and. h < tt)    &
@@ -178,9 +180,9 @@ module rrtm_astro
                where ( abs(time_pi) <= h .and. abs(tt) <= h)    &
                     cosz = aa + bb*(stt - st)/ (tt - time_pi)
 !-------------------------------------------------------------------
-!    case 5: averaging period begins after sunrise, ends after sunset. 
-!    modify when averaging period extends past the next day's sunrise.  
-!------------------------------------------------------------------- 
+!    case 5: averaging period begins after sunrise, ends after sunset.
+!    modify when averaging period extends past the next day's sunrise.
+!-------------------------------------------------------------------
                where ((h-time_pi) /= 0.0 .and. abs(time_pi) <= h .and.  h < tt)    &
                     cosz = aa + bb*(sh - st)/(h-time_pi)
 !-------------------------------------------------------------------
@@ -215,7 +217,7 @@ module rrtm_astro
                where( h < time_pi .and. h + twopi < tt .and. h /= 0. )
                   cosz = aa + bb*(sh + sh) / (h + h)
                end where
-    
+
 !----------------------------------------------------------------------
 !    if instantaneous values are desired, define cosz at time t.
 !----------------------------------------------------------------------

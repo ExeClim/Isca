@@ -565,6 +565,7 @@ if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
 if(two_stream_gray) then
    call two_stream_gray_rad_down(is, js, Time, &
                        rad_lat(:,:),           &
+                       rad_lon(:,:),           &
                        p_half(:,:,:,current),  &
                        tg(:,:,:,previous),     &
                        net_surf_sw_down(:,:),  &

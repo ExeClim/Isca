@@ -1,0 +1,61 @@
+ &main_nml
+     days   = 30,
+     hours  = 0,
+     minutes = 0,
+     seconds = 0,
+     dt_atmos = 900,
+     current_date = 0001,1,1,0,0,0
+     calendar = 'thirty_day' /
+
+ &spectral_dynamics_nml
+    damping_option          = 'resolution_dependent',
+    damping_order           = 4,
+    do_mass_correction      =.true.,
+    do_energy_correction    =.true.,
+    do_water_correction     =.true.,
+    water_correction_limit  = 200.e2,
+    use_virtual_temperature =.false.,
+    vert_advect_uv          = 'second_centered',
+    vert_advect_t           = 'second_centered',
+    longitude_origin        = 0.,
+    robert_coeff            = .03,
+    alpha_implicit          = .5,
+    reference_sea_level_press=1.e5,
+    lon_max                 = 128,
+    lat_max                 = 64,
+    num_levels              = 40,
+    num_fourier             = 42,
+    num_spherical           = 43,
+    fourier_inc             = 1,
+    triang_trunc            =.true.,
+    valid_range_t 	    = 100. 800.,
+    initial_sphum           = 2.e-6,
+    vert_coord_option       = 'uneven_sigma',
+    surf_res                = 0.5,
+    scale_heights           = 11.0,
+    exponent                = 7.0 /
+
+# Note: damping_order = 4 specifies del 8'th diffusion
+
+ &vert_coordinate_nml
+   bk= 0.000000, 0.0117665, 0.0196679, 0.0315244, 0.0485411, 0.0719344,
+      0.1027829, 0.1418581, 0.1894648, 0.2453219, 0.3085103, 0.3775033, 0.4502789,
+      0.5244989, 0.5977253, 0.6676441, 0.7322627, 0.7900587, 0.8400683, 0.8819111,
+      0.9157609, 0.9422770, 0.9625127, 0.9778177, 0.9897489, 1.0000000,
+   pk= 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
+       0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
+       0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
+       0.000000, 0.000000, 0.000000, 0.000000, 0.000000 /
+
+ &diag_manager_nml
+   mix_snapshot_average_fields = .false. /
+
+# domains_stack_size will vary for different model resolutions,
+# domain decompositions, and number of processors used.
+
+ &fms_nml
+   domains_stack_size = 600000 /
+
+ &fms_io_nml
+   threading_write = 'single',
+   fileset_write = 'single' /
