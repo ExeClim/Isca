@@ -77,6 +77,7 @@ use time_manager_mod,  only : time_type,   &
                               get_date,    &
                               get_calendar_type, &
                               JULIAN, NOLEAP, &
+                              THIRTY_DAY_MONTHS, & !mj
                               get_date_julian, set_date_no_leap, &
                               set_date_julian, get_date_no_leap, &
                               print_date, &
@@ -551,7 +552,9 @@ do i = 1, ndim
         if ( (model_calendar == JULIAN .and.   &
               trim(file_calendar) == 'julian')  .or. &
               (model_calendar == NOLEAP .and.   &
-               trim(file_calendar) == 'noleap') )  then
+               trim(file_calendar) == 'noleap')  .or. &
+              (model_calendar == THIRTY_DAY_MONTHS .and. & !mj
+               trim(file_calendar) == 'thirty_day_months'))  then
           call mpp_error (NOTE, 'interpolator_mod: Model and file&
                     & calendars are the same for file ' //   &
                     & trim(file_name) // '; no calendar conversion  &
@@ -648,7 +651,9 @@ do i = 1, ndim
             if ( (model_calendar == JULIAN .and.   &
                   trim(file_calendar) == 'julian')  .or. &
                  (model_calendar == NOLEAP .and.   &
-                  trim(file_calendar) == 'noleap') )  then
+                  trim(file_calendar) == 'noleap') .or. &
+                 (model_calendar == THIRTY_DAY_MONTHS .and. & !mj
+                  trim(file_calendar) == 'thirty_day_months') )  then
 
 !---------------------------------------------------------------------
 !    no calendar conversion needed.

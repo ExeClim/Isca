@@ -67,7 +67,7 @@ public :: spectral_init_cond
 
 real :: initial_temperature=264.
 character(len=64) :: topography_option = 'flat'  ! realistic topography computed from high resolution raw data
-character(len=64) :: topog_file_name  = 'INPUT/topography.data.nc'
+character(len=64) :: topog_file_name  = 'topography.data.nc'
 character(len=64) :: topog_field_name = 'zsurf'
 
 namelist / spectral_init_cond_nml / initial_temperature, topography_option, topog_file_name, topog_field_name
@@ -180,11 +180,11 @@ if(trim(topography_option) == 'flat') then
    surf_geopotential = 0.
 
 else if(trim(topography_option) == 'input') then
-   if(file_exist(trim(topog_file_name))) then
+   if(file_exist(trim('INPUT/'//topog_file_name))) then
      call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat) 
-     call field_size(trim(topog_file_name), trim(topog_field_name), siz)
+     call field_size(trim('INPUT/'//topog_file_name), trim(topog_field_name), siz)
      if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
-       call read_data(trim(topog_file_name), trim(topog_field_name), surf_height, grid_domain)
+       call read_data(trim('INPUT/'//topog_file_name), trim(topog_field_name), surf_height, grid_domain)
      else
        write(ctmp1(1: 4),'(i4)') siz(1)
        write(ctmp1(9:12),'(i4)') siz(2)
@@ -203,7 +203,7 @@ else if(trim(topography_option) == 'input') then
      surf_geopotential = grav*surf_height
    else
      call error_mesg('get_topography','topography_option="'//trim(topography_option)//'"'// &
-                     ' but trim(topog_file_name) does not exist', FATAL)
+                     ' but '//trim('INPUT/'//topog_file_name)//' does not exist', FATAL)
    endif
 
 else if(trim(topography_option) == 'interpolated') then

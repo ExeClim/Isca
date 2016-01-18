@@ -1,0 +1,106 @@
+Using mimapy
+============
+
+mimapy provides a python module `mima` that allows for a specific configuration of the GFDLmoistModel to be run from a python script.
+
+The `mima.Experiment` object wraps the key steps in running GFDL:
+
+1. Compile the source code
+2. Configure the `input.nml` namelist, and `diag_file` settings
+3. Run the model for a set period of integration time
+4. Collate output data and move to a permanent storage location.
+
+By passing a git commit handle to the `Experiment` object, you can ensure
+the exact source code that the model will compile and the exact set of
+configuration options, no matter how many changes are made to the code in
+the future.
+
+The commit handle can be anything that you can `checkout` in git. For example, all of these are valid options:
+
+* The current checkout: HEAD
+* A fully qualified commit hash: 78870c69fe3d17c92e5fb6cd73b1004d25bb803b
+* The top of a specific branch: my_test_branch
+* A named tag: mima_1.0.1
+
+Here's a mimimal example `greyradiation.py`:
+
+	import mima
+
+	exp = mima.Experiment('greyrad',
+		repo='git@github.com:ExeClim/GFDLmoistModel.git',
+		commit='mima_2013')
+
+	exp.clone_and_checkout()
+	exp.compile()
+
+	exp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
+	exp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
+	exp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False
+
+	exp.runmonth(1, use_restart=False)
+	for m in range(2, 60):
+		exp.runmonth(2)  # by default, this will use (month - 1) as restart
+
+All paths and files that mimapy uses to build the experiment are
+configurable, check out the source code or some of the experiments in
+`exp/mimapy` to see how this is done.
+
+For example, you may want to use the same compiled source and restarts as
+were produced in the experiment above, but this time change the namelist.  A second experiment can easily be added to the script:
+
+	exp2 = mima.Experiment('greyrad_seasonal')
+	exp2.execdir = exp.execdir  # use the same executable
+
+	exp2.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
+	exp2.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
+	exp2.namelist['two_stream_gray_rad_nml']['do_seasonal'] = True
+
+	# use a spun up restart from exp above to kick off the integration
+	exp2.runmonth(21, restart_file=exp.get_restart_file(20))
+	for i in range(22, 60):
+		exp2.runmonth(i)
+
+
+
+A note on running on exeter gv* servers
+---------------------------------------
+
+mimapy depends on a couple of Python modules that are not installed with
+the default Python installation.
+
+- `jinja2` for using file templates.
+- `f90nml` for read/write namelists.
+
+To install new modules without root permission on the server you will
+need to create your own local Python environment.  The easiest way to do
+this is with Ananconda:
+
+1. Load the Anaconda module.
+
+	jp492@emps-gv4:~$ module load python/anaconda
+
+2. Add a default location for your environments to be saved.  This needs
+   to be somewhere you have write access to.  For example, I use
+   `/scratch/jp492/envs`.  Add this to your `~/.condarc` file:
+
+   	env_dirs:
+   		- /scratch/jp492/envs
+
+3. Create a new environment.  This command will create a new environment
+   called "gfdl" and will install into it the modules `ipython`, `notebook`
+   and `numpy`.  Further modules can easily be installed later once the
+   environment has been created and activated.
+
+	jp492@emps-gv4:~$ conda create -n gfdl ipython notebook numpy
+
+4. Activate the new environment.
+
+	jp492@emps-gv4:~$ source activate gfdl
+	(gfdl)jp492@emps-gv4:~$
+
+5. Now that the environment is active, you can easily add any modules you
+   would like using either `conda install` or `pip install`.  To get the
+   necessary components for running mimapy:
+
+    (gfdl)jp492@emps-gv4:~$ conda install flask
+    (gfdl)jp492@emps-gv4:~$ pip install f90nml

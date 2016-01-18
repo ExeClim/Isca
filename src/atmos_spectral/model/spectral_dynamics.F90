@@ -191,7 +191,8 @@ real    :: damping_coeff       = 1.15740741e-4, & ! (one tenth day)**-1
            exponent            = 2.5, &
          ocean_topog_smoothing = .93, &
            initial_sphum       = 0.0, &
-     reference_sea_level_press =  101325.
+     reference_sea_level_press =  101325.,&
+        water_correction_limit = 0.0 !mj
 !===============================================================================================
 
 real, dimension(2) :: valid_range_t = (/100.,500./)
@@ -206,8 +207,9 @@ namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option,       
                                  num_fourier, num_spherical, fourier_inc, triang_trunc,              &
                                  vert_coord_option, scale_heights, surf_res,      &
                                  p_press, p_sigma, exponent, ocean_topog_smoothing, initial_sphum,   &
-                                 valid_range_t, eddy_sponge_coeff, zmu_sponge_coeff, zmv_sponge_coeff, &
-                                 print_interval, num_steps, initial_state_option
+                                 valid_range_t, eddy_sponge_coeff, zmu_sponge_coeff, zmv_sponge_coeff,&
+                                 print_interval, num_steps, initial_state_option,                    &
+                                 water_correction_limit !mj
                                  
 contains
 
@@ -797,6 +799,9 @@ real, dimension(is:ie, js:je, num_levels, num_tracers) :: dt_tracers_tmp
 
 integer :: j, k, time_level, seconds, days
 real    :: delta_t
+!mj error message
+real    :: extrtmp
+integer :: ii,jj,kk,i1,j1,k1
 
 ! < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < >
 
@@ -913,12 +918,41 @@ call trans_spherical_to_grid(ln_ps(:,:,  future), ln_psg)
 psg(:,:,future) = exp(ln_psg)
 
 if(minval(tg(:,:,:,future)) < valid_range_t(1) .or. maxval(tg(:,:,:,future)) > valid_range_t(2)) then
+!mj !s This doesn't affect the normal running of the code in any way. It simply allows identification of the point where temp violation has occured.
+   if(minval(tg(:,:,:,future)) < valid_range_t(1))then
+      extrtmp = minval(tg(:,:,:,future))
+   else
+      extrtmp = maxval(tg(:,:,:,future))
+   endif
+   do k1=1,size(tg,3)
+      do j1=1,size(tg,2)
+         do i1=1,size(tg,1)
+            if(tg(i1,j1,k1,future) .eq. extrtmp)then
+               ii=i1
+               jj=j1
+               kk=k1
+               exit
+            endif
+         enddo
+      enddo
+   enddo
+   write(*,'(a,i3,a,3i3,2f10.3)')'PE, location, Textr(curr,future): ',mpp_pe()&
+        &,': ',ii,jj,kk&
+        &,tg(ii,jj,kk,current)&
+        &,tg(ii,jj,kk,future)
+   write(*,'(a,i3,a,3i3,2f10.3)')'PE, location, Uextr(curr,future): ',mpp_pe()&
+        &,': ',ii,jj,kk&
+        &,ug(ii,jj,kk,current)&
+        &,ug(ii,jj,kk,future)
+!jm
   call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
 endif
 
 call update_tracers(tracer_attributes, dt_tracers_tmp, wg, p_half, delta_t)
 
-call compute_corrections(delta_t, tracer_attributes)
+!mj add a vertical limit to water correction 
+!call compute_corrections(delta_t, tracer_attributes)
+call compute_corrections(delta_t, tracer_attributes, p_full)
 
 previous = current
 current  = future
@@ -1106,13 +1140,18 @@ end subroutine compute_pressure_gradient
 
 !===================================================================================
 
-subroutine compute_corrections(delta_t, tracer_attributes)
+subroutine compute_corrections(delta_t, tracer_attributes, p_full)
 
 real,              intent(in   )               :: delta_t
 type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
+real,              intent(in   ), dimension(:,:,:) :: p_full !mj
 
 real :: mass_correction_factor, temperature_correction, water_correction_factor
 real :: mean_surf_press_tmp,    mean_energy_tmp,        mean_water_tmp
+!mj selective water correction
+real :: corr_water_tmp, not_corr_water_tmp
+integer,dimension(size(grid_tracers,1),size(grid_tracers,2),size(grid_tracers,3)) :: water_mask, water_mask_not_corr
+integer :: iw,jw,kw
 
 if(do_mass_correction) then
   mean_surf_press_tmp = area_weighted_global_mean(psg(:,:,future))
@@ -1138,15 +1177,56 @@ if(do_water_correction) then
     call error_mesg('compute_corrections','do_water_correction must be .false. in a dry model (default is .true.)', FATAL)
   else
     mean_water_tmp  = mass_weighted_global_integral(grid_tracers(:,:,:,future,nhum), psg(:,:,future))
+
+!s Adding mj's water correction limit code from MiMA
+!mj add water correction upper limit
+    water_mask = 0
+    where ( p_full >= water_correction_limit )
+       water_mask = 1
+    endwhere
+    corr_water_tmp    = mass_weighted_global_integral(grid_tracers(:,:,:,future,nhum)*water_mask, psg(:,:,future))
+    water_mask_not_corr = 0
+    where ( p_full < water_correction_limit )
+       water_mask_not_corr = 1
+    endwhere
+    not_corr_water_tmp= mass_weighted_global_integral(grid_tracers(:,:,:,future,nhum)*water_mask_not_corr, psg(:,:,future))
+!s end of first part of mj extra code.
+
     if(mean_water_tmp > 0.) then
       water_correction_factor = mean_water_previous/mean_water_tmp
-      grid_tracers(:,:,:,future,nhum) = water_correction_factor*grid_tracers(:,:,:,future,nhum)
+
+!s Begin second part of mj's extra code.
+!mj add water correction upper limit
+      water_correction_factor = water_correction_factor*(1.+not_corr_water_tmp/corr_water_tmp) - not_corr_water_tmp/corr_water_tmp
+       where ( p_full >= water_correction_limit )
+           grid_tracers(:,:,:,future,nhum) = water_correction_factor*grid_tracers(:,:,:,future,nhum)
+       endwhere
+!s End second part of mj's extra code.
+
       if(tracer_attributes(nhum)%numerical_representation == 'spectral') then
+       where ( p_full > water_correction_limit ) !s mj's modification here was adding the where statement around the correction to spec_tracers.
         spec_tracers(:,:,:,future,nhum) = water_correction_factor*spec_tracers(:,:,:,future,nhum)
+       endwhere !s the endwhere to mj's additional where.
       endif
     endif
   endif
 endif
+
+! !s Original FMS 2013 code
+! if(do_water_correction) then
+!  if(dry_model) then
+!    call error_mesg('compute_corrections','do_water_correction must be .false. in a dry model (default is .true.)', FATAL)
+!  else
+!    mean_water_tmp  = mass_weighted_global_integral(grid_tracers(:,:,:,future,nhum), psg(:,:,future))
+!    if(mean_water_tmp > 0.) then
+!      water_correction_factor = mean_water_previous/mean_water_tmp
+!      grid_tracers(:,:,:,future,nhum) = water_correction_factor*grid_tracers(:,:,:,future,nhum)
+!      if(tracer_attributes(nhum)%numerical_representation == 'spectral') then
+!        spec_tracers(:,:,:,future,nhum) = water_correction_factor*spec_tracers(:,:,:,future,nhum)
+!      endif
+!    endif
+!   endif
+! endif
 
 return
 end subroutine compute_corrections 
