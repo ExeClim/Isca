@@ -37,7 +37,7 @@ use  field_manager_mod, only: MODEL_ATMOS
 
 use tracer_manager_mod, only: get_tracer_names, get_number_tracers
 
-use      constants_mod, only: HLV, PI, RHO_CP, CP_AIR 
+use      constants_mod, only: HLV, PI, RHO_CP, CP_AIR
 
 use   diag_manager_mod, only: register_diag_field, send_data
 
@@ -61,7 +61,7 @@ private
 
 character(len=128) :: version= &
 '$Id: mixed_layer.F90,v 1.1.2.1 2013/01/24 20:35:37 pjp Exp $'
-      
+
 character(len=128) :: tagname= &
 '$Name:  $'
 character(len=128), parameter :: mod_name='mixed_layer'
@@ -82,17 +82,24 @@ logical :: prescribe_initial_dist = .false.
 real    :: albedo_value    = 0.06
 
 !s Surface heat capacity options
-real    :: depth = 40.0,      &          !s 2013 implementation
-           land_capacity   = -1.,      & !mj
-           trop_capacity   = -1.,      & !mj
-           trop_cap_limit  = 15.,      & !mj
-           heat_cap_limit  = 60.,      & !mj
+real    :: depth           = 40.0,         & !s 2013 implementation
+           land_depth      = -1.,          & !mj 2013
+           trop_depth      = -1.,          & !mj 2013
+           trop_cap_limit  = 15.,          & !mj
+           heat_cap_limit  = 60.,          & !mj
+           np_cap_factor   =  1.,          & !mj
+           albedo_exp      = 2.,           & !mj
+           albedo_cntr     = 45.,          & !mj
+           albedo_wdth     = 10.,          & !mj
+           higher_albedo   = albedo_value, & !mj
+           lat_glacier     = 60.,          & !mj
            land_h_capacity_prefactor = 1.0 !s where(land) heat_capcity = land_h_capacity_prefactor * depth * rho_cp
 
 !s Surface albedo options
-real    :: land_albedo_prefactor = 1.0 !s where(land) albedo = land_albedo_prefactor * albedo_value
+real    :: land__prefactor = 1.0 !s where(land) albedo = land_albedo_prefactor * albedo_value
 
 !s Begin mj extra options
+integer :: albedo_choice    = 1 ! 1->constant or following 'where(land)', 2->NH or SH step, 3->N-S symmetric step, 4->profile with albedo_exp, 5->tanh with albedo_cntr,albedo_wdth
 logical :: do_qflux         = .false. !mj
 logical :: do_warmpool      = .false. !mj
 logical :: do_read_sst      = .false. !mj
@@ -102,17 +109,18 @@ character(len=256) :: land_option = 'none'
 real,dimension(10) :: slandlon=0,slandlat=0,elandlon=-1,elandlat=-1
 !s End mj extra options
 
-namelist/mixed_layer_nml/ evaporation, qflux_amp, depth, qflux_width, load_qflux, tconst, delta_T, prescribe_initial_dist,albedo_value, &
-                              land_capacity,trop_capacity,       &  !mj
-                              trop_cap_limit, heat_cap_limit,    &  !mj
-			      do_qflux,do_warmpool,              &  !mj
-                              do_read_sst,do_sc_sst,sst_file,    &  !mj
-                              land_option,slandlon,slandlat,     &  !mj
-                              elandlon,elandlat,                 &  !mj
-                              land_h_capacity_prefactor,         &  !s 
-                              land_albedo_prefactor                 !s 
-
-!,albedo_exp          !mj
+namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
+                              delta_T, prescribe_initial_dist,albedo_value,  &
+                              land_depth,trop_depth,                         &  !mj
+                              trop_cap_limit, heat_cap_limit, np_cap_factor, &  !mj
+			                        do_qflux,do_warmpool,                          &  !mj
+                              albedo_choice,higher_albedo,albedo_exp,        &  !mj
+                              albedo_cntr,albedo_wdth,lat_glacier,           &  !mj
+                              do_read_sst,do_sc_sst,sst_file,                &  !mj
+                              land_option,slandlon,slandlat,                 &  !mj
+                              elandlon,elandlat,                             &  !mj
+                              land_h_capacity_prefactor,                     &  !s
+                              land_albedo_prefactor                             !s
 
 !=================================================================================================================================
 
@@ -125,13 +133,14 @@ integer, dimension(4) :: axes
 integer ::                                                                    &
      id_t_surf,            &   ! surface temperature
      id_flux_lhe,          &   ! latent heat flux at surface
-     id_flux_oceanq,       &   ! oceanic Q flux 
+     id_flux_oceanq,       &   ! oceanic Q flux
      id_flux_t,            &   ! sensible heat flux at surface
-     id_heat_cap
+     id_heat_cap,          &   ! heat capacity
+     id_albedo                 ! mj albedo
 
 real, allocatable, dimension(:,:)   ::                                        &
-     ocean_qflux,           &   ! Q-flux 
-     rad_lat_2d                 ! latitude in radians 
+     ocean_qflux,           &   ! Q-flux
+     rad_lat_2d                 ! latitude in radians
 
 real, allocatable, dimension(:)   :: deg_lat
 
@@ -139,7 +148,7 @@ real, allocatable, dimension(:,:)   ::                                        &
      gamma_t,               &   ! Used to calculate the implicit
      gamma_q,               &   ! correction to the diffusion in
      fn_t,                  &   ! the lowest layer
-     fn_q,                  &   ! 
+     fn_q,                  &   !
      en_t,                  &   !
      en_q,                  &   !
      alpha_t,               &   !
@@ -153,7 +162,7 @@ real, allocatable, dimension(:,:)   ::                                        &
      eff_heat_capacity,     &   ! Effective heat capacity
      delta_t_surf,          &   ! Increment in surface temperature
      zsurf,                 &   ! mj know about topography
-     land_sea_heat_capacity,&   
+     land_sea_heat_capacity,&
      sst_new                    ! mj input SST
 
 
@@ -172,7 +181,7 @@ type(time_type), intent(in)       :: Time
 real, intent(out), dimension(:,:) :: t_surf, albedo
 integer, intent(in), dimension(4) :: axes
 real, intent(in), dimension(:,:) :: rad_lonb_2d, rad_latb_2d
-integer, intent(in) :: is, ie, js, je, num_levels 
+integer, intent(in) :: is, ie, js, je, num_levels
 
 logical, intent(in), dimension(:,:) :: land
 
@@ -182,12 +191,9 @@ integer:: ierr, io, unit, num_tr, n
 character(32) :: tr_name
 
 ! mj shallower ocean in tropics, land-sea contrast
- real :: lon,lat
-!,pi
+ real :: lon,lat,loc_cap
  integer :: i,k
 
-
-!   pi = 4.*atan(1.)
 
 if(module_is_initialized) return
 
@@ -249,6 +255,8 @@ enddo
 
 !s Adding MiMA options
    if(do_sc_sst) do_read_sst = .true.
+   trop_capacity   = trop_depth*RHO_CP
+   land_capacity   = land_depth*RHO_CP
    if(trop_capacity .le. 0.) trop_capacity = depth*RHO_CP
    if(land_capacity .le. 0.) land_capacity = depth*RHO_CP
 !s End MiMA options
@@ -271,7 +279,7 @@ else if( do_read_sst ) then !s Added so that if we are reading sst values then w
 elseif (prescribe_initial_dist) then
 !  call error_mesg('mixed_layer','mixed_layer restart file not found - initializing from prescribed distribution', WARNING)
 
-    t_surf(:,:) = tconst - delta_T*((3.*sin(rad_lat_2d)**2.)-1.)/3. 
+    t_surf(:,:) = tconst - delta_T*((3.*sin(rad_lat_2d)**2.)-1.)/3.
 
 else
 
@@ -289,6 +297,8 @@ id_flux_oceanq = register_diag_field(mod_name, 'flux_oceanq',        &
                                  axes(1:2), Time, 'oceanic Q-flux','watts/m2')
 id_heat_cap = register_diag_field(mod_name, 'ml_heat_cap',        &
                                  axes(1:2), Time, 'mixed layer heat capacity','joules/m^2/deg C')
+id_albedo = register_diag_field ( mod_name, 'albedo',     &
+                                 axes(1:2), Time, 'surface albedo','none' )
 
 
 
@@ -297,7 +307,7 @@ rad_qwidth = qflux_width*PI/180.
 ocean_qflux = qflux_amp*(1-2.*rad_lat_2d**2/rad_qwidth**2) * &
         exp(- ((rad_lat_2d)**2/(rad_qwidth)**2))
 
-! load Q flux 
+! load Q flux
 if (load_qflux) then
   call read_data('INPUT/ocean_qflux.nc', 'ocean_qflux',  ocean_qflux)
 endif
@@ -306,7 +316,7 @@ endif
 
 if ( do_qflux .or. do_warmpool) then
    call qflux_init
-!mj q-flux as in Merlis et al (2013) [Part II] 
+!mj q-flux as in Merlis et al (2013) [Part II]
    if ( do_qflux ) call qflux(rad_latb_2d(is,:),ocean_qflux)
 !mj q-flux to create a tropical temperature perturbation
    if ( do_warmpool) call warmpool(rad_lonb_2d(:,js),rad_latb_2d(is,:),ocean_qflux)
@@ -315,9 +325,9 @@ endif
 !s End MiMA options for qfluxes
 
 
-inv_cp_air = 1.0 / CP_AIR 
+inv_cp_air = 1.0 / CP_AIR
 
-!s Prescribe albedo distribution here so that it will be the same in both two_stream_gray later and rrtmg radiation. 
+!s Prescribe albedo distribution here so that it will be the same in both two_stream_gray later and rrtmg radiation.
 
 albedo(:,:) = albedo_value
 
@@ -328,6 +338,51 @@ where(land) albedo = land_albedo_prefactor * albedo
 
 endif
 
+!mj MiMA albedo choices.
+select case (albedo_choice)
+  case (2) ! higher_albedo northward (lat_glacier>0) or southward (lat_glacier <0 ) of lat_glacier
+    do j = 1, size(Atm%t_bot,2)
+      lat = 0.5*(Atm%lat_bnd(j+1) + Atm%lat_bnd(j))*180/PI
+      ! mj SH or NH only
+      if ( lat_glacier .ge. 0. ) then
+         if ( lat > lat_glacier ) then
+            albedo(:,j) = higher_albedo
+         else
+            albedo(:,j) = const_albedo
+         endif
+      else
+         if ( lat < lat_glacier ) then
+            albedo(:,j) = higher_albed
+         else
+            albedo(:,j) = const_albedo
+         endif
+      endif
+    enddo
+  case (3) ! higher_albedo poleward of lat_glacier
+    do j = 1, size(Atm%t_bot,2)
+      lat = 0.5*(Atm%lat_bnd(j+1) + Atm%lat_bnd(j))*180/PI
+      if ( abs(lat) > lat_glacier ) then
+        albedo(:,j) = higher_albedo
+      else
+        albedo(:,j) = const_albedo
+      endif
+    enddo
+  case (4) ! exponential increase with albedo_exp
+     do j = 1, size(Atm%t_bot,2)
+        lat = 0.5*(Atm%lat_bnd(j+1) + Atm%lat_bnd(j))*180/PI
+        lat = abs(lat)
+        albedo(:,j) = const_albedo + (higher_albedo-const_albedo)*(lat/90.)**albedo_exp
+     enddo
+  case (5) ! tanh increase around albedo_cntr with albedo_wdth
+     do j = 1, size(Atm%t_bot,2)
+        lat = 0.5*(Atm%lat_bnd(j+1) + Atm%lat_bnd(j))*180/PI
+        lat = abs(lat)
+        albedo(:,j) = const_albedo + (higher_albedo-const_albedo)*&
+             0.5*(1+tanh((lat-albedo_cntr)/albedo_wdth))
+     enddo
+end select
+
+
 
 !mj read fixed SSTs
 if( do_read_sst ) then
@@ -337,14 +392,21 @@ endif
 !s begin surface heat capacity calculation
    if(.not.do_sc_sst) then
          land_sea_heat_capacity = depth*RHO_CP
-	if(trim(land_option) .eq. 'mjtrop') then
-         if ( trop_capacity .ne. depth*RHO_CP ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0. 
+	if(trim(land_option) .eq. 'mjtrop' .or. np_cap_factor .ne. 1.0 ) then
+         if ( trop_capacity .ne. depth*RHO_CP ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0.
             do j=1,size(t_surf,2)
-               lat = 0.5*180/pi*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j) )
+               lat = 0.5*180/PI*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j) )
+               if ( lat > 0. ) then
+                  loc_cap = depth*RHO_CP*np_cap_factor
+               else
+                  loc_cap = depth*RHO_CP
+               endif
                if ( abs(lat) < trop_cap_limit ) then
                   land_sea_heat_capacity(:,j) = trop_capacity
                elseif ( abs(lat) < heat_cap_limit ) then
-                  land_sea_heat_capacity(:,j) = trop_capacity*(1.-(abs(lat)-trop_cap_limit)/(heat_cap_limit-trop_cap_limit)) + (abs(lat)-trop_cap_limit)/(heat_cap_limit-trop_cap_limit)*depth*RHO_CP
+                  land_sea_heat_capacity(:,j) = trop_capacity*(1.-(abs(lat)-trop_cap_limit)/(heat_cap_limit-trop_cap_limit)) + (abs(lat)-trop_cap_limit)/(heat_cap_limit-trop_cap_limit)*loc_cap
+               elseif ( lat > heat_cap_limit ) then
+                  land_sea_heat_capacity(:,j) = loc_cap
                end if
             enddo
          endif
@@ -357,9 +419,9 @@ endif
 ! mj land heat capacity given through ?landlon, ?landlat
          if(trim(land_option) .eq. 'lonlat')then
             do j=1,size(t_surf,2)
-               lat = 0.5*180/pi*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j) )
+               lat = 0.5*180/PI*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j) )
                do i=1,size(t_surf,1)
-                  lon = 0.5*180/pi*( rad_lonb_2d(i+1,js) + rad_lonb_2d(i,js) )
+                  lon = 0.5*180/PI*( rad_lonb_2d(i+1,js) + rad_lonb_2d(i,js) )
                   do k=1,size(slandlat)
                      if ( lon >= slandlon(k) .and. lon <= elandlon(k) &
                           &.and. lat >= slandlat(k) .and. lat <= elandlat(k) )then
@@ -398,7 +460,7 @@ subroutine mixed_layer (                                               &
      dedq_surf,                                                        &
      drdt_surf,                                                        &
      dhdt_atm,                                                         &
-     dedq_atm)         
+     dedq_atm)
 
 ! ---- arguments -----------------------------------------------------------
 type(time_type), intent(in)       :: Time
@@ -420,19 +482,19 @@ endif
 
 ! Need to calculate the implicit changes to the lowest level delta_q and delta_t
 ! - see the discussion in vert_diff.tech.ps
-                                                                                                                                    
+
 ! Care is needed to differentiate between the sensible heat flux and the
 ! diffusive flux of temperature
-                                                                                                                                    
+
 gamma_t = 1.0 / (1.0 - Tri_surf%dtmass * (Tri_surf%dflux_t + dhdt_atm * inv_cp_air))
 gamma_q = 1.0 / (1.0 - Tri_surf%dtmass * (Tri_surf%dflux_tr(:,:,nhum) + dedq_atm))
-                                                                                                                                 
+
 fn_t = gamma_t * (Tri_surf%delta_t + Tri_surf%dtmass * flux_t * inv_cp_air)
 fn_q = gamma_q * (Tri_surf%delta_tr(:,:,nhum) + Tri_surf%dtmass * flux_q)
-                                                                                                                                 
+
 en_t = gamma_t * Tri_surf%dtmass * dhdt_surf * inv_cp_air
 en_q = gamma_q * Tri_surf%dtmass * dedt_surf
-                                                                                                                                    
+
 !
 ! Note flux_sw doesn't depend on surface or lowest layer values
 ! Note drdt_atm is not used - should be fixed
@@ -440,7 +502,7 @@ en_q = gamma_q * Tri_surf%dtmass * dedt_surf
 alpha_t = flux_t * inv_cp_air + dhdt_atm * inv_cp_air * fn_t
 alpha_q = flux_q + dedq_atm * fn_q
 alpha_lw = flux_r
-                                                                                                                                 
+
 beta_t = dhdt_surf * inv_cp_air + dhdt_atm * inv_cp_air * en_t
 beta_q = dedt_surf + dedq_atm * en_q
 beta_lw = drdt_surf
@@ -469,7 +531,7 @@ else   !s use the land_sea_heat_capacity calculated in mixed_layer_init
 	!
 	eff_heat_capacity = land_sea_heat_capacity + t_surf_dependence * dt !s need to investigate how this works
 
-	if (any(eff_heat_capacity .eq. 0.0))  then 
+	if (any(eff_heat_capacity .eq. 0.0))  then
 	  write(*,*) 'mixed_layer: error', eff_heat_capacity
 	  call error_mesg('mixed_layer', 'Avoiding division by zero',fatal)
 	end if
@@ -479,7 +541,7 @@ else   !s use the land_sea_heat_capacity calculated in mixed_layer_init
 	t_surf = t_surf + delta_t_surf
 
 endif !s end of if(do_sc_sst).
-                                                                                                                                    
+
 !
 ! Finally calculate the increments for the lowest atmospheric layer
 !
@@ -496,6 +558,7 @@ if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time)
 if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q, Time)
 if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time)
 if(id_heat_cap > 0)   used = send_data(id_heat_cap, land_sea_heat_capacity, Time)
+if(id_albedo > 0)   used = send_data(id_albedo, albedo, Time)
 
 end subroutine mixed_layer
 
