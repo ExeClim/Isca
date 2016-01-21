@@ -91,9 +91,10 @@ real    :: depth           = 40.0,         & !s 2013 implementation
            albedo_exp      = 2.,           & !mj
            albedo_cntr     = 45.,          & !mj
            albedo_wdth     = 10.,          & !mj
-           higher_albedo   = albedo_value, & !mj
+           higher_albedo   = 0.10,         & !mj
            lat_glacier     = 60.,          & !mj
-           land_h_capacity_prefactor = 1.0 !s where(land) heat_capcity = land_h_capacity_prefactor * depth * rho_cp
+           land_h_capacity_prefactor = 1.0 & !s where(land) heat_capcity = land_h_capacity_prefactor * depth * rho_cp
+           land_albedo_prefactor = 1.0
 
 !s Surface albedo options
 real    :: land__prefactor = 1.0 !s where(land) albedo = land_albedo_prefactor * albedo_value
