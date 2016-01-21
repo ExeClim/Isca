@@ -93,7 +93,7 @@ real    :: depth           = 40.0,         & !s 2013 implementation
            albedo_wdth     = 10.,          & !mj
            higher_albedo   = 0.10,         & !mj
            lat_glacier     = 60.,          & !mj
-           land_h_capacity_prefactor = 1.0 & !s where(land) heat_capcity = land_h_capacity_prefactor * depth * rho_cp
+           land_h_capacity_prefactor = 1.0,& !s where(land) heat_capcity = land_h_capacity_prefactor * depth * rho_cp
            land_albedo_prefactor = 1.0
 
 !s Surface albedo options
@@ -192,7 +192,7 @@ integer:: ierr, io, unit, num_tr, n
 character(32) :: tr_name
 
 ! mj shallower ocean in tropics, land-sea contrast
- real :: lon,lat,loc_cap
+ real :: trop_capacity,land_capacity,lon,lat,loc_cap
  integer :: i,k
 
 
@@ -298,8 +298,8 @@ id_flux_oceanq = register_diag_field(mod_name, 'flux_oceanq',        &
                                  axes(1:2), Time, 'oceanic Q-flux','watts/m2')
 id_heat_cap = register_diag_field(mod_name, 'ml_heat_cap',        &
                                  axes(1:2), Time, 'mixed layer heat capacity','joules/m^2/deg C')
-id_albedo = register_diag_field ( mod_name, 'albedo',     &
-                                 axes(1:2), Time, 'surface albedo','none' )
+id_albedo = register_static_field(mod_name, 'albedo',    &
+                                 axes(1:2), 'surface albedo', 'none')
 
 
 
@@ -342,46 +342,48 @@ endif
 !mj MiMA albedo choices.
 select case (albedo_choice)
   case (2) ! higher_albedo northward (lat_glacier>0) or southward (lat_glacier <0 ) of lat_glacier
-    do j = 1, size(Atm%t_bot,2)
-      lat = 0.5*(Atm%lat_bnd(j+1) + Atm%lat_bnd(j))*180/PI
+    do j = 1, size(t_surf,2)
+      lat = 0.5*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
       ! mj SH or NH only
       if ( lat_glacier .ge. 0. ) then
          if ( lat > lat_glacier ) then
             albedo(:,j) = higher_albedo
          else
-            albedo(:,j) = const_albedo
+            albedo(:,j) = albedo_value
          endif
       else
          if ( lat < lat_glacier ) then
-            albedo(:,j) = higher_albed
+            albedo(:,j) = higher_albedo
          else
-            albedo(:,j) = const_albedo
+            albedo(:,j) = albedo_value
          endif
       endif
     enddo
   case (3) ! higher_albedo poleward of lat_glacier
-    do j = 1, size(Atm%t_bot,2)
-      lat = 0.5*(Atm%lat_bnd(j+1) + Atm%lat_bnd(j))*180/PI
+    do j = 1, size(t_surf,2)
+      lat = 0.5*(rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
       if ( abs(lat) > lat_glacier ) then
         albedo(:,j) = higher_albedo
       else
-        albedo(:,j) = const_albedo
+        albedo(:,j) = albedo_value
       endif
     enddo
   case (4) ! exponential increase with albedo_exp
-     do j = 1, size(Atm%t_bot,2)
-        lat = 0.5*(Atm%lat_bnd(j+1) + Atm%lat_bnd(j))*180/PI
+     do j = 1, size(t_surf,2)
+        lat = 0.5*(rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
         lat = abs(lat)
-        albedo(:,j) = const_albedo + (higher_albedo-const_albedo)*(lat/90.)**albedo_exp
+        albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*(lat/90.)**albedo_exp
      enddo
   case (5) ! tanh increase around albedo_cntr with albedo_wdth
-     do j = 1, size(Atm%t_bot,2)
-        lat = 0.5*(Atm%lat_bnd(j+1) + Atm%lat_bnd(j))*180/PI
+     do j = 1, size(t_surf,2)
+        lat = 0.5*(rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
         lat = abs(lat)
-        albedo(:,j) = const_albedo + (higher_albedo-const_albedo)*&
+        albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
              0.5*(1+tanh((lat-albedo_cntr)/albedo_wdth))
      enddo
 end select
+
+if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
 
 
 
@@ -559,7 +561,6 @@ if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time)
 if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q, Time)
 if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time)
 if(id_heat_cap > 0)   used = send_data(id_heat_cap, land_sea_heat_capacity, Time)
-if(id_albedo > 0)   used = send_data(id_albedo, albedo, Time)
 
 end subroutine mixed_layer
 
