@@ -39,7 +39,7 @@ use tracer_manager_mod, only: get_tracer_names, get_number_tracers
 
 use      constants_mod, only: HLV, PI, RHO_CP, CP_AIR
 
-use   diag_manager_mod, only: register_diag_field, send_data
+use   diag_manager_mod, only: register_diag_field, register_static_field, send_data
 
 use   time_manager_mod, only: time_type
 
