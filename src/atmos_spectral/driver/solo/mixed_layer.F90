@@ -332,7 +332,6 @@ inv_cp_air = 1.0 / CP_AIR
 
 albedo(:,:) = albedo_value
 
-!s TODO: Add more options here from MiMA to prescribe different distributions of albedo.
 if(trim(land_option) .eq. 'input') then
 
 where(land) albedo = land_albedo_prefactor * albedo
