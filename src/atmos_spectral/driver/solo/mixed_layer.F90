@@ -296,8 +296,8 @@ id_flux_lhe = register_diag_field(mod_name, 'flux_lhe',        &
                                  axes(1:2), Time, 'latent heat flux up at surface','watts/m2')
 id_flux_oceanq = register_diag_field(mod_name, 'flux_oceanq',        &
                                  axes(1:2), Time, 'oceanic Q-flux','watts/m2')
-id_heat_cap = register_diag_field(mod_name, 'ml_heat_cap',        &
-                                 axes(1:2), Time, 'mixed layer heat capacity','joules/m^2/deg C')
+id_heat_cap = register_static_field(mod_name, 'ml_heat_cap',        &
+                                 axes(1:2), 'mixed layer heat capacity','joules/m^2/deg C')
 id_albedo = register_static_field(mod_name, 'albedo',    &
                                  axes(1:2), 'surface albedo', 'none')
 
@@ -438,6 +438,7 @@ endif
 	endif
     endif !end of if(.not.do_sc_sst)
 
+if ( id_heat_cap > 0 ) used = send_data ( id_heat_cap, land_sea_heat_capacity )
 !s end surface heat capacity calculation
 
 module_is_initialized = .true.
@@ -559,7 +560,6 @@ if(id_t_surf > 0) used = send_data(id_t_surf, t_surf, Time)
 if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time)
 if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q, Time)
 if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time)
-if(id_heat_cap > 0)   used = send_data(id_heat_cap, land_sea_heat_capacity, Time)
 
 end subroutine mixed_layer
 
