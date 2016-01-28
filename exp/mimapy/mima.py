@@ -24,6 +24,13 @@ def clean_log_info(s):
     if s.strip():
        log.info(s.strip())
 
+def clean_log_error(s):
+    if s.strip():
+       log.error(s.strip())
+
+def clean_log_debug(s):
+    if s.strip():
+       log.debug(s.strip())
 
 try:
     GFDL_BASE = os.environ['GFDL_BASE']
@@ -93,14 +100,20 @@ class Experiment(object):
         self.path_names.insert(0, new_pathname)
 
     def clear_workdir(self):
-        sh.rm(['-r', self.workdir])
+        try:
+            sh.rm(['-r', self.workdir])
+        except sh.ErrorReturnCode_1:
+            log.warning('Tried to remove working directory but it doesnt exist')
         mkdir(self.workdir)
-        log.debug('emptied working directory %r' % self.workdir)
+        log.info('Emptied working directory %r' % self.workdir)
 
     def clear_rundir(self):
-        sh.rm(['-r', self.rundir])
+        try:
+            sh.rm(['-r', self.rundir])
+        except sh.ErrorReturnCode_1:
+            log.warning('Tried to remove run directory but it doesnt exist')
         mkdir(self.rundir)
-        log.debug('emptied run directory %r' % self.rundir)
+        log.info('Emptied run directory %r' % self.rundir)
 
     def _get_default_path_names(self):
         with open(self.path_names_file) as pn:
@@ -118,7 +131,7 @@ class Experiment(object):
             sh.cd(self.srcdir)
             sh.git.status()
         except Exception as e:
-            log.debug('Repository not found at %r. Cloning.' % self.srcdir)
+            log.info('Repository not found at %r. Cloning.' % self.srcdir)
             log.debug(e.message)
             try:
                 sh.git.clone(self.repo, self.srcdir)
@@ -126,7 +139,7 @@ class Experiment(object):
                 log.error('Unable to clone repository %r' % self.repo)
                 raise e
         try:
-            log.debug('Checking out commit %r' % c)
+            log.info('Checking out commit %r' % c)
             sh.cd(self.srcdir)
             sh.git.checkout(c)
         except Exception as e:
@@ -137,20 +150,20 @@ class Experiment(object):
         return P(self.restartdir, 'res_%d.cpio' % (month))
 
     def write_path_names(self, outdir):
-        log.debug('Writing path_names to %r' % P(outdir, 'path_names'))
+        log.info('Writing path_names to %r' % P(outdir, 'path_names'))
         with open(P(outdir, 'path_names'), 'w') as pn:
             pn.writelines('\n'.join(self.path_names))
 
     def write_namelist(self, outdir):
-        log.debug('Writing namelist to %r' % P(outdir, 'input.nml'))
+        log.info('Writing namelist to %r' % P(outdir, 'input.nml'))
         self.namelist.write(P(outdir, 'input.nml'))
 
     def write_diag_table(self, outdir):
-        log.debug('Writing diag_table to %r' % P(outdir, 'diag_table'))
+        log.info('Writing diag_table to %r' % P(outdir, 'diag_table'))
         sh.cp(self.diag_table_file, P(outdir, 'diag_table'))
 
     def write_field_table(self, outdir):
-        log.debug('Writing field_table to %r' % P(outdir, 'field_table'))
+        log.info('Writing field_table to %r' % P(outdir, 'field_table'))
         sh.cp(self.field_table_file, P(outdir, 'field_table'))
 
     def write_details_file(self, outdir):
@@ -179,9 +192,12 @@ class Experiment(object):
         self.write_path_names(self.workdir)
 
         self.templates.get_template('compile.sh').stream(**vars).dump(P(self.workdir, 'compile.sh'))
-        log.debug('Running compiler')
-
-        sh.bash(P(self.workdir, 'compile.sh'), _out=clean_log_info)
+        log.info('Running compiler')
+        try:
+            sh.bash(P(self.workdir, 'compile.sh'), _out=clean_log_debug, _err=clean_log_debug)
+        except Exception as e:
+            log.critical('Compilation failed.')
+            raise e
         log.debug('Compilation complete.')
 
 
@@ -191,7 +207,7 @@ class Experiment(object):
 
         if os.path.isdir(outdir):
             if self.overwrite_data or overwrite_data:
-                log.debug('Data for month %d already exists and overwrite_data is True. Overwriting.' % month)
+                log.warning('Data for month %d already exists and overwrite_data is True. Overwriting.' % month)
                 sh.rm('-r', outdir)
             else:
                 log.error('Data for month %d already exists but overwrite_data is False. Stopping.' % month)
@@ -217,9 +233,9 @@ class Experiment(object):
                 log.error('Restart file not found, expecting file %r' % restart_file)
                 exit(2)
             else:
-                log.debug('Using restart file %r' % restart_file)
+                log.info('Using restart file %r' % restart_file)
         else:
-            log.debug('Running month %r without restart file' % month)
+            log.info('Running month %r without restart file' % month)
             restart_file = None
 
         vars = {
@@ -236,9 +252,13 @@ class Experiment(object):
         # employ the template to create a runscript
         t = runmonth.stream(**vars).dump(P(self.rundir, 'runmonth.sh'))
 
-        log.debug("Running GFDL for month %r" % month)
-        sh.bash(P(self.rundir, 'runmonth.sh'), _out=clean_log_info)
-        log.debug("Run for month %r complete" % month)
+        log.info("Running GFDL for month %r" % month)
+        try:
+            sh.bash(P(self.rundir, 'runmonth.sh'), _out=clean_log_debug, _err=clean_log_debug)
+            log.info("Run for month %r complete" % month)
+        except Exception as e:
+            log.error("Run failed for month %r" % month)
+            raise e
 
         mkdir(outdir)
 
@@ -248,9 +268,10 @@ class Experiment(object):
         sh.cd(P(self.rundir, 'RESTART'))
         state_files = sh.glob('*.res*')
         sh.cpio('-ov', _in='\n'.join(state_files), _out=restart_file)
-        log.debug("Saved restart file %r" % restart_file)
+        log.info("Saved restart file %r" % restart_file)
         sh.rm('-r', P(self.rundir, 'RESTART'))
 
         sh.cp(['-a', self.rundir+'/.', outdir])
         self.clear_rundir()
+        sh.cd(self.rundir)
         return True
