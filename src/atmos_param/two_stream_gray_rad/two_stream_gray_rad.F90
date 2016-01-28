@@ -27,13 +27,15 @@ module two_stream_gray_rad_mod
    use fms_mod,               only: open_file, check_nml_error, &
                                     mpp_pe, close_file, error_mesg, NOTE
 
-   use constants_mod,         only: stefan, cp_air, grav, pstd_mks
+   use constants_mod,         only: stefan, cp_air, grav, pstd_mks, seconds_per_sol, orbital_period
 
    use    diag_manager_mod,   only: register_diag_field, send_data
 
    use    time_manager_mod,   only: time_type, &
-                                    operator(+), operator(-), operator(/=)
-   use rrtm_astro,            only: compute_zenith, astro_init, solday
+                                    operator(+), operator(-), operator(/=), get_time
+   ! use rrtm_astro,            only: compute_zenith, astro_init, solday
+
+   use astronomy_mod,         only: astronomy_init, diurnal_solar
 
 !==================================================================================
 implicit none
@@ -72,7 +74,7 @@ real, allocatable, dimension(:,:)   :: b_surf
 real, allocatable, dimension(:,:,:) :: b, tdt_rad, tdt_solar
 real, allocatable, dimension(:,:,:) :: lw_up, lw_down, lw_flux, sw_up, sw_down, sw_flux, rad_flux
 real, allocatable, dimension(:,:,:) :: lw_tau, sw_tau, lw_dtrans
-real, allocatable, dimension(:,:)   :: olr, net_lw_surf, toa_sw_in, coszen
+real, allocatable, dimension(:,:)   :: olr, net_lw_surf, toa_sw_in, coszen, fracsun
 
 real, save :: pi, deg_to_rad , rad_to_deg
 
@@ -85,7 +87,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 !-------------------- diagnostics fields -------------------------------
 
 integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
-           id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen
+           id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun
 
 character(len=10), parameter :: mod_name = 'two_stream'
 
@@ -130,11 +132,12 @@ pi         = 4. * atan(1.)
 deg_to_rad = pi/180.
 rad_to_deg = 180./pi
 
-call astro_init
+!call astro_init
+call astronomy_init
 
-if(solday .gt. 0)then
-   call error_mesg( tag, ' running perpetual simulation', NOTE)
-endif
+! if(solday .gt. 0)then
+!    call error_mesg( tag, ' running perpetual simulation', NOTE)
+! endif
 
 
 
@@ -166,6 +169,7 @@ allocate (insolation       (ie-is+1, je-js+1))
 !allocate (albedo           (ie-is+1, je-js+1)) !s albedo now set in mixed_layer_init
 allocate (p2               (ie-is+1, je-js+1))
 allocate (coszen           (ie-is+1, je-js+1))
+allocate (fracsun          (ie-is+1, je-js+1)) !jp from astronomy.f90 : fraction of sun on surface
 
 
 !-----------------------------------------------------------------------
@@ -225,6 +229,10 @@ allocate (coszen           (ie-is+1, je-js+1))
                register_diag_field ( mod_name, 'coszen', axes(1:2), Time, &
                  'cosine of zenith angle', &
                  'none', missing_value=missing_value      )
+    id_fracsun  = &
+               register_diag_field ( mod_name, 'fracsun', axes(1:2), Time, &
+                 'daylight fraction of time interval', &
+                 'none', missing_value=missing_value      )
 return
 end subroutine two_stream_gray_rad_init
 
@@ -233,8 +241,8 @@ end subroutine two_stream_gray_rad_init
 subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, lon, p_half, t,         &
                            net_surf_sw_down, surf_lw_down, albedo)
 
-  use rrtm_astro, only:      compute_zenith,use_dyofyr,solr_cnst,&
-                             solrad,solday,equinox_day
+  ! use rrtm_astro, only:      compute_zenith,use_dyofyr,solr_cnst,&
+  !                            solrad,solday,equinox_day
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
@@ -248,6 +256,8 @@ real, intent(in), dimension(:,:,:)  :: t, p_half
 
 integer :: i, j, k, n, dyofyr
 
+integer :: seconds
+real :: frac_of_day, frac_of_year, gmt, time_since_ae, rrsun
 logical :: used
 
 n = size(t,3)
@@ -259,9 +269,16 @@ if (do_seasonal) then
     ! else
     !    call compute_zenith(Time_loc,equinox_day,0     ,lat,lon,coszen,dyofyr)
     ! end if
-    !JP first version, don't do time averaging for now
-    call compute_zenith(Time_diag,equinox_day,0     ,lat,lon,coszen,dyofyr)
-    where(coszen < 1.e-2)coszen=0.
+    ! JP first version, don't do time averaging for now
+    ! call compute_zenith(Time_diag,equinox_day,0     ,lat,lon,coszen,dyofyr)
+    ! where(coszen < 1.e-2)coszen=0.
+    ! insolation = solar_constant * coszen
+    call get_time(Time_diag, seconds)
+    frac_of_day = seconds / seconds_per_sol
+    frac_of_year = seconds / orbital_period
+    gmt = mod(frac_of_day, 1.0) * 2.0 * pi
+    time_since_ae = mod(frac_of_year, 1.0) * 2.0 * pi
+    call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
     insolation = solar_constant * coszen
 else
   p2          = (1. - 3.*sin(lat)**2)/4.

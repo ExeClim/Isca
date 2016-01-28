@@ -38,7 +38,7 @@ use   atmosphere_mod, only: atmosphere_init, atmosphere_end, atmosphere, atmosph
 use time_manager_mod, only: time_type, set_time, get_time,  &
                             operator(+), operator (<), operator (>), &
                             operator (/=), operator (/), operator (*),&
-			    THIRTY_DAY_MONTHS, JULIAN,                &
+			    THIRTY_DAY_MONTHS, JULIAN,  EXOPLANET,              &
                             NOLEAP, NO_CALENDAR, set_calendar_type, &
 			    set_date, get_date
 
@@ -210,6 +210,8 @@ contains
             calendar_type = THIRTY_DAY_MONTHS
         case( 'NO_CALENDAR' )
             calendar_type = NO_CALENDAR
+        case('EXOPLANET')
+            calendar_type = EXOPLANET
         case default
             call error_mesg( 'program atmos_model', 'main_nml entry calendar must be one of JULIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.', FATAL )
         end select

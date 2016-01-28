@@ -15,8 +15,8 @@
  "atmosphere",      "convection_rain",     "convection_rain",    "1x5days",     "all", .true., "none", 2,
  "dynamics",  	    "slp",                 "slp",                "1x5days",     "all", .true., "none", 2,
  "dynamics",        "temp",                "temp",               "1x5days",     "all", .true., "none", 2,
- "rrtm_radiation",  "tdt_rad",             "tdt_rad",            "1x5days",     "all", .true., "none", 2,
- "rrtm_radiation",  "z_thalf",             "z_thalf",            "1x5days",     "all", .true., "none", 2,
+ #"rrtm_radiation",  "tdt_rad",             "tdt_rad",            "1x5days",     "all", .true., "none", 2,
+ #"rrtm_radiation",  "z_thalf",             "z_thalf",            "1x5days",     "all", .true., "none", 2,
  "dynamics",        "ucomp",               "ucomp",              "1x5days",     "all", .true., "none", 2,
  "dynamics",        "ps",                  "ps",                 "atmos_12hourly",       "all", .true., "none", 2,
  "dynamics",        "bk",                  "bk",                 "atmos_12hourly",       "all", .false., "none", 2,
@@ -42,11 +42,12 @@
  "damping",         "vdt_rdamp",           "vdt_rdamp",          "atmos_12hourly",       "all", .true., "none", 2,
  "damping",         "tdt_diss_rdamp",      "tdt_diss_rdamp",     "atmos_12hourly",       "all", .true., "none", 2,
  "vert_turb",       "z_pbl",               "z_pbl",              "atmos_12hourly",       "all", .true., "none", 2,
- "two_stream",       "olr",                "olr",              "atmos_12hourly",       "all", .true., "none", 2,
- "two_stream",       "tdt_rad",            "tdt_rad",              "atmos_12hourly",       "all", .true., "none", 2,
- "two_stream",       "flux_sw",           "flux_sw",              "atmos_12hourly",       "all", .true., "none", 2,
- "two_stream",       "flux_lw",           "flux_lw",              "atmos_12hourly",       "all", .true., "none", 2,
-#"two_stream",       "coszen",             "coszen",              "atmos_hourly",       "all", .true., "none", 2,
+ "two_stream",       "olr",                "olr",              "atmos_hourly",       "all", .true., "none", 2,
+ "two_stream",       "tdt_rad",            "tdt_rad",              "atmos_hourly",       "all", .true., "none", 2,
+ "two_stream",       "flux_sw",           "flux_sw",              "atmos_hourly",       "all", .true., "none", 2,
+ "two_stream",       "flux_lw",           "flux_lw",              "atmos_hourly",       "all", .true., "none", 2,
+"two_stream",       "coszen",             "coszen",              "atmos_hourly",       "all", .true., "none", 2,
+"two_stream",       "fracsun",             "fracsun",              "atmos_hourly",       "all", .true., "none", 2,
 
 
 #=============================================================================================

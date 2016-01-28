@@ -248,12 +248,25 @@ real, public, parameter :: EARTH_ORBITAL_PERIOD = 365.25*SECONDS_PER_DAY
 
 real, public :: RADIUS = 6376.0e3
 real, public :: GRAV   = EARTH_GRAV
-real, public :: OMEGA  = EARTH_OMEGA 				         ! planetary rotation rate in s^-1
+real, public :: OMEGA  = EARTH_OMEGA                         ! planetary rotation rate in s^-1
 real, public :: ORBITAL_PERIOD = EARTH_ORBITAL_PERIOD        ! orbital period (periapse -> periapse) in s
+real, public :: SECONDS_PER_SOL = SECONDS_PER_DAY
 
 
+real, public :: obliq       = 23.439              ! planetary obliquity [ degrees ]
+real, public :: ecc         = 0.01671             ! eccentricity of orbital ellipse [ nondim ]
+real, public :: vernal_eq   = 0.0                 ! angle of the vernal equinox in the orbit [ degrees ]
+real, public :: periapse    = 288.0               ! argument of periapsis [ degrees ]
+                                                  ! the angle around the orbit where the planet is closest
+                                                  ! to its star, relative to vernal eq
 
-namelist/constants_nml/ RADIUS, GRAV, OMEGA, ORBITAL_PERIOD
+real, public :: solar_const = 1368.22             ! solar constant [ W/m2 ]
+real, public :: orbit_radius=1.0                  ! distance Earth-Sun [ AU ]
+
+
+namelist/constants_nml/ radius, grav, omega, orbital_period, &
+                        obliq, ecc, vernal_eq, periapse, &
+                        solar_const, orbit_radius
 
 !-----------------------------------------------------------------------
 ! version and tagname published
@@ -270,6 +283,7 @@ contains
 
 subroutine constants_init
     integer :: ierr, io, unit
+    real :: orbit_rate
 
     if (constants_initialised) return
 
@@ -283,6 +297,14 @@ subroutine constants_init
     enddo
     10 call close_file (unit)
 
+
+    ! SECONDS_PER_SOL is the exoplanet equivalent of seconds_per_day.
+    ! It is the number of seconds between sucessive solar zeniths at longitude 0.
+    ! (The concept of seconds_per_day is kept as seconds per earth day
+    ! as this is too integral to the model calendar to change.)
+    ! For Earth parameters, SECONDS_PER_SOL == SECONDS_PER_DAY
+    orbit_rate = 2*pi / orbital_period
+    seconds_per_sol = 2*pi / (omega - orbit_rate)
 
     constants_initialised = .true.
 
