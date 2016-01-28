@@ -6,7 +6,9 @@ exp = mima.Experiment('playground', overwrite_data=True)
 exp.compile()
 
 
-#exp.namelist['constants_nml'] = {'omega': 6.5e-5}
+exp.namelist['constants_nml'] = {
+    'grav': 10.0
+}
 
 
 exp.clear_rundir()
