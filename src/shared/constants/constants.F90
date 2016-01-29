@@ -252,21 +252,11 @@ real, public :: OMEGA  = EARTH_OMEGA                         ! planetary rotatio
 real, public :: ORBITAL_PERIOD = EARTH_ORBITAL_PERIOD        ! orbital period (periapse -> periapse) in s
 real, public :: SECONDS_PER_SOL = SECONDS_PER_DAY
 
-
-real, public :: obliq       = 23.439              ! planetary obliquity [ degrees ]
-real, public :: ecc         = 0.01671             ! eccentricity of orbital ellipse [ nondim ]
-real, public :: vernal_eq   = 0.0                 ! angle of the vernal equinox in the orbit [ degrees ]
-real, public :: periapse    = 288.0               ! argument of periapsis [ degrees ]
-                                                  ! the angle around the orbit where the planet is closest
-                                                  ! to its star, relative to vernal eq
-
 real, public :: solar_const = 1368.22             ! solar constant [ W/m2 ]
 real, public :: orbit_radius=1.0                  ! distance Earth-Sun [ AU ]
 
 
-namelist/constants_nml/ radius, grav, omega, orbital_period, &
-                        obliq, ecc, vernal_eq, periapse, &
-                        solar_const, orbit_radius
+namelist/constants_nml/ radius, grav, omega, orbital_period
 
 !-----------------------------------------------------------------------
 ! version and tagname published

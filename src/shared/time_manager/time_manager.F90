@@ -1685,8 +1685,6 @@ end function get_ticks_per_second
    call get_date_julian_private   (time, year, month, day, hour, minute, second, tick1)
  case(NOLEAP)
    call get_date_no_leap_private  (time, year, month, day, hour, minute, second, tick1)
- case(EXOPLANET)
-   call get_date_exoplanet (time, year, month, day, hour, minute, second, tick1)
  case(NO_CALENDAR)
    err_msg_local = 'Cannot produce a date when the calendar type is NO_CALENDAR'
    if(error_handler('subroutine get_date', err_msg_local, err_msg)) return
@@ -1847,33 +1845,6 @@ end function get_ticks_per_second
  end subroutine get_date_thirty
 
 
- subroutine get_date_exoplanet(time, year, month, day, hour, minute, second, tick)
-
-! Exoplanets have 12 month calendar with day 1 falling on vernal equinox
-
- type(time_type), intent(in) :: time
- integer, intent(out) :: second, minute, hour, day, month, year
- integer, intent(out) :: tick
- integer :: t, dmonth, dyear
-
- t = time%days
- dyear = t / (30 * 12)
- year = dyear + 1
- t = t - dyear * (30 * 12)
- dmonth = t / 30
- month = 1 + dmonth
- day = t -dmonth * 30 + 1
-
- t = time%seconds
- hour = t / (60 * 60)
- t = t - hour * (60 * 60)
- minute = t / 60
- second = t - 60 * minute
- tick = time%ticks
-
- end subroutine get_date_exoplanet
-
-
 !------------------------------------------------------------------------
 
  subroutine get_date_no_leap_private(time, year, month, day, hour, minute, second, tick)
@@ -1998,8 +1969,6 @@ end function get_ticks_per_second
    set_date_private = set_date_julian_private   (year, month, day, hour, minute, second, tick, Time_out, err_msg)
  case(NOLEAP)
    set_date_private = set_date_no_leap_private  (year, month, day, hour, minute, second, tick, Time_out, err_msg)
- case(EXOPLANET)
-   set_date_private = set_date_exoplanet (year, month, day, hour, minute, second, tick, Time_out, err_msg)
  case (NO_CALENDAR)
    err_msg = 'Cannot produce a date when calendar type is NO_CALENDAR'
    set_date_private = .false.
@@ -2284,36 +2253,6 @@ end function get_ticks_per_second
  set_date_thirty = .true.
 
  end function set_date_thirty
-
- !------------------------------------------------------------------------
-
- function set_date_exoplanet(year, month, day, hour, minute, second, tick, Time_out, err_msg)
- logical :: set_date_exoplanet
-
-! Computes time corresponding to date for exoplanet day months.
-
- integer,          intent(in)  :: year, month, day, hour, minute, second, tick
- type(time_type),  intent(out) :: Time_out
- character(len=*), intent(out) :: err_msg
-
- if( .not.valid_increments(year,month,day,hour,minute,second,tick,err_msg) ) then
-   set_date_exoplanet = .false.
-   return
- endif
-
- if(day > 30) then
-   err_msg = 'Invalid date. Date='//convert_integer_date_to_char(year,month,day,hour,minute,second)
-   set_date_exoplanet = .false.
-   return
- endif
-
- Time_out%days    = (day - 1) + 30 * ((month - 1) + 12 * (year - 1))
- Time_out%seconds = second + 60 * (minute + 60 * hour)
- Time_out%ticks   = tick
- err_msg = ''
- set_date_exoplanet = .true.
-
- end function set_date_exoplanet
 
 !------------------------------------------------------------------------
 
@@ -2943,8 +2882,6 @@ case(JULIAN)
 case(NOLEAP)
    length_of_year = length_of_year_no_leap()
 case(NO_CALENDAR)
-   length_of_year = length_of_year_exoplanet()
-case(EXOPLANET)
    length_of_year = length_of_year_exoplanet()
 
 case default
