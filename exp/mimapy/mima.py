@@ -99,11 +99,14 @@ class Experiment(object):
         self.templates.get_template(filename).stream(values).dump(new_pathname)
         self.path_names.insert(0, new_pathname)
 
-    def clear_workdir(self):
+    def rm_workdir(self):
         try:
             sh.rm(['-r', self.workdir])
         except sh.ErrorReturnCode_1:
             log.warning('Tried to remove working directory but it doesnt exist')
+
+    def clear_workdir(self):
+        self.rm_workdir()
         mkdir(self.workdir)
         log.info('Emptied working directory %r' % self.workdir)
 
