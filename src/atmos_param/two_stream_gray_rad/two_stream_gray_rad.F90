@@ -276,8 +276,8 @@ if (do_seasonal) then
     call get_time(Time_diag, seconds)
     frac_of_day = seconds / seconds_per_sol
     frac_of_year = seconds / orbital_period
-    gmt = mod(frac_of_day, 1.0) * 2.0 * pi
-    time_since_ae = mod(frac_of_year, 1.0) * 2.0 * pi
+    gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
+    time_since_ae = abs(mod(frac_of_year, 1.0)) * 2.0 * pi
     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
     insolation = solar_constant * coszen
 else
