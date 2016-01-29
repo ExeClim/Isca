@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from contextlib import contextmanager
 import logging
 import os
 
@@ -81,6 +82,7 @@ class Experiment(object):
         self.templates = Environment(loader=FileSystemLoader(P(self.mimapy_dir, 'templates')))
 
         self.diag_table_file = P(self.mimapy_dir, 'diag_table')
+        self._diag_table = None
         self.field_table_file = P(self.mimapy_dir, 'field_table')
 
         self.path_names_file = P(self.mimapy_dir, 'path_names')
@@ -162,8 +164,16 @@ class Experiment(object):
         self.namelist.write(P(outdir, 'input.nml'))
 
     def write_diag_table(self, outdir):
-        log.info('Writing diag_table to %r' % P(outdir, 'diag_table'))
-        sh.cp(self.diag_table_file, P(outdir, 'diag_table'))
+        outfile = P(outdir, 'diag_table')
+        log.info('Writing diag_table to %r' % outfile)
+        if self._diag_table:
+            template = self.templates.get_template('diag_table')
+            calendar = not self.namelist['main_nml']['calendar'].lower().startswith('no_calendar')
+            vars = {'calendar': calendar, 'outputfiles': self._diag_table.files.values()}
+            print(vars)
+            template.stream(**vars).dump(outfile)
+        else:
+            sh.cp(self.diag_table_file, P(outdir, 'diag_table'))
 
     def write_field_table(self, outdir):
         log.info('Writing field_table to %r' % P(outdir, 'field_table'))
@@ -202,6 +212,10 @@ class Experiment(object):
             log.critical('Compilation failed.')
             raise e
         log.debug('Compilation complete.')
+
+    def use_diag_table(self, diag_table):
+        """Use a DiagTable object for the diagnostic output specification."""
+        self._diag_table = diag_table
 
 
     def runmonth(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False):
@@ -278,3 +292,30 @@ class Experiment(object):
         self.clear_rundir()
         sh.cd(self.rundir)
         return True
+
+class DiagTable(object):
+    def __init__(self):
+        super(DiagTable, self).__init__()
+        self.files = {}
+
+    def add_file(self, name, freq, units="hours", time_units=None):
+        if time_units is None:
+            time_units = units
+        self.files[name] = {
+            'name': name,
+            'freq': freq,
+            'units': units,
+            'time_units': time_units,
+            'fields': []
+        }
+
+    def add_field(self, module, name, time_avg=False, files=None):
+        if files is None:
+            files = self.files.keys()
+
+        for fname in files:
+            self.files[fname]['fields'].append({
+                'module': module,
+                'name': name,
+                'time_avg': time_avg
+                })

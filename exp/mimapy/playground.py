@@ -4,10 +4,24 @@ import mima
 
 exp = mima.Experiment('playground', overwrite_data=True)
 
+diag = mima.DiagTable()
 
-exp.diag_table_file = exp.diag_table_file+'.no_calendar'
-#exp.clear_workdir()
+diag.add_file('6hourly', 6*60*60, 'seconds', time_units='days')
+diag.add_field('dynamics', 'ucomp')
+diag.add_field('dynamics', 'vcomp')
+diag.add_field('dynamics', 'temp')
+diag.add_field('dynamics', 'vor')
+diag.add_field('dynamics', 'div')
+
+diag.add_field('two_stream', 'olr')
+diag.add_field('two_stream', 'flux_sw')
+diag.add_field('two_stream', 'flux_lw')
+
+exp.use_diag_table(diag)
+
 exp.compile()
+
+exp.clear_rundir()
 
 exp.namelist['main_nml'] = {
     'dt_atmos': 900,
@@ -20,26 +34,4 @@ exp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
 exp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = True
 exp.namelist['spectral_dynamics_nml']['num_levels'] = 25
 
-exp.clear_rundir()
-
-
-#omega = 7.2921150e-5
-orbital_period = 360*86400.0
-
-for ratio in [360.0, 180.0, 90.0, 45.0, 15.0, 1.0]:
-    exp1 = mima.Experiment('ratio_%d' % ratio)
-    omega  = 2*np.pi / orbital_period * ratio
-
-    exp1.diag_table_file = exp.diag_table_file
-    exp1.execdir = exp.execdir
-
-    exp1.namelist = exp.namelist.copy()
-
-    exp1.namelist['constants_nml'] = {
-        'omega': omega,
-        'orbital_period': orbital_period
-    }
-
-    exp1.runmonth(1, use_restart=False)
-    for i in range(2, 60):
-        exp1.runmonth(i)
+exp.runmonth(1, use_restart=False)
