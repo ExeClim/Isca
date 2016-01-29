@@ -170,7 +170,6 @@ class Experiment(object):
             template = self.templates.get_template('diag_table')
             calendar = not self.namelist['main_nml']['calendar'].lower().startswith('no_calendar')
             vars = {'calendar': calendar, 'outputfiles': self._diag_table.files.values()}
-            print(vars)
             template.stream(**vars).dump(outfile)
         else:
             sh.cp(self.diag_table_file, P(outdir, 'diag_table'))
