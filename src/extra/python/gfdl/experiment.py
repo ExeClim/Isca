@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import logging
 import os
+import re
 
 import f90nml
 from jinja2 import Environment, FileSystemLoader
@@ -40,7 +41,17 @@ except Exception, e:
     exit(0)
 
 
+try:
+    _screen_window = os.environ['WINDOW']
+    _using_screen = True
+except:
+    _using_screen = False
 
+
+def set_screen_title(title):
+    if _using_screen:
+        sh.screen('-p', _screen_window, '-X', 'title', title)
+        sh.screen('-X', 'redisplay')
 
 class Experiment(object):
     """A basic GFDL experiment"""
@@ -205,6 +216,7 @@ class Experiment(object):
         self.templates.get_template('compile.sh').stream(**vars).dump(P(self.workdir, 'compile.sh'))
         log.info('Running compiler')
         try:
+            set_screen_title('compiling')
             sh.bash(P(self.workdir, 'compile.sh'), _out=clean_log_debug, _err=clean_log_debug)
         except Exception as e:
             log.critical('Compilation failed.')
@@ -214,6 +226,20 @@ class Experiment(object):
     def use_diag_table(self, diag_table):
         """Use a DiagTable object for the diagnostic output specification."""
         self._diag_table = diag_table
+
+
+    _day_re = re.compile('Integration completed through\s+([0-9]+) days')
+    def _log_runmonth(self, outputstring):
+        s = outputstring.strip()
+        m = self._day_re.search(s)
+        try:
+            days = int(m.group(1))
+            set_screen_title('rm:%d:%d' % (self._cur_month, days))
+        except:
+            pass
+        return clean_log_debug(outputstring)
+
+
 
 
     def runmonth(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False):
@@ -268,8 +294,10 @@ class Experiment(object):
         t = runmonth.stream(**vars).dump(P(self.rundir, 'runmonth.sh'))
 
         log.info("Running GFDL for month %r" % month)
+        self._cur_month = month
         try:
-            sh.bash(P(self.rundir, 'runmonth.sh'), _out=clean_log_debug, _err=clean_log_debug)
+            set_screen_title('month:%d' % month)
+            sh.bash(P(self.rundir, 'runmonth.sh'), _out=self._log_runmonth, _err=self._log_runmonth)
             log.info("Run for month %r complete" % month)
         except Exception as e:
             log.error("Run failed for month %r" % month)

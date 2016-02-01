@@ -1,10 +1,10 @@
 import numpy as np
 
-import mima
+from gfdl.experiment import Experiment, DiagTable
 
-exp = mima.Experiment('playground', overwrite_data=True)
+exp = Experiment('playground', overwrite_data=True)
 
-diag = mima.DiagTable()
+diag = DiagTable()
 
 diag.add_file('6hourly', 6*60*60, 'seconds', time_units='days')
 diag.add_field('dynamics', 'ucomp')
@@ -25,7 +25,7 @@ exp.clear_rundir()
 
 exp.namelist['main_nml'] = {
     'dt_atmos': 900,
-    'seconds': 86400.0*30,     # approximately 1 earth month of integration
+    'seconds': 86400.0*5,
     'calendar': 'no_calendar'
 }
 
