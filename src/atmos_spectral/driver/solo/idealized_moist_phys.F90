@@ -89,6 +89,7 @@ logical :: do_simple = .false. !s Have added this to enable relative humidity to
 real :: roughness_heat = 0.05
 real :: roughness_moist = 0.05
 real :: roughness_mom = 0.05
+real :: land_roughness_prefactor = 1.0
 
 !s options for adding idealised land
 
@@ -100,8 +101,9 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, roughness_he
                                       two_stream_gray, do_rrtm_radiation, do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
-                                      land_option, land_file_name, land_field_name    !s options for idealised land
-
+                                      land_option, land_file_name, land_field_name,   & !s options for idealised land
+                                      land_roughness_prefactor
+                                      
 real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
      t_surf,               &   ! surface temperature
@@ -369,6 +371,21 @@ elseif(trim(land_option) .eq. 'zsurf')then
 	!s wherever zsurf is greater than some threshold height then make land = .true.
 	where ( z_surf > 10. ) land = .true.
 endif
+
+
+!s Add option to alter surface roughness length over land
+
+if(trim(land_option) .eq. 'input') then
+
+	where(land)  
+	rough_mom   = land_roughness_prefactor * rough_mom
+	rough_heat  = land_roughness_prefactor * rough_heat
+	rough_moist = land_roughness_prefactor * rough_moist
+	end where
+
+endif
+
+!s end option to alter surface roughness length over land
 
 
 !    initialize damping_driver_mod.
