@@ -17,4 +17,9 @@ setup(name='GFDL',
       author='James Penn',
       url='https://github.com/ExeClim/GFDLMoistModel',
       packages=['gfdl'],
+      install_requires=[
+        'sh',
+        'jinja2',
+        'f90nml'
+      ]
      )

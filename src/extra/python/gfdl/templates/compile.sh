@@ -4,7 +4,7 @@
 
 #-----------------------------------------------------------------------------------------------------
 hostname=`hostname`
-template={{ mimapy_dir }}/mkmf.template.ia64
+template={{ template_dir }}/mkmf.template.ia64
 mkmf={{ srcdir }}/bin/mkmf                             # path to executable mkmf
 sourcedir={{ srcdir }}/src                             # path to directory containing model source code
 pathnames={{ workdir }}/path_names                        # path to file containing list of source paths

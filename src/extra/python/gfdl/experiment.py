@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from contextlib import contextmanager
 import logging
 import os
@@ -9,12 +7,12 @@ from jinja2 import Environment, FileSystemLoader
 import sh
 
 P = os.path.join
+_module_directory = os.path.dirname(os.path.realpath(__file__))
+
 
 mkdir = sh.mkdir.bake('-p')
 
-
-
-log = logging.getLogger('mima')
+log = logging.getLogger('gfdl')
 log.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
@@ -42,8 +40,10 @@ except Exception, e:
     exit(0)
 
 
+
+
 class Experiment(object):
-    """A basic MiMA experiment"""
+    """A basic GFDL experiment"""
     def __init__(self, name, commit=None, repo=None, overwrite_data=False):
         super(Experiment, self).__init__()
         self.name = name
@@ -59,7 +59,6 @@ class Experiment(object):
         self.restartdir = P(self.workdir, 'restarts') # where restarts will be stored
         self.rundir = P(self.workdir, 'run')          # temporary area an individual run will be performed
         self.datadir = P(GFDL_DATA, self.name)        # where run data will be moved to upon completion
-
 
         if os.path.isdir(self.workdir):
             log.warning('Working directory for exp %r already exists' % self.name)
@@ -77,18 +76,18 @@ class Experiment(object):
         else:
             self.srcdir = GFDL_BASE
 
-        self.mimapy_dir = P(self.srcdir, 'exp', 'mimapy')
+        self.template_dir = P(_module_directory, 'templates')
 
-        self.templates = Environment(loader=FileSystemLoader(P(self.mimapy_dir, 'templates')))
+        self.templates = Environment(loader=FileSystemLoader(self.template_dir))
 
-        self.diag_table_file = P(self.mimapy_dir, 'diag_table')
+        self.diag_table_file = P(self.template_dir, 'diag_table.default')
         self._diag_table = None
-        self.field_table_file = P(self.mimapy_dir, 'field_table')
+        self.field_table_file = P(self.template_dir, 'field_table')
 
-        self.path_names_file = P(self.mimapy_dir, 'path_names')
+        self.path_names_file = P(self.template_dir, 'path_names')
         self.path_names = self._get_default_path_names()
 
-        self.namelist_files = [P(self.mimapy_dir, 'core.nml'), P(self.mimapy_dir, 'phys.nml')]
+        self.namelist_files = [P(self.template_dir, 'core.nml'), P(self.template_dir, 'phys.nml')]
         self.namelist = self.rebuild_namelist()
 
         self.inputfiles = []
@@ -196,7 +195,7 @@ class Experiment(object):
 
         vars = {
             'execdir': self.execdir,
-            'mimapy_dir': self.mimapy_dir,
+            'template_dir': self.template_dir,
             'srcdir': self.srcdir,
             'workdir': self.workdir
         }
