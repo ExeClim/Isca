@@ -238,7 +238,8 @@ allocate(eff_heat_capacity       (is:ie, js:je))
 allocate(corrected_flux          (is:ie, js:je))
 allocate(t_surf_dependence       (is:ie, js:je))
 !allocate (albedo                (ie-is+1, je-js+1))
-allocate(land_sea_heat_capacity  (is:ie, js:je))
+!allocate(land_sea_heat_capacity  (is:ie, js:je))
+allocate(land_sea_heat_capacity  (ie-is+1, je-js+1))
 allocate(zsurf                  (is:ie, js:je))
 allocate(sst_new                 (is:ie, js:je))
 !
@@ -296,8 +297,8 @@ id_flux_lhe = register_diag_field(mod_name, 'flux_lhe',        &
                                  axes(1:2), Time, 'latent heat flux up at surface','watts/m2')
 id_flux_oceanq = register_diag_field(mod_name, 'flux_oceanq',        &
                                  axes(1:2), Time, 'oceanic Q-flux','watts/m2')
-id_heat_cap = register_diag_field(mod_name, 'ml_heat_cap',        &
-                                 axes(1:2), Time, 'mixed layer heat capacity','joules/m^2/deg C')
+id_heat_cap = register_static_field(mod_name, 'ml_heat_cap',        &
+                                 axes(1:2), 'mixed layer heat capacity','joules/m^2/deg C')
 id_albedo = register_static_field(mod_name, 'albedo',    &
                                  axes(1:2), 'surface albedo', 'none')
 
@@ -332,7 +333,6 @@ inv_cp_air = 1.0 / CP_AIR
 
 albedo(:,:) = albedo_value
 
-!s TODO: Add more options here from MiMA to prescribe different distributions of albedo.
 if(trim(land_option) .eq. 'input') then
 
 where(land) albedo = land_albedo_prefactor * albedo
@@ -395,29 +395,28 @@ endif
 !s begin surface heat capacity calculation
    if(.not.do_sc_sst) then
          land_sea_heat_capacity = depth*RHO_CP
-	if(trim(land_option) .eq. 'mjtrop' .or. np_cap_factor .ne. 1.0 ) then
-         if ( trop_capacity .ne. depth*RHO_CP ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0.
+	if(trim(land_option) .ne. 'input') then
+         if ( trop_capacity .ne. depth*RHO_CP .or. np_cap_factor .ne. 1. ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0.
             do j=1,size(t_surf,2)
                lat = 0.5*180/PI*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j) )
-               if ( lat > 0. ) then
+               if ( lat .gt. 0. ) then
                   loc_cap = depth*RHO_CP*np_cap_factor
                else
                   loc_cap = depth*RHO_CP
                endif
-               if ( abs(lat) < trop_cap_limit ) then
+               if ( abs(lat) .lt. trop_cap_limit ) then
                   land_sea_heat_capacity(:,j) = trop_capacity
-               elseif ( abs(lat) < heat_cap_limit ) then
+               elseif ( abs(lat) .lt. heat_cap_limit ) then
                   land_sea_heat_capacity(:,j) = trop_capacity*(1.-(abs(lat)-trop_cap_limit)/(heat_cap_limit-trop_cap_limit)) + (abs(lat)-trop_cap_limit)/(heat_cap_limit-trop_cap_limit)*loc_cap
-               elseif ( lat > heat_cap_limit ) then
+               elseif ( lat .gt. heat_cap_limit ) then
                   land_sea_heat_capacity(:,j) = loc_cap
                end if
             enddo
          endif
-	endif
 ! mj land heat capacity function of surface topography
          if(trim(land_option) .eq. 'zsurf')then
             call get_surf_geopotential(zsurf)
-            where ( zsurf > 10. ) land_sea_heat_capacity = land_capacity
+            where ( zsurf .gt. 10. ) land_sea_heat_capacity = land_capacity
          endif
 ! mj land heat capacity given through ?landlon, ?landlat
          if(trim(land_option) .eq. 'lonlat')then
@@ -426,19 +425,20 @@ endif
                do i=1,size(t_surf,1)
                   lon = 0.5*180/PI*( rad_lonb_2d(i+1,js) + rad_lonb_2d(i,js) )
                   do k=1,size(slandlat)
-                     if ( lon >= slandlon(k) .and. lon <= elandlon(k) &
-                          &.and. lat >= slandlat(k) .and. lat <= elandlat(k) )then
+                     if ( lon .ge. slandlon(k) .and. lon .le. elandlon(k) &
+                          &.and. lat .ge. slandlat(k) .and. lat .le. elandlat(k) )then
                         land_sea_heat_capacity(i,j) = land_capacity
                      endif
                   enddo
                enddo
             enddo
          endif
-	if(trim(land_option) .eq. 'input') then
+	else  !trim(land_option) .eq. 'input'
 		where(land) land_sea_heat_capacity = land_h_capacity_prefactor*land_sea_heat_capacity
-	endif
+	endif !end of if (trim(land_option) .ne. 'input')
     endif !end of if(.not.do_sc_sst)
 
+if ( id_heat_cap > 0 ) used = send_data ( id_heat_cap, land_sea_heat_capacity )
 !s end surface heat capacity calculation
 
 module_is_initialized = .true.
@@ -560,7 +560,6 @@ if(id_t_surf > 0) used = send_data(id_t_surf, t_surf, Time)
 if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time)
 if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q, Time)
 if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time)
-if(id_heat_cap > 0)   used = send_data(id_heat_cap, land_sea_heat_capacity, Time)
 
 end subroutine mixed_layer
 
