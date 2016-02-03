@@ -343,7 +343,8 @@ endif
 select case (albedo_choice)
   case (2) ! higher_albedo northward (lat_glacier>0) or southward (lat_glacier <0 ) of lat_glacier
     do j = 1, size(t_surf,2)
-      lat = 0.5*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
+!      lat = 0.5*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
+      lat = deg_lat(j)
       ! mj SH or NH only
       if ( lat_glacier .ge. 0. ) then
          if ( lat > lat_glacier ) then
@@ -361,7 +362,8 @@ select case (albedo_choice)
     enddo
   case (3) ! higher_albedo poleward of lat_glacier
     do j = 1, size(t_surf,2)
-      lat = 0.5*(rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
+!      lat = 0.5*(rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
+      lat = deg_lat(j)
       if ( abs(lat) > lat_glacier ) then
         albedo(:,j) = higher_albedo
       else
@@ -370,14 +372,16 @@ select case (albedo_choice)
     enddo
   case (4) ! exponential increase with albedo_exp
      do j = 1, size(t_surf,2)
-        lat = 0.5*(rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
-        lat = abs(lat)
+!        lat = 0.5*(rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
+!        lat = abs(lat)
+	lat = abs(deg_lat(j))
         albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*(lat/90.)**albedo_exp
      enddo
   case (5) ! tanh increase around albedo_cntr with albedo_wdth
      do j = 1, size(t_surf,2)
-        lat = 0.5*(rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
-        lat = abs(lat)
+!        lat = 0.5*(rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
+!        lat = abs(lat)
+	lat = abs(deg_lat(j))
         albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
              0.5*(1+tanh((lat-albedo_cntr)/albedo_wdth))
      enddo
@@ -398,7 +402,8 @@ endif
 	if(trim(land_option) .ne. 'input') then
          if ( trop_capacity .ne. depth*RHO_CP .or. np_cap_factor .ne. 1. ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0.
             do j=1,size(t_surf,2)
-               lat = 0.5*180/PI*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j) )
+!               lat = 0.5*180/PI*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j) )
+	       lat = deg_lat(j)
                if ( lat .gt. 0. ) then
                   loc_cap = depth*RHO_CP*np_cap_factor
                else
@@ -421,7 +426,8 @@ endif
 ! mj land heat capacity given through ?landlon, ?landlat
          if(trim(land_option) .eq. 'lonlat')then
             do j=1,size(t_surf,2)
-               lat = 0.5*180/PI*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j) )
+!               lat = 0.5*180/PI*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j) )
+	       lat = deg_lat(j)
                do i=1,size(t_surf,1)
                   lon = 0.5*180/PI*( rad_lonb_2d(i+1,js) + rad_lonb_2d(i,js) )
                   do k=1,size(slandlat)
