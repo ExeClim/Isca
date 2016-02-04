@@ -1,0 +1,15 @@
+# template for the Intel fortran compiler
+# typical use with mkmf
+# mkmf -t template.ifc -c"-Duse_libMPI -Duse_netCDF" path_names /usr/local/include
+CPPFLAGS = -I/usr/local/include 
+CPPFLAGS += -I${NETCDF_INC}
+FFLAGS = $(CPPFLAGS) -fpp -stack_temps -safe_cray_ptr -ftz -i-dynamic -assume byterecl -i4 -r8
+FFLAGS += -O2
+FFLAGS += ${DEBUG}
+FFLAGS += -I${NETCDF_INC} -I${MPI_INC}
+FC = mpif90
+LD = mpif90 -L/sw/netcdf-4.3.0/lib/ # works on zen and gv2
+CC = mpicc 
+LDFLAGS = -lnetcdff -lnetcdf -shared-intel
+LDFLAGS += -L${NETCDF_LIB} -L${MPI_LIB}
+CFLAGS = -D__IFC
