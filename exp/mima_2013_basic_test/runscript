@@ -11,7 +11,7 @@
   set timestamp
 #   set echo timestamp
   set machine          = `hostname`
-  set platform         = nyu    #will choose mkmf.template.$platform
+  set platform         = ia64    #will choose mkmf.template.$platform
 
   set do_compile       = true	#compile before running (true for development)
   set in               = $1	#this is the input from runjob and corresponds to the restart month
