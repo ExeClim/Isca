@@ -11,6 +11,7 @@
   set timestamp
 #   set echo timestamp
   set machine          = `hostname`
+  set platform         = nyu    #will choose mkmf.template.$platform
 
   set do_compile       = true	#compile before running (true for development)
   set in               = $1	#this is the input from runjob and corresponds to the restart month
@@ -101,7 +102,7 @@ if($do_compile == true) then
   #> make the Makefile from distributed source:
     # -a is the abspath (absolute path)
     # -p is the file to be made
-    # -t is template location mkmf.no_opt.template.ia64 template (ifort compiler)
+    # -t is template location mkmf.no_opt.template.$platform template (ifort compiler)
     # -c are cppDefs are "-Duse_libMPI -Duse_netCDF"
     #note that '\' is the escape character and is used in this context to continue reading next line as though there is no carrage return
 
@@ -124,7 +125,7 @@ if($do_compile == true) then
 
   if ($run_mpi == true) then
     echo "Run in parallel mode"
-    $dir_base/bin/mkmf $make_flags -a $source_dir  -p fms_moist.x -t   $exp_dir/mkmf.template.ia64 \
+    $dir_base/bin/mkmf $make_flags -a $source_dir  -p fms_moist.x -t   $exp_dir/mkmf.template.$platform \
     -c "-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8" $workdir/tmp_pathnames $source_dir/shared/mpp/include $source_dir/shared/constants $source_dir/include  
     cp Makefile $compile_dir		#copy the mf 
     cd $compile_dir    
