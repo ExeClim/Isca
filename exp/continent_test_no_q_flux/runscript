@@ -18,7 +18,7 @@
   set npes             = 8	#number of processes WARNING: can only use the restart files from 8 cpu's if restart was made from a run using 8 cps
   
   #begin personalisations for running at exeter:
-  set exp_name         	= equinox_continent_test 	#control run of code - for each experiment have a new experiment name
+  set exp_name         	= continent_test_no_q_flux 	#control run of code - for each experiment have a new experiment name
   set workdir           = $GFDL_WORK/$exp_name/np$npes	#base working directory
   set base_arc        	= $GFDL_DATA/$exp_name/np$npes	#storing data in location other than workdir (eg archived data) 
   set dir_base		= $GFDL_BASE
@@ -29,7 +29,7 @@
   set phys_namelist    	= $exp_dir/phys.nml				#physic namelist
   set diag_table       	= $exp_dir/diag_table				#vars to output
   set field_table       = $exp_dir/field_table										
-  set compile_dir       = $dir_base/compilation_parallel/new_compilers	#compiled code location
+  set compile_dir       = $dir_base/compilation_parallel/original_compilers	#compiled code location
   set executable        = $compile_dir/fms_moist.x			#compiled executable
   set path_names        = $exp_dir/path_names 					#s Uses the file `path_names' that's in the exp directory /path_names
   set make_flags        =                                                # set to -d for DEBUG messages
