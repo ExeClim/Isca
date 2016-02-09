@@ -28,8 +28,8 @@ lonb_array, latb_array = np.meshgrid(lonb,latb)
 
 
 #s for land use this kind of indexing approach. Then it will be super easy.
-idx = (20. < lat_array) & (lat_array < 60) & (30. < lon_array) & (lon_array < 130)
-land_array[idx] = 1.0
+#idx = (20. < lat_array) & (lat_array < 60) & (30. < lon_array) & (lon_array < 130)
+#land_array[idx] = 1.0
 
 #make continents
 
