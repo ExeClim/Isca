@@ -103,12 +103,13 @@ character(len=128), parameter :: tag = &
       integer :: days=0, hours=0, minutes=0, seconds=0
       integer :: dt_atmos = 0
       integer :: memuse_interval = 72
+      logical :: print_memuse = .true.
       integer :: atmos_nthreads = 1
       character(len=17) :: calendar = '                 '
       integer, dimension(6) :: current_date = (/ 0, 0, 0, 0, 0, 0 /)
 
       namelist /main_nml/ current_date, dt_atmos,  &
-                          days, hours, minutes, seconds, memuse_interval, atmos_nthreads, calendar, current_time
+                          days, hours, minutes, seconds, memuse_interval, print_memuse, atmos_nthreads, calendar, current_time
 
 !#######################################################################
 
@@ -125,7 +126,7 @@ character(len=128), parameter :: tag = &
 
        Time = Time + Time_step_atmos
 
-       if(modulo(na,memuse_interval) == 0) then
+       if(modulo(na,memuse_interval) == 0 .and. print_memuse) then
          write( text,'(a,i4)' )'Main loop at timestep=',na
          call print_memuse_stats(text)
        endif
