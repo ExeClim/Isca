@@ -151,7 +151,7 @@ integer, parameter :: THIRTY_DAY_MONTHS = 1,      JULIAN = 2, &
                       GREGORIAN = 3,              NOLEAP = 4, &
                       NO_CALENDAR = 0,  INVALID_CALENDAR =-1
 integer, private :: calendar_type = NO_CALENDAR
-integer, parameter :: max_type = 5
+integer, parameter :: max_type = 4
 
 ! Define number of days per month
 integer, private :: days_per_month(12) = (/31,28,31,30,31,30,31,31,30,31,30,31/)
