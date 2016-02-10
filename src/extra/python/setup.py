@@ -20,6 +20,9 @@ setup(name='GFDL',
       install_requires=[
         'sh',
         'jinja2',
-        'f90nml'
+        'f90nml',
+        'numpy',
+        'pandas',
+        'xray'
       ]
      )
