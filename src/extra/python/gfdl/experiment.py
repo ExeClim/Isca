@@ -50,8 +50,12 @@ except:
 
 def set_screen_title(title):
     if _using_screen:
-        sh.screen('-p', _screen_window, '-X', 'title', title)
-        sh.screen('-X', 'redisplay')
+        try:
+            sh.screen('-p', _screen_window, '-X', 'title', title)
+            sh.screen('-X', 'redisplay')
+        except Exception as e:
+            log.warning('Screen title could not be changed.')
+            log.debug(e.message)
 
 class Experiment(object):
     """A basic GFDL experiment"""
