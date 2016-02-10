@@ -111,7 +111,7 @@ public set_time, increment_time, decrement_time, get_time, interval_alarm
 public repeat_alarm, time_type_to_real, real_to_time_type
 
 ! List of available calendar types
-public    THIRTY_DAY_MONTHS,    JULIAN,    GREGORIAN,  NOLEAP,  EXOPLANET, NO_CALENDAR, INVALID_CALENDAR
+public    THIRTY_DAY_MONTHS,    JULIAN,    GREGORIAN,  NOLEAP, NO_CALENDAR, INVALID_CALENDAR
 
 ! Subroutines and functions involving relations between time and calendar
 public set_calendar_type
@@ -149,7 +149,6 @@ public :: date_to_string
 ! Global data to define calendar type
 integer, parameter :: THIRTY_DAY_MONTHS = 1,      JULIAN = 2, &
                       GREGORIAN = 3,              NOLEAP = 4, &
-                      EXOPLANET = 5,                          &
                       NO_CALENDAR = 0,  INVALID_CALENDAR =-1
 integer, private :: calendar_type = NO_CALENDAR
 integer, parameter :: max_type = 5
@@ -1532,8 +1531,8 @@ if(type <  0 .or. type > max_type) then
   if(error_handler('subroutine set_calendar_type', err_msg_local, err_msg)) return
 endif
 
-if(seconds_per_day /= 86400 .and. (type /= NO_CALENDAR .and. type /= EXOPLANET)) then
-  err_msg_local = 'Only calendar type NO_CALENDAR or EXOPLANET is allowed when seconds_per_day is not 86400.'// &
+if(seconds_per_day /= 86400 .and. type /= NO_CALENDAR) then
+  err_msg_local = 'Only calendar type NO_CALENDAR is allowed when seconds_per_day is not 86400.'// &
                   ' You are using '//trim(valid_calendar_types(type))//' and seconds_per_day='
   write(err_msg_local(len_trim(err_msg_local)+1:len_trim(err_msg_local)+8),'(i8)') seconds_per_day
   if(error_handler('subroutine set_calendar_type', err_msg_local, err_msg)) return
