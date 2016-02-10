@@ -12,10 +12,10 @@
 # = diagnostic field entries =
 # module_name, field_name, output_name, file_name, time_sampling, time_avg, other_opts, precision
  "atmosphere",      "convection_rain",     "convection_rain",    "atmos_4xdaily",     "all", .true., "none", 2,
- "dynamics",  	    "slp",                 "slp",                "atmos_4xdaily",     "all", .true., "none", 2, 
+ "dynamics",  	    "slp",                 "slp",                "atmos_4xdaily",     "all", .true., "none", 2,
  "dynamics",        "temp",                "temp",               "atmos_4xdaily",     "all", .true., "none", 2,
- "rrtm_radiation",  "tdt_rad",             "tdt_rad",            "atmos_4xdaily",     "all", .true., "none", 2,
- "rrtm_radiation",  "z_thalf",             "z_thalf",            "atmos_4xdaily",     "all", .true., "none", 2,
+ #"rrtm_radiation",  "tdt_rad",             "tdt_rad",            "atmos_4xdaily",     "all", .true., "none", 2,
+ #"rrtm_radiation",  "z_thalf",             "z_thalf",            "atmos_4xdaily",     "all", .true., "none", 2,
  "dynamics",        "ucomp",               "ucomp",              "atmos_4xdaily",     "all", .true., "none", 2,
  "dynamics",        "ps",                  "ps",                 "atmos_daily",       "all", .true., "none", 2,
  "dynamics",        "bk",                  "bk",                 "atmos_daily",       "all", .false., "none", 2,
@@ -26,8 +26,8 @@
  "dynamics",        "vcomp",               "vcomp",              "atmos_daily",       "all", .true., "none", 2,
  "dynamics",        "temp",                "temp",               "atmos_daily",       "all", .true., "none", 2,
  "atmosphere",      "rh",                  "rh",                 "atmos_daily",       "all", .true., "none", 2,
- "dynamics",  	    "slp",                 "slp",                "atmos_daily",       "all", .true., "none", 2, 
- "dynamics",  	    "omega",               "omega",              "atmos_daily",       "all", .true., "none", 2, 
+ "dynamics",  	    "slp",                 "slp",                "atmos_daily",       "all", .true., "none", 2,
+ "dynamics",  	    "omega",               "omega",              "atmos_daily",       "all", .true., "none", 2,
  "mixed_layer",     "t_surf",              "t_surf",             "atmos_daily",       "all", .true., "none", 2,
  "atmosphere",      "convection_rain",     "convection_rain",    "atmos_daily",       "all", .true., "none", 2,
  "atmosphere",      "condensation_rain",   "condensation_rain",  "atmos_daily",       "all", .true., "none", 2,
@@ -45,7 +45,7 @@
  "two_stream",       "tdt_rad",            "tdt_rad",              "atmos_daily",       "all", .true., "none", 2,
  "two_stream",       "flux_sw",           "flux_sw",              "atmos_daily",       "all", .true., "none", 2,
  "two_stream",       "flux_lw",           "flux_lw",              "atmos_daily",       "all", .true., "none", 2,
-#"two_stream",       "coszen",             "coszen",              "atmos_hourly",       "all", .true., "none", 2,
+"two_stream",       "coszen",             "coszen",              "atmos_hourly",       "all", .true., "none", 2,
 
 
 #=============================================================================================

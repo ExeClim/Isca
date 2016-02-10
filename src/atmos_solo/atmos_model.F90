@@ -38,7 +38,7 @@ use   atmosphere_mod, only: atmosphere_init, atmosphere_end, atmosphere, atmosph
 use time_manager_mod, only: time_type, set_time, get_time,  &
                             operator(+), operator (<), operator (>), &
                             operator (/=), operator (/), operator (*),&
-			    THIRTY_DAY_MONTHS, JULIAN,                &
+			    THIRTY_DAY_MONTHS, JULIAN,            &
                             NOLEAP, NO_CALENDAR, set_calendar_type, &
 			    set_date, get_date
 
@@ -62,7 +62,7 @@ use diag_manager_mod, only: diag_manager_init, diag_manager_end, get_base_date
 use  field_manager_mod, only: MODEL_ATMOS
 use tracer_manager_mod, only: register_tracers
 use       memutils_mod, only: print_memuse_stats
-use   constants_mod,    only: SECONDS_PER_HOUR,  SECONDS_PER_MINUTE
+use   constants_mod,    only: SECONDS_PER_HOUR,  SECONDS_PER_MINUTE, constants_init
 
 implicit none
 
@@ -112,9 +112,9 @@ character(len=128), parameter :: tag = &
                           days, hours, minutes, seconds, memuse_interval, print_memuse, atmos_nthreads, calendar, current_time
 
 !#######################################################################
-
+ call constants_init
  call fms_init ( )
- call atmos_model_init 
+ call atmos_model_init
 
 !   ------ atmosphere integration loop -------
 
@@ -232,7 +232,7 @@ contains
       write (logunit,16) date(3:6)
     endif
 
- 16 format ('  current time used = day',i5,' hour',i3,2(':',i2.2)) 
+ 16 format ('  current time used = day',i5,' hour',i3,2(':',i2.2))
 
 !  print number of tracers to logfile
    if (mpp_pe() == mpp_root_pe()) then
@@ -283,7 +283,7 @@ contains
 
     Run_length = set_time(       hours*int(SECONDS_PER_HOUR)+     minutes*int(SECONDS_PER_MINUTE)+     seconds,days        )
     Time_end   = Time + Run_length
-	
+
 !-----------------------------------------------------------------------
 !----- write time stamps (for start time and end time) ------
 
@@ -308,7 +308,7 @@ contains
 
 !-----------------------------------------------------------------------
 !--- compute the time steps ---
-!    determine number of iterations through the time integration loop 
+!    determine number of iterations through the time integration loop
 !    must be evenly divisible
 
       Time_step_atmos = set_time (dt_atmos,0)
@@ -325,7 +325,7 @@ contains
    if ( num_atmos_calls * Time_step_atmos /= Run_length )  &
         call error_mesg ('program atmos_model',  &
            'run length must be multiple of atmosphere time step', FATAL)
-   
+
 !-----------------------------------------------------------------------
 !------ initialize atmospheric model ------
 
@@ -340,7 +340,7 @@ contains
 !      call set_cpu_affinity(base_cpu + omp_get_thread_num())
 #ifdef DEBUG
       write(6,*) 'PE: ',mpp_pe(),'  thread_num', omp_get_thread_num(),'  affinity:',get_cpu_affinity()
-      call flush(6) 
+      call flush(6)
 #endif
 !$OMP END PARALLEL
 
@@ -374,7 +374,7 @@ contains
 !----- compute current time in days,hours,minutes,seconds -----
 
      if( calendar_type /= NO_CALENDAR) then
-!s Updated call to get final date in line with updating initial date setting above. 
+!s Updated call to get final date in line with updating initial date setting above.
          call get_date (Time, date(1), date(2), date(3),  &
               date(4), date(5), date(6))
      else
@@ -422,4 +422,3 @@ contains
 !#######################################################################
 
 end program atmos_model
-

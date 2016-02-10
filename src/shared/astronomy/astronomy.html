@@ -1,0 +1,1669 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module astronomy_mod</title>
+<link type="text/css" href="http://www.gfdl.noaa.gov/~fms/style/doc.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>~
+          <a href="#PUBLIC DATA">PUBLIC DATA </a>~
+          <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>~
+          <a href="#NAMELIST">NAMELIST </a>~
+          <a href="#DIAGNOSTIC FIELDS">DIAGNOSTIC FIELDS </a>~
+          <a href="#ERROR MESSAGES">ERROR MESSAGES </a>~
+          <a href="#REFERENCES">REFERENCES </a>~ 
+          <a href="#NOTES">NOTES</a></font>
+<hr>
+<h2>Module astronomy_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:Fei.Liu@noaa.gov">   fil </a>
+<br>
+<b>Reviewers:&nbsp;</b><a href="mailto:"> </a>
+<br>
+<b>Change History:&nbsp;</b><a href="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/atmos/param/astronomy">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text">   astronomy_mod provides astronomical variables for use
+   by other modules within fms. the only currently used interface is 
+   for determination of astronomical values needed by the shortwave
+   radiation packages. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div> 
+</div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>         fms_mod<br>time_manager_mod<br>   constants_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#astronomy_init">astronomy_init</a>:</dt>
+<dd>   astronomy_init is the constructor for astronomy_mod. </dd>
+<dt>
+<a href="#get_period_integer">get_period_integer</a>:</dt>
+<dd>   get_period_integer returns the length of the year as an integer
+   number of seconds. </dd>
+<dt>
+<a href="#get_period_time_type">get_period_time_type</a>:</dt>
+<dd>   get_period_time_type returns the length of the year as a time_type
+   variable. </dd>
+<dt>
+<a href="#set_period_integer">set_period_integer</a>:</dt>
+<dd>   set_period_integer saves as the input length of the year (an 
+   integer) in a time_type module variable. </dd>
+<dt>
+<a href="#set_orbital_parameters">set_orbital_parameters</a>:</dt>
+<dd>   set_orbital_parameters saves the input values of eccentricity,
+   obliquity and perihelion time as module variables for use by
+   astronomy_mod. </dd>
+<dt>
+<a href="#get_orbital_parameters">get_orbital_parameters</a>:</dt>
+<dd>   get_orbital_parameters retrieves the orbital parameters for use
+   by another module. </dd>
+<dt>
+<a href="#set_ref_date_of_ae">set_ref_date_of_ae</a>:</dt>
+<dd>   set_ref_date_of_ae provides a means of specifying the reference
+   date of the NH autumnal equinox for a particular year. </dd>
+<dt>
+<a href="#get_ref_date_of_ae">get_ref_date_of_ae</a>:</dt>
+<dd>   get_ref_date_of_ae retrieves the reference date of the autumnal
+   equinox as integer variables. </dd>
+<dt>
+<a href="#diurnal_solar_2d">diurnal_solar_2d</a>:</dt>
+<dd>   diurnal_solar_2d returns 2d fields of cosine of zenith angle, 
+   daylight fraction and earth-sun distance at the specified lati-
+   tudes, longitudes and time. these values may be instantaneous
+   or averaged over a specified time interval. </dd>
+<dt>
+<a href="#diurnal_solar_1d">diurnal_solar_1d</a>:</dt>
+<dd>   diurnal_solar_1d takes 1-d input fields, adds a second dimension
+   and calls diurnal_solar_2d. on return, the 2d fields are returned
+   to the original 1d fields. </dd>
+<dt>
+<a href="#diurnal_solar_0d">diurnal_solar_0d</a>:</dt>
+<dd>   diurnal_solar_0d takes scalar input fields, makes them into 2d
+   arrays dimensioned (1,1), and calls diurnal_solar_2d. on return, 
+   the 2d fields are converted back to the desired scalar output. </dd>
+<dt>
+<a href="#diurnal_solar_cal_2d">diurnal_solar_cal_2d</a>:</dt>
+<dd>   diurnal_solar_cal_2d receives time_type inputs, converts 
+   them to real variables and then calls diurnal_solar_2d to
+   compute desired astronomical variables. </dd>
+<dt>
+<a href="#diurnal_solar_cal_1d">diurnal_solar_cal_1d</a>:</dt>
+<dd>   diurnal_solar_cal_1d receives time_type inputs, converts 
+   them to real variables and then calls diurnal_solar_2d to
+   compute desired astronomical variables. </dd>
+<dt>
+<a href="#diurnal_solar_cal_0d">diurnal_solar_cal_0d</a>:</dt>
+<dd>   diurnal_solar_cal_0d receives time_type inputs, converts 
+   them to real variables and then calls diurnal_solar_2d to
+   compute desired astronomical variables. </dd>
+<dt>
+<a href="#daily_mean_solar_2d">daily_mean_solar_2d</a>:</dt>
+<dd>   daily_mean_solar_2d computes the daily mean astronomical 
+   parameters for the input points at latitude lat and time of year 
+   time_since_ae. </dd>
+<dt>
+<a href="#daily_mean_solar_1d">daily_mean_solar_1d</a>:</dt>
+<dd>   daily_mean_solar_1d takes 1-d input fields, adds a second dimension
+   and calls daily_mean_solar_2d. on return, the 2d fields are 
+   returned to the original 1d fields. </dd>
+<dt>
+<a href="#daily_mean_solar_2level">daily_mean_solar_2level</a>:</dt>
+<dd>   daily_mean_solar_2level takes 1-d input fields, adds a second 
+   dimension and calls daily_mean_solar_2d. on return, the 2d fields 
+   are returned to the original 1d fields. </dd>
+<dt>
+<a href="#daily_mean_solar_0d">daily_mean_solar_0d</a>:</dt>
+<dd>   daily_mean_solar_1d takes 1-d input fields, adds a second dimension
+   and calls daily_mean_solar_2d. on return, the 2d fields are 
+   returned to the original 1d fields. </dd>
+<dt>
+<a href="#daily_mean_solar_cal_2d">daily_mean_solar_cal_2d</a>:</dt>
+<dd>   daily_mean_solar_cal_2d receives time_type inputs, converts 
+   them to real variables and then calls daily_mean_solar_2d to
+   compute desired astronomical variables. </dd>
+<dt>
+<a href="#daily_mean_solar_cal_1d">daily_mean_solar_cal_1d</a>:</dt>
+<dd>   daily_mean_solar_cal_1d receives time_type inputs, converts 
+   them to real, 2d variables and then calls daily_mean_solar_2d to
+   compute desired astronomical variables. </dd>
+<dt>
+<a href="#daily_mean_solar_cal_2level">daily_mean_solar_cal_2level</a>:</dt>
+<dd>   daily_mean_solar_cal_2level receives 1d arrays and time_type input,
+   converts them to real, 2d variables and then calls 
+   daily_mean_solar_2d to compute desired astronomical variables. </dd>
+<dt>
+<a href="#daily_mean_solar_cal_0d">daily_mean_solar_cal_0d</a>:</dt>
+<dd>   daily_mean_solar_cal_0d converts scalar input fields to real, 
+   2d variables and then calls daily_mean_solar_2d to compute desired
+   astronomical variables. </dd>
+<dt>
+<a href="#annual_mean_solar_2d">annual_mean_solar_2d</a>:</dt>
+<dd>   annual_mean_solar_2d returns 2d fields of annual mean values of
+   the cosine of zenith angle, daylight fraction and earth-sun 
+   distance at the specified latitude. </dd>
+<dt>
+<a href="#annual_mean_solar_1d">annual_mean_solar_1d</a>:</dt>
+<dd>   annual_mean_solar_1d creates 2-d input fields from 1-d input fields
+   and then calls annual_mean_solar_2d to obtain 2-d output fields 
+   which are then stored into 1-d fields for return to the calling 
+   subroutine. </dd>
+<dt>
+<a href="#annual_mean_solar_2level">annual_mean_solar_2level</a>:</dt>
+<dd>   annual_mean_solar_2level creates 2-d input fields from 1-d input 
+   fields and then calls annual_mean_solar_2d to obtain 2-d output 
+   fields which are then stored into 1-d fields for return to the 
+   calling subroutine. this subroutine will be called during model
+   initialization. </dd>
+<dt>
+<a href="#astronomy_end">astronomy_end</a>:</dt>
+<dd>   astronomy_init is the destructor for astronomy_mod. </dd>
+<dt>
+<a href="#orbit">orbit</a>:</dt>
+<dd>   orbit computes and stores a table of value of orbital angles as a 
+   function of orbital time (both the angle and time are zero at 
+   autumnal equinox in the NH, and range from 0 to 2*pi). </dd>
+<dt>
+<a href="#r_inv_squared">r_inv_squared</a>:</dt>
+<dd>   r_inv_squared returns the inverse of the square of the earth-sun
+   distance relative to the mean distance at angle ang in the earth's
+   orbit. </dd>
+<dt>
+<a href="#angle">angle</a>:</dt>
+<dd>   angle determines the position within the earth's orbit at time t
+   in the year ( t = 0 at NH autumnal equinox.) by interpolating
+   into the orbital position table. </dd>
+<dt>
+<a href="#declination">declination</a>:</dt>
+<dd>   declination returns the solar declination angle at orbital
+   position ang in earth's orbit. </dd>
+<dt>
+<a href="#half_day_2d">half_day_2d</a>:</dt>
+<dd>   half_day_2d returns a 2-d array of half-day lengths at the 
+   latitudes and declination provided. </dd>
+<dt>
+<a href="#half_day_0d">half_day_0d</a>:</dt>
+<dd>   half_day_0d takes scalar input fields, makes them into 2-d fields
+   dimensioned (1,1), and calls half_day_2d. on return, the 2-d 
+   fields are converted to the desired scalar output. </dd>
+<dt>
+<a href="#orbital_time">orbital_time</a>:</dt>
+<dd>   orbital time returns the time (1 year = 2*pi) since autumnal 
+   equinox </dd>
+<dt>
+<a href="#universal_time">universal_time</a>:</dt>
+<dd>   universal_time returns the time of day at longitude = 0.0 
+   (1 day = 2*pi) </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC DATA"></a>
+<hr>
+<h4>PUBLIC DATA</h4>
+<!-- BEGIN PUBLIC DATA -->
+<div>None.<br>
+<br>
+</div>
+<!-- END PUBLIC DATA -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="astronomy_init"></a>
+<h4>astronomy_init</h4>
+<pre>
+<b>call astronomy_init </b>(latb, lonb)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   astronomy_init is the constructor for astronomy_mod. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>latb&nbsp;&nbsp;&nbsp;</tt></td><td>   array of model latitudes at cell boundaries [radians] <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lonb&nbsp;&nbsp;&nbsp;</tt></td><td>   array of model longitudes at cell boundaries [radians] <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_period_integer"></a>
+<h4>get_period_integer</h4>
+<pre>
+<b>call get_period_integer </b>(period_out)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   get_period_integer returns the length of the year as an integer
+   number of seconds. </dd>
+<br>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>period_out&nbsp;&nbsp;&nbsp;</tt></td><td>   number of seconds as the length of the year <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_period_time_type"></a>
+<h4>get_period_time_type</h4>
+<pre>
+<b>call get_period_time_type </b>(period_out)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   get_period_time_type returns the length of the year as a time_type
+   variable. </dd>
+<br>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>period_out&nbsp;&nbsp;&nbsp;</tt></td><td>   the length of the year as a time_type <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="set_period_integer"></a>
+<h4>set_period_integer</h4>
+<pre>
+<b>call set_period_integer </b>(period_in)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   set_period_integer saves as the input length of the year (an 
+   integer) in a time_type module variable. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>period_in&nbsp;&nbsp;&nbsp;</tt></td><td>   the length of the year as a time_type <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="set_orbital_parameters"></a>
+<h4>set_orbital_parameters</h4>
+<pre>
+<b>call set_orbital_parameters </b>(ecc_in, obliq_in, per_in)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   set_orbital_parameters saves the input values of eccentricity,
+   obliquity and perihelion time as module variables for use by
+   astronomy_mod. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>ecc_in&nbsp;&nbsp;&nbsp;</tt></td><td>   eccentricity of orbital ellipse <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>obliq_in&nbsp;&nbsp;&nbsp;</tt></td><td>   obliquity fof orbital ellipse <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>per_in&nbsp;&nbsp;&nbsp;</tt></td><td>   longitude of perihelion with respect to autumnal
+   equinox in northern hemisphere <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_orbital_parameters"></a>
+<h4>get_orbital_parameters</h4>
+<pre>
+<b>call get_orbital_parameters </b>(ecc_out, obliq_out, per_out)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   get_orbital_parameters retrieves the orbital parameters for use
+   by another module. </dd>
+<br>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>ecc_out&nbsp;&nbsp;&nbsp;</tt></td><td>   eccentricity of orbital ellipse <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>obliq_out&nbsp;&nbsp;&nbsp;</tt></td><td>   obliquity fof orbital ellipse <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>per_out&nbsp;&nbsp;&nbsp;</tt></td><td>   longitude of perihelion with respect to autumnal
+   equinox in northern hemisphere <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="set_ref_date_of_ae"></a>
+<h4>set_ref_date_of_ae</h4>
+<pre>
+<b>call set_ref_date_of_ae </b>(day_in,month_in,year_in, &amp; second_in,minute_in,hour_in)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   set_ref_date_of_ae provides a means of specifying the reference
+   date of the NH autumnal equinox for a particular year.  it is only
+   used if calls are made to the calandar versions of the routines 
+   diurnal_solar and daily_mean_solar. if the NOLEAP calendar is 
+   used, then the date of autumnal equinox will be the same every 
+   year. if JULIAN is used, then the date of autumnal equinox will 
+   return to the same value every 4th year. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>day_in&nbsp;&nbsp;&nbsp;</tt></td><td>   day of reference autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>month_in&nbsp;&nbsp;&nbsp;</tt></td><td>   month of reference autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>year_in&nbsp;&nbsp;&nbsp;</tt></td><td>   year of reference autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>second_in&nbsp;&nbsp;&nbsp;</tt></td><td>   OPTIONAL: second of reference autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>minute_in&nbsp;&nbsp;&nbsp;</tt></td><td>   OPTIONAL: minute of reference autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>hour_in&nbsp;&nbsp;&nbsp;</tt></td><td>   OPTIONAL: hour of reference autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="get_ref_date_of_ae"></a>
+<h4>get_ref_date_of_ae</h4>
+<pre>
+<b>call get_ref_date_of_ae </b>(day_out,month_out,year_out, &amp; second_out, minute_out,hour_out)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   get_ref_date_of_ae retrieves the reference date of the autumnal
+   equinox as integer variables. </dd>
+<br>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>day_out&nbsp;&nbsp;&nbsp;</tt></td><td>   day of reference autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>month_out&nbsp;&nbsp;&nbsp;</tt></td><td>   month of reference autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>year_out&nbsp;&nbsp;&nbsp;</tt></td><td>   year of reference autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[integer]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>second_out&nbsp;&nbsp;&nbsp;</tt></td><td>   second of reference autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>minute_out&nbsp;&nbsp;&nbsp;</tt></td><td>   minute of reference autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>hour_out&nbsp;&nbsp;&nbsp;</tt></td><td>   hour of reference autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diurnal_solar_2d"></a>
+<h4>diurnal_solar_2d</h4>
+<pre>
+<b>call diurnal_solar_2d </b>(lat, lon, gmt, time_since_ae, cosz, &amp; fracday, rrsun, dt_time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   diurnal_solar_2d returns 2d fields of cosine of zenith angle, 
+   daylight fraction and earth-sun distance at the specified lati-
+   tudes, longitudes and time. these values may be instantaneous
+   or averaged over a specified time interval. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon&nbsp;&nbsp;&nbsp;</tt></td><td>   longitude of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>gmt&nbsp;&nbsp;&nbsp;</tt></td><td>   time of day at longitude 0.0; midnight = 0.0, 
+   one day = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_since_ae&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0,
+   one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dt&nbsp;&nbsp;&nbsp;</tt></td><td>   OPTIONAL: time interval after gmt over which the astronomical
+   variables are to be averaged. this produces averaged
+   output rather than instantaneous. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>fracday&nbsp;&nbsp;&nbsp;</tt></td><td>   daylight fraction of time interval <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rrsun&nbsp;&nbsp;&nbsp;</tt></td><td>   earth-sun distance (r) relative to semi-major axis
+   of orbital ellipse (a) : (a/r)**2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diurnal_solar_1d"></a>
+<h4>diurnal_solar_1d</h4>
+<pre>
+<b>call diurnal_solar_1d </b>(lat, lon, gmt, time_since_ae, cosz, &amp; fracday, rrsun, dt)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   diurnal_solar_1d takes 1-d input fields, adds a second dimension
+   and calls diurnal_solar_2d. on return, the 2d fields are returned
+   to the original 1d fields. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon&nbsp;&nbsp;&nbsp;</tt></td><td>   longitude of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>gmt&nbsp;&nbsp;&nbsp;</tt></td><td>   time of day at longitude 0.0; midnight = 0.0, 
+   one day = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_since_ae&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0,
+   one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dt&nbsp;&nbsp;&nbsp;</tt></td><td>   OPTIONAL: time interval after gmt over which the astronomical
+   variables are to be averaged. this produces averaged
+   output rather than instantaneous. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>fracday&nbsp;&nbsp;&nbsp;</tt></td><td>   daylight fraction of time interval <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rrsun&nbsp;&nbsp;&nbsp;</tt></td><td>   earth-sun distance (r) relative to semi-major axis
+   of orbital ellipse (a) : (a/r)**2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diurnal_solar_0d"></a>
+<h4>diurnal_solar_0d</h4>
+<pre>
+<b>call diurnal_solar_0d </b>(lat, lon, gmt, time_since_ae, cosz, &amp; fracday, rrsun, dt)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   diurnal_solar_0d takes scalar input fields, makes them into 2d
+   arrays dimensioned (1,1), and calls diurnal_solar_2d. on return, 
+   the 2d fields are converted back to the desired scalar output. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon&nbsp;&nbsp;&nbsp;</tt></td><td>   longitude of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>gmt&nbsp;&nbsp;&nbsp;</tt></td><td>   time of day at longitude 0.0; midnight = 0.0, 
+   one day = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_since_ae&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0,
+   one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dt&nbsp;&nbsp;&nbsp;</tt></td><td>   OPTIONAL: time interval after gmt over which the astronomical
+   variables are to be averaged. this produces averaged
+   output rather than instantaneous. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>fracday&nbsp;&nbsp;&nbsp;</tt></td><td>   daylight fraction of time interval <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rrsun&nbsp;&nbsp;&nbsp;</tt></td><td>   earth-sun distance (r) relative to semi-major axis
+   of orbital ellipse (a) : (a/r)**2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diurnal_solar_cal_2d"></a>
+<h4>diurnal_solar_cal_2d</h4>
+<pre>
+<b>call diurnal_solar_cal_2d </b>(lat, lon, gmt, time_since_ae, cosz, &amp; fracday, rrsun, dt)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   diurnal_solar_cal_2d receives time_type inputs, converts 
+   them to real variables and then calls diurnal_solar_2d to
+   compute desired astronomical variables. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon&nbsp;&nbsp;&nbsp;</tt></td><td>   longitude of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>gmt&nbsp;&nbsp;&nbsp;</tt></td><td>   time of day at longitude 0.0; midnight = 0.0, 
+   one day = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_since_ae&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0,
+   one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dt_time&nbsp;&nbsp;&nbsp;</tt></td><td>   OPTIONAL: time interval after gmt over which the astronomical
+   variables are to be averaged. this produces averaged
+   output rather than instantaneous. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>fracday&nbsp;&nbsp;&nbsp;</tt></td><td>   daylight fraction of time interval <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rrsun&nbsp;&nbsp;&nbsp;</tt></td><td>   earth-sun distance (r) relative to semi-major axis
+   of orbital ellipse (a) : (a/r)**2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diurnal_solar_cal_1d"></a>
+<h4>diurnal_solar_cal_1d</h4>
+<pre>
+<b>call diurnal_solar_cal_1d </b>(lat, lon, gmt, time_since_ae, cosz, &amp; fracday, rrsun, dt)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   diurnal_solar_cal_1d receives time_type inputs, converts 
+   them to real variables and then calls diurnal_solar_2d to
+   compute desired astronomical variables. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon&nbsp;&nbsp;&nbsp;</tt></td><td>   longitude of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>gmt&nbsp;&nbsp;&nbsp;</tt></td><td>   time of day at longitude 0.0; midnight = 0.0, 
+   one day = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_since_ae&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0,
+   one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dt_time&nbsp;&nbsp;&nbsp;</tt></td><td>   OPTIONAL: time interval after gmt over which the astronomical
+   variables are to be averaged. this produces averaged
+   output rather than instantaneous. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>fracday&nbsp;&nbsp;&nbsp;</tt></td><td>   daylight fraction of time interval <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rrsun&nbsp;&nbsp;&nbsp;</tt></td><td>   earth-sun distance (r) relative to semi-major axis
+   of orbital ellipse (a) : (a/r)**2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="diurnal_solar_cal_0d"></a>
+<h4>diurnal_solar_cal_0d</h4>
+<pre>
+<b>call diurnal_solar_cal_0d </b>(lat, lon, gmt, time_since_ae, cosz, &amp; fracday, rrsun, dt_time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   diurnal_solar_cal_0d receives time_type inputs, converts 
+   them to real variables and then calls diurnal_solar_2d to
+   compute desired astronomical variables. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lon&nbsp;&nbsp;&nbsp;</tt></td><td>   longitude of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>gmt&nbsp;&nbsp;&nbsp;</tt></td><td>   time of day at longitude 0.0; midnight = 0.0, 
+   one day = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_since_ae&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0,
+   one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dt_time&nbsp;&nbsp;&nbsp;</tt></td><td>   OPTIONAL: time interval after gmt over which the astronomical
+   variables are to be averaged. this produces averaged
+   output rather than instantaneous. <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>fracday&nbsp;&nbsp;&nbsp;</tt></td><td>   daylight fraction of time interval <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rrsun&nbsp;&nbsp;&nbsp;</tt></td><td>   earth-sun distance (r) relative to semi-major axis
+   of orbital ellipse (a) : (a/r)**2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="daily_mean_solar_2d"></a>
+<h4>daily_mean_solar_2d</h4>
+<pre>
+<b>call daily_mean_solar_2d </b>(lat, time_since_ae, cosz, h_out, rr_out)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   daily_mean_solar_2d computes the daily mean astronomical 
+   parameters for the input points at latitude lat and time of year 
+   time_since_ae. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_since_ae&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0,
+   one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>h_out&nbsp;&nbsp;&nbsp;</tt></td><td>   2-d array of half-day lengths at the latitudes <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rr_out&nbsp;&nbsp;&nbsp;</tt></td><td>   the inverse of the square of the earth-sun
+   distance relative to the mean distance at angle ang in the earth's
+   orbit. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="daily_mean_solar_1d"></a>
+<h4>daily_mean_solar_1d</h4>
+<pre>
+<b>call daily_mean_solar_1d </b>(lat, time_since_ae, cosz, h_out, rr_out)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   daily_mean_solar_1d takes 1-d input fields, adds a second dimension
+   and calls daily_mean_solar_2d. on return, the 2d fields are 
+   returned to the original 1d fields. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_since_ae&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0,
+   one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>h_out&nbsp;&nbsp;&nbsp;</tt></td><td>   2-d array of half-day lengths at the latitudes <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rr_out&nbsp;&nbsp;&nbsp;</tt></td><td>   the inverse of the square of the earth-sun
+   distance relative to the mean distance at angle ang in the earth's
+   orbit. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="daily_mean_solar_2level"></a>
+<h4>daily_mean_solar_2level</h4>
+<pre>
+<b>call daily_mean_solar_2level </b>(lat, time_since_ae, cosz, solar)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   daily_mean_solar_2level takes 1-d input fields, adds a second 
+   dimension and calls daily_mean_solar_2d. on return, the 2d fields 
+   are returned to the original 1d fields. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_since_ae&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0,
+   one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>solar&nbsp;&nbsp;&nbsp;</tt></td><td>   shortwave flux factor: cosine of zenith angle *
+   daylight fraction / (earth-sun distance squared) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="daily_mean_solar_0d"></a>
+<h4>daily_mean_solar_0d</h4>
+<pre>
+<b>call daily_mean_solar_0d </b>(lat, time_since_ae, cosz, h_out, rr_out)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   daily_mean_solar_1d takes 1-d input fields, adds a second dimension
+   and calls daily_mean_solar_2d. on return, the 2d fields are 
+   returned to the original 1d fields. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time_since_ae&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0,
+   one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>h_out&nbsp;&nbsp;&nbsp;</tt></td><td>   2-d array of half-day lengths at the latitudes <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rr_out&nbsp;&nbsp;&nbsp;</tt></td><td>   the inverse of the square of the earth-sun
+   distance relative to the mean distance at angle ang in the earth's
+   orbit. <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="daily_mean_solar_cal_2d"></a>
+<h4>daily_mean_solar_cal_2d</h4>
+<pre>
+<b>call daily_mean_solar_cal_2d </b>(lat, time, cosz, fracday, rrsun)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   daily_mean_solar_cal_2d receives time_type inputs, converts 
+   them to real variables and then calls daily_mean_solar_2d to
+   compute desired astronomical variables. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0, one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>fracday&nbsp;&nbsp;&nbsp;</tt></td><td>   daylight fraction of time interval <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rrsun&nbsp;&nbsp;&nbsp;</tt></td><td>   earth-sun distance (r) relative to semi-major axis
+   of orbital ellipse (a) : (a/r)**2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="daily_mean_solar_cal_1d"></a>
+<h4>daily_mean_solar_cal_1d</h4>
+<pre>
+<b>call daily_mean_solar_cal_1d </b>(lat, time, cosz, fracday, rrsun)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   daily_mean_solar_cal_1d receives time_type inputs, converts 
+   them to real, 2d variables and then calls daily_mean_solar_2d to
+   compute desired astronomical variables. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0, one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>fracday&nbsp;&nbsp;&nbsp;</tt></td><td>   daylight fraction of time interval <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rrsun&nbsp;&nbsp;&nbsp;</tt></td><td>   earth-sun distance (r) relative to semi-major axis
+   of orbital ellipse (a) : (a/r)**2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="daily_mean_solar_cal_2level"></a>
+<h4>daily_mean_solar_cal_2level</h4>
+<pre>
+<b>call daily_mean_solar_cal_2level </b>(lat, time, cosz, solar)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   daily_mean_solar_cal_2level receives 1d arrays and time_type input,
+   converts them to real, 2d variables and then calls 
+   daily_mean_solar_2d to compute desired astronomical variables. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0, one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>solar&nbsp;&nbsp;&nbsp;</tt></td><td>   shortwave flux factor: cosine of zenith angle *
+   daylight fraction / (earth-sun distance squared) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="daily_mean_solar_cal_0d"></a>
+<h4>daily_mean_solar_cal_0d</h4>
+<pre>
+<b>call daily_mean_solar_cal_0d </b>(lat, time, cosz, fracday, rrsun)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   daily_mean_solar_cal_0d converts scalar input fields to real, 
+   2d variables and then calls daily_mean_solar_2d to compute desired
+   astronomical variables. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0, one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>fracday&nbsp;&nbsp;&nbsp;</tt></td><td>   daylight fraction of time interval <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rrsun&nbsp;&nbsp;&nbsp;</tt></td><td>   earth-sun distance (r) relative to semi-major axis
+   of orbital ellipse (a) : (a/r)**2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="annual_mean_solar_2d"></a>
+<h4>annual_mean_solar_2d</h4>
+<pre>
+<b>call annual_mean_solar_2d </b>(js, je, lat, cosz, solar, fracday, &amp; rrsun)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   annual_mean_solar_2d returns 2d fields of annual mean values of
+   the cosine of zenith angle, daylight fraction and earth-sun 
+   distance at the specified latitude. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>js, je&nbsp;&nbsp;&nbsp;</tt></td><td>   Starting/ending index of latitude window <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0, one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>solar&nbsp;&nbsp;&nbsp;</tt></td><td>   shortwave flux factor: cosine of zenith angle *
+   daylight fraction / (earth-sun distance squared) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>fracday&nbsp;&nbsp;&nbsp;</tt></td><td>   daylight fraction of time interval <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rrsun&nbsp;&nbsp;&nbsp;</tt></td><td>   earth-sun distance (r) relative to semi-major axis
+   of orbital ellipse (a) : (a/r)**2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="annual_mean_solar_1d"></a>
+<h4>annual_mean_solar_1d</h4>
+<pre>
+<b>call annual_mean_solar_1d </b>(jst, jnd, lat, cosz, solar, &amp; fracday, rrsun_out)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   annual_mean_solar_1d creates 2-d input fields from 1-d input fields
+   and then calls annual_mean_solar_2d to obtain 2-d output fields 
+   which are then stored into 1-d fields for return to the calling 
+   subroutine. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>jst, jnd&nbsp;&nbsp;&nbsp;</tt></td><td>   Starting/ending index of latitude window <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year; autumnal equinox = 0.0, one year = 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>solar&nbsp;&nbsp;&nbsp;</tt></td><td>   shortwave flux factor: cosine of zenith angle *
+   daylight fraction / (earth-sun distance squared) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>fracday&nbsp;&nbsp;&nbsp;</tt></td><td>   daylight fraction of time interval <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>rrsun_out&nbsp;&nbsp;&nbsp;</tt></td><td>   earth-sun distance (r) relative to semi-major axis
+   of orbital ellipse (a) : (a/r)**2 <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="annual_mean_solar_2level"></a>
+<h4>annual_mean_solar_2level</h4>
+<pre>
+<b>call annual_mean_solar_2level </b>(lat, cosz, solar)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   annual_mean_solar_2level creates 2-d input fields from 1-d input 
+   fields and then calls annual_mean_solar_2d to obtain 2-d output 
+   fields which are then stored into 1-d fields for return to the 
+   calling subroutine. this subroutine will be called during model
+   initialization. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>lat&nbsp;&nbsp;&nbsp;</tt></td><td>   latitudes of model grid points <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>cosz&nbsp;&nbsp;&nbsp;</tt></td><td>   cosine of solar zenith angle <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>solar&nbsp;&nbsp;&nbsp;</tt></td><td>   shortwave flux factor: cosine of zenith angle *
+   daylight fraction / (earth-sun distance squared) <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="astronomy_end"></a>
+<h4>astronomy_end</h4>
+<pre>
+<b>call astronomy_end </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   astronomy_init is the destructor for astronomy_mod. </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="orbit"></a>
+<h4>orbit</h4>
+<pre>
+<b>call orbit </b>
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   orbit computes and stores a table of value of orbital angles as a 
+   function of orbital time (both the angle and time are zero at 
+   autumnal equinox in the NH, and range from 0 to 2*pi). </dd>
+<br>
+<br>
+</dl>
+</li>
+<li>
+<a name="r_inv_squared"></a>
+<h4>r_inv_squared</h4>
+<pre>r = <b>r_inv_squared</b> (ang)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   r_inv_squared returns the inverse of the square of the earth-sun
+   distance relative to the mean distance at angle ang in the earth's
+   orbit. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>ang&nbsp;&nbsp;&nbsp;</tt></td><td>   angular position of earth in its orbit, relative to a 
+   value of 0.0 at the NH autumnal equinox, value between
+   0.0 and 2 * pi <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="angle"></a>
+<h4>angle</h4>
+<pre>r = <b>angle</b> (t)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   angle determines the position within the earth's orbit at time t
+   in the year ( t = 0 at NH autumnal equinox.) by interpolating
+   into the orbital position table. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>t&nbsp;&nbsp;&nbsp;</tt></td><td>   time of year (between 0 and 2*pi; t=0 at NH autumnal
+   equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="declination"></a>
+<h4>declination</h4>
+<pre>r = <b>declination</b> (ang)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   declination returns the solar declination angle at orbital
+   position ang in earth's orbit. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>ang&nbsp;&nbsp;&nbsp;</tt></td><td>   solar orbital position ang in earth's orbit <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="half_day_2d"></a>
+<h4>half_day_2d</h4>
+<pre>h = <b>half_day_2d</b> (latitude, dec)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   half_day_2d returns a 2-d array of half-day lengths at the 
+   latitudes and declination provided. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>latitude&nbsp;&nbsp;&nbsp;</tt></td><td>   latitutde of view point <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dec&nbsp;&nbsp;&nbsp;</tt></td><td>   solar declination angle at view point <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="half_day_0d"></a>
+<h4>half_day_0d</h4>
+<pre> 
+<b>half_day_0d</b> 
+</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   half_day_0d takes scalar input fields, makes them into 2-d fields
+   dimensioned (1,1), and calls half_day_2d. on return, the 2-d 
+   fields are converted to the desired scalar output. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>latitude&nbsp;&nbsp;&nbsp;</tt></td><td>   latitutde of view point <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>dec&nbsp;&nbsp;&nbsp;</tt></td><td>   solar declination angle at view point <br>&nbsp;&nbsp;&nbsp;<span class="type">[real]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="orbital_time"></a>
+<h4>orbital_time</h4>
+<pre>t = <b>orbital_time</b> (time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   orbital time returns the time (1 year = 2*pi) since autumnal 
+   equinox; autumnal_eq_ref is a module variable of time_type and 
+   will have been defined by default or by a call to 
+   set_ref_date_of_ae; length_of_year is available through the time 
+   manager and is set at the value approriate for the calandar being 
+   used </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   time (1 year = 2*pi) since autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+<li>
+<a name="universal_time"></a>
+<h4>universal_time</h4>
+<pre>t = <b>universal_time</b> (time)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd>   universal_time returns the time of day at longitude = 0.0 
+   (1 day = 2*pi) </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>time&nbsp;&nbsp;&nbsp;</tt></td><td>   time (1 year = 2*pi) since autumnal equinox <br>&nbsp;&nbsp;&nbsp;<span class="type">[time_type]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="NAMELIST"></a>
+<!-- BEGIN NAMELIST -->
+<!-- END NAMELIST --><a name="DIAGNOSTIC FIELDS"></a>
+<!-- BEGIN DIAGNOSTIC FIELDS -->
+<!-- END DIAGNOSTIC FIELDS --><a name="DATA SETS"></a>
+<!-- BEGIN DATA SETS -->
+<hr>
+<h4>DATA SETS</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END DATA SETS -->
+<a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<!-- BEGIN ERROR MESSAGES -->
+<hr>
+<h4>ERROR MESSAGES</h4>
+<div>None.<br>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>
