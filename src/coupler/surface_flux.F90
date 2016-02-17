@@ -26,7 +26,7 @@ module surface_flux_mod
 ! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
 !
 ! <OVERVIEW>
-!  Driver program for the calculation of fluxes on the exchange grids. 
+!  Driver program for the calculation of fluxes on the exchange grids.
 ! </OVERVIEW>
 !
 ! <DESCRIPTION>
@@ -51,29 +51,29 @@ public  surface_flux
 
 ! <INTERFACE NAME="surface_flux">
 !   <OVERVIEW>
-!   For the calculation of fluxes on the exchange grids. 
+!   For the calculation of fluxes on the exchange grids.
 !   </OVERVIEW>
 !   <DESCRIPTION>
-!   For the calculation of fluxes on the exchange grids. 
+!   For the calculation of fluxes on the exchange grids.
 !   </DESCRIPTION>
 !
 !  <IN NAME="t_atm" TYPE="real, dimension(:)" UNITS="Kelvin">
-!  Air temp lowest atmospheric level.  
+!  Air temp lowest atmospheric level.
 !  </IN>
 !  <IN NAME="q_atm" TYPE="real, dimension(:)" UNITS="dimensionless">
-!  Mixing ratio at lowest atmospheric level (kg/kg).  
+!  Mixing ratio at lowest atmospheric level (kg/kg).
 !  </IN>
 !  <IN NAME="u_atm" TYPE="real, dimension(:)" UNITS="m/s">
-!  Zonal wind velocity at lowest atmospheric level.       
+!  Zonal wind velocity at lowest atmospheric level.
 !  </IN>
 !  <IN NAME="v_atm" TYPE="real, dimension(:)" UNITS="m/s">
-!  Meridional wind velocity at lowest atmospheric level.    
+!  Meridional wind velocity at lowest atmospheric level.
 !  </IN>
 !  <IN NAME="p_atm" TYPE="real, dimension(:)" UNITS="Pascal">
-!  Pressure lowest atmospheric level.    
+!  Pressure lowest atmospheric level.
 !  </IN>
 !  <IN NAME="z_atm" TYPE="real, dimension(:)" UNITS="m" >
-!  Height lowest atmospheric level. 
+!  Height lowest atmospheric level.
 !  </IN>
 !  <IN NAME="p_surf" TYPE="real, dimension(:)" UNITS="Pascal">
 !   Pressure at the earth's surface
@@ -82,16 +82,16 @@ public  surface_flux
 !   Temp at the earth's surface
 !  </IN>
 !  <IN NAME="t_ca" TYPE="real, dimension(:)" UNITS="Kelvin">
-!   Air temp at the canopy 
+!   Air temp at the canopy
 !  </IN>
 !  <OUT NAME="q_surf" TYPE="real, dimension(:)" UNITS="dimensionless">
-!  Mixing ratio at earth surface (kg/kg). 
+!  Mixing ratio at earth surface (kg/kg).
 !  </OUT>
 !  <IN NAME="u_surf" TYPE="real, dimension(:)" UNITS="m/s">
-!  Zonal wind velocity at earth surface.   
+!  Zonal wind velocity at earth surface.
 !  </IN>
 !  <IN NAME="v_surf" TYPE="real, dimension(:)" UNITS="m/s">
-!  Meridional wind velocity at earth surface. 
+!  Meridional wind velocity at earth surface.
 !  </IN>
 !  <IN NAME="rough_mom" TYPE="real, dimension(:)" UNITS="m">
 !  Momentum roughness length
@@ -106,37 +106,37 @@ public  surface_flux
 !  Scale factor used to topographic roughness calculation
 !  </IN>
 !  <IN NAME="gust" TYPE="real, dimension(:)"  UNITS="m/s">
-!   Gustiness factor 
+!   Gustiness factor
 !  </IN>
 !  <OUT NAME="flux_t" TYPE="real, dimension(:)" UNITS="W/m^2">
-!  Sensible heat flux 
+!  Sensible heat flux
 !  </OUT>
 !  <OUT NAME="flux_q" TYPE="real, dimension(:)" UNITS="kg/(m^2 s)">
-!  Evaporative water flux 
+!  Evaporative water flux
 !  </OUT>
 !  <OUT NAME="flux_r" TYPE="real, dimension(:)" UNITS="W/m^2">
-!  Radiative energy flux 
+!  Radiative energy flux
 !  </OUT>
 !  <OUT NAME="flux_u" TYPE="real, dimension(:)" UNITS="Pa">
-!  Zonal momentum flux 
+!  Zonal momentum flux
 !  </OUT>
 !  <OUT NAME="flux_v" TYPE="real, dimension(:)" UNITS="Pa">
-! Meridional momentum flux 
+! Meridional momentum flux
 !  </OUT>
 !  <OUT NAME="cd_m" TYPE="real, dimension(:)" UNITS="dimensionless">
-!  Momentum exchange coefficient 
+!  Momentum exchange coefficient
 !  </OUT>
 !  <OUT NAME="cd_t" TYPE="real, dimension(:)" UNITS="dimensionless">
-!  Heat exchange coefficient 
+!  Heat exchange coefficient
 !  </OUT>
 !  <OUT NAME="cd_q" TYPE="real, dimension(:)" UNITS="dimensionless">
-!  Moisture exchange coefficient 
+!  Moisture exchange coefficient
 !  </OUT>
 !  <OUT NAME="w_atm" TYPE="real, dimension(:)" UNITS="m/s">
 !  Absolute wind at the lowest atmospheric level
 !  </OUT>
 !  <OUT NAME="u_star" TYPE="real, dimension(:)" UNITS="m/s">
-!  Turbulent velocity scale 
+!  Turbulent velocity scale
 !  </OUT>
 !  <OUT NAME="b_star" TYPE="real, dimension(:)" UNITS="m/s^2">
 !  Turbulent buoyant scale
@@ -148,13 +148,13 @@ public  surface_flux
 !  Sensible heat flux temperature sensitivity
 !  </OUT>
 !  <OUT NAME="dedt_surf" TYPE="real, dimension(:)" UNITS="1/K">
-!   Moisture flux temperature sensitivity 
+!   Moisture flux temperature sensitivity
 !  </OUT>
 !  <OUT NAME="dedq_surf" TYPE="real, dimension(:)" UNITS="(kg/m^2)/s">
-!  Moisture flux humidity sensitivity  
+!  Moisture flux humidity sensitivity
 !  </OUT>
 !  <OUT NAME="drdt_surf" TYPE="real, dimension(:)" UNITS="(W/m^2)/K">
-!  Radiative energy flux temperature sensitivity 
+!  Radiative energy flux temperature sensitivity
 !  </OUT>
 !  <OUT NAME="dhdt_atm" TYPE="real, dimension(:)" UNITS="(W/m^2)/K">
 !  Derivative of sensible heat flux over temp at the lowest atmos level.
@@ -163,32 +163,32 @@ public  surface_flux
 !  Derivative of water vapor flux over temp at the lowest atmos level.
 !  </OUT>
 !  <OUT NAME="dtaudu_atm" TYPE="real, dimension(:)" UNITS="Pa/(m/s)">
-!  Derivative of zonal wind stress w.r.t the lowest level zonal 
+!  Derivative of zonal wind stress w.r.t the lowest level zonal
 !  wind speed of the atmos
 !  </OUT>
 !  <OUT NAME="dtaudv_atm" TYPE="real, dimension(:)" UNITS="Pa/(m/s)">
-!  Derivative of meridional wind stress w.r.t the lowest level meridional 
+!  Derivative of meridional wind stress w.r.t the lowest level meridional
 !  wind speed of the atmos
 !  </OUT>
 !  <OUT NAME="dt" TYPE="real">
 !  Time step (it is not used presently)
 !  </OUT>
 !  <IN NAME="land" TYPE="logical, dimension(:)">
-!  Indicates where land exists (true if exchange cell is on land). 
+!  Indicates where land exists (true if exchange cell is on land).
 !  </IN>
 !  <IN NAME="seawater" TYPE="logical, dimension(:)">
-!  Indicates where liquid ocean water exists 
-!  (true if exchange cell is on liquid ocean water). 
+!  Indicates where liquid ocean water exists
+!  (true if exchange cell is on liquid ocean water).
 !  </IN>
 !  <IN NAME="avail" TYPE="logical, dimension(:)">
-!  True where the exchange cell is active.  
+!  True where the exchange cell is active.
 !  </IN>
 
 
 interface surface_flux
 !    module procedure surface_flux_0d
     module procedure surface_flux_1d
-    module procedure surface_flux_2d  
+    module procedure surface_flux_2d
 end interface
 ! </INTERFACE>
 
@@ -196,41 +196,36 @@ end interface
 
 character(len=*), parameter :: version = '$Id: surface_flux.F90,v 19.0.6.1 2013/01/24 20:23:30 pjp Exp $'
 character(len=*), parameter :: tagname = '$Name:  $'
-   
+
 logical :: do_init = .true.
 
-real, parameter :: d622   = rdgas/rvgas
-real, parameter :: d378   = 1.-d622
-real, parameter :: hlars  = hlv/rvgas
-real, parameter :: gcp    = grav/cp_air
-real, parameter :: kappa  = rdgas/cp_air
-real            :: d608   = d378/d622
-      ! d608 set to zero at initialization if the use of 
-      ! virtual temperatures is turned off in namelist
-      
-      
+!jp As grav is no longer a `parameter`, initialisation of these variables
+!   now happens in surface_flux_init
+real :: d622, d378, hlars, gcp, kappa, d608
+
+
 ! ---- namelist with default values ------------------------------------------
 ! <NAMELIST NAME="surface_flux_nml">
 !   <DATA NAME="no_neg_q"  TYPE="logical"  DEFAULT=".false.">
-!    If q_atm_in (specific humidity) is negative (because of numerical truncation),  
-!    then override with 0. 
+!    If q_atm_in (specific humidity) is negative (because of numerical truncation),
+!    then override with 0.
 !   </DATA>
 !   <DATA NAME="use_virtual_temp"  TYPE="logical"  DEFAULT=".true.">
 !    If true, use virtual potential temp to calculate the stability of the surface layer.
 !    if false, use potential temp.
 !   </DATA>
 !   <DATA NAME="alt_gustiness"  TYPE="logical"  DEFAULT=".false.">
-!   An alternative formulation for gustiness calculation. 
-!   A minimum bound on the wind speed used influx calculations, with the bound 
-!   equal to gust_const 
+!   An alternative formulation for gustiness calculation.
+!   A minimum bound on the wind speed used influx calculations, with the bound
+!   equal to gust_const
 !   </DATA>
 !   <DATA NAME="old_dtaudv"  TYPE="logical"  DEFAULT=".false.">
 !   The derivative of surface wind stress w.r.t. the zonal wind and
 !   meridional wind are approximated by the same tendency.
 !   </DATA>
 !   <DATA NAME="use_mixing_ratio"  TYPE="logical"  DEFAULT=".false.">
-!   An option to provide capability to run the Manabe Climate form of the 
-!   surface flux (coded for legacy purposes). 
+!   An option to provide capability to run the Manabe Climate form of the
+!   surface flux (coded for legacy purposes).
 !   </DATA>
 !   <DATA NAME="gust_const"  TYPE=""  DEFAULT="1.0">
 !    Constant for alternative gustiness calculation.
@@ -245,9 +240,9 @@ real            :: d608   = d378/d622
 !   <DATA NAME="ncar_ocean_flux_orig"  TYPE="logical"  DEFAULT=".false.">
 !    Use NCAR climate model turbulent flux calculation described by
 !    Large and Yeager, NCAR Technical Document, 2004, using the original
-!    GFDL implementation, which contains a bug in the specification of 
+!    GFDL implementation, which contains a bug in the specification of
 !    the exchange coefficient for the sensible heat.  This option is available
-!    for legacy purposes, and is not recommended for new experiments.   
+!    for legacy purposes, and is not recommended for new experiments.
 !   </DATA>
 !   <DATA NAME="raoult_sat_vap"  TYPE="logical"  DEFAULT=".false.">
 !    Reduce saturation vapor pressures to account for seawater salinity.
@@ -255,14 +250,14 @@ real            :: d608   = d378/d622
 ! </NAMELIST>
 
 logical :: no_neg_q              = .false.  ! for backwards compatibility
-logical :: use_virtual_temp      = .true. 
+logical :: use_virtual_temp      = .true.
 logical :: alt_gustiness         = .false.
 logical :: old_dtaudv            = .false.
 logical :: use_mixing_ratio      = .false.
 real    :: gust_const            =  1.0
 real    :: gust_min              =  0.0
 logical :: ncar_ocean_flux       = .false.
-logical :: ncar_ocean_flux_orig  = .false. ! for backwards compatibility 
+logical :: ncar_ocean_flux_orig  = .false. ! for backwards compatibility
 logical :: raoult_sat_vap        = .false.
 logical :: do_simple             = .false.
 
@@ -279,8 +274,8 @@ namelist /surface_flux_nml/ no_neg_q,             &
                             ncar_ocean_flux_orig, &
                             raoult_sat_vap,       &
                             do_simple,            &
-                            land_humidity_prefactor !s Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.       
-   
+                            land_humidity_prefactor !s Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
+
 
 
 contains
@@ -381,7 +376,7 @@ subroutine surface_flux_1d (                                           &
 
   !---- use local value of surf temp ----
 
-  t_surf0 = 200.   !  avoids out-of-bounds in es lookup 
+  t_surf0 = 200.   !  avoids out-of-bounds in es lookup
   where (avail)
      where (land)
         t_surf0 = t_ca
@@ -397,15 +392,15 @@ subroutine surface_flux_1d (                                           &
 
   if(use_mixing_ratio) then
     ! surface mixing ratio at saturation
-    q_sat   = d622*e_sat /(p_surf-e_sat )  
-    q_sat1  = d622*e_sat1/(p_surf-e_sat1)  
+    q_sat   = d622*e_sat /(p_surf-e_sat )
+    q_sat1  = d622*e_sat1/(p_surf-e_sat1)
   elseif(do_simple) then                  !rif:(09/02/09)
     q_sat   = d622*e_sat / p_surf
-    q_sat1  = d622*e_sat1/ p_surf   
+    q_sat1  = d622*e_sat1/ p_surf
   else
     ! surface specific humidity at saturation
-    q_sat   = d622*e_sat /(p_surf-d378*e_sat )  
-    q_sat1  = d622*e_sat1/(p_surf-d378*e_sat1)     
+    q_sat   = d622*e_sat /(p_surf-d378*e_sat )
+    q_sat1  = d622*e_sat1/(p_surf-d378*e_sat1)
   endif
 
   ! initilaize surface air humidity according to surface type
@@ -430,7 +425,7 @@ subroutine surface_flux_1d (                                           &
 
      tv_atm  = t_atm  * (1.0 + d608*q_atm)     ! virtual temperature
      th_atm  = t_atm  * p_ratio                ! potential T, using p_surf as refernce
-     thv_atm = tv_atm * p_ratio                ! virt. potential T, using p_surf as reference 
+     thv_atm = tv_atm * p_ratio                ! virt. potential T, using p_surf as reference
      thv_surf= t_surf0 * (1.0 + d608*q_surf0 ) ! surface virtual (potential) T
 !     thv_surf= t_surf0                        ! surface virtual (potential) T -- just for testing tun off the q_surf
 
@@ -452,7 +447,7 @@ subroutine surface_flux_1d (                                           &
         endif
      enddo
   else
-     if (gust_min > 0.0) then 
+     if (gust_min > 0.0) then
        where(avail)
          w_gust = max(gust,gust_min) ! minimum gustiness
        end where
@@ -460,9 +455,9 @@ subroutine surface_flux_1d (                                           &
        where(avail)
          w_gust = gust
        end where
-     endif  
-           
-     where(avail) 
+     endif
+
+     where(avail)
         w_atm = sqrt(u_dif*u_dif + v_dif*v_dif + w_gust*w_gust)
         ! derivatives of surface wind w.r.t. atm. wind components
         dw_atmdu = u_dif/w_atm
@@ -470,7 +465,7 @@ subroutine surface_flux_1d (                                           &
      endwhere
   endif
 
-  !  monin-obukhov similarity theory 
+  !  monin-obukhov similarity theory
   call mo_drag (thv_atm, thv_surf, z_atm,                  &
        rough_mom, rough_heat, rough_moist, w_atm,          &
        cd_m, cd_t, cd_q, u_star, b_star, avail             )
@@ -490,7 +485,7 @@ subroutine surface_flux_1d (                                           &
      drag_m = cd_m * w_atm
 
      ! density
-     rho = p_atm / (rdgas * tv_atm)  
+     rho = p_atm / (rdgas * tv_atm)
 
      ! sensible heat flux
      rho_drag = cp_air * drag_t * rho
@@ -500,11 +495,11 @@ subroutine surface_flux_1d (                                           &
 
      ! evaporation
      rho_drag  =  drag_q * rho
-!s   Have moved flux_q calculation to within the where(land) section, in order that we can include a land_humidity_prefactor. 
+!s   Have moved flux_q calculation to within the where(land) section, in order that we can include a land_humidity_prefactor.
 !     flux_q    =  rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
 
      where (land)
-!s      Simplified land model uses simple prefactor in front of qsurf0. Land is therefore basically the same as sea, but with this prefactor, hence the changes to dedq_surf and dedt_surf also. 
+!s      Simplified land model uses simple prefactor in front of qsurf0. Land is therefore basically the same as sea, but with this prefactor, hence the changes to dedq_surf and dedt_surf also.
         flux_q    =  rho_drag * (land_humidity_prefactor*q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
         dedq_surf = 0
         dedt_surf =  rho_drag * (land_humidity_prefactor*q_sat1 - q_sat) *del_temp_inv
@@ -515,7 +510,7 @@ subroutine surface_flux_1d (                                           &
         dedq_surf = 0
         dedt_surf =  rho_drag * (q_sat1 - q_sat) *del_temp_inv
      endwhere
-        
+
      dedq_atm  = -rho_drag   ! d(latent heat flux)/d(atmospheric mixing ratio)
 
      q_star = flux_q / (u_star * rho)             ! moisture scale
@@ -529,7 +524,7 @@ subroutine surface_flux_1d (                                           &
      ! stresses
      rho_drag   = drag_m * rho
      flux_u     = rho_drag * u_dif   ! zonal      component of stress (Nt/m**2)
-     flux_v     = rho_drag * v_dif   ! meridional component of stress 
+     flux_v     = rho_drag * v_dif   ! meridional component of stress
 
   elsewhere
      ! zero-out un-available data in output only fields
@@ -722,7 +717,7 @@ end subroutine surface_flux_2d
 
 
 ! ============================================================================
-!  Initialization of the surface flux module--reads the nml.     
+!  Initialization of the surface flux module--reads the nml.
 !
 subroutine surface_flux_init
 
@@ -735,7 +730,7 @@ subroutine surface_flux_init
 #else
   if ( file_exist('input.nml')) then
      unit = open_namelist_file ()
-     ierr=1; 
+     ierr=1;
      do while (ierr /= 0)
         read  (unit, nml=surface_flux_nml, iostat=io, end=10)
         ierr = check_nml_error(io,'surface_flux_nml')
@@ -749,11 +744,20 @@ subroutine surface_flux_init
 
   unit = stdlog()
   if ( mpp_pe() == mpp_root_pe() )  write (unit, nml=surface_flux_nml)
-  
+
+  d622   = rdgas/rvgas
+  d378   = 1.-d622
+  hlars  = hlv/rvgas
+  gcp    = grav/cp_air
+  kappa  = rdgas/cp_air
+  d608   = d378/d622
+
+  ! d608 set to zero  if the use of
+  ! virtual temperatures is turned off in namelist
   if(.not. use_virtual_temp) d608 = 0.0
-  
+
   do_init = .false.
-  
+
 end subroutine surface_flux_init
 
 
@@ -761,7 +765,7 @@ end subroutine surface_flux_init
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
 ! Over-ocean fluxes following Large and Yeager (used in NCAR models)           !
 ! Original  code: GFDL.Climate.Model.Info@noaa.gov
-! Update Jul2007: GFDL.Climate.Model.Info@noaa.gov (ch and ce exchange coeff bugfix)  
+! Update Jul2007: GFDL.Climate.Model.Info@noaa.gov (ch and ce exchange coeff bugfix)
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
 !
 subroutine ncar_ocean_fluxes (u_del, t, ts, q, qs, z, avail, &
@@ -825,7 +829,7 @@ real   , intent(inout), dimension(:) :: cd, ch, ce, ustar, bstar
                 xx = (log(z(i)/10)-psi_m)/vonkarm;
                 cd(i) = cd_n10/(1+cd_n10_rt*xx)**2;                       ! L-Y 10a
                 xx = (log(z(i)/10)-psi_h)/vonkarm;
-                ch(i) = ch_n10/(1+ch_n10*xx/cd_n10_rt)**2;                !     10b (this code is wrong)  
+                ch(i) = ch_n10/(1+ch_n10*xx/cd_n10_rt)**2;                !     10b (this code is wrong)
                 ce(i) = ce_n10/(1+ce_n10*xx/cd_n10_rt)**2;                !     10c (this code is wrong)
              end do
          end if

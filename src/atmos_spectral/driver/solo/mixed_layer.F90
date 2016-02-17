@@ -43,7 +43,7 @@ use   diag_manager_mod, only: register_diag_field, register_static_field, send_d
 
 use   time_manager_mod, only: time_type
 
-use     transforms_mod, only: get_deg_lat, grid_domain
+use     transforms_mod, only: get_deg_lat, get_deg_lon, grid_domain
 
 use      vert_diff_mod, only: surf_diff_type
 
@@ -143,7 +143,7 @@ real, allocatable, dimension(:,:)   ::                                        &
      ocean_qflux,           &   ! Q-flux
      rad_lat_2d                 ! latitude in radians
 
-real, allocatable, dimension(:)   :: deg_lat
+real, allocatable, dimension(:)   :: deg_lat, deg_lon
 
 real, allocatable, dimension(:,:)   ::                                        &
      gamma_t,               &   ! Used to calculate the implicit
@@ -221,6 +221,7 @@ enddo
 allocate(rad_lat_2d              (is:ie, js:je))
 allocate(ocean_qflux             (is:ie, js:je))
 allocate(deg_lat                 (js:je))
+allocate(deg_lon                 (is:ie))
 allocate(gamma_t                 (is:ie, js:je))
 allocate(gamma_q                 (is:ie, js:je))
 allocate(en_t                    (is:ie, js:je))
@@ -239,6 +240,7 @@ allocate(corrected_flux          (is:ie, js:je))
 allocate(t_surf_dependence       (is:ie, js:je))
 !allocate (albedo                (ie-is+1, je-js+1))
 allocate(land_sea_heat_capacity  (is:ie, js:je))
+!allocate(land_sea_heat_capacity  (ie-is+1, je-js+1))
 allocate(zsurf                  (is:ie, js:je))
 allocate(sst_new                 (is:ie, js:je))
 !
@@ -253,6 +255,8 @@ call get_deg_lat(deg_lat)
 do j=js,je
   rad_lat_2d(:,j) = deg_lat(j)*PI/180.
 enddo
+!mj get lon for land_sea_heat_capacity
+call get_deg_lon(deg_lon)
 
 !s Adding MiMA options
    if(do_sc_sst) do_read_sst = .true.
@@ -342,7 +346,7 @@ endif
 select case (albedo_choice)
   case (2) ! higher_albedo northward (lat_glacier>0) or southward (lat_glacier <0 ) of lat_glacier
     do j = 1, size(t_surf,2)
-      lat = 0.5*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
+      lat = deg_lat(js+j-1)
       ! mj SH or NH only
       if ( lat_glacier .ge. 0. ) then
          if ( lat > lat_glacier ) then
@@ -360,7 +364,7 @@ select case (albedo_choice)
     enddo
   case (3) ! higher_albedo poleward of lat_glacier
     do j = 1, size(t_surf,2)
-      lat = 0.5*(rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
+      lat = deg_lat(js+j-1)
       if ( abs(lat) > lat_glacier ) then
         albedo(:,j) = higher_albedo
       else
@@ -369,14 +373,12 @@ select case (albedo_choice)
     enddo
   case (4) ! exponential increase with albedo_exp
      do j = 1, size(t_surf,2)
-        lat = 0.5*(rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
-        lat = abs(lat)
+	lat = abs(deg_lat(js+j-1))
         albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*(lat/90.)**albedo_exp
      enddo
   case (5) ! tanh increase around albedo_cntr with albedo_wdth
      do j = 1, size(t_surf,2)
-        lat = 0.5*(rad_latb_2d(is,j+1) + rad_latb_2d(is,j))*180/PI
-        lat = abs(lat)
+	lat = abs(deg_lat(js+j-1))
         albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
              0.5*(1+tanh((lat-albedo_cntr)/albedo_wdth))
      enddo
@@ -394,48 +396,47 @@ endif
 !s begin surface heat capacity calculation
    if(.not.do_sc_sst) then
          land_sea_heat_capacity = depth*RHO_CP
-	if(trim(land_option) .eq. 'mjtrop' .or. np_cap_factor .ne. 1.0 ) then
-         if ( trop_capacity .ne. depth*RHO_CP ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0.
-            do j=1,size(t_surf,2)
-               lat = 0.5*180/PI*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j) )
-               if ( lat > 0. ) then
+	if(trim(land_option) .ne. 'input') then
+         if ( trop_capacity .ne. depth*RHO_CP .or. np_cap_factor .ne. 1. ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0.
+            do j=js,je
+	       lat = deg_lat(j)
+               if ( lat .gt. 0. ) then
                   loc_cap = depth*RHO_CP*np_cap_factor
                else
                   loc_cap = depth*RHO_CP
                endif
-               if ( abs(lat) < trop_cap_limit ) then
+               if ( abs(lat) .lt. trop_cap_limit ) then
                   land_sea_heat_capacity(:,j) = trop_capacity
-               elseif ( abs(lat) < heat_cap_limit ) then
+               elseif ( abs(lat) .lt. heat_cap_limit ) then
                   land_sea_heat_capacity(:,j) = trop_capacity*(1.-(abs(lat)-trop_cap_limit)/(heat_cap_limit-trop_cap_limit)) + (abs(lat)-trop_cap_limit)/(heat_cap_limit-trop_cap_limit)*loc_cap
-               elseif ( lat > heat_cap_limit ) then
+               elseif ( lat .gt. heat_cap_limit ) then
                   land_sea_heat_capacity(:,j) = loc_cap
                end if
             enddo
          endif
-	endif
 ! mj land heat capacity function of surface topography
          if(trim(land_option) .eq. 'zsurf')then
             call get_surf_geopotential(zsurf)
-            where ( zsurf > 10. ) land_sea_heat_capacity = land_capacity
+            where ( zsurf .gt. 10. ) land_sea_heat_capacity = land_capacity
          endif
 ! mj land heat capacity given through ?landlon, ?landlat
          if(trim(land_option) .eq. 'lonlat')then
-            do j=1,size(t_surf,2)
-               lat = 0.5*180/PI*( rad_latb_2d(is,j+1) + rad_latb_2d(is,j) )
-               do i=1,size(t_surf,1)
-                  lon = 0.5*180/PI*( rad_lonb_2d(i+1,js) + rad_lonb_2d(i,js) )
+            do j=js,je
+	       lat = deg_lat(j)
+               do i=is,ie
+                  lon = deg_lon(i)
                   do k=1,size(slandlat)
-                     if ( lon >= slandlon(k) .and. lon <= elandlon(k) &
-                          &.and. lat >= slandlat(k) .and. lat <= elandlat(k) )then
+                     if ( lon .ge. slandlon(k) .and. lon .le. elandlon(k) &
+                          &.and. lat .ge. slandlat(k) .and. lat .le. elandlat(k) )then
                         land_sea_heat_capacity(i,j) = land_capacity
                      endif
                   enddo
                enddo
             enddo
          endif
-	if(trim(land_option) .eq. 'input') then
+	else  !trim(land_option) .eq. 'input'
 		where(land) land_sea_heat_capacity = land_h_capacity_prefactor*land_sea_heat_capacity
-	endif
+	endif !end of if (trim(land_option) .ne. 'input')
     endif !end of if(.not.do_sc_sst)
 
 if ( id_heat_cap > 0 ) used = send_data ( id_heat_cap, land_sea_heat_capacity )

@@ -16,6 +16,7 @@
 |atmosphere |	rh	  | relative humidity |	(pfull, lat, lon)	|
 |atmosphere |	convection_rain	| Rain from convection scheme	| (lat, lon)	|
 |atmosphere |	condensation_rain |	Large scale resolved rain	| (lat, lon)	|
+|atmosphere |	precipitation |	Sum of resolved rain, resolved snow and parameterised rain 	| (lat, lon)	|
 |rrtm_radiation |  z_thalf 	|   	|   	|   	|
 |rrtm_radiation |	tdt_rad	| Temperature tendency due to radiation | 	(pfull, lat, lon)	|
 |rrtm_radiation |	flux_sw	| Net short wave surface flux	| (lat, lon)	|
