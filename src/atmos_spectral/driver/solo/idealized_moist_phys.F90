@@ -171,8 +171,9 @@ real, allocatable, dimension(:,:) ::                                          &
      cin,                  &   ! convective inhibition (this and the above are before the adjustment)
      invtau_q_relaxation,  &   ! temperature relaxation time scale
      invtau_t_relaxation,  &   ! humidity relaxation time scale
-     rain,                 &   !
-     snow
+     rain,                 &   ! Can be resolved or  parameterised
+     snow,                 &   !
+     precip                    ! cumulus rain  + resolved rain  + resolved snow 
 
 real, allocatable, dimension(:,:,:) :: &
      t_ref,          &   ! relaxation temperature for bettsmiller scheme
@@ -189,6 +190,7 @@ integer ::           &
      id_diff_dt_qg,  &   ! moisture tendency from vertical diffusion
      id_conv_rain,   &   ! rain from convection
      id_cond_rain,   &   ! rain from condensation
+     id_precip,      &   ! rain and snow from condensation and convection
      id_conv_dt_tg,  &   ! temperature tendency from convection
      id_conv_dt_qg,  &   ! temperature tendency from convection
      id_cond_dt_tg,  &   ! temperature tendency from convection
@@ -321,6 +323,7 @@ allocate(invtau_q_relaxation  (is:ie, js:je))
 allocate(invtau_t_relaxation  (is:ie, js:je))
 allocate(rain         (is:ie, js:je)); rain = 0.0
 allocate(snow         (is:ie, js:je)); snow = 0.0
+allocate(precip       (is:ie, js:je)); precip = 0.0
 allocate(convflag     (is:ie, js:je))
 allocate(convect      (is:ie, js:je)); convect = .false.
 
@@ -423,6 +426,9 @@ id_cond_dt_tg = register_diag_field(mod_name, 'dt_tg_condensation',        &
      axes(1:3), Time, 'Temperature tendency from condensation','K/s')
 id_cond_rain = register_diag_field(mod_name, 'condensation_rain',          &
      axes(1:2), Time, 'Rain from condensation','kg/m/m/s')
+id_precip = register_diag_field(mod_name, 'precipitation',          &
+     axes(1:2), Time, 'Precipitation from resolved, parameterised and snow','kg/m/m/s')
+
 
 if(lwet_convection) then
    call qe_moist_convection_init()
@@ -495,8 +501,9 @@ else
    delta_t = 2*dt_real
 endif
 
+rain = 0.0; snow = 0.0; precip = 0.0
 if (lwet_convection) then
-   rain = 0.0; snow = 0.0
+
    call qe_moist_convection ( delta_t,              tg(:,:,:,previous),      &
     grid_tracers(:,:,:,previous,nsphum),        p_full(:,:,:,previous),      &
                           p_half(:,:,:,previous),                coldT,      &
@@ -514,6 +521,7 @@ if (lwet_convection) then
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
    rain       = rain/delta_t
+   precip     = rain  
 
    dt_tg = dt_tg + conv_dt_tg
    dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
@@ -521,6 +529,7 @@ if (lwet_convection) then
    if(id_conv_dt_qg > 0) used = send_data(id_conv_dt_qg, conv_dt_qg, Time)
    if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
    if(id_conv_rain  > 0) used = send_data(id_conv_rain, rain, Time)
+
 
 else if (do_bm) then
 
@@ -542,6 +551,7 @@ else if (do_bm) then
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
    rain       = rain/delta_t
+   precip     = rain   
 
    dt_tg = dt_tg + conv_dt_tg
    dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
@@ -558,7 +568,7 @@ else
 
 endif
 
-rain = 0.0
+rain = 0.0; snow = 0.0
 call lscale_cond (         tg_tmp,                          qg_tmp,        &
            p_full(:,:,:,previous),          p_half(:,:,:,previous),        &
                             coldT,                            rain,        &
@@ -568,13 +578,18 @@ call lscale_cond (         tg_tmp,                          qg_tmp,        &
 cond_dt_tg = cond_dt_tg/delta_t
 cond_dt_qg = cond_dt_qg/delta_t
 rain       = rain/delta_t
+snow       = snow/delta_t
+precip     = precip + rain + snow      
                                                                              
 dt_tg = dt_tg + cond_dt_tg
 dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + cond_dt_qg
+
+
                                                                                
 if(id_cond_dt_qg > 0) used = send_data(id_cond_dt_qg, cond_dt_qg, Time)
 if(id_cond_dt_tg > 0) used = send_data(id_cond_dt_tg, cond_dt_tg, Time)
 if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
+if(id_precip     > 0) used = send_data(id_precip, precip, Time)
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
