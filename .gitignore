@@ -11,3 +11,4 @@ opt_exps
 frierson_comparison_*old*
 *.pyc
 exp/st_test*
+*.DS_Store
