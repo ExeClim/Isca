@@ -25,7 +25,7 @@ module diffusivity_mod
 !
 !                          DIFFUSIVITY MODULE
 !
-!     Routines for computing atmospheric diffusivities in the 
+!     Routines for computing atmospheric diffusivities in the
 !       planetary boundary layer and in the free atmosphere
 !
 !=======================================================================
@@ -54,11 +54,11 @@ private
 ! form of iterfaces
 
 !=======================================================================
-! subroutine diffusivity (t, q, u, v, p_full, p_half, z_full, z_half, 
+! subroutine diffusivity (t, q, u, v, p_full, p_half, z_full, z_half,
 !                         u_star, b_star, h, k_m, k_t)
 
 ! input:
-  
+
 !        t     : real, dimension(:,:,:) -- (:,:,pressure), third index running
 !                          from top of atmosphere to bottom
 !                 temperature (K)
@@ -69,10 +69,10 @@ private
 !        u     : real, dimension(:,:)
 !                 zonal wind (m/s)
 !
-!        v     : real, dimension(:,:,:) 
-!                 meridional wind (m/s) 
+!        v     : real, dimension(:,:,:)
+!                 meridional wind (m/s)
 !
-!        z_full  : real, dimension(:,:,: 
+!        z_full  : real, dimension(:,:,:
 !                 height of full levels (m)
 !                 1 = top of atmosphere; size(p_half,3) = surface
 !                 size(z_full,3) = size(t,3)
@@ -89,12 +89,12 @@ private
 !        b_star: real, dimension(:,:)
 !                buoyancy scale (m/s**2)
 
-!   (u_star and b_star can be obtained by calling 
+!   (u_star and b_star can be obtained by calling
 !     mo_drag in monin_obukhov_mod)
 
 ! output:
 
-!        h     : real, dimension(:,:,) 
+!        h     : real, dimension(:,:,)
 !                 depth of planetary boundary layer (m)
 !
 !        k_m   : real, dimension(:,:,:)
@@ -102,7 +102,7 @@ private
 !
 !                defined at half-levels
 !                size(k_m,3) should be at least as large as size(t,3)
-!                only the returned values at 
+!                only the returned values at
 !                      levels 2 to size(t,3) are meaningful
 !                other values will be returned as zero
 !
@@ -137,7 +137,7 @@ real    :: mix_len             = 30.
 real    :: rich_prandtl        =  1.00
 real    :: background_m        =  0.0
 real    :: background_t        =  0.0
-logical :: ampns               = .false. ! include delta z factor in 
+logical :: ampns               = .false. ! include delta z factor in
                                          ! defining ri ?
 real    :: ampns_max           = 1.0E20  ! limit to reduction factor
                                          ! applied to ri due to delta z
@@ -145,19 +145,19 @@ real    :: ampns_max           = 1.0E20  ! limit to reduction factor
 logical :: do_entrain          =.true.
 logical :: do_simple           =.false.
 
-namelist /diffusivity_nml/ fixed_depth, depth_0, frac_inner,& 
+namelist /diffusivity_nml/ fixed_depth, depth_0, frac_inner,&
                            rich_crit_pbl, entr_ratio, parcel_buoy,&
                            znom, free_atm_diff, free_atm_skyhi_diff,&
                            pbl_mcm, rich_crit_diff, mix_len, rich_prandtl,&
                            background_m, background_t, ampns, ampns_max, &
                            do_entrain, do_simple
-                          
+
 !=======================================================================
 
 !  OTHER MODULE VARIABLES
 
 real    :: small  = 1.e-04
-real    :: gcp    = grav/cp_air
+real    :: gcp    = 0
 logical :: module_is_initialized   = .false.
 real    :: beta   = 1.458e-06
 real    :: rbop1  = 110.4
@@ -173,6 +173,7 @@ contains
 subroutine diffusivity_init
 
 integer :: unit, ierr, io, logunit
+
 
 !------------------- read namelist input -------------------------------
 
@@ -192,7 +193,7 @@ integer :: unit, ierr, io, logunit
 !------------------- dummy checks --------------------------------------
          if (frac_inner .le. 0. .or. frac_inner .ge. 1.) &
             call error_mesg ('diffusivity_init',  &
-            'frac_inner must be between 0 and 1', FATAL) 
+            'frac_inner must be between 0 and 1', FATAL)
          if (rich_crit_pbl .lt. 0.) &
             call error_mesg ('diffusivity_init',  &
            'rich_crit_pbl must be greater than or equal to zero', FATAL)
@@ -205,7 +206,7 @@ integer :: unit, ierr, io, logunit
          if (.not.free_atm_diff .and. free_atm_skyhi_diff)&
             call error_mesg ('diffusivity_init',  &
             'free_atm_diff must be set to true if '//&
-            'free_atm_skyhi_diff = .true.', FATAL) 
+            'free_atm_skyhi_diff = .true.', FATAL)
          if (rich_crit_diff .le. 0.) &
             call error_mesg ('diffusivity_init',  &
             'rich_crit_diff must be greater than zero', FATAL)
@@ -228,8 +229,11 @@ integer :: unit, ierr, io, logunit
             call error_mesg ('diffusivity_init',  &
             'ampns is only valid when free_atm_skyhi_diff is &
                    & also true', FATAL)
-      
+
       endif  !end of reading input.nml
+
+  ! initialise from constants
+  gcp = grav/cp_air
 
 !---------- output namelist to log-------------------------------------
 
@@ -296,7 +300,7 @@ end if
 do k = 1, nlev
   z_full_ag(:,:,k) = z_full(:,:,k) - z_surf(:,:)
   z_half_ag(:,:,k) = z_half(:,:,k) - z_surf(:,:)
-  
+
   if(do_simple) then
     svcp(:,:,k)  =   t(:,:,k) + gcp*(z_full_ag(:,:,k))
   else
@@ -308,7 +312,7 @@ z_half_ag(:,:,nlev+1) = z_half(:,:,nlev+1) - z_surf(:,:)
 
 if(fixed_depth)  then
    h = depth_0
-else 
+else
    call pbl_depth(svcp,u,v,z_full_ag,u_star,b_star,h,kbot=kbot)
 end if
 
@@ -394,9 +398,9 @@ ws = max(small,ws/vonkarm/h_inner)
 do j = 1, nlat
  do i = 1, nlon
 
-        !do neutral or stable case 
-        if (b_star(i,j).le.0. .or. do_simple) then    
-              
+        !do neutral or stable case
+        if (b_star(i,j).le.0. .or. do_simple) then
+
               h1     = z(i,j,ibot(i,j))
               h(i,j) = h1
               rich1  = rich(i,j,ibot(i,j))
@@ -410,7 +414,7 @@ do j = 1, nlat
                        endif
                        rich1 = rich2
                        h1    = h2
-              enddo 
+              enddo
 
         !do unstable case
         else
@@ -486,7 +490,7 @@ call mo_diff(h_inner        , u_star, b_star, k_m_ref         , k_t_ref)
 call mo_diff(zm(:,:,kk:nlev), u_star, b_star, k_m(:,:,kk:nlev), k_t(:,:,kk:nlev))
 
 do k = 2, nlev
-  where(zm(:,:,k) >= h_inner .and. zm(:,:,k) < h) 
+  where(zm(:,:,k) >= h_inner .and. zm(:,:,k) < h)
     factor = (zm(:,:,k)/h_inner)* &
              (1.0 - (zm(:,:,k) - h_inner)/(h - h_inner))**2
     k_m(:,:,k) = k_m_ref*factor
@@ -516,7 +520,7 @@ real, dimension(size(z_full,1),size(z_full,2)) :: sig_half, z_half_ss, elmix_ss
 
 !  htcrit_ss = height at which mixing length is a maximum (75m)
 !  h_ss   = height at which mixing length vanishes (4900m)
-!  elmix_ss   = mixing length 
+!  elmix_ss   = mixing length
 
 ! Define some constants:
 !  salaps = standard atmospheric lapse rate (K/m)
@@ -540,17 +544,17 @@ do k = 2, nlev
 !  have large errors above the tropopause.
 
 ! In order to determine the height, the layer mean temperature
-! from the surface to that level is required.  A surface 
-! temperature of 15 deg Celsius and a standard lapse rate of 
-! -6.5 deg/km will be used to estimate an average temperature 
-! profile. 
- 
+! from the surface to that level is required.  A surface
+! temperature of 15 deg Celsius and a standard lapse rate of
+! -6.5 deg/km will be used to estimate an average temperature
+! profile.
+
    sig_half = p_half(:,:,k)/p_half(:,:,nlev+1)
    z_half_ss = -rdgas * .5*(tsfc+tsfc*(sig_half**(-rdgas*salaps/grav))) * alog(sig_half)/grav
 
    !compute mixing length as in SS (no geographical variation)
     elmix_ss = 0.
-  
+
     where (z_half_ss < htcrit_ss .and. z_half_ss > 0.)
          elmix_ss = vonkarm*z_half_ss
     endwhere
@@ -562,7 +566,7 @@ do k = 2, nlev
              (grav*p_half(:,:,k))
    delta_u =      u(:,:,k-1) -      u(:,:,k)
    delta_v =      v(:,:,k-1) -      v(:,:,k)
-   
+
    k_m(:,:,k) =   elmix_ss * elmix_ss *&
                   sqrt(delta_u*delta_u + delta_v*delta_v)/delta_z
 
@@ -593,17 +597,17 @@ do k = 2, size(t,3)
 !----------------------------------------------------------------------
   dz     = z(:,:,k-1) - z(:,:,k)
   b      = grav*(t(:,:,k-1)-t(:,:,k))/t(:,:,k)
-  speed2 = (u(:,:,k-1) - u(:,:,k))**2 + (v(:,:,k-1) - v(:,:,k))**2 
+  speed2 = (u(:,:,k-1) - u(:,:,k))**2 + (v(:,:,k-1) - v(:,:,k))**2
   rich= b*dz/(speed2+small)
   rich = max(rich, 0.0)
 
   if (free_atm_skyhi_diff) then
 !---------------------------------------------------------------------
-!   limit the standard richardson number to between 0 and the critical 
-!   value (rich2). compute the richardson number factor needed in the 
+!   limit the standard richardson number to between 0 and the critical
+!   value (rich2). compute the richardson number factor needed in the
 !   eddy mixing coefficient using this standard richardson number.
 !---------------------------------------------------------------------
-    where (rich(:,:) >= rich_crit_diff) 
+    where (rich(:,:) >= rich_crit_diff)
       fri2(:,:) = 0.0
     elsewhere
       fri2(:,:)  = (1.0 - rich/rich_crit_diff)**2
@@ -611,7 +615,7 @@ do k = 2, size(t,3)
   endif
 
 !---------------------------------------------------------------------
-!  if ampns is activated, compute the delta z factor. define rich 
+!  if ampns is activated, compute the delta z factor. define rich
 !  including this factor.
 !---------------------------------------------------------------------
   if (ampns) then
@@ -620,20 +624,20 @@ do k = 2, size(t,3)
   endif
 
 !---------------------------------------------------------------------
-!   compute the richardson number factor to be used in the eddy 
+!   compute the richardson number factor to be used in the eddy
 !   mixing coefficient. if ampns is on, this value includes it; other-
 !   wise it does not.
 !---------------------------------------------------------------------
   fri(:,:)   = (1.0 - rich/rich_crit_diff)**2
 
 !---------------------------------------------------------------------
-!   compute the eddy mixing coefficients in the free atmosphere ( zz 
-!   > h). in the non-ampns case, values are obtained only when the 
+!   compute the eddy mixing coefficients in the free atmosphere ( zz
+!   > h). in the non-ampns case, values are obtained only when the
 !   standard richardson number is sub-critical; in the ampns case values
-!   are obtained only when the richardson number computed with the 
+!   are obtained only when the richardson number computed with the
 !   ampns factor is sub critical. when the ampns factor is activated,
 !   it is also included in the mixing coefficient. the value of mixing
-!   for temperature, etc. is reduced dependent on the ri stability 
+!   for temperature, etc. is reduced dependent on the ri stability
 !   factor calculated without the ampns factor.
 !---------------------------------------------------------------------
   if (free_atm_skyhi_diff) then
@@ -643,7 +647,7 @@ do k = 2, size(t,3)
 !   of k_m to k_t defined based on computed stability factor.
 !---------------------------------------------------------------------
     if (ampns) then
-      where (rich < rich_crit_diff .and. zz(:,:,k) > h) 
+      where (rich < rich_crit_diff .and. zz(:,:,k) > h)
            k_m(:,:,k) = mix_len*mix_len*sqrt(speed2)*fri(:,:)* &
                         ( 1.  + 1.e-04*(dz(:,:)**1.5))/dz
            k_t(:,:,k) = k_m(:,:,k)* (0.1 + 0.9*fri2(:,:))
@@ -660,7 +664,7 @@ do k = 2, size(t,3)
 !   this is the non-skyhi-like formulation -- no ampns factor, ratio
 !   of k_m to k_t defined by rich_prandtl.
 !---------------------------------------------------------------------
-    where (rich < rich_crit_diff .and. zz(:,:,k) > h) 
+    where (rich < rich_crit_diff .and. zz(:,:,k) > h)
          k_t(:,:,k) = mix_len*mix_len*sqrt(speed2)*fri(:,:)/dz
          k_m(:,:,k) = k_t(:,:,k)*rich_prandtl
     end where
@@ -675,7 +679,7 @@ end subroutine diffusivity_free
 subroutine molecular_diff ( temp, press, k_m, k_t)
 
 real, intent(in),    dimension (:,:,:)  ::  temp, press
-real, intent(inout), dimension (:,:,:)  ::  k_m, k_t    
+real, intent(inout), dimension (:,:,:)  ::  k_m, k_t
 
       real, dimension (size(temp,1), size(temp,2)) :: temp_half, &
                                                       rho_half, rbop2d
@@ -686,7 +690,7 @@ real, intent(inout), dimension (:,:,:)  ::  k_m, k_t
       do k=2,size(temp,3)
         temp_half(:,:) = 0.5*(temp(:,:,k) + temp(:,:,k-1))
         rho_half(:,:) = press(:,:,k)/(rdgas*temp_half(:,:) )
-        rbop2d(:,:)  = beta*temp_half(:,:)*sqrt(temp_half(:,:))/  & 
+        rbop2d(:,:)  = beta*temp_half(:,:)*sqrt(temp_half(:,:))/  &
                        (rho_half(:,:)*(temp_half(:,:)+rbop1))
         k_m(:,:,k) = rbop2d(:,:)
         k_t(:,:,k) = rbop2d(:,:)*rbop2
@@ -697,7 +701,7 @@ real, intent(inout), dimension (:,:,:)  ::  k_m, k_t
 
 
 
-end subroutine molecular_diff 
+end subroutine molecular_diff
 
 
 
@@ -715,7 +719,7 @@ nlev=size(t,3)
 
 do k = 2,nlev
     where (b_star .gt. 0. .and. z(:,:,k-1) .gt. h .and. &
-                                z(:,:,k)   .le. h) 
+                                z(:,:,k)   .le. h)
         k_t(:,:,k) = (z(:,:,k-1)-z(:,:,k))*entr_ratio*t(:,:,k)* &
                       u_star*b_star/grav/max(small,t(:,:,k-1)-t(:,:,k))
         k_m(:,:,k) = k_t(:,:,k)

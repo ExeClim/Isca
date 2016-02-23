@@ -1,19 +1,19 @@
-#!/usr/bin/env python
-
+from contextlib import contextmanager
 import logging
 import os
+import re
 
 import f90nml
 from jinja2 import Environment, FileSystemLoader
 import sh
 
 P = os.path.join
+_module_directory = os.path.dirname(os.path.realpath(__file__))
+
 
 mkdir = sh.mkdir.bake('-p')
 
-
-
-log = logging.getLogger('mima')
+log = logging.getLogger('gfdl')
 log.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
@@ -41,8 +41,24 @@ except Exception, e:
     exit(0)
 
 
+try:
+    _screen_window = os.environ['WINDOW']
+    _using_screen = True
+except:
+    _using_screen = False
+
+
+def set_screen_title(title):
+    if _using_screen:
+        try:
+            sh.screen('-p', _screen_window, '-X', 'title', title)
+            sh.screen('-X', 'redisplay')
+        except Exception as e:
+            log.warning('Screen title could not be changed.')
+            log.debug(e.message)
+
 class Experiment(object):
-    """A basic MiMA experiment"""
+    """A basic GFDL experiment"""
     def __init__(self, name, commit=None, repo=None, overwrite_data=False):
         super(Experiment, self).__init__()
         self.name = name
@@ -58,7 +74,6 @@ class Experiment(object):
         self.restartdir = P(self.workdir, 'restarts') # where restarts will be stored
         self.rundir = P(self.workdir, 'run')          # temporary area an individual run will be performed
         self.datadir = P(GFDL_DATA, self.name)        # where run data will be moved to upon completion
-
 
         if os.path.isdir(self.workdir):
             log.warning('Working directory for exp %r already exists' % self.name)
@@ -76,17 +91,18 @@ class Experiment(object):
         else:
             self.srcdir = GFDL_BASE
 
-        self.mimapy_dir = P(self.srcdir, 'exp', 'mimapy')
+        self.template_dir = P(_module_directory, 'templates')
 
-        self.templates = Environment(loader=FileSystemLoader(P(self.mimapy_dir, 'templates')))
+        self.templates = Environment(loader=FileSystemLoader(self.template_dir))
 
-        self.diag_table_file = P(self.mimapy_dir, 'diag_table')
-        self.field_table_file = P(self.mimapy_dir, 'field_table')
+        self.diag_table_file = P(self.template_dir, 'diag_table.default')
+        self._diag_table = None
+        self.field_table_file = P(self.template_dir, 'field_table')
 
-        self.path_names_file = P(self.mimapy_dir, 'path_names')
+        self.path_names_file = P(self.template_dir, 'path_names')
         self.path_names = self._get_default_path_names()
 
-        self.namelist_files = [P(self.mimapy_dir, 'core.nml'), P(self.mimapy_dir, 'phys.nml')]
+        self.namelist_files = [P(self.template_dir, 'core.nml'), P(self.template_dir, 'phys.nml')]
         self.namelist = self.rebuild_namelist()
 
         self.inputfiles = []
@@ -99,11 +115,14 @@ class Experiment(object):
         self.templates.get_template(filename).stream(values).dump(new_pathname)
         self.path_names.insert(0, new_pathname)
 
-    def clear_workdir(self):
+    def rm_workdir(self):
         try:
             sh.rm(['-r', self.workdir])
         except sh.ErrorReturnCode_1:
             log.warning('Tried to remove working directory but it doesnt exist')
+
+    def clear_workdir(self):
+        self.rm_workdir()
         mkdir(self.workdir)
         log.info('Emptied working directory %r' % self.workdir)
 
@@ -159,8 +178,15 @@ class Experiment(object):
         self.namelist.write(P(outdir, 'input.nml'))
 
     def write_diag_table(self, outdir):
-        log.info('Writing diag_table to %r' % P(outdir, 'diag_table'))
-        sh.cp(self.diag_table_file, P(outdir, 'diag_table'))
+        outfile = P(outdir, 'diag_table')
+        log.info('Writing diag_table to %r' % outfile)
+        if self._diag_table:
+            template = self.templates.get_template('diag_table')
+            calendar = not self.namelist['main_nml']['calendar'].lower().startswith('no_calendar')
+            vars = {'calendar': calendar, 'outputfiles': self._diag_table.files.values()}
+            template.stream(**vars).dump(outfile)
+        else:
+            sh.cp(self.diag_table_file, P(outdir, 'diag_table'))
 
     def write_field_table(self, outdir):
         log.info('Writing field_table to %r' % P(outdir, 'field_table'))
@@ -184,7 +210,7 @@ class Experiment(object):
 
         vars = {
             'execdir': self.execdir,
-            'mimapy_dir': self.mimapy_dir,
+            'template_dir': self.template_dir,
             'srcdir': self.srcdir,
             'workdir': self.workdir
         }
@@ -194,11 +220,30 @@ class Experiment(object):
         self.templates.get_template('compile.sh').stream(**vars).dump(P(self.workdir, 'compile.sh'))
         log.info('Running compiler')
         try:
+            set_screen_title('compiling')
             sh.bash(P(self.workdir, 'compile.sh'), _out=clean_log_debug, _err=clean_log_debug)
         except Exception as e:
             log.critical('Compilation failed.')
             raise e
         log.debug('Compilation complete.')
+
+    def use_diag_table(self, diag_table):
+        """Use a DiagTable object for the diagnostic output specification."""
+        self._diag_table = diag_table
+
+
+    _day_re = re.compile('Integration completed through\s+([0-9]+) days')
+    def _log_runmonth(self, outputstring):
+        s = outputstring.strip()
+        m = self._day_re.search(s)
+        try:
+            days = int(m.group(1))
+            set_screen_title('rm:%d:%d' % (self._cur_month, days))
+        except:
+            pass
+        return clean_log_debug(outputstring)
+
+
 
 
     def runmonth(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False):
@@ -253,8 +298,10 @@ class Experiment(object):
         t = runmonth.stream(**vars).dump(P(self.rundir, 'runmonth.sh'))
 
         log.info("Running GFDL for month %r" % month)
+        self._cur_month = month
         try:
-            sh.bash(P(self.rundir, 'runmonth.sh'), _out=clean_log_debug, _err=clean_log_debug)
+            set_screen_title('month:%d' % month)
+            sh.bash(P(self.rundir, 'runmonth.sh'), _out=self._log_runmonth, _err=self._log_runmonth)
             log.info("Run for month %r complete" % month)
         except Exception as e:
             log.error("Run failed for month %r" % month)
@@ -275,3 +322,30 @@ class Experiment(object):
         self.clear_rundir()
         sh.cd(self.rundir)
         return True
+
+class DiagTable(object):
+    def __init__(self):
+        super(DiagTable, self).__init__()
+        self.files = {}
+
+    def add_file(self, name, freq, units="hours", time_units=None):
+        if time_units is None:
+            time_units = units
+        self.files[name] = {
+            'name': name,
+            'freq': freq,
+            'units': units,
+            'time_units': time_units,
+            'fields': []
+        }
+
+    def add_field(self, module, name, time_avg=False, files=None):
+        if files is None:
+            files = self.files.keys()
+
+        for fname in files:
+            self.files[fname]['fields'].append({
+                'module': module,
+                'name': name,
+                'time_avg': time_avg
+                })

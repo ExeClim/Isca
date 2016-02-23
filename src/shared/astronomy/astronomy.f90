@@ -7,7 +7,7 @@
 ! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
 ! <OVERVIEW>
 !    astronomy_mod provides astronomical variables for use
-!    by other modules within fms. the only currently used interface is 
+!    by other modules within fms. the only currently used interface is
 !    for determination of astronomical values needed by the shortwave
 !    radiation packages.
 ! </OVERVIEW>
@@ -26,7 +26,7 @@ use time_manager_mod,  only: time_type, set_time, get_time, &
                              set_date, length_of_year, &
                              time_manager_init, &
                              operator(-), operator(+), &
-                             operator( // ), operator(<)
+                             operator( // ), operator(<), get_calendar_type, NO_CALENDAR
 use constants_mod,     only: constants_init, PI
 use mpp_mod,           only: input_nml_file
 
@@ -37,7 +37,7 @@ private
 
 !---------------------------------------------------------------------
 !    astronomy_mod provides astronomical variables for use
-!    by other modules within fms. the only currently used interface is 
+!    by other modules within fms. the only currently used interface is
 !    for determination of astronomical values needed by the shortwave
 !    radiation packages.
 !---------------------------------------------------------------------
@@ -114,20 +114,20 @@ private &
 
 interface half_day
    module procedure half_day_2d, half_day_0d
-end interface 
+end interface
 
 
 !---------------------------------------------------------------------
 !-------- namelist  ---------
 
-real    :: ecc   = 0.01671   ! eccentricity of orbital ellipse 
+real    :: ecc   = 0.01671   ! eccentricity of orbital ellipse
                              ! [ non-dimensional ]
 real    :: obliq = 23.439    ! obliquity [ degrees ]
-real    :: per   = 102.932   ! longitude of perihelion with respect 
+real    :: per   = 102.932   ! longitude of perihelion with respect
                              ! to autumnal equinox in NH [ degrees ]
-integer :: period = 0        ! specified length of year [ seconds ] ; 
-                             ! must be specified to override default 
-                             ! value given by length_of_year in 
+integer :: period = 0        ! specified length of year [ seconds ] ;
+                             ! must be specified to override default
+                             ! value given by length_of_year in
                              ! time_manager_mod
 integer :: day_ae    = 23    ! day of specified autumnal equinox
 integer :: month_ae  = 9     ! month of specified autumnal equinox
@@ -135,12 +135,12 @@ integer :: year_ae   = 1998  ! year of specified autumnal equinox
 integer :: hour_ae   = 5     ! hour of specified autumnal equinox
 integer :: minute_ae = 37    ! minute of specified autumnal equinox
 integer :: second_ae = 0     ! second of specified autumnal equinox
-integer :: num_angles = 3600 ! number of intervals into which the year 
+integer :: num_angles = 3600 ! number of intervals into which the year
                              ! is divided to compute orbital positions
 
 
 namelist /astronomy_nml/ ecc, obliq, per, period, &
-                         year_ae, month_ae,  day_ae,         & 
+                         year_ae, month_ae,  day_ae,         &
                          hour_ae, minute_ae, second_ae, &
                          num_angles
 
@@ -152,14 +152,14 @@ namelist /astronomy_nml/ ecc, obliq, per, period, &
 !------   private data ----------
 
 type(time_type) :: autumnal_eq_ref  ! time_type variable containing
-                                    ! specified time of reference 
+                                    ! specified time of reference
                                     ! NH autumnal equinox
 
 type(time_type) :: period_time_type ! time_type variable containing
                                     ! period of one orbit
 
 real, dimension(:), allocatable ::      &
-                          orb_angle ! table of orbital positions (0 to 
+                          orb_angle ! table of orbital positions (0 to
                                     ! 2*pi) as a function of time  used
                                     ! to find actual orbital position
                                     ! via interpolation
@@ -176,7 +176,7 @@ real, dimension(:), allocatable ::       &
                        fracday_ann  ! annual mean daylight fraction
 real    :: rrsun_ann                ! annual mean earth-sun distance
 logical :: annual_mean_calculated =      &
-                           .false.  ! have the annual mean values been 
+                           .false.  ! have the annual mean values been
                                     ! calculated ?
 integer :: num_pts = 0              ! count of grid_boxes for which
                                     ! annual mean astronomy values have
@@ -195,7 +195,7 @@ integer :: total_pts                ! number of grid boxes owned by the
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                     PUBLIC SUBROUTINES
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,7 +220,7 @@ integer :: total_pts                ! number of grid boxes owned by the
 ! </SUBROUTINE>
 !
 subroutine astronomy_init (latb, lonb)
-  
+
 !-------------------------------------------------------------------
 !    astronomy_init is the constructor for astronomy_mod.
 !-------------------------------------------------------------------
@@ -231,9 +231,9 @@ real,   dimension(:,:), intent(in), optional   :: lonb
 !--------------------------------------------------------------------
 !   intent(in) variables:
 !
-!       latb         2d array of model latitudes at cell corners 
+!       latb         2d array of model latitudes at cell corners
 !                    [ radians ]
-!       lonb         2d array of model longitudes at cell corners 
+!       lonb         2d array of model longitudes at cell corners
 !                    [ radians ]
 !
 !--------------------------------------------------------------------
@@ -270,7 +270,7 @@ real,   dimension(:,:), intent(in), optional   :: lonb
       call constants_init
 
 !-----------------------------------------------------------------------
-!    read namelist.              
+!    read namelist.
 !-----------------------------------------------------------------------
 #ifdef INTERNAL_FILE_NML
       read (input_nml_file, astronomy_nml, iostat=io)
@@ -278,12 +278,12 @@ real,   dimension(:,:), intent(in), optional   :: lonb
       if ( file_exist('input.nml')) then
         unit =  open_namelist_file ( )
         ierr=1; do while (ierr /= 0)
-        read  (unit, nml=astronomy_nml, iostat=io, end=10) 
+        read  (unit, nml=astronomy_nml, iostat=io, end=10)
         ierr = check_nml_error(io,'astronomy_nml')
-        end do                   
-10      call close_file (unit)   
-      endif                      
-#endif                                 
+        end do
+10      call close_file (unit)
+      endif
+#endif
 !---------------------------------------------------------------------
 !    write version number and namelist to logfile.
 !---------------------------------------------------------------------
@@ -310,17 +310,18 @@ real,   dimension(:,:), intent(in), optional   :: lonb
 !    set up time-type variable defining specified time of autumnal
 !    equinox.
 !----------------------------------------------------------------------
+    if (get_calendar_type() /=NO_CALENDAR) then
       autumnal_eq_ref = set_date (year_ae,month_ae,day_ae, &
                                   hour_ae,minute_ae,second_ae)
-
+    endif
 !---------------------------------------------------------------------
 !    set up time-type variable defining length of year.
 !----------------------------------------------------------------------
-      if (period == 0) then  
+      if (period == 0) then
         period_time_type = length_of_year()
         call get_time (period_time_type, seconds, days)
         period = seconds_per_day*days + seconds
-      else   
+      else
         period_time_type = set_time(period,0)
       endif
 
@@ -331,7 +332,7 @@ real,   dimension(:,:), intent(in), optional   :: lonb
       deg_to_rad = twopi/360.
 
 !---------------------------------------------------------------------
-!    call orbit to define table of orbital angles as function of 
+!    call orbit to define table of orbital angles as function of
 !    orbital time.
 !----------------------------------------------------------------------
 ! wfc moved here from orbit
@@ -340,7 +341,7 @@ real,   dimension(:,:), intent(in), optional   :: lonb
 
 !--------------------------------------------------------------------
 !    if annual mean radiation is desired, then latb will be present.
-!    allocate arrays to hold the needed astronomical factors. define 
+!    allocate arrays to hold the needed astronomical factors. define
 !    the total number of points that the processor is responsible for.
 !--------------------------------------------------------------------
       if (present(latb)) then
@@ -351,7 +352,7 @@ real,   dimension(:,:), intent(in), optional   :: lonb
         allocate (fracday_ann(jd))
         total_pts = jd*id
       endif
-     
+
 !---------------------------------------------------------------------
 !    mark the module as initialized.
 !---------------------------------------------------------------------
@@ -369,7 +370,7 @@ end subroutine astronomy_init
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                    INTERFACE GET_PERIOD
 !
 !
@@ -485,7 +486,7 @@ end subroutine get_period_time_type
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                END INTERFACE GET_PERIOD
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -494,7 +495,7 @@ end subroutine get_period_time_type
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                    INTERFACE SET_PERIOD
 !
 !
@@ -517,11 +518,11 @@ end subroutine get_period_time_type
 
 ! <SUBROUTINE NAME="set_period_integer">
 !  <OVERVIEW>
-!    set_period_integer saves as the input length of the year (an 
+!    set_period_integer saves as the input length of the year (an
 !    integer) in a time_type module variable.
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    set_period_integer saves as the input length of the year (an 
+!    set_period_integer saves as the input length of the year (an
 !    integer) in a time_type module variable.
 !  </DESCRIPTION>
 !  <TEMPLATE>
@@ -535,7 +536,7 @@ end subroutine get_period_time_type
 subroutine set_period_integer (period_in)
 
 !--------------------------------------------------------------------
-!    set_period_integer saves as the input length of the year (an 
+!    set_period_integer saves as the input length of the year (an
 !    integer) in a time_type module variable.
 !--------------------------------------------------------------------
 
@@ -565,7 +566,7 @@ end subroutine set_period_integer
 subroutine set_period_time_type(period_in)
 
 !--------------------------------------------------------------------
-!    set_period_time_type saves the length of the year (input as a 
+!    set_period_time_type saves the length of the year (input as a
 !    time_type variable) into a time_type module variable.
 !--------------------------------------------------------------------
 
@@ -590,7 +591,7 @@ end subroutine set_period_time_type
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                END INTERFACE SET_PERIOD
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -636,11 +637,11 @@ real, intent(in) :: ecc_in
 real, intent(in) :: obliq_in
 real, intent(in) :: per_in
 
-!--------------------------------------------------------------------  
+!--------------------------------------------------------------------
 !
 !  intent(in) variables:
 !
-!     ecc_in           eccentricity of orbital ellipse 
+!     ecc_in           eccentricity of orbital ellipse
 !                      [ non-dimensional ]
 !     obliq_in         obliquity
 !                      [ degrees ]
@@ -679,7 +680,7 @@ real, intent(in) :: per_in
       per   = per_in
 
 !---------------------------------------------------------------------
-!    call orbit to define table of orbital angles as function of 
+!    call orbit to define table of orbital angles as function of
 !    orbital time using the input values of parameters just supplied.
 !----------------------------------------------------------------------
       call orbit
@@ -726,11 +727,11 @@ subroutine get_orbital_parameters (ecc_out, obliq_out, per_out)
 
 real, intent(out) :: ecc_out, obliq_out, per_out
 
-!--------------------------------------------------------------------  
+!--------------------------------------------------------------------
 !
 !  intent(out) variables:
 !
-!     ecc_out          eccentricity of orbital ellipse 
+!     ecc_out          eccentricity of orbital ellipse
 !                      [ non-dimensional ]
 !     obliq_out        obliquity
 !                      [ degrees ]
@@ -748,7 +749,7 @@ real, intent(out) :: ecc_out, obliq_out, per_out
          ' module has not been initialized', FATAL)
 
 !--------------------------------------------------------------------
-!    fill the output arguments with the eccentricity, obliquity and 
+!    fill the output arguments with the eccentricity, obliquity and
 !    perihelion angle.
 !--------------------------------------------------------------------
       ecc_out = ecc
@@ -764,15 +765,15 @@ end subroutine get_orbital_parameters
 ! <SUBROUTINE NAME="set_ref_date_of_ae">
 !  <OVERVIEW>
 !    set_ref_date_of_ae provides a means of specifying the reference
-!    date of the NH autumnal equinox for a particular year. 
+!    date of the NH autumnal equinox for a particular year.
 !  </OVERVIEW>
 !  <DESCRIPTION>
 !    set_ref_date_of_ae provides a means of specifying the reference
 !    date of the NH autumnal equinox for a particular year.  it is only
-!    used if calls are made to the calandar versions of the routines 
-!    diurnal_solar and daily_mean_solar. if the NOLEAP calendar is 
-!    used, then the date of autumnal equinox will be the same every 
-!    year. if JULIAN is used, then the date of autumnal equinox will 
+!    used if calls are made to the calandar versions of the routines
+!    diurnal_solar and daily_mean_solar. if the NOLEAP calendar is
+!    used, then the date of autumnal equinox will be the same every
+!    year. if JULIAN is used, then the date of autumnal equinox will
 !    return to the same value every 4th year.
 !  </DESCRIPTION>
 !  <TEMPLATE>
@@ -805,17 +806,17 @@ subroutine set_ref_date_of_ae (day_in,month_in,year_in, &
 !---------------------------------------------------------------------
 !    set_ref_date_of_ae provides a means of specifying the reference
 !    date of the NH autumnal equinox for a particular year.  it is only
-!    used if calls are made to the calandar versions of the routines 
-!    diurnal_solar and daily_mean_solar. if the NOLEAP calendar is 
-!    used, then the date of autumnal equinox will be the same every 
-!    year. if JULIAN is used, then the date of autumnal equinox will 
+!    used if calls are made to the calandar versions of the routines
+!    diurnal_solar and daily_mean_solar. if the NOLEAP calendar is
+!    used, then the date of autumnal equinox will be the same every
+!    year. if JULIAN is used, then the date of autumnal equinox will
 !    return to the same value every 4th year.
 !----------------------------------------------------------------------
 
 integer, intent(in)           :: day_in, month_in, year_in
 integer, intent(in), optional :: second_in, minute_in, hour_in
 
-!--------------------------------------------------------------------  
+!--------------------------------------------------------------------
 !
 !  intent(in) variables:
 !
@@ -834,8 +835,8 @@ integer, intent(in), optional :: second_in, minute_in, hour_in
 !                      [ non-dimensional ]
 !     hour_in          hour of reference autumnal equinox
 !                      [ non-dimensional ]
-! 
-!------------------------------------------------------------------- 
+!
+!-------------------------------------------------------------------
 
 !---------------------------------------------------------------------
 !    exit if module has not been initialized.
@@ -844,8 +845,8 @@ integer, intent(in), optional :: second_in, minute_in, hour_in
         call error_mesg ( 'astronomy_mod',  &
          ' module has not been initialized', FATAL)
 
-!-------------------------------------------------------------------- 
-!    save the input time of ae specification into a time_type module 
+!--------------------------------------------------------------------
+!    save the input time of ae specification into a time_type module
 !    variable autumnal_eq_ref.
 !--------------------------------------------------------------------
       day_ae =    day_in
@@ -917,7 +918,7 @@ subroutine get_ref_date_of_ae (day_out,month_out,year_out,&
 integer, intent(out) :: day_out, month_out, year_out,  &
                         second_out, minute_out, hour_out
 
-!--------------------------------------------------------------------  
+!--------------------------------------------------------------------
 !
 !  intent(out) variables:
 !
@@ -933,8 +934,8 @@ integer, intent(out) :: day_out, month_out, year_out,  &
 !                      [ non-dimensional ]
 !     hour_out         hour of reference autumnal equinox
 !                      [ non-dimensional ]
-! 
-!------------------------------------------------------------------- 
+!
+!-------------------------------------------------------------------
 
 !---------------------------------------------------------------------
 !    exit if module has not been initialized.
@@ -962,28 +963,28 @@ end subroutine get_ref_date_of_ae
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                    INTERFACE DIURNAL_SOLAR
 !
 ! call diurnal_solar (lat, lon, time, cosz, fracday, rrsun, dt_time)
-!   or 
-! call diurnal_solar (lat, lon, gmt, time_since_ae, cosz, fracday, 
+!   or
+! call diurnal_solar (lat, lon, gmt, time_since_ae, cosz, fracday,
 !                     rrsun, dt)
 !
-!  the first option (used in conjunction with time_manager_mod)      
-!  generates the real variables gmt and time_since_ae from the 
+!  the first option (used in conjunction with time_manager_mod)
+!  generates the real variables gmt and time_since_ae from the
 !  time_type input, and then calls diurnal_solar with these real
-!  inputs. 
+!  inputs.
 !
-!  the time of day is set by 
+!  the time of day is set by
 !    real, intent(in) :: gmt
-!  the time of year is set by 
+!  the time of year is set by
 !    real, intent(in) :: time_since_ae
-!  with time_type input, both of these are extracted from 
+!  with time_type input, both of these are extracted from
 !    type(time_type), intent(in) :: time
 !
 !
-!  separate routines exist within this interface for scalar, 
+!  separate routines exist within this interface for scalar,
 !  1D or 2D input and output fields:
 !
 !    real, intent(in), dimension(:,:) :: lat, lon
@@ -994,14 +995,14 @@ end subroutine get_ref_date_of_ae
 ! OR real, intent(out), dimension(:)   :: cosz, fracday
 ! OR real, intent(out)                 :: cosz, fracday
 !
-!  one may also average the output fields over the time interval 
-!  between gmt and gmt + dt by including the optional argument dt (or 
-!  dt_time). dt is measured in radians and must be less than pi 
-!  (1/2 day). this average is computed analytically, and should be 
-!  exact except for the fact that changes in earth-sun distance over 
-!  the time interval dt are ignored. in the context of a diurnal GCM, 
-!  this option should always be employed to insure that the total flux 
-!  at the top of the atmosphere is not modified by time truncation 
+!  one may also average the output fields over the time interval
+!  between gmt and gmt + dt by including the optional argument dt (or
+!  dt_time). dt is measured in radians and must be less than pi
+!  (1/2 day). this average is computed analytically, and should be
+!  exact except for the fact that changes in earth-sun distance over
+!  the time interval dt are ignored. in the context of a diurnal GCM,
+!  this option should always be employed to insure that the total flux
+!  at the top of the atmosphere is not modified by time truncation
 !  error.
 !
 !    real, intent(in), optional :: dt
@@ -1012,11 +1013,11 @@ end subroutine get_ref_date_of_ae
 !
 !  intent(in) variables:
 !
-!     lat            latitudes of model grid points 
+!     lat            latitudes of model grid points
 !                    [ radians ]
 !     lon            longitudes of model grid points
 !                    [ radians ]
-!     gmt            time of day at longitude 0.0; midnight = 0.0, 
+!     gmt            time of day at longitude 0.0; midnight = 0.0,
 !                    one day = 2 * pi
 !                    [ radians ]
 !     time_since_ae  time of year; autumnal equinox = 0.0,
@@ -1024,7 +1025,7 @@ end subroutine get_ref_date_of_ae
 !                    [ radians ]
 !     time           time at which astronomical values are desired
 !                    time_type variable [ seconds, days]
-!     
+!
 !
 !  intent(out) variables:
 !
@@ -1041,7 +1042,7 @@ end subroutine get_ref_date_of_ae
 !
 !     dt            time interval after gmt over which the astronomical
 !                   variables are to be averaged. this produces averaged
-!                   output rather than instantaneous. 
+!                   output rather than instantaneous.
 !                   [ radians ], (1 day = 2 * pi)
 !     dt_time       as in dt, but dt_time is a time_type variable
 !                   time_type [ days, seconds ]
@@ -1050,29 +1051,29 @@ end subroutine get_ref_date_of_ae
 
 ! <SUBROUTINE NAME="diurnal_solar_2d">
 !  <OVERVIEW>
-!    diurnal_solar_2d returns 2d fields of cosine of zenith angle, 
+!    diurnal_solar_2d returns 2d fields of cosine of zenith angle,
 !    daylight fraction and earth-sun distance at the specified lati-
 !    tudes, longitudes and time. these values may be instantaneous
 !    or averaged over a specified time interval.
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    diurnal_solar_2d returns 2d fields of cosine of zenith angle, 
+!    diurnal_solar_2d returns 2d fields of cosine of zenith angle,
 !    daylight fraction and earth-sun distance at the specified lati-
 !    tudes, longitudes and time. these values may be instantaneous
 !    or averaged over a specified time interval.
 !  </DESCRIPTION>
 !  <TEMPLATE>
 !   call diurnal_solar_2d (lat, lon, gmt, time_since_ae, cosz, &
-!                             fracday, rrsun, dt_time) 
+!                             fracday, rrsun, dt_time)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
-!  </IN> 
+!   latitudes of model grid points
+!  </IN>
 !  <IN NAME="lon" TYPE="real">
-!   longitude of model grid points 
+!   longitude of model grid points
 !  </IN>
 !  <IN NAME="gmt" TYPE="real">
-!   time of day at longitude 0.0; midnight = 0.0, 
+!   time of day at longitude 0.0; midnight = 0.0,
 !                    one day = 2 * pi
 !  </IN>
 !  <IN NAME="time_since_ae" TYPE="real">
@@ -1098,10 +1099,10 @@ end subroutine get_ref_date_of_ae
 !
 subroutine diurnal_solar_2d (lat, lon, gmt, time_since_ae, cosz, &
                              fracday, rrsun, dt, allow_negative_cosz, &
-                             half_day_out) 
+                             half_day_out)
 
 !---------------------------------------------------------------------
-!    diurnal_solar_2d returns 2d fields of cosine of zenith angle, 
+!    diurnal_solar_2d returns 2d fields of cosine of zenith angle,
 !    daylight fraction and earth-sun distance at the specified lati-
 !    tudes, longitudes and time. these values may be instantaneous
 !    or averaged over a specified time interval.
@@ -1140,7 +1141,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    ang         position of earth in its orbit wrt autumnal equinox
 !                [ radians ]
 !    dec         earth's declination [ radians ]
-!    
+!
 !--------------------------------------------------------------------
 
 !--------------------------------------------------------------------
@@ -1175,8 +1176,8 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    define local time. force it to be between -pi and pi.
 !--------------------------------------------------------------------
       t = gmt + lon - PI
-      where(t >= PI) t = t - twopi  
-      where(t < -PI) t = t + twopi   
+      where(t >= PI) t = t - twopi
+      where(t < -PI) t = t + twopi
 
       Lallow_negative = .false.
       if (present(allow_negative_cosz)) then
@@ -1188,8 +1189,8 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    output is valid over the period from t to t + dt.
 !--------------------------------------------------------------------
       h   = half_day   (lat,dec)
-      
-      if ( present(half_day_out) ) then 
+
+      if ( present(half_day_out) ) then
          half_day_out = h
       end if
 
@@ -1215,8 +1216,8 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 
 !-------------------------------------------------------------------
 !    case 3: averaging period begins before sunrise, ends after sunset,
-!    but before the next sunrise. modify if averaging period extends 
-!    past the next day's sunrise, but if averaging period is less than 
+!    but before the next sunrise. modify if averaging period extends
+!    past the next day's sunrise, but if averaging period is less than
 !    a half- day (pi) that circumstance will never occur.
 !-------------------------------------------------------------------
         where (t < -h .and. h /= 0.0 .and. h < tt)    &
@@ -1229,9 +1230,9 @@ real, dimension(:,:), intent(out), optional :: half_day_out
              cosz = aa + bb*(stt - st)/ (tt - t)
 
 !-------------------------------------------------------------------
-!    case 5: averaging period begins after sunrise, ends after sunset. 
-!    modify when averaging period extends past the next day's sunrise.  
-!------------------------------------------------------------------- 
+!    case 5: averaging period begins after sunrise, ends after sunset.
+!    modify when averaging period extends past the next day's sunrise.
+!-------------------------------------------------------------------
         where ((h-t) /= 0.0 .and. abs(t) <= h .and.  h < tt)    &
               cosz = aa + bb*(sh - st)/(h-t)
 
@@ -1256,7 +1257,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    averaging period is less than a half-day (pi) the latter
 !    circumstance will never occur.
 !-----------------------------------------------------------------
-        where(  h <  t .and. twopi - h < tt  ) 
+        where(  h <  t .and. twopi - h < tt  )
           cosz = aa + bb*(stt + sh) / (tt + h - twopi)
         end where
 
@@ -1267,7 +1268,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 
 
 !-------------------------------------------------------------------
-!    day fraction is the fraction of the averaging period contained 
+!    day fraction is the fraction of the averaging period contained
 !    within the (-h,h) period.
 !-------------------------------------------------------------------
         where (t < -h .and.      tt < -h)      fracday = 0.0
@@ -1278,7 +1279,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
         where (      h <  t                 )  fracday = 0.0
         where (twopi - h < tt)                 fracday = fracday +  &
                                                          (tt + h - &
-                                                         twopi)/dt      
+                                                         twopi)/dt
 !----------------------------------------------------------------------
 !    if instantaneous values are desired, define cosz at time t.
 !----------------------------------------------------------------------
@@ -1329,16 +1330,16 @@ end subroutine diurnal_solar_2d
 !  </DESCRIPTION>
 !  <TEMPLATE>
 !   call diurnal_solar_1d (lat, lon, gmt, time_since_ae, cosz, &
-!                             fracday, rrsun, dt) 
+!                             fracday, rrsun, dt)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
-!  </IN> 
+!   latitudes of model grid points
+!  </IN>
 !  <IN NAME="lon" TYPE="real">
-!   longitude of model grid points 
+!   longitude of model grid points
 !  </IN>
 !  <IN NAME="gmt" TYPE="real">
-!   time of day at longitude 0.0; midnight = 0.0, 
+!   time of day at longitude 0.0; midnight = 0.0,
 !                    one day = 2 * pi
 !  </IN>
 !  <IN NAME="time_since_ae" TYPE="real">
@@ -1407,12 +1408,12 @@ real, dimension(:),  intent(out), optional :: half_day_out
 !     endif
 
 !-------------------------------------------------------------------
-!    place output fields into 1-d arguments for return to 
+!    place output fields into 1-d arguments for return to
 !    calling routine.
 !-------------------------------------------------------------------
       fracday = fracday_2d(:,1)
       cosz  = cosz_2d (:,1)
-      if (present(half_day_out)) then 
+      if (present(half_day_out)) then
          half_day_out = halfday_2d(:,1)
       end if
 
@@ -1424,26 +1425,26 @@ end subroutine diurnal_solar_1d
 ! <SUBROUTINE NAME="diurnal_solar_0d">
 !  <OVERVIEW>
 !    diurnal_solar_0d takes scalar input fields, makes them into 2d
-!    arrays dimensioned (1,1), and calls diurnal_solar_2d. on return, 
+!    arrays dimensioned (1,1), and calls diurnal_solar_2d. on return,
 !    the 2d fields are converted back to the desired scalar output.
 !  </OVERVIEW>
 !  <DESCRIPTION>
 !    diurnal_solar_0d takes scalar input fields, makes them into 2d
-!    arrays dimensioned (1,1), and calls diurnal_solar_2d. on return, 
+!    arrays dimensioned (1,1), and calls diurnal_solar_2d. on return,
 !    the 2d fields are converted back to the desired scalar output.
 !  </DESCRIPTION>
 !  <TEMPLATE>
 !   call diurnal_solar_0d (lat, lon, gmt, time_since_ae, cosz, &
-!                             fracday, rrsun, dt) 
+!                             fracday, rrsun, dt)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
-!  </IN> 
+!   latitudes of model grid points
+!  </IN>
 !  <IN NAME="lon" TYPE="real">
-!   longitude of model grid points 
+!   longitude of model grid points
 !  </IN>
 !  <IN NAME="gmt" TYPE="real">
-!   time of day at longitude 0.0; midnight = 0.0, 
+!   time of day at longitude 0.0; midnight = 0.0,
 !                    one day = 2 * pi
 !  </IN>
 !  <IN NAME="time_since_ae" TYPE="real">
@@ -1473,7 +1474,7 @@ subroutine diurnal_solar_0d (lat, lon, gmt, time_since_ae, cosz,  &
 
 !--------------------------------------------------------------------
 !    diurnal_solar_0d takes scalar input fields, makes them into 2d
-!    arrays dimensioned (1,1), and calls diurnal_solar_2d. on return, 
+!    arrays dimensioned (1,1), and calls diurnal_solar_2d. on return,
 !    the 2d fields are converted back to the desired scalar output.
 !----------------------------------------------------------------------
 
@@ -1512,7 +1513,7 @@ real, intent(out), optional :: half_day_out
 !-------------------------------------------------------------------
       fracday = fracday_2d(1,1)
       cosz = cosz_2d(1,1)
-      if (present(half_day_out)) then 
+      if (present(half_day_out)) then
          half_day_out = halfday_2d(1,1)
       end if
 
@@ -1525,27 +1526,27 @@ end subroutine diurnal_solar_0d
 !####################################################################
 ! <SUBROUTINE NAME="diurnal_solar_cal_2d">
 !  <OVERVIEW>
-!    diurnal_solar_cal_2d receives time_type inputs, converts 
+!    diurnal_solar_cal_2d receives time_type inputs, converts
 !    them to real variables and then calls diurnal_solar_2d to
 !    compute desired astronomical variables.
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    diurnal_solar_cal_2d receives time_type inputs, converts 
+!    diurnal_solar_cal_2d receives time_type inputs, converts
 !    them to real variables and then calls diurnal_solar_2d to
 !    compute desired astronomical variables.
 !  </DESCRIPTION>
 !  <TEMPLATE>
 !   call diurnal_solar_cal_2d (lat, lon, gmt, time_since_ae, cosz, &
-!                             fracday, rrsun, dt) 
+!                             fracday, rrsun, dt)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
-!  </IN> 
+!   latitudes of model grid points
+!  </IN>
 !  <IN NAME="lon" TYPE="real">
-!   longitude of model grid points 
+!   longitude of model grid points
 !  </IN>
 !  <IN NAME="gmt" TYPE="real">
-!   time of day at longitude 0.0; midnight = 0.0, 
+!   time of day at longitude 0.0; midnight = 0.0,
 !                    one day = 2 * pi
 !  </IN>
 !  <IN NAME="time_since_ae" TYPE="real">
@@ -1571,10 +1572,10 @@ end subroutine diurnal_solar_0d
 !
 subroutine diurnal_solar_cal_2d (lat, lon, time, cosz, fracday,   &
                                  rrsun, dt_time, allow_negative_cosz, &
-                                 half_day_out) 
+                                 half_day_out)
 
 !-------------------------------------------------------------------
-!    diurnal_solar_cal_2d receives time_type inputs, converts 
+!    diurnal_solar_cal_2d receives time_type inputs, converts
 !    them to real variables and then calls diurnal_solar_2d to
 !    compute desired astronomical variables.
 !-------------------------------------------------------------------
@@ -1602,13 +1603,13 @@ real, dimension(:,:), intent(out), optional  :: half_day_out
       gmt = universal_time(time)
 
 !---------------------------------------------------------------------
-!    extract the time of year (time_since_ae) from time_type variable 
+!    extract the time of year (time_since_ae) from time_type variable
 !    time using the function orbital_time.
 !---------------------------------------------------------------------
       time_since_ae = orbital_time(time)
 
 !---------------------------------------------------------------------
-!    convert optional time_type variable dt_time (length of averaging 
+!    convert optional time_type variable dt_time (length of averaging
 !    period) to a real variable dt with the function universal_time.
 !---------------------------------------------------------------------
       if (present(dt_time))  then
@@ -1625,12 +1626,12 @@ real, dimension(:,:), intent(out), optional  :: half_day_out
         endif
 
 !--------------------------------------------------------------------
-!    call diurnal_solar_2d to calculate astronomy fields, with or 
+!    call diurnal_solar_2d to calculate astronomy fields, with or
 !    without the optional argument dt.
 !--------------------------------------------------------------------
         call diurnal_solar_2d (lat, lon, gmt, time_since_ae, cosz, &
                fracday, rrsun, dt=dt, &
-               allow_negative_cosz=allow_negative_cosz, & 
+               allow_negative_cosz=allow_negative_cosz, &
                half_day_out=half_day_out)
       else
         call diurnal_solar_2d (lat, lon, gmt, time_since_ae, cosz, &
@@ -1646,27 +1647,27 @@ end subroutine diurnal_solar_cal_2d
 !#####################################################################
 ! <SUBROUTINE NAME="diurnal_solar_cal_1d">
 !  <OVERVIEW>
-!    diurnal_solar_cal_1d receives time_type inputs, converts 
+!    diurnal_solar_cal_1d receives time_type inputs, converts
 !    them to real variables and then calls diurnal_solar_2d to
 !    compute desired astronomical variables.
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    diurnal_solar_cal_1d receives time_type inputs, converts 
+!    diurnal_solar_cal_1d receives time_type inputs, converts
 !    them to real variables and then calls diurnal_solar_2d to
 !    compute desired astronomical variables.
 !  </DESCRIPTION>
 !  <TEMPLATE>
 !   call diurnal_solar_cal_1d (lat, lon, gmt, time_since_ae, cosz, &
-!                             fracday, rrsun, dt) 
+!                             fracday, rrsun, dt)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
-!  </IN> 
+!   latitudes of model grid points
+!  </IN>
 !  <IN NAME="lon" TYPE="real">
-!   longitude of model grid points 
+!   longitude of model grid points
 !  </IN>
 !  <IN NAME="gmt" TYPE="real">
-!   time of day at longitude 0.0; midnight = 0.0, 
+!   time of day at longitude 0.0; midnight = 0.0,
 !                    one day = 2 * pi
 !  </IN>
 !  <IN NAME="time_since_ae" TYPE="real">
@@ -1707,7 +1708,7 @@ real, dimension(:), intent(out), optional :: half_day_out
 !-------------------------------------------------------------------
 !   local variables
 
-      real, dimension(size(lat),1) :: lat_2d, lon_2d, cosz_2d, & 
+      real, dimension(size(lat),1) :: lat_2d, lon_2d, cosz_2d, &
                                       fracday_2d, halfday_2d
 
 !--------------------------------------------------------------------
@@ -1733,15 +1734,15 @@ real, dimension(:), intent(out), optional :: half_day_out
       end if
 
 !-------------------------------------------------------------------
-!    place output fields into 1-d arguments for return to 
+!    place output fields into 1-d arguments for return to
 !    calling routine.
 !-------------------------------------------------------------------
       fracday = fracday_2d(:,1)
       cosz  = cosz_2d (:,1)
-      if (present(half_day_out)) then 
+      if (present(half_day_out)) then
          half_day_out = halfday_2d(:,1)
       end if
-      
+
 
 end subroutine diurnal_solar_cal_1d
 
@@ -1750,27 +1751,27 @@ end subroutine diurnal_solar_cal_1d
 !#####################################################################
 ! <SUBROUTINE NAME="diurnal_solar_cal_0d">
 !  <OVERVIEW>
-!    diurnal_solar_cal_0d receives time_type inputs, converts 
+!    diurnal_solar_cal_0d receives time_type inputs, converts
 !    them to real variables and then calls diurnal_solar_2d to
 !    compute desired astronomical variables.
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    diurnal_solar_cal_0d receives time_type inputs, converts 
+!    diurnal_solar_cal_0d receives time_type inputs, converts
 !    them to real variables and then calls diurnal_solar_2d to
 !    compute desired astronomical variables.
 !  </DESCRIPTION>
 !  <TEMPLATE>
 !   call diurnal_solar_cal_0d (lat, lon, gmt, time_since_ae, cosz, &
-!                             fracday, rrsun, dt_time) 
+!                             fracday, rrsun, dt_time)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
-!  </IN> 
+!   latitudes of model grid points
+!  </IN>
 !  <IN NAME="lon" TYPE="real">
-!   longitude of model grid points 
+!   longitude of model grid points
 !  </IN>
 !  <IN NAME="gmt" TYPE="real">
-!   time of day at longitude 0.0; midnight = 0.0, 
+!   time of day at longitude 0.0; midnight = 0.0,
 !                    one day = 2 * pi
 !  </IN>
 !  <IN NAME="time_since_ae" TYPE="real">
@@ -1835,12 +1836,12 @@ real,            intent(out), optional :: half_day_out
       end if
 
 !-------------------------------------------------------------------
-!    place output fields into 1-d arguments for return to 
+!    place output fields into 1-d arguments for return to
 !    calling routine.
 !-------------------------------------------------------------------
       fracday= fracday_2d(1,1)
       cosz = cosz_2d(1,1)
-      if (present(half_day_out)) then 
+      if (present(half_day_out)) then
          half_day_out = halfday_2d(1,1)
       end if
 
@@ -1851,7 +1852,7 @@ end subroutine diurnal_solar_cal_0d
 !####################################################################
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                END INTERFACE DIURNAL_SOLAR
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1859,34 +1860,34 @@ end subroutine diurnal_solar_cal_0d
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                 INTERFACE DAILY_MEAN_SOLAR
 !
 !
 ! call daily_mean_solar (lat, time, cosz, fracday, rrsun)
-!   or 
+!   or
 ! call daily_mean_solar (lat, time_since_ae, cosz, fracday, rrsun)
 !   or
 ! call daily_mean_solar (lat, time, cosz, solar)
-!   or 
+!   or
 ! call daily_mean_solar (lat, time_since_ae, cosz, solar)
 !
 !  the first option (used in conjunction with time_manager_mod)
 !  generates the real variable time_since_ae from the time_type
-!  input time, and then calls daily_mean_solar with this real input 
+!  input time, and then calls daily_mean_solar with this real input
 !  (option 2).  the third and fourth options correspond to the first
-!  and second and are used with then spectral 2-layer model, where 
+!  and second and are used with then spectral 2-layer model, where
 !  only cosz and solar are desired as output. these routines generate
 !  dummy arguments and then call option 2, where the calculation is
 !  done.
 !
-!  the time of year is set by 
+!  the time of year is set by
 !    real, intent(in) :: time_since_ae
 !  with time_type input, the time of year is extracted from
 !    type(time_type), intent(in) :: time
 !
 !
-!  separate routines exist within this interface for scalar, 
+!  separate routines exist within this interface for scalar,
 !  1D or 2D input and output fields:
 !
 !    real, intent(in), dimension(:,:) :: lat
@@ -1901,21 +1902,21 @@ end subroutine diurnal_solar_cal_0d
 !
 !  intent(in) variables:
 !
-!     lat            latitudes of model grid points 
+!     lat            latitudes of model grid points
 !                    [ radians ]
 !     time_since_ae  time of year; autumnal equinox = 0.0,
 !                    one year = 2 * pi
 !                    [ radians ]
 !     time           time at which astronomical values are desired
 !                    time_type variable [ seconds, days]
-!     
+!
 !
 !  intent(out) variables:
 !
-!     cosz           cosz is cosine of an effective zenith angle that 
-!                    would produce the correct daily solar flux if the 
-!                    sun were fixed at that position for the period of 
-!                    daylight.  
+!     cosz           cosz is cosine of an effective zenith angle that
+!                    would produce the correct daily solar flux if the
+!                    sun were fixed at that position for the period of
+!                    daylight.
 !                    should one also, or instead, compute cosz weighted
 !                    by the instantaneous flux, averaged over the day ??
 !                    [ dimensionless ]
@@ -1933,21 +1934,21 @@ end subroutine diurnal_solar_cal_0d
 
 ! <SUBROUTINE NAME="daily_mean_solar_2d">
 !  <OVERVIEW>
-!    daily_mean_solar_2d computes the daily mean astronomical 
-!    parameters for the input points at latitude lat and time of year 
+!    daily_mean_solar_2d computes the daily mean astronomical
+!    parameters for the input points at latitude lat and time of year
 !    time_since_ae.
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    daily_mean_solar_2d computes the daily mean astronomical 
-!    parameters for the input points at latitude lat and time of year 
+!    daily_mean_solar_2d computes the daily mean astronomical
+!    parameters for the input points at latitude lat and time of year
 !    time_since_ae.
 !  </DESCRIPTION>
 !  <TEMPLATE>
 !   call daily_mean_solar_2d (lat, time_since_ae, cosz, h_out, rr_out)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
-!  </IN> 
+!   latitudes of model grid points
+!  </IN>
 !  <IN NAME="time_since_ae" TYPE="real">
 !   time of year; autumnal equinox = 0.0,
 !                    one year = 2 * pi
@@ -1968,10 +1969,10 @@ end subroutine diurnal_solar_cal_0d
 subroutine daily_mean_solar_2d (lat, time_since_ae, cosz, h_out, rr_out)
 
 !----------------------------------------------------------------------
-!    daily_mean_solar_2d computes the daily mean astronomical 
-!    parameters for the input points at latitude lat and time of year 
+!    daily_mean_solar_2d computes the daily mean astronomical
+!    parameters for the input points at latitude lat and time of year
 !    time_since_ae.
-!    
+!
 !----------------------------------------------------------------------
 
 !----------------------------------------------------------------------
@@ -1996,7 +1997,7 @@ real,                 intent(out)  :: rr_out
 
 !---------------------------------------------------------------------
 !    define the orbital angle (location in year), solar declination,
-!    half-day length and earth sun distance factor. use functions 
+!    half-day length and earth sun distance factor. use functions
 !    contained in this module.
 !---------------------------------------------------------------------
       ang = angle (time_since_ae)
@@ -2026,20 +2027,20 @@ end subroutine daily_mean_solar_2d
 ! <SUBROUTINE NAME="daily_mean_solar_1d">
 !  <OVERVIEW>
 !    daily_mean_solar_1d takes 1-d input fields, adds a second dimension
-!    and calls daily_mean_solar_2d. on return, the 2d fields are 
+!    and calls daily_mean_solar_2d. on return, the 2d fields are
 !    returned to the original 1d fields.
 !  </OVERVIEW>
 !  <DESCRIPTION>
 !    daily_mean_solar_1d takes 1-d input fields, adds a second dimension
-!    and calls daily_mean_solar_2d. on return, the 2d fields are 
+!    and calls daily_mean_solar_2d. on return, the 2d fields are
 !    returned to the original 1d fields.
 !  </DESCRIPTION>
 !  <TEMPLATE>
 !   call daily_mean_solar_1d (lat, time_since_ae, cosz, h_out, rr_out)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
-!  </IN> 
+!   latitudes of model grid points
+!  </IN>
 !  <IN NAME="time_since_ae" TYPE="real">
 !   time of year; autumnal equinox = 0.0,
 !                    one year = 2 * pi
@@ -2061,7 +2062,7 @@ subroutine daily_mean_solar_1d (lat, time_since_ae, cosz, h_out, rr_out)
 
 !--------------------------------------------------------------------
 !    daily_mean_solar_1d takes 1-d input fields, adds a second dimension
-!    and calls daily_mean_solar_2d. on return, the 2d fields are 
+!    and calls daily_mean_solar_2d. on return, the 2d fields are
 !    returned to the original 1d fields.
 !----------------------------------------------------------------------
 
@@ -2090,7 +2091,7 @@ real, intent(out)           :: rr_out
                                 hout_2d, rr_out)
 
 !-------------------------------------------------------------------
-!    place output fields into 1-d arguments for return to 
+!    place output fields into 1-d arguments for return to
 !    calling routine.
 !-------------------------------------------------------------------
       h_out = hout_2d(:,1)
@@ -2103,21 +2104,21 @@ end subroutine daily_mean_solar_1d
 !######################################################################
 ! <SUBROUTINE NAME="daily_mean_solar_2level">
 !  <OVERVIEW>
-!    daily_mean_solar_2level takes 1-d input fields, adds a second 
-!    dimension and calls daily_mean_solar_2d. on return, the 2d fields 
+!    daily_mean_solar_2level takes 1-d input fields, adds a second
+!    dimension and calls daily_mean_solar_2d. on return, the 2d fields
 !    are returned to the original 1d fields.
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    daily_mean_solar_2level takes 1-d input fields, adds a second 
-!    dimension and calls daily_mean_solar_2d. on return, the 2d fields 
+!    daily_mean_solar_2level takes 1-d input fields, adds a second
+!    dimension and calls daily_mean_solar_2d. on return, the 2d fields
 !    are returned to the original 1d fields.
 !  </DESCRIPTION>
 !  <TEMPLATE>
 !   call daily_mean_solar_2level (lat, time_since_ae, cosz, solar)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
-!  </IN> 
+!   latitudes of model grid points
+!  </IN>
 !  <IN NAME="time_since_ae" TYPE="real">
 !   time of year; autumnal equinox = 0.0,
 !                    one year = 2 * pi
@@ -2134,8 +2135,8 @@ end subroutine daily_mean_solar_1d
 subroutine daily_mean_solar_2level (lat, time_since_ae, cosz, solar)
 
 !--------------------------------------------------------------------
-!    daily_mean_solar_2level takes 1-d input fields, adds a second 
-!    dimension and calls daily_mean_solar_2d. on return, the 2d fields 
+!    daily_mean_solar_2level takes 1-d input fields, adds a second
+!    dimension and calls daily_mean_solar_2d. on return, the 2d fields
 !    are returned to the original 1d fields.
 !----------------------------------------------------------------------
 
@@ -2163,7 +2164,7 @@ real, intent(out), dimension(size(lat(:))) :: cosz, solar
                                 hout_2d, rr_out)
 
 !-------------------------------------------------------------------
-!    place output fields into 1-d arguments for return to 
+!    place output fields into 1-d arguments for return to
 !    calling routine.
 !-------------------------------------------------------------------
       solar = cosz_2d(:,1)*hout_2d(:,1)*rr_out
@@ -2178,20 +2179,20 @@ end subroutine daily_mean_solar_2level
 ! <SUBROUTINE NAME="daily_mean_solar_0d">
 !  <OVERVIEW>
 !    daily_mean_solar_1d takes 1-d input fields, adds a second dimension
-!    and calls daily_mean_solar_2d. on return, the 2d fields are 
+!    and calls daily_mean_solar_2d. on return, the 2d fields are
 !    returned to the original 1d fields.
 !  </OVERVIEW>
 !  <DESCRIPTION>
 !    daily_mean_solar_1d takes 1-d input fields, adds a second dimension
-!    and calls daily_mean_solar_2d. on return, the 2d fields are 
+!    and calls daily_mean_solar_2d. on return, the 2d fields are
 !    returned to the original 1d fields.
 !  </DESCRIPTION>
 !  <TEMPLATE>
 !   call daily_mean_solar_0d (lat, time_since_ae, cosz, h_out, rr_out)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
-!  </IN> 
+!   latitudes of model grid points
+!  </IN>
 !  <IN NAME="time_since_ae" TYPE="real">
 !   time of year; autumnal equinox = 0.0,
 !                    one year = 2 * pi
@@ -2213,7 +2214,7 @@ subroutine daily_mean_solar_0d (lat, time_since_ae, cosz, h_out, rr_out)
 
 !--------------------------------------------------------------------
 !    daily_mean_solar_1d takes 1-d input fields, adds a second dimension
-!    and calls daily_mean_solar_2d. on return, the 2d fields are 
+!    and calls daily_mean_solar_2d. on return, the 2d fields are
 !    returned to the original 1d fields.
 !----------------------------------------------------------------------
 
@@ -2248,20 +2249,20 @@ end subroutine daily_mean_solar_0d
 !####################################################################
 ! <SUBROUTINE NAME="daily_mean_solar_cal_2d">
 !  <OVERVIEW>
-!    daily_mean_solar_cal_2d receives time_type inputs, converts 
+!    daily_mean_solar_cal_2d receives time_type inputs, converts
 !    them to real variables and then calls daily_mean_solar_2d to
 !    compute desired astronomical variables.
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    daily_mean_solar_cal_2d receives time_type inputs, converts 
+!    daily_mean_solar_cal_2d receives time_type inputs, converts
 !    them to real variables and then calls daily_mean_solar_2d to
 !    compute desired astronomical variables.
 !  </DESCRIPTION>
 !  <TEMPLATE>
-!   call daily_mean_solar_cal_2d (lat, time, cosz, fracday, rrsun) 
+!   call daily_mean_solar_cal_2d (lat, time, cosz, fracday, rrsun)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
+!   latitudes of model grid points
 !  </IN>
 !  <IN NAME="time" TYPE="time_type">
 !   time of year; autumnal equinox = 0.0, one year = 2 * pi
@@ -2278,14 +2279,14 @@ end subroutine daily_mean_solar_0d
 !  </OUT>
 ! </SUBROUTINE>
 !
-subroutine daily_mean_solar_cal_2d (lat, time, cosz, fracday, rrsun) 
+subroutine daily_mean_solar_cal_2d (lat, time, cosz, fracday, rrsun)
 
 !-------------------------------------------------------------------
-!    daily_mean_solar_cal_2d receives time_type inputs, converts 
+!    daily_mean_solar_cal_2d receives time_type inputs, converts
 !    them to real variables and then calls daily_mean_solar_2d to
 !    compute desired astronomical variables.
 !-------------------------------------------------------------------
- 
+
 !-------------------------------------------------------------------
 real, dimension(:,:), intent(in)  :: lat
 type(time_type),      intent(in)  :: time
@@ -2320,20 +2321,20 @@ end subroutine daily_mean_solar_cal_2d
 !#####################################################################
 ! <SUBROUTINE NAME="daily_mean_solar_cal_1d">
 !  <OVERVIEW>
-!    daily_mean_solar_cal_1d receives time_type inputs, converts 
+!    daily_mean_solar_cal_1d receives time_type inputs, converts
 !    them to real, 2d variables and then calls daily_mean_solar_2d to
 !    compute desired astronomical variables.
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    daily_mean_solar_cal_1d receives time_type inputs, converts 
+!    daily_mean_solar_cal_1d receives time_type inputs, converts
 !    them to real, 2d variables and then calls daily_mean_solar_2d to
 !    compute desired astronomical variables.
 !  </DESCRIPTION>
 !  <TEMPLATE>
-!   call daily_mean_solar_cal_1d (lat, time, cosz, fracday, rrsun) 
+!   call daily_mean_solar_cal_1d (lat, time, cosz, fracday, rrsun)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
+!   latitudes of model grid points
 !  </IN>
 !  <IN NAME="time" TYPE="time_type">
 !   time of year; autumnal equinox = 0.0, one year = 2 * pi
@@ -2350,10 +2351,10 @@ end subroutine daily_mean_solar_cal_2d
 !  </OUT>
 ! </SUBROUTINE>
 !
-subroutine daily_mean_solar_cal_1d (lat, time, cosz, fracday, rrsun) 
+subroutine daily_mean_solar_cal_1d (lat, time, cosz, fracday, rrsun)
 
 !-------------------------------------------------------------------
-!    daily_mean_solar_cal_1d receives time_type inputs, converts 
+!    daily_mean_solar_cal_1d receives time_type inputs, converts
 !    them to real, 2d variables and then calls daily_mean_solar_2d to
 !    compute desired astronomical variables.
 !-------------------------------------------------------------------
@@ -2367,7 +2368,7 @@ real,                intent(out)  :: rrsun
 !  local variables
 
       real, dimension(size(lat),1) :: lat_2d, cosz_2d, fracday_2d
-       
+
 
 !--------------------------------------------------------------------
 !    define 2-d versions of input data array.
@@ -2382,7 +2383,7 @@ real,                intent(out)  :: rrsun
                                     fracday_2d, rrsun)
 
 !-------------------------------------------------------------------
-!    place output fields into 1-d arguments for return to 
+!    place output fields into 1-d arguments for return to
 !    calling routine.
 !-------------------------------------------------------------------
       fracday = fracday_2d(:,1)
@@ -2396,19 +2397,19 @@ end subroutine daily_mean_solar_cal_1d
 ! <SUBROUTINE NAME="daily_mean_solar_cal_2level">
 !  <OVERVIEW>
 !    daily_mean_solar_cal_2level receives 1d arrays and time_type input,
-!    converts them to real, 2d variables and then calls 
+!    converts them to real, 2d variables and then calls
 !    daily_mean_solar_2d to compute desired astronomical variables.
 !  </OVERVIEW>
 !  <DESCRIPTION>
 !    daily_mean_solar_cal_2level receives 1d arrays and time_type input,
-!    converts them to real, 2d variables and then calls 
+!    converts them to real, 2d variables and then calls
 !    daily_mean_solar_2d to compute desired astronomical variables.
 !  </DESCRIPTION>
 !  <TEMPLATE>
-!   call daily_mean_solar_cal_2level (lat, time, cosz, solar) 
+!   call daily_mean_solar_cal_2level (lat, time, cosz, solar)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
+!   latitudes of model grid points
 !  </IN>
 !  <IN NAME="time" TYPE="time_type">
 !   time of year; autumnal equinox = 0.0, one year = 2 * pi
@@ -2422,11 +2423,11 @@ end subroutine daily_mean_solar_cal_1d
 !  </OUT>
 ! </SUBROUTINE>
 !
-subroutine daily_mean_solar_cal_2level (lat, time, cosz, solar) 
+subroutine daily_mean_solar_cal_2level (lat, time, cosz, solar)
 
 !-------------------------------------------------------------------
 !    daily_mean_solar_cal_2level receives 1d arrays and time_type input,
-!    converts them to real, 2d variables and then calls 
+!    converts them to real, 2d variables and then calls
 !    daily_mean_solar_2d to compute desired astronomical variables.
 !-------------------------------------------------------------------
 
@@ -2439,7 +2440,7 @@ real, dimension(:),  intent(out)  :: cosz, solar
 
       real, dimension(size(lat),1) :: lat_2d, cosz_2d, fracday_2d
       real                         :: rrsun
-       
+
 
 !--------------------------------------------------------------------
 !    define 2-d versions of input data array.
@@ -2454,7 +2455,7 @@ real, dimension(:),  intent(out)  :: cosz, solar
                                     fracday_2d, rrsun)
 
 !-------------------------------------------------------------------
-!    place output fields into 1-d arguments for return to 
+!    place output fields into 1-d arguments for return to
 !    calling routine.
 !-------------------------------------------------------------------
       solar = cosz_2d(:,1)*fracday_2d(:,1)*rrsun
@@ -2469,20 +2470,20 @@ end subroutine daily_mean_solar_cal_2level
 !###################################################################
 ! <SUBROUTINE NAME="daily_mean_solar_cal_0d">
 !  <OVERVIEW>
-!    daily_mean_solar_cal_0d converts scalar input fields to real, 
+!    daily_mean_solar_cal_0d converts scalar input fields to real,
 !    2d variables and then calls daily_mean_solar_2d to compute desired
 !    astronomical variables.
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    daily_mean_solar_cal_0d converts scalar input fields to real, 
+!    daily_mean_solar_cal_0d converts scalar input fields to real,
 !    2d variables and then calls daily_mean_solar_2d to compute desired
 !    astronomical variables.
 !  </DESCRIPTION>
 !  <TEMPLATE>
-!   call daily_mean_solar_cal_0d (lat, time, cosz, fracday, rrsun) 
+!   call daily_mean_solar_cal_0d (lat, time, cosz, fracday, rrsun)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
+!   latitudes of model grid points
 !  </IN>
 !  <IN NAME="time" TYPE="time_type">
 !   time of year; autumnal equinox = 0.0, one year = 2 * pi
@@ -2499,10 +2500,10 @@ end subroutine daily_mean_solar_cal_2level
 !  </OUT>
 ! </SUBROUTINE>
 !
-subroutine daily_mean_solar_cal_0d (lat, time, cosz, fracday, rrsun) 
+subroutine daily_mean_solar_cal_0d (lat, time, cosz, fracday, rrsun)
 
 !-------------------------------------------------------------------
-!    daily_mean_solar_cal_0d converts scalar input fields to real, 
+!    daily_mean_solar_cal_0d converts scalar input fields to real,
 !    2d variables and then calls daily_mean_solar_2d to compute desired
 !    astronomical variables.
 !-------------------------------------------------------------------
@@ -2531,7 +2532,7 @@ real,             intent(out) :: cosz, fracday, rrsun
                                     fracday_2d, rrsun)
 
 !-------------------------------------------------------------------
-!    place output fields into scalar arguments for return to 
+!    place output fields into scalar arguments for return to
 !    calling routine.
 !-------------------------------------------------------------------
       fracday = fracday_2d(1,1)
@@ -2545,7 +2546,7 @@ end subroutine daily_mean_solar_cal_0d
 !####################################################################
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                END INTERFACE DAILY_MEAN_SOLAR
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2553,7 +2554,7 @@ end subroutine daily_mean_solar_cal_0d
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                   INTERFACE ANNUAL_MEAN_SOLAR
 !
 !  call annual_mean_solar (js, je, lat, cosz, solar, fracday, rrsun)
@@ -2564,7 +2565,7 @@ end subroutine daily_mean_solar_cal_0d
 !  which requires only cosz and solar as output arguments, and which
 !  makes this call during the initialization phase of the model.
 
-!  separate routines exist within this interface for 1D or 2D input 
+!  separate routines exist within this interface for 1D or 2D input
 !  and output fields:
 !
 !    real, intent(in), dimension(:,:) :: lat
@@ -2574,33 +2575,33 @@ end subroutine daily_mean_solar_cal_0d
 ! OR real, intent(out), dimension(:)   :: cosz, solar, fracday
 !
 !---------------------------------------------------------------------
-!  intent(in) variables: 
+!  intent(in) variables:
 !
-!     js, je         starting/ ending subdomain j indices of data in 
+!     js, je         starting/ ending subdomain j indices of data in
 !                    the physics wiondow being integrated
-!     lat            latitudes of model grid points 
+!     lat            latitudes of model grid points
 !                    [ radians ]
-!     
+!
 !
 !  intent(out) variables:
 !
 !     cosz           cosz is the average over the year of the cosine of
-!                    an effective zenith angle that would produce the 
-!                    correct daily solar flux if the sun were fixed at 
+!                    an effective zenith angle that would produce the
+!                    correct daily solar flux if the sun were fixed at
 !                    that single position for the period of daylight on
-!                    the given day. in this average, the daily mean 
-!                    effective cosz is weighted by the daily mean solar 
+!                    the given day. in this average, the daily mean
+!                    effective cosz is weighted by the daily mean solar
 !                    flux.
 !                    [ dimensionless ]
-!     solar          normalized solar flux, averaged over the year, 
+!     solar          normalized solar flux, averaged over the year,
 !                    equal to the product of fracday*cosz*rrsun
 !                    [ dimensionless ]
-!     fracday        daylight fraction calculated so as to make the 
+!     fracday        daylight fraction calculated so as to make the
 !                    average flux (solar) equal to the product of the
-!                    flux-weighted avg cosz * this fracday * assumed 
+!                    flux-weighted avg cosz * this fracday * assumed
 !                    annual mean avg earth-sun distance of 1.0.
 !                    [ dimensionless ]
-!     rrsun          annual mean earth-sun distance (r) relative to 
+!     rrsun          annual mean earth-sun distance (r) relative to
 !                    semi-major axis of orbital ellipse (a); assumed
 !                    to be 1.0
 !                    [ dimensionless ]
@@ -2615,12 +2616,12 @@ end subroutine daily_mean_solar_cal_0d
 ! <SUBROUTINE NAME="annual_mean_solar_2d">
 !  <OVERVIEW>
 !    annual_mean_solar_2d returns 2d fields of annual mean values of
-!    the cosine of zenith angle, daylight fraction and earth-sun 
+!    the cosine of zenith angle, daylight fraction and earth-sun
 !    distance at the specified latitude.
 !  </OVERVIEW>
 !  <DESCRIPTION>
 !    annual_mean_solar_2d returns 2d fields of annual mean values of
-!    the cosine of zenith angle, daylight fraction and earth-sun 
+!    the cosine of zenith angle, daylight fraction and earth-sun
 !    distance at the specified latitude.
 !  </DESCRIPTION>
 !  <TEMPLATE>
@@ -2631,7 +2632,7 @@ end subroutine daily_mean_solar_cal_0d
 !   Starting/ending index of latitude window
 !  </IN>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
+!   latitudes of model grid points
 !  </IN>
 !  <IN NAME="time" TYPE="time_type">
 !   time of year; autumnal equinox = 0.0, one year = 2 * pi
@@ -2657,8 +2658,8 @@ subroutine annual_mean_solar_2d (js, je, lat, cosz, solar, fracday,  &
 
 !---------------------------------------------------------------------
 !    annual_mean_solar_2d returns 2d fields of annual mean values of
-!    the cosine of zenith angle, daylight fraction and earth-sun 
-!    distance at the specified latitude. 
+!    the cosine of zenith angle, daylight fraction and earth-sun
+!    distance at the specified latitude.
 !---------------------------------------------------------------------
 
 !--------------------------------------------------------------------
@@ -2681,8 +2682,8 @@ real,                    intent(out)   :: rrsun
       if (.not. annual_mean_calculated) then
 
 !----------------------------------------------------------------------
-!    determine annual mean values of solar flux and product of cosz 
-!    and solar flux by integrating the annual cycle in num_angles 
+!    determine annual mean values of solar flux and product of cosz
+!    and solar flux by integrating the annual cycle in num_angles
 !    orbital increments.
 !----------------------------------------------------------------------
         solar = 0.0
@@ -2700,19 +2701,19 @@ real,                    intent(out)   :: rrsun
 !--------------------------------------------------------------------
 !   define the flux-weighted annual mean cosine of the zenith angle.
 !--------------------------------------------------------------------
-        where(solar.eq.0.0) 
+        where(solar.eq.0.0)
           cosz = 0.0
         elsewhere
           cosz = cosz/solar
         end where
 
 !-------------------------------------------------------------------
-!    define avg fracday such as to make the avg flux (solar) equal to 
-!    the product of the avg cosz * avg fracday * assumed mean avg 
-!    radius of 1.0. it is unlikely that these avg fracday and avg rr 
+!    define avg fracday such as to make the avg flux (solar) equal to
+!    the product of the avg cosz * avg fracday * assumed mean avg
+!    radius of 1.0. it is unlikely that these avg fracday and avg rr
 !    will ever be used.
 !--------------------------------------------------------------------
-        where(solar  .eq.0.0) 
+        where(solar  .eq.0.0)
           fracday = 0.0
         elsewhere
           fracday = solar/cosz
@@ -2731,7 +2732,7 @@ real,                    intent(out)   :: rrsun
 
 !--------------------------------------------------------------------
 !    increment the points computed counter. set flag to end execution
-!    once values have been calculated for all points owned by the 
+!    once values have been calculated for all points owned by the
 !    processor.
 !--------------------------------------------------------------------
           num_pts = num_pts + size(lat,1)*size(lat,2)
@@ -2739,7 +2740,7 @@ real,                    intent(out)   :: rrsun
         endif
 
 !--------------------------------------------------------------------
-!    if the calculation has been done, return the appropriate module 
+!    if the calculation has been done, return the appropriate module
 !    variables.
 !--------------------------------------------------------------------
       else
@@ -2764,14 +2765,14 @@ end subroutine annual_mean_solar_2d
 ! <SUBROUTINE NAME="annual_mean_solar_1d">
 !  <OVERVIEW>
 !    annual_mean_solar_1d creates 2-d input fields from 1-d input fields
-!    and then calls annual_mean_solar_2d to obtain 2-d output fields 
-!    which are then stored into 1-d fields for return to the calling 
+!    and then calls annual_mean_solar_2d to obtain 2-d output fields
+!    which are then stored into 1-d fields for return to the calling
 !    subroutine.
 !  </OVERVIEW>
 !  <DESCRIPTION>
 !    annual_mean_solar_1d creates 2-d input fields from 1-d input fields
-!    and then calls annual_mean_solar_2d to obtain 2-d output fields 
-!    which are then stored into 1-d fields for return to the calling 
+!    and then calls annual_mean_solar_2d to obtain 2-d output fields
+!    which are then stored into 1-d fields for return to the calling
 !    subroutine.
 !  </DESCRIPTION>
 !  <TEMPLATE>
@@ -2782,7 +2783,7 @@ end subroutine annual_mean_solar_2d
 !   Starting/ending index of latitude window
 !  </IN>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
+!   latitudes of model grid points
 !  </IN>
 !  <IN NAME="time" TYPE="time_type">
 !   time of year; autumnal equinox = 0.0, one year = 2 * pi
@@ -2808,8 +2809,8 @@ subroutine annual_mean_solar_1d (jst, jnd, lat, cosz, solar,  &
 
 !---------------------------------------------------------------------
 !    annual_mean_solar_1d creates 2-d input fields from 1-d input fields
-!    and then calls annual_mean_solar_2d to obtain 2-d output fields 
-!    which are then stored into 1-d fields for return to the calling 
+!    and then calls annual_mean_solar_2d to obtain 2-d output fields
+!    which are then stored into 1-d fields for return to the calling
 !    subroutine.
 !---------------------------------------------------------------------
 
@@ -2852,7 +2853,7 @@ real,               intent(out)    :: rrsun_out
         cosz  =  cosz_2d(:,1)
 
 !--------------------------------------------------------------------
-!    if the calculation has been done, simply return the module 
+!    if the calculation has been done, simply return the module
 !    variables contain the results at the desired latitudes.
 !--------------------------------------------------------------------
       else
@@ -2869,16 +2870,16 @@ end subroutine annual_mean_solar_1d
 !####################################################################
 ! <SUBROUTINE NAME="annual_mean_solar_2level">
 !  <OVERVIEW>
-!    annual_mean_solar_2level creates 2-d input fields from 1-d input 
-!    fields and then calls annual_mean_solar_2d to obtain 2-d output 
-!    fields which are then stored into 1-d fields for return to the 
+!    annual_mean_solar_2level creates 2-d input fields from 1-d input
+!    fields and then calls annual_mean_solar_2d to obtain 2-d output
+!    fields which are then stored into 1-d fields for return to the
 !    calling subroutine. this subroutine will be called during model
 !    initialization.
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    annual_mean_solar_2level creates 2-d input fields from 1-d input 
-!    fields and then calls annual_mean_solar_2d to obtain 2-d output 
-!    fields which are then stored into 1-d fields for return to the 
+!    annual_mean_solar_2level creates 2-d input fields from 1-d input
+!    fields and then calls annual_mean_solar_2d to obtain 2-d output
+!    fields which are then stored into 1-d fields for return to the
 !    calling subroutine. this subroutine will be called during model
 !    initialization.
 !  </DESCRIPTION>
@@ -2886,7 +2887,7 @@ end subroutine annual_mean_solar_1d
 !   call annual_mean_solar_2level (lat, cosz, solar)
 !  </TEMPLATE>
 !  <IN NAME="lat" TYPE="real">
-!   latitudes of model grid points 
+!   latitudes of model grid points
 !  </IN>
 !  <OUT NAME="cosz" TYPE="real">
 !   cosine of solar zenith angle
@@ -2900,9 +2901,9 @@ end subroutine annual_mean_solar_1d
 subroutine annual_mean_solar_2level (lat, cosz, solar)
 
 !---------------------------------------------------------------------
-!    annual_mean_solar_2level creates 2-d input fields from 1-d input 
-!    fields and then calls annual_mean_solar_2d to obtain 2-d output 
-!    fields which are then stored into 1-d fields for return to the 
+!    annual_mean_solar_2level creates 2-d input fields from 1-d input
+!    fields and then calls annual_mean_solar_2d to obtain 2-d output
+!    fields which are then stored into 1-d fields for return to the
 !    calling subroutine. this subroutine will be called during model
 !    initialization.
 !---------------------------------------------------------------------
@@ -2962,7 +2963,7 @@ end subroutine annual_mean_solar_2level
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                END INTERFACE ANNUAL_MEAN_SOLAR
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3016,7 +3017,7 @@ end subroutine astronomy_end
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                    PRIVATE SUBROUTINES
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3025,13 +3026,13 @@ end subroutine astronomy_end
 !####################################################################
 ! <SUBROUTINE NAME="orbit">
 !  <OVERVIEW>
-!    orbit computes and stores a table of value of orbital angles as a 
-!    function of orbital time (both the angle and time are zero at 
+!    orbit computes and stores a table of value of orbital angles as a
+!    function of orbital time (both the angle and time are zero at
 !    autumnal equinox in the NH, and range from 0 to 2*pi).
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    orbit computes and stores a table of value of orbital angles as a 
-!    function of orbital time (both the angle and time are zero at 
+!    orbit computes and stores a table of value of orbital angles as a
+!    function of orbital time (both the angle and time are zero at
 !    autumnal equinox in the NH, and range from 0 to 2*pi).
 !  </DESCRIPTION>
 !  <TEMPLATE>
@@ -3042,8 +3043,8 @@ end subroutine astronomy_end
 subroutine orbit
 
 !---------------------------------------------------------------------
-!    orbit computes and stores a table of value of orbital angles as a 
-!    function of orbital time (both the angle and time are zero at 
+!    orbit computes and stores a table of value of orbital angles as a
+!    function of orbital time (both the angle and time are zero at
 !    autumnal equinox in the NH, and range from 0 to 2*pi).
 !---------------------------------------------------------------------
 
@@ -3066,7 +3067,7 @@ subroutine orbit
       dt = dt*norm
 
 !---------------------------------------------------------------------
-!    define the orbital angle at each of the num_angles locations in 
+!    define the orbital angle at each of the num_angles locations in
 !    the orbit.
 !---------------------------------------------------------------------
       do n = 1, num_angles
@@ -3077,7 +3078,7 @@ subroutine orbit
         d5 = d1/6.0 + d2/3.0 +d3/3.0 +d4/6.0
         orb_angle(n) = orb_angle(n-1) + d5
       end do
-  
+
 !-------------------------------------------------------------------
 
 
@@ -3102,7 +3103,7 @@ end subroutine orbit
 !    r = r_inv_squared (ang)
 !  </TEMPLATE>
 !  <IN NAME="ang" TYPE="real">
-!    angular position of earth in its orbit, relative to a 
+!    angular position of earth in its orbit, relative to a
 !            value of 0.0 at the NH autumnal equinox, value between
 !            0.0 and 2 * pi
 !  </IN>
@@ -3124,7 +3125,7 @@ real, intent(in) :: ang
 !
 !  intent(in) variables:
 !
-!      ang   angular position of earth in its orbit, relative to a 
+!      ang   angular position of earth in its orbit, relative to a
 !            value of 0.0 at the NH autumnal equinox, value between
 !            0.0 and 2 * pi
 !            [ radians ]
@@ -3133,18 +3134,18 @@ real, intent(in) :: ang
 
 !---------------------------------------------------------------------
 !  local variables
- 
+
       real :: r_inv_squared, r, rad_per
 
 !---------------------------------------------------------------------
 !  local variables:
 !
 !      r_inv_squared    the inverse of the square of the earth-sun
-!                       distance relative to the mean distance 
+!                       distance relative to the mean distance
 !                       [ dimensionless ]
 !      r                earth-sun distance relative to mean distance
 !                       [ dimensionless ]
-!      rad_per          angular position of perihelion 
+!      rad_per          angular position of perihelion
 !                       [ radians ]
 !
 !--------------------------------------------------------------------
@@ -3168,12 +3169,12 @@ end function r_inv_squared
 !  <OVERVIEW>
 !    angle determines the position within the earth's orbit at time t
 !    in the year ( t = 0 at NH autumnal equinox.) by interpolating
-!    into the orbital position table. 
+!    into the orbital position table.
 !  </OVERVIEW>
 !  <DESCRIPTION>
 !    angle determines the position within the earth's orbit at time t
 !    in the year ( t = 0 at NH autumnal equinox.) by interpolating
-!    into the orbital position table. 
+!    into the orbital position table.
 !  </DESCRIPTION>
 !  <TEMPLATE>
 !    r = angle (t)
@@ -3189,7 +3190,7 @@ function angle (t)
 !--------------------------------------------------------------------
 !    angle determines the position within the earth's orbit at time t
 !    in the year ( t = 0 at NH autumnal equinox.) by interpolating
-!    into the orbital position table. 
+!    into the orbital position table.
 !--------------------------------------------------------------------
 
 !--------------------------------------------------------------------
@@ -3224,7 +3225,7 @@ real, intent(in) :: t
 !     int         table index which is lower than actual position, but
 !                 closest to it
 !                 [ dimensionless ]
-!     int_1       next table index just larger than actual orbital 
+!     int_1       next table index just larger than actual orbital
 !                 position
 !                 [ dimensionless ]
 !
@@ -3232,7 +3233,7 @@ real, intent(in) :: t
 
 !--------------------------------------------------------------------
 !    define orbital tables indices bracketing current orbital time
-!    (int and int_1). define table index distance between the lower 
+!    (int and int_1). define table index distance between the lower
 !    table value (int) and the actual orbital time (x). define orbital
 !    position as being  x of the way between int and int_1. renormalize
 !    angle to be within the range 0 to 2*pi.
@@ -3286,9 +3287,9 @@ real, intent(in) :: ang
 !   local variables:
 !
 !    declination         solar declination angle
-!                        [ radians ]              
+!                        [ radians ]
 !    rad_obliq           obliquity of the ecliptic
-!                        [ radians ]              
+!                        [ radians ]
 !    sin_dec             sine of the solar declination
 !                        [ dimensionless ]
 !
@@ -3309,13 +3310,13 @@ end function declination
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                 INTERFACE HALF_DAY
 !
 ! half_day (latitude, dec) result (h)
 !
 !
-!  separate routines exist within this interface for scalar, 
+!  separate routines exist within this interface for scalar,
 !  or 2D input and output fields:
 !
 !    real, intent(in), dimension(:,:) :: latitude
@@ -3328,14 +3329,14 @@ end function declination
 !
 !  intent(in) variables:
 !
-!     latitude       latitudes of model grid points 
+!     latitude       latitudes of model grid points
 !                    [ radians ]
-!     dec            solar declination               
+!     dec            solar declination
 !                    [ radians ]
 !
 !  intent(out) variables:
 !
-!     h              half of the length of daylight at the given 
+!     h              half of the length of daylight at the given
 !                    latitude and orbital position (dec); value
 !                    ranges between 0 (all darkness) and pi (all
 !                    daylight)
@@ -3344,11 +3345,11 @@ end function declination
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ! <FUNCTION NAME="half_day_2d">
 !  <OVERVIEW>
-!    half_day_2d returns a 2-d array of half-day lengths at the 
+!    half_day_2d returns a 2-d array of half-day lengths at the
 !    latitudes and declination provided.
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    half_day_2d returns a 2-d array of half-day lengths at the 
+!    half_day_2d returns a 2-d array of half-day lengths at the
 !    latitudes and declination provided.
 !  </DESCRIPTION>
 !  <TEMPLATE>
@@ -3365,7 +3366,7 @@ end function declination
 function half_day_2d (latitude, dec) result(h)
 
 !--------------------------------------------------------------------
-!    half_day_2d returns a 2-d array of half-day lengths at the 
+!    half_day_2d returns a 2-d array of half-day lengths at the
 !    latitudes and declination provided.
 !--------------------------------------------------------------------
 
@@ -3379,9 +3380,9 @@ real, dimension(size(latitude,1),size(latitude,2))   :: h
 !---------------------------------------------------------------------
 !   local variables
 
-      real, dimension (size(latitude,1),size(latitude,2)):: & 
+      real, dimension (size(latitude,1),size(latitude,2)):: &
                                                   cos_half_day, lat
-      real :: tan_dec 
+      real :: tan_dec
       real :: eps = 1.0E-05
 
 !---------------------------------------------------------------------
@@ -3389,14 +3390,14 @@ real, dimension(size(latitude,1),size(latitude,2))   :: h
 !
 !     cos_half_day       cosine of half-day length
 !                        [ dimensionless ]
-!     lat                model latitude, adjusted so that it is never 
+!     lat                model latitude, adjusted so that it is never
 !                        0.5*pi or -0.5*pi
 !     tan_dec            tangent of solar declination
 !                        [ dimensionless ]
 !     eps                small increment
 !
 !--------------------------------------------------------------------
-   
+
 !--------------------------------------------------------------------
 !    define tangent of the declination.
 !--------------------------------------------------------------------
@@ -3410,7 +3411,7 @@ real, dimension(size(latitude,1),size(latitude,2))   :: h
       where (latitude == -0.5*PI) lat= latitude + eps
 
 !--------------------------------------------------------------------
-!    define the cosine of the half-day length. adjust for cases of 
+!    define the cosine of the half-day length. adjust for cases of
 !    all daylight or all night.
 !--------------------------------------------------------------------
       cos_half_day = -tan(lat)*tan_dec
@@ -3426,12 +3427,12 @@ end function half_day_2d
 ! <FUNCTION NAME="half_day_0d">
 !  <OVERVIEW>
 !    half_day_0d takes scalar input fields, makes them into 2-d fields
-!    dimensioned (1,1), and calls half_day_2d. on return, the 2-d 
+!    dimensioned (1,1), and calls half_day_2d. on return, the 2-d
 !    fields are converted to the desired scalar output.
 !  </OVERVIEW>
 !  <DESCRIPTION>
 !    half_day_0d takes scalar input fields, makes them into 2-d fields
-!    dimensioned (1,1), and calls half_day_2d. on return, the 2-d 
+!    dimensioned (1,1), and calls half_day_2d. on return, the 2-d
 !    fields are converted to the desired scalar output.
 !  </DESCRIPTION>
 !  <TEMPLATE>
@@ -3449,7 +3450,7 @@ function half_day_0d(latitude, dec) result(h)
 
 !--------------------------------------------------------------------
 !    half_day_0d takes scalar input fields, makes them into 2-d fields
-!    dimensioned (1,1), and calls half_day_2d. on return, the 2-d 
+!    dimensioned (1,1), and calls half_day_2d. on return, the 2-d
 !    fields are converted to the desired scalar output.
 !--------------------------------------------------------------------
 
@@ -3482,7 +3483,7 @@ end function half_day_0d
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!                                
+!
 !                 END INTERFACE HALF_DAY
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3493,15 +3494,15 @@ end function half_day_0d
 !####################################################################
 ! <FUNCTION NAME="orbital_time">
 !  <OVERVIEW>
-!    orbital time returns the time (1 year = 2*pi) since autumnal 
+!    orbital time returns the time (1 year = 2*pi) since autumnal
 !    equinox
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    orbital time returns the time (1 year = 2*pi) since autumnal 
-!    equinox; autumnal_eq_ref is a module variable of time_type and 
-!    will have been defined by default or by a call to 
-!    set_ref_date_of_ae; length_of_year is available through the time 
-!    manager and is set at the value approriate for the calandar being 
+!    orbital time returns the time (1 year = 2*pi) since autumnal
+!    equinox; autumnal_eq_ref is a module variable of time_type and
+!    will have been defined by default or by a call to
+!    set_ref_date_of_ae; length_of_year is available through the time
+!    manager and is set at the value approriate for the calandar being
 !    used
 !  </DESCRIPTION>
 !  <TEMPLATE>
@@ -3515,11 +3516,11 @@ end function half_day_0d
 function orbital_time(time) result(t)
 
 !---------------------------------------------------------------------
-!    orbital time returns the time (1 year = 2*pi) since autumnal 
-!    equinox; autumnal_eq_ref is a module variable of time_type and 
-!    will have been defined by default or by a call to 
-!    set_ref_date_of_ae; length_of_year is available through the time 
-!    manager and is set at the value approriate for the calandar being 
+!    orbital time returns the time (1 year = 2*pi) since autumnal
+!    equinox; autumnal_eq_ref is a module variable of time_type and
+!    will have been defined by default or by a call to
+!    set_ref_date_of_ae; length_of_year is available through the time
+!    manager and is set at the value approriate for the calandar being
 !    used
 !---------------------------------------------------------------------
 
@@ -3529,7 +3530,7 @@ real                        :: t
 !--------------------------------------------------------------------
       t = real ( (time - autumnal_eq_ref)//period_time_type)
       t = twopi*(t - floor(t))
-      if (time < autumnal_eq_ref) t = twopi - t 
+      if (time < autumnal_eq_ref) t = twopi - t
 
 
 end function orbital_time
@@ -3538,11 +3539,11 @@ end function orbital_time
 !#####################################################################
 ! <FUNCTION NAME="universal_time">
 !  <OVERVIEW>
-!    universal_time returns the time of day at longitude = 0.0 
+!    universal_time returns the time of day at longitude = 0.0
 !    (1 day = 2*pi)
 !  </OVERVIEW>
 !  <DESCRIPTION>
-!    universal_time returns the time of day at longitude = 0.0 
+!    universal_time returns the time of day at longitude = 0.0
 !    (1 day = 2*pi)
 !  </DESCRIPTION>
 !  <TEMPLATE>
@@ -3556,7 +3557,7 @@ end function orbital_time
 function universal_time(time) result(t)
 
 !--------------------------------------------------------------------
-!    universal_time returns the time of day at longitude = 0.0 
+!    universal_time returns the time of day at longitude = 0.0
 !    (1 day = 2*pi)
 !--------------------------------------------------------------------
 
@@ -3569,7 +3570,7 @@ real                        :: t
       integer ::  seconds, days
 
       call get_time (time, seconds, days)
-      t = twopi*real(seconds)/seconds_per_day 
+      t = twopi*real(seconds)/seconds_per_day
 
 end function universal_time
 
