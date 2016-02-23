@@ -264,15 +264,6 @@ n = size(t,3)
 
 ! insolation at TOA
 if (do_seasonal) then
-    !   if(do_rad_time_avg) then
-    !    call compute_zenith(Time_loc,equinox_day,dt_rad_avg,lat,lon,coszen,dyofyr)
-    ! else
-    !    call compute_zenith(Time_loc,equinox_day,0     ,lat,lon,coszen,dyofyr)
-    ! end if
-    ! JP first version, don't do time averaging for now
-    ! call compute_zenith(Time_diag,equinox_day,0     ,lat,lon,coszen,dyofyr)
-    ! where(coszen < 1.e-2)coszen=0.
-    ! insolation = solar_constant * coszen
     call get_time(Time_diag, seconds)
     frac_of_day = seconds / seconds_per_sol
     frac_of_year = seconds / orbital_period
@@ -451,7 +442,3 @@ end subroutine two_stream_gray_rad_end
 ! ==================================================================================
 
 end module two_stream_gray_rad_mod
-
-
-
-
