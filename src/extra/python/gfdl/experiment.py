@@ -127,6 +127,7 @@ class Experiment(object):
         log.info('Emptied working directory %r' % self.workdir)
 
     def clear_rundir(self):
+        sh.cd(self.workdir)
         try:
             sh.rm(['-r', self.rundir])
         except sh.ErrorReturnCode_1:
