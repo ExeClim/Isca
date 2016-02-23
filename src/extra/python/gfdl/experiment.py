@@ -288,6 +288,7 @@ class Experiment(object):
             'datadir': outdir,
             'rundir': self.rundir,
             'execdir': self.execdir,
+            'srcdir': self.srcdir,
             'restart_file': restart_file,
             'num_cores': num_cores
         }
