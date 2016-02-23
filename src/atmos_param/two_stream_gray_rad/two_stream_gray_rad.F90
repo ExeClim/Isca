@@ -44,9 +44,19 @@ private
 
 ! version information
 
-character(len=128) :: version='$Id: two_stream_gray_rad.F90,v 1.1.2.1 2013/01/24 14:44:49 pjp Exp $'
+character(len=128) :: version='$Id: two_stream_gray_rad.F90,v 1.1.2.1 2016/02/23$'
 character(len=128) :: tag='Two-stream gray atmosphere'
 
+! Version Details
+! [2016/01/28] <James Penn>:  GFDL Astronomy module used to calculate insolation
+!   - Diurnal & Seasonal cycle implemented in astronomy_mod.
+!   - set `do_seasonal` to .true. in namelist to activate.
+!   - default (`do_seasonal = .false.`) remains as permanent global equinox.
+!   - tidal locking can be achieved with by setting `2*pi / orbital_period = omega`.
+! [2016/02/23] <James Penn>:  Window parameterisation in the longwave stream
+!   - reference: Ruth Geen etal, GRL 2016 (supp. information).
+!   - Set `wv_exponent` and `solar_exponent` to -1 in namelist to activate.
+!   - Moisture and CO2 feedback on SW and LW controlled by `ir_tau...` constants.
 !==================================================================================
 
 ! public interfaces
@@ -68,6 +78,17 @@ real    :: linear_tau      = 0.1
 real    :: wv_exponent     = 4.0
 real    :: solar_exponent  = 4.0
 logical :: do_seasonal     = .false.
+logical :: do_window       = .false.
+logical :: do_attenuate    = .false.
+
+! constants for RG radiation version
+real    :: ir_tau_co2_win  = 0.2150
+real    :: ir_tau_wv_win1  = 147.11
+real    :: ir_tau_wv_win2  = 1.0814e4
+real    :: ir_tau_co2      = 0.154925
+real    :: ir_tau_wv       = 351.48
+real    :: window          = 0.3732
+real    :: carbon_conc     = 360.0
 
 real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 !s albedo now defined in mixed_layer_init
 real, allocatable, dimension(:,:)   :: b_surf
@@ -76,18 +97,26 @@ real, allocatable, dimension(:,:,:) :: lw_up, lw_down, lw_flux, sw_up, sw_down, 
 real, allocatable, dimension(:,:,:) :: lw_tau, sw_tau, lw_dtrans
 real, allocatable, dimension(:,:)   :: olr, net_lw_surf, toa_sw_in, coszen, fracsun
 
+! window parameterisation (RG, 2015)
+real, allocatable, dimension(:,:,:) :: lw_up_win, lw_down_win, lw_dtrans_win
+real, allocatable, dimension(:,:,:) :: b_win, sw_dtrans
+real, allocatable, dimension(:,:)   :: sw_wv, del_sol_tau, sw_tau_k, lw_del_tau, lw_del_tau_win
+
 real, save :: pi, deg_to_rad , rad_to_deg
 
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            ir_tau_eq, ir_tau_pole, atm_abs, sw_diff, &
            linear_tau, del_sw, wv_exponent, &
-           solar_exponent, do_seasonal
+           solar_exponent, do_seasonal, &
+           ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
+           ir_tau_co2, ir_tau_wv, window, carbon_conc
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
 
 integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
-           id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun
+           id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun, &
+           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans
 
 character(len=10), parameter :: mod_name = 'two_stream'
 
@@ -132,14 +161,10 @@ pi         = 4. * atan(1.)
 deg_to_rad = pi/180.
 rad_to_deg = 180./pi
 
-!call astro_init
 call astronomy_init
 
-! if(solday .gt. 0)then
-!    call error_mesg( tag, ' running perpetual simulation', NOTE)
-! endif
-
-
+do_window =    wv_exponent .eq. -1
+do_attenuate = solar_exponent .eq. -1
 
 initialized = .true.
 
@@ -171,6 +196,21 @@ allocate (p2               (ie-is+1, je-js+1))
 allocate (coszen           (ie-is+1, je-js+1))
 allocate (fracsun          (ie-is+1, je-js+1)) !jp from astronomy.f90 : fraction of sun on surface
 
+!Allocate RG variables only if option selected.
+if (do_window) then
+  allocate (b_win            (ie-is+1, je-js+1, num_levels))
+  allocate (lw_dtrans_win    (ie-is+1, je-js+1, num_levels))
+  allocate (lw_up_win        (ie-is+1, je-js+1, num_levels+1))
+  allocate (lw_down_win      (ie-is+1, je-js+1, num_levels+1))
+  allocate (lw_del_tau       (ie-is+1, je-js+1))
+  allocate (lw_del_tau_win   (ie-is+1, je-js+1))
+endif
+if (do_attenuate) then
+  allocate (sw_dtrans        (ie-is+1, je-js+1, num_levels))
+  allocate (sw_wv            (ie-is+1, je-js+1))
+  allocate (del_sol_tau      (ie-is+1, je-js+1))
+  allocate (sw_tau_k         (ie-is+1, je-js+1))
+endif
 
 !-----------------------------------------------------------------------
 !------------ initialize diagnostic fields ---------------
@@ -233,13 +273,30 @@ allocate (fracsun          (ie-is+1, je-js+1)) !jp from astronomy.f90 : fraction
                register_diag_field ( mod_name, 'fracsun', axes(1:2), Time, &
                  'daylight fraction of time interval', &
                  'none', missing_value=missing_value      )
+  if (do_window) then
+    id_lw_dtrans  = &
+               register_diag_field ( mod_name, 'lw_dtrans', axes(1:3), Time, &
+                 'LW transmission (non window)', &
+                 'none', missing_value=missing_value      )
+
+    id_lw_dtrans_win  = &
+               register_diag_field ( mod_name, 'lw_dtrans_win', axes(1:3), Time, &
+                 'LW window transmission', &
+                 'none', missing_value=missing_value      )
+  endif
+  if (do_attenuate) then
+    id_sw_dtrans  = &
+                 register_diag_field ( mod_name, 'sw_dtrans', axes(1:3), Time, &
+                   'SW transmission', &
+                   'none', missing_value=missing_value      )
+  endif
 return
 end subroutine two_stream_gray_rad_init
 
 ! ==================================================================================
 
 subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, lon, p_half, t,         &
-                           net_surf_sw_down, surf_lw_down, albedo)
+                           net_surf_sw_down, surf_lw_down, albedo, q)
 
   ! use rrtm_astro, only:      compute_zenith,use_dyofyr,solr_cnst,&
   !                            solrad,solday,equinox_day
@@ -252,7 +309,7 @@ type(time_type), intent(in)         :: Time_diag
 real, intent(in), dimension(:,:)    :: lat, lon, albedo
 real, intent(out), dimension(:,:)   :: net_surf_sw_down
 real, intent(out), dimension(:,:)   :: surf_lw_down
-real, intent(in), dimension(:,:,:)  :: t, p_half
+real, intent(in), dimension(:,:,:)  :: t, q,  p_half
 
 integer :: i, j, k, n, dyofyr
 
@@ -262,59 +319,123 @@ logical :: used
 
 n = size(t,3)
 
+! albedo(:,:) = albedo_value !s albedo now set in mixed_layer_init.
+
+! SHORTWAVE RADIATION
+
 ! insolation at TOA
 if (do_seasonal) then
-    call get_time(Time_diag, seconds)
-    frac_of_day = seconds / seconds_per_sol
-    frac_of_year = seconds / orbital_period
-    gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
-    time_since_ae = abs(mod(frac_of_year, 1.0)) * 2.0 * pi
-    call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
-    insolation = solar_constant * coszen
+  ! Seasonal Cycle: Use astronomical parameters to calculate insolation
+  call get_time(Time_diag, seconds)
+  frac_of_day = seconds / seconds_per_sol
+  frac_of_year = seconds / orbital_period
+  gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
+  time_since_ae = abs(mod(frac_of_year, 1.0)) * 2.0 * pi
+  call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
+  insolation = solar_constant * coszen
 else
+  ! Default: Permanent equinox at all longitudes
   p2          = (1. - 3.*sin(lat)**2)/4.
   insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
 end if
 
-! LW optical thickness
-lw_tau_0    = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
+if(do_attenuate) then
+  ! RG scheme: optical depth a function of wv and co2
+  sw_tau_k = 0.
+  do k = 1, n
+    sw_wv = sw_tau_k + 0.5194
+    sw_wv = exp( 0.01887 / (sw_tau_k + 0.009522)                      &
+                 + 1.603 / ( sw_wv*sw_wv ) )
+    del_sol_tau(:,:) = ( 0.0596 + 0.0029 * log(carbon_conc/360)       &
+                                + sw_wv(:,:) * q(:,:,k) )             &
+                     * ( p_half(:,:,k+1) - p_half(:,:,k) ) / p_half(:,:,n+1)
+    sw_dtrans(:,:,k) = exp( - del_sol_tau(:,:) )
+    sw_tau_k = sw_tau_k + del_sol_tau(:,:)
+  end do
 
-! SW optical thickness
-sw_tau_0    = (1.0 - sw_diff*sin(lat)**2)*atm_abs
+  ! compute downward shortwave flux
+  sw_down(:,:,1) = insolation(:,:)
+  do k = 1, n
+     sw_down(:,:,k+1)   = sw_down(:,:,k) * sw_dtrans(:,:,k)
+  end do
+else
+  ! Default: Frierson handling of SW radiation
+  ! SW optical thickness
+  sw_tau_0    = (1.0 - sw_diff*sin(lat)**2)*atm_abs
 
-! constant albedo
-!albedo(:,:) = albedo_value !s albedo now set in mixed_layer_init.
+  ! compute optical depths for each model level
+  do k = 1, n+1
+    sw_tau(:,:,k) = sw_tau_0 * (p_half(:,:,k)/pstd_mks)**solar_exponent
+  end do
 
-! compute optical depths for each model level
-do k = 1, n+1
+  ! compute downward shortwave flux
+  do k = 1, n+1
+     sw_down(:,:,k)   = insolation(:,:) * exp(-sw_tau(:,:,k))
+  end do
+endif
 
+
+
+! LONGWAVE RADIATION
+
+if (do_window) then
+  ! split LW in 2 bands: water-vapour window and remaining = non-window
+  ! ref: Ruth Geen etal, GRL 2016 (supp. information).
+  do k = 1, n
+    lw_del_tau    = ( ir_tau_co2 + 0.2023 * log(carbon_conc/360)                  &
+                    + ir_tau_wv*sqrt(q(:,:,k)) )                               &
+               * ( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1)
+    lw_dtrans(:,:,k) = exp( - lw_del_tau )
+    lw_del_tau_win   = ( ir_tau_co2_win + 0.0954 * log(carbon_conc/360)           &
+                                     + ir_tau_wv_win1*q(:,:,k)                 &
+                                     + ir_tau_wv_win2*q(:,:,k)*q(:,:,k) )      &
+                  * ( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1)
+    lw_dtrans_win(:,:,k) = exp( - lw_del_tau_win )
+  end do
+else
+  lw_dtrans_win = 1.
+  ! longwave optical thickness function of latitude and pressure
+  lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
+
+  ! compute optical depths for each model level
+  do k = 1, n+1
   lw_tau(:,:,k) = lw_tau_0 * ( linear_tau * p_half(:,:,k)/pstd_mks     &
        + (1.0 - linear_tau) * (p_half(:,:,k)/pstd_mks)**wv_exponent )
+  end do
 
-  sw_tau(:,:,k) = sw_tau_0 * (p_half(:,:,k)/pstd_mks)**solar_exponent
-!  sw_tau(:,:,k) = sw_tau_0 * (p_half(:,:,k)/p_half(:,:,n+1))**solar_exponent !s old code used actual surface pressure, rather than pstd_mks here.
+  ! longwave differential transmissivity
+  do k = 1, n
+     lw_dtrans(:,:,k) = exp( -(lw_tau(:,:,k+1) - lw_tau(:,:,k)) )
+  end do
+endif
 
-end do
+
 
 ! longwave source function
 
 b = stefan*t**4
 
-! longwave differential transmissivity
-do k = 1, n
-   lw_dtrans(:,:,k) = exp( -(lw_tau(:,:,k+1) - lw_tau(:,:,k)) )
-end do
+if (do_window) then
+  ! if RG radiation switched on, also compute downward longwave flux for window
+  ! Allocate a fraction of the longwave spectrum as window radiation
+  b_win = window*b
+  b = (1.0 - window)*b
+  lw_down_win(:,:,1) = 0.0
+  lw_down(:,:,1) = 0.0
+  do k = 1,n
+    lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
+    lw_down_win(:,:,k+1) = lw_down_win(:,:,k)*lw_dtrans_win(:,:,k)              &
+                      + b_win(:,:,k)*(1.0 - lw_dtrans_win(:,:,k))
+  end do
+  lw_down = lw_down + lw_down_win
+else
+  ! compute downward longwave flux by integrating downward
+  lw_down(:,:,1)      = 0.
+  do k = 1, n
+     lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
+  end do
+endif
 
-! compute downward longwave flux by integrating downward
-lw_down(:,:,1)      = 0.
-do k = 1, n
-   lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
-end do
-
-! compute downward shortwave flux
-do k = 1, n+1
-   sw_down(:,:,k)   = insolation(:,:) * exp(-sw_tau(:,:,k))
-end do
 
 surf_lw_down     = lw_down(:, :, n+1)
 toa_sw_in        = sw_down(:, :, 1)
@@ -362,11 +483,23 @@ logical :: used
 n = size(t,3)
 b_surf            = stefan*t_surf**4
 
-! compute upward longwave flux by integrating upward
-lw_up(:,:,n+1)    = b_surf
-do k = n, 1, -1
-   lw_up(:,:,k)   = lw_up(:,:,k+1)*lw_dtrans(:,:,k) + b(:,:,k)*(1.0 - lw_dtrans(:,:,k))
-end do
+if (do_window) then
+  ! integrate upward, including window contribution
+  lw_up(:,:,n+1)     = b_surf*(1-window)
+  lw_up_win(:,:,n+1) = b_surf*window
+
+  do k = n, 1, -1
+     lw_up(:,:,k)   = lw_up(:,:,k+1)*lw_dtrans(:,:,k) + b(:,:,k)*(1.0 - lw_dtrans(:,:,k))
+     lw_up_win(:,:,k)   = lw_up_win(:,:,k+1)*lw_dtrans_win(:,:,k) + b_win(:,:,k)*(1.0 - lw_dtrans_win(:,:,k))
+  end do
+  lw_up = lw_up + lw_up_win
+else
+  ! compute upward longwave flux by integrating upward
+  lw_up(:,:,n+1)    = b_surf
+  do k = n, 1, -1
+     lw_up(:,:,k)   = lw_up(:,:,k+1)*lw_dtrans(:,:,k) + b(:,:,k)*(1.0 - lw_dtrans(:,:,k))
+  end do
+end if
 
 ! compute upward shortwave flux (here taken to be constant)
 do k = 1, n+1
@@ -422,6 +555,16 @@ endif
 if ( id_flux_sw > 0 ) then
    used = send_data ( id_flux_sw, sw_flux, Time_diag)
 endif
+!------- radiative transmissivities (at half levels) --------
+if ( id_lw_dtrans > 0 ) then
+   used = send_data ( id_lw_dtrans, lw_dtrans, Time_diag)
+endif
+if ( id_lw_dtrans_win > 0 ) then
+   used = send_data ( id_lw_dtrans_win, lw_dtrans_win, Time_diag)
+endif
+if ( id_sw_dtrans > 0 ) then
+   used = send_data ( id_sw_dtrans, sw_dtrans, Time_diag)
+endif
 
 return
 end subroutine two_stream_gray_rad_up
@@ -436,6 +579,14 @@ deallocate (lw_up, lw_down, lw_flux, sw_up, sw_down, sw_flux, rad_flux)
 deallocate (b_surf, olr, net_lw_surf, toa_sw_in, lw_tau_0, sw_tau_0)
 deallocate (lw_dtrans, lw_tau, sw_tau)
 deallocate (insolation, p2) !s albedo
+
+! deallocate RG variables
+if (do_window) then
+  deallocate (b_win, lw_dtrans_win, lw_up_win, lw_down_win, lw_del_tau, lw_del_tau_win)
+endif
+if (do_attenuate) then
+  deallocate (sw_dtrans, sw_wv, del_sol_tau, sw_tau_k)
+endif
 
 end subroutine two_stream_gray_rad_end
 
