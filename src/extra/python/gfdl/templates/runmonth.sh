@@ -14,8 +14,8 @@ cd {{ rundir }}
 
 export MALLOC_CHECK_=0
 
-ln -s {{ execdir }}/fms_moist.x fms_moist.x
-mpirun  -np {{ num_cores }} fms_moist.x
+#ln -s {{ execdir }}/fms_moist.x fms_moist.x  # causing not found issues
+mpirun  -np {{ num_cores }} {{ execdir }}/fms_moist.x
 
 err_code=$?
 if [[ $err_code -ne 0 ]]; then
