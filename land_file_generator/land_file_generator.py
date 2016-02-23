@@ -28,9 +28,19 @@ lonb_array, latb_array = np.meshgrid(lonb,latb)
 
 
 #s for land use this kind of indexing approach. Then it will be super easy.
-idx = (20. < lat_array) & (lat_array < 60) & (20. < lon_array) & (lon_array < 60)
+#idx = (20. < lat_array) & (lat_array < 60) & (30. < lon_array) & (lon_array < 130)
+#land_array[idx] = 1.0
 
-land_array[idx] = 1.0
+#make continents
+
+idx_na = (103.-43./40.*(lon_array-180) < lat_array) & ((lon_array-180)*43./50. -51.8 < lat_array) &( lat_array < 60.)
+idx_sa = (737.-7.2*(lon_array-180) < lat_array) & ((lon_array-180)*10./7. + -212.1 < lat_array) &( lat_array < -22./45*(lon_array-180) +65.9)
+idx_ea = (17. <= lat_array) & (lat_array < 60.) & (-5. < lon_array) & ( 43./40.*lon_array -101.25 < lat_array)
+idx_ea_neg = (17. <= lat_array) & (lat_array < 60.) & (355. < lon_array) 
+idx_af = (lat_array < 17.) & (-52./27.*lon_array + 7.37 < lat_array) & (52./38.*lon_array -65.1 < lat_array) 
+idx_af_neg = (lat_array < 17.) & (-52./27.*(lon_array-360) + 7.37 < lat_array)
+idx_world = idx_na + idx_sa + idx_ea + idx_ea_neg + idx_af + idx_af_neg
+#land_array[idx_world] = 1.0
 
 
 
@@ -63,4 +73,5 @@ plt.yticks(np.linspace(-90,90,7))
 cb = plt.colorbar(cs, shrink=0.5, extend='both')
 
 plt.show()
+
 

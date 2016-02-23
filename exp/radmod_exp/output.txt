@@ -1,0 +1,724 @@
+loadmodules
+1
+Using the following sourcecode modifications:
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/two_stream_gray_rad.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/idealized_moist_phys.F90
+Run in parallel mode
+ Makefile is ready.
+make: Nothing to be done for `all'.
+Compilation done
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to    32768.
+ &MPP_IO_NML
+ HEADER_BUFFER_VAL       =       16384,
+ GLOBAL_FIELD_ON_ROOT_PE = T,
+ IO_CLOCKS_ON    = F,
+ SHUFFLE =           0,
+ DEFLATE_LEVEL   =          -1
+ /
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     131072.
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to   600000.
+  starting            1  OpenMP threads per MPI-task
+ATMOS MODEL DOMAIN DECOMPOSITION
+  X-AXIS =  128
+  Y-AXIS =    8   8   8   8   8   8   8   8
+mean surface pressure=1000.0000 mb
+ Integration completed through    1 Jan  2   0: 0: 0
+ Integration completed through    1 Jan  3   0: 0: 0
+ Integration completed through    1 Jan  4   0: 0: 0
+ Integration completed through    1 Jan  5   0: 0: 0
+ Integration completed through    1 Jan  6   0: 0: 0
+ Integration completed through    1 Jan  7   0: 0: 0
+ Integration completed through    1 Jan  8   0: 0: 0
+ Integration completed through    1 Jan  9   0: 0: 0
+ Integration completed through    1 Jan 10   0: 0: 0
+ Integration completed through    1 Jan 11   0: 0: 0
+ Integration completed through    1 Jan 12   0: 0: 0
+ Integration completed through    1 Jan 13   0: 0: 0
+ Integration completed through    1 Jan 14   0: 0: 0
+ Integration completed through    1 Jan 15   0: 0: 0
+ Integration completed through    1 Jan 16   0: 0: 0
+ Integration completed through    1 Jan 17   0: 0: 0
+ Integration completed through    1 Jan 18   0: 0: 0
+ Integration completed through    1 Jan 19   0: 0: 0
+ Integration completed through    1 Jan 20   0: 0: 0
+ Integration completed through    1 Jan 21   0: 0: 0
+ Integration completed through    1 Jan 22   0: 0: 0
+ Integration completed through    1 Jan 23   0: 0: 0
+ Integration completed through    1 Jan 24   0: 0: 0
+ Integration completed through    1 Jan 25   0: 0: 0
+ Integration completed through    1 Jan 26   0: 0: 0
+ Integration completed through    1 Jan 27   0: 0: 0
+ Integration completed through    1 Jan 28   0: 0: 0
+ Integration completed through    1 Jan 29   0: 0: 0
+ Integration completed through    1 Jan 30   0: 0: 0
+ Integration completed through    1 Feb  1   0: 0: 0
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
+ MPP_DOMAINS_STACK high water mark=       81920
+
+Tabulating mpp_clock statistics across      8 PEs...
+
+                                          tmin          tmax          tavg          tstd  tfrac grain pemin pemax
+Total runtime                       161.604083    161.604092    161.604087      0.000003  1.000     0     0     7
+ MPP_STACK high water mark=           0
+2
+Using the following sourcecode modifications:
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/two_stream_gray_rad.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/idealized_moist_phys.F90
+Run in parallel mode
+ Makefile is ready.
+make: Nothing to be done for `all'.
+Compilation done
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to    32768.
+ &MPP_IO_NML
+ HEADER_BUFFER_VAL       =       16384,
+ GLOBAL_FIELD_ON_ROOT_PE = T,
+ IO_CLOCKS_ON    = F,
+ SHUFFLE =           0,
+ DEFLATE_LEVEL   =          -1
+ /
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     131072.
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to   600000.
+  starting            1  OpenMP threads per MPI-task
+ATMOS MODEL DOMAIN DECOMPOSITION
+  X-AXIS =  128
+  Y-AXIS =    8   8   8   8   8   8   8   8
+ Integration completed through    1 Feb  2   0: 0: 0
+ Integration completed through    1 Feb  3   0: 0: 0
+ Integration completed through    1 Feb  4   0: 0: 0
+ Integration completed through    1 Feb  5   0: 0: 0
+ Integration completed through    1 Feb  6   0: 0: 0
+ Integration completed through    1 Feb  7   0: 0: 0
+ Integration completed through    1 Feb  8   0: 0: 0
+ Integration completed through    1 Feb  9   0: 0: 0
+ Integration completed through    1 Feb 10   0: 0: 0
+ Integration completed through    1 Feb 11   0: 0: 0
+ Integration completed through    1 Feb 12   0: 0: 0
+ Integration completed through    1 Feb 13   0: 0: 0
+ Integration completed through    1 Feb 14   0: 0: 0
+ Integration completed through    1 Feb 15   0: 0: 0
+ Integration completed through    1 Feb 16   0: 0: 0
+ Integration completed through    1 Feb 17   0: 0: 0
+ Integration completed through    1 Feb 18   0: 0: 0
+ Integration completed through    1 Feb 19   0: 0: 0
+ Integration completed through    1 Feb 20   0: 0: 0
+ Integration completed through    1 Feb 21   0: 0: 0
+ Integration completed through    1 Feb 22   0: 0: 0
+ Integration completed through    1 Feb 23   0: 0: 0
+ Integration completed through    1 Feb 24   0: 0: 0
+ Integration completed through    1 Feb 25   0: 0: 0
+ Integration completed through    1 Feb 26   0: 0: 0
+ Integration completed through    1 Feb 27   0: 0: 0
+ Integration completed through    1 Feb 28   0: 0: 0
+ Integration completed through    1 Feb 29   0: 0: 0
+ Integration completed through    1 Feb 30   0: 0: 0
+ Integration completed through    1 Mar  1   0: 0: 0
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
+ MPP_DOMAINS_STACK high water mark=       81920
+
+Tabulating mpp_clock statistics across      8 PEs...
+
+                                          tmin          tmax          tavg          tstd  tfrac grain pemin pemax
+Total runtime                       173.238791    173.238797    173.238794      0.000002  1.000     0     0     7
+ MPP_STACK high water mark=           0
+3
+Using the following sourcecode modifications:
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/two_stream_gray_rad.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/idealized_moist_phys.F90
+Run in parallel mode
+ Makefile is ready.
+make: Nothing to be done for `all'.
+Compilation done
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to    32768.
+ &MPP_IO_NML
+ HEADER_BUFFER_VAL       =       16384,
+ GLOBAL_FIELD_ON_ROOT_PE = T,
+ IO_CLOCKS_ON    = F,
+ SHUFFLE =           0,
+ DEFLATE_LEVEL   =          -1
+ /
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     131072.
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to   600000.
+  starting            1  OpenMP threads per MPI-task
+ATMOS MODEL DOMAIN DECOMPOSITION
+  X-AXIS =  128
+  Y-AXIS =    8   8   8   8   8   8   8   8
+ Integration completed through    1 Mar  2   0: 0: 0
+ Integration completed through    1 Mar  3   0: 0: 0
+ Integration completed through    1 Mar  4   0: 0: 0
+ Integration completed through    1 Mar  5   0: 0: 0
+ Integration completed through    1 Mar  6   0: 0: 0
+ Integration completed through    1 Mar  7   0: 0: 0
+ Integration completed through    1 Mar  8   0: 0: 0
+ Integration completed through    1 Mar  9   0: 0: 0
+ Integration completed through    1 Mar 10   0: 0: 0
+ Integration completed through    1 Mar 11   0: 0: 0
+ Integration completed through    1 Mar 12   0: 0: 0
+ Integration completed through    1 Mar 13   0: 0: 0
+ Integration completed through    1 Mar 14   0: 0: 0
+ Integration completed through    1 Mar 15   0: 0: 0
+ Integration completed through    1 Mar 16   0: 0: 0
+ Integration completed through    1 Mar 17   0: 0: 0
+ Integration completed through    1 Mar 18   0: 0: 0
+ Integration completed through    1 Mar 19   0: 0: 0
+ Integration completed through    1 Mar 20   0: 0: 0
+ Integration completed through    1 Mar 21   0: 0: 0
+ Integration completed through    1 Mar 22   0: 0: 0
+ Integration completed through    1 Mar 23   0: 0: 0
+ Integration completed through    1 Mar 24   0: 0: 0
+ Integration completed through    1 Mar 25   0: 0: 0
+ Integration completed through    1 Mar 26   0: 0: 0
+ Integration completed through    1 Mar 27   0: 0: 0
+ Integration completed through    1 Mar 28   0: 0: 0
+ Integration completed through    1 Mar 29   0: 0: 0
+ Integration completed through    1 Mar 30   0: 0: 0
+ Integration completed through    1 Apr  1   0: 0: 0
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
+ MPP_DOMAINS_STACK high water mark=       81920
+
+Tabulating mpp_clock statistics across      8 PEs...
+
+                                          tmin          tmax          tavg          tstd  tfrac grain pemin pemax
+Total runtime                       153.384915    153.384928    153.384921      0.000005  1.000     0     0     7
+ MPP_STACK high water mark=           0
+4
+Using the following sourcecode modifications:
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/two_stream_gray_rad.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/idealized_moist_phys.F90
+Run in parallel mode
+ Makefile is ready.
+make: Nothing to be done for `all'.
+Compilation done
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to    32768.
+ &MPP_IO_NML
+ HEADER_BUFFER_VAL       =       16384,
+ GLOBAL_FIELD_ON_ROOT_PE = T,
+ IO_CLOCKS_ON    = F,
+ SHUFFLE =           0,
+ DEFLATE_LEVEL   =          -1
+ /
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     131072.
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to   600000.
+  starting            1  OpenMP threads per MPI-task
+ATMOS MODEL DOMAIN DECOMPOSITION
+  X-AXIS =  128
+  Y-AXIS =    8   8   8   8   8   8   8   8
+ Integration completed through    1 Apr  2   0: 0: 0
+ Integration completed through    1 Apr  3   0: 0: 0
+ Integration completed through    1 Apr  4   0: 0: 0
+ Integration completed through    1 Apr  5   0: 0: 0
+ Integration completed through    1 Apr  6   0: 0: 0
+ Integration completed through    1 Apr  7   0: 0: 0
+ Integration completed through    1 Apr  8   0: 0: 0
+ Integration completed through    1 Apr  9   0: 0: 0
+ Integration completed through    1 Apr 10   0: 0: 0
+ Integration completed through    1 Apr 11   0: 0: 0
+ Integration completed through    1 Apr 12   0: 0: 0
+ Integration completed through    1 Apr 13   0: 0: 0
+ Integration completed through    1 Apr 14   0: 0: 0
+ Integration completed through    1 Apr 15   0: 0: 0
+ Integration completed through    1 Apr 16   0: 0: 0
+ Integration completed through    1 Apr 17   0: 0: 0
+ Integration completed through    1 Apr 18   0: 0: 0
+ Integration completed through    1 Apr 19   0: 0: 0
+ Integration completed through    1 Apr 20   0: 0: 0
+ Integration completed through    1 Apr 21   0: 0: 0
+ Integration completed through    1 Apr 22   0: 0: 0
+ Integration completed through    1 Apr 23   0: 0: 0
+ Integration completed through    1 Apr 24   0: 0: 0
+ Integration completed through    1 Apr 25   0: 0: 0
+ Integration completed through    1 Apr 26   0: 0: 0
+ Integration completed through    1 Apr 27   0: 0: 0
+ Integration completed through    1 Apr 28   0: 0: 0
+ Integration completed through    1 Apr 29   0: 0: 0
+ Integration completed through    1 Apr 30   0: 0: 0
+ Integration completed through    1 May  1   0: 0: 0
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
+ MPP_DOMAINS_STACK high water mark=       81920
+
+Tabulating mpp_clock statistics across      8 PEs...
+
+                                          tmin          tmax          tavg          tstd  tfrac grain pemin pemax
+Total runtime                       170.015141    170.015152    170.015147      0.000004  1.000     0     0     7
+ MPP_STACK high water mark=           0
+5
+Using the following sourcecode modifications:
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/two_stream_gray_rad.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/idealized_moist_phys.F90
+Run in parallel mode
+ Makefile is ready.
+make: Nothing to be done for `all'.
+Compilation done
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to    32768.
+ &MPP_IO_NML
+ HEADER_BUFFER_VAL       =       16384,
+ GLOBAL_FIELD_ON_ROOT_PE = T,
+ IO_CLOCKS_ON    = F,
+ SHUFFLE =           0,
+ DEFLATE_LEVEL   =          -1
+ /
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     131072.
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to   600000.
+  starting            1  OpenMP threads per MPI-task
+ATMOS MODEL DOMAIN DECOMPOSITION
+  X-AXIS =  128
+  Y-AXIS =    8   8   8   8   8   8   8   8
+ Integration completed through    1 May  2   0: 0: 0
+ Integration completed through    1 May  3   0: 0: 0
+ Integration completed through    1 May  4   0: 0: 0
+ Integration completed through    1 May  5   0: 0: 0
+ Integration completed through    1 May  6   0: 0: 0
+ Integration completed through    1 May  7   0: 0: 0
+ Integration completed through    1 May  8   0: 0: 0
+ Integration completed through    1 May  9   0: 0: 0
+ Integration completed through    1 May 10   0: 0: 0
+ Integration completed through    1 May 11   0: 0: 0
+ Integration completed through    1 May 12   0: 0: 0
+ Integration completed through    1 May 13   0: 0: 0
+ Integration completed through    1 May 14   0: 0: 0
+ Integration completed through    1 May 15   0: 0: 0
+ Integration completed through    1 May 16   0: 0: 0
+ Integration completed through    1 May 17   0: 0: 0
+ Integration completed through    1 May 18   0: 0: 0
+ Integration completed through    1 May 19   0: 0: 0
+ Integration completed through    1 May 20   0: 0: 0
+ Integration completed through    1 May 21   0: 0: 0
+ Integration completed through    1 May 22   0: 0: 0
+ Integration completed through    1 May 23   0: 0: 0
+ Integration completed through    1 May 24   0: 0: 0
+ Integration completed through    1 May 25   0: 0: 0
+ Integration completed through    1 May 26   0: 0: 0
+ Integration completed through    1 May 27   0: 0: 0
+ Integration completed through    1 May 28   0: 0: 0
+ Integration completed through    1 May 29   0: 0: 0
+ Integration completed through    1 May 30   0: 0: 0
+ Integration completed through    1 Jun  1   0: 0: 0
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
+ MPP_DOMAINS_STACK high water mark=       81920
+
+Tabulating mpp_clock statistics across      8 PEs...
+
+                                          tmin          tmax          tavg          tstd  tfrac grain pemin pemax
+Total runtime                       171.584014    171.584022    171.584017      0.000003  1.000     0     0     7
+ MPP_STACK high water mark=           0
+6
+Using the following sourcecode modifications:
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/two_stream_gray_rad.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/idealized_moist_phys.F90
+Run in parallel mode
+ Makefile is ready.
+make: Nothing to be done for `all'.
+Compilation done
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to    32768.
+ &MPP_IO_NML
+ HEADER_BUFFER_VAL       =       16384,
+ GLOBAL_FIELD_ON_ROOT_PE = T,
+ IO_CLOCKS_ON    = F,
+ SHUFFLE =           0,
+ DEFLATE_LEVEL   =          -1
+ /
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     131072.
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to   600000.
+  starting            1  OpenMP threads per MPI-task
+ATMOS MODEL DOMAIN DECOMPOSITION
+  X-AXIS =  128
+  Y-AXIS =    8   8   8   8   8   8   8   8
+ Integration completed through    1 Jun  2   0: 0: 0
+ Integration completed through    1 Jun  3   0: 0: 0
+ Integration completed through    1 Jun  4   0: 0: 0
+ Integration completed through    1 Jun  5   0: 0: 0
+ Integration completed through    1 Jun  6   0: 0: 0
+ Integration completed through    1 Jun  7   0: 0: 0
+ Integration completed through    1 Jun  8   0: 0: 0
+ Integration completed through    1 Jun  9   0: 0: 0
+ Integration completed through    1 Jun 10   0: 0: 0
+ Integration completed through    1 Jun 11   0: 0: 0
+ Integration completed through    1 Jun 12   0: 0: 0
+ Integration completed through    1 Jun 13   0: 0: 0
+ Integration completed through    1 Jun 14   0: 0: 0
+ Integration completed through    1 Jun 15   0: 0: 0
+ Integration completed through    1 Jun 16   0: 0: 0
+ Integration completed through    1 Jun 17   0: 0: 0
+ Integration completed through    1 Jun 18   0: 0: 0
+ Integration completed through    1 Jun 19   0: 0: 0
+ Integration completed through    1 Jun 20   0: 0: 0
+ Integration completed through    1 Jun 21   0: 0: 0
+ Integration completed through    1 Jun 22   0: 0: 0
+ Integration completed through    1 Jun 23   0: 0: 0
+ Integration completed through    1 Jun 24   0: 0: 0
+ Integration completed through    1 Jun 25   0: 0: 0
+ Integration completed through    1 Jun 26   0: 0: 0
+ Integration completed through    1 Jun 27   0: 0: 0
+ Integration completed through    1 Jun 28   0: 0: 0
+ Integration completed through    1 Jun 29   0: 0: 0
+ Integration completed through    1 Jun 30   0: 0: 0
+ Integration completed through    1 Jul  1   0: 0: 0
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
+ MPP_DOMAINS_STACK high water mark=       81920
+
+Tabulating mpp_clock statistics across      8 PEs...
+
+                                          tmin          tmax          tavg          tstd  tfrac grain pemin pemax
+Total runtime                       165.547615    165.547631    165.547624      0.000006  1.000     0     0     7
+ MPP_STACK high water mark=           0
+7
+Using the following sourcecode modifications:
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/two_stream_gray_rad.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/idealized_moist_phys.F90
+Run in parallel mode
+ Makefile is ready.
+make: Nothing to be done for `all'.
+Compilation done
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to    32768.
+ &MPP_IO_NML
+ HEADER_BUFFER_VAL       =       16384,
+ GLOBAL_FIELD_ON_ROOT_PE = T,
+ IO_CLOCKS_ON    = F,
+ SHUFFLE =           0,
+ DEFLATE_LEVEL   =          -1
+ /
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     131072.
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to   600000.
+  starting            1  OpenMP threads per MPI-task
+ATMOS MODEL DOMAIN DECOMPOSITION
+  X-AXIS =  128
+  Y-AXIS =    8   8   8   8   8   8   8   8
+ Integration completed through    1 Jul  2   0: 0: 0
+ Integration completed through    1 Jul  3   0: 0: 0
+ Integration completed through    1 Jul  4   0: 0: 0
+ Integration completed through    1 Jul  5   0: 0: 0
+ Integration completed through    1 Jul  6   0: 0: 0
+ Integration completed through    1 Jul  7   0: 0: 0
+ Integration completed through    1 Jul  8   0: 0: 0
+ Integration completed through    1 Jul  9   0: 0: 0
+ Integration completed through    1 Jul 10   0: 0: 0
+ Integration completed through    1 Jul 11   0: 0: 0
+ Integration completed through    1 Jul 12   0: 0: 0
+ Integration completed through    1 Jul 13   0: 0: 0
+ Integration completed through    1 Jul 14   0: 0: 0
+ Integration completed through    1 Jul 15   0: 0: 0
+ Integration completed through    1 Jul 16   0: 0: 0
+ Integration completed through    1 Jul 17   0: 0: 0
+ Integration completed through    1 Jul 18   0: 0: 0
+ Integration completed through    1 Jul 19   0: 0: 0
+ Integration completed through    1 Jul 20   0: 0: 0
+ Integration completed through    1 Jul 21   0: 0: 0
+ Integration completed through    1 Jul 22   0: 0: 0
+ Integration completed through    1 Jul 23   0: 0: 0
+ Integration completed through    1 Jul 24   0: 0: 0
+ Integration completed through    1 Jul 25   0: 0: 0
+ Integration completed through    1 Jul 26   0: 0: 0
+ Integration completed through    1 Jul 27   0: 0: 0
+ Integration completed through    1 Jul 28   0: 0: 0
+ Integration completed through    1 Jul 29   0: 0: 0
+ Integration completed through    1 Jul 30   0: 0: 0
+ Integration completed through    1 Aug  1   0: 0: 0
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
+ MPP_DOMAINS_STACK high water mark=       81920
+
+Tabulating mpp_clock statistics across      8 PEs...
+
+                                          tmin          tmax          tavg          tstd  tfrac grain pemin pemax
+Total runtime                       167.036748    167.036752    167.036750      0.000001  1.000     0     0     7
+ MPP_STACK high water mark=           0
+8
+Using the following sourcecode modifications:
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/two_stream_gray_rad.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/idealized_moist_phys.F90
+Run in parallel mode
+ Makefile is ready.
+make: Nothing to be done for `all'.
+Compilation done
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to    32768.
+ &MPP_IO_NML
+ HEADER_BUFFER_VAL       =       16384,
+ GLOBAL_FIELD_ON_ROOT_PE = T,
+ IO_CLOCKS_ON    = F,
+ SHUFFLE =           0,
+ DEFLATE_LEVEL   =          -1
+ /
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     131072.
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to   600000.
+  starting            1  OpenMP threads per MPI-task
+ATMOS MODEL DOMAIN DECOMPOSITION
+  X-AXIS =  128
+  Y-AXIS =    8   8   8   8   8   8   8   8
+ Integration completed through    1 Aug  2   0: 0: 0
+ Integration completed through    1 Aug  3   0: 0: 0
+ Integration completed through    1 Aug  4   0: 0: 0
+ Integration completed through    1 Aug  5   0: 0: 0
+ Integration completed through    1 Aug  6   0: 0: 0
+ Integration completed through    1 Aug  7   0: 0: 0
+ Integration completed through    1 Aug  8   0: 0: 0
+ Integration completed through    1 Aug  9   0: 0: 0
+ Integration completed through    1 Aug 10   0: 0: 0
+ Integration completed through    1 Aug 11   0: 0: 0
+ Integration completed through    1 Aug 12   0: 0: 0
+ Integration completed through    1 Aug 13   0: 0: 0
+ Integration completed through    1 Aug 14   0: 0: 0
+ Integration completed through    1 Aug 15   0: 0: 0
+ Integration completed through    1 Aug 16   0: 0: 0
+ Integration completed through    1 Aug 17   0: 0: 0
+ Integration completed through    1 Aug 18   0: 0: 0
+ Integration completed through    1 Aug 19   0: 0: 0
+ Integration completed through    1 Aug 20   0: 0: 0
+ Integration completed through    1 Aug 21   0: 0: 0
+ Integration completed through    1 Aug 22   0: 0: 0
+ Integration completed through    1 Aug 23   0: 0: 0
+ Integration completed through    1 Aug 24   0: 0: 0
+ Integration completed through    1 Aug 25   0: 0: 0
+ Integration completed through    1 Aug 26   0: 0: 0
+ Integration completed through    1 Aug 27   0: 0: 0
+ Integration completed through    1 Aug 28   0: 0: 0
+ Integration completed through    1 Aug 29   0: 0: 0
+ Integration completed through    1 Aug 30   0: 0: 0
+ Integration completed through    1 Sep  1   0: 0: 0
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
+ MPP_DOMAINS_STACK high water mark=       81920
+
+Tabulating mpp_clock statistics across      8 PEs...
+
+                                          tmin          tmax          tavg          tstd  tfrac grain pemin pemax
+Total runtime                       167.401830    167.401849    167.401839      0.000008  1.000     0     0     7
+ MPP_STACK high water mark=           0
+9
+Using the following sourcecode modifications:
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/two_stream_gray_rad.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/idealized_moist_phys.F90
+Run in parallel mode
+ Makefile is ready.
+make: Nothing to be done for `all'.
+Compilation done
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to    32768.
+ &MPP_IO_NML
+ HEADER_BUFFER_VAL       =       16384,
+ GLOBAL_FIELD_ON_ROOT_PE = T,
+ IO_CLOCKS_ON    = F,
+ SHUFFLE =           0,
+ DEFLATE_LEVEL   =          -1
+ /
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     131072.
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to   600000.
+  starting            1  OpenMP threads per MPI-task
+ATMOS MODEL DOMAIN DECOMPOSITION
+  X-AXIS =  128
+  Y-AXIS =    8   8   8   8   8   8   8   8
+ Integration completed through    1 Sep  2   0: 0: 0
+ Integration completed through    1 Sep  3   0: 0: 0
+ Integration completed through    1 Sep  4   0: 0: 0
+ Integration completed through    1 Sep  5   0: 0: 0
+ Integration completed through    1 Sep  6   0: 0: 0
+ Integration completed through    1 Sep  7   0: 0: 0
+ Integration completed through    1 Sep  8   0: 0: 0
+ Integration completed through    1 Sep  9   0: 0: 0
+ Integration completed through    1 Sep 10   0: 0: 0
+ Integration completed through    1 Sep 11   0: 0: 0
+ Integration completed through    1 Sep 12   0: 0: 0
+ Integration completed through    1 Sep 13   0: 0: 0
+ Integration completed through    1 Sep 14   0: 0: 0
+ Integration completed through    1 Sep 15   0: 0: 0
+ Integration completed through    1 Sep 16   0: 0: 0
+ Integration completed through    1 Sep 17   0: 0: 0
+ Integration completed through    1 Sep 18   0: 0: 0
+ Integration completed through    1 Sep 19   0: 0: 0
+ Integration completed through    1 Sep 20   0: 0: 0
+ Integration completed through    1 Sep 21   0: 0: 0
+ Integration completed through    1 Sep 22   0: 0: 0
+ Integration completed through    1 Sep 23   0: 0: 0
+ Integration completed through    1 Sep 24   0: 0: 0
+ Integration completed through    1 Sep 25   0: 0: 0
+ Integration completed through    1 Sep 26   0: 0: 0
+ Integration completed through    1 Sep 27   0: 0: 0
+ Integration completed through    1 Sep 28   0: 0: 0
+ Integration completed through    1 Sep 29   0: 0: 0
+ Integration completed through    1 Sep 30   0: 0: 0
+ Integration completed through    1 Oct  1   0: 0: 0
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
+ MPP_DOMAINS_STACK high water mark=       81920
+
+Tabulating mpp_clock statistics across      8 PEs...
+
+                                          tmin          tmax          tavg          tstd  tfrac grain pemin pemax
+Total runtime                       163.280737    163.280746    163.280742      0.000004  1.000     0     0     7
+ MPP_STACK high water mark=           0
+10
+Using the following sourcecode modifications:
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/two_stream_gray_rad.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/idealized_moist_phys.F90
+Run in parallel mode
+ Makefile is ready.
+make: Nothing to be done for `all'.
+Compilation done
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to    32768.
+ &MPP_IO_NML
+ HEADER_BUFFER_VAL       =       16384,
+ GLOBAL_FIELD_ON_ROOT_PE = T,
+ IO_CLOCKS_ON    = F,
+ SHUFFLE =           0,
+ DEFLATE_LEVEL   =          -1
+ /
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     131072.
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to   600000.
+  starting            1  OpenMP threads per MPI-task
+ATMOS MODEL DOMAIN DECOMPOSITION
+  X-AXIS =  128
+  Y-AXIS =    8   8   8   8   8   8   8   8
+ Integration completed through    1 Oct  2   0: 0: 0
+ Integration completed through    1 Oct  3   0: 0: 0
+ Integration completed through    1 Oct  4   0: 0: 0
+ Integration completed through    1 Oct  5   0: 0: 0
+ Integration completed through    1 Oct  6   0: 0: 0
+ Integration completed through    1 Oct  7   0: 0: 0
+ Integration completed through    1 Oct  8   0: 0: 0
+ Integration completed through    1 Oct  9   0: 0: 0
+ Integration completed through    1 Oct 10   0: 0: 0
+ Integration completed through    1 Oct 11   0: 0: 0
+ Integration completed through    1 Oct 12   0: 0: 0
+ Integration completed through    1 Oct 13   0: 0: 0
+ Integration completed through    1 Oct 14   0: 0: 0
+ Integration completed through    1 Oct 15   0: 0: 0
+ Integration completed through    1 Oct 16   0: 0: 0
+ Integration completed through    1 Oct 17   0: 0: 0
+ Integration completed through    1 Oct 18   0: 0: 0
+ Integration completed through    1 Oct 19   0: 0: 0
+ Integration completed through    1 Oct 20   0: 0: 0
+ Integration completed through    1 Oct 21   0: 0: 0
+ Integration completed through    1 Oct 22   0: 0: 0
+ Integration completed through    1 Oct 23   0: 0: 0
+ Integration completed through    1 Oct 24   0: 0: 0
+ Integration completed through    1 Oct 25   0: 0: 0
+ Integration completed through    1 Oct 26   0: 0: 0
+ Integration completed through    1 Oct 27   0: 0: 0
+ Integration completed through    1 Oct 28   0: 0: 0
+ Integration completed through    1 Oct 29   0: 0: 0
+ Integration completed through    1 Oct 30   0: 0: 0
+ Integration completed through    1 Nov  1   0: 0: 0
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
+ MPP_DOMAINS_STACK high water mark=       81920
+
+Tabulating mpp_clock statistics across      8 PEs...
+
+                                          tmin          tmax          tavg          tstd  tfrac grain pemin pemax
+Total runtime                       164.602452    164.602472    164.602465      0.000007  1.000     0     0     7
+ MPP_STACK high water mark=           0
+11
+Using the following sourcecode modifications:
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/two_stream_gray_rad.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/idealized_moist_phys.F90
+Run in parallel mode
+ Makefile is ready.
+make: Nothing to be done for `all'.
+Compilation done
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to    32768.
+ &MPP_IO_NML
+ HEADER_BUFFER_VAL       =       16384,
+ GLOBAL_FIELD_ON_ROOT_PE = T,
+ IO_CLOCKS_ON    = F,
+ SHUFFLE =           0,
+ DEFLATE_LEVEL   =          -1
+ /
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     131072.
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to   600000.
+  starting            1  OpenMP threads per MPI-task
+ATMOS MODEL DOMAIN DECOMPOSITION
+  X-AXIS =  128
+  Y-AXIS =    8   8   8   8   8   8   8   8
+ Integration completed through    1 Nov  2   0: 0: 0
+ Integration completed through    1 Nov  3   0: 0: 0
+ Integration completed through    1 Nov  4   0: 0: 0
+ Integration completed through    1 Nov  5   0: 0: 0
+ Integration completed through    1 Nov  6   0: 0: 0
+ Integration completed through    1 Nov  7   0: 0: 0
+ Integration completed through    1 Nov  8   0: 0: 0
+ Integration completed through    1 Nov  9   0: 0: 0
+ Integration completed through    1 Nov 10   0: 0: 0
+ Integration completed through    1 Nov 11   0: 0: 0
+ Integration completed through    1 Nov 12   0: 0: 0
+ Integration completed through    1 Nov 13   0: 0: 0
+ Integration completed through    1 Nov 14   0: 0: 0
+ Integration completed through    1 Nov 15   0: 0: 0
+ Integration completed through    1 Nov 16   0: 0: 0
+ Integration completed through    1 Nov 17   0: 0: 0
+ Integration completed through    1 Nov 18   0: 0: 0
+ Integration completed through    1 Nov 19   0: 0: 0
+ Integration completed through    1 Nov 20   0: 0: 0
+ Integration completed through    1 Nov 21   0: 0: 0
+ Integration completed through    1 Nov 22   0: 0: 0
+ Integration completed through    1 Nov 23   0: 0: 0
+ Integration completed through    1 Nov 24   0: 0: 0
+ Integration completed through    1 Nov 25   0: 0: 0
+ Integration completed through    1 Nov 26   0: 0: 0
+ Integration completed through    1 Nov 27   0: 0: 0
+ Integration completed through    1 Nov 28   0: 0: 0
+ Integration completed through    1 Nov 29   0: 0: 0
+ Integration completed through    1 Nov 30   0: 0: 0
+ Integration completed through    1 Dec  1   0: 0: 0
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
+ MPP_DOMAINS_STACK high water mark=       81920
+
+Tabulating mpp_clock statistics across      8 PEs...
+
+                                          tmin          tmax          tavg          tstd  tfrac grain pemin pemax
+Total runtime                       173.527752    173.527763    173.527758      0.000004  1.000     0     0     7
+ MPP_STACK high water mark=           0
+12
+Using the following sourcecode modifications:
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/two_stream_gray_rad.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/radmod_exp/srcmods/idealized_moist_phys.F90
+Run in parallel mode
+ Makefile is ready.
+make: Nothing to be done for `all'.
+Compilation done
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to    32768.
+ &MPP_IO_NML
+ HEADER_BUFFER_VAL       =       16384,
+ GLOBAL_FIELD_ON_ROOT_PE = T,
+ IO_CLOCKS_ON    = F,
+ SHUFFLE =           0,
+ DEFLATE_LEVEL   =          -1
+ /
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     131072.
+NOTE from PE    0: MPP_DOMAINS_SET_STACK_SIZE: stack size set to   600000.
+  starting            1  OpenMP threads per MPI-task
+ATMOS MODEL DOMAIN DECOMPOSITION
+  X-AXIS =  128
+  Y-AXIS =    8   8   8   8   8   8   8   8
+ Integration completed through    1 Dec  2   0: 0: 0
+ Integration completed through    1 Dec  3   0: 0: 0
+ Integration completed through    1 Dec  4   0: 0: 0
+ Integration completed through    1 Dec  5   0: 0: 0
+ Integration completed through    1 Dec  6   0: 0: 0
+ Integration completed through    1 Dec  7   0: 0: 0
+ Integration completed through    1 Dec  8   0: 0: 0
+ Integration completed through    1 Dec  9   0: 0: 0
+ Integration completed through    1 Dec 10   0: 0: 0
+ Integration completed through    1 Dec 11   0: 0: 0
+ Integration completed through    1 Dec 12   0: 0: 0
+ Integration completed through    1 Dec 13   0: 0: 0
+ Integration completed through    1 Dec 14   0: 0: 0
+ Integration completed through    1 Dec 15   0: 0: 0
+ Integration completed through    1 Dec 16   0: 0: 0
+ Integration completed through    1 Dec 17   0: 0: 0
+ Integration completed through    1 Dec 18   0: 0: 0
+ Integration completed through    1 Dec 19   0: 0: 0
+ Integration completed through    1 Dec 20   0: 0: 0
+ Integration completed through    1 Dec 21   0: 0: 0
+ Integration completed through    1 Dec 22   0: 0: 0
+ Integration completed through    1 Dec 23   0: 0: 0
+ Integration completed through    1 Dec 24   0: 0: 0
+ Integration completed through    1 Dec 25   0: 0: 0
+ Integration completed through    1 Dec 26   0: 0: 0
+ Integration completed through    1 Dec 27   0: 0: 0
+ Integration completed through    1 Dec 28   0: 0: 0
+ Integration completed through    1 Dec 29   0: 0: 0
+ Integration completed through    1 Dec 30   0: 0: 0
+ Integration completed through    2 Jan  1   0: 0: 0
+NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
+ MPP_DOMAINS_STACK high water mark=       81920
+
+Tabulating mpp_clock statistics across      8 PEs...
+
+                                          tmin          tmax          tavg          tstd  tfrac grain pemin pemax
+Total runtime                       157.423982    157.423991    157.423987      0.000003  1.000     0     0     7
+ MPP_STACK high water mark=           0
+finished
+Notes on this run as follows:
