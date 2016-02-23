@@ -25,30 +25,20 @@ land_array = np.zeros((nlat,nlon))
 lon_array, lat_array = np.meshgrid(lons,lats)
 lonb_array, latb_array = np.meshgrid(lonb,latb)
 
-#for land use this kind of indexing approach. Then it will be super easy.
 
-#central_lat = 40. 
-#central_lon = 40.
-#radius_degrees = 20.
-#std_dev = 10.
-#height = 3500.
 
-#rsqd_array = np.sqrt((lon_array - central_lon)**2.+(lat_array - central_lat)**2.)
+#s for land use this kind of indexing approach. Then it will be super easy.
 
-#generalise to ellipse (maths could be a bit iffy, see also Sauliere et al 2012 for idealised Rockies and Tibet)
 central_lat = 40. 
 central_lon = 40.
 radius_degrees = 20.
 std_dev = 10.
 height = 3500.
-ax_rot = 1. #gradient of new x axis
-ax_rat = 2. #axis ratio a**2/b**2
 
-rsqd_array = np.sqrt((lon_array - central_lon + ax_rot*(lat_array - central_lat))**2.+ ax_rat*(lat_array - central_lat - ax_rot*(lon_array - central_lon))**2.)*np.cos(np.arctan(ax_rot))
-#divide by factor of cos(atan(m)) to account for change in coords
+
+rsqd_array = np.sqrt((lon_array - central_lon)**2.+(lat_array - central_lat)**2.)
 
 idx = (rsqd_array < radius_degrees) 
-
 
 topo_array[idx] = height* np.exp(-(rsqd_array[idx]**2.)/(2.*std_dev**2.))
 land_array[idx] = 1.0
