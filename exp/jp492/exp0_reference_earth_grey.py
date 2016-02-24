@@ -1,24 +1,23 @@
+# A basic Earth-like setup.
+# - Uses nearly all standard parameter values.
+# - Grey radiation scheme
+# - No seasonal cycle - p2 like insolation profile
+
 import numpy as np
 
 import gfdl.experiment
 
-#omega = 7.2921150e-5
-orbital_period = 365.25*86400.0
-
-ratios = [360, 180, 90, 45, 30, 15, 4, 2, 1]
-
 # Use one experiment to compile the source.  All other experiments
 # then use the same code with different namelist config
-baseexp = gfdl.experiment.Experiment('rot_base',
+baseexp = gfdl.experiment.Experiment('ref_earth_grey',
     repo='git@github.com:jamesp/GFDLmoistModel.git',
     commit='exoplan0.2')
 
 baseexp.compile()
 
-
 baseexp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
 baseexp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
-baseexp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = True
+baseexp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False
 baseexp.namelist['spectral_dynamics_nml']['num_levels'] = 25
 
 baseexp.namelist['main_nml'] = {
@@ -27,15 +26,10 @@ baseexp.namelist['main_nml'] = {
     'calendar': 'no_calendar'
 }
 
-baseexp.namelist['astronomy_nml'] = {
-    'ecc': 0.0,
-    'obliq': 0.0
-}
-
 
 diag = gfdl.experiment.DiagTable()
 
-#diag.add_file('6hourly', 6*60*60, 'seconds')
+diag.add_file('6hourly', 6*60*60, 'seconds')
 diag.add_file('daily', 1, 'days')
 
 diag.add_field('dynamics', 'ucomp')
@@ -50,9 +44,8 @@ diag.add_field('two_stream', 'flux_lw')
 diag.add_field('two_stream', 'tdt_rad')
 diag.add_field('two_stream', 'tdt_solar')
 
-
-for ratio in ratios:
-    exp = gfdl.experiment.Experiment('ratio_%d_no_obl' % ratio)
+for ratio in [360.0, 180.0, 90.0, 45.0, 15.0, 2.0, 1.0]:
+    exp = gfdl.experiment.Experiment('ratio_%d' % ratio)
     exp.clear_rundir()
 
     omega  = 2*np.pi / orbital_period * ratio

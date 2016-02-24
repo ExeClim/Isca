@@ -80,7 +80,7 @@ logical :: two_stream_gray = .true.
 
 logical :: do_rrtm_radiation = .false.
 
-!s MiMA uses damping 
+!s MiMA uses damping
 logical :: do_damping = .false.
 
 
@@ -103,7 +103,7 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, roughness_he
                                       roughness_moist, roughness_mom, do_virtual,    &
                                       land_option, land_file_name, land_field_name,   & !s options for idealised land
                                       land_roughness_prefactor
-                                      
+
 real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
      t_surf,               &   ! surface temperature
@@ -173,7 +173,7 @@ real, allocatable, dimension(:,:) ::                                          &
      invtau_t_relaxation,  &   ! humidity relaxation time scale
      rain,                 &   ! Can be resolved or  parameterised
      snow,                 &   !
-     precip                    ! cumulus rain  + resolved rain  + resolved snow 
+     precip                    ! cumulus rain  + resolved rain  + resolved snow
 
 real, allocatable, dimension(:,:,:) :: &
      t_ref,          &   ! relaxation temperature for bettsmiller scheme
@@ -199,7 +199,7 @@ integer ::           &
      id_z_tg       	 ! Relative humidity
 
 integer, allocatable, dimension(:,:) :: & convflag ! indicates which qe convection subroutines are used
-real,    allocatable, dimension(:,:) :: rad_lat, rad_lon   
+real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
 real,    allocatable, dimension(:) :: pref, p_half_1d, ln_p_half_1d, p_full_1d,ln_p_full_1d !s pref is a reference pressure profile, which in 2006 MiMA is just the initial full pressure levels, and an extra level with the reference surface pressure. Others are only necessary to calculate pref.
 real,    allocatable, dimension(:,:) :: capeflag !s Added for Betts Miller scheme (rather than the simplified Betts Miller scheme).
 
@@ -224,7 +224,7 @@ integer :: io, nml_unit, stdlog_unit, seconds, days, id, jd, kd
 real, dimension (size(rad_lonb_2d,1)-1, size(rad_latb_2d,2)-1) :: sgsmtn !s added for damping_driver
 
 !s added for land reading
-integer, dimension(4) :: siz 
+integer, dimension(4) :: siz
 integer :: global_num_lon, global_num_lat
 character(len=12) :: ctmp1='     by     ', ctmp2='     by     '
 !s end added for land reading
@@ -235,7 +235,7 @@ call write_version_number(version, tagname)
 
 #ifdef INTERNAL_FILE_NML
    read (input_nml_file, nml=idealized_moist_phys_nml, iostat=io)
-#else  
+#else
    if ( file_exist('input.nml') ) then
       nml_unit = open_namelist_file()
       read (nml_unit, idealized_moist_phys_nml, iostat=io)
@@ -349,7 +349,7 @@ if(trim(land_option) .eq. 'input')then
 !s adapted from spectral_init_cond.F90
 
 	   if(file_exist(trim(land_file_name))) then
-	     call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat) 
+	     call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat)
 	     call field_size(trim(land_file_name), trim(land_field_name), siz)
 	     if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
 	       call read_data(trim(land_file_name), trim(land_field_name), land_ones, grid_domain)
@@ -380,7 +380,7 @@ endif
 
 if(trim(land_option) .eq. 'input') then
 
-	where(land)  
+	where(land)
 	rough_mom   = land_roughness_prefactor * rough_mom
 	rough_heat  = land_roughness_prefactor * rough_heat
 	rough_moist = land_roughness_prefactor * rough_moist
@@ -521,7 +521,7 @@ if (lwet_convection) then
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
    rain       = rain/delta_t
-   precip     = rain  
+   precip     = rain
 
    dt_tg = dt_tg + conv_dt_tg
    dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
@@ -551,7 +551,7 @@ else if (do_bm) then
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
    rain       = rain/delta_t
-   precip     = rain   
+   precip     = rain
 
    dt_tg = dt_tg + conv_dt_tg
    dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
@@ -574,18 +574,18 @@ call lscale_cond (         tg_tmp,                          qg_tmp,        &
                             coldT,                            rain,        &
                              snow,                      cond_dt_tg,        &
                        cond_dt_qg )
-                                                                          
+
 cond_dt_tg = cond_dt_tg/delta_t
 cond_dt_qg = cond_dt_qg/delta_t
 rain       = rain/delta_t
 snow       = snow/delta_t
-precip     = precip + rain + snow      
-                                                                             
+precip     = precip + rain + snow
+
 dt_tg = dt_tg + cond_dt_tg
 dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + cond_dt_qg
 
 
-                                                                               
+
 if(id_cond_dt_qg > 0) used = send_data(id_cond_dt_qg, cond_dt_qg, Time)
 if(id_cond_dt_tg > 0) used = send_data(id_cond_dt_tg, cond_dt_tg, Time)
 if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
@@ -601,16 +601,17 @@ if(two_stream_gray) then
                        p_half(:,:,:,current),  &
                        tg(:,:,:,previous),     &
                        net_surf_sw_down(:,:),  &
-                       surf_lw_down(:,:), albedo)
+                       surf_lw_down(:,:), albedo, &
+                       grid_tracers(:,:,:,previous,nsphum))
 end if
 
 if(.not.mixed_layer_bc) then
-                                                                               
+
 !!$! infinite heat capacity
 !    t_surf = surface_temperature_forced(rad_lat)
 !!$! no heat capacity:
 !!$   t_surf = tg(:,:,num_levels,previous)
-                                                                              
+
 !!$! surface temperature has same potential temp. as lowest layer:
 !!$  t_surf = surface_temperature(tg(:,:,:,previous), p_full(:,:,:,current), p_half(:,:,:,current))
 end if
@@ -680,9 +681,9 @@ endif
 !----------------------------------------------------------------------
 !    Copied from MiMA physics_driver.f90
 !    call damping_driver to calculate the various model dampings that
-!    are desired. 
+!    are desired.
 !----------------------------------------------------------------------
-z_pbl(:,:) = pbltop(is:ie,js:je) 
+z_pbl(:,:) = pbltop(is:ie,js:je)
 if(do_damping) then
      call damping_driver (is, js, rad_lat, Time+Time_step, delta_t,                               &
                              p_full(:,:,:,current), p_half(:,:,:,current),              &
@@ -692,7 +693,7 @@ if(do_damping) then
                              grid_tracers(:,:,:,previous,:),                            &
                              dt_ug(:,:,:), dt_vg(:,:,:), dt_tg(:,:,:),                  &
                              dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:),             &
-                             z_pbl) !s have taken the names of arrays etc from vert_turb_driver below. Watch ntp from 2006 call to this routine? 
+                             z_pbl) !s have taken the names of arrays etc from vert_turb_driver below. Watch ntp from 2006 call to this routine?
 endif
 
 
@@ -815,7 +816,7 @@ if(do_damping) call damping_driver_end
 end subroutine idealized_moist_phys_end
 !=================================================================================================================================
 
-subroutine rh_calc(pfull,T,qv,RH) !s subroutine copied from 2006 FMS MoistModel file moist_processes.f90 (v14 2012/06/22 14:50:00). 
+subroutine rh_calc(pfull,T,qv,RH) !s subroutine copied from 2006 FMS MoistModel file moist_processes.f90 (v14 2012/06/22 14:50:00).
 
         IMPLICIT NONE
 
@@ -827,7 +828,7 @@ subroutine rh_calc(pfull,T,qv,RH) !s subroutine copied from 2006 FMS MoistModel 
 
 	real, parameter :: d622 = rdgas/rvgas
 	real, parameter :: d378 = 1.-d622
-        
+
 !-----------------------------------------------------------------------
 !       Calculate RELATIVE humidity.
 !       This is calculated according to the formula:
@@ -846,22 +847,22 @@ subroutine rh_calc(pfull,T,qv,RH) !s subroutine copied from 2006 FMS MoistModel 
         !calculate water saturated vapor pressure from table
         !and store temporarily in the variable esat
         CALL LOOKUP_ES(T,esat)						!same as escomp
-        
+
         !calculate denominator in qsat formula
         if(do_simple) then
           RH(:,:,:) = pfull(:,:,:)
         else
           RH(:,:,:) = pfull(:,:,:)-d378*esat(:,:,:)
         endif
-     
+
         !limit denominator to esat, and thus qs to epsilon
         !this is done to avoid blow up in the upper stratosphere
         !where pfull ~ esat
-        RH(:,:,:) = MAX(RH(:,:,:),esat(:,:,:)) 
-        
+        RH(:,:,:) = MAX(RH(:,:,:),esat(:,:,:))
+
         !calculate RH
         RH(:,:,:)=qv(:,:,:)/(d622*esat(:,:,:)/RH(:,:,:))
-      
+
         !IF MASK is present set RH to zero
 !        IF (present(MASK)) RH(:,:,:)=MASK(:,:,:)*RH(:,:,:)
 

@@ -127,6 +127,7 @@ class Experiment(object):
         log.info('Emptied working directory %r' % self.workdir)
 
     def clear_rundir(self):
+        sh.cd(self.workdir)
         try:
             sh.rm(['-r', self.rundir])
         except sh.ErrorReturnCode_1:
@@ -233,12 +234,19 @@ class Experiment(object):
 
 
     _day_re = re.compile('Integration completed through\s+([0-9]+) days')
+    _month_re = re.compile('Integration completed through\s+([\w\s]+)\s([0-9]+:)')
     def _log_runmonth(self, outputstring):
         s = outputstring.strip()
         m = self._day_re.search(s)
         try:
             days = int(m.group(1))
             set_screen_title('rm:%d:%d' % (self._cur_month, days))
+        except:
+            pass
+        m = self._month_re.search(s)
+        try:
+            date = m.group(1)
+            set_screen_title('rm:%s' % date.strip())
         except:
             pass
         return clean_log_debug(outputstring)
