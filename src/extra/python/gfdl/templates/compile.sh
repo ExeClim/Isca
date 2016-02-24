@@ -16,6 +16,7 @@ executable=$execdir/fms_moist.x
 netcdf_flags=`nf-config --fflags --flibs`
 
 # 2. Load the necessary tools into the environment
+module purge
 source {{ srcdir }}/src/extra/loadmodule
 module list
 ulimit -s unlimited # Set stack size to unlimited

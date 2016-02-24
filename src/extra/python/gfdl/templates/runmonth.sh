@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Run a single month
 
+module purge
+source {{ srcdir }}/src/extra/loadmodule
+module list
 
 cd {{ rundir }}
 
@@ -14,7 +17,7 @@ cd {{ rundir }}
 
 export MALLOC_CHECK_=0
 
-ln -s {{ execdir }}/fms_moist.x fms_moist.x
+cp {{ execdir }}/fms_moist.x fms_moist.x
 mpirun  -np {{ num_cores }} fms_moist.x
 
 err_code=$?
