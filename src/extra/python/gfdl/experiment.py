@@ -267,7 +267,7 @@ class Experiment(object):
         self.write_diag_table(self.rundir)
 
         for filename in self.inputfiles:
-            sh.cp([filename, P(indir, os.split(filename)[1])])
+            sh.cp([filename, P(indir, os.path.split(filename)[1])])
 
 
         if use_restart:
@@ -288,6 +288,7 @@ class Experiment(object):
             'datadir': outdir,
             'rundir': self.rundir,
             'execdir': self.execdir,
+            'srcdir': self.srcdir,
             'restart_file': restart_file,
             'num_cores': num_cores
         }
