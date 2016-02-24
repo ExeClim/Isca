@@ -28,7 +28,6 @@ diag.add_field('two_stream', 'sw_dtrans')
 diag.add_field('mixed_layer', 't_surf')
 
 
-
 exp.use_diag_table(diag)
 
 exp.compile()
