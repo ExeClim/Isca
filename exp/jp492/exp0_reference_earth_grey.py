@@ -28,11 +28,12 @@ exp.namelist['main_nml'] = {
 
 diag = gfdl.experiment.DiagTable()
 
-diag.add_file('6hourly', 6, 'hours')
+#diag.add_file('6hourly', 6, 'hours')
 diag.add_file('daily', 1, 'days')
 
 diag.add_field('dynamics', 'ps')
 diag.add_field('dynamics', 'bk')
+diag.add_field('dynamics', 'pk')
 diag.add_field('dynamics', 'ucomp')
 diag.add_field('dynamics', 'vcomp')
 diag.add_field('dynamics', 'temp')
@@ -43,11 +44,10 @@ diag.add_field('dynamics', 'sphum')
 diag.add_field('two_stream', 'olr')
 diag.add_field('two_stream', 'flux_sw')
 diag.add_field('two_stream', 'flux_lw')
-diag.add_field('two_stream', 'lw_dtrans')
-diag.add_field('two_stream', 'lw_dtrans_win')
-diag.add_field('two_stream', 'sw_dtrans')
+diag.add_field('two_stream', 'tdt_rad')
 
 diag.add_field('mixed_layer', 't_surf')
+diag.add_field('mixed_layer', 'flux_oceanq')
 
 
 exp.clear_rundir()
