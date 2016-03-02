@@ -652,6 +652,9 @@ endif
 if (sw_scheme.eq.B_GEEN) then
   deallocate (sw_dtrans, sw_wv, del_sol_tau, sw_tau_k)
 endif
+if (lw_scheme.eq.B_BYRNE) then
+  deallocate (lw_del_tau)
+endif
 
 end subroutine two_stream_gray_rad_end
 
