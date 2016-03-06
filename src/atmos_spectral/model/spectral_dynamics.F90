@@ -69,7 +69,7 @@ use   spectral_damping_mod, only: spectral_damping_init, spectral_damping_end, c
 use           leapfrog_mod, only: leapfrog, leapfrog_2level_A, leapfrog_2level_B
 
 use       fv_advection_mod, only: fv_advection_init, fv_advection_end, a_grid_horiz_advection
-                                  
+
 use    water_borrowing_mod, only: water_borrowing
 
 use    global_integral_mod, only: mass_weighted_global_integral
@@ -210,7 +210,7 @@ namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option,       
                                  valid_range_t, eddy_sponge_coeff, zmu_sponge_coeff, zmv_sponge_coeff,&
                                  print_interval, num_steps, initial_state_option,                    &
                                  water_correction_limit !mj
-                                 
+
 contains
 
 !===============================================================================================
@@ -289,7 +289,7 @@ else
   call error_mesg('spectral_dynamics_init','"'//trim(vert_advect_t)//'"'//' is not a valid value for vert_advect_t.', FATAL)
 endif
 
-! transforms_init must be called before the remaining 
+! transforms_init must be called before the remaining
 ! restart data can be read or the fields can be allocated.
 ! This is because transforms_init calls spec_mpp_init,
 ! which is where domains are determined.
@@ -365,7 +365,7 @@ if(nsphum == NO_TRACER) then
     nhum = 0
     dry_model = .true.
   else
-    nhum = nmix_rat 
+    nhum = nmix_rat
     dry_model = .false.
   endif
 else
@@ -572,7 +572,7 @@ else
       grid_tracers(:,:,:,:,ntr) = 0.
     else
       grid_tracers(:,:,:,:,ntr) = 0.
-    endif   
+    endif
   enddo
 
   previous = 1
@@ -734,7 +734,7 @@ if(robert_coeff < 0. .or. robert_coeff > 1.) then
 endif
 
 if((do_energy_correction .or. do_water_correction) .and. .not.do_mass_correction) then
-  call error_mesg('check_dynamics_nml','.not.do_mass_correction must be .true. when either & 
+  call error_mesg('check_dynamics_nml','.not.do_mass_correction must be .true. when either &
            &do_energy_correction or do_water_correction is .true.', FATAL)
 endif
 
@@ -950,7 +950,7 @@ endif
 
 call update_tracers(tracer_attributes, dt_tracers_tmp, wg, p_half, delta_t)
 
-!mj add a vertical limit to water correction 
+!mj add a vertical limit to water correction
 !call compute_corrections(delta_t, tracer_attributes)
 call compute_corrections(delta_t, tracer_attributes, p_full)
 
@@ -999,7 +999,7 @@ real :: kappa
 integer :: k
 
 kappa = rdgas/cp_air
-   
+
 dmean_tot = 0.
 
 if(vert_difference_option == 'simmons_and_burridge') then
@@ -1136,7 +1136,7 @@ call divide_by_cos(dx_psg)
 call divide_by_cos(dy_psg)
 
 return
-end subroutine compute_pressure_gradient 
+end subroutine compute_pressure_gradient
 
 !===================================================================================
 
@@ -1229,7 +1229,7 @@ endif
 ! endif
 
 return
-end subroutine compute_corrections 
+end subroutine compute_corrections
 
 !===================================================================================
 
@@ -1265,7 +1265,7 @@ if(do_water_correction) then
 endif
 
 return
-end subroutine initialize_corrections 
+end subroutine initialize_corrections
 
 !================================================================================
 

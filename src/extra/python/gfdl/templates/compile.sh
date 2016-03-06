@@ -4,7 +4,7 @@
 
 #-----------------------------------------------------------------------------------------------------
 hostname=`hostname`
-template={{ mimapy_dir }}/mkmf.template.ia64
+template={{ template_dir }}/mkmf.template.ia64
 mkmf={{ srcdir }}/bin/mkmf                             # path to executable mkmf
 sourcedir={{ srcdir }}/src                             # path to directory containing model source code
 pathnames={{ workdir }}/path_names                        # path to file containing list of source paths
@@ -16,6 +16,7 @@ executable=$execdir/fms_moist.x
 netcdf_flags=`nf-config --fflags --flibs`
 
 # 2. Load the necessary tools into the environment
+module purge
 source {{ srcdir }}/src/extra/loadmodule
 module list
 ulimit -s unlimited # Set stack size to unlimited
