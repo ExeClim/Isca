@@ -1,0 +1,68 @@
+Instructions to compile plev.x, which will interpolate from
+sigma coordinates to user specified pressure levels.  This version,
+"v12," which I downloaded from GFDL on 12 July 2010, seems to handle 
+higher resolution runs better than the old version!
+
+To compile, you need to set up the mkmf.template.[platform], where 
+[platform] is something you set to work with your local machines.  In
+general, the same template that you use to compile the GFDL
+dry dynamical core (or all things FMS) works.  Put this template in
+the bin/ directory.  Then, go to exec, and run these two commands to
+make the makefile and the compile the code.
+
+cd exec
+
+../bin/mkmf -p plev.x -t ../bin/mkmf.template.[platform] -c "-Duse_netCDF" -a ../src ../src/path_names ../src/shared/mpp/include ../src/shared/include
+
+make -f Makefile
+
+The executable plev.x is called with the script: 
+
+script/plevel.sh.  
+
+which sets up the input variables, etc, and calls plev.x.
+You must first change the path to the executable.  To do so, just search 
+for "executable" and replace this line with a path pointing to your plev.x.
+
+If you just try to run this script (with no inputs), it'll give you 
+instructions on how to use it.  
+
+------------------------------------------------------------------
+
+Notes on how I got the code:
+
+I got the "testing" version of the plevel interpolation scripts on 
+12 July 2010, more-or-less following the instructions in:
+/home/fms/local/ia64/v12/readme_compilation
+ 
+Here's what I did at GFDL.  #=comment
+ 
+
+# make a place for the code
+mkdir plev_testing
+cd plev_testing
+mkdir src
+mkdir bin
+
+# do the CVS checkout
+cd src
+cvs -d /home/fms/cvs/ co -r testing plevel
+
+# get the path names
+/home/fms/bin/list_paths
+
+Next, I copied all this over to hpc, and followed the procedure that
+worked before.  I used the template that compiled the cubed sphere core,
+created a exec/ directory, and ran the commands above.
+
+Then, to get it to work, I got the latest script from GFDL:
+
+/home/fms/local/ia64/v12/plevel.sh
+
+With this, all I had to do was set the path to the executable - no worries
+about stacksize and secondary script.
+
+
+
+
+

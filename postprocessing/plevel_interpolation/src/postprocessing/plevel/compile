@@ -1,0 +1,27 @@
+#!/bin/csh
+set echo
+
+set codeDir = $cwd 
+
+source /opt/modules/default/init/tcsh
+module purge
+module load idb.9.0.12
+module load icc.9.1.045
+module load ifort.9.1.041
+module load mpt-1.14
+module load netcdf-4.0_hdf
+module load hdf5-1.8.1
+
+
+ifort -o PLEV.exe \
+         $codeDir/plev_constants.F90 $codeDir/moisture_convert.F90 \
+         $codeDir/pressure_interp.F90 $codeDir/pinterp_utilities.F90 $codeDir/run_pressure_interp.F90 \
+      -fltconsistency -fno-alias -stack_temps -safe_cray_ptr -ftz -assume byterecl -g -O2 -i4 -r8 -nowarn -Wp,-w -I/usr/local/netcdf-4.0_hdf/include -I/usr/local/hdf5-1.8.1/include -L/usr/local/netcdf-4.0_hdf/lib -L/usr/local/hdf5-1.8.1/lib  -lnetcdff -lnetcdf -lhdf5_hl -lhdf5 -lz -lmpi -L/usr/lib/gcc/ia64-suse-linux/4.1.0/ -lunwind -lc -lunwind -lgcc_eh -lunwind -lstdc++ -lunwind -lgcc
+
+
+ifort -o PLEV.r4.exe \
+         $codeDir/plev_constants.F90 $codeDir/moisture_convert.F90 \
+         $codeDir/pressure_interp.F90 $codeDir/pinterp_utilities.F90 $codeDir/run_pressure_interp.F90 \
+      -fltconsistency -fno-alias -stack_temps -safe_cray_ptr -ftz -assume byterecl -g -O2 -i4 -nowarn -Wp,-w -I/usr/local/netcdf-4.0_hdf/include -I/usr/local/hdf5-1.8.1/include -L/usr/local/netcdf-4.0_hdf/lib  -L/usr/local/hdf5-1.8.1/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5 -lz -lmpi -L/usr/lib/gcc/ia64-suse-linux/4.1.0/ -lunwind -lc -lunwind -lgcc_eh -lunwind -lstdc++ -lunwind -lgcc
+
+
