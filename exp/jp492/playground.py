@@ -22,8 +22,8 @@ diag.add_field('two_stream', 'olr')
 diag.add_field('two_stream', 'flux_sw')
 diag.add_field('two_stream', 'flux_lw')
 diag.add_field('two_stream', 'lw_dtrans')
-diag.add_field('two_stream', 'lw_dtrans_win')
-diag.add_field('two_stream', 'sw_dtrans')
+# diag.add_field('two_stream', 'lw_dtrans_win')
+# diag.add_field('two_stream', 'sw_dtrans')
 
 diag.add_field('mixed_layer', 't_surf')
 
@@ -43,9 +43,13 @@ exp.namelist['main_nml'] = {
 exp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
 exp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
 # turn on Ruth's radiation scheme:
-exp.namelist['two_stream_gray_rad_nml']['solar_exponent'] = -1
-exp.namelist['two_stream_gray_rad_nml']['wv_exponent'] = -1
+#exp.namelist['two_stream_gray_rad_nml']['solar_exponent'] = -1
+#exp.namelist['two_stream_gray_rad_nml']['wv_exponent'] = -1
 exp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False
+
 exp.namelist['spectral_dynamics_nml']['num_levels'] = 25
 
-exp.runmonth(1, use_restart=False)
+
+for i, scheme in enumerate(('frierson', 'geen', 'byrne')):
+    exp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = scheme
+    exp.runmonth(i, use_restart=False)

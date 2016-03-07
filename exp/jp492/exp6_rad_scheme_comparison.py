@@ -24,6 +24,8 @@ diag.add_field('two_stream', 'flux_sw')
 diag.add_field('two_stream', 'flux_lw')
 diag.add_field('two_stream', 'lw_dtrans')
 
+diag.add_field('atmosphere', 'rh')
+
 exp.use_diag_table(diag)
 
 exp.compile()
