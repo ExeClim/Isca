@@ -1,0 +1,18 @@
+#!/bin/tcsh -f
+source /opt/modules/default/init/tcsh
+module purge
+module load ifort.9.1.041
+module load icc.9.1.045
+module load mpt-1.18
+module load idb.9.1.045
+module load scsl-1.5.1.0
+module load netcdf-4.0
+module list
+setenv NC_BLKSZ 64K
+
+rm *.o PLEV.exe >& /dev/null
+make -f Makefile.static
+cp PLEV.exe ../../../bin.static
+rm *.o PLEV.r4.exe >& /dev/null
+make -f Makefile.r4.static
+cp PLEV.r4.exe ../../../bin.static
