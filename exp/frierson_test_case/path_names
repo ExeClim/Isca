@@ -46,6 +46,7 @@ atmos_spectral/tools/transforms.F90
 coupler/surface_flux.F90
 shared/axis_utils/axis_utils.F90
 shared/constants/constants.F90
+shared/astronomy/astronomy.f90
 shared/diag_manager/diag_axis.F90
 shared/diag_manager/diag_data.F90
 shared/diag_manager/diag_grid.F90

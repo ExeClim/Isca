@@ -10,3 +10,6 @@ old_exps
 opt_exps
 frierson_comparison_*old*
 *.pyc
+*.egg-info
+.DS_Store
+._.DS_Store

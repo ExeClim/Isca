@@ -1,0 +1,26 @@
+{%- macro fortrantrue(t) -%}
+{%- if t -%}
+.true.
+{%- else -%}
+.false.
+{%- endif -%}
+{%- endmacro -%}
+"FMS Model results"
+{% if calendar -%}
+0001 1 1 0 0 0
+{%- else -%}
+0 0 0 0 0 0
+{%- endif %}
+# = output files =
+# file_name, output_freq, output_units, format, time_units, long_name
+{% for file in outputfiles %}
+"{{ file.name }}", {{ file.freq }}, "{{ file.units }}", 1, "{{ file.time_units }}", "time",
+{% endfor %}
+# = diagnostic field entries =
+# module_name, field_name, output_name, file_name, time_sampling, time_avg, other_opts, precision
+
+{% for file in outputfiles %}
+{% for field in file.fields -%}
+"{{ field.module}}", "{{ field.name }}", "{{ field.name }}", "{{ file.name }}", "all", {{ fortrantrue(field.time_avg) }}, "none", 2,
+{% endfor %}
+{% endfor %}

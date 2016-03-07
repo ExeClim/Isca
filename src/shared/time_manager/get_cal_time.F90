@@ -51,7 +51,7 @@ logical :: module_is_initialized=.false. ! This module is initialized on
 ! <DATA NAME="allow_calendar_conversion" TYPE="logical"  DEFAULT=".true.">
 !   This sets the default value of the optional argument named "permit_calendar_conversion" of get_cal_time.
 !   This namelist is deprecated as of the memphis release.
-!   If calendar conversion is not desired, then it is recommended that permit_calendar_conversion 
+!   If calendar conversion is not desired, then it is recommended that permit_calendar_conversion
 !   be present in the call to get_cal_time and that it be set to .false.
 ! </DATA>
 
@@ -90,7 +90,7 @@ contains
 !
 ! Because months are not equal increments of time, and, for julian calendar,
 ! neither are years, the 'years since' and 'month since' cases deserve
-! further explaination. 
+! further explaination.
 !
 ! When 'years since' is used:
 ! The year number is increased by floor(time_increment)   to obtain a time T1.
@@ -164,7 +164,7 @@ contains
 ! Note: this option was originally coded to allow noleap calendar as input when
 ! the julian calendar was in effect by the time_manager.
 ! </IN>
-! 
+!
 !---------------------------------------------------------------------------------------------
 
 function get_cal_time(time_increment, units, calendar, permit_calendar_conversion)
@@ -291,7 +291,7 @@ endif
 ! Returns the starting position of substring as a substring of string,
 ! or zero if it does not occur as a substring. Default value of back is
 ! .false. If back is .false., the starting position of the first such
-! substring is returned. If back is .true., the starting position of the 
+! substring is returned. If back is .true., the starting position of the
 ! last such substring is returned.
 ! Returns zero if substring is not a substring of string (regardless of value of back)
 
@@ -304,7 +304,7 @@ endif
 
 if(lowercase(units(1:10)) == 'days since') then
   increment_days = floor(time_increment)
-  increment_seconds = 86400*(time_increment - increment_days) 
+  increment_seconds = 86400*(time_increment - increment_days)
 else if(lowercase(units(1:11)) == 'hours since') then
   increment_days = floor(time_increment/24)
   increment_seconds = 86400*(time_increment/24 - increment_days)
