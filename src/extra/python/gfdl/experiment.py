@@ -75,6 +75,8 @@ class Experiment(object):
         self.rundir = P(self.workdir, 'run')          # temporary area an individual run will be performed
         self.datadir = P(GFDL_DATA, self.name)        # where run data will be moved to upon completion
 
+        self.log = log
+
         if os.path.isdir(self.workdir):
             log.warning('Working directory for exp %r already exists' % self.name)
         else:
