@@ -4,42 +4,28 @@ from calendar_calc import day_number_to_date
 from netCDF4 import Dataset, date2num
 
 #create grid
-t_res = 42
+lons = [0.]
+lonbs = [0., 360.]
 
-resolution_file = Dataset('/scratch/sit204/FMS2013/GFDLmoistModel/land_file_generator/gfdl_grid_files/t'+str(t_res)+'.nc', 'r', format='NETCDF3_CLASSIC')
+lats = [0.]
+latbs = [-90., 90.]
 
-lons = resolution_file.variables['lon'][:]
-lats = resolution_file.variables['lat'][:]
-
-lonbs = resolution_file.variables['lonb'][:]
-latbs = resolution_file.variables['latb'][:]
-
-#lons = [0.]
-#lonbs = [0., 360.]
-
-#lats = [-10., 0., 10.]
-#latbs = [-90., -5., 5., 90.]
-
-p_full = [950., 300.]
+p_full = [1000.]
 
 #create times
-day_number = np.arange(0,10)
+#day_number = np.arange(0,10)
+
+day_number = [16.0,45.0,75.0,105.0,136.0,166.0,197.0,228.0,258.0,289.0,319.0,350.0]
 
 time_arr = day_number_to_date(day_number)
 
 #Find grid and time numbers
 
-#nlon=len(lons)
-#nlat=len(lats)
+nlon=len(lons)
+nlat=len(lats)
 
-#nlonb=len(lonbs)
-#nlatb=len(latbs)
-
-nlon=lons.shape[0]
-nlat=lats.shape[0]
-
-nlonb=lonbs.shape[0]
-nlatb=latbs.shape[0]
+nlonb=len(lonbs)
+nlatb=len(latbs)
 
 npfull=len(p_full)
 ntime=len(time_arr)
@@ -50,7 +36,7 @@ ntime=len(time_arr)
 co2 = np.zeros((ntime, npfull, nlat, nlon))
 
 for tick in np.arange(0,len(day_number)):
-	co2[tick,...] = 300.*1.e-6*day_number[tick]
+    co2[tick,...] = 300.*(day_number[tick]/360.+1.)*1.e-6 #Some scenario in dimensionless units. 1.e-6 is to convert from ppmv. 
 
 
 #Output it to a netcdf file. 
@@ -64,7 +50,7 @@ latb = co2_file.createDimension('latb', nlatb)
 lonb = co2_file.createDimension('lonb', nlonb)
 
 pfull = co2_file.createDimension('pfull', npfull)
-time = co2_file.createDimension('time', ntime)
+time = co2_file.createDimension('time', 0) #s Key point for a year-independent climatology file is to have the length of the time axis 0, or 'unlimited'. This seems necessary to get the code to run properly. 
 
 latitudes = co2_file.createVariable('lat','d',('lat',))
 longitudes = co2_file.createVariable('lon','d',('lon',))
@@ -72,29 +58,37 @@ longitudes = co2_file.createVariable('lon','d',('lon',))
 latitudebs = co2_file.createVariable('latb','d',('latb',))
 longitudebs = co2_file.createVariable('lonb','d',('lonb',))
 
-pfulls = co2_file.createVariable('pfull','f4',('pfull',))
-times = co2_file.createVariable('time','f4',('time',))
+pfulls = co2_file.createVariable('pfull','d',('pfull',))
+times = co2_file.createVariable('time','d',('time',))
 
-latitudes.units = 'degree'.encode('utf-8')
+latitudes.units = 'degrees_N'.encode('utf-8')
 latitudes.cartesian_axis = 'Y'
+latitudes.edges = 'latb'
+latitudes.long_name = 'latitude'
 
-longitudes.units = 'degree'.encode('utf-8')
+longitudes.units = 'degrees_E'.encode('utf-8')
 longitudes.cartesian_axis = 'X'
+longitudes.edges = 'lonb'
+longitudes.long_name = 'longitude'
 
-latitudebs.units = 'degree'.encode('utf-8')
+latitudebs.units = 'degrees_N'.encode('utf-8')
 latitudebs.cartesian_axis = 'Y'
+latitudebs.long_name = 'latitude edges'
 
-longitudebs.units = 'degree'.encode('utf-8')
+longitudebs.units = 'degrees_E'.encode('utf-8')
 longitudebs.cartesian_axis = 'X'
-
+longitudebs.long_name = 'longitude edges'
 
 pfulls.units = 'hPa'
 pfulls.cartesian_axis = 'Z'
+pfulls.positive = 'down'
+pfulls.long_name = 'full pressure level'
 
 times.units = 'days since 0000-01-01 00:00:00.0'
 times.calendar = 'THIRTY_DAY_MONTHS'
 times.calendar_type = 'THIRTY_DAY_MONTHS'
 times.cartesian_axis = 'T'
+times.climatology = '1979-01-01 00:00:00, 1998-01-01 00:00:00'
 
 co2_array_netcdf = co2_file.createVariable('co2','f4',('time','pfull','lat','lon',))
 
@@ -110,10 +104,4 @@ times[:]     = date2num(time_arr,units='days since 0001-01-01 00:00:00.0',calend
 co2_array_netcdf[:] = co2
 
 co2_file.close()
-
-
-
-
-
-
 

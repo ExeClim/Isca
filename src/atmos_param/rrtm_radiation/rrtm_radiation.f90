@@ -173,7 +173,7 @@
 !
 !-------------------- diagnostics fields -------------------------------
 
-        integer :: id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_z_thalf
+        integer :: id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_z_thalf
         character(len=14), parameter :: mod_name_rad = 'rrtm_radiation' !s changed parameter name from mod_name to mod_name_rad as compiler objected, presumably because mod_name also defined in idealized_moist_physics.F90 after use rrtm_vars is included. 
         real :: missing_value = -999.
 
@@ -281,6 +281,10 @@
           id_ozone   = &
                register_diag_field ( mod_name_rad, 'ozone', axes(1:3), Time, &
                  'Ozone', &
+                 'mmr', missing_value=missing_value               )
+          id_co2   = &
+               register_diag_field ( mod_name_rad, 'co2', axes(1:3), Time, &
+                 'Co2', &
                  'mmr', missing_value=missing_value               )
           id_z_thalf = &
                register_diag_field ( mod_name_rad, 'z_thalf', axes(1:3), Time, &
@@ -455,7 +459,6 @@ call get_grid_domain(is, ie, js, je)
           enddo
 
 
-!		write(6,*) maxval(t_half), minval(t_half)
           if ( id_z_thalf > 0 ) used = send_data ( id_z_thalf, t_half(:,:,1:kend), Time)
        
 
@@ -510,7 +513,8 @@ call get_grid_domain(is, ie, js, je)
 ! Local variables
           integer k,j,i,ij,j1,i1,ij1,kend,dyofyr,seconds,days
           integer si,sj,sk,locmin(3)
-          real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: o3f, co2f
+          real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: o3f
+          real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: co2f
           real(kind=rb),dimension(ncols_rrt,nlay_rrt) :: pfull,tfull,fracday&
                , hr,hrc, swhr, swhrc
           real(kind=rb),dimension(size(tdt,1),size(tdt,2),size(tdt,3)) :: tdt_rrtm
@@ -839,22 +843,22 @@ call get_grid_domain(is, ie, js, je)
           ! check if we want surface albedo as a function of precipitation
           !  call diagnostics accordingly
           if(do_precip_albedo)then
-             call write_diag_rrtm(Time,is,js,o3f,albedo_loc)
+             call write_diag_rrtm(Time,is,js,o3f,co2f,albedo_loc)
           else
-             call write_diag_rrtm(Time,is,js,o3f)
+             call write_diag_rrtm(Time,is,js,o3f,co2f)
           endif
         end subroutine run_rrtmg
 
 !*****************************************************************************************
 !*****************************************************************************************
-        subroutine write_diag_rrtm(Time,is,js,ozone,albedo_loc)
+        subroutine write_diag_rrtm(Time,is,js,ozone,cotwo,albedo_loc)
 ! 
 ! write out diagnostics fields
 !
 ! Modules
           use rrtm_vars,only:         sw_flux,lw_flux,zencos,tdt_rad,tdt_sw_rad,tdt_lw_rad,&
                                       &id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,&
-                                      &id_flux_sw,id_flux_lw,id_albedo,id_ozone
+                                      &id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2
           use diag_manager_mod, only: register_diag_field, send_data
           use time_manager_mod,only:  time_type
 ! Input variables
@@ -862,6 +866,7 @@ call get_grid_domain(is, ie, js, je)
           type(time_type)               ,intent(in)          :: Time
           integer                       ,intent(in)          :: is, js
           real(kind=rb),dimension(:,:,:),intent(in),optional :: ozone
+          real(kind=rb),dimension(:,:,:),intent(in),optional :: cotwo
           real(kind=rb),dimension(:,:  ),intent(in),optional :: albedo_loc
 ! Local variables
           logical :: used
@@ -905,6 +910,10 @@ call get_grid_domain(is, ie, js, je)
           if ( present(ozone) .and. id_ozone > 0 ) then
 !             used = send_data ( id_ozone, ozone, Time, is, js, 1 )
              used = send_data ( id_ozone, ozone, Time)
+          endif
+!------- Co2                                   ------------
+          if ( present(cotwo) .and. id_co2 > 0 ) then
+             used = send_data ( id_co2, cotwo, Time)
           endif
         end subroutine write_diag_rrtm
 !*****************************************************************************************
