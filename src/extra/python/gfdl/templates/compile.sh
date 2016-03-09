@@ -44,7 +44,7 @@ ln -s $ppdir/mppnccombine.x {{ execdir }}/mppnccombine.x
 
 cd $execdir
 # execute mkmf to create makefile
-cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8"
+cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 {{compile_flags}}"
 $mkmf -a $sourcedir -t $template -p `basename $executable` -c "$cppDefs" $pathnames $sourcedir/shared/include $sourcedir/shared/mpp/include
 
 make
