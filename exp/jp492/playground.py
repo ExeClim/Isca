@@ -4,6 +4,7 @@ from gfdl.experiment import Experiment, DiagTable
 
 exp = Experiment('playground', overwrite_data=True)
 
+
 diag = DiagTable()
 
 diag.add_file('6hourly', 6*60*60, 'seconds', time_units='days')
@@ -30,6 +31,7 @@ diag.add_field('mixed_layer', 't_surf')
 
 exp.use_diag_table(diag)
 
+exp.disable_rrtm()
 exp.compile()
 
 exp.clear_rundir()
@@ -40,13 +42,7 @@ exp.namelist['main_nml'] = {
     'calendar': 'no_calendar'
 }
 
-exp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
-exp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
-# turn on Ruth's radiation scheme:
-#exp.namelist['two_stream_gray_rad_nml']['solar_exponent'] = -1
-#exp.namelist['two_stream_gray_rad_nml']['wv_exponent'] = -1
 exp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False
-
 exp.namelist['spectral_dynamics_nml']['num_levels'] = 25
 
 
