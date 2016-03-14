@@ -13,3 +13,6 @@ frierson_comparison_*old*
 exp/st_test*
 *.DS_Store
 *.egg-info
+*.mod
+postprocessing/plevel_interpolation/scripts/*.nc
+postprocessing/plevel_interpolation/scripts/*.nml
