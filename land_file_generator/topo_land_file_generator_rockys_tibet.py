@@ -96,8 +96,8 @@ topo_file = Dataset('land_world_mountains.nc', 'w', format='NETCDF3_CLASSIC')
 lat = topo_file.createDimension('lat', nlat)
 lon = topo_file.createDimension('lon', nlon)
 
-latitudes = topo_file.createVariable('latitude','f4',('lat',))
-longitudes = topo_file.createVariable('longitude','f4',('lon',))
+latitudes = topo_file.createVariable('lat','f4',('lat',))
+longitudes = topo_file.createVariable('lon','f4',('lon',))
 topo_array_netcdf = topo_file.createVariable('zsurf','f4',('lat','lon',))
 land_array_netcdf = topo_file.createVariable('land_mask','f4',('lat','lon',))
 
