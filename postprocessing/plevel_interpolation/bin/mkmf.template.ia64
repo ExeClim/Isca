@@ -1,0 +1,11 @@
+# template for the Intel fortran compiler
+# typical use with mkmf
+# mkmf -t template.ifc -c"-Duse_libMPI -Duse_netCDF" path_names /usr/local/include
+CPPFLAGS = -I/usr/local/include 
+FFLAGS = $(CPPFLAGS) -fpp -stack_temps -safe_cray_ptr -ftz -i_dynamic -assume byterecl -i4 -r8 -g -O2
+#FFLAGS = $(CPPFLAGS) -fltconsistency -stack_temps -safe_cray_ptr -ftz -i_dynamic -assume byterecl -g -O0 -i4 -r8 -check -warn -warn noerrors -debug variable_locations -inline_debug_info -traceback
+FC = mpif90
+LD = mpif90 -L/usr/local/netcdf-4.3.3.1/lib/ # # when running `module show netcdf-4.3.3.1-openmpi-intel` it shows what directory should be used for LD options. Should apparently work with shell variable $LD_LIBRARY_PATH, but it doesn't seem to.
+CC = mpicc 
+LDFLAGS = -lnetcdff -lnetcdf -lmpi -shared-intel
+CFLAGS = -D__IFC

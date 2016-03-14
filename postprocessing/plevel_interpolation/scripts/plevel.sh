@@ -83,9 +83,9 @@ fi
 
 # location of executable
 
-source /opt/modules/default/init/sh
-source /home/fms/local/ia64/v12/moduleloads.sh
-executable=$FMSLOCALPATH/PLEV.exe
+#source /opt/modules/default/init/sh
+source ../../../src/extra/loadmodule
+executable=../exec/plev.x
 if [ ! -x "$executable" ]; then
    echo "ERROR: executable does not exist"
    echo "       executable=$executable"
@@ -170,6 +170,10 @@ do
 done
 
    echo " /" >> $namelist
+
+echo $executable 
+
+ulimit -s unlimited
 
 $executable
 
