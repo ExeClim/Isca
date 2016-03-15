@@ -29,7 +29,7 @@ use strict;
 use File::Basename;
 use Getopt::Std;
 use Config;			# use to put in platform-specific stuff
-use vars qw( $opt_a $opt_c $opt_d $opt_f $opt_l $opt_m $opt_o $opt_p $opt_t $opt_v $opt_x ); # declare these global to be shared with Getopt:Std
+use vars qw( $opt_a $opt_c $opt_d $opt_f $opt_l $opt_m $opt_o $opt_p $opt_t $opt_v $opt_x $opt_I ); # declare these global to be shared with Getopt:Std
 
 #subroutines
 sub ensureTrailingSlash {
@@ -37,10 +37,10 @@ sub ensureTrailingSlash {
    local $/ = '/'; chomp @_[0]; @_[0] .= '/';
 }
 
-my $version = '$Id: mkmf,v 18.0 2010/03/02 23:26:08 fms Exp $ ';
+my $version = '$Id: mkmf,v 16.1 2010/05/19 18:49:19 fms Exp $ ';
 
 # initialize variables: use getopts for these
-getopts( 'a:c:dfm:o:p:t:vx' ) || die "\aSyntax: $0 [-a abspath] [-c cppdefs] [-d] [-f] [-m makefile] [-o otherflags] ][-p program] [-t template] [-v] [-x] [targets]\n";
+getopts( 'a:I:c:dfm:o:l:p:t:vx' ) || die "\aSyntax: $0 [-a abspath] [-c cppdefs] [-d] [-f] [-m makefile] [-o otherflags] ][-p program] [-t template] [-v] [-x] [-I \"space separated include dirs\"] [targets]\n";
 $opt_v = 1 if $opt_d;	# debug flag turns on verbose flag also
 print "$0 $version\n" if $opt_v;
 
@@ -378,6 +378,11 @@ foreach $object ( sort @objects ) {
    }
    foreach ( @includepaths ) { # include files may be anywhere in directory array
       print MAKEFILE " -I$_" if $_;
+   }
+   if ( $opt_I ){
+     foreach ( split /\s+/, $opt_I ){
+       print MAKEFILE " -I$_";
+     }
    }
    print MAKEFILE "\t$source_of{$object}\n";
 

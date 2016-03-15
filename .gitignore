@@ -10,6 +10,10 @@ old_exps
 opt_exps
 frierson_comparison_*old*
 *.pyc
+exp/st_test*
+*.DS_Store
 *.egg-info
-.DS_Store
 ._*
+*.mod
+postprocessing/plevel_interpolation/scripts/*.nc
+postprocessing/plevel_interpolation/scripts/*.nml
