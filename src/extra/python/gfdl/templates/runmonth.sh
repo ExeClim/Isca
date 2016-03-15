@@ -15,6 +15,7 @@ cpio -iv < res
 cd {{ rundir }}
 {% endif %}
 
+ulimit -s unlimited # Set stack size to unlimited
 export MALLOC_CHECK_=0
 
 cp {{ execdir }}/fms_moist.x fms_moist.x
