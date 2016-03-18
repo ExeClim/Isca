@@ -608,8 +608,6 @@
              call interpolator( co2_interp, Time_loc, p_half, co2f, trim(co2_file))
 	     co2f_temp = co2f*1.e-6
              co2f = co2f_temp
-            if(maxval(co2f) .ne. minval(co2f)) write(6,*) 'warning, difference', maxval(co2f)-minval(co2f)
-            if(maxval(co2f) .le. 0.0) write(6,*) 'warning, no co2', maxval(co2f)
           endif
 
           !interactive albedo: zonal mean of precipitation
