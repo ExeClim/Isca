@@ -321,9 +321,9 @@ endif
 if ( do_qflux .or. do_warmpool) then
    call qflux_init
 !mj q-flux as in Merlis et al (2013) [Part II]
-   if ( do_qflux ) call qflux(rad_latb_2d(is,:),ocean_qflux)
+   if ( do_qflux ) call qflux(rad_latb_2d(1,:),ocean_qflux)
 !mj q-flux to create a tropical temperature perturbation
-   if ( do_warmpool) call warmpool(rad_lonb_2d(:,js),rad_latb_2d(is,:),ocean_qflux)
+   if ( do_warmpool) call warmpool(rad_lonb_2d(:,1),rad_latb_2d(1,:),ocean_qflux)
 endif
 
 !s End MiMA options for qfluxes
