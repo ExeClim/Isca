@@ -75,6 +75,8 @@ class Experiment(object):
         self.rundir = P(self.workdir, 'run')          # temporary area an individual run will be performed
         self.datadir = P(GFDL_DATA, self.name)        # where run data will be moved to upon completion
 
+        self.log = log
+
         if os.path.isdir(self.workdir):
             log.warning('Working directory for exp %r already exists' % self.name)
         else:
@@ -106,6 +108,8 @@ class Experiment(object):
         self.namelist = self.rebuild_namelist()
 
         self.inputfiles = []
+
+        self.compile_flags=[]
 
         self.overwrite_data = overwrite_data
 
@@ -206,6 +210,19 @@ class Experiment(object):
         return {'git_desc': git_desc,
                 'git_show': git_show}
 
+    def disable_rrtm(self):
+        # remove all rrtm paths
+        self.path_names = [p for p in self.path_names if not 'rrtm' in p]
+
+        # add no compile flag
+        self.compile_flags.append('-DRRTM_NO_COMPILE')
+
+        # set the namelist to use gray radiation scheme
+        self.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
+        self.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
+
+        log.info('RRTM compilation disabled.  Namelist set to gray radiation.')
+
     def compile(self):
         mkdir(self.execdir)
 
@@ -213,7 +230,8 @@ class Experiment(object):
             'execdir': self.execdir,
             'template_dir': self.template_dir,
             'srcdir': self.srcdir,
-            'workdir': self.workdir
+            'workdir': self.workdir,
+            'compile_flags': ' '.join(self.compile_flags)
         }
 
         self.write_path_names(self.workdir)

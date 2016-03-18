@@ -1,0 +1,106 @@
+Exeter instructions
+
+This set of scripts is able to take 3D data that is outputed on model sigma levels, and interpolate it to be on pressure levels. Basic instructions are as follows:
+
+cd postprocessing/plevel_interpolation/exec/
+
+source ../../../src/extra/loadmodule
+
+../bin/mkmf -p plev.x -t ../bin/mkmf.template.ia64 -c "-Duse_netCDF" -a ../src ../src/path_names ../src/shared/mpp/include ../src/shared/include
+
+make -f Makefile
+
+Once this is done the executable `plev.x` will be created in the exec folder.
+
+To execute the script, do
+
+cd ../scripts
+./plevel.sh INSERT OPTIONS HERE
+
+The runscript plevel.sh takes many different inputs, which are well documented in the file itself. A working example is
+
+./plevel.sh -i PATH_TO_FILE/atmos_daily.nc div height omega temp ucomp vcomp vor
+
+The -i option specifies the input netcdf file location. The variable names are those that you wish to interpolate. 
+
+The result is the file `plevel.nc` in postprocessing/plevel_interpolation/scripts 
+(the output file name can be changed in plevel.sh).
+
+plevel.nc will contain all of the 3D fields that have been interpolated. The pressure levels onto which the data is interpolated are set in plevel.sh and are in Pascal (not hecto pascal). 
+
+Known issues:
+
+Instead of listing variable names you can use the option -a to interpolate all fields onto specified pressure levels. However, if you have any 3D variables whose vertical coordinate is half levels (e.g. height_half) the interpolation routine will fail. This is because min(p_half) = 0.0, and the code takes the log of the relevant pressure coordinates, resulting in an error for variables with p_half as their vertical coordinate.
+
+
+################## Original instructions ##################
+Instructions to compile plev.x, which will interpolate from
+sigma coordinates to user specified pressure levels.  This version,
+"v12," which I downloaded from GFDL on 12 July 2010, seems to handle 
+higher resolution runs better than the old version!
+
+To compile, you need to set up the mkmf.template.[platform], where 
+[platform] is something you set to work with your local machines.  In
+general, the same template that you use to compile the GFDL
+dry dynamical core (or all things FMS) works.  Put this template in
+the bin/ directory.  Then, go to exec, and run these two commands to
+make the makefile and the compile the code.
+
+cd exec
+
+../bin/mkmf -p plev.x -t ../bin/mkmf.template.[platform] -c "-Duse_netCDF" -a ../src ../src/path_names ../src/shared/mpp/include ../src/shared/include
+
+make -f Makefile
+
+
+
+The executable plev.x is called with the script: 
+
+script/plevel.sh.  
+
+which sets up the input variables, etc, and calls plev.x.
+You must first change the path to the executable.  To do so, just search 
+for "executable" and replace this line with a path pointing to your plev.x.
+
+If you just try to run this script (with no inputs), it'll give you 
+instructions on how to use it.  
+
+------------------------------------------------------------------
+
+Notes on how I got the code:
+
+I got the "testing" version of the plevel interpolation scripts on 
+12 July 2010, more-or-less following the instructions in:
+/home/fms/local/ia64/v12/readme_compilation
+ 
+Here's what I did at GFDL.  #=comment
+ 
+
+# make a place for the code
+mkdir plev_testing
+cd plev_testing
+mkdir src
+mkdir bin
+
+# do the CVS checkout
+cd src
+cvs -d /home/fms/cvs/ co -r testing plevel
+
+# get the path names
+/home/fms/bin/list_paths
+
+Next, I copied all this over to hpc, and followed the procedure that
+worked before.  I used the template that compiled the cubed sphere core,
+created a exec/ directory, and ran the commands above.
+
+Then, to get it to work, I got the latest script from GFDL:
+
+/home/fms/local/ia64/v12/plevel.sh
+
+With this, all I had to do was set the path to the executable - no worries
+about stacksize and secondary script.
+
+
+
+
+

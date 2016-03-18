@@ -23,6 +23,6 @@ setup(name='GFDL',
         'f90nml',
         'numpy',
         'pandas',
-        'xray'
+        'xarray'
       ]
      )

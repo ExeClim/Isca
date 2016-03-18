@@ -9,7 +9,8 @@
 |dynamics |	vor	    |Vorticity	| (pfull, lat, lon)	|
 |dynamics |	div	    |Divergence	| (pfull, lat, lon)	|
 |dynamics |	temp	  |atmospheric tempertaure	| (pfull, lat, lon)	|
-|dynamics |	omega	  |vertical velocity	| (pfull, lat, lon)	dp/dt|
+|dynamics |	omega	  |vertical velocity	| (pfull, lat, lon)	| dp/dt|
+|dynamics |	sphum	  | specific humidity	| (pfull, lat, lon)	|
 |mixed_layer | t_surf |	surface temperature	| (lat, lon) | slab |
 |mixed_layer | albedo | surface albedo | (lat, lon) | static |
 |mixed_layer | ml_heat_cap | mixed layer heat capacity | (lat, lon) | 
@@ -28,3 +29,6 @@
 |damping |	vdt_rdamp |	v wind tendency for Rayleigh damping	| (pfull, lat, lon)	|
 |damping |	tdt_diss_rdamp |	Dissipative heating from Rayleigh damping	| (pfull, lat, lon)	|
 |vert_turb|	z_pbl	| depth of planetary boundary layer	| (lat, lon)| 	
+|mixed_layer|	t_surf	| SST 	| (lat, lon)|
+
+

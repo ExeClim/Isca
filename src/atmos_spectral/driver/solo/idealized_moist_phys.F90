@@ -44,13 +44,18 @@ use         mpp_domains_mod, only: mpp_get_global_domain !s added to enable land
 
 use          transforms_mod, only: grid_domain
 
-!mj: RRTM radiative scheme
-use rrtmg_lw_init
-use rrtmg_lw_rad
-use rrtmg_sw_init
-use rrtmg_sw_rad
-use rrtm_radiation
-use rrtm_vars
+#ifdef RRTM_NO_COMPILE
+    ! RRTM_NO_COMPILE not included
+#else
+    !mj: RRTM radiative scheme
+    use rrtmg_lw_init
+    use rrtmg_lw_rad
+    use rrtmg_sw_init
+    use rrtmg_sw_rad
+    use rrtm_radiation
+    use rrtm_vars
+#endif
+
 
 implicit none
 private
@@ -451,16 +456,22 @@ endif
 
 if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time)
 
-if(do_rrtm_radiation) then
-   id=ie-is+1 !s Taking dimensions from equivalend calls in vert_turb_driver_init
-   jd=je-js+1
-   kd=num_levels
-   call rrtmg_lw_ini(cp_air)
-   call rrtmg_sw_ini(cp_air)
-   call rrtm_radiation_init(axes,Time,id*jd,kd,rad_lonb_2d,rad_latb_2d)
-   id_z_tg = register_diag_field(mod_name, 'interp_t',        &
-        axes(1:3), Time, 'temperature interp','T/s')
-endif
+#ifdef RRTM_NO_COMPILE
+    if (do_rrtm_radiation) then
+        call error_mesg('idealized_moist_phys','do_rrtm_radiation is .true. but compiler flag -D RRTM_NO_COMPILE used. Stopping.', FATAL)
+    endif
+#else
+    if(do_rrtm_radiation) then
+       id=ie-is+1 !s Taking dimensions from equivalend calls in vert_turb_driver_init
+       jd=je-js+1
+       kd=num_levels
+       call rrtmg_lw_ini(cp_air)
+       call rrtmg_sw_ini(cp_air)
+       call rrtm_radiation_init(axes,Time,id*jd,kd,rad_lonb_2d,rad_latb_2d)
+       id_z_tg = register_diag_field(mod_name, 'interp_t',        &
+            axes(1:3), Time, 'temperature interp','T/s')
+    endif
+#endif
 
 if(turb) then
    call vert_turb_driver_init (rad_lonb_2d, rad_latb_2d, ie-is+1,je-js+1, &
@@ -670,13 +681,18 @@ if(two_stream_gray) then
                      dt_tg(:,:,:), albedo)
 end if
 
+#ifdef RRTM_NO_COMPILE
+    if (do_rrtm_radiation) then
+        call error_mesg('idealized_moist_phys','do_rrtm_radiation is .true. but compiler flag -D RRTM_NO_COMPILE used. Stopping.', FATAL)
+    endif
+#else
 if(do_rrtm_radiation) then
    !need t at half grid
 	tg_interp=tg(:,:,:,previous)
    call interp_temp(z_full(:,:,:,current),z_half(:,:,:,current),tg_interp, Time)
    call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),coszen,net_surf_sw_down(:,:),surf_lw_down(:,:))
 endif
-
+#endif
 
 !----------------------------------------------------------------------
 !    Copied from MiMA physics_driver.f90

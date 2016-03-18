@@ -1,0 +1,28 @@
+# The following three directory may need to set.
+NETCDFPATH = /usr/local/netcdf-4.0.1
+POSTPPATH  = .
+FFLAGS = -I${NETCDFPATH}/include -I/usr/include -fltconsistency -fno-alias -stack_temps -safe_cray_ptr -ftz -assume byterecl -g -O2 -i4 -nowarn -Wp,-w
+LDFLAGS =  -L${NETCDFPATH}/lib/shared -lnetcdff -lnetcdf -lhdf5_hl -lhdf5 -lmpi -lz
+DEFFLAG = -Duse_netCDF
+LNFLAGS = -v
+FC      = ifort
+
+OBJS = plev_constants.o moisture_convert.o pressure_interp.o pinterp_utilities.o run_pressure_interp.o
+
+PLEV.r4.exe: $(OBJS)
+	$(FC) $(LNFLAGS) -o $@ $(OBJS) $(LDFLAGS)
+
+run_pressure_interp.o: $(POSTPPATH)/run_pressure_interp.F90
+	$(FC) $(FFLAGS) -c $(POSTPPATH)/run_pressure_interp.F90
+
+pinterp_utilities.o: $(POSTPPATH)/pinterp_utilities.F90
+	$(FC) $(FFLAGS) -c $(POSTPPATH)/pinterp_utilities.F90
+
+pressure_interp.o: $(POSTPPATH)/pressure_interp.F90
+	$(FC) $(FFLAGS) -c $(POSTPPATH)/pressure_interp.F90
+
+moisture_convert.o: $(POSTPPATH)/moisture_convert.F90
+	$(FC) $(FFLAGS) -c $(POSTPPATH)/moisture_convert.F90
+
+plev_constants.o: $(POSTPPATH)/plev_constants.F90
+	$(FC) $(FFLAGS) -c $(POSTPPATH)/plev_constants.F90

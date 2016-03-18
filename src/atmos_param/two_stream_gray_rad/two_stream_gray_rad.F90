@@ -25,7 +25,8 @@ module two_stream_gray_rad_mod
 ! ==================================================================================
 
    use fms_mod,               only: open_file, check_nml_error, &
-                                    mpp_pe, close_file, error_mesg, NOTE
+                                    mpp_pe, close_file, error_mesg, &
+                                    NOTE, FATAL,  uppercase
 
    use constants_mod,         only: stefan, cp_air, grav, pstd_mks, seconds_per_sol, orbital_period
 
@@ -78,8 +79,13 @@ real    :: linear_tau      = 0.1
 real    :: wv_exponent     = 4.0
 real    :: solar_exponent  = 4.0
 logical :: do_seasonal     = .false.
-logical :: do_window       = .false.
-logical :: do_attenuate    = .false.
+
+character(len=32) :: rad_scheme = 'frierson'
+
+integer, parameter :: B_GEEN = 1,      B_FRIERSON = 2, &
+                      B_BYRNE = 3
+integer, private :: sw_scheme = B_FRIERSON
+integer, private :: lw_scheme = B_FRIERSON
 
 ! constants for RG radiation version
 real    :: ir_tau_co2_win  = 0.2150
@@ -109,7 +115,8 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            linear_tau, del_sw, wv_exponent, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
-           ir_tau_co2, ir_tau_wv, window, carbon_conc
+           ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme
+
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -163,8 +170,20 @@ rad_to_deg = 180./pi
 
 call astronomy_init
 
-do_window =    wv_exponent .eq. -1
-do_attenuate = solar_exponent .eq. -1
+if(uppercase(trim(rad_scheme)) == 'GEEN') then
+  lw_scheme = B_GEEN
+  call error_mesg('two_stream_gray_rad','Using Geen (2015) radiation scheme.', NOTE)
+else if(uppercase(trim(rad_scheme)) == 'FRIERSON') then
+  lw_scheme = B_FRIERSON
+  !call error_mesg('two_stream_gray_rad','Using "'//trim(rad_scheme)//'" radiation scheme.', NOTE)
+  call error_mesg('two_stream_gray_rad','Using Frierson (2006) radiation scheme.', NOTE)
+else if(uppercase(trim(rad_scheme)) == 'BYRNE') then
+  lw_scheme = B_BYRNE
+  call error_mesg('two_stream_gray_rad','Using Byrne & OGorman (2013) radiation scheme.', NOTE)
+else
+  call error_mesg('two_stream_gray_rad','"'//trim(rad_scheme)//'"'//' is not a valid radiation scheme.', FATAL)
+endif
+sw_scheme = lw_scheme
 
 initialized = .true.
 
@@ -197,20 +216,24 @@ allocate (coszen           (ie-is+1, je-js+1))
 allocate (fracsun          (ie-is+1, je-js+1)) !jp from astronomy.f90 : fraction of sun on surface
 
 !Allocate RG variables only if option selected.
-if (do_window) then
+select case(lw_scheme)
+case(B_GEEN)
   allocate (b_win            (ie-is+1, je-js+1, num_levels))
   allocate (lw_dtrans_win    (ie-is+1, je-js+1, num_levels))
   allocate (lw_up_win        (ie-is+1, je-js+1, num_levels+1))
   allocate (lw_down_win      (ie-is+1, je-js+1, num_levels+1))
   allocate (lw_del_tau       (ie-is+1, je-js+1))
   allocate (lw_del_tau_win   (ie-is+1, je-js+1))
-endif
-if (do_attenuate) then
+
   allocate (sw_dtrans        (ie-is+1, je-js+1, num_levels))
   allocate (sw_wv            (ie-is+1, je-js+1))
   allocate (del_sol_tau      (ie-is+1, je-js+1))
   allocate (sw_tau_k         (ie-is+1, je-js+1))
-endif
+
+case(B_BYRNE)
+  allocate (lw_del_tau       (ie-is+1, je-js+1))
+end select
+
 
 !-----------------------------------------------------------------------
 !------------ initialize diagnostic fields ---------------
@@ -273,7 +296,7 @@ endif
                register_diag_field ( mod_name, 'fracsun', axes(1:2), Time, &
                  'daylight fraction of time interval', &
                  'none', missing_value=missing_value      )
-  if (do_window) then
+  if (lw_scheme.eq.B_GEEN) then
     id_lw_dtrans  = &
                register_diag_field ( mod_name, 'lw_dtrans', axes(1:3), Time, &
                  'LW transmission (non window)', &
@@ -284,11 +307,17 @@ endif
                  'LW window transmission', &
                  'none', missing_value=missing_value      )
   endif
-  if (do_attenuate) then
+  if (sw_scheme.eq.B_GEEN) then
     id_sw_dtrans  = &
                  register_diag_field ( mod_name, 'sw_dtrans', axes(1:3), Time, &
                    'SW transmission', &
                    'none', missing_value=missing_value      )
+  endif
+  if (lw_scheme.eq.B_BYRNE) then
+    id_lw_dtrans  = &
+               register_diag_field ( mod_name, 'lw_dtrans', axes(1:3), Time, &
+                 'LW transmission (non window)', &
+                 'none', missing_value=missing_value      )
   endif
 return
 end subroutine two_stream_gray_rad_init
@@ -310,17 +339,22 @@ real, intent(in), dimension(:,:)    :: lat, lon, albedo
 real, intent(out), dimension(:,:)   :: net_surf_sw_down
 real, intent(out), dimension(:,:)   :: surf_lw_down
 real, intent(in), dimension(:,:,:)  :: t, q,  p_half
-
 integer :: i, j, k, n, dyofyr
 
 integer :: seconds
 real :: frac_of_day, frac_of_year, gmt, time_since_ae, rrsun
 logical :: used
 
+! Byrne + O'Gorman rad scheme parameters
+real :: bog_a = 0.8678
+real :: bog_b = 1997.9
+real :: bog_mu = 1.0
+
 n = size(t,3)
 
 ! albedo(:,:) = albedo_value !s albedo now set in mixed_layer_init.
 
+! =================================================================================
 ! SHORTWAVE RADIATION
 
 ! insolation at TOA
@@ -339,7 +373,8 @@ else
   insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
 end if
 
-if(do_attenuate) then
+select case(sw_scheme)
+case(B_GEEN)
   ! RG scheme: optical depth a function of wv and co2
   sw_tau_k = 0.
   do k = 1, n
@@ -358,7 +393,8 @@ if(do_attenuate) then
   do k = 1, n
      sw_down(:,:,k+1)   = sw_down(:,:,k) * sw_dtrans(:,:,k)
   end do
-else
+
+case(B_FRIERSON, B_BYRNE)
   ! Default: Frierson handling of SW radiation
   ! SW optical thickness
   sw_tau_0    = (1.0 - sw_diff*sin(lat)**2)*atm_abs
@@ -372,13 +408,21 @@ else
   do k = 1, n+1
      sw_down(:,:,k)   = insolation(:,:) * exp(-sw_tau(:,:,k))
   end do
-endif
 
+case default
+ call error_mesg('two_stream_gray_rad','invalid radiation scheme',FATAL)
 
+end select
 
+! =================================================================================
 ! LONGWAVE RADIATION
 
-if (do_window) then
+! longwave source function
+b = stefan*t**4
+lw_dtrans_win = 1.
+
+select case(lw_scheme)
+case(B_GEEN)
   ! split LW in 2 bands: water-vapour window and remaining = non-window
   ! ref: Ruth Geen etal, GRL 2016 (supp. information).
   do k = 1, n
@@ -392,8 +436,39 @@ if (do_window) then
                   * ( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1)
     lw_dtrans_win(:,:,k) = exp( - lw_del_tau_win )
   end do
-else
-  lw_dtrans_win = 1.
+
+  ! also compute downward longwave flux for window
+  ! Allocate a fraction of the longwave spectrum as window radiation
+  b_win = window*b
+  b = (1.0 - window)*b
+  lw_down_win(:,:,1) = 0.0
+  lw_down(:,:,1) = 0.0
+  do k = 1,n
+    lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
+    lw_down_win(:,:,k+1) = lw_down_win(:,:,k)*lw_dtrans_win(:,:,k)              &
+                      + b_win(:,:,k)*(1.0 - lw_dtrans_win(:,:,k))
+  end do
+  lw_down = lw_down + lw_down_win
+
+case(B_BYRNE)
+  ! dtau/ds = a*mu + b*q
+  ! ref: Byrne, M. P. & O'Gorman, P. A.
+  !      Land–ocean warming contrast over a wide range of climates:
+  !      Convective quasi-equilibrium theory and idealized simulations.
+  !      J. Climate 26, 4000–4106 (2013).
+  do k = 1, n
+    lw_del_tau    = (bog_a*bog_mu + bog_b*q(:,:,k)) * (( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1))
+    lw_dtrans(:,:,k) = exp( - lw_del_tau )
+
+  end do
+
+  ! compute downward longwave flux by integrating downward
+  lw_down(:,:,1)      = 0.
+  do k = 1, n
+     lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
+  end do
+
+case(B_FRIERSON)
   ! longwave optical thickness function of latitude and pressure
   lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
 
@@ -407,39 +482,23 @@ else
   do k = 1, n
      lw_dtrans(:,:,k) = exp( -(lw_tau(:,:,k+1) - lw_tau(:,:,k)) )
   end do
-endif
 
-
-
-! longwave source function
-
-b = stefan*t**4
-
-if (do_window) then
-  ! if RG radiation switched on, also compute downward longwave flux for window
-  ! Allocate a fraction of the longwave spectrum as window radiation
-  b_win = window*b
-  b = (1.0 - window)*b
-  lw_down_win(:,:,1) = 0.0
-  lw_down(:,:,1) = 0.0
-  do k = 1,n
-    lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
-    lw_down_win(:,:,k+1) = lw_down_win(:,:,k)*lw_dtrans_win(:,:,k)              &
-                      + b_win(:,:,k)*(1.0 - lw_dtrans_win(:,:,k))
-  end do
-  lw_down = lw_down + lw_down_win
-else
   ! compute downward longwave flux by integrating downward
   lw_down(:,:,1)      = 0.
   do k = 1, n
      lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
   end do
-endif
 
+case default
+ call error_mesg('two_stream_gray_rad','invalid radiation scheme',FATAL)
 
+end select
+
+! =================================================================================
 surf_lw_down     = lw_down(:, :, n+1)
 toa_sw_in        = sw_down(:, :, 1)
 net_surf_sw_down = sw_down(:, :, n+1) * (1. - albedo)
+! =================================================================================
 
 !------- downward lw flux surface -------
 if ( id_lwdn_sfc > 0 ) then
@@ -454,7 +513,7 @@ if ( id_swdn_sfc > 0 ) then
    used = send_data ( id_swdn_sfc, net_surf_sw_down, Time_diag)
 endif
 
-!------- cosine of zenith angle                ------------
+!------- cosine of zenith angle ------------
 if ( id_coszen > 0 ) then
    used = send_data ( id_coszen, coszen, Time_diag)
 endif
@@ -483,7 +542,8 @@ logical :: used
 n = size(t,3)
 b_surf            = stefan*t_surf**4
 
-if (do_window) then
+select case(lw_scheme)
+case(B_GEEN)
   ! integrate upward, including window contribution
   lw_up(:,:,n+1)     = b_surf*(1-window)
   lw_up_win(:,:,n+1) = b_surf*window
@@ -493,13 +553,18 @@ if (do_window) then
      lw_up_win(:,:,k)   = lw_up_win(:,:,k+1)*lw_dtrans_win(:,:,k) + b_win(:,:,k)*(1.0 - lw_dtrans_win(:,:,k))
   end do
   lw_up = lw_up + lw_up_win
-else
+
+case(B_FRIERSON, B_BYRNE)
   ! compute upward longwave flux by integrating upward
   lw_up(:,:,n+1)    = b_surf
   do k = n, 1, -1
      lw_up(:,:,k)   = lw_up(:,:,k+1)*lw_dtrans(:,:,k) + b(:,:,k)*(1.0 - lw_dtrans(:,:,k))
   end do
-end if
+
+case default
+ call error_mesg('two_stream_gray_rad','invalid radiation scheme',FATAL)
+
+end select
 
 ! compute upward shortwave flux (here taken to be constant)
 do k = 1, n+1
@@ -581,11 +646,14 @@ deallocate (lw_dtrans, lw_tau, sw_tau)
 deallocate (insolation, p2) !s albedo
 
 ! deallocate RG variables
-if (do_window) then
+if (lw_scheme.eq.B_GEEN) then
   deallocate (b_win, lw_dtrans_win, lw_up_win, lw_down_win, lw_del_tau, lw_del_tau_win)
 endif
-if (do_attenuate) then
+if (sw_scheme.eq.B_GEEN) then
   deallocate (sw_dtrans, sw_wv, del_sol_tau, sw_tau_k)
+endif
+if (lw_scheme.eq.B_BYRNE) then
+  deallocate (lw_del_tau)
 endif
 
 end subroutine two_stream_gray_rad_end

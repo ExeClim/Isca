@@ -7,13 +7,13 @@ hostname=`hostname`
 ppdir=./                 # path to directory containing the tool for combining distributed diagnostic output files
 #-----------------------------------------------------------------------------------------------------
 
-netcdf_flags=`nf-config --fflags --flibs`
+
 
 # 2. Load the necessary tools into the environment
 module purge
 module load netcdf-4.3.0-openmpi-intel
 module list
-
+netcdf_flags=`nf-config --fflags --flibs`
 #--------------------------------------------------------------------------------------------------------
 # compile combine tool
 #cd $ppdir
