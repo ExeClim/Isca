@@ -322,12 +322,8 @@
           if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
 
 !------------ allocate arrays to be used later  -------
-call get_grid_domain(is, ie, js, je)
-!          allocate(t_half(is:ie,js:je,nlay+1)) !s changed all size(latb) to size(latb,2) as latb now 2d in 2013, where it was 1d in MiMA.
+          call get_grid_domain(is, ie, js, je)
           allocate(t_half(size(lonb,1)-1,size(latb,2)-1,nlay+1)) !s changed all size(latb) to size(latb,2) as latb now 2d in 2013, where it was 1d in MiMA.
-!          allocate(t_half_add_tw(is:ie,js:je,nlay+1)) !s changed all size(latb) to size(latb,2) as latb now 2d in 2013, where it was 1d in MiMA.
- 
-!          write(6,*) 'sizes', size(lonb,1), size(lonb,2), size(latb,1), size(latb,2), size(t_half,1), size(t_half, 2), size(t_half,3)
           if(.not. do_read_radiation .or. .not. do_read_sw_flux .and. .not. do_read_lw_flux)then
              allocate(h2o(ncols_rrt,nlay_rrt),o3(ncols_rrt,nlay_rrt), &
                   co2(ncols_rrt,nlay_rrt))
