@@ -142,7 +142,8 @@ integer ::                                                                    &
      id_flux_oceanq,       &   ! oceanic Q flux
      id_flux_t,            &   ! sensible heat flux at surface
      id_heat_cap,          &   ! heat capacity
-     id_albedo                 ! mj albedo
+     id_albedo,            &   ! mj albedo
+     id_delta_t_surf
 
 real, allocatable, dimension(:,:)   ::                                        &
      ocean_qflux,           &   ! Q-flux
@@ -317,6 +318,9 @@ id_flux_oceanq = register_diag_field(mod_name, 'flux_oceanq',        &
                                  axes(1:2), Time, 'oceanic Q-flux','watts/m2')
 id_heat_cap = register_static_field(mod_name, 'ml_heat_cap',        &
                                  axes(1:2), 'mixed layer heat capacity','joules/m^2/deg C')
+id_delta_t_surf = register_diag_field(mod_name, 'delta_t_surf',        &
+                                 axes(1:2), Time, 'change in sst','K')
+
 id_albedo = register_static_field(mod_name, 'albedo',    &
                                  axes(1:2), 'surface albedo', 'none')
 
@@ -588,6 +592,8 @@ if(id_t_surf > 0) used = send_data(id_t_surf, t_surf, Time)
 if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time)
 if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q, Time)
 if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time)
+
+if(id_delta_t_surf > 0)   used = send_data(id_delta_t_surf, delta_t_surf, Time)
 
 end subroutine mixed_layer
 
