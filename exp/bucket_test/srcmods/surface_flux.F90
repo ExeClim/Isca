@@ -329,7 +329,8 @@ contains
 !<PUBLICROUTINE INTERFACE="surface_flux">
 subroutine surface_flux_1d (                                           &
      t_atm,     q_atm_in,   u_atm,     v_atm,     p_atm,     z_atm,    &
-     p_surf,    t_surf,     t_ca,      q_surf,                         &
+     p_surf,    t_surf,     t_ca,      q_surf, bucket, bucket_depth,   & !RG Add bucket
+     depth_change_lh_1d, depth_change_conv_1d, depth_change_cond_1d,   & !RG Add bucket
      u_surf,    v_surf,                                                &
      rough_mom, rough_heat, rough_moist, rough_scale, gust,            &
      flux_t, flux_q, flux_r, flux_u, flux_v,                           &
@@ -343,6 +344,7 @@ subroutine surface_flux_1d (                                           &
 ! ============================================================================
   ! ---- arguments -----------------------------------------------------------
   logical, intent(in), dimension(:) :: land,  seawater, avail
+  logical, intent(in) :: bucket
   real, intent(in),  dimension(:) :: &
        t_atm,     q_atm_in,   u_atm,     v_atm,              &
        p_atm,     z_atm,      t_ca,                          &
@@ -355,6 +357,9 @@ subroutine surface_flux_1d (                                           &
        w_atm,     u_star,     b_star,    q_star,             &
        cd_m,      cd_t,       cd_q
   real, intent(inout), dimension(:) :: q_surf
+  real, intent(inout), dimension(:) :: bucket_depth                              !RG Add bucket
+  real, intent(inout), dimension(:) :: depth_change_lh_1d                        !RG Add bucket
+  real, intent(in), dimension(:) :: depth_change_conv_1d, depth_change_cond_1d   !RG Add bucket
   real, intent(in) :: dt
 
   ! ---- local constants -----------------------------------------------------
@@ -495,8 +500,31 @@ subroutine surface_flux_1d (                                           &
 
      ! evaporation
      rho_drag  =  drag_q * rho
-!s   Have moved flux_q calculation to within the where(land) section, in order that we can include a land_humidity_prefactor.
-!     flux_q    =  rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
+
+!RG Add bucket - if bucket is on evaluate fluxes based on moisture availability. Land-ocean contrasts are done in idealized_moist in this case
+  if (bucket) then
+     ! begin LJJ addition
+     flux_q    =  rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
+
+     depth_change_lh_1d  = flux_q * dt/dens_h2o 
+     where (flux_q > 0.0 .and. bucket_depth < depth_change_lh_1d) ! where more evaporation than what's in bucket, empty bucket
+        flux_q = bucket_depth * dens_h2o / dt
+        depth_change_lh_1d = flux_q * dt / dens_h2o
+     endwhere 
+    
+     where (bucket_depth <= 0.0)
+        dedt_surf = 0.
+        dedq_surf = 0.
+        dedq_atm = 0.
+     elsewhere
+        dedq_surf = 0.
+        dedt_surf =  rho_drag * (q_sat1 - q_sat) *del_temp_inv
+        dedq_atm = -rho_drag ! d(latent heat flux)/d(atmospheric mixing ratio)
+     endwhere
+        
+  else
+
+!RG otherwise revert to simple land model
 
      where (land)
 !s      Simplified land model uses simple prefactor in front of qsurf0. Land is therefore basically the same as sea, but with this prefactor, hence the changes to dedq_surf and dedt_surf also.
@@ -510,6 +538,9 @@ subroutine surface_flux_1d (                                           &
         dedq_surf = 0
         dedt_surf =  rho_drag * (q_sat1 - q_sat) *del_temp_inv
      endwhere
+  endif
+
+!RG end Add bucket changes
 
      dedq_atm  = -rho_drag   ! d(latent heat flux)/d(atmospheric mixing ratio)
 
@@ -595,7 +626,7 @@ subroutine surface_flux_0d (                                                 &
   real, intent(in)    :: dt
 
   ! ---- local vars ----------------------------------------------------------
-  logical, dimension(1) :: land,  seawater, avail
+  logical, dimension(1) :: land,  seawater, avail, bucket
   real, dimension(1) :: &
        t_atm,     q_atm,      u_atm,     v_atm,              &
        p_atm,     z_atm,      t_ca,                          &
@@ -608,7 +639,9 @@ subroutine surface_flux_0d (                                                 &
        w_atm,     u_star,     b_star,    q_star,             &
        cd_m,      cd_t,       cd_q
   real, dimension(1) :: q_surf
-
+  real, dimension(1) :: bucket_depth                                 !RG Add bucket 
+  real, dimension(1) :: depth_change_lh_1d                           !RG Add bucket
+  real, dimension(1) :: depth_change_conv_1d, depth_change_cond_1d   !RG Add bucket
 
   avail = .true.
 
@@ -635,7 +668,8 @@ subroutine surface_flux_0d (                                                 &
 
   call surface_flux_1d (                                                 &
        t_atm,     q_atm,      u_atm,     v_atm,     p_atm,     z_atm,    &
-       p_surf,    t_surf,     t_ca,      q_surf,                         &
+       p_surf,    t_surf,     t_ca,      q_surf, bucket, bucket_depth,   & !RG Add bucket
+       depth_change_lh_1d, depth_change_conv_1d, depth_change_cond_1d,   & !RG Add bucket
        u_surf,    v_surf,                                                &
        rough_mom, rough_heat, rough_moist, rough_scale, gust,            &
        flux_t, flux_q, flux_r, flux_u, flux_v,                           &
@@ -671,7 +705,8 @@ end subroutine surface_flux_0d
 
 subroutine surface_flux_2d (                                           &
      t_atm,     q_atm_in,   u_atm,     v_atm,     p_atm,     z_atm,    &
-     p_surf,    t_surf,     t_ca,      q_surf,                         &
+     p_surf,    t_surf,     t_ca,      q_surf, bucket, bucket_depth,   & !RG Add bucket
+     depth_change_lh,   depth_change_conv,   depth_change_cond,        & !RG Add bucket
      u_surf,    v_surf,                                                &
      rough_mom, rough_heat, rough_moist, rough_scale, gust,            &
      flux_t,    flux_q,     flux_r,    flux_u,    flux_v,              &
@@ -695,6 +730,9 @@ subroutine surface_flux_2d (                                           &
        w_atm,     u_star,     b_star,    q_star,             &
        cd_m,      cd_t,       cd_q
   real, intent(inout), dimension(:,:) :: q_surf
+  real, intent(inout), dimension(:,:) :: bucket_depth ! RG Add bucket
+  real, intent(inout), dimension(:,:) :: depth_change_lh ! RG Add bucket
+  real, intent(in), dimension(:,:)    :: depth_change_conv, depth_change_cond ! RG Add bucket
   real, intent(in) :: dt
 
   ! ---- local vars -----------------------------------------------------------
@@ -703,7 +741,8 @@ subroutine surface_flux_2d (                                           &
   do j = 1, size(t_atm,2)
      call surface_flux_1d (                                           &
           t_atm(:,j),     q_atm_in(:,j),   u_atm(:,j),     v_atm(:,j),     p_atm(:,j),     z_atm(:,j),    &
-          p_surf(:,j),    t_surf(:,j),     t_ca(:,j),      q_surf(:,j),                                   &
+          p_surf(:,j),    t_surf(:,j),     t_ca(:,j),      q_surf(:,j),    bucket_depth(:,j),             & !RG Add bucket
+          depth_change_lh(:,j), depth_change_conv(:,j), depth_change_cond(:,j),                           & !RG Add bucket
           u_surf(:,j),    v_surf(:,j),                                                                    &
           rough_mom(:,j), rough_heat(:,j), rough_moist(:,j), rough_scale(:,j), gust(:,j),                 &
           flux_t(:,j),    flux_q(:,j),     flux_r(:,j),    flux_u(:,j),    flux_v(:,j),                   &
