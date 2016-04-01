@@ -39,7 +39,7 @@ use             fms_mod, only: FATAL, close_file, mpp_pe, mpp_root_pe, write_ver
 use             fms_mod, only: file_exist, check_nml_error, open_namelist_file, stdlog
 use   monin_obukhov_mod, only: mo_drag, mo_profile
 use  sat_vapor_pres_mod, only: escomp, descomp
-use       constants_mod, only: cp_air, hlv, stefan, rdgas, rvgas, grav, vonkarm
+use       constants_mod, only: cp_air, hlv, stefan, rdgas, rvgas, grav, vonkarm, dens_h2o
 use             mpp_mod, only: input_nml_file
 
 implicit none
@@ -344,7 +344,7 @@ subroutine surface_flux_1d (                                           &
 ! ============================================================================
   ! ---- arguments -----------------------------------------------------------
   logical, intent(in), dimension(:) :: land,  seawater, avail
-  logical, intent(in) :: bucket
+  logical, intent(in) :: bucket         !RG Add bucket
   real, intent(in),  dimension(:) :: &
        t_atm,     q_atm_in,   u_atm,     v_atm,              &
        p_atm,     z_atm,      t_ca,                          &
@@ -424,6 +424,15 @@ subroutine surface_flux_1d (                                           &
      where(avail .and. q_atm_in < 0.0) q_atm = 0.0
   endif
 
+  ! initialize surface air humidity depending on whether surface is dry or wet (bucket empty or not)
+  if (bucket) then
+  where (bucket_depth <= 0.0)
+      q_surf0 = q_atm
+  elsewhere
+      q_surf0 = q_sat    ! everything else assumes saturated sfc humidity
+  end where
+  endif
+
   ! generate information needed by monin_obukhov
   where (avail)
      p_ratio = (p_surf/p_atm)**kappa
@@ -500,32 +509,35 @@ subroutine surface_flux_1d (                                           &
 
      ! evaporation
      rho_drag  =  drag_q * rho
+  end where  
 
 !RG Add bucket - if bucket is on evaluate fluxes based on moisture availability. Land-ocean contrasts are done in idealized_moist in this case
+!RG Note changes to avail statements to allow bucket to be switched on or off
   if (bucket) then
-     ! begin LJJ addition
-     flux_q    =  rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
+    where (avail)
+      ! begin LJJ addition
+      flux_q    =  rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
 
-     depth_change_lh_1d  = flux_q * dt/dens_h2o 
-     where (flux_q > 0.0 .and. bucket_depth < depth_change_lh_1d) ! where more evaporation than what's in bucket, empty bucket
+      depth_change_lh_1d  = flux_q * dt/dens_h2o 
+      where (flux_q > 0.0 .and. bucket_depth < depth_change_lh_1d) ! where more evaporation than what's in bucket, empty bucket
         flux_q = bucket_depth * dens_h2o / dt
         depth_change_lh_1d = flux_q * dt / dens_h2o
-     endwhere 
+      end where 
     
-     where (bucket_depth <= 0.0)
+      where (bucket_depth <= 0.0)
         dedt_surf = 0.
         dedq_surf = 0.
         dedq_atm = 0.
-     elsewhere
+      elsewhere
         dedq_surf = 0.
         dedt_surf =  rho_drag * (q_sat1 - q_sat) *del_temp_inv
         dedq_atm = -rho_drag ! d(latent heat flux)/d(atmospheric mixing ratio)
-     endwhere
-        
+      end where
+    end where    
   else
 
 !RG otherwise revert to simple land model
-
+  where (avail)
      where (land)
 !s      Simplified land model uses simple prefactor in front of qsurf0. Land is therefore basically the same as sea, but with this prefactor, hence the changes to dedq_surf and dedt_surf also.
         flux_q    =  rho_drag * (land_humidity_prefactor*q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
@@ -537,10 +549,13 @@ subroutine surface_flux_1d (                                           &
         flux_q    =  rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
         dedq_surf = 0
         dedt_surf =  rho_drag * (q_sat1 - q_sat) *del_temp_inv
-     endwhere
+     end where
+   end where
   endif
 
 !RG end Add bucket changes
+
+  where (avail)
 
      dedq_atm  = -rho_drag   ! d(latent heat flux)/d(atmospheric mixing ratio)
 
@@ -575,7 +590,7 @@ subroutine surface_flux_1d (                                           &
      q_star     = 0.0
      q_surf     = 0.0
      w_atm      = 0.0
-  endwhere
+  end where
 
   ! calculate d(stress component)/d(atmos wind component)
   dtaudu_atm = 0.0
@@ -626,7 +641,8 @@ subroutine surface_flux_0d (                                                 &
   real, intent(in)    :: dt
 
   ! ---- local vars ----------------------------------------------------------
-  logical, dimension(1) :: land,  seawater, avail, bucket
+  logical, dimension(1) :: land,  seawater, avail
+  logical :: bucket
   real, dimension(1) :: &
        t_atm,     q_atm,      u_atm,     v_atm,              &
        p_atm,     z_atm,      t_ca,                          &
@@ -730,6 +746,7 @@ subroutine surface_flux_2d (                                           &
        w_atm,     u_star,     b_star,    q_star,             &
        cd_m,      cd_t,       cd_q
   real, intent(inout), dimension(:,:) :: q_surf
+  logical, intent(in) :: bucket !RG Add bucket
   real, intent(inout), dimension(:,:) :: bucket_depth ! RG Add bucket
   real, intent(inout), dimension(:,:) :: depth_change_lh ! RG Add bucket
   real, intent(in), dimension(:,:)    :: depth_change_conv, depth_change_cond ! RG Add bucket
@@ -741,7 +758,7 @@ subroutine surface_flux_2d (                                           &
   do j = 1, size(t_atm,2)
      call surface_flux_1d (                                           &
           t_atm(:,j),     q_atm_in(:,j),   u_atm(:,j),     v_atm(:,j),     p_atm(:,j),     z_atm(:,j),    &
-          p_surf(:,j),    t_surf(:,j),     t_ca(:,j),      q_surf(:,j),    bucket_depth(:,j),             & !RG Add bucket
+          p_surf(:,j),    t_surf(:,j),     t_ca(:,j),      q_surf(:,j),  bucket, bucket_depth(:,j),       & !RG Add bucket
           depth_change_lh(:,j), depth_change_conv(:,j), depth_change_cond(:,j),                           & !RG Add bucket
           u_surf(:,j),    v_surf(:,j),                                                                    &
           rough_mom(:,j), rough_heat(:,j), rough_moist(:,j), rough_scale(:,j), gust(:,j),                 &

@@ -32,10 +32,13 @@
  "mixed_layer",     "t_surf",              "t_surf",             "atmos_daily",       "all", .true., "none", 2,
  "atmosphere",      "convection_rain",     "convection_rain",    "atmos_daily",       "all", .true., "none", 2,
  "atmosphere",      "condensation_rain",   "condensation_rain",  "atmos_daily",       "all", .true., "none", 2,
+ "atmosphere",      "bucket_depth",        "bucket_depth",       "atmos_daily",       "all", .true., "none", 2,
+ "atmosphere",      "bucket_depth_cond",   "bucket_depth_cond",  "atmos_daily",       "all", .true., "none", 2,
+ "atmosphere",      "bucket_depth_conv",   "bucket_depth_conv",  "atmos_daily",       "all", .true., "none", 2,
+ "atmosphere",      "bucket_depth_lh",     "bucket_depth_lh",    "atmos_daily",       "all", .true., "none", 2,
  "rrtm_radiation",  "tdt_rad",             "tdt_rad",            "atmos_daily",       "all", .true., "none", 2,
  "rrtm_radiation",  "flux_sw",             "flux_sw",            "atmos_daily",       "all", .true., "none", 2,
  "rrtm_radiation",  "flux_lw",             "flux_lw",            "atmos_daily",       "all", .true., "none", 2,
- "rrtm_radiation",  "rrtm_albedo",         "rrtm_albedo",        "atmos_daily",       "all", .true., "none", 2,
  "rrtm_radiation",  "tdt_sw",              "tdt_sw",             "atmos_daily",       "all", .true., "none", 2,
  "rrtm_radiation",  "tdt_lw",              "tdt_lw",             "atmos_daily",       "all", .true., "none", 2,
  "damping",         "udt_rdamp",           "udt_rdamp",          "atmos_daily",       "all", .true., "none", 2,
@@ -43,7 +46,7 @@
  "damping",         "tdt_diss_rdamp",      "tdt_diss_rdamp",     "atmos_daily",       "all", .true., "none", 2,
  "vert_turb",       "z_pbl",               "z_pbl",              "atmos_daily",       "all", .true., "none", 2,
  "mixed_layer",     "flux_lhe",            "flux_lhe",           "atmos_daily",       "all", .true., "none", 2,
- "mixed_layer",     "ml_heat_cap",         "ml_heat_cap",        "atmos_daily",       "all", .true., "none", 2,
+ "mixed_layer",     "ml_heat_cap",         "ml_heat_cap",        "atmos_daily",       "all", .false., "none", 2,
 #=============================================================================================
 #
 #  FORMATS FOR FILE ENTRIES (not all input values are used)

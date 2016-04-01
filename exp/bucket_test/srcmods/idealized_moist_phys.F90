@@ -8,7 +8,7 @@ module idealized_moist_phys_mod
 
 use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, FATAL, read_data, field_size
 
-use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS !mj cp_air needed for rrtmg !s pstd_mks needed for pref calculation
+use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS, dens_h2o !mj cp_air needed for rrtmg !s pstd_mks needed for pref calculation
 
 use        time_manager_mod, only: time_type, get_time, operator( + )
 
@@ -119,8 +119,8 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, roughness_he
                                       land_option, land_file_name, land_field_name,   & !s options for idealised land
                                       land_roughness_prefactor,                       &
                                       bucket, init_bucket_depth, init_bucket_depth_land, & !RG Add bucket 
-                                      max_bucket_depth_land, robert_bucket, raw_bucket, &
-                                      damping_coeff_bucket
+                                      max_bucket_depth_land, robert_bucket, raw_bucket
+
 
 integer, parameter :: num_time_levels = 2 !RG Add bucket - number of time levels added to allow timestepping in this module
 real, allocatable, dimension(:,:,:)   :: bucket_depth      ! RG Add bucket
@@ -429,6 +429,7 @@ where(land)
   bucket_depth(:,:,1)  = init_bucket_depth_land
   bucket_depth(:,:,2)  = init_bucket_depth_land
 end where
+endif
 !RG end Add bucket
 
 !s end option to alter surface roughness length over land

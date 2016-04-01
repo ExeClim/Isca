@@ -49,7 +49,8 @@
     roughness_heat  = 3.21e-05,
     roughness_moist = 3.21e-05,
     land_roughness_prefactor = 10.0,
-    land_option     = 'input' /
+    land_option     = 'input',
+    bucket          = .true. /
 
  &spectral_init_cond_nml
     initial_temperature  = 264.0,
