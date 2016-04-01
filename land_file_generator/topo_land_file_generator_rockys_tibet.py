@@ -73,16 +73,32 @@ idx = (h_arr_tibet / h_0 > 0.05)
 topo_array[idx] = h_arr_tibet[idx]
 
 #Add back land from Sauliere too. 
+#idx_na = (103.-43./40.*(lon_array-180) < lat_array) & ((lon_array-180)*43./50. -51.8 < lat_array) &( lat_array < 60.)
+#idx_sa = (737.-7.2*(lon_array-180) < lat_array) & ((lon_array-180)*10./7. + -212.1 < lat_array) &( lat_array < -22./45*(lon_array-180) +65.9)
+#idx_ea = (17. <= lat_array) & (lat_array < 60.) & (-5. < lon_array) & ( 43./40.*lon_array -101.25 < lat_array)
+#idx_ea = (17. <= lat_array) & (lat_array < 60.) & (-5. < lon_array) & (137. > lon_array)
+#idx_ea_neg = (17. <= lat_array) & (lat_array < 60.) & (355. < lon_array) 
+#idx_af = (lat_array < 17.) & (-52./27.*lon_array + 7.37 < lat_array) & (52./38.*lon_array -65.1 < lat_array)# 
+#idx_af_neg = (lat_array < 17.) & (-52./27.*(lon_array-360) + 7.37 < lat_array)
+#idx_world = idx_na + idx_sa + idx_ea + idx_ea_neg + idx_af + idx_af_neg
+#land_array[idx_world] = 1.0
+
+#make continents - amended to include India and SouthEast Asia
 
 idx_na = (103.-43./40.*(lon_array-180) < lat_array) & ((lon_array-180)*43./50. -51.8 < lat_array) &( lat_array < 60.)
 idx_sa = (737.-7.2*(lon_array-180) < lat_array) & ((lon_array-180)*10./7. + -212.1 < lat_array) &( lat_array < -22./45*(lon_array-180) +65.9)
-idx_ea = (17. <= lat_array) & (lat_array < 60.) & (-5. < lon_array) & ( 43./40.*lon_array -101.25 < lat_array)
-#idx_ea = (17. <= lat_array) & (lat_array < 60.) & (-5. < lon_array) & (137. > lon_array)
-idx_ea_neg = (17. <= lat_array) & (lat_array < 60.) & (355. < lon_array) 
-idx_af = (lat_array < 17.) & (-52./27.*lon_array + 7.37 < lat_array) & (52./38.*lon_array -65.1 < lat_array) 
-idx_af_neg = (lat_array < 17.) & (-52./27.*(lon_array-360) + 7.37 < lat_array)
-idx_world = idx_na + idx_sa + idx_ea + idx_ea_neg + idx_af + idx_af_neg
+idx_ea = (23. <= lat_array) & (lat_array < 60.) & (-8. < lon_array) & ( 43./40.*lon_array -101.25 < lat_array)
+idx_ea_neg = (23. <= lat_array) & (lat_array < 60.) & (352. < lon_array) 
+idx_af = (lat_array < 23.) & (-52./27.*lon_array + 7.59 < lat_array) & (52./38.*lon_array -65.1 < lat_array) 
+idx_af_neg = (lat_array < 23.) & (-52./27.*(lon_array-360) + 7.59 < lat_array)
+idx_oz = (lat_array > - 35.) & (lat_array < -17.) & (lon_array > 115.) & (lon_array < 150.)
+
+idx_in = (lat_array < 23.) & (-15./8.*lon_array + 152 < lat_array) & (15./13.*lon_array - 81 < lat_array) 
+idx_sea = (lat_array < 23.) & ( 43./40.*lon_array -101.25 < lat_array) & (-14./13.*lon_array +120 < lat_array)
+
+idx_world = idx_na + idx_sa + idx_ea + idx_ea_neg + idx_af + idx_af_neg + idx_oz +idx_sea +idx_in
 land_array[idx_world] = 1.0
+
 
 
 idx = (land_array == 0.) & (topo_array != 0.)
@@ -96,8 +112,9 @@ topo_file = Dataset('land_world_mountains.nc', 'w', format='NETCDF3_CLASSIC')
 lat = topo_file.createDimension('lat', nlat)
 lon = topo_file.createDimension('lon', nlon)
 
-latitudes = topo_file.createVariable('lat','f4',('lat',))
-longitudes = topo_file.createVariable('lon','f4',('lon',))
+
+latitudes = topo_file.createVariable('latitude','f4',('lat',))
+longitudes = topo_file.createVariable('longitude','f4',('lon',))
 topo_array_netcdf = topo_file.createVariable('zsurf','f4',('lat','lon',))
 land_array_netcdf = topo_file.createVariable('land_mask','f4',('lat','lon',))
 
@@ -118,9 +135,9 @@ xi, yi = m(lon_array, lat_array)
 plt.figure()
 m.contour(xi,yi,land_array)
 cs = m.contourf(xi,yi,topo_array, cmap=plt.get_cmap('RdBu_r'))
-plt.xticks(np.linspace(0,360,13))
-plt.yticks(np.linspace(-90,90,7))
+m.drawparallels(np.arange(-60., 61., 30.), labels=[1,0,0,0], fontsize=10)
+m.drawmeridians(np.arange(-180., 181., 30.), labels=[0,0,0,1], fontsize=10)
+m.drawcoastlines()
 cb = plt.colorbar(cs, shrink=0.5, extend='both')
-
+plt.savefig('continents.png')
 plt.show()
-
