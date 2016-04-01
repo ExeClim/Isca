@@ -122,4 +122,4 @@
        tau_min = 2400./
 
  &qflux_nml
-     qflux_amp        = 30. /
+     qflux_amp        = 0. /
