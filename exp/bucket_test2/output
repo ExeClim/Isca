@@ -1,12 +1,14 @@
 loadmodules
 1
 Using the following sourcecode modifications:
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/mixed_layer.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/surface_flux.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 Run in parallel mode
  Makefile is ready.
-mpif90 -Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 -I/usr/local/include   -I/usr/local/include  -fpp -stack_temps -safe_cray_ptr -ftz -i_dynamic -assume byterecl -i4 -r8 -g -O2  -c	/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+mpif90 -Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 -I/usr/local/include   -I/usr/local/include  -fpp -stack_temps -safe_cray_ptr -ftz -i_dynamic -assume byterecl -i4 -r8 -g -O2  -c	/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+mpif90 -Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 -I/usr/local/include   -I/usr/local/include  -fpp -stack_temps -safe_cray_ptr -ftz -i_dynamic -assume byterecl -i4 -r8 -g -O2  -c	/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+mpif90 -Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 -I/usr/local/include   -I/usr/local/include  -fpp -stack_temps -safe_cray_ptr -ftz -i_dynamic -assume byterecl -i4 -r8 -g -O2  -c	/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 mpif90 -Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 -I/usr/local/include   -I/usr/local/include  -fpp -stack_temps -safe_cray_ptr -ftz -i_dynamic -assume byterecl -i4 -r8 -g -O2  -c	/scratch/rg419/GFDL_model/GFDLmoistModel//src/atmos_spectral/driver/solo/atmosphere.F90
 mpif90 -Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 -I/usr/local/include   -I/usr/local/include  -fpp -stack_temps -safe_cray_ptr -ftz -i_dynamic -assume byterecl -i4 -r8 -g -O2  -c	/scratch/rg419/GFDL_model/GFDLmoistModel//src/atmos_solo/atmos_model.F90
 mpif90 -L/sw/netcdf-4.3.0/lib/  mcica_subcol_gen_sw.o rrtmg_lw_rtrnmr.o affinity.o gradient_c2l.o atmosphere.o fms_io.o ic_from_external_file.o rrlw_kg11.o edt.o time_interp_external.o mpp_memutils.o rrsw_cld.o rrlw_kg01.o diag_util.o time_interp.o random_numbers.o mosaic.o memuse.o memutils.o horiz_interp_bicubic.o rrlw_vsn.o rrsw_ref.o gaussian_topog.o diag_axis.o diag_manager.o transforms.o spherical.o rrsw_ncpar.o idealized_moist_phys.o create_xgrid.o interp.o horiz_interp_conserve.o mpp_parameter.o axis_utils.o surface_flux.o platform.o mpp_domains.o diag_grid.o diffusivity.o rrlw_ref.o spherical_fourier.o tridiagonal.o astro.o mpp_io.o sat_vapor_pres_k.o rrtmg_lw_cldprop.o rrtmg_sw_rad.nomcica.o rrsw_tbl.o rrlw_kg12.o rrtmg_lw_rtrn.o rrtmg_lw_setcoef.o rrsw_kg22.o monin_obukhov.o gradient.o fm_util.o fft.o rrlw_kg13.o rrtmg_sw_k_g.o rrtmg_sw_init.o diag_data.o matrix_invert.o rrsw_vsn.o get_cal_time.o read_mosaic.o hs_forcing.o rrtmg_sw_cldprmc.o rrsw_kg21.o constants.o my25_turb.o rrsw_kg24.o rrtmg_lw_cldprmc.o test_mpp_pset.o test_fms_io.o rrsw_kg19.o rrlw_kg16.o rrsw_kg18.o shallow_conv.o grid_fourier.o rrtmg_lw_taumol.o vert_turb_driver.o gauss_and_legendre.o nsclock.o leapfrog.o fft99.o press_and_geopot.o rrsw_kg27.o rrlw_kg04.o water_borrowing.o rrtmg_sw_spcvrt.o parrrtm.o spectral_dynamics.o mpp_data.o parkind.o every_step_diagnostics.o rrlw_kg05.o tracer_manager.o mg_drag.o strat_cloud.o rrsw_kg29.o rrsw_kg20.o mosaic_util.o rrtmg_lw_k_g.o rrtmg_sw_reftra.o rrlw_kg15.o rrsw_con.o rrsw_kg17.o polvani_2004.o jablonowski_2006.o threadloc.o astronomy.o vert_diff.o rrlw_kg10.o rrlw_ncpar.o implicit.o rrlw_con.o two_stream_gray_rad.o qe_moist_convection.o vert_coordinate.o mpp_utilities.o rrlw_kg07.o mpp_pset.o fms.o test_mpp_io.o rrtm_radiation.o diag_output.o rrlw_tbl.o rrsw_wvn.o mcica_random_numbers.o rrlw_kg14.o rrtmg_lw_rad.nomcica.o rrsw_kg28.o fv_advection.o rad_utilities.o rrsw_kg23.o rrtmg_lw_init.o cg_drag.o diag_table.o rrtmg_lw_rtrnmc.o time_manager.o rrlw_cld.o vert_advection.o mcica_subcol_gen_lw.o atmos_model.o stable_bl_turb.o rrlw_kg02.o rrtmg_sw_spcvmc.o polvani_2007.o horiz_interp_spherical.o damping_driver.o rrtmg_sw_setcoef.o rrlw_wvn.o topography.o rrlw_kg06.o monin_obukhov_kernel.o rrsw_aer.o spectral_damping.o horiz_interp.o rrtmg_sw_taumol.o spectral_initialize_fields.o rrtmg_sw_cldprop.o topo_drag.o qflux.o entrain.o rrsw_kg25.o horiz_interp_bilinear.o grid.o betts_miller.o rrsw_kg26.o tracer_type.o sat_vapor_pres.o spec_mpp.o field_manager.o interpolator.o lscale_cond.o rrlw_kg09.o global_integral.o parrrsw.o rrtmg_sw_vrtqdr.o topog_regularization.o mpp.o rrsw_kg16.o rrlw_kg03.o MersenneTwister.o horiz_interp_type.o rrlw_kg08.o test_mpp_domains.o mixed_layer.o test_mpp.o spectral_init_cond.o -o fms_moist.x  -lnetcdff -lnetcdf -lmpi -shared-intel
@@ -64,13 +66,13 @@ NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
 Tabulating mpp_clock statistics across      8 PEs...
 
                                           tmin          tmax          tavg          tstd  tfrac grain pemin pemax
-Total runtime                       694.340431    694.340434    694.340433      0.000001  1.000     0     0     7
+Total runtime                       661.725414    661.725416    661.725415      0.000001  1.000     0     0     7
  MPP_STACK high water mark=           0
 2
 Using the following sourcecode modifications:
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/mixed_layer.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/surface_flux.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 Run in parallel mode
  Makefile is ready.
 make: Nothing to be done for `all'.
@@ -127,13 +129,13 @@ NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
 Tabulating mpp_clock statistics across      8 PEs...
 
                                           tmin          tmax          tavg          tstd  tfrac grain pemin pemax
-Total runtime                       705.880749    705.880751    705.880750      0.000001  1.000     0     0     7
+Total runtime                       639.194965    639.194967    639.194966      0.000001  1.000     0     0     7
  MPP_STACK high water mark=           0
 3
 Using the following sourcecode modifications:
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/mixed_layer.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/surface_flux.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 Run in parallel mode
  Makefile is ready.
 make: Nothing to be done for `all'.
@@ -190,13 +192,13 @@ NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
 Tabulating mpp_clock statistics across      8 PEs...
 
                                           tmin          tmax          tavg          tstd  tfrac grain pemin pemax
-Total runtime                       616.904379    616.904382    616.904380      0.000001  1.000     0     0     7
+Total runtime                       558.425236    558.425238    558.425237      0.000001  1.000     0     0     7
  MPP_STACK high water mark=           0
 4
 Using the following sourcecode modifications:
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/mixed_layer.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/surface_flux.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 Run in parallel mode
  Makefile is ready.
 make: Nothing to be done for `all'.
@@ -253,13 +255,13 @@ NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
 Tabulating mpp_clock statistics across      8 PEs...
 
                                           tmin          tmax          tavg          tstd  tfrac grain pemin pemax
-Total runtime                       627.819794    627.819797    627.819796      0.000001  1.000     0     0     7
+Total runtime                       550.654511    550.654512    550.654512      0.000000  1.000     0     0     7
  MPP_STACK high water mark=           0
 5
 Using the following sourcecode modifications:
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/mixed_layer.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/surface_flux.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 Run in parallel mode
  Makefile is ready.
 make: Nothing to be done for `all'.
@@ -316,13 +318,13 @@ NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
 Tabulating mpp_clock statistics across      8 PEs...
 
                                           tmin          tmax          tavg          tstd  tfrac grain pemin pemax
-Total runtime                       729.075605    729.075608    729.075606      0.000001  1.000     0     0     7
+Total runtime                       633.012336    633.012337    633.012336      0.000000  1.000     0     0     7
  MPP_STACK high water mark=           0
 6
 Using the following sourcecode modifications:
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/mixed_layer.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/surface_flux.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 Run in parallel mode
  Makefile is ready.
 make: Nothing to be done for `all'.
@@ -379,13 +381,13 @@ NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
 Tabulating mpp_clock statistics across      8 PEs...
 
                                           tmin          tmax          tavg          tstd  tfrac grain pemin pemax
-Total runtime                       727.462739    727.462748    727.462740      0.000003  1.000     0     0     7
+Total runtime                       669.298995    669.298996    669.298996      0.000000  1.000     0     0     7
  MPP_STACK high water mark=           0
 7
 Using the following sourcecode modifications:
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/mixed_layer.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/surface_flux.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 Run in parallel mode
  Makefile is ready.
 make: Nothing to be done for `all'.
@@ -442,13 +444,13 @@ NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
 Tabulating mpp_clock statistics across      8 PEs...
 
                                           tmin          tmax          tavg          tstd  tfrac grain pemin pemax
-Total runtime                       738.270767    738.270768    738.270767      0.000000  1.000     0     0     7
+Total runtime                       664.430795    664.430797    664.430796      0.000000  1.000     0     0     7
  MPP_STACK high water mark=           0
 8
 Using the following sourcecode modifications:
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/mixed_layer.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/surface_flux.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 Run in parallel mode
  Makefile is ready.
 make: Nothing to be done for `all'.
@@ -505,13 +507,13 @@ NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
 Tabulating mpp_clock statistics across      8 PEs...
 
                                           tmin          tmax          tavg          tstd  tfrac grain pemin pemax
-Total runtime                       721.079872    721.079874    721.079873      0.000001  1.000     0     0     7
+Total runtime                       637.250458    637.250460    637.250459      0.000001  1.000     0     0     7
  MPP_STACK high water mark=           0
 9
 Using the following sourcecode modifications:
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/mixed_layer.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/surface_flux.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 Run in parallel mode
  Makefile is ready.
 make: Nothing to be done for `all'.
@@ -568,13 +570,13 @@ NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
 Tabulating mpp_clock statistics across      8 PEs...
 
                                           tmin          tmax          tavg          tstd  tfrac grain pemin pemax
-Total runtime                       604.934515    604.934517    604.934516      0.000001  1.000     0     0     7
+Total runtime                       546.915360    546.915361    546.915361      0.000000  1.000     0     0     7
  MPP_STACK high water mark=           0
 10
 Using the following sourcecode modifications:
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/mixed_layer.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/surface_flux.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 Run in parallel mode
  Makefile is ready.
 make: Nothing to be done for `all'.
@@ -631,13 +633,13 @@ NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
 Tabulating mpp_clock statistics across      8 PEs...
 
                                           tmin          tmax          tavg          tstd  tfrac grain pemin pemax
-Total runtime                       606.659704    606.659705    606.659704      0.000000  1.000     0     0     7
+Total runtime                       552.510579    552.510584    552.510583      0.000001  1.000     0     0     7
  MPP_STACK high water mark=           0
 11
 Using the following sourcecode modifications:
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/mixed_layer.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/surface_flux.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 Run in parallel mode
  Makefile is ready.
 make: Nothing to be done for `all'.
@@ -694,13 +696,13 @@ NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
 Tabulating mpp_clock statistics across      8 PEs...
 
                                           tmin          tmax          tavg          tstd  tfrac grain pemin pemax
-Total runtime                       694.864845    694.864847    694.864846      0.000001  1.000     0     0     7
+Total runtime                       643.750438    643.750442    643.750440      0.000002  1.000     0     0     7
  MPP_STACK high water mark=           0
 12
 Using the following sourcecode modifications:
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/mixed_layer.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/surface_flux.F90
-/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test/srcmods/idealized_moist_phys.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/mixed_layer.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/surface_flux.F90
+/scratch/rg419/GFDL_model/GFDLmoistModel//exp/bucket_test2/srcmods/idealized_moist_phys.F90
 Run in parallel mode
  Makefile is ready.
 make: Nothing to be done for `all'.
@@ -757,7 +759,7 @@ NOTE from PE    0: MPP_IO_SET_STACK_SIZE: stack size set to     327680.
 Tabulating mpp_clock statistics across      8 PEs...
 
                                           tmin          tmax          tavg          tstd  tfrac grain pemin pemax
-Total runtime                       699.450138    699.450140    699.450139      0.000001  1.000     0     0     7
+Total runtime                       670.840025    670.840028    670.840026      0.000001  1.000     0     0     7
  MPP_STACK high water mark=           0
 finished
 Notes on this run as follows:
