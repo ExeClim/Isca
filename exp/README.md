@@ -26,7 +26,7 @@ prepending /scratch/jp492/envs/jpgfdl/bin to PATH
 (jpgfdl)jp492@emps-gv4:~$  export GFDL_BASE=/scratch/jp492/GFDLmoistModel
 (jpgfdl)jp492@emps-gv4:~$  export GFDL_DATA=/scratch/jp492/gfdl_data
 ```
-3. Navigate to `src/shared/python` and install the `gfdl` library in development mode:
+3. Navigate to `src/extra/python` and install the `gfdl` library in development mode:
 ```
 (jpgfdl)jp492@emps-gv4:~$ cd $GFDL_BASE/src/extra/python
 (jpgfdl)jp492@emps-gv4:.../python$ pip install -e .

@@ -93,11 +93,10 @@ real    :: depth           = 40.0,         & !s 2013 implementation
            albedo_wdth     = 10.,          & !mj
            higher_albedo   = 0.10,         & !mj
            lat_glacier     = 60.,          & !mj
-           land_h_capacity_prefactor = 1.0,& !s where(land) heat_capcity = land_h_capacity_prefactor * depth * rho_cp
-           land_albedo_prefactor = 1.0
+           land_h_capacity_prefactor = 1.0 !s where(land) heat_capcity = land_h_capacity_prefactor * depth * rho_cp
 
 !s Surface albedo options
-real    :: land__prefactor = 1.0 !s where(land) albedo = land_albedo_prefactor * albedo_value
+real    :: land_albedo_prefactor = 1.0 !s where(land) albedo = land_albedo_prefactor * albedo_value
 
 !s Begin mj extra options
 integer :: albedo_choice    = 1 ! 1->constant or following 'where(land)', 2->NH or SH step, 3->N-S symmetric step, 4->profile with albedo_exp, 5->tanh with albedo_cntr,albedo_wdth
