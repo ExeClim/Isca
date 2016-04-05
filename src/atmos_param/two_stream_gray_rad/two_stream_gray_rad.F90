@@ -297,11 +297,6 @@ end select
                  'daylight fraction of time interval', &
                  'none', missing_value=missing_value      )
   if (lw_scheme.eq.B_GEEN) then
-    id_lw_dtrans  = &
-               register_diag_field ( mod_name, 'lw_dtrans', axes(1:3), Time, &
-                 'LW transmission (non window)', &
-                 'none', missing_value=missing_value      )
-
     id_lw_dtrans_win  = &
                register_diag_field ( mod_name, 'lw_dtrans_win', axes(1:3), Time, &
                  'LW window transmission', &
@@ -313,12 +308,10 @@ end select
                    'SW transmission', &
                    'none', missing_value=missing_value      )
   endif
-  if (lw_scheme.eq.B_BYRNE) then
     id_lw_dtrans  = &
                register_diag_field ( mod_name, 'lw_dtrans', axes(1:3), Time, &
                  'LW transmission (non window)', &
                  'none', missing_value=missing_value      )
-  endif
 return
 end subroutine two_stream_gray_rad_init
 

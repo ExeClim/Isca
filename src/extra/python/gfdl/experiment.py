@@ -113,6 +113,10 @@ class Experiment(object):
 
         self.overwrite_data = overwrite_data
 
+        # a short prefix to go before the month and day in
+        # the `screen` title. Default rm is for "runmonth".
+        self.screen_runmonth_prefix = 'rm'
+
     def use_template_file(self, filename, values):
         """Use a template file for compilation of the code"""
         new_pathname = P(self.rundir, filename)
@@ -258,13 +262,15 @@ class Experiment(object):
         m = self._day_re.search(s)
         try:
             days = int(m.group(1))
-            set_screen_title('rm:%d:%d' % (self._cur_month, days))
+            set_screen_title('%s:%d:%d' %
+                (self.screen_runmonth_prefix, self._cur_month, days))
         except:
             pass
         m = self._month_re.search(s)
         try:
             date = m.group(1)
-            set_screen_title('rm:%s' % date.strip())
+            set_screen_title('%s:%s' %
+                (self.screen_runmonth_prefix, date.strip()))
         except:
             pass
         return clean_log_debug(outputstring)
