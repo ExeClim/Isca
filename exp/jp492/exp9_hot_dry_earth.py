@@ -8,26 +8,45 @@ import numpy as np
 import gfdl.experiment
 
 # create an experiment based on the code version tagged `exoplan0.3`
-exp = gfdl.experiment.Experiment('dry_earth',
-    repo='git@github.com:jamesp/GFDLmoistModel.git',
-    commit='hot-n-dry')
+# exp = gfdl.experiment.Experiment('dry_earth',
+#     repo='git@github.com:jamesp/GFDLmoistModel.git',
+#     commit='hot-n-dry',
+#     overwrite_data=True)
+exp = gfdl.experiment.Experiment('dry_earth', overwrite_data=True)
+
 
 # compiles source code to exp.execdir
+exp.disable_rrtm()
 exp.compile()
 
 # setup the namelist:
-# - Frierson gray radiation
-# - No diurnal or seasonal cycle
+# - No limits on temperature
+# - Initial temperature of 1200K
 # - 25 vertical levels (26 half levels)
-exp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
-exp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
-exp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False
+# - tidally locked at Earth rotation rate
 exp.namelist['spectral_dynamics_nml']['num_levels'] = 25
+exp.namelist['spectral_dynamics_nml']['valid_range_t'] = [100, 5000]
+
+# Use the Frierson radiation scheme, with day-night sides.
+exp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = 'frierson'
+exp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = True
+
+exp.namelist['astronomy_nml'] = {
+    'ecc': 0.0,
+    'obliq': 0.0
+}
+
+omega = 7.2921150e-5
+orbital_period = 2*np.pi / omega
+exp.namelist['constants_nml'] = {
+    'omega': omega,
+    'orbital_period': orbital_period
+}
 
 # don't use a calendar, but do use 30 day "months"
 exp.namelist['main_nml'] = {
     'dt_atmos': 900,
-    'seconds': 86400.0*30,
+    'seconds': 86400.0*5,
     'calendar': 'no_calendar'
 }
 
