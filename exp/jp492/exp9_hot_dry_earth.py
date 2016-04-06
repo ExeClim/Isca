@@ -26,10 +26,12 @@ exp.compile()
 # - tidally locked at Earth rotation rate
 exp.namelist['spectral_dynamics_nml']['num_levels'] = 25
 exp.namelist['spectral_dynamics_nml']['valid_range_t'] = [100, 5000]
+exp.namelist['spectral_init_cond_nml']['initial_temperature'] = 2000
 
 # Use the Frierson radiation scheme, with day-night sides.
 exp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = 'frierson'
 exp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = True
+exp.namelist['two_stream_gray_rad_nml']['solar_constant'] = 3.4e6
 
 exp.namelist['astronomy_nml'] = {
     'ecc': 0.0,
@@ -46,9 +48,12 @@ exp.namelist['constants_nml'] = {
 # don't use a calendar, but do use 30 day "months"
 exp.namelist['main_nml'] = {
     'dt_atmos': 900,
-    'seconds': 86400.0*5,
+    'seconds': 86400.0*30,
     'calendar': 'no_calendar'
 }
+
+
+
 
 # Setup a diag_table
 # - Record daily and every 6 hours
