@@ -63,7 +63,7 @@ baseexp.clear_rundir()
 
 #s Namelist changes from default values
 baseexp.namelist['main_nml'] = {
-     'days'   : 1,	
+     'days'   : 30,	
      'hours'  : 0,
      'minutes': 0,
      'seconds': 0,			
@@ -111,7 +111,7 @@ baseexp.namelist['qflux_nml']['qflux_amp'] = 0.0
 
 
 for evap_res in [0.7]:
-    evap_res_name = 1
+    evap_res_name = 6
     exp = Experiment('co2_test_fresh_%d' % evap_res_name)
     exp.clear_rundir()
 
