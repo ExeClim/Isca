@@ -79,7 +79,7 @@ real :: realnumber
 ! </DATA>
 
 real, public, parameter :: EARTH_GRAV = 9.80
-real, public, parameter :: RDGAS  = 287.04
+real, public, parameter :: RDGAS  = 3605.38
 real, public, parameter :: KAPPA  = 2./7.
 real, public, parameter :: CP_AIR = RDGAS/KAPPA
 real, public, parameter :: CP_OCEAN = 3989.24495292815
@@ -173,8 +173,8 @@ real, public, parameter :: WTMCFC12 = 120.9135
 real, public, parameter :: DIFFAC = 1.660000E+00
 real, public, parameter :: SECONDS_PER_DAY  = 8.640000E+04, SECONDS_PER_HOUR = 3600., SECONDS_PER_MINUTE=60.
 real, public, parameter :: AVOGNO = 6.023000E+23
-real, public, parameter :: PSTD   = 1.013250E+06
-real, public, parameter :: PSTD_MKS    = 101325.0
+real, public, parameter :: PSTD   = 3.0E+06
+real, public, parameter :: PSTD_MKS    = 3.0E+05
 !real, public, parameter :: REARTH  = 6.356766E+08 !pjp Not used anywhere.
 
 ! <DATA NAME="RADCON" UNITS="deg sec/(cm day)" TYPE="real" DEFAULT="((1.0E+02*GRAV)/(1.0E+04*CP_AIR))*SECONDS_PER_DAY">

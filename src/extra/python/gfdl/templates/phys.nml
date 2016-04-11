@@ -114,3 +114,6 @@
 
  &qflux_nml
      qflux_amp        = 30. /
+
+ &constants_nml
+     /
