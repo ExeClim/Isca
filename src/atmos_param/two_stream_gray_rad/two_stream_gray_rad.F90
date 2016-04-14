@@ -32,7 +32,7 @@ module two_stream_gray_rad_mod
 
    use    diag_manager_mod,   only: register_diag_field, send_data
 
-   use    time_manager_mod,   only: time_type, &
+   use    time_manager_mod,   only: time_type, length_of_year, length_of_day, &
                                     operator(+), operator(-), operator(/=), get_time
    ! use rrtm_astro,            only: compute_zenith, astro_init, solday
 
@@ -334,8 +334,8 @@ real, intent(out), dimension(:,:)   :: surf_lw_down
 real, intent(in), dimension(:,:,:)  :: t, q,  p_half
 integer :: i, j, k, n, dyofyr
 
-integer :: seconds
-real :: frac_of_day, frac_of_year, gmt, time_since_ae, rrsun
+integer :: seconds, year_in_s
+real :: frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s
 logical :: used
 
 ! Byrne + O'Gorman rad scheme parameters
@@ -354,8 +354,12 @@ n = size(t,3)
 if (do_seasonal) then
   ! Seasonal Cycle: Use astronomical parameters to calculate insolation
   call get_time(Time_diag, seconds)
-  frac_of_day = seconds / seconds_per_sol
-  frac_of_year = seconds / orbital_period
+  call get_time(length_of_year(), year_in_s)
+  day_in_s = length_of_day()
+  frac_of_day = seconds / day_in_s
+  frac_of_year = seconds / year_in_s
+  write (*,*) 'day diff:', day_in_s - seconds_per_sol
+  write (*,*) 'year diff:', year_in_s - orbital_period
   gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
   time_since_ae = abs(mod(frac_of_year, 1.0)) * 2.0 * pi
   call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)

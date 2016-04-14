@@ -23,7 +23,7 @@ use fms_mod,           only: open_namelist_file, fms_init, &
                              FATAL, NOTE, WARNING, close_file
 use time_manager_mod,  only: time_type, set_time, get_time, &
                              get_date_julian, set_date_julian, &
-                             set_date, length_of_year, &
+                             set_date, length_of_year, length_of_day, &
                              time_manager_init, &
                              operator(-), operator(+), &
                              operator( // ), operator(<), get_calendar_type, NO_CALENDAR
