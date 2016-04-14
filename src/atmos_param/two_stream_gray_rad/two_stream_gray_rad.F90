@@ -358,8 +358,6 @@ if (do_seasonal) then
   day_in_s = length_of_day()
   frac_of_day = seconds / day_in_s
   frac_of_year = seconds / year_in_s
-  write (*,*) 'day diff:', day_in_s - seconds_per_sol
-  write (*,*) 'year diff:', year_in_s - orbital_period
   gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
   time_since_ae = abs(mod(frac_of_year, 1.0)) * 2.0 * pi
   call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
