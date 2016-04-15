@@ -3,7 +3,7 @@ import os
 
 from gfdl.experiment import Experiment, DiagTable
 
-baseexp = Experiment('rrtm_astro_new', overwrite_data=True)
+baseexp = Experiment('rrtm_astro_time_manager_new', overwrite_data=True)
 
 #s Define input files for experiment - by default they are found in exp_dir/input/
 
@@ -80,14 +80,16 @@ baseexp.namelist['qflux_nml']['qflux_amp'] = 0.0
 
 baseexp.namelist['astronomy_nml']['ecc'] = 0.0 #s make orbit circular. 
 
+baseexp.namelist['rrtm_radiation_nml']['solr_cnst'] = 1360. #s set solar constant to 1360, rather than default of 1368.22
+
 #s Using perpetual equinox
 #baseexp.namelist['astro_nml']['solday'] = 90.0 
 #s End namelist changes from default values
 
 
-for evap_res in [1]:
+for evap_res in [2]:
     evap_res_name = evap_res
-    exp = Experiment('rrtm_new_%d' % evap_res_name)
+    exp = Experiment('rrtm_time_manager_new_%d' % evap_res_name, overwrite_data=True)
     exp.clear_rundir()
 
     exp.use_diag_table(diag)
@@ -97,11 +99,6 @@ for evap_res in [1]:
 
     exp.namelist = baseexp.namelist.copy()
 
-    if evap_res==2:  
-       exp.namelist['rrtm_radiation_nml']['do_rad_time_avg']=False
-
     exp.namelist['surface_flux_nml']['land_humidity_prefactor'] = 0.7
 
     exp.runmonth(1, use_restart=False)
-#    for i in range(2, 20):
-#        exp.runmonth(i)
