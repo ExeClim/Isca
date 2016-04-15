@@ -723,6 +723,9 @@
          enddo
          !mj swhrc(iplon,nlayers) = 0._rb ! AM2 radiation does not set the top layer to zero artificially
          !mj swhr(iplon,nlayers) = 0._rb ! AM2 radiation does not set the top layer to zero artificially
+	 !mj RRTM sets top layer SW heating to zero. AM2 radiation does not do that
+         swhrc(iplon,nlayers) = 0._rb 
+         swhr(iplon,nlayers) = 0._rb 
 
 ! End longitude loop
       enddo

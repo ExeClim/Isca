@@ -695,7 +695,7 @@ call get_grid_domain(is, ie, js, je)
           !h2o=h2o_lower_limit
           ! SW seems to have a problem with too small coszen values. 
           ! anything lower than 0.01 (about 15min) is set to zero
-          where(cosz_rr < 1.e-2)cosz_rr=0.
+!          where(cosz_rr < 1.e-2)cosz_rr=0.
           
           if(include_secondary_gases)then
              call rrtmg_sw &
@@ -729,13 +729,13 @@ call get_grid_domain(is, ie, js, je)
           
           ! make sure we don't have SW radiation at night
           ! there is some optimization possible here: only feed grid points to rrtm_sw where cosz_rr>0
-          do i=1,size(swhr,2)
-             where( cosz_rr <= 0.)
-                swuflx(:,i) = 0.
-                swdflx(:,i) = 0.
-                swhr  (:,i) = 0.
-             endwhere
-          enddo
+!          do i=1,size(swhr,2)
+!             where( cosz_rr <= 0.)
+!                swuflx(:,i) = 0.
+!                swdflx(:,i) = 0.
+!                swhr  (:,i) = 0.
+!             endwhere
+!          enddo
              
           swijk   = reshape(swhr(:,sk:1:-1),(/ si/lonstep,sj,sk /))*daypersec
 
