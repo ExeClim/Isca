@@ -174,7 +174,7 @@
                                                               !  day of the year = solday \in [0,days per year]
         real(kind=rb)      :: equinox_day=0.25                ! fraction of the year defining March equinox \in [0,1]
         real(kind=rb)      :: solr_cnst= 1368.22              ! solar constant [W/m2]
-!---------------------------------------------------------------------------------------------------------------
+!-------------------------------------------------s--------------------------------------------------------------
 !
 !-------------------- diagnostics fields -------------------------------
 
@@ -202,7 +202,7 @@
 !*****************************************************************************************
       module rrtm_radiation
         use parkind, only : im => kind_im, rb => kind_rb
-        use constants_mod,         only: seconds_per_sol, orbital_period, pi
+        use constants_mod,         only: pi
         implicit none
     
       contains
@@ -479,7 +479,7 @@ call get_grid_domain(is, ie, js, je)
 !                                     solrad,solday,equinox_day
           use astronomy_mod,         only: diurnal_solar
           use rrtm_vars
-          use time_manager_mod,only: time_type,get_time,set_time
+          use time_manager_mod,only: time_type,get_time,set_time, length_of_year, length_of_day
           use interpolator_mod,only: interpolator
 
           use diag_manager_mod, only: register_diag_field, send_data
@@ -528,7 +528,8 @@ call get_grid_domain(is, ie, js, je)
           real(kind=rb),dimension(size(q,1),size(q,2)) :: albedo_loc
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: q_tmp
 
-          real :: frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians
+	  integer :: year_in_s
+          real :: frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s
 
           real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
 
@@ -573,23 +574,21 @@ call get_grid_domain(is, ie, js, je)
 ! compute zenith angle
 !  this is also an output, so need to compute even if we read radiation from file
 	     call get_time(Time_loc, seconds)
-	     frac_of_day = seconds / seconds_per_sol
-	     frac_of_year = seconds / orbital_period
+	     call get_time(length_of_year(), year_in_s)
+	     day_in_s = length_of_day()
+	     frac_of_day = seconds / day_in_s
+	     frac_of_year = seconds / year_in_s
 	     gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
 	     time_since_ae = abs(mod(frac_of_year-equinox_day, 1.0)) * 2.0 * pi
 
           if(do_rad_time_avg) then
-	     dt_rad_radians = (dt_rad_avg/seconds_per_sol)*2.0*pi
-!             call compute_zenith(Time_loc,equinox_day,dt_rad_avg,lat,lon,coszen,dyofyr)
+	     dt_rad_radians = (dt_rad_avg/day_in_s)*2.0*pi
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun,dt_rad_radians)
           else
-	     !s copied from two_stream_grey_rad on 12/04/16
 	     ! Seasonal Cycle: Use astronomical parameters to calculate insolation
-
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
-
-             !call compute_zenith(Time_loc,equinox_day,0     ,lat,lon,coszen,dyofyr)
           end if
+
 ! input files: only deal with case where we don't need to call radiation at all
           if(do_read_radiation .and. do_read_sw_flux .and. do_read_lw_flux) then
              call interpolator( rad_interp, Time_loc, p_half, tdt_rrtm, trim(radiation_file))
