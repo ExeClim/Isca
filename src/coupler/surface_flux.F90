@@ -264,6 +264,7 @@ logical :: do_simple             = .false.
 real    :: land_humidity_prefactor  =  1.0    !s Default is that land makes no difference to evaporative fluxes
 
 real    :: flux_heat_gp  =  5.7    !s Default value for Jupiter of 5.7 Wm^-2
+real    :: diabatic_acce =  1.0    !s Diabatic acceleration??
 
 
 namelist /surface_flux_nml/ no_neg_q,             &
@@ -278,7 +279,8 @@ namelist /surface_flux_nml/ no_neg_q,             &
                             raoult_sat_vap,       &
                             do_simple,            &
                             land_humidity_prefactor, & !s Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
-                            flux_heat_gp          !s prescribed lower boundary heat flux on a giant planet
+                            flux_heat_gp,         &    !s prescribed lower boundary heat flux on a giant planet
+			    diabatic_acce
 
 
 
@@ -906,7 +908,7 @@ integer   , intent(in) :: num_levels
 
 ! add the internal heat flux
 dt_tg(:,:,num_levels) = dt_tg(:,:,num_levels)                          &
-  + grav*flux_heat_gp/(cp_air*(p_half(:,:,num_levels+1)    &
+  + diabatic_acce*grav*flux_heat_gp/(cp_air*(p_half(:,:,num_levels+1)    &
   - p_half(:,:,num_levels)))
 
 

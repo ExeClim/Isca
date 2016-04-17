@@ -103,6 +103,7 @@ real    :: lw_tau_0_gp        = 50.0
 real    :: sw_tau_0_gp        = 3.0
 real    :: lw_tau_exponent_gp = 2.0 
 real    :: sw_tau_exponent_gp = 1.0
+real    :: diabatic_acce = 1.0
 real,save :: gp_albedo, Ga_asym, g_asym
 
 
@@ -125,7 +126,8 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            linear_tau, del_sw, wv_exponent, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
-           ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme
+           ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme,&
+	   diabatic_acce !Schneider Liu values
 
 
 !==================================================================================
@@ -389,8 +391,9 @@ if (do_seasonal) then
   insolation = solar_constant * coszen
 else
   ! Default: Permanent equinox at all longitudes
-  p2          = (1. - 3.*sin(lat)**2)/4.
-  insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
+!  p2          = (1. - 3.*sin(lat)**2)/4.
+!  insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
+   insolation = (solar_constant/pi)*cos(lat)
 end if
 
 select case(sw_scheme)
@@ -643,7 +646,7 @@ sw_flux  = sw_up - sw_down
 rad_flux = lw_flux + sw_flux
 
 do k = 1, n
-   tdt_rad(:,:,k)   = ( rad_flux(:,:,k+1) - rad_flux(:,:,k) )  &
+   tdt_rad(:,:,k)   = diabatic_acce * ( rad_flux(:,:,k+1) - rad_flux(:,:,k) )  &
         * grav/( cp_air*(p_half(:,:,k+1) - p_half(:,:,k)) )
 
    tdt_solar(:,:,k) = ( sw_flux(:,:,k+1) - sw_flux(:,:,k) )  &
