@@ -288,11 +288,11 @@ subroutine constants_init
     10 call close_file (unit)
 
 
-    ! SECONDS_PER_SOL is the exoplanet equivalent of seconds_per_day.
-    ! It is the number of seconds between sucessive solar zeniths at longitude 0.
-    ! (The concept of seconds_per_day is kept as seconds per earth day
-    ! as this is too integral to the model calendar to change.)
-    ! For Earth parameters, SECONDS_PER_SOL == SECONDS_PER_DAY
+    !> SECONDS_PER_SOL is the exoplanet equivalent of seconds_per_day.
+    !! It is the number of seconds between sucessive solar zeniths at longitude 0.
+    !! (The concept of seconds_per_day is kept as seconds per earth day
+    !! as this is too integral to the model calendar to change.)
+    !! For Earth parameters, SECONDS_PER_SOL == SECONDS_PER_DAY
     orbit_rate = 2*pi / orbital_period
     seconds_per_sol = 2*pi / (omega - orbit_rate)
 

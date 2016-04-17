@@ -9,8 +9,11 @@ P = gfdl.experiment.P
 args = sys.argv[1:]
 ratios = [int(arg) for arg in args]
 
-#omega = 7.2921150e-5
-orbital_period = 365.25*86400.0
+# Vary both the omega and orbital period in unison
+#   so that the planet remains tidally locked.
+
+omega = 7.2921150e-5
+earth_orbital_period = 365.25*86400.0
 
 #ratios = [360, 180, 90, 45, 30, 15, 4, 2, 1]
 
@@ -67,10 +70,12 @@ diag.add_field('mixed_layer', 'flux_t')
 
 
 for ratio in ratios:
-    exp = gfdl.experiment.Experiment('exp2_ratio_%d' % ratio)
+    exp = gfdl.experiment.Experiment('exp8_ratio_%d' % ratio)
     exp.clear_rundir()
-
-    omega  = 2*np.pi / orbital_period * ratio
+    exp.screen_runmonth_prefix = 'r%d' % ratio
+    orbital_period = earth_orbital_period / ratio
+    omega  = 2*np.pi / orbital_period
+    #orbital_period = 2*np.pi / omega * ratio
 
     exp.use_diag_table(diag)
     exp.execdir = baseexp.execdir
@@ -83,5 +88,5 @@ for ratio in ratios:
     }
 
     exp.runmonth(1, use_restart=False)
-    for i in range(2, 161):
+    for i in range(2, 81):  # 81, 161
         exp.runmonth(i)
