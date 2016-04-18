@@ -69,8 +69,9 @@ real :: initial_temperature=264.
 character(len=64) :: topography_option = 'flat'  ! realistic topography computed from high resolution raw data
 character(len=64) :: topog_file_name  = 'topography.data.nc'
 character(len=64) :: topog_field_name = 'zsurf'
+character(len=256) :: land_field_name = 'land_mask'
 
-namelist / spectral_init_cond_nml / initial_temperature, topography_option, topog_file_name, topog_field_name
+namelist / spectral_init_cond_nml / initial_temperature, topography_option, topog_file_name, topog_field_name, land_field_name
 
 contains
 
@@ -167,6 +168,7 @@ logical, intent(in), optional, dimension(:,:) :: ocean_mask_in
 real,    dimension(size(surf_geopotential,1)  ) :: deg_lon
 real,    dimension(size(surf_geopotential,2)  ) :: deg_lat
 real,    dimension(size(surf_geopotential,1),size(surf_geopotential,2)) :: surf_height
+real,    dimension(size(surf_geopotential,1),size(surf_geopotential,2)) :: land_ones
 logical, dimension(size(surf_geopotential,1),size(surf_geopotential,2)) :: ocean_mask
 complex, allocatable, dimension(:,:) :: spec_tmp
 real :: fraction_smoothed, lambda
@@ -193,18 +195,57 @@ else if(trim(topography_option) == 'input') then
        call error_mesg ('get_topography','Topography file contains data on a '// &
               ctmp1//' grid, but atmos model grid is '//ctmp2, FATAL)
      endif
-
-!    Spectrally truncate the topography
-     call get_spec_domain(ms, me, ns, ne)
-     allocate(spec_tmp(ms:me, ns:ne))
-     call trans_grid_to_spherical(surf_height,spec_tmp)
-     call trans_spherical_to_grid(spec_tmp,surf_height)
-     deallocate(spec_tmp)
-     surf_geopotential = grav*surf_height
    else
      call error_mesg('get_topography','topography_option="'//trim(topography_option)//'"'// &
                      ' but '//trim('INPUT/'//topog_file_name)//' does not exist', FATAL)
    endif
+
+!  RG add lines to read land mask as well as topography, then convert to an ocean_mask for smoothing
+   if(file_exist(trim('INPUT/'//topog_file_name))) then
+     call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat) 
+     call field_size(trim('INPUT/'//topog_file_name), trim(land_field_name), siz)
+     if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
+       call read_data(trim('INPUT/'//topog_file_name), trim(land_field_name), land_ones, grid_domain)
+     else
+       write(ctmp1(1: 4),'(i4)') siz(1)
+       write(ctmp1(9:12),'(i4)') siz(2)
+       write(ctmp2(1: 4),'(i4)') global_num_lon
+       write(ctmp2(9:12),'(i4)') global_num_lat
+       call error_mesg ('get_topography','Land file contains data on a '// &
+              ctmp1//' grid, but atmos model grid is '//ctmp2, FATAL)
+     endif
+   else
+     call error_mesg('get_topography','topography_option="'//trim(topography_option)//'"'// &
+                     ' but '//trim('INPUT/'//topog_file_name)//' does not exist', FATAL)
+   endif
+
+   where(land_ones < 1.) ocean_mask = .true.
+
+   surf_geopotential = grav*surf_height
+
+   if(ocean_topog_smoothing == 0.) then
+!    Spectrally truncate the topography
+     call get_spec_domain(ms, me, ns, ne)
+     allocate(spec_tmp(ms:me, ns:ne))
+     call trans_grid_to_spherical(surf_geopotential,spec_tmp)
+     call trans_spherical_to_grid(spec_tmp,surf_geopotential)
+     deallocate(spec_tmp)
+   else
+     call compute_lambda(ocean_topog_smoothing, ocean_mask, surf_geopotential, lambda, fraction_smoothed)
+
+!  Note that the array surf_height is used here for the smoothed surf_geopotential,
+!  then immediately loaded back into surf_geopotential
+     call regularize(lambda, ocean_mask, surf_geopotential, surf_height, fraction_smoothed)
+     surf_geopotential = surf_height
+
+     if(mpp_pe() == mpp_root_pe()) then
+       print '(/,"Message from subroutine get_topography:")'
+       print '("lambda=",1pe16.8,"  fraction_smoothed=",1pe16.8,/)',lambda,fraction_smoothed
+     endif
+   endif
+
+
+
 
 else if(trim(topography_option) == 'interpolated') then
 
