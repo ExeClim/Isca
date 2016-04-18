@@ -9,8 +9,9 @@ P = gfdl.experiment.P
 args = sys.argv[1:]
 ratios = [int(arg) for arg in args]
 
-#omega = 7.2921150e-5
-orbital_period = 365.25*86400.0
+# Fix omega at Earth value
+omega = 7.2921150e-5
+#orbital_period = 365.25*86400.0
 
 #ratios = [360, 180, 90, 45, 30, 15, 4, 2, 1]
 
@@ -67,10 +68,11 @@ diag.add_field('mixed_layer', 'flux_t')
 
 
 for ratio in ratios:
-    exp = gfdl.experiment.Experiment('exp2_ratio_%d' % ratio)
+    exp = gfdl.experiment.Experiment('exp7_ratio_%d' % ratio)
     exp.clear_rundir()
 
-    omega  = 2*np.pi / orbital_period * ratio
+    #omega  = 2*np.pi / orbital_period * ratio
+    orbital_period = 2*np.pi / omega * ratio
 
     exp.use_diag_table(diag)
     exp.execdir = baseexp.execdir
@@ -83,5 +85,5 @@ for ratio in ratios:
     }
 
     exp.runmonth(1, use_restart=False)
-    for i in range(2, 161):
+    for i in range(2, 161):  # 81, 161
         exp.runmonth(i)

@@ -14,6 +14,9 @@
 |mixed_layer | t_surf |	surface temperature	| (lat, lon) | slab |
 |mixed_layer | albedo | surface albedo | (lat, lon) | static |
 |mixed_layer | ml_heat_cap | mixed layer heat capacity | (lat, lon) | 
+|mixed_layer |	flux_lhe	| latent heat flux up at surface	| (lat,lon) |
+|mixed_layer |	flux_sw	| Net shortwave radiative flux (positive up)	| (phalf,lat,lon) |
+|mixed_layer |	flux_lw	| Net longwave radiative flux (positive up)	 | (phalf,lat,lon) |
 |atmosphere |	rh	  | relative humidity |	(pfull, lat, lon)	|
 |atmosphere |	convection_rain	| Rain from convection scheme	| (lat, lon)	|
 |atmosphere |	condensation_rain |	Large scale resolved rain	| (lat, lon)	|
@@ -29,6 +32,7 @@
 |damping |	vdt_rdamp |	v wind tendency for Rayleigh damping	| (pfull, lat, lon)	|
 |damping |	tdt_diss_rdamp |	Dissipative heating from Rayleigh damping	| (pfull, lat, lon)	|
 |vert_turb|	z_pbl	| depth of planetary boundary layer	| (lat, lon)| 	
-|mixed_layer|	t_surf	| SST 	| (lat, lon)|
+|two_stream |	tdt_rad	|Temperature tendency due to radiation	 | (pfull,lat,lon) |
 
 
+The following variables need to be saved to do pressure interpolation: bk, pk and ps. These should be saved for each output frequency (i.e daily and monthly if both are used).

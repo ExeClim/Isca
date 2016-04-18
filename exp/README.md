@@ -3,6 +3,7 @@
 `gfdl` is a Python module that provides an easy way to configure, compile and run an experiment based on the `GFDLmoistModel` source code.
 
 The primary advantages of using it are:
+
 1. Each experiment is completely isolated - there is no chance another run will overwrite existing data, even if both are run in parallel.
 2. Experiments can be tied to a specific git commit, from which the code will be compiled and run.  This ensures repeatability of results when the same script is run again in the future.
 2. Namelists and diagnostic tables can be created and manipulated in Python.
