@@ -7,7 +7,7 @@ from mpl_toolkits.basemap import Basemap
 t_res = 42
 
 #read in grid from approriate file
-resolution_file = Dataset('gfdl_grid_files/t'+str(t_res)+'.nc', 'r', format='NETCDF3_CLASSIC')
+resolution_file = Dataset('../gfdl_grid_files/t'+str(t_res)+'.nc', 'r', format='NETCDF3_CLASSIC')
 
 lons = resolution_file.variables['lon'][:]
 lats = resolution_file.variables['lat'][:]
