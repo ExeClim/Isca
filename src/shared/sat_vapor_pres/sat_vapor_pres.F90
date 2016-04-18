@@ -526,8 +526,8 @@ private
 !-----------------------------------------------------------------------
 !  parameters for table size and resolution
 
- integer :: tcmin = -160  ! minimum temperature (degC) in lookup table
- integer :: tcmax =  100  ! maximum temperature (degC) in lookup table
+ integer :: tcmin = -160  ! minimum temperature (degC) in lookup table !Note that this value is overwritten if do_simple = .true.
+ integer :: tcmax =  100  ! maximum temperature (degC) in lookup table !Note that this value is overwritten if do_simple = .true.
  integer :: esres =  10   ! table resolution (increments per degree)
  integer :: nsize  ! (tcmax-tcmin)*esres+1    !  lookup table size
  integer :: nlim   ! nsize-1
@@ -2245,7 +2245,7 @@ real,  intent(in),              optional :: hc
   if (mpp_pe() == mpp_root_pe()) write (unit, nml=sat_vapor_pres_nml)
 
   if(do_simple) then
-    tcmin = -173
+    tcmin = -223
     tcmax =  350
   endif
   nsize = (tcmax-tcmin)*esres+1
