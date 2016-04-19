@@ -27,8 +27,9 @@ import numpy as np
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
+import os
 
-def write_land(land_mode='square',boundaries=[20.,60.,20.,60.],continents=['all'],topo_mode='none',mountains=['all'],topo_gauss=[40.,40.,20.,10.,3500.],waterworld=False):
+def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['all'],topo_mode='none',mountains=['all'],topo_gauss=[40.,40.,20.,10.,3500.],waterworld=False):
 
 # Common features of set-ups
     # specify resolution
@@ -175,7 +176,9 @@ def write_land(land_mode='square',boundaries=[20.,60.,20.,60.],continents=['all'
 
 
     #Write land and topography arrays to file
-    topo_file = Dataset('land_world_mountains.nc', 'w', format='NETCDF3_CLASSIC')
+    GFDL_BASE = os.environ['GFDL_BASE']
+    topo_filename = GFDL_BASE + 'exp/' + exp + '/input/land.nc'
+    topo_file = Dataset(topo_filename, 'w', format='NETCDF3_CLASSIC')
     lat = topo_file.createDimension('lat', nlat)
     lon = topo_file.createDimension('lon', nlon)
     latitudes = topo_file.createVariable('lat','f4',('lat',))
@@ -187,6 +190,7 @@ def write_land(land_mode='square',boundaries=[20.,60.,20.,60.],continents=['all'
     topo_array_netcdf[:] = topo_array
     land_array_netcdf[:] = land_array
     topo_file.close()
+    print 'Output written to: ' + topo_filename
 
 
     #Show configuration on screen to allow checking
@@ -208,5 +212,5 @@ def write_land(land_mode='square',boundaries=[20.,60.,20.,60.],continents=['all'
 
 if __name__ == "__main__":
 
-    write_land(land_mode='continents_old',topo_mode='sauliere2012')
+    write_land('test',land_mode='continents')
 
