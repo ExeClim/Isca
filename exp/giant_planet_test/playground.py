@@ -55,7 +55,7 @@ baseexp.namelist['main_nml'] = {
      'hours'  : 0,
      'minutes': 0,
      'seconds': 0,			
-     'dt_atmos':900,
+     'dt_atmos':1800,
      'current_date' : [0001,1,1,0,0,0],
      'calendar' : 'no_calendar'
 }
@@ -71,9 +71,9 @@ baseexp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = 'Schneider'
 baseexp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False
 
 baseexp.namelist['two_stream_gray_rad_nml']['solar_constant'] = 50.7
-baseexp.namelist['two_stream_gray_rad_nml']['diabatic_acce'] = 100.0
+baseexp.namelist['two_stream_gray_rad_nml']['diabatic_acce'] = 10.0
 
-baseexp.namelist['surface_flux_nml']['diabatic_acce'] = 100.0
+baseexp.namelist['surface_flux_nml']['diabatic_acce'] = 10.0
 
 baseexp.namelist['betts_miller_nml']['tau_bm'] = 21600.
 baseexp.namelist['betts_miller_nml']['rhbm'] = 0.0
@@ -90,6 +90,12 @@ baseexp.namelist['spectral_dynamics_nml']['exponent'] = 2.0
 baseexp.namelist['spectral_dynamics_nml']['scale_heights'] = 5.0
 baseexp.namelist['spectral_dynamics_nml']['valid_range_t'] =[50.,800.]
 
+baseexp.namelist['spectral_dynamics_nml']['num_fourier'] = 85
+baseexp.namelist['spectral_dynamics_nml']['num_spherical'] = 86
+baseexp.namelist['spectral_dynamics_nml']['lon_max'] = 256
+baseexp.namelist['spectral_dynamics_nml']['lat_max'] = 128
+baseexp.namelist['spectral_dynamics_nml']['num_levels'] = 30
+
 baseexp.namelist['spectral_init_cond_nml']['initial_temperature'] = 200.
 
 baseexp.namelist['rayleigh_bottom_drag_nml']['kf_days'] = 10.0
@@ -99,7 +105,7 @@ baseexp.namelist['rayleigh_bottom_drag_nml']['H_lambda'] = 1000.0e3
 
 
 
-for exp_number in [20]:
+for exp_number in [21]:
     exp = Experiment('giant_planet_test_%d' % exp_number, overwrite_data=False)
     exp.clear_rundir()
 
