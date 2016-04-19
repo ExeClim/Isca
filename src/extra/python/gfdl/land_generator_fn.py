@@ -35,7 +35,8 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
     # specify resolution
     t_res = 42
     #read in grid from approriate file
-    resolution_file = Dataset('../gfdl_grid_files/t'+str(t_res)+'.nc', 'r', format='NETCDF3_CLASSIC')
+    GFDL_BASE = os.environ['GFDL_BASE']
+    resolution_file = Dataset(GFDL_BASE + 'src/extra/python/scripts/gfdl_grid_files/t'+str(t_res)+'.nc', 'r', format='NETCDF3_CLASSIC')
     lons = resolution_file.variables['lon'][:]
     lats = resolution_file.variables['lat'][:]
     lonb = resolution_file.variables['lonb'][:]
@@ -176,7 +177,6 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
 
 
     #Write land and topography arrays to file
-    GFDL_BASE = os.environ['GFDL_BASE']
     topo_filename = GFDL_BASE + 'exp/' + exp + '/input/land.nc'
     topo_file = Dataset(topo_filename, 'w', format='NETCDF3_CLASSIC')
     lat = topo_file.createDimension('lat', nlat)
