@@ -99,7 +99,7 @@ real    :: carbon_conc     = 360.0
 ! constants for SCHNEIDER_LIU radiation version
 real    :: single_albedo      = 0.8
 real    :: back_scatter       = 0.398
-real    :: lw_tau_0_gp        = 50.0
+real    :: lw_tau_0_gp        = 80.0
 real    :: sw_tau_0_gp        = 3.0
 real    :: lw_tau_exponent_gp = 2.0 
 real    :: sw_tau_exponent_gp = 1.0

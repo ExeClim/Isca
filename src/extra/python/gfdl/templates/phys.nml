@@ -117,3 +117,7 @@
 
  &constants_nml
      /
+
+ &rayleigh_bottom_drag_nml
+     /
+

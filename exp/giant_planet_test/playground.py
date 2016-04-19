@@ -84,14 +84,22 @@ baseexp.namelist['constants_nml']['omega'] = 1.7587e-4
 baseexp.namelist['constants_nml']['orbital_period'] = 4332.589*86400.
 
 baseexp.namelist['spectral_dynamics_nml']['reference_sea_level_press'] = 3.0e5
-baseexp.namelist['spectral_dynamics_nml']['surf_res'] = 0.2
+baseexp.namelist['spectral_dynamics_nml']['vert_coord_option'] = 'even_sigma'
+baseexp.namelist['spectral_dynamics_nml']['surf_res'] = 0.1
+baseexp.namelist['spectral_dynamics_nml']['exponent'] = 2.0
 baseexp.namelist['spectral_dynamics_nml']['scale_heights'] = 5.0
 baseexp.namelist['spectral_dynamics_nml']['valid_range_t'] =[50.,800.]
 
 baseexp.namelist['spectral_init_cond_nml']['initial_temperature'] = 200.
 
+baseexp.namelist['rayleigh_bottom_drag_nml']['kf_days'] = 10.0
+baseexp.namelist['rayleigh_bottom_drag_nml']['sigma_b'] = 0.9
+baseexp.namelist['rayleigh_bottom_drag_nml']['rc'] = 0.84
+baseexp.namelist['rayleigh_bottom_drag_nml']['H_lambda'] = 1000.0e3
 
-for exp_number in [18]:
+
+
+for exp_number in [20]:
     exp = Experiment('giant_planet_test_%d' % exp_number, overwrite_data=False)
     exp.clear_rundir()
 
