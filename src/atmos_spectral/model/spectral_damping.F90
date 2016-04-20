@@ -39,6 +39,12 @@ real, allocatable, dimension(:)   :: damping_zmu_sponge, damping_zmv_sponge
 logical :: module_is_initialized = .false.
 integer :: ms, me, ns, ne, num_levels
 
+! begin LJJ addition via ST
+real    :: damping_coeff_vor_local, damping_coeff_div_local, damping_coeff_local
+integer :: damping_order_vor_local, damping_order_div_local, damping_order_local
+logical :: damping_option_exponential = .false.
+! end LJJ addition via ST
+
 character(len=128), parameter :: version = '$Id: spectral_damping.F90,v 17.0 2009/07/21 03:00:53 fms Exp $'
 character(len=128), parameter :: tagname = '$Name: siena_201211 $'
 
@@ -47,12 +53,13 @@ public :: compute_spectral_damping_vor, compute_spectral_damping_div
 
 contains
 !----------------------------------------------------------------------------------------------------------------
-subroutine spectral_damping_init (damping_coeff, damping_order, damping_option, num_fourier, num_spherical, &
+subroutine spectral_damping_init (damping_coeff, damping_order, damping_option, cutoff_wn, num_fourier, num_spherical, &
                                   num_levels_in, eddy_sponge_coeff, zmu_sponge_coeff, zmv_sponge_coeff,     &
                                   damping_coeff_vor, damping_order_vor, damping_coeff_div, damping_order_div, &
                                   damping_coeff_r)
 
 real,    intent(in) :: damping_coeff
+integer, intent(in) :: cutoff_wn
 integer, intent(in) :: damping_order, num_fourier, num_spherical, num_levels_in
 real,    intent(in) :: eddy_sponge_coeff, zmu_sponge_coeff, zmv_sponge_coeff
 character(len=*), intent(in) :: damping_option
@@ -60,9 +67,12 @@ real,    intent(in), optional :: damping_coeff_vor, damping_coeff_div
 integer, intent(in), optional :: damping_order_vor, damping_order_div
 real,    intent(in), optional :: damping_coeff_r ! linear drag coefficient (units = 1/seconds)
 
-real    :: damping_coeff_vor_local, damping_coeff_div_local
-integer :: damping_order_vor_local, damping_order_div_local
-real, dimension(0:num_fourier, 0:num_spherical) :: eigen
+! begin LJJ addition via ST - These vars now defined globally within module
+! real    :: damping_coeff_vor_local, damping_coeff_div_local
+! integer :: damping_order_vor_local, damping_order_div_local
+! end LJJ addition via ST
+
+real, dimension(0:num_fourier, 0:num_spherical) :: eigen, sqrt_eigen
 
 if(module_is_initialized) return
 
@@ -79,6 +89,10 @@ allocate(damping_vor(0:num_fourier, 0:num_spherical))
 allocate(damping_div(0:num_fourier, 0:num_spherical))
 
 call get_eigen_laplacian(eigen)
+
+! begin LJJ addition via ST
+sqrt_eigen = sqrt(eigen)
+! end LJJ addition via ST
 
 if(present(damping_coeff_vor)) then
   damping_coeff_vor_local = damping_coeff_vor
@@ -104,10 +118,34 @@ else
   damping_order_div_local = damping_order
 endif
 
+! begin LJJ addition via ST
+damping_coeff_local = damping_coeff
+damping_order_local = damping_order
+! end LJJ addition via ST
+
 if(trim(damping_option) == 'resolution_dependent') then
   damping    (:,:) = damping_coeff          *((eigen(:,:)/eigen(0,num_spherical-1))**damping_order          )
   damping_vor(:,:) = damping_coeff_vor_local*((eigen(:,:)/eigen(0,num_spherical-1))**damping_order_vor_local)
   damping_div(:,:) = damping_coeff_div_local*((eigen(:,:)/eigen(0,num_spherical-1))**damping_order_div_local)
+  ! begin LJJ addition via ST
+else if(trim(damping_option) == 'exponential_cutoff') then
+   !  implement exponential filter similar to K.S. Smith et al JFM 2002
+   !  note typo in equation B6 of paper (minus sign)
+   !  note damping coefficients are further modified in the compute routines below
+
+   damping_option_exponential = .true.
+
+   where (eigen(:,:)/eigen(0, cutoff_wn) > 1)
+     damping    (:,:) = ((sqrt_eigen(:,:) - sqrt_eigen(0, cutoff_wn) ) & 
+        / ( sqrt_eigen(0, num_spherical-1) - sqrt_eigen(0, cutoff_wn))  )**damping_order_local
+     damping_vor(:,:) = damping
+     damping_div(:,:) = damping
+   elsewhere
+     damping    (:,:) = 0.0
+     damping_vor(:,:) = 0.0
+     damping_div(:,:) = 0.0
+   end where
+! end LJJ addition via ST
 else if(trim(damping_option) == 'resolution_independent') then
   damping    (:,:) = damping_coeff          *(eigen(:,:)**damping_order          )
   damping_vor(:,:) = damping_coeff_vor_local*(eigen(:,:)**damping_order_vor_local)
@@ -137,7 +175,7 @@ complex, intent(in), dimension(:,:,:) :: spec
 real,    intent(in) :: current_dt
 complex, intent(inout), dimension (:,:,:) :: dt_spec
 
-real, dimension(size(spec,1),size(spec,2)) :: coeff
+real, dimension(size(spec,1),size(spec,2)) :: coeff, damping_eff
 
 integer :: k
 
@@ -145,11 +183,19 @@ if(.not.module_is_initialized) then
   call error_mesg('compute_spectral_damping','initialization of spectral_damping not performed', FATAL)
 end if
 
-coeff = 1.0/(1.0 + damping(ms:me,ns:ne)*current_dt)
+! begin LJJ addition via ST
+if(damping_option_exponential) then
+ damping_eff = (exp(log(current_dt*damping_coeff_local+1)*damping(ms:me,ns:ne))-1.0)/current_dt
+else
+ damping_eff = damping(ms:me, ns:ne)
+endif
+
+coeff = 1.0/(1.0 + damping_eff*current_dt)
 
 do k = 1, size(spec,3)
-  dt_spec(:,:,k) =   coeff(:,:) * (dt_spec(:,:,k) - damping(ms:me,ns:ne)*spec(:,:,k))
+  dt_spec(:,:,k) =   coeff(:,:) * (dt_spec(:,:,k) - damping_eff*spec(:,:,k))
 end do
+! end LJJ addition via ST
 
 return
 end subroutine compute_spectral_damping_3d
@@ -160,7 +206,7 @@ complex, intent(in), dimension(ms:me, ns:ne, num_levels) :: vor
 real,    intent(in) :: current_dt
 complex, intent(inout), dimension(ms:me, ns:ne, num_levels) :: dt_vor
 
-real, dimension(ms:me, ns:ne) :: coeff
+real, dimension(ms:me, ns:ne) :: coeff, damping_vor_eff
 
 integer :: k, m, n
 
@@ -168,11 +214,19 @@ if(.not.module_is_initialized) then
   call error_mesg('compute_spectral_damping_vor','initialization of spectral_damping not performed', FATAL)
 end if
 
-coeff = 1.0/(1.0 + damping_vor(ms:me,ns:ne)*current_dt)
+! begin LJJ addition via ST
+if(damping_option_exponential) then
+ damping_vor_eff = (exp(log(current_dt*damping_coeff_vor_local+1)*damping_vor(ms:me,ns:ne))-1.0)/current_dt
+else
+ damping_vor_eff = damping_vor(ms:me,ns:ne)
+endif
+
+coeff = 1.0/(1.0 + damping_vor_eff*current_dt)
 
 do k = 1, size(vor,3)
-  dt_vor(:,:,k) = coeff * (dt_vor(:,:,k) - damping_vor(ms:me,ns:ne)*vor(:,:,k))
+  dt_vor(:,:,k) = coeff * (dt_vor(:,:,k) - damping_vor_eff*vor(:,:,k))
 end do
+! end LJJ addition via ST
 
 do n=ns,ne
   do m=ms,me
@@ -197,7 +251,7 @@ complex, intent(in), dimension(ms:me, ns:ne, num_levels) :: div
 real,    intent(in) :: current_dt
 complex, intent(inout), dimension (ms:me, ns:ne, num_levels) :: dt_div
 
-real, dimension(ms:me, ns:ne) :: coeff
+real, dimension(ms:me, ns:ne) :: coeff, damping_div_eff
 
 integer :: k, m, n
 
@@ -205,11 +259,19 @@ if(.not.module_is_initialized) then
   call error_mesg('compute_spectral_damping_div','initialization of spectral_damping not performed', FATAL)
 end if
 
-coeff = 1.0/(1.0 + damping_div(ms:me,ns:ne)*current_dt)
+! begin LJJ addition via ST
+if(damping_option_exponential) then
+ damping_div_eff = (exp(log(current_dt*damping_coeff_div_local+1)*damping_div(ms:me,ns:ne))-1.0)/current_dt
+else
+ damping_div_eff = damping_div(ms:me,ns:ne)
+endif
+
+coeff = 1.0/(1.0 + damping_div_eff*current_dt)
 
 do k = 1, size(div,3)
-  dt_div(:,:,k) = coeff * (dt_div(:,:,k) - damping_div(ms:me,ns:ne)*div(:,:,k))
+  dt_div(:,:,k) = coeff * (dt_div(:,:,k) - damping_div_eff*div(:,:,k))
 end do
+! end LJJ addition via ST
 
 do n=ns,ne
   do m=ms,me
@@ -234,14 +296,22 @@ complex, intent(in), dimension(:,:) :: spec
 real, intent(in) :: current_dt
 complex, intent(inout), dimension(:,:) :: dt_spec
 
-real, dimension(size(spec,1),size(spec,2)) :: coeff
+real, dimension(size(spec,1),size(spec,2)) :: coeff, damping_eff
 
 if(.not.module_is_initialized) then
   call error_mesg('compute_spectral_damping','initialization of spectral_damping not performed', FATAL)
 end if
 
-coeff = 1.0/(1.0 + damping(ms:me,ns:ne)*current_dt)
-dt_spec = coeff*(dt_spec - damping(ms:me,ns:ne)*spec)
+! begin LJJ addition via ST
+if(damping_option_exponential) then
+ damping_eff = (exp(log(current_dt*damping_coeff_local+1)*damping(ms:me,ns:ne))-1.0)/current_dt
+else
+ damping_eff = damping(ms:me,ns:ne)
+endif
+
+coeff = 1.0/(1.0 + damping_eff*current_dt)
+dt_spec = coeff*(dt_spec - damping_eff*spec)
+! end LJJ addition via ST
 
 return
 end subroutine compute_spectral_damping_2d

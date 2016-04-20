@@ -96,6 +96,11 @@ baseexp.namelist['spectral_dynamics_nml']['lon_max'] = 256
 baseexp.namelist['spectral_dynamics_nml']['lat_max'] = 128
 baseexp.namelist['spectral_dynamics_nml']['num_levels'] = 30
 
+baseexp.namelist['spectral_dynamics_nml']['damping_option'] = 'exponential_cutoff'
+baseexp.namelist['spectral_dynamics_nml']['damping_order'] = 4
+baseexp.namelist['spectral_dynamics_nml']['damping_coeff'] = 1.3889e-04
+baseexp.namelist['spectral_dynamics_nml']['cutoff_wn'] = 30
+
 baseexp.namelist['spectral_init_cond_nml']['initial_temperature'] = 200.
 
 baseexp.namelist['rayleigh_bottom_drag_nml']['kf_days'] = 10.0
@@ -105,7 +110,7 @@ baseexp.namelist['rayleigh_bottom_drag_nml']['H_lambda'] = 1000.0e3
 
 
 
-for exp_number in [21]:
+for exp_number in [22]:
     exp = Experiment('giant_planet_test_%d' % exp_number, overwrite_data=False)
     exp.clear_rundir()
 
@@ -116,6 +121,6 @@ for exp_number in [21]:
 
     exp.namelist = baseexp.namelist.copy()
 
-    exp.runmonth(1, use_restart=False)
+    exp.runmonth(1, use_restart=False,num_cores=4)
     for i in range(2, 49):
          exp.runmonth(i)
