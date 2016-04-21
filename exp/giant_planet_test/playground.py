@@ -15,29 +15,30 @@ baseexp.path_names.insert(0, os.path.join(os.getcwd(),'../../src/atmos_param/ray
 diag = DiagTable()
 
 diag.add_file('atmos_daily', 1, 'days', time_units='days')
+diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 
 # Define diag table entries 
-diag.add_field('dynamics', 'ps', time_avg=True, files=['atmos_daily'])
-diag.add_field('dynamics', 'bk', time_avg=True, files=['atmos_daily'])
-diag.add_field('dynamics', 'pk', time_avg=True, files=['atmos_daily'])
-diag.add_field('dynamics', 'vor', time_avg=True, files=['atmos_daily'])
-diag.add_field('dynamics', 'div', time_avg=True, files=['atmos_daily'])
-diag.add_field('dynamics', 'ucomp', time_avg=True, files=['atmos_daily'])
-diag.add_field('dynamics', 'vcomp', time_avg=True, files=['atmos_daily'])
-diag.add_field('dynamics', 'temp', time_avg=True, files=['atmos_daily'])
-diag.add_field('atmosphere', 'rh', time_avg=True, files=['atmos_daily'])
-diag.add_field('dynamics', 'slp', time_avg=True, files=['atmos_daily'])
-diag.add_field('dynamics', 'omega', time_avg=True, files=['atmos_daily'])
-diag.add_field('dynamics', 'height', time_avg=True, files=['atmos_daily'])
+diag.add_field('dynamics', 'ps', time_avg=True)
+diag.add_field('dynamics', 'bk', time_avg=True)
+diag.add_field('dynamics', 'pk', time_avg=True)
+diag.add_field('dynamics', 'vor', time_avg=True)
+diag.add_field('dynamics', 'div', time_avg=True)
+diag.add_field('dynamics', 'ucomp', time_avg=True)
+diag.add_field('dynamics', 'vcomp', time_avg=True)
+diag.add_field('dynamics', 'temp', time_avg=True)
+diag.add_field('atmosphere', 'rh', time_avg=True)
+diag.add_field('atmosphere', 'sphum', time_avg=True)
+diag.add_field('dynamics', 'omega', time_avg=True)
+diag.add_field('dynamics', 'height', time_avg=True)
 
-diag.add_field('two_stream', 'tdt_rad', time_avg=True, files=['atmos_daily'])
+diag.add_field('two_stream', 'tdt_rad', time_avg=True)
 
-diag.add_field('atmosphere', 'convection_rain', time_avg=True, files=['atmos_daily'])
-diag.add_field('atmosphere', 'condensation_rain', time_avg=True, files=['atmos_daily'])
+diag.add_field('atmosphere', 'convection_rain', time_avg=True)
+diag.add_field('atmosphere', 'condensation_rain', time_avg=True)
 
-diag.add_field('atmosphere', 'diss_heat_ray', time_avg=True, files=['atmos_daily'])
+diag.add_field('atmosphere', 'diss_heat_ray', time_avg=True)
 
-diag.add_field('damping', 'diss_heat_rdamp', time_avg=True, files=['atmos_daily'])
+diag.add_field('damping', 'diss_heat_rdamp', time_avg=True)
 
 
 
@@ -122,5 +123,5 @@ for exp_number in [22]:
     exp.namelist = baseexp.namelist.copy()
 
     exp.runmonth(1, use_restart=False,num_cores=4)
-    for i in range(2, 49):
-         exp.runmonth(i)
+    for i in range(2, 181):
+         exp.runmonth(i,num_cores=4)
