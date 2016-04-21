@@ -6,7 +6,7 @@ module idealized_moist_phys_mod
   use fms_mod, only: open_namelist_file, close_file
 #endif
 
-use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, FATAL, read_data, field_size
+use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, FATAL, read_data, field_size, uppercase
 
 use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS !mj cp_air needed for rrtmg !s pstd_mks needed for pref calculation
 
@@ -25,6 +25,8 @@ use         lscale_cond_mod, only: lscale_cond_init, lscale_cond, lscale_cond_en
 use qe_moist_convection_mod, only: qe_moist_convection_init, qe_moist_convection, qe_moist_convection_end
 
 use        betts_miller_mod, only: betts_miller, betts_miller_init
+
+use      dry_convection_mod, only: dry_convection_init, dry_convection
 
 use        diag_manager_mod, only: register_diag_field, send_data
 
@@ -79,12 +81,19 @@ logical :: turb = .false.
 logical :: do_virtual = .false. ! whether virtual temp used in gcm_vert_diff
 
 !s Convection scheme options
+character(len=256) :: convection_scheme = 'unset'  !< Use a specific convection scheme.  Valid options
+integer, parameter :: UNSET = -1,                & !! are NONE, MOIST_QE, BETTS_MILLER, DRY
+                      NO_CONV = 0,               &
+                      MOIST_QE_CONV = 1,         &
+                      BETTS_MILLER_CONV = 2,     &
+                      DRY_CONV = 3
+integer :: r_conv_scheme = UNSET  ! the selected convection scheme
+
 logical :: lwet_convection = .false.
 logical :: do_bm = .false.
 
 !s Radiation options
 logical :: two_stream_gray = .true.
-
 logical :: do_rrtm_radiation = .false.
 
 !s MiMA uses damping
@@ -112,7 +121,7 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, roughness_he
                                       roughness_moist, roughness_mom, do_virtual,    &
                                       land_option, land_file_name, land_field_name,   & !s options for idealised land
                                       land_roughness_prefactor,               &
-                                      gp_surface
+                                      gp_surface, convection_scheme
 
 real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
@@ -262,8 +271,41 @@ write(stdlog_unit, idealized_moist_phys_nml)
 if(two_stream_gray .and. do_rrtm_radiation) &
    call error_mesg('physics_driver_init','do_grey_radiation and do_rrtm_radiation cannot both be .true.',FATAL)
 
+if(uppercase(trim(convection_scheme)) == 'NONE') then
+  r_conv_scheme = NO_CONV
+  call error_mesg('idealized_moist_phys','No convective adjustment scheme used.', NOTE)
+
+else if(uppercase(trim(convection_scheme)) == 'MOIST_QE') then
+  r_conv_scheme = MOIST_QE_CONV
+  call error_mesg('idealized_moist_phys','Using Frierson Quasi-Equilibrium convection scheme.', NOTE)
+  lwet_convection = .true.
+
+else if(uppercase(trim(convection_scheme)) == 'BETTS_MILLER') then
+  r_conv_scheme = BETTS_MILLER_CONV
+  call error_mesg('idealized_moist_phys','Using Betts-Miller convection scheme.', NOTE)
+  do_bm = .true.
+
+else if(uppercase(trim(convection_scheme)) == 'DRY') then
+  r_conv_scheme = DRY_CONV
+  call error_mesg('idealized_moist_phys','Using dry convection scheme.', NOTE)
+
+else if(uppercase(trim(convection_scheme)) == 'UNSET') then
+  call error_mesg('idealized_moist_phys','determining convection scheme from flags', NOTE)
+  if (lwet_convection) then
+    r_conv_scheme = MOIST_QE_CONV
+    call error_mesg('idealized_moist_phys','Using Frierson Quasi-Equilibrium convection scheme.', NOTE)
+  end if
+  if (do_bm) then
+    r_conv_scheme = BETTS_MILLER_CONV
+    call error_mesg('idealized_moist_phys','Using Betts-Miller convection scheme.', NOTE)
+  end if
+else
+  call error_mesg('idealized_moist_phys','"'//trim(convection_scheme)//'"'//' is not a valid convection scheme.'// &
+      ' Choices are NONE, MOIST_QE, BETTS_MILLER, DRY', FATAL)
+endif
+
 if(lwet_convection .and. do_bm) &
-   call error_mesg('physics_driver_init','lwet_convection and do_bm cannot both be .true.',FATAL)
+  call error_mesg('idealized_moist_phys','lwet_convection and do_bm cannot both be .true.',FATAL)
 
 nsphum = nhum
 Time_step = Time_step_in
@@ -372,11 +414,11 @@ if(trim(land_option) .eq. 'input')then
 	       write(ctmp1(9:12),'(i4)') siz(2)
 	       write(ctmp2(1: 4),'(i4)') global_num_lon
 	       write(ctmp2(9:12),'(i4)') global_num_lat
-	       call error_mesg ('get_land','Land file contains data on a '// &
+	       call error_mesg ('idealized_moist_phys','Land file contains data on a '// &
 	              ctmp1//' grid, but atmos model grid is '//ctmp2, FATAL)
 	     endif
 	   else
-	     call error_mesg('get_land','land_option="'//trim(land_option)//'"'// &
+	     call error_mesg('idealized_moist_phys','land_option="'//trim(land_option)//'"'// &
 	                     ' but '//trim(land_file_name)//' does not exist', FATAL)
 	   endif
 
@@ -457,24 +499,28 @@ id_cond_rain = register_diag_field(mod_name, 'condensation_rain',          &
 id_precip = register_diag_field(mod_name, 'precipitation',          &
      axes(1:2), Time, 'Precipitation from resolved, parameterised and snow','kg/m/m/s')
 
+select case(r_conv_scheme)
 
-if(lwet_convection) then
-   call qe_moist_convection_init()
-endif
+case(MOIST_QE_CONV)
+  call qe_moist_convection_init()
 
-if(do_bm) then
-    call betts_miller_init()
-    !s TODO Think about what fields you still need to register here.
-endif
+case(BETTS_MILLER_CONV)
+  call betts_miller_init()
 
-if(lwet_convection .or. do_bm) then
+case(DRY_CONV)
+  call dry_convection_init(axes, Time)
+
+end select
+
+!jp not sure why these diag_fields are fenced when condensation ones above are not...
+!if(lwet_convection .or. do_bm) then
    id_conv_dt_qg = register_diag_field(mod_name, 'dt_qg_convection',          &
         axes(1:3), Time, 'Moisture tendency from convection','kg/kg/s')
    id_conv_dt_tg = register_diag_field(mod_name, 'dt_tg_convection',          &
         axes(1:3), Time, 'Temperature tendency from convection','K/s')
    id_conv_rain = register_diag_field(mod_name, 'convection_rain',            &
         axes(1:2), Time, 'Rain from convection','kg/m/m/s')
-endif
+!endif
 
 
 if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time)
@@ -536,7 +582,10 @@ else
 endif
 
 rain = 0.0; snow = 0.0; precip = 0.0
-if (lwet_convection) then
+
+select case(r_conv_scheme)
+
+case(MOIST_QE_CONV)
 
    call qe_moist_convection ( delta_t,              tg(:,:,:,previous),      &
     grid_tracers(:,:,:,previous,nsphum),        p_full(:,:,:,previous),      &
@@ -564,9 +613,7 @@ if (lwet_convection) then
    if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
    if(id_conv_rain  > 0) used = send_data(id_conv_rain, rain, Time)
 
-
-else if (do_bm) then
-
+case(BETTS_MILLER_CONV)
    call betts_miller (          delta_t,           tg(:,:,:,previous),       &
     grid_tracers(:,:,:,previous,nsphum),       p_full(:,:,:,previous),       &
                  p_half(:,:,:,previous),                        coldT,       &
@@ -594,13 +641,25 @@ else if (do_bm) then
    if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
    if(id_conv_rain  > 0) used = send_data(id_conv_rain, rain, Time)
 
+case(DRY_CONV)
+    call dry_convection(Time, tg(:, :, :, previous),                         &
+                        p_full(:,:,:,previous), p_half(:,:,:,previous),      &
+                        conv_dt_tg)
 
-else
+    tg_tmp = conv_dt_tg + tg(:,:,:,previous)
+    qg_tmp = grid_tracers(:,:,:,previous,nsphum)
 
+    conv_dt_tg = conv_dt_tg/delta_t
+    if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
+
+case(NO_CONV)
    tg_tmp = tg(:,:,:,previous)
    qg_tmp = grid_tracers(:,:,:,previous,nsphum)
 
-endif
+case default
+  call error_mesg('idealized_moist_phys','Invalid convection scheme.', FATAL)
+
+end select
 
 rain = 0.0; snow = 0.0
 call lscale_cond (         tg_tmp,                          qg_tmp,        &
