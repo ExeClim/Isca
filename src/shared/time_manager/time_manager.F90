@@ -92,7 +92,7 @@ module time_manager_mod
 !    contains three PRIVATE variables: days, seconds and ticks.
 ! </DATA>
 
-use constants_mod, only: rseconds_per_day=>seconds_per_day, orbital_period
+use constants_mod, only: rseconds_per_day=>seconds_per_day, seconds_per_sol, orbital_period
 use fms_mod, only: error_mesg, FATAL, WARNING, write_version_number, stdout
 
 implicit none
@@ -125,6 +125,7 @@ public decrement_date
 public days_in_month
 public leap_year
 public length_of_year
+public length_of_day
 public days_in_year
 public month_name
 
@@ -2848,6 +2849,30 @@ type(time_type), intent(in) :: Time
 leap_year_no_leap = .FALSE.
 
 end function leap_year_no_leap
+
+!> length_of_day returns the number of seconds in a "day".
+!!
+!! On Earth a "day" is considered to be one solar day:
+!!    86400.0 seconds +/- a few milliseconds (ignored)
+!!
+!! On another planet the length depends on the rotation rate
+!! and orbital rate of the planet, given by constant SOLS_PER_DAY.
+!!
+!! * If a specific Earth calendar is used, it is assumed that the length
+!! of a day wanted is 86400.0s, regardless of year length.
+!! * If NO_CALENDAR is used, the length of a solar day is calculated from
+!! the orbital parameters prescribed in constants.f90.
+function length_of_day()
+  real :: length_of_day
+
+  select case(calendar_type)
+  case(NO_CALENDAR)
+    length_of_day = SECONDS_PER_SOL
+  case default
+    length_of_day = SECONDS_PER_DAY
+  end select
+
+end function length_of_day
 
 !END OF leap_year BLOCK
 !==========================================================================

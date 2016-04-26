@@ -17,3 +17,5 @@ exp/st_test*
 *.mod
 postprocessing/plevel_interpolation/scripts/*.nc
 postprocessing/plevel_interpolation/scripts/*.nml
+*land_world_mountains.nc
+*output.txt
