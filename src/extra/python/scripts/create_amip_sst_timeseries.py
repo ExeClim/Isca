@@ -3,6 +3,7 @@ import numpy as np
 from calendar_calc import day_number_to_date
 from netCDF4 import Dataset, date2num
 import pdb
+import create_timeseries as cts
 
 nfiles=50
 
@@ -58,6 +59,9 @@ nphalf=None
 #Find grid and time numbers
 
 ntime=time_arr.day.shape[0]
+nlonb=lonbs_adjusted.shape[0]
+nlatb=latbs_adjusted.shape[0]
+
 
 #Output it to a netcdf file. 
 file_name='sst_clim_amip_test.nc'
