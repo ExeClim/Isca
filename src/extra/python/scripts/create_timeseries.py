@@ -169,7 +169,10 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
 		pfulls[:]     = p_full
 		phalfs[:]     = p_half
 
-	times[:]     = date2num(time_arr,units='days since 0001-01-01 00:00:00.0',calendar='360_day')
+	if type(time_arr[0])!=np.float64:
+		times[:]     = date2num(time_arr,units='days since 0001-01-01 00:00:00.0',calendar='360_day')
+	else:
+		times[:]     = time_arr
 
 	output_array_netcdf[:] = data
 
