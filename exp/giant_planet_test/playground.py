@@ -14,7 +14,7 @@ baseexp.path_names.insert(0, os.path.join(os.getcwd(),'../../src/atmos_param/ray
 
 diag = DiagTable()
 
-diag.add_file('atmos_daily', 1, 'days', time_units='days')
+#diag.add_file('atmos_daily', 1, 'days', time_units='days')
 diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 
 # Define diag table entries 
@@ -27,9 +27,10 @@ diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('atmosphere', 'rh', time_avg=True)
-diag.add_field('atmosphere', 'sphum', time_avg=True)
+diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'omega', time_avg=True)
 diag.add_field('dynamics', 'height', time_avg=True)
+diag.add_field('dynamics', 'EKE', time_avg=True)
 
 diag.add_field('two_stream', 'tdt_rad', time_avg=True)
 
@@ -97,6 +98,8 @@ baseexp.namelist['spectral_dynamics_nml']['lon_max'] = 256
 baseexp.namelist['spectral_dynamics_nml']['lat_max'] = 128
 baseexp.namelist['spectral_dynamics_nml']['num_levels'] = 30
 
+baseexp.namelist['spectral_dynamics_nml']['do_water_correction'] = False
+
 baseexp.namelist['spectral_dynamics_nml']['damping_option'] = 'exponential_cutoff'
 baseexp.namelist['spectral_dynamics_nml']['damping_order'] = 4
 baseexp.namelist['spectral_dynamics_nml']['damping_coeff'] = 1.3889e-04
@@ -109,9 +112,9 @@ baseexp.namelist['rayleigh_bottom_drag_nml']['sigma_b'] = 0.9
 baseexp.namelist['rayleigh_bottom_drag_nml']['rc'] = 0.84
 baseexp.namelist['rayleigh_bottom_drag_nml']['H_lambda'] = 1000.0e3
 
+baseexp.namelist['spectral_dynamics_nml']['initial_sphum'] = 1.e-20
 
-
-for exp_number in [22]:
+for exp_number in [23]:
     exp = Experiment('giant_planet_test_%d' % exp_number, overwrite_data=False)
     exp.clear_rundir()
 
@@ -123,5 +126,5 @@ for exp_number in [22]:
     exp.namelist = baseexp.namelist.copy()
 
     exp.runmonth(1, use_restart=False,num_cores=4)
-    for i in range(2, 181):
+    for i in range(2, 240):
          exp.runmonth(i,num_cores=4)
