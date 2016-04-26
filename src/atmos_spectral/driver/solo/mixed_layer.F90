@@ -78,6 +78,7 @@ logical :: evaporation = .true.
 real    :: qflux_amp = 0.0
 real    :: qflux_width = 16.0  ! width of qflux region in degrees
 logical :: load_qflux = .false.
+logical :: time_varying_qflux = .false.
 real    :: tconst = 305.0
 real    :: delta_T = 40.0
 logical :: prescribe_initial_dist = .false.
@@ -126,7 +127,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               elandlon,elandlat,                             &  !mj
                               land_h_capacity_prefactor,                     &  !s
                               land_albedo_prefactor,                         &  !s
-			      load_qflux,qflux_file_name
+			      load_qflux,qflux_file_name,time_varying_qflux
 
 !=================================================================================================================================
 
@@ -175,6 +176,7 @@ real, allocatable, dimension(:,:)   ::                                        &
 
 !mj read sst from input file
   type(interpolate_type),save :: sst_interp
+  type(interpolate_type),save :: qflux_interp
 
 real inv_cp_air
 
@@ -324,16 +326,15 @@ id_delta_t_surf = register_diag_field(mod_name, 'delta_t_surf',        &
 id_albedo = register_static_field(mod_name, 'albedo',    &
                                  axes(1:2), 'surface albedo', 'none')
 
-
-
-! calculate ocean Q flux
-!rad_qwidth = qflux_width*PI/180.
-!ocean_qflux = qflux_amp*(1-2.*rad_lat_2d**2/rad_qwidth**2) * &
-!        exp(- ((rad_lat_2d)**2/(rad_qwidth)**2))
 ocean_qflux = 0.
 
 ! load Q flux
 if (load_qflux) then
+
+	if (time_varying_qflux) then
+	   call interpolator_init( qflux_interp, trim(qflux_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+	else
+
 	   if(file_exist(trim(qflux_file_name))) then
 	     call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat)
 	     call field_size(trim(qflux_file_name), trim(qflux_field_name), siz)
@@ -351,7 +352,8 @@ if (load_qflux) then
 	     call error_mesg('get_qflux','load_qflux="'//trim('True')//'"'// &
 	                     ' but '//trim(qflux_file_name)//' does not exist', FATAL)
 	   endif
- ! call read_data('INPUT/ocean_qflux.nc', 'ocean_qflux',  ocean_qflux)
+
+	endif
 endif
 
 !s Adding MiMA options for qfluxes.
@@ -541,6 +543,11 @@ alpha_lw = flux_r
 beta_t = dhdt_surf * inv_cp_air + dhdt_atm * inv_cp_air * en_t
 beta_q = dedt_surf + dedq_atm * en_q
 beta_lw = drdt_surf
+
+! If time-varying qflux then update value
+if(load_qflux.and.time_varying_qflux) then 
+         call interpolator( qflux_interp, Time, ocean_qflux, trim(qflux_file_name) )
+endif
 
 !
 ! Implement mixed layer surface boundary condition
