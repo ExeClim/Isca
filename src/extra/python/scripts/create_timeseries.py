@@ -63,20 +63,20 @@ def create_pressures():
 	return p_full,p_half,npfull,nphalf
 
 
-def create_time_arr(num_years,is_climatology):
+def create_time_arr(num_years,is_climatology,time_spacing):
 
 	if(is_climatology):
 		if(num_years!=1.):
 			print 'note that for climatology file only one year is required, so setting num_years=1.'
 		num_days=360.
 		num_years=1.
-		time_spacing=num_days//10
-		day_number = np.linspace(0,num_days,time_spacing+1)
+#		time_spacing=num_days//10
+		day_number = np.linspace(0,num_days,time_spacing+1)[1:]-(num_days/(2.*time_spacing))
 		time_units='days since 0000-01-01 00:00:00.0'
 		print 'when creating a climatology file, the year of the time units must be zero. This is how the model knows it is a climatology.'
 	else:
 		num_days=num_years*360.
-		time_spacing=num_years
+#		time_spacing=num_years
 		day_number = np.linspace(0,num_days,time_spacing+1)
 		time_units='days since 0001-01-01 00:00:00.0'
 
@@ -90,14 +90,22 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
 
 	output_file = Dataset(file_name, 'w', format='NETCDF3_CLASSIC')
 
+	if p_full==None:
+		is_thd=False
+	else:
+		is_thd=True
+
+
 	lat = output_file.createDimension('lat', number_dict['nlat'])
 	lon = output_file.createDimension('lon', number_dict['nlon'])
 
 	latb = output_file.createDimension('latb', number_dict['nlatb'])
 	lonb = output_file.createDimension('lonb', number_dict['nlonb'])
 
-	pfull = output_file.createDimension('pfull', number_dict['npfull'])
-	phalf = output_file.createDimension('phalf', number_dict['nphalf'])
+	if is_thd:
+		pfull = output_file.createDimension('pfull', number_dict['npfull'])
+		phalf = output_file.createDimension('phalf', number_dict['nphalf'])
+
 	time = output_file.createDimension('time', 0) #s Key point is to have the length of the time axis 0, or 'unlimited'. This seems necessary to get the code to run properly. 
 
 	latitudes = output_file.createVariable('lat','d',('lat',))
@@ -105,9 +113,9 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
 
 	latitudebs = output_file.createVariable('latb','d',('latb',))
 	longitudebs = output_file.createVariable('lonb','d',('lonb',))
-
-	pfulls = output_file.createVariable('pfull','d',('pfull',))
-	phalfs = output_file.createVariable('phalf','d',('phalf',))
+	if is_thd:
+		pfulls = output_file.createVariable('pfull','d',('pfull',))
+		phalfs = output_file.createVariable('phalf','d',('phalf',))
 
 	times = output_file.createVariable('time','d',('time',))
 
@@ -129,15 +137,16 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
 	longitudebs.cartesian_axis = 'X'
 	longitudebs.long_name = 'longitude edges'
 
-	pfulls.units = 'hPa'
-	pfulls.cartesian_axis = 'Z'
-	pfulls.positive = 'down'
-	pfulls.long_name = 'full pressure level'
+	if is_thd:
+		pfulls.units = 'hPa'
+		pfulls.cartesian_axis = 'Z'
+		pfulls.positive = 'down'
+		pfulls.long_name = 'full pressure level'
 
-	phalfs.units = 'hPa'
-	phalfs.cartesian_axis = 'Z'
-	phalfs.positive = 'down'
-	phalfs.long_name = 'half pressure level'
+		phalfs.units = 'hPa'
+		phalfs.cartesian_axis = 'Z'
+		phalfs.positive = 'down'
+		phalfs.long_name = 'half pressure level'
 
 
 	times.units = time_units
@@ -145,7 +154,10 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
 	times.calendar_type = 'THIRTY_DAY_MONTHS'
 	times.cartesian_axis = 'T'
 
-	output_array_netcdf = output_file.createVariable(variable_name,'f4',('time','pfull', 'lat','lon',))
+	if is_thd:
+		output_array_netcdf = output_file.createVariable(variable_name,'f4',('time','pfull', 'lat','lon',))
+	else:
+		output_array_netcdf = output_file.createVariable(variable_name,'f4',('time','lat','lon',))
 
 	latitudes[:] = lats
 	longitudes[:] = lons
@@ -153,8 +165,9 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
 	latitudebs[:] = latbs
 	longitudebs[:] = lonbs
 
-	pfulls[:]     = p_full
-	phalfs[:]     = p_half
+	if is_thd:
+		pfulls[:]     = p_full
+		phalfs[:]     = p_half
 
 	times[:]     = date2num(time_arr,units='days since 0001-01-01 00:00:00.0',calendar='360_day')
 

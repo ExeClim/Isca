@@ -12,8 +12,9 @@ p_full,p_half,npfull,nphalf=cts.create_pressures()
 #create times
 is_climatology=False
 num_years=100	
+time_spacing=num_years
 
-time_arr,day_number,ntime,time_units=cts.create_time_arr(num_years,is_climatology)
+time_arr,day_number,ntime,time_units=cts.create_time_arr(num_years,is_climatology, time_spacing)
 
 #create time series based on times
 co2 = np.zeros((ntime, npfull, nlat, nlon))
@@ -22,7 +23,7 @@ for tick in np.arange(0,len(day_number)):
     co2[tick,...] = 300.*(1.01**(day_number[tick]/360.)) #Some scenario in dimensionless units. 1.e-6 is to convert from ppmv. 
 
 #Output it to a netcdf file. 
-file_name='co2_test.nc'
+file_name='co2_test_new_routine_2.nc'
 variable_name='co2'
 
 number_dict={}
