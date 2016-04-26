@@ -265,6 +265,14 @@ call get_deg_lon(deg_lon)
    if(land_capacity .le. 0.) land_capacity = depth*RHO_CP
 !s End MiMA options
 
+	!mj read fixed SSTs
+	if( do_read_sst ) then
+	   call interpolator_init( sst_interp, trim(sst_file)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+	endif
+
+
+
+
 if (file_exist('INPUT/mixed_layer.res.nc')) then
 
    call nullify_domain()
@@ -278,6 +286,7 @@ else if (file_exist('INPUT/swamp.res')) then
   call error_mesg('mixed_layer','mixed_layer restart file not found, using swamp restart file', WARNING)
 
 else if( do_read_sst ) then !s Added so that if we are reading sst values then we can restart using them.
+
    call interpolator( sst_interp, Time, t_surf, trim(sst_file) )
 
 elseif (prescribe_initial_dist) then
@@ -385,12 +394,6 @@ end select
 
 if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
 
-
-
-!mj read fixed SSTs
-if( do_read_sst ) then
-   call interpolator_init( sst_interp, trim(sst_file)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
-endif
 
 !s begin surface heat capacity calculation
    if(.not.do_sc_sst) then
