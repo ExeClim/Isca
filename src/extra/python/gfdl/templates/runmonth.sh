@@ -7,6 +7,8 @@ module list
 
 cd {{ rundir }}
 
+ulimit -s unlimited
+
 # copy and extract the restart information
 {% if restart_file %}
 cd INPUT
