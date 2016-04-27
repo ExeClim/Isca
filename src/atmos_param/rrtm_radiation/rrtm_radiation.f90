@@ -572,7 +572,8 @@ call get_grid_domain(is, ie, js, je)
 	     call get_time(length_of_year(), year_in_s)
 	     day_in_s = length_of_day()
 	     frac_of_day = seconds / day_in_s
-	     frac_of_year = seconds / year_in_s
+!	     frac_of_year = real(days*day_in_s) / real(year_in_s) !s This is the way MJ's astro.f90 does it.
+	     frac_of_year = real(seconds) / real(year_in_s)
 	     gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
 	     time_since_ae = abs(mod(frac_of_year-equinox_day, 1.0)) * 2.0 * pi
 
