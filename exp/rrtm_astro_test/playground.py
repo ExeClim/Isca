@@ -14,7 +14,9 @@ baseexp.inputfiles = [os.path.join(os.getcwd(),'input/ozone_1990.nc'),os.path.jo
 diag = DiagTable()
 
 diag.add_file('atmos_hourly', 1, 'hours', time_units='days')
+diag.add_file('atmos_hourly_mk2', 1, 'hours', time_units='days')
 diag.add_file('atmos_daily', 1, 'days', time_units='days')
+diag.add_file('atmos_daily_mk2', 1, 'days', time_units='days')
 
 # Define diag table entries 
 diag.add_field('dynamics', 'ps', time_avg=True, files=['atmos_hourly'])
@@ -37,7 +39,9 @@ diag.add_field('rrtm_radiation', 'flux_lw', time_avg=True, files=['atmos_hourly'
 diag.add_field('rrtm_radiation', 'tdt_sw', time_avg=True, files=['atmos_hourly'])
 diag.add_field('rrtm_radiation', 'tdt_lw', time_avg=True, files=['atmos_hourly'])
 
-diag.add_field('rrtm_radiation', 'coszen', time_avg=True, files=['atmos_hourly'])
+diag.add_field('rrtm_radiation', 'coszen', time_avg=True, files=['atmos_hourly', 'atmos_daily'])
+
+diag.add_field('rrtm_radiation', 'coszen', time_avg=False, files=['atmos_hourly_mk2','atmos_daily_mk2'])
 
 
 diag.add_field('dynamics', 'ps', time_avg=True, files=['atmos_daily'])
@@ -86,7 +90,7 @@ baseexp.clear_rundir()
 
 #s Namelist changes from default values
 baseexp.namelist['main_nml'] = {
-     'days'   : 5,	
+     'days'   : 2,	
      'hours'  : 0,
      'minutes': 0,
      'seconds': 0,			
@@ -114,13 +118,16 @@ baseexp.namelist['qflux_nml']['qflux_amp'] = 0.0
 baseexp.namelist['astronomy_nml']['ecc'] = 0.0 #s make orbit circular. 
 
 baseexp.namelist['rrtm_radiation_nml']['solr_cnst'] = 1360. #s set solar constant to 1360, rather than default of 1368.22
+baseexp.namelist['rrtm_radiation_nml']['solday'] = 90 #s set solar constant to 1360, rather than default of 1368.22
+baseexp.namelist['rrtm_radiation_nml']['dt_rad'] = 4200 #s set solar constant to 1360, rather than default of 1368.22
+baseexp.namelist['rrtm_radiation_nml']['do_rad_time_avg'] = False #s set solar constant to 1360, rather than default of 1368.22
 
 #s Using perpetual equinox
 #baseexp.namelist['astro_nml']['solday'] = 90.0 
 #s End namelist changes from default values
 
 
-for evap_res in [9]:
+for evap_res in [20]:
     evap_res_name = evap_res
     exp = Experiment('rrtm_time_manager_fresh_%d' % evap_res_name, overwrite_data=True)
     exp.clear_rundir()
