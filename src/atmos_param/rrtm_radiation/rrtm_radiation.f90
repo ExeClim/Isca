@@ -208,7 +208,7 @@
       contains
 
 !*****************************************************************************************
-        subroutine rrtm_radiation_init(axes,Time,ncols,nlay,lonb,latb)
+        subroutine rrtm_radiation_init(axes,Time,ncols,nlay,lonb,latb, Time_step)
 !
 ! Initialize diagnostics, allocate variables, set constants
 !
@@ -224,20 +224,22 @@
           use fms_mod, only:          open_namelist_file, check_nml_error,  &
                                       &mpp_pe, mpp_root_pe, close_file, &
                                       &write_version_number, stdlog, &
-                                      &error_mesg, NOTE, WARNING
-          use time_manager_mod, only: time_type
+                                      &error_mesg, NOTE, WARNING, FATAL
+          use time_manager_mod, only: time_type, length_of_day, get_time
 	  use transforms_mod,   only: get_grid_domain
 ! Local variables
           implicit none
           
           integer, intent(in), dimension(4) :: axes
-          type(time_type), intent(in)       :: Time
+          type(time_type), intent(in)       :: Time, Time_step
           integer(kind=im),intent(in)       :: ncols,nlay
           real(kind=rb),dimension(:,:),intent(in),optional :: lonb,latb !s Changed to 2d arrays as 2013 interpolator expects this. 
 
-          integer :: i,k,seconds
+          integer :: i,k,seconds, time_step_seconds,res
 
           integer :: ierr, io, unit, is, ie, js, je
+
+          real :: day_in_s_check
 
 
 ! read namelist and copy to logfile
@@ -329,6 +331,27 @@
 
           ncols_rrt = ncols/lonstep
           nlay_rrt  = nlay
+
+          call get_time(Time_step,time_step_seconds)
+
+	    if (dt_rad .gt. time_step_seconds) then
+	        res=mod(dt_rad, time_step_seconds)
+
+		if (res.ne.0) then
+			call error_mesg( 'rrtm_gases_init', &
+        	         'dt_rad must be an integer multiple of dt_atmos', FATAL)
+		endif
+
+		day_in_s_check=length_of_day()
+	        res=mod(int(day_in_s_check), dt_rad)
+
+		if (res.ne.0) then
+			call error_mesg( 'rrtm_gases_init', &
+        	         'dt_rad must fit into one day an integer number of times', FATAL)
+		endif
+
+
+	    endif
 
           if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
 
@@ -459,7 +482,7 @@ call get_grid_domain(is, ie, js, je)
         end subroutine interp_temp
 !*****************************************************************************************
 !*****************************************************************************************
-        subroutine run_rrtmg(is,js,Time,lat,lon,p_full,p_half,albedo,q,t,t_surf_rad,tdt,coszen,flux_sw,flux_lw)
+        subroutine run_rrtmg(is,js,Time,lat,lon,p_full,p_half,albedo,q,t,t_surf_rad,tdt,coszen,flux_sw,flux_lw, previous, current)
 !
 ! Driver for RRTMG radiation scheme.
 ! Prepares all inputs, calls SW and LW radiation schemes, 
@@ -483,7 +506,7 @@ call get_grid_domain(is, ie, js, je)
 ! In/Out variables
           implicit none
 
-          integer, intent(in)                               :: is, js          ! index range for each CPU
+          integer, intent(in)                               :: is, js,previous,current          ! index range for each CPU
           type(time_type),intent(in)                        :: Time            ! global time in calendar
           real(kind=rb),dimension(:,:,:),intent(in)         :: p_full,p_half   ! pressure, full and half levels
                                                                                ! dimension (lat x lon x p*)
@@ -524,7 +547,7 @@ call get_grid_domain(is, ie, js, je)
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: q_tmp
 
 	  integer :: year_in_s
-          real :: frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s
+          real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday
 
           real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
 
@@ -571,14 +594,25 @@ call get_grid_domain(is, ie, js, je)
 	     call get_time(Time_loc, seconds)
 	     call get_time(length_of_year(), year_in_s)
 	     day_in_s = length_of_day()
-	     frac_of_day = seconds / day_in_s
-!	     frac_of_year = real(days*day_in_s) / real(year_in_s) !s This is the way MJ's astro.f90 does it.
-	     frac_of_year = real(seconds) / real(year_in_s)
+	     r_seconds=real(seconds)
+	     frac_of_day = r_seconds / day_in_s
+
+             if(solday > 0) then
+                 r_solday=real(solday)
+                 frac_of_year=(r_solday*day_in_s)/year_in_s
+	     else
+!	         frac_of_year = real(days*day_in_s) / real(year_in_s) !s This is the way MJ's astro.f90 does it.
+	         frac_of_year = r_seconds / year_in_s
+             endif
 	     gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
 	     time_since_ae = abs(mod(frac_of_year-equinox_day, 1.0)) * 2.0 * pi
 
           if(do_rad_time_avg) then
-	     dt_rad_radians = (dt_rad_avg/day_in_s)*2.0*pi
+!		if(previous==current) then
+!		     dt_rad_radians = (dt_rad_avg/day_in_s)*2.0*pi
+!		else
+!		     dt_rad_radians = (dt_rad_avg/day_in_s)*2.0*pi
+!		endif
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun,dt_rad_radians)
           else
 	     ! Seasonal Cycle: Use astronomical parameters to calculate insolation

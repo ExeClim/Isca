@@ -467,7 +467,7 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
        kd=num_levels
        call rrtmg_lw_ini(cp_air)
        call rrtmg_sw_ini(cp_air)
-       call rrtm_radiation_init(axes,Time,id*jd,kd,rad_lonb_2d,rad_latb_2d)
+       call rrtm_radiation_init(axes,Time,id*jd,kd,rad_lonb_2d,rad_latb_2d, Time_step_in)
        id_z_tg = register_diag_field(mod_name, 'interp_t',        &
             axes(1:3), Time, 'temperature interp','T/s')
     endif
@@ -690,7 +690,7 @@ if(do_rrtm_radiation) then
    !need t at half grid
 	tg_interp=tg(:,:,:,previous)
    call interp_temp(z_full(:,:,:,current),z_half(:,:,:,current),tg_interp, Time)
-   call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),coszen,net_surf_sw_down(:,:),surf_lw_down(:,:))
+   call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),coszen,net_surf_sw_down(:,:),surf_lw_down(:,:),previous,current)
 endif
 #endif
 
