@@ -229,7 +229,6 @@ class Experiment(object):
 
     def compile(self):
         mkdir(self.execdir)
-
         vars = {
             'execdir': self.execdir,
             'template_dir': self.template_dir,
@@ -334,10 +333,18 @@ class Experiment(object):
         self._cur_month = month
         try:
             set_screen_title('month:%d' % month)
-            sh.bash(P(self.rundir, 'runmonth.sh'), _out=self._log_runmonth, _err=self._log_runmonth)
+            proc = sh.bash(P(self.rundir, 'runmonth.sh'), _out=self._log_runmonth, _err=self._log_runmonth, _bg=True)
+            proc.wait()  # allow the background thread to complete
             log.info("Run for month %r complete" % month)
+        except KeyboardInterrupt:
+            log.error("Manual interrupt, killing process.")
+            proc.process.kill()
+            log.info("Cleaning run directory.")
+            self.clear_rundir()
+            return False
         except Exception as e:
             log.error("Run failed for month %r" % month)
+            proc.process.kill()
             raise e
 
         mkdir(outdir)
