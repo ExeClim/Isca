@@ -31,7 +31,7 @@ module dry_convection_mod
 
 !                             ---  namelist ---
   real :: tau, &            !< relaxation timescale [seconds]
-          gamma             !< prescibed lapse rate [m/second]
+          gamma             !< prescibed lapse rate [K/km]
 
   namelist /dry_convection_nml/ tau, gamma
 
