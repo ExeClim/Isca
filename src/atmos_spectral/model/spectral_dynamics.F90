@@ -105,7 +105,7 @@ character(len=128), parameter :: tagname = '$Name: siena_201211 $'
 ! variables needed for diagnostics
 integer :: id_ps, id_u, id_v, id_t, id_vor, id_div, id_omega, id_wspd, id_slp
 integer :: id_pres_full, id_pres_half, id_zfull, id_zhalf, id_vort_norm, id_EKE
-integer :: id_uu, id_vv, id_tt, id_omega_omega, id_uv, id_omega_t
+integer :: id_uu, id_vv, id_tt, id_omega_omega, id_uv, id_omega_t, id_vw, id_uw, id_ut, id_vt
 integer, allocatable, dimension(:) :: id_tr
 real :: gamma, expf, expf_inverse
 character(len=8) :: mod_name = 'dynamics'
@@ -1543,6 +1543,18 @@ id_vv  = register_diag_field(mod_name, &
 id_uv  = register_diag_field(mod_name, &
       'ucomp_vcomp', axes_3d_full, Time, 'zonal wind * meridional wind', '(m/sec)**2', range=(/-vrange(2)**2,vrange(2)**2/))
 
+id_uw  = register_diag_field(mod_name, &
+      'ucomp_omega', axes_3d_full, Time, 'vertical * zonal wind', 'm*Pa/sec**2')
+
+id_vw  = register_diag_field(mod_name, &
+      'vcomp_omega', axes_3d_full, Time, 'vertical * meridional wind', 'm*Pa/sec**2')
+
+id_ut  = register_diag_field(mod_name, &
+      'ucomp_temp', axes_3d_full, Time, 'zonal wind * temperature', 'm*K/sec')
+
+id_vt  = register_diag_field(mod_name, &
+      'vcomp_temp', axes_3d_full, Time, 'meridional wind * temperature', 'm*K/sec')
+
 id_omega_t = register_diag_field(mod_name, &
       'omega_temp',axes_3d_full,     Time, 'dp/dt * temperature',          'Pa*K/sec')
 
@@ -1665,6 +1677,22 @@ endif
 if(id_omega_t > 0) then
   worka3d = wg_full*t_grid
   used = send_data(id_omega_t, worka3d, Time)
+endif
+if(id_uw > 0) then
+  worka3d = u_grid*wg_full
+  used = send_data(id_uw, worka3d, Time)
+endif
+if(id_vw > 0) then
+  worka3d = wg_full*v_grid
+  used = send_data(id_vw, worka3d, Time)
+endif
+if(id_ut > 0) then
+  worka3d = u_grid*t_grid
+  used = send_data(id_ut, worka3d, Time)
+endif
+if(id_vt > 0) then
+  worka3d = t_grid*v_grid
+  used = send_data(id_vt, worka3d, Time)
 endif
 
 if(size(tr_grid,5) /= num_tracers) then

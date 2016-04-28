@@ -19,5 +19,5 @@ The phys namelist (phys.nml) is sometimes really hard to work out what the flags
 | idealized_moist_phys_nml   | mixed_layer_bc      | ml flag           |  turn on mixed_layer. Default false |   
 | qe_moist_convection_nml    | tau_bm              | convection flag for SBMS| default is 7200.0 |
 | qe_moist_convection_nml    | rhbm                | convection flag for SBMS| default is 0.7    |
-| | | |
+| spectral_dynamics_nml      | surf_res            | trop vs strat distribution of sigma levels | Larger surf_res gives more levels in strat vs trop when using uneven-sigma option. 0.2 new recommended value.
 | | | |
