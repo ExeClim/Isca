@@ -126,5 +126,5 @@ for exp_number in [24]:
     exp.namelist = baseexp.namelist.copy()
 
     exp.runmonth(240,num_cores=4, restart_file='/scratch/sit204/workdir_2013/giant_planet_test_23/restarts/res_239.cpio')
-    for i in range(241, 481):
+    for i in range(241, 601):
          exp.runmonth(i,num_cores=4)
