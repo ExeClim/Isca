@@ -335,7 +335,7 @@ real, intent(in), dimension(:,:,:)  :: t, q,  p_half
 integer :: i, j, k, n, dyofyr
 
 integer :: seconds, year_in_s
-real :: frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s
+real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s
 logical :: used
 
 ! Byrne + O'Gorman rad scheme parameters
@@ -355,9 +355,10 @@ if (do_seasonal) then
   ! Seasonal Cycle: Use astronomical parameters to calculate insolation
   call get_time(Time_diag, seconds)
   call get_time(length_of_year(), year_in_s)
+  r_seconds = real(seconds)
   day_in_s = length_of_day()
-  frac_of_day = seconds / day_in_s
-  frac_of_year = seconds / year_in_s
+  frac_of_day = r_seconds / day_in_s
+  frac_of_year = r_seconds / year_in_s
   gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
   time_since_ae = abs(mod(frac_of_year, 1.0)) * 2.0 * pi
   call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
