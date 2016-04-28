@@ -227,25 +227,15 @@ class Experiment(object):
 
         log.info('RRTM compilation disabled.  Namelist set to gray radiation.')
 
-    def compile(self, debug=False):
+    def compile(self):
         mkdir(self.execdir)
-        compile_flags = []
-        if debug:
-            compile_flags.append('-g')
-            compile_flags.append('-traceback')
-            compile_flags.append('-debug all')
-            optimisation = 0
-        else:
-            optimisation = 2
-        compile_flags.append('-O%d' % optimisation)
-        compile_flags.extend(self.compile_flags)
-        compile_flags_str = ' '.join(compile_flags)
+
         vars = {
             'execdir': self.execdir,
             'template_dir': self.template_dir,
             'srcdir': self.srcdir,
             'workdir': self.workdir,
-            'compile_flags': compile_flags_str
+            'compile_flags': ' '.join(self.compile_flags)
         }
 
         self.write_path_names(self.workdir)
