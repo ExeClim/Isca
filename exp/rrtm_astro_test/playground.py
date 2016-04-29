@@ -90,7 +90,7 @@ baseexp.clear_rundir()
 
 #s Namelist changes from default values
 baseexp.namelist['main_nml'] = {
-     'days'   : 2,	
+     'days'   : 3,	
      'hours'  : 0,
      'minutes': 0,
      'seconds': 0,			
@@ -119,15 +119,15 @@ baseexp.namelist['astronomy_nml']['ecc'] = 0.0 #s make orbit circular.
 
 baseexp.namelist['rrtm_radiation_nml']['solr_cnst'] = 1360. #s set solar constant to 1360, rather than default of 1368.22
 baseexp.namelist['rrtm_radiation_nml']['solday'] = 90 #s set solar constant to 1360, rather than default of 1368.22
-baseexp.namelist['rrtm_radiation_nml']['dt_rad'] = 4200 #s set solar constant to 1360, rather than default of 1368.22
-baseexp.namelist['rrtm_radiation_nml']['do_rad_time_avg'] = False #s set solar constant to 1360, rather than default of 1368.22
+baseexp.namelist['rrtm_radiation_nml']['dt_rad'] = 900 #s set solar constant to 1360, rather than default of 1368.22
+baseexp.namelist['rrtm_radiation_nml']['do_rad_time_avg'] = True #s set solar constant to 1360, rather than default of 1368.22
 
 #s Using perpetual equinox
 #baseexp.namelist['astro_nml']['solday'] = 90.0 
 #s End namelist changes from default values
 
 
-for evap_res in [20]:
+for evap_res in [26]:
     evap_res_name = evap_res
     exp = Experiment('rrtm_time_manager_fresh_%d' % evap_res_name, overwrite_data=True)
     exp.clear_rundir()
@@ -140,3 +140,5 @@ for evap_res in [20]:
     exp.namelist = baseexp.namelist.copy()
 
     exp.runmonth(1, use_restart=False, num_cores=4)
+
+
