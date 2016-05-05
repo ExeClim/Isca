@@ -661,7 +661,7 @@ dt_tg = dt_tg + conv_dt_tg
 dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
 
 ! Perform large scale convection
-if (r_conv_scheme .ne. DRY_CONV) then
+!if (r_conv_scheme .ne. DRY_CONV) then
   ! Large scale convection is a function of humidity only.  This is
   ! inconsistent with the dry convection scheme, don't run it!
   rain = 0.0; snow = 0.0
@@ -685,7 +685,7 @@ if (r_conv_scheme .ne. DRY_CONV) then
   if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
   if(id_precip     > 0) used = send_data(id_precip, precip, Time)
 
-endif
+!endif
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
