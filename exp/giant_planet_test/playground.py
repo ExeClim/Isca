@@ -3,7 +3,7 @@ import os
 
 from gfdl.experiment import Experiment, DiagTable
 
-baseexp = Experiment('giant_planet_test', overwrite_data=True)
+baseexp = Experiment('giant_planet_test', overwrite_data=False)
 
 #s Define input files for experiment - by default they are found in exp_dir/input/
 
@@ -73,9 +73,9 @@ baseexp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = 'Schneider'
 baseexp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False
 
 baseexp.namelist['two_stream_gray_rad_nml']['solar_constant'] = 50.7
-baseexp.namelist['two_stream_gray_rad_nml']['diabatic_acce'] = 1.0
+baseexp.namelist['two_stream_gray_rad_nml']['diabatic_acce'] = 10.0
 
-baseexp.namelist['surface_flux_nml']['diabatic_acce'] = 1.0
+baseexp.namelist['surface_flux_nml']['diabatic_acce'] = 10.0
 
 baseexp.namelist['betts_miller_nml']['tau_bm'] = 21600.
 baseexp.namelist['betts_miller_nml']['rhbm'] = 0.0
@@ -112,9 +112,10 @@ baseexp.namelist['rayleigh_bottom_drag_nml']['sigma_b'] = 0.9
 baseexp.namelist['rayleigh_bottom_drag_nml']['rc'] = 0.84
 baseexp.namelist['rayleigh_bottom_drag_nml']['H_lambda'] = 1000.0e3
 
+
 baseexp.namelist['spectral_dynamics_nml']['initial_sphum'] = 1.e-20
 
-for exp_number in [24]:
+for exp_number in [24,25]:
     exp = Experiment('giant_planet_test_%d' % exp_number, overwrite_data=False)
     exp.clear_rundir()
 
@@ -125,6 +126,16 @@ for exp_number in [24]:
 
     exp.namelist = baseexp.namelist.copy()
 
-    exp.runmonth(240,num_cores=4, restart_file='/scratch/sit204/workdir_2013/giant_planet_test_23/restarts/res_239.cpio')
-    for i in range(241, 601):
-         exp.runmonth(i,num_cores=4)
+    if exp_number==24:
+    	exp.namelist['rayleigh_bottom_drag_nml']['variable_drag'] = True
+    else:
+    	exp.namelist['rayleigh_bottom_drag_nml']['variable_drag'] = False
+
+    exp.runmonth(1,num_cores=4, use_restart=False)
+    for i in range(2, 649):
+	
+        if i>240:
+		exp.namelist['two_stream_gray_rad_nml']['diabatic_acce'] = 1.0
+		exp.namelist['surface_flux_nml']['diabatic_acce'] = 1.0
+
+        exp.runmonth(i,num_cores=4)
