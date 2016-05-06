@@ -347,7 +347,7 @@
 
 		if (res.ne.0) then
 			call error_mesg( 'rrtm_gases_init', &
-        	         'dt_rad must fit into one day an integer number of times', FATAL)
+        	         'dt_rad does not fit into one day an integer number of times', WARNING)
 		endif
 
 
