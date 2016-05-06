@@ -482,7 +482,7 @@ call get_grid_domain(is, ie, js, je)
         end subroutine interp_temp
 !*****************************************************************************************
 !*****************************************************************************************
-        subroutine run_rrtmg(is,js,Time,lat,lon,p_full,p_half,albedo,q,t,t_surf_rad,tdt,coszen,flux_sw,flux_lw, previous, current)
+        subroutine run_rrtmg(is,js,Time,lat,lon,p_full,p_half,albedo,q,t,t_surf_rad,tdt,coszen,flux_sw,flux_lw)
 !
 ! Driver for RRTMG radiation scheme.
 ! Prepares all inputs, calls SW and LW radiation schemes, 
@@ -506,8 +506,10 @@ call get_grid_domain(is, ie, js, je)
 ! In/Out variables
           implicit none
 
-          integer, intent(in)                               :: is, js,previous,current          ! index range for each CPU
+          integer, intent(in)                               :: is, js          ! index range for each CPU
+
           type(time_type),intent(in)                        :: Time            ! global time in calendar
+
           real(kind=rb),dimension(:,:,:),intent(in)         :: p_full,p_half   ! pressure, full and half levels
                                                                                ! dimension (lat x lon x p*)
           real(kind=rb),dimension(:,:,:),intent(in)         :: q               ! water vapor mixing ratio [g/g]
@@ -588,6 +590,7 @@ call get_grid_domain(is, ie, js, je)
           else
              Time_loc = Time
           endif
+
 !
 ! compute zenith angle
 !  this is also an output, so need to compute even if we read radiation from file
