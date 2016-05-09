@@ -10,6 +10,7 @@
 !! ### Namelist parameters
 !! @param tau The relaxation timescale to the lapse rate gamma.
 !! @param gamma The prescribed lapse rate.
+!!              When gamma = 1, parcel lifting temperature is dry potential temperature.
 !!
 !! @see https://github.com/tapios/fms-idealized
 !!
@@ -31,7 +32,7 @@ module dry_convection_mod
 
 !                             ---  namelist ---
   real :: tau, &            !< relaxation timescale [seconds]
-          gamma             !< prescibed lapse rate [K/km]
+          gamma             !< prescibed lapse rate [non-dim]
 
   namelist /dry_convection_nml/ tau, gamma
 
@@ -260,7 +261,7 @@ module dry_convection_mod
 
           ! lift parcel with lapse rate given by gamma
           do k = btm(i,j)-1, 1, -1
-             zdpkpk = exp( cons1 * alog(p_full(i,j,k)/p_full(i,j,k+1)))
+             zdpkpk = exp( cons1 * alog(p_full(i,j,k)/p_full(i,j,k+1)))  !< equiv. to (pfull[k]/pfull[k+1])^cons1
              tp(i,j,k) = tp(i,j,k+1) +                                        &
                   gamma * (tp(i,j,k+1)*zdpkpk - tp(i,j,k+1))
           end do
