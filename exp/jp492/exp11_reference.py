@@ -2,8 +2,12 @@ import numpy as np
 
 from gfdl.experiment import Experiment, DiagTable
 
-exp = Experiment('playground', overwrite_data=True)
+exp = Experiment('exp11_reference')
 
+exp.info = """A seasonal Earth with default parameter set.
+For comparison with the dry convection scheme."""
+
+exp.execdir =  Experiment('exp11_dry_conv_scheme').execdir
 
 diag = DiagTable()
 
@@ -28,13 +32,13 @@ diag.add_field('two_stream', 'lw_dtrans')
 
 diag.add_field('mixed_layer', 't_surf')
 
-diag.add_field('dry_convection', 'dp')
-diag.add_field('dry_convection', 'CAPE')
-diag.add_field('dry_convection', 'CIN')
-diag.add_field('dry_convection',  'LZB')
-diag.add_field('dry_convection', 'LCL')
-diag.add_field('dry_convection', 'dt_tg')
-diag.add_field('dry_convection', 'parcel_temp')
+# diag.add_field('dry_convection', 'dp')
+# diag.add_field('dry_convection', 'CAPE')
+# diag.add_field('dry_convection', 'CIN')
+# diag.add_field('dry_convection',  'LZB')
+# diag.add_field('dry_convection', 'LCL')
+# diag.add_field('dry_convection', 'dt_tg')
+# diag.add_field('dry_convection', 'parcel_temp')
 
 
 
@@ -49,27 +53,31 @@ exp.clear_rundir()
 exp.namelist['main_nml'] = {
     'dt_atmos': 900,
 #    'seconds': 5*86400,
-    'days': 5,
+    'days': 30,
     'calendar': 'no_calendar',
 #    'current_date': [0001,1,1,0,0,0]
 }
 
 exp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = True
+
 exp.namelist['spectral_dynamics_nml']['num_levels'] = 25
-exp.namelist['idealized_moist_phys_nml']['convection_scheme'] = 'dry'
+#exp.namelist['spectral_dynamics_nml']['initial_sphum'] = 0.0
+
+
+#exp.namelist['idealized_moist_phys_nml']['convection_scheme'] = 'dry'
 # exp.namelist['idealized_moist_phys_nml']['lwet_convection'] = False
 # exp.namelist['idealized_moist_phys_nml']['do_bm'] = False
 
-exp.namelist['dry_convection_nml'] = {
-    'tau': 86400.0*10,
-    'gamma': 1.0, # K/km
-}
+# exp.namelist['dry_convection_nml'] = {
+#     'tau': 14400.0,  # from tapios/fms-idealized
+#     'gamma': 1.0,
+# }
 
-exp.namelist['lscale_cond_nml'] = {
-    'do_simple': True,
-    'do_evap': False,
-    'hc': 1.0,
-}
+# exp.namelist['lscale_cond_nml'] = {
+#     'do_simple': True,
+#     'do_evap': False,
+#     'hc': 1.0,
+# }
 
 exp.namelist['mixed_layer_nml'] = {
     'albedo_value': 0.27,
@@ -77,11 +85,16 @@ exp.namelist['mixed_layer_nml'] = {
     #'prescribe_initial_dist': True
     # 'tconst': 285.0,
     # 'delta_T': 40.0,
-    'evaporation': False,
-    'do_qflux': False
+    #'evaporation': False,
+    #'do_qflux': False
 }
 
-exp.runmonth(1, use_restart=False)
+
+
+exp.runmonth(1, use_restart=False, overwrite_data=True)
+for i in range(2, 80):
+    exp.runmonth(i)
+
 
 #for i, scheme in enumerate(('frierson', 'geen', 'byrne')):
     # exp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = scheme

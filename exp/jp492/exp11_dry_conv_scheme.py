@@ -2,7 +2,7 @@ import numpy as np
 
 from gfdl.experiment import Experiment, DiagTable
 
-exp = Experiment('playground', overwrite_data=True)
+exp = Experiment('exp11_dry_conv_scheme')
 
 
 diag = DiagTable()
@@ -49,20 +49,24 @@ exp.clear_rundir()
 exp.namelist['main_nml'] = {
     'dt_atmos': 900,
 #    'seconds': 5*86400,
-    'days': 5,
+    'days': 30,
     'calendar': 'no_calendar',
 #    'current_date': [0001,1,1,0,0,0]
 }
 
 exp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = True
+
 exp.namelist['spectral_dynamics_nml']['num_levels'] = 25
+exp.namelist['spectral_dynamics_nml']['initial_sphum'] = 0.0
+
+
 exp.namelist['idealized_moist_phys_nml']['convection_scheme'] = 'dry'
 # exp.namelist['idealized_moist_phys_nml']['lwet_convection'] = False
 # exp.namelist['idealized_moist_phys_nml']['do_bm'] = False
 
 exp.namelist['dry_convection_nml'] = {
-    'tau': 86400.0*10,
-    'gamma': 1.0, # K/km
+    'tau': 14400.0,  # from tapios/fms-idealized
+    'gamma': 1.0,
 }
 
 exp.namelist['lscale_cond_nml'] = {
@@ -81,7 +85,12 @@ exp.namelist['mixed_layer_nml'] = {
     'do_qflux': False
 }
 
-exp.runmonth(1, use_restart=False)
+
+
+exp.runmonth(1, use_restart=False, overwrite_data=True)
+for i in range(2, 80):
+    exp.runmonth(i)
+
 
 #for i, scheme in enumerate(('frierson', 'geen', 'byrne')):
     # exp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = scheme
