@@ -2,7 +2,19 @@ import numpy as np
 
 import gfdl.experiment
 
+import logging
+import os
 import sys
+
+
+# log = gfdl.experiment.log
+
+
+# ch = logging.FileHandler(os.path.basename(__file__)+'.log', 'a')
+# ch.setLevel(logging.DEBUG)
+# ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+# log.addHandler(ch)
+
 
 P = gfdl.experiment.P
 
@@ -99,9 +111,9 @@ for depth in depths:
     exp.namelist['mixed_layer_nml'] = {
         'albedo_value': 0.27,
         'depth': depth,
-        #'prescribe_initial_dist': True
-        # 'tconst': 285.0,
-        # 'delta_T': 40.0,
+        'prescribe_initial_dist': True,
+        'tconst': 285.0,
+        'delta_T': 40.0,
         'evaporation': MOIST_MODEL,
         'do_qflux': MOIST_MODEL
     }
