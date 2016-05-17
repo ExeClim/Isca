@@ -83,6 +83,6 @@ exp.namelist['mixed_layer_nml'] = {
 
 exp.runmonth(1, use_restart=False)
 
-#for i, scheme in enumerate(('frierson', 'geen', 'byrne')):
+for i in range(10):
     # exp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = scheme
-    # exp.runmonth(i, use_restart=False)
+    exp.runmonth(i+2)
