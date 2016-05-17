@@ -97,8 +97,7 @@ class Experiment(object):
 
         self.templates = Environment(loader=FileSystemLoader(self.template_dir))
 
-        self.diag_table_file = P(self.template_dir, 'diag_table.default')
-        self._diag_table = None
+        self.diag_table = DiagTable()
         self.field_table_file = P(self.template_dir, 'field_table')
 
         self.path_names_file = P(self.template_dir, 'path_names')
@@ -189,13 +188,14 @@ class Experiment(object):
     def write_diag_table(self, outdir):
         outfile = P(outdir, 'diag_table')
         log.info('Writing diag_table to %r' % outfile)
-        if self._diag_table:
+        if len(self.diag_table.files):
             template = self.templates.get_template('diag_table')
             calendar = not self.namelist['main_nml']['calendar'].lower().startswith('no_calendar')
-            vars = {'calendar': calendar, 'outputfiles': self._diag_table.files.values()}
+            vars = {'calendar': calendar, 'outputfiles': self.diag_table.files.values()}
             template.stream(**vars).dump(outfile)
         else:
-            sh.cp(self.diag_table_file, P(outdir, 'diag_table'))
+            log.error("No output files defined in the DiagTable. Stopping.")
+            raise ValueError()
 
     def write_field_table(self, outdir):
         log.info('Writing field_table to %r' % P(outdir, 'field_table'))
@@ -251,7 +251,7 @@ class Experiment(object):
 
     def use_diag_table(self, diag_table):
         """Use a DiagTable object for the diagnostic output specification."""
-        self._diag_table = diag_table
+        self.diag_table = diag_table.copy()
 
 
     _day_re = re.compile('Integration completed through\s+([0-9]+) days')
@@ -363,6 +363,15 @@ class Experiment(object):
         sh.cd(self.rundir)
         return True
 
+    def derive(self, new_experiment_name):
+        """Derive a new experiment based on this one."""
+        new_exp = Experiment(new_experiment_name)
+        new_exp.execdir = self.execdir
+        new_exp.namelist = self.namelist.copy()
+        new_exp.use_diag_table(self.diag_table.copy())
+        return new_exp
+
+
 class DiagTable(object):
     def __init__(self):
         super(DiagTable, self).__init__()
@@ -389,3 +398,8 @@ class DiagTable(object):
                 'name': name,
                 'time_avg': time_avg
                 })
+
+    def copy(self):
+        d = DiagTable()
+        d.files = self.files.copy()
+        return d
