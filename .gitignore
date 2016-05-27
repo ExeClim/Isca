@@ -19,3 +19,4 @@ postprocessing/plevel_interpolation/scripts/*.nc
 postprocessing/plevel_interpolation/scripts/*.nml
 *land_world_mountains.nc
 *output.txt
+src/extra/python/scripts/*.nc
