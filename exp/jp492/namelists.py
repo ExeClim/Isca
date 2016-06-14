@@ -64,6 +64,13 @@ basic['idealized_moist_phys_nml'] = {
     'mixed_layer_bc': True,
     'do_virtual': False,
     'do_simple': True,
+    # Roughness Lengths for Monin-Obukhov theory:
+    # Baseline 3.21e-5 m
+    # Ref:  Heng et al: Mon. Not. R. Astron. Soc [418] (2011)
+    #       Frierson et al: J Atmos. Sci [63] (2006)
+    # roughness_mom:
+    #   Open water: 1e-4m
+    #   Urban terrain: 1m
     'roughness_mom': 3.21e-05,             # default: 0.05
     'roughness_heat': 3.21e-05,
     'roughness_moist': 3.21e-05
@@ -183,8 +190,12 @@ basic['betts_miller_nml'] = {
 #     'qflux_amp': 30.
 # }
 
+moist = basic.copy()
+
 
 dry = basic.copy()
+
+del dry['betts_miller_nml']
 dry['idealized_moist_phys_nml']['convection_scheme'] = 'dry'
 
 dry['dry_convection_nml'] = {
