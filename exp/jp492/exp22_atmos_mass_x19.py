@@ -30,6 +30,11 @@ if __name__ == '__main__':
                 'reference_sea_level_press': 1.0e5*m,
             }
 
+            # no shortwave absorption in the atmosphere
+            exp.namelist['two_stream_gray_rad_nml'] = {
+                'atm_abs': 0.0
+            }
+
             experiments.append(exp)
 
     for exp in experiments:
