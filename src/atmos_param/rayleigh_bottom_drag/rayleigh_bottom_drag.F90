@@ -37,7 +37,7 @@ use  diag_manager_mod, only: register_diag_field, send_data
 
   character(len=128) :: version='$Id: rayleigh_bottom_drag.f90 $'
   character(len=128) :: tag='homemade'
-  character(len=15)  :: mod_name = "rayleigh_bottom_drag"
+  character(len=128)  :: mod_name = 'rayleigh_bottom_drag'
 
 ! Version Details
 ! [2016/04/11] <Stephen Thomson>: Downloaded version of file from https://github.com/tapios/fms-idealized/blob/master/exp/jupiter/srcmods/rayleigh_drag_forcing.f90 and renamed module rayleigh_bottom_drag to distinguish from existing rayleigh drag at TOA
@@ -89,6 +89,7 @@ contains
     
 10  format(1x,a,1x,f8.2,1x,a)
 20  format(1x,a,1x,e8.2,1x,a)
+
 
 
 ! register fields with diagnostic manager
@@ -200,10 +201,8 @@ contains
 
 
     ! send data to diagnostic manager
-    if(id_udt > 0) used = send_data(id_udt, dt_ug, Time,      &
-                                    is, js)
-    if(id_vdt > 0) used = send_data(id_vdt, dt_vg, Time,      &
-                                    is, js)
+    if(id_udt > 0) used = send_data(id_udt, dt_ug, Time)
+    if(id_vdt > 0) used = send_data(id_vdt, dt_vg, Time)
 !    if(id_dissdt > 0) used = send_data(id_dissdt, dissipative_heat, &
 !                                    Time, is, js)    
 
