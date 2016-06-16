@@ -31,9 +31,7 @@ if __name__ == '__main__':
             }
 
             # no shortwave absorption in the atmosphere
-            exp.namelist['two_stream_gray_rad_nml'] = {
-                'atm_abs': 0.0
-            }
+            exp.namelist['two_stream_gray_rad_nml']['atm_abs'] = 0.0
 
             experiments.append(exp)
 
