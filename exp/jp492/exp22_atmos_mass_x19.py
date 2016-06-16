@@ -26,9 +26,7 @@ if __name__ == '__main__':
                 'orbital_period': orbital_period
             }
 
-            exp.namelist['spectral_dynamics_nml'] = {
-                'reference_sea_level_press': 1.0e5*m,
-            }
+            exp.namelist['spectral_dynamics_nml']['reference_sea_level_press'] = 1.0e5*m
 
             # no shortwave absorption in the atmosphere
             exp.namelist['two_stream_gray_rad_nml']['atm_abs'] = 0.0
