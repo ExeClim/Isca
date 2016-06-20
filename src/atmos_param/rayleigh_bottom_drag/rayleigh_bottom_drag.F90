@@ -22,7 +22,15 @@ use  diag_manager_mod, only: register_diag_field, send_data
   real, public ::                      &
        sigma_b             = 0.85,     & ! extent of frictional `PBL'
        rc                  = 0.84,     & ! radius of the magnetic core
-       H_lambda            = 100.0e3     ! scale height of the magnetic diffusivity      
+       H_lambda            = 100.0e3     ! scale height of the magnetic diffusivity
+
+  real, public ::                      &
+       sigma_bot             = ((1./3.)+0.05),     & ! extent of frictional `PBL'
+       sigma_mid             = 1./3.,              & ! extent of frictional `PBL'
+       sigma_top             = ((1./3.)-0.05)        ! extent of frictional `PBL'
+
+  logical ::                           &
+       do_drag_at_surface = .true.
 
   logical ::                           &
        do_energy_conserv_ray = .true., & 
@@ -31,7 +39,8 @@ use  diag_manager_mod, only: register_diag_field, send_data
              ! consider latitudinally varying drag produced by magnetic field
              
   namelist/rayleigh_bottom_drag_nml/ sigma_b, rc, H_lambda,             &
-              kf_days, do_energy_conserv_ray, variable_drag
+              kf_days, do_energy_conserv_ray, variable_drag,            &
+              do_drag_at_surface, sigma_bot, sigma_mid, sigma_top
 
   private rayleigh_bottom_drag_nml
 
@@ -123,9 +132,15 @@ contains
 
 
     if(present(ug_previous)) then
-          call surface_drag(Time, delta_t, lat, is, js, ug_previous, vg_previous,    &
+          if (do_drag_at_surface) then
+             call surface_drag(Time, delta_t, lat, is, js, ug_previous, vg_previous,    &
                             p_half_previous,  p_full_previous, dt_ug, dt_vg,    &
                             dt_tg, dissipative_heat)
+	  else 
+             call interior_drag(Time, delta_t, lat, is, js, ug_previous, vg_previous,    &
+                            p_half_previous,  p_full_previous, dt_ug, dt_vg,    &
+                            dt_tg, dissipative_heat)
+          endif
     else
        call error_mesg('compute_rayleigh_bottom_drag',                         &
             'ug_previous is not present',fatal)
@@ -210,7 +225,78 @@ contains
   end subroutine surface_drag
 
  !-----------------------------------------------------------------------
+ 
+  subroutine interior_drag(Time, delta_t, lat, is, js, ug, vg, p_half, p_full, & 
+                         dt_ug, dt_vg, dt_tg, dissipative_heat )
 
+    real,    intent(in)                       :: delta_t
+    real,    intent(in),    dimension(:,:)    :: lat
+    integer, intent(in)                       :: is, js
+    real,    intent(in),    dimension (:,:,:) :: ug, vg, p_full, p_half
+    real,    intent(inout), dimension(:,:,:)  :: dt_ug, dt_vg, dt_tg
+    real,    dimension(size(ug,1),size(ug,2)) :: sigma, sigma_norm, sigma_max
+    real,    intent(out),   dimension(:,:,:)  :: dissipative_heat 
+    
+    real, dimension(size(ug,1),size(ug,2),size(ug,3)):: dt_u_temp, dt_v_temp
+    real, dimension(size(ug,2))  :: drag_coeff
+    integer :: j, k, num_level 
+    type(time_type), intent(in)            ::  Time
+    logical :: used
+    real :: half_delt, cp_inv
+
+! ------------------------------------------------------------------------------
+   cp_inv = 1.0/CP_air
+
+   if (do_energy_conserv_ray) then
+      dt_u_temp = dt_ug
+      dt_v_temp = dt_vg
+   endif
+
+  ! pseudo=parameter for number of levels
+    num_level = size(ug,3)
+
+   drag_coeff = kf
+
+    do k = 1, num_level
+       do j = 1, size(ug,2)
+       sigma(:, j)  = p_full(:,j,k) / p_half(:,j,num_level+1)
+
+       if (maxval(sigma(:,j)).le.sigma_mid) then
+           sigma_norm(:,j)   = (sigma(:,j) - sigma_top) / (sigma_mid - sigma_top)
+           sigma_max(:,j)    = max(sigma_norm(:,j), 0.0)
+       else
+           sigma_norm(:,j)   = (sigma_bot - sigma(:,j)) / (sigma_bot - sigma_mid)
+           sigma_max(:,j)    = max(sigma_norm(:,j), 0.0)
+       endif
+
+       dt_ug(:,j,k) = dt_ug(:,j,k)     &
+                        - drag_coeff(j) * sigma_max(:,j) * ug(:,j,k)
+       dt_vg(:,j,k) = dt_vg(:,j,k)     &
+                        - drag_coeff(j) * sigma_max(:,j) * vg(:,j,k)
+       end do
+    end do
+
+    if (do_energy_conserv_ray) then
+       dt_u_temp = dt_ug - dt_u_temp
+       dt_v_temp = dt_vg - dt_v_temp
+       dissipative_heat = - cp_inv * ( (ug + 0.5 * delta_t * dt_u_temp)*dt_u_temp   &
+                                      +(vg + 0.5 * delta_t * dt_v_temp)*dt_v_temp )
+       dt_tg = dt_tg + dissipative_heat
+    else
+       dissipative_heat = 0.0
+     endif
+
+
+    ! send data to diagnostic manager
+    if(id_udt > 0) used = send_data(id_udt, dt_ug, Time)
+    if(id_vdt > 0) used = send_data(id_vdt, dt_vg, Time)
+!    if(id_dissdt > 0) used = send_data(id_dissdt, dissipative_heat, &
+!                                    Time, is, js)    
+
+
+  end subroutine interior_drag
+
+ !-----------------------------------------------------------------------
 
   function surface_temperature(temp, p_full, p_half)
 

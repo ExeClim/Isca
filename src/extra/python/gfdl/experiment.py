@@ -134,6 +134,27 @@ class Experiment(object):
         mkdir(self.workdir)
         log.info('Emptied working directory %r' % self.workdir)
 
+    def keep_only_certain_restart_files(self, max_num_files, interval=12):
+        try:
+#	    sh.ls(sh.glob(P(self.workdir,'restarts','res_*.cpio'))) #TODO get max_num_files calculated in line, rather than a variable to pass.
+
+            #First defines a list of ALL the restart file numbers
+	    files_to_remove=range(0,max_num_files)
+
+            #Then defines a list of the ones we want to KEEP
+	    files_to_keep  =range(0,max_num_files,interval) 
+
+            #Then we remove the files we want to keep from the list of all files, giving a list of those we wish to remove
+	    for x in files_to_keep:
+               files_to_remove.remove(x) 
+
+            #Then we remove them.
+	    for entry in files_to_remove:
+                sh.rm(P(self.workdir,'restarts','res_'+str(entry)+'.cpio'))
+
+        except sh.ErrorReturnCode_1:
+            log.warning('Tried to remove some restart files, but the last one doesnt exist')
+
     def clear_rundir(self):
         sh.cd(self.workdir)
         try:
