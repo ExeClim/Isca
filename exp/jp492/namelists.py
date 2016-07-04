@@ -1,9 +1,13 @@
+"""A set of default namelists from which to derive experiments."""
+
 import f90nml
 
 basic =  f90nml.Namelist({})
 
-
 # from core.nml
+# where the value is the same as the default in the code base, it is not
+# included in the namelist.
+# Where the value is different, the code default is shown in a comment
 basic['spectral_dynamics_nml'] = {
     #'damping_option'          : 'resolution_dependent',
     'damping_order'           : 4,                      # default: 2
@@ -25,7 +29,8 @@ basic['spectral_dynamics_nml'] = {
     #'num_spherical'           : 43,
     #'fourier_inc'             : 1,
     #'triang_trunc'            :True
-    'valid_range_t'       : [100., 800.],                  # default: (100, 500)
+    'valid_range_t'           : [100., 800.],           # default: (100, 500)
+    #'initial_state_option'   : 'quiescent'
     'initial_sphum'           : 2.e-6,                  # default: 0
     'vert_coord_option'       : 'uneven_sigma',         # default: 'even_sigma'
     'surf_res'                : 0.2,                    # default: 0.1
@@ -72,8 +77,8 @@ basic['idealized_moist_phys_nml'] = {
     #   Open water: 1e-4m
     #   Urban terrain: 1m
     'roughness_mom': 3.21e-05,             # default: 0.05
-    'roughness_heat': 3.21e-05,
-    'roughness_moist': 3.21e-05
+    'roughness_heat': 3.21e-05,            # default: 0.05
+    'roughness_moist': 3.21e-05            # default: 0.05
 }
 
 
@@ -81,15 +86,15 @@ basic['vert_turb_driver_nml'] = {
    'do_mellor_yamada': False,     # default: True
    'do_diffusivity': True,        # default: False
    'do_simple': True,             # default: False
-   #'do_shallow_conv': False,      # default: False
+   #'do_shallow_conv': False,
    #'gust_scheme': 'constant',
-   'constant_gust': 0.0,  # default: 1.0
-   #'use_tau': False     # default: False
+   'constant_gust': 0.0,          # default: 1.0
+   #'use_tau': False
 }
 
 basic['diffusivity_nml'] = {
-    'do_entrain': False,
-    'do_simple': True,
+    'do_entrain': False,          # default: True
+    'do_simple': True,            # default: False
     #'frac_inner': 0.1,
     #'rich_crit_pbl':  1.0
 }
@@ -110,20 +115,20 @@ basic['atmosphere_nml'] = {
     'idealized_moist_model': True
 }
 
-basic['spectral_init_cond_nml'] = {
-    'initial_temperature': 264.0
-}
+# basic['spectral_init_cond_nml'] = {
+#     'initial_temperature': 264.0
+# }
 
 basic['two_stream_gray_rad_nml'] = {
-    'rad_scheme': 'frierson',
-    'do_seasonal': True,
+    'rad_scheme': 'frierson',           # default: frierson
+    'do_seasonal': True,                # default: False
     #'linear_tau': 0.1,
     #'solar_constant': 1360.,
     #'solar_exponent': 4.0,
     #'ir_tau_pole': 1.5,
     #'ir_tau_eq': 6.0,
     #'del_sol': 1.4,
-    'atm_abs': 0.2
+    'atm_abs': 0.2                      # default: 0.0
 }
 
 basic['mixed_layer_nml'] = {
@@ -133,7 +138,7 @@ basic['mixed_layer_nml'] = {
     #'delta_T': 40.,
     'prescribe_initial_dist': True,
     'evaporation': True,
-    'do_qflux': True
+    # 'do_qflux': False
 }
 
 basic['qe_moist_convection_nml'] = {

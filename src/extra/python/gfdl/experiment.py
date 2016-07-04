@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import copy
 import logging
 import os
 import re
@@ -57,6 +58,9 @@ def set_screen_title(title):
             log.warning('Screen title could not be changed.')
             log.debug(e.message)
 
+class CompilationError(Exception):
+    pass
+
 class Experiment(object):
     """A basic GFDL experiment"""
     def __init__(self, name, commit=None, repo=None, overwrite_data=False):
@@ -100,8 +104,16 @@ class Experiment(object):
         self.diag_table = DiagTable()
         self.field_table_file = P(self.template_dir, 'field_table')
 
-        self.path_names_file = P(self.template_dir, 'path_names')
-        self.path_names = self._get_default_path_names()
+        # Setup the path_names for compilation
+        # 1. read the default path_names file
+        # 2. self.path_names can be changed before compilation
+        # 3. when self.compile() is called, if more than
+        #    `missing_file_tol` paths are not found, abort the compilation.
+        #
+        # * set `missing_file_tol = -1` to ignore all missing files.
+        self.path_names = self._read_pathnames(P(self.template_dir, 'path_names'))
+        self.missing_file_tol = 3
+
 
         self.namelist_files = [P(self.template_dir, 'core.nml'), P(self.template_dir, 'phys.nml')]
         self.namelist = self.rebuild_namelist()
@@ -142,8 +154,8 @@ class Experiment(object):
         mkdir(self.rundir)
         log.info('Emptied run directory %r' % self.rundir)
 
-    def _get_default_path_names(self):
-        with open(self.path_names_file) as pn:
+    def _read_pathnames(self, path_names_file):
+        with open(path_names_file) as pn:
             return [l.strip() for l in pn]
 
     def rebuild_namelist(self):
@@ -227,6 +239,23 @@ class Experiment(object):
 
         log.info('RRTM compilation disabled.  Namelist set to gray radiation.')
 
+    def check_path_names(self):
+        new_path_names = []
+        missing_files = []
+        for f in self.path_names:
+            if os.path.isfile(os.path.join(self.srcdir, 'src', f)):
+                new_path_names.append(f)
+            else:
+                log.warn('"%r" in path_names but not found in checked out src' % f)
+                missing_files.append(f)
+        if len(missing_files) >= self.missing_file_tol >= 0:
+            log.error('Too many files in "path_names" not found.\nTo prevent this error set exp.missing_file_tol = -1')
+            for f in missing_files:
+                log.error('File "%r" not found.' % f)
+            raise CompilationError('Missing %d compilation files (tolerance %d).' % (len(missing_files), self.missing_file_tol))
+        else:
+            self.path_names = new_path_names
+
     def compile(self):
         mkdir(self.execdir)
         vars = {
@@ -237,6 +266,7 @@ class Experiment(object):
             'compile_flags': ' '.join(self.compile_flags)
         }
 
+        self.check_path_names()
         self.write_path_names(self.workdir)
 
         self.templates.get_template('compile.sh').stream(**vars).dump(P(self.workdir, 'compile.sh'))
@@ -277,7 +307,7 @@ class Experiment(object):
 
 
 
-    def runmonth(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False):
+    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False):
         indir = P(self.rundir, 'INPUT')
         outdir = P(self.datadir, 'run%d' % month)
 
@@ -363,6 +393,8 @@ class Experiment(object):
         sh.cd(self.rundir)
         return True
 
+    runmonth = run
+
     def derive(self, new_experiment_name):
         """Derive a new experiment based on this one."""
         new_exp = Experiment(new_experiment_name)
@@ -371,6 +403,26 @@ class Experiment(object):
         new_exp.use_diag_table(self.diag_table.copy())
         return new_exp
 
+    def run_parameter_sweep(self, parameter_values, runs=10, num_cores=16):
+        # parameter_values should be a namelist fragment, with multiple values
+        # for each study e.g. to vary obliquity:
+        # exp.run_parameter_sweep({'astronomy_nml': {'obliq': [0.0, 5.0, 10.0, 15.0]}})
+        # will run 4 independent studies and create data e.g.
+        # <exp_name>/astronomy_nml_obliq_<0.0, 5.0 ...>/run[1-10]/daily.nc
+        params = [(sec, name, values) for sec, parameters in parameter_values.items()
+                        for name, values in parameters.items()]
+        # make a list of lists of namelist section, parameter names and values
+        params = [[(a,b,val) for val in values] for a,b,values in params]
+        parameter_space = itertools.product(params)
+        for combo in parameter_space:
+            title = '_'.join(['%s_%s_%r' % (sec[:3], name[:5], val) for sec, name, val in combo])
+            exp = self.derive(self.name + '_' + title)
+            for sec, name, val in combo:
+                exp.namelist[sec][name] = val
+            exp.clear_rundir()
+            exp.run(1, use_restart=False, num_cores=num_cores)
+            for i in range(runs-1):
+                exp.run(i+2)
 
 class DiagTable(object):
     def __init__(self):
@@ -401,5 +453,5 @@ class DiagTable(object):
 
     def copy(self):
         d = DiagTable()
-        d.files = self.files.copy()
+        d.files = copy.deepcopy(self.files)
         return d
