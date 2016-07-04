@@ -19,15 +19,14 @@ earth_orbital_period = 365.25*86400.0
 
 # Use one experiment to compile the source.  All other experiments
 # then use the same code with different namelist config
-baseexp = gfdl.experiment.Experiment('exp2_base',
+baseexp = gfdl.experiment.Experiment('base_dry0.1',
     repo='git@github.com:jamesp/GFDLmoistModel.git',
-    commit='exoplan0.3')
+    commit='dry0.1')
 
 baseexp.log.info('Running ratios %r' % ratios)
+baseexp.disable_rrtm()
 baseexp.compile()
 
-baseexp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
-baseexp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
 baseexp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = True
 baseexp.namelist['spectral_dynamics_nml']['num_levels'] = 25
 
@@ -68,19 +67,15 @@ diag.add_field('atmosphere', 'rh')
 
 diag.add_field('mixed_layer', 'flux_t')
 
+baseexp.use_diag_table(diag)
 
 for ratio in ratios:
-    exp = gfdl.experiment.Experiment('exp8_ratio_%d' % ratio)
+    exp = baseexp.derive('exp8_ratio_%d' % ratio)
     exp.clear_rundir()
     exp.screen_runmonth_prefix = 'r%d' % ratio
     orbital_period = earth_orbital_period / ratio
     omega  = 2*np.pi / orbital_period
     #orbital_period = 2*np.pi / omega * ratio
-
-    exp.use_diag_table(diag)
-    exp.execdir = baseexp.execdir
-
-    exp.namelist = baseexp.namelist.copy()
 
     exp.namelist['constants_nml'] = {
         'omega': omega,
@@ -88,5 +83,5 @@ for ratio in ratios:
     }
 
     exp.runmonth(1, use_restart=False)
-    for i in range(2, 81):  # 81, 161
+    for i in range(2, 82):  # 81, 161
         exp.runmonth(i)
