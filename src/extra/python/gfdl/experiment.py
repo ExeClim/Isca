@@ -424,6 +424,13 @@ class Experiment(object):
             for i in range(runs-1):
                 exp.run(i+2)
 
+    def update_namelist(self, new_vals):
+        """Update the namelist sections, overwriting existing values."""
+        for sec in new_vals:
+            nml = self.namelist.setdefault(sec, {})
+            nml.update(new_vals[sec])
+
+
 class DiagTable(object):
     def __init__(self):
         super(DiagTable, self).__init__()
