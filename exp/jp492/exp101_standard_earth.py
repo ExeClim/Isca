@@ -1,6 +1,6 @@
 # Moist Earth
 # - 360 day orbital period
-# - Rotation rate 2pi/86400
+# - Rotation rate: 361 rotations / year
 
 import numpy as np
 import exputil
@@ -11,7 +11,7 @@ exp = exputil.new_experiment('exp101_std_earth',
 exp.update_namelist({
     'constants_nml': {
         'omega': 2*np.pi/86400.0,
-        'orbital_period': 86400.0*360,
+        'orbital_period': 86400.0*361,
     },
     'two_stream_gray_rad_nml': {
         'atm_abs': 0.0,     # no SW absorption in the atmosphere
@@ -36,7 +36,8 @@ exp.update_namelist({
     }
 })
 
-# exp.clear_rundir()
-# exp.run(1, use_restart=False, num_cores=16)
-# for i in range(1, 3*5):
-#     exp.run(i+1, num_cores=16)
+if __name__ == '__main__':
+    exp.clear_rundir()
+    exp.run(1, use_restart=False, num_cores=16)
+    for i in range(1, 3*5):
+        exp.run(i+1, num_cores=16)
