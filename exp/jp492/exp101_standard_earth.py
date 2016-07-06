@@ -10,8 +10,8 @@ exp = exputil.new_experiment('exp101_std_earth',
 
 exp.update_namelist({
     'constants_nml': {
-        'omega': 2*np.pi/86400.0,
-        'orbital_period': 86400.0*361,
+        'omega': 2*np.pi/86400.0*(361/360),
+        'orbital_period': 86400.0*360,
     },
     'two_stream_gray_rad_nml': {
         'atm_abs': 0.0,     # no SW absorption in the atmosphere
