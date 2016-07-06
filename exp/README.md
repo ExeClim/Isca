@@ -64,7 +64,7 @@ diag.add_field('two_stream', 'olr')
 diag.add_field('two_stream', 'flux_sw')
 diag.add_field('two_stream', 'flux_lw')
 
-exp.diag_table(diag)
+exp.use_diag_table(diag)
 
 # compile the source code to $work_dir/exec
 exp.disable_rrtm()	# when using two-stream gray rad we don't need rrtm
