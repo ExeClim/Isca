@@ -106,7 +106,7 @@ character(len=128), parameter :: tagname = '$Name: siena_201211 $'
 integer :: id_ps, id_u, id_v, id_t, id_vor, id_div, id_omega, id_wspd, id_slp
 integer :: id_pres_full, id_pres_half, id_zfull, id_zhalf, id_vort_norm, id_EKE
 integer :: id_uu, id_vv, id_tt, id_omega_omega, id_uv, id_omega_t, id_vw, id_uw, id_ut, id_vt
-integer, allocatable, dimension(:) :: id_tr
+integer, allocatable, dimension(:) :: id_tr, id_utr, id_vtr, id_wtr !extra advection diags added by RG
 real :: gamma, expf, expf_inverse
 character(len=8) :: mod_name = 'dynamics'
 integer, dimension(4) :: axis_id
@@ -1600,9 +1600,15 @@ if(id_slp > 0) then
 endif
 
 allocate(id_tr(num_tracers))
+allocate(id_utr(num_tracers)) !Add additional diagnostics RG
+allocate(id_vtr(num_tracers)) !Add additional diagnostics RG
+allocate(id_wtr(num_tracers)) !Add additional diagnostics RG
 do ntr=1,num_tracers
   call get_tracer_names(MODEL_ATMOS, ntr, tname, longname, units)
   id_tr(ntr) = register_diag_field(mod_name, tname, axes_3d_full, Time, longname, units)
+  id_utr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_u'), axes_3d_full, Time, trim(longname)//trim(' x u'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
+  id_vtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_v'), axes_3d_full, Time, trim(longname)//trim(' x v'), trim(units)//trim(' m/s')) !Add additional diagnostics RG 
+  id_wtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_w'), axes_3d_full, Time, trim(longname)//trim(' x w'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
 enddo
 
 id_vort_norm = register_diag_field(mod_name, 'vort_norm', Time, 'vorticity norm', '1/(m*sec)')
@@ -1701,6 +1707,12 @@ if(size(tr_grid,5) /= num_tracers) then
 endif
 do ntr=1,num_tracers
   if(id_tr(ntr) > 0) used = send_data(id_tr(ntr), tr_grid(:,:,:,time_level,ntr), Time)
+  worka3d = tr_grid(:,:,:,time_level,ntr)*u_grid
+  if(id_utr(ntr) > 0) used = send_data(id_utr(ntr), worka3d, Time)
+  worka3d = tr_grid(:,:,:,time_level,ntr)*v_grid
+  if(id_vtr(ntr) > 0) used = send_data(id_vtr(ntr), worka3d, Time)
+  worka3d = tr_grid(:,:,:,time_level,ntr)*wg_full
+  if(id_wtr(ntr) > 0) used = send_data(id_wtr(ntr), worka3d, Time)
 enddo
 
 if(id_slp > 0) then
