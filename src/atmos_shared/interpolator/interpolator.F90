@@ -375,6 +375,7 @@ call mpp_get_info(unit, ndim, nvar, natt, ntime)
 clim_type%unit      = unit
 clim_type%file_name = trim(file_name)
 
+
 num_fields = nvar
 if(present(data_names)) num_fields= size(data_names(:))
 
@@ -511,7 +512,7 @@ do i = 1, ndim
       allocate(clim_type%halflevs(nlevh))
       call mpp_get_axis_data(axes(i),clim_type%halflevs)
       clim_type%level_type = SIGMA
-  
+    
     case('time')
       model_calendar = get_calendar_type() 
       fileday = 0
@@ -542,7 +543,6 @@ do i = 1, ndim
       end select
 
        clim_type%climatological_year = (fileyr == 0)
-
       if (.not. clim_type%climatological_year) then
 
 !----------------------------------------------------------------------
@@ -1535,6 +1535,11 @@ type(time_type), dimension(2) :: month
 integer :: indexm, indexp, yearm, yearp
 integer :: i, j, k, n
 
+!RG add option to go to 'no time axis' version if clim_type%TIME_FLAG==NOTIME i.e. data has no time, despite input received
+if (clim_type%TIME_FLAG .eq. NOTIME) then
+	call interpolator_4D_no_time_axis(clim_type, phalf, interp_data, field_name, is,js, clim_units)
+	return
+endif
 
 if (.not. module_is_initialized .or. .not. associated(clim_type%lon)) &
    call mpp_error(FATAL, "interpolator_4D : You must call interpolator_init before calling interpolator")
@@ -1954,7 +1959,11 @@ type(time_type), dimension(2) :: month
 integer :: indexm, indexp, yearm, yearp
 integer :: i, j, k, n
 
-
+!RG add option to go to 'no time axis' version if clim_type%TIME_FLAG==NOTIME i.e. data has no time, despite input received
+if (clim_type%TIME_FLAG .eq. NOTIME) then
+	call interpolator_3D_no_time_axis(clim_type, phalf, interp_data, field_name, is,js, clim_units)
+	return
+endif
 
 if (.not. module_is_initialized .or. .not. associated(clim_type%lon)) &
    call mpp_error(FATAL, "interpolator_3D : You must call interpolator_init before calling interpolator")
@@ -2327,6 +2336,12 @@ type(time_type), dimension(2) :: month
 integer :: indexm, indexp, yearm, yearp
 integer :: j, i, n
 
+!RG add option to go to 'no time axis' version if clim_type%TIME_FLAG==NOTIME i.e. data has no time, despite input received
+if (clim_type%TIME_FLAG .eq. NOTIME) then
+	call interpolator_2D_no_time_axis(clim_type, interp_data, field_name, is,js, clim_units)
+	return
+endif
+	
 if (.not. module_is_initialized .or. .not. associated(clim_type%lon)) &
    call mpp_error(FATAL, "interpolator_2D : You must call interpolator_init before calling interpolator")
 
