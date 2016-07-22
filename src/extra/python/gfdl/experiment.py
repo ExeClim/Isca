@@ -307,7 +307,7 @@ class Experiment(object):
 
 
 
-    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False):
+    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False):
         indir = P(self.rundir, 'INPUT')
         outdir = P(self.datadir, 'run%d' % month)
 
