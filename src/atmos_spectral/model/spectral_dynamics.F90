@@ -192,7 +192,9 @@ real    :: damping_coeff       = 1.15740741e-4, & ! (one tenth day)**-1
          ocean_topog_smoothing = .93, &
            initial_sphum       = 0.0, &
      reference_sea_level_press =  101325.,&
-        water_correction_limit = 0.0 !mj
+        water_correction_limit = 0.0, & !mj
+           raw_filter_coeff    = 0.5     !st
+
 !===============================================================================================
 
 real, dimension(2) :: valid_range_t = (/100.,500./)
@@ -209,7 +211,8 @@ namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option,       
                                  p_press, p_sigma, exponent, ocean_topog_smoothing, initial_sphum,   &
                                  valid_range_t, eddy_sponge_coeff, zmu_sponge_coeff, zmv_sponge_coeff,&
                                  print_interval, num_steps, initial_state_option,                    &
-                                 water_correction_limit !mj
+                                 water_correction_limit,                                             & !mj										 
+                                 raw_filter_coeff !st
 
 contains
 
@@ -803,6 +806,10 @@ real    :: delta_t
 real    :: extrtmp
 integer :: ii,jj,kk,i1,j1,k1
 
+!st RAW filter implementation
+complex, dimension(ms:me, ns:ne              ) :: part_filt_ln_ps
+complex, dimension(ms:me, ns:ne, num_levels  ) :: part_filt_vors, part_filt_divs, part_filt_ts
+
 ! < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < >
 
 if(.not.module_is_initialized) then
@@ -897,16 +904,16 @@ if(.not.robert_complete_for_tracers) then
 endif
 
 if(step_number == num_steps) then
-  call leapfrog_2level_A(ln_ps, dt_ln_ps, previous, current, future, delta_t, robert_coeff)
-  call leapfrog_2level_A(vors,  dt_vors,  previous, current, future, delta_t, robert_coeff)
-  call leapfrog_2level_A(divs,  dt_divs,  previous, current, future, delta_t, robert_coeff)
-  call leapfrog_2level_A(ts,    dt_ts,    previous, current, future, delta_t, robert_coeff)
+  call leapfrog_2level_A(ln_ps, dt_ln_ps, previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_ln_ps)
+  call leapfrog_2level_A(vors,  dt_vors,  previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_vors)
+  call leapfrog_2level_A(divs,  dt_divs,  previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_divs)
+  call leapfrog_2level_A(ts,    dt_ts,    previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_ln_ts)
   robert_complete_for_fields = .false.
 else
-  call leapfrog         (ln_ps, dt_ln_ps, previous, current, future, delta_t, robert_coeff)
-  call leapfrog         (vors , dt_vors , previous, current, future, delta_t, robert_coeff)
-  call leapfrog         (divs , dt_divs , previous, current, future, delta_t, robert_coeff)
-  call leapfrog         (ts   , dt_ts   , previous, current, future, delta_t, robert_coeff)
+  call leapfrog         (ln_ps, dt_ln_ps, previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
+  call leapfrog         (vors , dt_vors , previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
+  call leapfrog         (divs , dt_divs , previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
+  call leapfrog         (ts   , dt_ts   , previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
   robert_complete_for_fields = .true.
 endif
 
@@ -970,6 +977,9 @@ ug_final  =  ug(:,:,:,current)
 vg_final  =  vg(:,:,:,current)
 tg_final  =  tg(:,:,:,current)
 grid_tracers_final(:,:,:,time_level_out,:) = grid_tracers(:,:,:,current,:)
+
+
+call complete_robert_filter(tracer_attributes, part_filt_ln_ps, part_filt_vors, part_filt_divs, part_filt_ts, part_filt_trs)
 
 return
 end subroutine spectral_dynamics
@@ -1383,17 +1393,21 @@ enddo
 return
 end subroutine complete_update_of_future
 !================================================================================
-subroutine complete_robert_filter(tracer_attributes)
+subroutine complete_robert_filter(tracer_attributes, part_filt_ln_ps, part_filt_vors, part_filt_divs, part_filt_ts, part_filt_trs)
+
 type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
+complex, intent(in), dimension(:,:) :: part_filt_ln_ps
+complex, intent(in), dimension(:,:,:) :: part_filt_vors, part_filt_divs, part_filt_ln_ts
+
 integer :: ntr
 
 if(robert_complete_for_fields) then
   call error_mesg('complete_robert_filter','This routine should not be called when robert_complete_for_fields=.true.',FATAL)
 endif
-call leapfrog_2level_B(ln_ps, previous, current, robert_coeff)
-call leapfrog_2level_B(vors,  previous, current, robert_coeff)
-call leapfrog_2level_B(divs,  previous, current, robert_coeff)
-call leapfrog_2level_B(ts,    previous, current, robert_coeff)
+call leapfrog_2level_B(ln_ps, part_filt_ln_ps, previous, current, robert_coeff, raw_filter_coeff)
+call leapfrog_2level_B(vors,  part_filt_vors,  previous, current, robert_coeff, raw_filter_coeff)
+call leapfrog_2level_B(divs,  part_filt_divs,  previous, current, robert_coeff, raw_filter_coeff)
+call leapfrog_2level_B(ts,    part_filt_ts,    previous, current, robert_coeff, raw_filter_coeff)
 robert_complete_for_fields=.true.
 
 if(num_tracers > 0 .and. robert_complete_for_tracers) then
