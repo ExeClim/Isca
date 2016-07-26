@@ -902,6 +902,9 @@ endif
  case(:0)
    clim_type%TIME_FLAG = NOTIME
    allocate(clim_type%data(size(lonb_mod,1)-1, size(latb_mod,2)-1, nlev, 1, num_fields))
+
+   call mpp_error(NOTE,"Interpolator: Using input file with no time dimension - "&
+                             // trim(file_name))
 end select
 
 
