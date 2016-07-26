@@ -809,7 +809,7 @@ integer :: ii,jj,kk,i1,j1,k1
 !st RAW filter implementation
 complex, dimension(ms:me, ns:ne              ) :: part_filt_ln_ps
 complex, dimension(ms:me, ns:ne, num_levels  ) :: part_filt_vors, part_filt_divs, part_filt_ts
-
+complex, dimension(ms:me, ns:ne, num_levels, num_tracers) :: part_filt_trs
 ! < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < >
 
 if(.not.module_is_initialized) then
@@ -907,7 +907,7 @@ if(step_number == num_steps) then
   call leapfrog_2level_A(ln_ps, dt_ln_ps, previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_ln_ps)
   call leapfrog_2level_A(vors,  dt_vors,  previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_vors)
   call leapfrog_2level_A(divs,  dt_divs,  previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_divs)
-  call leapfrog_2level_A(ts,    dt_ts,    previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_ln_ts)
+  call leapfrog_2level_A(ts,    dt_ts,    previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_ts)
   robert_complete_for_fields = .false.
 else
   call leapfrog         (ln_ps, dt_ln_ps, previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
@@ -1407,7 +1407,7 @@ subroutine complete_robert_filter(tracer_attributes, part_filt_ln_ps, part_filt_
 
 type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
 complex, intent(in), dimension(:,:) :: part_filt_ln_ps
-complex, intent(in), dimension(:,:,:) :: part_filt_vors, part_filt_divs, part_filt_ln_ts
+complex, intent(in), dimension(:,:,:) :: part_filt_vors, part_filt_divs, part_filt_ts
 complex, intent(in), dimension(:,:,:,:) :: part_filt_trs
 
 
@@ -1430,7 +1430,7 @@ do ntr = 1, num_tracers
   if(uppercase(trim(tracer_attributes(ntr)%numerical_representation)) == 'SPECTRAL') then
     call leapfrog_2level_B(spec_tracers(:,:,:,:,ntr), part_filt_trs(:,:,:,ntr), previous, current, tracer_attributes(ntr)%robert_coeff, raw_filter_coeff)
   else
-    call leapfrog_2level_B(grid_tracers(:,:,:,:,ntr), part_filt_trs(:,:,:,ntr), previous, current, tracer_attributes(ntr)%robert_coeff, raw_filter_coeff)
+    call leapfrog_2level_B(grid_tracers(:,:,:,:,ntr), real(part_filt_trs(:,:,:,ntr)), previous, current, tracer_attributes(ntr)%robert_coeff, raw_filter_coeff)
   endif
   robert_complete_for_tracers=.true.
 enddo

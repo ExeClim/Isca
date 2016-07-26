@@ -168,7 +168,7 @@ real,    intent(in) :: delta_t, robert_coeff, raw_filter_coeff
 
 complex, intent(out), dimension(size(dt_a,1),size(dt_a,2)) :: prev_curr_part_raw_filter
 
-complex,              dimension(size(dt_a,1),size(dt_a,2)) :: prev_curr_part_raw_filter_tmp
+complex,              dimension(size(a,1),size(a,2),1) :: prev_curr_part_raw_filter_tmp
 
 
 complex, dimension(size(a,1),size(a,2),1,size(a,3)) :: a_3d
@@ -196,7 +196,7 @@ real,    intent(in) :: robert_coeff, raw_filter_coeff
 complex, dimension(size(a,1),size(a,2),1,size(a,3)) :: a_3d
 complex, intent(in), dimension(:,:) :: part_filt_a
 
-complex, dimension(size(a,1),size(a,2),1,size(a,3)) :: part_filt_a_3d
+complex, dimension(size(a,1),size(a,2),1) :: part_filt_a_3d
 
 
 
@@ -208,7 +208,7 @@ endif
 a_3d(:,:,1,:) = a
 part_filt_a_3d(:,:,1) = part_filt_a
 
-call leapfrog_2level_B_3d_complex (a_3d, part_filt_a, current, future, robert_coeff, raw_filter_coeff)
+call leapfrog_2level_B_3d_complex (a_3d, part_filt_a_3d, current, future, robert_coeff, raw_filter_coeff)
 a = a_3d(:,:,1,:)
 
 end subroutine leapfrog_2level_B_2d_complex
