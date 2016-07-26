@@ -810,6 +810,7 @@ integer :: ii,jj,kk,i1,j1,k1
 complex, dimension(ms:me, ns:ne              ) :: part_filt_ln_ps
 complex, dimension(ms:me, ns:ne, num_levels  ) :: part_filt_vors, part_filt_divs, part_filt_ts
 complex, dimension(ms:me, ns:ne, num_levels, num_tracers) :: part_filt_trs
+real, dimension(is:ie, js:je, num_levels, num_tracers) :: part_filt_tr
 ! < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < >
 
 if(.not.module_is_initialized) then
@@ -955,7 +956,7 @@ if(minval(tg(:,:,:,future)) < valid_range_t(1) .or. maxval(tg(:,:,:,future)) > v
   call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
 endif
 
-call update_tracers(tracer_attributes, dt_tracers_tmp, wg, p_half, delta_t, part_filt_trs)
+call update_tracers(tracer_attributes, dt_tracers_tmp, wg, p_half, delta_t, part_filt_trs, part_filt_tr)
 
 !mj add a vertical limit to water correction
 !call compute_corrections(delta_t, tracer_attributes)
@@ -979,7 +980,7 @@ tg_final  =  tg(:,:,:,current)
 grid_tracers_final(:,:,:,time_level_out,:) = grid_tracers(:,:,:,current,:)
 
 
-call complete_robert_filter(tracer_attributes, part_filt_ln_ps, part_filt_vors, part_filt_divs, part_filt_ts, part_filt_trs)
+call complete_robert_filter(tracer_attributes, part_filt_ln_ps, part_filt_vors, part_filt_divs, part_filt_ts, part_filt_trs, part_filt_tr)
 
 return
 end subroutine spectral_dynamics
@@ -1064,13 +1065,14 @@ end subroutine four_in_one
 
 !================================================================================
 
-subroutine update_tracers(tracer_attributes, dt_tr, wg, p_half, delta_t, part_filt_trs_out)
+subroutine update_tracers(tracer_attributes, dt_tr, wg, p_half, delta_t, part_filt_trs_out, part_filt_tr_out)
 
 type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
 real   , intent(inout), dimension(:,:,:,:) :: dt_tr
 real   , intent(in   ), dimension(:,:,:  ) :: wg, p_half
 real   , intent(in   )  :: delta_t
 complex, intent(out  ), dimension(ms:me, ns:ne, num_levels, num_tracers) :: part_filt_trs_out
+real, intent(out  ), dimension(is:ie, js:je, num_levels, num_tracers) :: part_filt_tr_out
 
 
 complex, dimension(ms:me, ns:ne, num_levels) :: dt_trs
@@ -1111,19 +1113,19 @@ do ntr = 1, num_tracers
     call vert_advection(delta_t, wg, dp, tr_future, dt_tmp, scheme=tracer_vert_advect_scheme(ntr), form=ADVECTIVE_FORM)
     tr_future = tr_future + delta_t*dt_tmp
     if(step_number == num_steps) then
-      part_filt_trs_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)
+      part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)
 
       grid_tracers(:,:,:,current,ntr) = grid_tracers(:,:,:,current,ntr) + &
-      tracer_attributes(ntr)%robert_coeff*(part_filt_trs_out(:,:,:,ntr))*raw_filter_coeff
+      tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr))*raw_filter_coeff
       robert_complete_for_tracers = .false.
     else
-      part_filt_trs_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)
+      part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)
       
       grid_tracers(:,:,:,current,ntr) = grid_tracers(:,:,:,current,ntr) + &
-      tracer_attributes(ntr)%robert_coeff*(part_filt_trs_out(:,:,:,ntr) + tr_future)*raw_filter_coeff
+      tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr) + tr_future)*raw_filter_coeff
       
       grid_tracers(:,:,:,future,ntr) = grid_tracers(:,:,:,future,ntr) + &
-      tracer_attributes(ntr)%robert_coeff*(part_filt_trs_out(:,:,:,ntr) + tr_future)*(raw_filter_coeff-1.0)
+      tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr) + tr_future)*(raw_filter_coeff-1.0)
       
       robert_complete_for_tracers = .true.
     endif
@@ -1403,12 +1405,13 @@ enddo
 return
 end subroutine complete_update_of_future
 !================================================================================
-subroutine complete_robert_filter(tracer_attributes, part_filt_ln_ps, part_filt_vors, part_filt_divs, part_filt_ts, part_filt_trs)
+subroutine complete_robert_filter(tracer_attributes, part_filt_ln_ps, part_filt_vors, part_filt_divs, part_filt_ts, part_filt_trs, part_filt_tr)
 
 type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
 complex, intent(in), dimension(:,:) :: part_filt_ln_ps
 complex, intent(in), dimension(:,:,:) :: part_filt_vors, part_filt_divs, part_filt_ts
 complex, intent(in), dimension(:,:,:,:) :: part_filt_trs
+real, intent(in), dimension(:,:,:,:) :: part_filt_tr
 
 
 integer :: ntr
@@ -1430,7 +1433,7 @@ do ntr = 1, num_tracers
   if(uppercase(trim(tracer_attributes(ntr)%numerical_representation)) == 'SPECTRAL') then
     call leapfrog_2level_B(spec_tracers(:,:,:,:,ntr), part_filt_trs(:,:,:,ntr), previous, current, tracer_attributes(ntr)%robert_coeff, raw_filter_coeff)
   else
-    call leapfrog_2level_B(grid_tracers(:,:,:,:,ntr), real(part_filt_trs(:,:,:,ntr)), previous, current, tracer_attributes(ntr)%robert_coeff, raw_filter_coeff)
+    call leapfrog_2level_B(grid_tracers(:,:,:,:,ntr), part_filt_tr(:,:,:,ntr), previous, current, tracer_attributes(ntr)%robert_coeff, raw_filter_coeff)
   endif
   robert_complete_for_tracers=.true.
 enddo
