@@ -1119,13 +1119,13 @@ do ntr = 1, num_tracers
       tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr))*raw_filter_coeff
       robert_complete_for_tracers = .false.
     else
-      part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)
+      part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)+tr_future
       
       grid_tracers(:,:,:,current,ntr) = grid_tracers(:,:,:,current,ntr) + &
-      tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr) + tr_future)*raw_filter_coeff
+      tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr))*raw_filter_coeff
       
-      grid_tracers(:,:,:,future,ntr) = grid_tracers(:,:,:,future,ntr) + &
-      tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr) + tr_future)*(raw_filter_coeff-1.0)
+      grid_tracers(:,:,:,future,ntr) = tr_future + &
+      tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr))*(raw_filter_coeff-1.0)
       
       robert_complete_for_tracers = .true.
     endif
