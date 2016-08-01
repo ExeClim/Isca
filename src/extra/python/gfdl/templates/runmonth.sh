@@ -9,8 +9,6 @@ ulimit -s unlimited
 
 cd {{ rundir }}
 
-ulimit -s unlimited
-
 # copy and extract the restart information
 {% if restart_file %}
 cd INPUT
