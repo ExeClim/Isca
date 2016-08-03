@@ -543,11 +543,14 @@ private
  logical :: do_simple             =.false.
  logical :: construct_table_wrt_liq = .false.
  logical :: construct_table_wrt_liq_and_ice = .false.
+ logical :: do_not_calculate = .false.
+    !! turn of esat calc altogether (for exoplanets where temperatures will be outside valid range)
 
  namelist / sat_vapor_pres_nml / show_bad_value_count_by_slice, show_all_bad_values, &
                                  use_exact_qs, do_simple, &
                                  construct_table_wrt_liq, &
-                                 construct_table_wrt_liq_and_ice
+                                 construct_table_wrt_liq_and_ice, &
+                                 do_not_calculate
 
 contains
 
@@ -567,6 +570,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es_k(temp, esat, nbad)
 
@@ -598,6 +602,7 @@ contains
 !-----------------------------------------------
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es_k(temp, esat, nbad)
 
@@ -632,6 +637,7 @@ contains
 !-----------------------------------------------
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es_k(temp, esat, nbad)
 
@@ -665,6 +671,7 @@ contains
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es_k(temp, esat, nbad)
 
@@ -696,6 +703,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es2_k(temp, esat, nbad)
 
@@ -727,6 +735,7 @@ contains
 !-----------------------------------------------
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es2_k(temp, esat, nbad)
 
@@ -761,6 +770,7 @@ contains
 !-----------------------------------------------
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es2_k(temp, esat, nbad)
 
@@ -794,6 +804,7 @@ contains
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es2_k(temp, esat, nbad)
 
@@ -825,6 +836,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es3_k(temp, esat, nbad)
 
@@ -856,6 +868,7 @@ contains
 !-----------------------------------------------
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es3_k(temp, esat, nbad)
 
@@ -890,6 +903,7 @@ contains
 !-----------------------------------------------
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es3_k(temp, esat, nbad)
 
@@ -923,6 +937,7 @@ contains
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es3_k(temp, esat, nbad)
 
@@ -957,6 +972,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_des_k( temp, desat, nbad)
 
@@ -988,6 +1004,7 @@ contains
 !-----------------------------------------------
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
    if(present(err_msg)) err_msg=''
 
    call lookup_des_k(temp, desat, nbad)
@@ -1022,6 +1039,7 @@ contains
 !-----------------------------------------------
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_des_k(temp, desat, nbad)
 
@@ -1053,6 +1071,7 @@ contains
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_des_k( temp, desat, nbad )
 
@@ -1083,6 +1102,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_des2_k( temp, desat, nbad)
 
@@ -1114,6 +1134,7 @@ contains
 !-----------------------------------------------
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
    if(present(err_msg)) err_msg=''
 
    call lookup_des2_k(temp, desat, nbad)
@@ -1148,6 +1169,7 @@ contains
 !-----------------------------------------------
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_des2_k(temp, desat, nbad)
 
@@ -1179,6 +1201,7 @@ contains
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_des2_k( temp, desat, nbad )
 
@@ -1209,6 +1232,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_des3_k( temp, desat, nbad)
 
@@ -1240,6 +1264,7 @@ contains
 !-----------------------------------------------
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
    if(present(err_msg)) err_msg=''
 
    call lookup_des3_k(temp, desat, nbad)
@@ -1274,6 +1299,7 @@ contains
 !-----------------------------------------------
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_des3_k(temp, desat, nbad)
 
@@ -1305,6 +1331,7 @@ contains
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_des3_k( temp, desat, nbad )
 
@@ -1339,6 +1366,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es_des_k(temp, esat, desat, nbad)
 
@@ -1370,6 +1398,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es_des_k(temp, esat, desat, nbad)
 
@@ -1402,6 +1431,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es_des_k(temp, esat, desat, nbad)
 
@@ -1434,6 +1464,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es_des_k(temp, esat, desat, nbad)
 
@@ -1467,6 +1498,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es2_des2_k(temp, esat, desat, nbad)
 
@@ -1498,6 +1530,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es2_des2_k(temp, esat, desat, nbad)
 
@@ -1530,6 +1563,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es2_des2_k(temp, esat, desat, nbad)
 
@@ -1562,6 +1596,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es2_des2_k(temp, esat, desat, nbad)
 
@@ -1596,6 +1631,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es3_des3_k(temp, esat, desat, nbad)
 
@@ -1627,6 +1663,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es3_des3_k(temp, esat, desat, nbad)
 
@@ -1659,6 +1696,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es3_des3_k(temp, esat, desat, nbad)
 
@@ -1691,6 +1729,7 @@ contains
  character(len=128) :: err_msg_local
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    call lookup_es3_des3_k(temp, esat, desat, nbad)
 
@@ -1732,6 +1771,7 @@ contains
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    if (present(es_over_liq)) then
      if (.not. (construct_table_wrt_liq)) then
@@ -1789,6 +1829,7 @@ real,  intent(in),              optional :: hc
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    if (present(es_over_liq)) then
      if (.not. (construct_table_wrt_liq)) then
@@ -1849,6 +1890,7 @@ real,  intent(in),              optional :: hc
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    if (present(es_over_liq)) then
      if (.not. (construct_table_wrt_liq)) then
@@ -1908,6 +1950,7 @@ real,  intent(in),              optional :: hc
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    if (present(es_over_liq)) then
      if (.not. (construct_table_wrt_liq)) then
@@ -1968,6 +2011,7 @@ real,  intent(in),              optional :: hc
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    if (present(es_over_liq)) then
      if (.not. (construct_table_wrt_liq)) then
@@ -2026,6 +2070,7 @@ real,  intent(in),              optional :: hc
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    if (present(es_over_liq)) then
      if (.not. (construct_table_wrt_liq)) then
@@ -2086,6 +2131,7 @@ real,  intent(in),              optional :: hc
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    if (present(es_over_liq)) then
      if (.not. (construct_table_wrt_liq)) then
@@ -2146,6 +2192,7 @@ real,  intent(in),              optional :: hc
  character(len=128) :: err_msg_tmp
 
    if (.not.module_is_initialized) call sat_vapor_pres_init
+   if (do_not_calculate) return
 
    if (present(es_over_liq)) then
      if (.not. (construct_table_wrt_liq)) then
