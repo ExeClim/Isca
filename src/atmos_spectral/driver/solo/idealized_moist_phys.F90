@@ -210,7 +210,9 @@ integer ::           &
      id_cond_dt_tg,  &   ! temperature tendency from convection
      id_cond_dt_qg,  &   ! temperature tendency from convection
      id_rh,          & 	 ! Relative humidity
-     id_z_tg       	 ! Relative humidity
+     id_z_tg,        &   ! Relative humidity
+     id_cape,        &
+     id_cin
 
 integer, allocatable, dimension(:,:) :: & convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
@@ -475,6 +477,10 @@ id_cond_rain = register_diag_field(mod_name, 'condensation_rain',          &
      axes(1:2), Time, 'Rain from condensation','kg/m/m/s')
 id_precip = register_diag_field(mod_name, 'precipitation',          &
      axes(1:2), Time, 'Precipitation from resolved, parameterised and snow','kg/m/m/s')
+id_cape = register_diag_field(mod_name, 'cape',          &
+     axes(1:2), Time, 'Convective Available Potential Energy','J/kg')
+id_cin = register_diag_field(mod_name, 'cin',          &
+     axes(1:2), Time, 'Convective Inhibition','J/kg')
 
 select case(r_conv_scheme)
 
@@ -586,6 +592,8 @@ case(MOIST_QE_CONV)
    if(id_conv_dt_qg > 0) used = send_data(id_conv_dt_qg, conv_dt_qg, Time)
    if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
    if(id_conv_rain  > 0) used = send_data(id_conv_rain, rain, Time)
+   if(id_cape  > 0) used = send_data(id_cape, cape, Time)
+   if(id_cin  > 0) used = send_data(id_cin, cin, Time)
 
 case(BETTS_MILLER_CONV)
    call betts_miller (          delta_t,           tg(:,:,:,previous),       &
@@ -611,18 +619,21 @@ case(BETTS_MILLER_CONV)
    if(id_conv_dt_qg > 0) used = send_data(id_conv_dt_qg, conv_dt_qg, Time)
    if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
    if(id_conv_rain  > 0) used = send_data(id_conv_rain, rain, Time)
+   if(id_cape  > 0) used = send_data(id_cape, cape, Time)
+   if(id_cin  > 0) used = send_data(id_cin, cin, Time)
+
 
 case(DRY_CONV)
     call dry_convection(Time, tg(:, :, :, previous),                         &
                         p_full(:,:,:,previous), p_half(:,:,:,previous),      &
-                        conv_dt_tg)
+                        conv_dt_tg, cape, cin)
 
-    tg_tmp = conv_dt_tg + tg(:,:,:,previous)
+    tg_tmp = conv_dt_tg*delta_t + tg(:,:,:,previous)
     qg_tmp = grid_tracers(:,:,:,previous,nsphum)
 
-    conv_dt_tg = conv_dt_tg/delta_t
     if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
-
+    if(id_cape  > 0) used = send_data(id_cape, cape, Time)
+    if(id_cin  > 0) used = send_data(id_cin, cin, Time)
 
 case(NO_CONV)
    tg_tmp = tg(:,:,:,previous)
@@ -657,10 +668,10 @@ if (r_conv_scheme .ne. DRY_CONV) then
   dt_tg = dt_tg + cond_dt_tg
   dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + cond_dt_qg
 
-  if(id_cond_dt_qg > 0) used = send_data(id_cond_dt_qg, cond_dt_qg, Time)
-  if(id_cond_dt_tg > 0) used = send_data(id_cond_dt_tg, cond_dt_tg, Time)
-  if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
-  if(id_precip     > 0) used = send_data(id_precip, precip, Time)
+  ! if(id_cond_dt_qg > 0) used = send_data(id_cond_dt_qg, cond_dt_qg, Time)
+  ! if(id_cond_dt_tg > 0) used = send_data(id_cond_dt_tg, cond_dt_tg, Time)
+  ! if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
+  ! if(id_precip     > 0) used = send_data(id_precip, precip, Time)
 
 endif
 
