@@ -383,7 +383,7 @@ if (do_seasonal) then
   call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
   insolation = solar_constant * coszen
 else
-  ! Default: Permanent equinox at all longitudes
+  ! Default: Averaged Earth insolation at all longitudes
   p2          = (1. - 3.*sin(lat)**2)/4.
   insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
 end if

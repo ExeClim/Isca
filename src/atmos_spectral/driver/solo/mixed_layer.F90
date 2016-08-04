@@ -552,7 +552,7 @@ endif !s end of if(do_sc_sst).
 ! Finally calculate the increments for the lowest atmospheric layer
 !
 Tri_surf%delta_t = fn_t + en_t * delta_t_surf
-Tri_surf%delta_tr(:,:,nhum) = fn_q + en_q * delta_t_surf
+if (evaporation) Tri_surf%delta_tr(:,:,nhum) = fn_q + en_q * delta_t_surf
 
 
 !
