@@ -79,6 +79,8 @@ real    :: linear_tau      = 0.1
 real    :: wv_exponent     = 4.0
 real    :: solar_exponent  = 4.0
 logical :: do_seasonal     = .false.
+integer :: solday          = -10 !s Day of year to run perpetually if do_seasonal=True and solday>0
+real    :: equinox_day     = 0.0 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months).
 
 character(len=32) :: rad_scheme = 'frierson'
 
@@ -115,7 +117,8 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            linear_tau, del_sw, wv_exponent, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
-           ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme
+           ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme, &
+           solday, equinox_day
 
 
 !==================================================================================
@@ -358,9 +361,17 @@ if (do_seasonal) then
   r_seconds = real(seconds)
   day_in_s = length_of_day()
   frac_of_day = r_seconds / day_in_s
-  frac_of_year = r_seconds / year_in_s
+  
+  if(solday .ge. 0) then
+      frac_of_year = (solday*day_in_s) / year_in_s
+  else
+      frac_of_year = r_seconds / year_in_s
+  endif
+
   gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
-  time_since_ae = abs(mod(frac_of_year, 1.0)) * 2.0 * pi
+
+  time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
+
   call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
   insolation = solar_constant * coszen
 else
