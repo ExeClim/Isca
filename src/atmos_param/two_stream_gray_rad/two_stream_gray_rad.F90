@@ -124,7 +124,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
            ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme, &
-           do_read_co2
+           do_read_co2,co2_file
 
 
 !==================================================================================
