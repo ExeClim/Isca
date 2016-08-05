@@ -608,7 +608,7 @@ call get_grid_domain(is, ie, js, je)
 	         frac_of_year = r_seconds / year_in_s
              endif
 	     gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
-	     time_since_ae = abs(mod(frac_of_year-equinox_day, 1.0)) * 2.0 * pi
+	     time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
 
           if(do_rad_time_avg) then
 	     dt_rad_radians = (dt_rad_avg/day_in_s)*2.0*pi
