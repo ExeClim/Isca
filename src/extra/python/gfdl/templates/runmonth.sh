@@ -5,6 +5,8 @@ module purge
 source {{ srcdir }}/src/extra/loadmodule
 module list
 
+ulimit -s unlimited
+
 cd {{ rundir }}
 
 ulimit -s unlimited

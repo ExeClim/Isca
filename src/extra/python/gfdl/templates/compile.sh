@@ -25,16 +25,17 @@ export MALLOC_CHECK_=0
 #--------------------------------------------------------------------------------------------------------
 # compile combine tool
 cd $ppdir
-cc -O -c `nf-config --cflags` mppnccombine.c
-if [ $? != 0 ]; then
-    echo "ERROR: could not compile combine tool"
-    exit 1
-fi
-cc -O -o mppnccombine.x `nf-config --libs`  mppnccombine.o
-if [ $? != 0 ]; then
-    echo "ERROR: could not compile combine tool"
-    exit 1
-fi
+# cc -O -c `nf-config --cflags` mppnccombine.c
+# if [ $? != 0 ]; then
+#     echo "ERROR: could not compile combine tool"
+#     exit 1
+# fi
+# cc -O -o mppnccombine.x `nf-config --libs`  mppnccombine.o
+# if [ $? != 0 ]; then
+#     echo "ERROR: could not compile combine tool"
+#     exit 1
+# fi
+./compile_mppn.sh
 
 ln -s $ppdir/mppnccombine.x {{ execdir }}/mppnccombine.x
 #--------------------------------------------------------------------------------------------------------
