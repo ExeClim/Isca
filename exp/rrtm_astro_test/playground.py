@@ -3,7 +3,7 @@ import os
 
 from gfdl.experiment import Experiment, DiagTable
 
-baseexp = Experiment('rrtm_astro_time_manager_fresh', overwrite_data=True)
+baseexp = Experiment('rrtm_astro_minimal_changes', overwrite_data=True)
 
 #s Define input files for experiment - by default they are found in exp_dir/input/
 
@@ -90,7 +90,7 @@ baseexp.clear_rundir()
 
 #s Namelist changes from default values
 baseexp.namelist['main_nml'] = {
-     'days'   : 3,	
+     'days'   : 1,	
      'hours'  : 0,
      'minutes': 0,
      'seconds': 0,			
@@ -127,9 +127,9 @@ baseexp.namelist['rrtm_radiation_nml']['do_rad_time_avg'] = True #s set solar co
 #s End namelist changes from default values
 
 
-for evap_res in [26]:
+for evap_res in [2]:
     evap_res_name = evap_res
-    exp = Experiment('rrtm_time_manager_fresh_%d' % evap_res_name, overwrite_data=True)
+    exp = Experiment('rrtm_minimal_changes_mk2_%d' % evap_res_name, overwrite_data=True)
     exp.clear_rundir()
 
     exp.use_diag_table(diag)
