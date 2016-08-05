@@ -611,11 +611,7 @@ call get_grid_domain(is, ie, js, je)
 	     time_since_ae = abs(mod(frac_of_year-equinox_day, 1.0)) * 2.0 * pi
 
           if(do_rad_time_avg) then
-!		if(previous==current) then
-!		     dt_rad_radians = (dt_rad_avg/day_in_s)*2.0*pi
-!		else
-!		     dt_rad_radians = (dt_rad_avg/day_in_s)*2.0*pi
-!		endif
+	     dt_rad_radians = (dt_rad_avg/day_in_s)*2.0*pi
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun,dt_rad_radians)
           else
 	     ! Seasonal Cycle: Use astronomical parameters to calculate insolation
