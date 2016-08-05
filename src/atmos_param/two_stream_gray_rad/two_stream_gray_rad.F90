@@ -38,6 +38,8 @@ module two_stream_gray_rad_mod
 
    use astronomy_mod,         only: astronomy_init, diurnal_solar
 
+   use interpolator_mod,      only: interpolate_type, interpolator_init, interpolator, ZERO, interpolator_end
+
 !==================================================================================
 implicit none
 private
@@ -110,12 +112,19 @@ real, allocatable, dimension(:,:)   :: sw_wv, del_sol_tau, sw_tau_k, lw_del_tau,
 
 real, save :: pi, deg_to_rad , rad_to_deg
 
+!extras for reading in co2 concentration
+logical                             :: do_read_co2=.false.
+type(interpolate_type),save         :: co2_interp           ! use external file for co2
+character(len=256)                  :: co2_file='co2'       !  file name of co2 file to read
+
+
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            ir_tau_eq, ir_tau_pole, atm_abs, sw_diff, &
            linear_tau, del_sw, wv_exponent, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
-           ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme
+           ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme, &
+           do_read_co2,co2_file
 
 
 !==================================================================================
@@ -137,12 +146,13 @@ contains
 ! ==================================================================================
 
 
-subroutine two_stream_gray_rad_init(is, ie, js, je, num_levels, axes, Time)
+subroutine two_stream_gray_rad_init(is, ie, js, je, num_levels, axes, Time, lonb, latb)
 
 !-------------------------------------------------------------------------------------
 integer, intent(in), dimension(4) :: axes
 type(time_type), intent(in)       :: Time
 integer, intent(in)               :: is, ie, js, je, num_levels
+real ,dimension(:,:),intent(in),optional :: lonb,latb !s Changed to 2d arrays as 2013 interpolator expects this.
 !-------------------------------------------------------------------------------------
 integer, dimension(3) :: half = (/1,2,4/)
 integer :: ierr, io, unit
@@ -169,6 +179,11 @@ deg_to_rad = pi/180.
 rad_to_deg = 180./pi
 
 call astronomy_init
+
+if(do_read_co2)then
+   call interpolator_init (co2_interp, trim(co2_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+endif
+
 
 if(uppercase(trim(rad_scheme)) == 'GEEN') then
   lw_scheme = B_GEEN
@@ -343,7 +358,11 @@ real :: bog_a = 0.8678
 real :: bog_b = 1997.9
 real :: bog_mu = 1.0
 
+real ,dimension(size(q,1),size(q,2),size(q,3)) :: co2f
+
 n = size(t,3)
+
+
 
 ! albedo(:,:) = albedo_value !s albedo now set in mixed_layer_init.
 
@@ -377,7 +396,7 @@ case(B_GEEN)
     sw_wv = sw_tau_k + 0.5194
     sw_wv = exp( 0.01887 / (sw_tau_k + 0.009522)                      &
                  + 1.603 / ( sw_wv*sw_wv ) )
-    del_sol_tau(:,:) = ( 0.0596 + 0.0029 * log(carbon_conc/360)       &
+    del_sol_tau(:,:) = ( 0.0596 + 0.0029 * log(carbon_conc/360.)       &
                                 + sw_wv(:,:) * q(:,:,k) )             &
                      * ( p_half(:,:,k+1) - p_half(:,:,k) ) / p_half(:,:,n+1)
     sw_dtrans(:,:,k) = exp( - del_sol_tau(:,:) )
@@ -417,6 +436,12 @@ end select
 b = stefan*t**4
 lw_dtrans_win = 1.
 
+if(do_read_co2)then
+  call interpolator( co2_interp, Time_diag, p_half, co2f, trim(co2_file))
+  carbon_conc = maxval(co2f) !Needs maxval just because co2f is a 3d array of a constant, so maxval is just a way to pick out one number
+endif
+
+
 select case(lw_scheme)
 case(B_GEEN)
   ! split LW in 2 bands: water-vapour window and remaining = non-window
@@ -452,6 +477,7 @@ case(B_BYRNE)
   !      Land–ocean warming contrast over a wide range of climates:
   !      Convective quasi-equilibrium theory and idealized simulations.
   !      J. Climate 26, 4000–4106 (2013).
+
   do k = 1, n
     lw_del_tau    = (bog_a*bog_mu + 0.17 * log(carbon_conc/360.)  + bog_b*q(:,:,k)) * (( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1))
     lw_dtrans(:,:,k) = exp( - lw_del_tau )
@@ -651,6 +677,8 @@ endif
 if (lw_scheme.eq.B_BYRNE) then
   deallocate (lw_del_tau)
 endif
+
+if(do_read_co2)call interpolator_end(co2_interp)
 
 end subroutine two_stream_gray_rad_end
 
