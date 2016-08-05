@@ -37,6 +37,7 @@
         logical                                    :: rrtm_init=.false.    ! has radiation been initialized?
         type(interpolate_type),save                :: o3_interp            ! use external file for ozone
         type(interpolate_type),save                :: h2o_interp           ! use external file for water vapor
+        type(interpolate_type),save                :: co2_interp           ! use external file for co2
         type(interpolate_type),save                :: rad_interp           ! use external file for radiation
         type(interpolate_type),save                :: fsw_interp           ! use external file for SW fluxes
         type(interpolate_type),save                :: flw_interp           ! use external file for SLW fluxes
@@ -87,7 +88,6 @@
                                                                             ! dimension (lon x lat x pfull)
         real(kind=rb),allocatable,dimension(:,:,:) :: t_half                ! temperature at half levels [K]
                                                                             ! dimension (lon x lat x phalf)
-        real(kind=rb),allocatable,dimension(:,:,:) :: t_half_add_tw         ! Penny added please delete after debugging
                                                                             
 
         real(kind=rb),allocatable,dimension(:,:)   :: rrtm_precip           ! total time of precipitation
@@ -100,7 +100,7 @@
                                                                             ! used for alarm
 !---------------------------------------------------------------------------------------------------------------
 ! some constants
-        real(kind=rb)      :: daypersec=1./86400,deg2rad
+        real(kind=rb)      :: daypersec=1./86400.,deg2rad
 ! no clouds in the radiative scheme
         integer(kind=im) :: icld=0,idrv=0, &
              inflglw=0,iceflglw=0,liqflglw=0, &
@@ -126,6 +126,9 @@
         character(len=256) :: ozone_file='ozone'              !  file name of ozone file to read
         logical            :: do_read_h2o=.false.             ! read water vapor from an external file?
         character(len=256) :: h2o_file='h2o'                  !  file name of h2o file to read
+        logical            :: do_read_co2=.false.             ! read co2 concentration from an external file?
+        character(len=256) :: co2_file='co2'                  !  file name of co2 file to read
+
 ! secondary gases (CH4,N2O,O2,CFC11,CFC12,CFC22,CCL4)
         logical            :: include_secondary_gases=.false. ! non-zero values for above listed secondary gases?
         real(kind=rb)      :: ch4_val  = 0.                   !  if .true., value for CH4
@@ -178,7 +181,7 @@
 !
 !-------------------- diagnostics fields -------------------------------
 
-        integer :: id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_z_thalf
+        integer :: id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2
         character(len=14), parameter :: mod_name_rad = 'rrtm_radiation' !s changed parameter name from mod_name to mod_name_rad as compiler objected, presumably because mod_name also defined in idealized_moist_physics.F90 after use rrtm_vars is included. 
         real :: missing_value = -999.
 
@@ -195,7 +198,7 @@
              &store_intermediate_rad, do_rad_time_avg, dt_rad, dt_rad_avg, &
              &lonstep, do_zm_tracers, do_zm_rad, &
              &do_precip_albedo, precip_albedo_mode, precip_albedo, precip_lat,&
-             &use_dyofyr, solrad, solday, equinox_day,solr_cnst
+             &do_read_co2, co2_file, use_dyofyr, solrad, solday, equinox_day,solr_cnst
 
       end module rrtm_vars
 !*****************************************************************************************
@@ -291,10 +294,10 @@
                register_diag_field ( mod_name_rad, 'ozone', axes(1:3), Time, &
                  'Ozone', &
                  'mmr', missing_value=missing_value               )
-          id_z_thalf = &
-               register_diag_field ( mod_name_rad, 'z_thalf', axes(1:3), Time, &
-                 'Temperature tendency due to radiation', &
-                 'K/s', missing_value=missing_value               ) !DELETE AFTER DEBUG
+          id_co2   = &
+               register_diag_field ( mod_name_rad, 'co2', axes(1:3), Time, &
+                 'Co2', &
+                 'mmr', missing_value=missing_value               )
 
 ! 
 !------------ make sure namelist choices are consistent -------
@@ -321,6 +324,9 @@
              if(do_precip_albedo) call error_mesg( 'rrtm_gases_init', &
                   'SETTING DO_PRECIP_ALBEDO TO FALSE AS DO_READ_RADIATION AND DO_READ_?W_FLUX ARE .TRUE.', NOTE)
              do_precip_albedo = .false.
+             if(do_read_co2) call error_mesg( 'rrtm_gases_init', &
+                  'SETTING DO_READ_CO2 TO FALSE AS DO_READ_RADIATION AND DO_READ_?W_FLUX ARE .TRUE.', NOTE)
+             do_read_co2   = .false.
           endif
 
 !------------ set some constants and parameters -------
@@ -356,9 +362,10 @@
           if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
 
 !------------ allocate arrays to be used later  -------
-call get_grid_domain(is, ie, js, je)
+
+          call get_grid_domain(is, ie, js, je)
           allocate(t_half(size(lonb,1)-1,size(latb,2)-1,nlay+1)) !s changed all size(latb) to size(latb,2) as latb now 2d in 2013, where it was 1d in MiMA.
- 
+
           if(.not. do_read_radiation .or. .not. do_read_sw_flux .and. .not. do_read_lw_flux)then
              allocate(h2o(ncols_rrt,nlay_rrt),o3(ncols_rrt,nlay_rrt), &
                   co2(ncols_rrt,nlay_rrt))
@@ -408,6 +415,10 @@ call get_grid_domain(is, ie, js, je)
              call interpolator_init (h2o_interp, trim(h2o_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
           endif
 
+          if(do_read_co2)then
+             call interpolator_init (co2_interp, trim(co2_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+          endif
+
           if(store_intermediate_rad .or. id_flux_sw > 0) &
                allocate(sw_flux(size(lonb,1)-1,size(latb,2)-1))
           if(store_intermediate_rad .or. id_flux_lw > 0) &
@@ -430,6 +441,7 @@ call get_grid_domain(is, ie, js, je)
              call error_mesg( mod_name_rad, &
                   ' running perpetual simulation', NOTE)
           endif
+
 
           rrtm_init=.true.
 
@@ -474,10 +486,8 @@ call get_grid_domain(is, ie, js, je)
                      * (t     (i,j,kend  ) - t     (i,j,kend-1))&
                      / (z_full(i,j,kend  ) - z_full(i,j,kend-1))
              enddo
-          enddo
+          enddo    
 
-          if ( id_z_thalf > 0 ) used = send_data ( id_z_thalf, t_half(:,:,1:kend), Time)
-       
 
         end subroutine interp_temp
 !*****************************************************************************************
@@ -534,6 +544,7 @@ call get_grid_domain(is, ie, js, je)
           integer k,j,i,ij,j1,i1,ij1,kend,dyofyr,seconds,days
           integer si,sj,sk,locmin(3)
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: o3f
+          real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: co2f,co2f_temp
           real(kind=rb),dimension(ncols_rrt,nlay_rrt) :: pfull,tfull,fracday&
                , hr,hrc, swhr, swhrc
           real(kind=rb),dimension(size(tdt,1),size(tdt,2),size(tdt,3)) :: tdt_rrtm
@@ -560,6 +571,7 @@ call get_grid_domain(is, ie, js, je)
 
           if(.not. rrtm_init)&
                call error_mesg('run_rrtm','module not initialized', FATAL)
+
 
 !check if we really want to recompute radiation (alarm,input file(s))
 ! alarm
@@ -656,6 +668,13 @@ call get_grid_domain(is, ie, js, je)
              call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_file))
           endif
 
+          !get co2
+          if(do_read_co2)then
+             call interpolator( co2_interp, Time_loc, p_half, co2f, trim(co2_file))
+	     co2f_temp = co2f*1.e-6
+             co2f = co2f_temp
+          endif
+
           !interactive albedo: zonal mean of precipitation
           if(do_precip_albedo .and. num_precip>0)then
              where ( abs(lat) < precip_lat*3.14159265/180. ) rrtm_precip = 0.
@@ -707,7 +726,9 @@ call get_grid_domain(is, ie, js, je)
           thalf = reshape(t_half(1:si:lonstep,:,sk+1:1:-1),(/ si*sj/lonstep,sk+1 /))
           h2o   = reshape(q_tmp (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
           if(do_read_ozone)o3 = reshape(o3f(1:si:lonstep,:,sk :1:-1),(/ si*sj/lonstep,sk  /))
-          
+          if(do_read_co2)co2 = reshape(co2f(1:si:lonstep,:,sk :1:-1),(/ si*sj/lonstep,sk  /))
+
+         
           cosz_rr   = reshape(coszen    (1:si:lonstep,:),(/ si*sj/lonstep /))
           albedo_rr = reshape(albedo_loc(1:si:lonstep,:),(/ si*sj/lonstep /))
           tsrf      = reshape(t_surf_rad(1:si:lonstep,:),(/ si*sj/lonstep /))
@@ -882,22 +903,22 @@ call get_grid_domain(is, ie, js, je)
           ! check if we want surface albedo as a function of precipitation
           !  call diagnostics accordingly
           if(do_precip_albedo)then
-             call write_diag_rrtm(Time,is,js,o3f,albedo_loc)
+             call write_diag_rrtm(Time,is,js,o3f,co2f,albedo_loc)
           else
-             call write_diag_rrtm(Time,is,js,o3f)
+             call write_diag_rrtm(Time,is,js,o3f,co2f)
           endif
         end subroutine run_rrtmg
 
 !*****************************************************************************************
 !*****************************************************************************************
-        subroutine write_diag_rrtm(Time,is,js,ozone,albedo_loc)
+        subroutine write_diag_rrtm(Time,is,js,ozone,cotwo,albedo_loc)
 ! 
 ! write out diagnostics fields
 !
 ! Modules
           use rrtm_vars,only:         sw_flux,lw_flux,zencos,tdt_rad,tdt_sw_rad,tdt_lw_rad,&
                                       &id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,&
-                                      &id_flux_sw,id_flux_lw,id_albedo,id_ozone
+                                      &id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2
           use diag_manager_mod, only: register_diag_field, send_data
           use time_manager_mod,only:  time_type
 ! Input variables
@@ -905,6 +926,7 @@ call get_grid_domain(is, ie, js, je)
           type(time_type)               ,intent(in)          :: Time
           integer                       ,intent(in)          :: is, js
           real(kind=rb),dimension(:,:,:),intent(in),optional :: ozone
+          real(kind=rb),dimension(:,:,:),intent(in),optional :: cotwo
           real(kind=rb),dimension(:,:  ),intent(in),optional :: albedo_loc
 ! Local variables
           logical :: used
@@ -949,15 +971,21 @@ call get_grid_domain(is, ie, js, je)
 !             used = send_data ( id_ozone, ozone, Time, is, js, 1 )
              used = send_data ( id_ozone, ozone, Time)
           endif
+!------- Co2                                   ------------
+          if ( present(cotwo) .and. id_co2 > 0 ) then
+             used = send_data ( id_co2, cotwo, Time)
+!	    if(maxval(cotwo) .ne. minval(cotwo)) write(6,*) 'warning, difference', maxval(cotwo)-minval(cotwo)
+          endif
         end subroutine write_diag_rrtm
 !*****************************************************************************************
 
         subroutine rrtm_radiation_end
-          use rrtm_vars, only: do_read_ozone,o3_interp
+          use rrtm_vars, only: do_read_ozone,o3_interp, do_read_co2, co2_interp
           use interpolator_mod, only: interpolator_end
           implicit none
 
           if(do_read_ozone)call interpolator_end(o3_interp)
+          if(do_read_co2)call interpolator_end(co2_interp)
 
         end subroutine rrtm_radiation_end
 
