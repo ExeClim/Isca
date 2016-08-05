@@ -351,7 +351,7 @@ real, intent(in), dimension(:,:,:)  :: t, q,  p_half
 integer :: i, j, k, n, dyofyr
 
 integer :: seconds, year_in_s
-real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s
+real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday
 logical :: used
 
 ! Byrne + O'Gorman rad scheme parameters
@@ -380,7 +380,8 @@ if (do_seasonal) then
   frac_of_day = r_seconds / day_in_s
   
   if(solday .ge. 0) then
-      frac_of_year = (solday*day_in_s) / year_in_s
+      r_solday=real(solday)
+      frac_of_year = (r_solday*day_in_s) / year_in_s
   else
       frac_of_year = r_seconds / year_in_s
   endif
