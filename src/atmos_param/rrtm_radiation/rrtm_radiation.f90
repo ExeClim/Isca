@@ -172,7 +172,7 @@
         real(kind=rb)      :: solrad=1.0                      ! distance Earth-Sun [AU] if use_dyofyr=.false.
         integer(kind=im)   :: solday=0                        ! if >0, do perpetual run corresponding to
                                                               !  day of the year = solday \in [0,days per year]
-        real(kind=rb)      :: equinox_day=0.25                ! fraction of the year defining March equinox \in [0,1]
+        real(kind=rb)      :: equinox_day=0.75                ! fraction of the year defining NH autumn equinox \in [0,1]
         real(kind=rb)      :: solr_cnst= 1368.22              ! solar constant [W/m2]
 !-------------------------------------------------s--------------------------------------------------------------
 !
