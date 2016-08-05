@@ -34,7 +34,6 @@ module two_stream_gray_rad_mod
 
    use    time_manager_mod,   only: time_type, length_of_year, length_of_day, &
                                     operator(+), operator(-), operator(/=), get_time
-   ! use rrtm_astro,            only: compute_zenith, astro_init, solday
 
    use astronomy_mod,         only: astronomy_init, diurnal_solar
 
@@ -335,9 +334,6 @@ end subroutine two_stream_gray_rad_init
 
 subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, lon, p_half, t,         &
                            net_surf_sw_down, surf_lw_down, albedo, q)
-
-  ! use rrtm_astro, only:      compute_zenith,use_dyofyr,solr_cnst,&
-  !                            solrad,solday,equinox_day
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.

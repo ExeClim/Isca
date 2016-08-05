@@ -217,7 +217,6 @@
 !
 ! Modules
           use rrtm_vars
-!          use rrtm_astro, only:       astro_init,solday
           use astronomy_mod,         only: astronomy_init
           use parrrtm, only:          nbndlw
           use parrrsw, only:          nbndsw
@@ -434,7 +433,6 @@
              num_precip  = 0
           endif
 
-          !call astro_init
 	  call astronomy_init
 
           if(solday .gt. 0)then
@@ -503,8 +501,6 @@
           use mpp_mod, only:         mpp_pe,mpp_root_pe
           use rrtmg_lw_rad, only:    rrtmg_lw
           use rrtmg_sw_rad, only:    rrtmg_sw
-!          use rrtm_astro, only:      compute_zenith,use_dyofyr,solr_cnst,&
-!                                     solrad,solday,equinox_day
           use astronomy_mod,         only: diurnal_solar
           use rrtm_vars
           use time_manager_mod,only: time_type,get_time,set_time, length_of_year, length_of_day
