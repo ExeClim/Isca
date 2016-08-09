@@ -120,7 +120,9 @@ end interface
 !---------------------------------------------------------------------
 !-------- namelist  ---------
 
-real    :: ecc   = 0.01671   ! eccentricity of orbital ellipse
+
+!real   :: ecc   = 0.01671   ! eccentricity of orbital ellipse
+real    :: ecc   = 0.0       ! eccentricity of orbital ellipse !s changed default eccentricity to zero, as this is how most 'simplified' models are run.
                              ! [ non-dimensional ]
 real    :: obliq = 23.439    ! obliquity [ degrees ]
 real    :: per   = 102.932   ! longitude of perihelion with respect
