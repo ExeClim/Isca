@@ -298,6 +298,7 @@
                  'Co2', &
                  'mmr', missing_value=missing_value               )
 
+
 ! 
 !------------ make sure namelist choices are consistent -------
 ! this does not work at the moment, as dt_atmos from coupler_mod induces a circular dependency at compilation
@@ -508,6 +509,7 @@
 
           use diag_manager_mod, only: register_diag_field, send_data
           use time_manager_mod,only:  time_type
+          use transforms_mod,only:    area_weighted_global_mean
 !---------------------------------------------------------------------------------------------------------------
 ! In/Out variables
           implicit none
@@ -554,11 +556,12 @@
           type(time_type) :: Time_loc
           real(kind=rb),dimension(size(q,1),size(q,2)) :: albedo_loc
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: q_tmp
+          real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
 
 	  integer :: year_in_s
-          real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday
+          real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
 
-          real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
+
 
 ! debug
           integer :: indx2(2),indx(3),ii,ji,ki
@@ -619,7 +622,8 @@
 	     time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
 
           if(do_rad_time_avg) then
-	     dt_rad_radians = (dt_rad_avg/day_in_s)*2.0*pi
+	     r_dt_rad_avg=real(dt_rad_avg)
+	     dt_rad_radians = (r_dt_rad_avg/day_in_s)*2.0*pi
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun,dt_rad_radians)
           else
 	     ! Seasonal Cycle: Use astronomical parameters to calculate insolation
@@ -944,7 +948,6 @@
           endif
 !------- cosine of zenith angle                ------------
           if ( id_coszen > 0 ) then
-!             used = send_data ( id_coszen, zencos, Time, is, js )
              used = send_data ( id_coszen, zencos, Time)
           endif
 !------- Net SW surface flux                   ------------
@@ -970,8 +973,8 @@
 !------- Co2                                   ------------
           if ( present(cotwo) .and. id_co2 > 0 ) then
              used = send_data ( id_co2, cotwo, Time)
-!	    if(maxval(cotwo) .ne. minval(cotwo)) write(6,*) 'warning, difference', maxval(cotwo)-minval(cotwo)
           endif
+
         end subroutine write_diag_rrtm
 !*****************************************************************************************
 
