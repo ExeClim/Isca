@@ -29,7 +29,6 @@ use time_manager_mod,  only: time_type, set_time, get_time, &
                              operator( // ), operator(<), get_calendar_type, NO_CALENDAR
 use constants_mod,     only: constants_init, PI
 use mpp_mod,           only: input_nml_file
-use transforms_mod,    only: get_grid_domain
 
 !--------------------------------------------------------------------
 
@@ -187,8 +186,6 @@ integer :: num_pts = 0              ! count of grid_boxes for which
 integer :: total_pts                ! number of grid boxes owned by the
                                     ! processor
 
-real, dimension(:,:), allocatable :: lat_widths
-
 
 !--------------------------------------------------------------------
 !--------------------------------------------------------------------
@@ -247,8 +244,7 @@ real,   dimension(:,:), intent(in), optional   :: lonb
 !  local variables:
 
       integer                         :: unit, ierr, io, seconds,  &
-                                         days, jd, id, is, ie, js, je
-      real, dimension((size(latb,1)-1),(size(latb,2)-1)) :: lat_widths_temp
+                                         days, jd, id
 
 !-------------------------------------------------------------------
 !  local variables:
@@ -357,12 +353,6 @@ real,   dimension(:,:), intent(in), optional   :: lonb
         allocate (solar_ann(jd))
         allocate (fracday_ann(jd))
         total_pts = jd*id
-
-        lat_widths_temp=abs(latb(:,1:(size(latb,2)-1))-latb(:,2:(size(latb,2))))
-
-        call get_grid_domain(is, ie, js, je)
-        allocate(lat_widths    (is:ie, js:je)); lat_widths=lat_widths_temp
-
       endif
 
 !---------------------------------------------------------------------
@@ -1133,7 +1123,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !   local variables
 
       real, dimension(size(lat,1),size(lat,2)) :: t, tt, h, aa, bb,  &
-                                                  st, stt, sh, fracday_2, lat_width
+                                                  st, stt, sh, fracday_2
       real                                     :: ang, dec
       logical :: Lallow_negative
 
@@ -1305,8 +1295,6 @@ real, dimension(:,:), intent(out), optional :: half_day_out
         else
            cosz = aa + bb*(stt - st)/ (tt - t)
         end if
-
-        cosz = cosz*(2.*sin(lat_widths/2.))/lat_widths
 
 !-------------------------------------------------------------------
 !    day fraction is the fraction of the averaging period contained
