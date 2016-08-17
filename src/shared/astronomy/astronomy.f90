@@ -1201,16 +1201,13 @@ real, dimension(:,:), intent(out), optional :: half_day_out
         st  = sin(t)
         stt = sin(tt)
         sh  = sin(h)
-
         cosz = 0.0
-        fracday_2=0.0
 
         if (.not. Lallow_negative) then
 !-------------------------------------------------------------------
 !    case 1: entire averaging period is before sunrise.
 !-------------------------------------------------------------------
         where (t < -h .and. tt < -h) cosz = 0.0
-        where (t < -h .and. tt < -h) fracday_2=1.0
 
 !-------------------------------------------------------------------
 !    case 2: averaging period begins before sunrise, ends after sunrise

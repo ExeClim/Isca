@@ -493,7 +493,7 @@
         end subroutine interp_temp
 !*****************************************************************************************
 !*****************************************************************************************
-        subroutine run_rrtmg(is,js,Time,Time_next,lat,lon,p_full,p_half,albedo,q,t,t_surf_rad,tdt,coszen,flux_sw,flux_lw)
+        subroutine run_rrtmg(is,js,Time,lat,lon,p_full,p_half,albedo,q,t,t_surf_rad,tdt,coszen,flux_sw,flux_lw)
 !
 ! Driver for RRTMG radiation scheme.
 ! Prepares all inputs, calls SW and LW radiation schemes, 
@@ -518,7 +518,7 @@
 
           integer, intent(in)                               :: is, js          ! index range for each CPU
 
-          type(time_type),intent(in)                        :: Time,Time_next            ! global time in calendar
+          type(time_type),intent(in)                        :: Time            ! global time in calendar
 
           real(kind=rb),dimension(:,:,:),intent(in)         :: p_full,p_half   ! pressure, full and half levels
                                                                                ! dimension (lat x lon x p*)
@@ -591,7 +591,7 @@
                 flux_lw  = 0.
              endif
              tdt = tdt + tdt_rrtm
-             call write_diag_rrtm(Time_next,is,js)
+             call write_diag_rrtm(Time,is,js)
              return !not time yet
           endif
 !make sure we run perpetual when solday > 0)
@@ -653,7 +653,7 @@
              tdt_rad = tdt_rrtm
              sw_flux = flux_sw
              lw_flux = flux_lw
-             call write_diag_rrtm(Time_next,is,js)
+             call write_diag_rrtm(Time_loc,is,js)
              return !we're done here
           endif
 !---------------------------------------------------------------------------------------------
@@ -905,9 +905,9 @@
           ! check if we want surface albedo as a function of precipitation
           !  call diagnostics accordingly
           if(do_precip_albedo)then
-             call write_diag_rrtm(Time_next,is,js,o3f,co2f,fracsun,albedo_loc)
+             call write_diag_rrtm(Time,is,js,o3f,co2f,fracsun,albedo_loc)
           else
-             call write_diag_rrtm(Time_next,is,js,o3f,co2f,fracsun)
+             call write_diag_rrtm(Time,is,js,o3f,co2f,fracsun)
           endif
         end subroutine run_rrtmg
 

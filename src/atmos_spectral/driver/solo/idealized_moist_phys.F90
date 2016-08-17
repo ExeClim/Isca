@@ -763,7 +763,7 @@ if(do_rrtm_radiation) then
    !need t at half grid
 	tg_interp=tg(:,:,:,previous)
    call interp_temp(z_full(:,:,:,current),z_half(:,:,:,current),tg_interp, Time)
-   call run_rrtmg(is,js,Time,Time+Time_step,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),coszen,net_surf_sw_down(:,:),surf_lw_down(:,:))
+   call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),coszen,net_surf_sw_down(:,:),surf_lw_down(:,:))
 endif
 #endif
 
