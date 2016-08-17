@@ -40,6 +40,8 @@ diag.add_field('rrtm_radiation', 'tdt_sw', time_avg=True, files=['atmos_hourly']
 diag.add_field('rrtm_radiation', 'tdt_lw', time_avg=True, files=['atmos_hourly'])
 
 diag.add_field('rrtm_radiation', 'coszen', time_avg=True, files=['atmos_hourly', 'atmos_daily'])
+diag.add_field('rrtm_radiation', 'fracday', time_avg=True, files=['atmos_hourly', 'atmos_daily'])
+diag.add_field('rrtm_radiation', 'half_day', time_avg=True, files=['atmos_hourly', 'atmos_daily'])
 
 diag.add_field('rrtm_radiation', 'coszen', time_avg=False, files=['atmos_hourly_mk2','atmos_daily_mk2'])
 
@@ -94,7 +96,7 @@ baseexp.namelist['main_nml'] = {
      'hours'  : 0,
      'minutes': 0,
      'seconds': 0,			
-     'dt_atmos':900,
+     'dt_atmos':720,
      'current_date' : [0001,1,1,0,0,0],
      'calendar' : 'thirty_day'
 }
@@ -118,8 +120,8 @@ baseexp.namelist['qflux_nml']['qflux_amp'] = 0.0
 baseexp.namelist['astronomy_nml']['ecc'] = 0.0 #s make orbit circular. 
 
 baseexp.namelist['rrtm_radiation_nml']['solr_cnst'] = 1360. #s set solar constant to 1360, rather than default of 1368.22
-baseexp.namelist['rrtm_radiation_nml']['solday'] = 90 #s set solar constant to 1360, rather than default of 1368.22
-baseexp.namelist['rrtm_radiation_nml']['dt_rad'] = 900 #s set solar constant to 1360, rather than default of 1368.22
+baseexp.namelist['rrtm_radiation_nml']['solday'] = 180 #s set solar constant to 1360, rather than default of 1368.22
+baseexp.namelist['rrtm_radiation_nml']['dt_rad'] = 3600 #s set solar constant to 1360, rather than default of 1368.22
 baseexp.namelist['rrtm_radiation_nml']['do_rad_time_avg'] = True #s set solar constant to 1360, rather than default of 1368.22
 
 #s Using perpetual equinox
@@ -127,9 +129,9 @@ baseexp.namelist['rrtm_radiation_nml']['do_rad_time_avg'] = True #s set solar co
 #s End namelist changes from default values
 
 
-for evap_res in [2]:
+for evap_res in [1]:
     evap_res_name = evap_res
-    exp = Experiment('rrtm_minimal_changes_mk2_%d' % evap_res_name, overwrite_data=True)
+    exp = Experiment('rrtm_minimal_changes_fix_seasonal_coszen_latitude_averaging_%d' % evap_res_name, overwrite_data=True)
     exp.clear_rundir()
 
     exp.use_diag_table(diag)
