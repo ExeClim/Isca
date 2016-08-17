@@ -181,7 +181,7 @@
 !
 !-------------------- diagnostics fields -------------------------------
 
-        integer :: id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_fracday, id_half_day
+        integer :: id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_fracday
         character(len=14), parameter :: mod_name_rad = 'rrtm_radiation' !s changed parameter name from mod_name to mod_name_rad as compiler objected, presumably because mod_name also defined in idealized_moist_physics.F90 after use rrtm_vars is included. 
         real :: missing_value = -999.
 
@@ -301,12 +301,6 @@
                register_diag_field ( mod_name_rad, 'fracday', axes(1:2), Time, &
                  'fracday', &
                  'none', missing_value=missing_value               )
-          id_half_day  = &
-               register_diag_field ( mod_name_rad, 'half_day', axes(1:2), Time, &
-                 'half_day', &
-                 'none', missing_value=missing_value               )
-
-
 ! 
 !------------ make sure namelist choices are consistent -------
 ! this does not work at the moment, as dt_atmos from coupler_mod induces a circular dependency at compilation
@@ -564,7 +558,7 @@
           type(time_type) :: Time_loc
           real(kind=rb),dimension(size(q,1),size(q,2)) :: albedo_loc
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: q_tmp
-          real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun, half_day
+          real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
 
 	  integer :: year_in_s
           real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
@@ -632,7 +626,7 @@
           if(do_rad_time_avg) then
 	     r_dt_rad_avg=real(dt_rad_avg)
 	     dt_rad_radians = (r_dt_rad_avg/day_in_s)*2.0*pi
-	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun,dt_rad_radians,.false., half_day)
+	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun,dt_rad_radians)
           else
 	     ! Seasonal Cycle: Use astronomical parameters to calculate insolation
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
@@ -911,25 +905,24 @@
           ! check if we want surface albedo as a function of precipitation
           !  call diagnostics accordingly
           if(do_precip_albedo)then
-             call write_diag_rrtm(Time_next,is,js,o3f,co2f,fracsun,half_day,albedo_loc)
+             call write_diag_rrtm(Time_next,is,js,o3f,co2f,fracsun,albedo_loc)
           else
-             call write_diag_rrtm(Time_next,is,js,o3f,co2f,fracsun, half_day)
+             call write_diag_rrtm(Time_next,is,js,o3f,co2f,fracsun)
           endif
         end subroutine run_rrtmg
 
 !*****************************************************************************************
 !*****************************************************************************************
-        subroutine write_diag_rrtm(Time,is,js,ozone,cotwo,fracday,half_day,albedo_loc)
+        subroutine write_diag_rrtm(Time,is,js,ozone,cotwo,fracday,albedo_loc)
 ! 
 ! write out diagnostics fields
 !
 ! Modules
           use rrtm_vars,only:         sw_flux,lw_flux,zencos,tdt_rad,tdt_sw_rad,tdt_lw_rad,&
                                       &id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,&
-                                      &id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_fracday, id_half_day
+                                      &id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_fracday
           use diag_manager_mod, only: register_diag_field, send_data
           use time_manager_mod,only:  time_type
-          use transforms_mod,only:    area_weighted_global_mean
 
 ! Input variables
           implicit none
@@ -937,10 +930,9 @@
           integer                       ,intent(in)          :: is, js
           real(kind=rb),dimension(:,:,:),intent(in),optional :: ozone
           real(kind=rb),dimension(:,:,:),intent(in),optional :: cotwo
-          real(kind=rb),dimension(:,:  ),intent(in),optional :: albedo_loc,fracday,half_day
+          real(kind=rb),dimension(:,:  ),intent(in),optional :: albedo_loc,fracday
 ! Local variables
           logical :: used
-	  real    :: global_coszen
 
 !------- temperature tendency due to radiation ------------
           if ( id_tdt_rad > 0 ) then
@@ -959,8 +951,6 @@
           endif
 !------- cosine of zenith angle                ------------
           if ( id_coszen > 0 ) then
-	     global_coszen=area_weighted_global_mean(zencos)
-             write(6,*) global_coszen
              used = send_data ( id_coszen, zencos, Time)
           endif
 !------- Net SW surface flux                   ------------
@@ -991,11 +981,6 @@
 !------- Fracday                                 ------------
           if ( present(fracday) .and. id_fracday > 0 ) then
              used = send_data ( id_fracday, fracday, Time)
-          endif
-
-!------- Halfday                                 ------------
-          if ( present(half_day) .and. id_half_day > 0 ) then
-             used = send_data ( id_half_day, half_day, Time)
           endif
 
         end subroutine write_diag_rrtm
