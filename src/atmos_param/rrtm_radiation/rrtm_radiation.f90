@@ -442,7 +442,7 @@
              num_precip  = 0
           endif
 
-	  call astronomy_init
+	  call astronomy_init(latb,lonb)
 
           if(solday .gt. 0)then
              call error_mesg( mod_name_rad, &
