@@ -207,8 +207,8 @@ integer ::           &
      id_precip,      &   ! rain and snow from condensation and convection
      id_conv_dt_tg,  &   ! temperature tendency from convection
      id_conv_dt_qg,  &   ! temperature tendency from convection
-     id_cond_dt_tg,  &   ! temperature tendency from convection
-     id_cond_dt_qg,  &   ! temperature tendency from convection
+     id_cond_dt_tg,  &   ! temperature tendency from condensation
+     id_cond_dt_qg,  &   ! temperature tendency from condensation
      id_rh,          & 	 ! Relative humidity
      id_z_tg,        &   ! Relative humidity
      id_cape,        &
@@ -668,10 +668,10 @@ if (r_conv_scheme .ne. DRY_CONV) then
   dt_tg = dt_tg + cond_dt_tg
   dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + cond_dt_qg
 
-  ! if(id_cond_dt_qg > 0) used = send_data(id_cond_dt_qg, cond_dt_qg, Time)
-  ! if(id_cond_dt_tg > 0) used = send_data(id_cond_dt_tg, cond_dt_tg, Time)
-  ! if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
-  ! if(id_precip     > 0) used = send_data(id_precip, precip, Time)
+  if(id_cond_dt_qg > 0) used = send_data(id_cond_dt_qg, cond_dt_qg, Time)
+  if(id_cond_dt_tg > 0) used = send_data(id_cond_dt_tg, cond_dt_tg, Time)
+  if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
+  if(id_precip     > 0) used = send_data(id_precip, precip, Time)
 
 endif
 
