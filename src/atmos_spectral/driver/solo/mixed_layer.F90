@@ -107,6 +107,7 @@ logical :: do_qflux         = .false. !mj
 logical :: do_warmpool      = .false. !mj
 logical :: do_read_sst      = .false. !mj
 logical :: do_sc_sst        = .false. !mj
+logical :: specify_sst_over_ocean_only = .false.
 character(len=256) :: sst_file
 character(len=256) :: land_option = 'none'
 real,dimension(10) :: slandlon=0,slandlat=0,elandlon=-1,elandlat=-1
@@ -127,7 +128,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               elandlon,elandlat,                             &  !mj
                               land_h_capacity_prefactor,                     &  !s
                               land_albedo_prefactor,                         &  !s
-			      load_qflux,qflux_file_name,time_varying_qflux
+			      load_qflux,qflux_file_name,time_varying_qflux, specify_sst_over_ocean_only
 
 !=================================================================================================================================
 
@@ -565,8 +566,17 @@ endif
 if(do_sc_sst) then !mj sst read from input file
          call interpolator( sst_interp, Time, sst_new, trim(sst_file) )
          delta_t_surf = sst_new - t_surf
-         t_surf = t_surf + delta_t_surf
-else   !s use the land_sea_heat_capacity calculated in mixed_layer_init
+         
+         if(specify_sst_over_ocean_only) then
+			 where (.not.land) t_surf = t_surf + delta_t_surf			 
+		 else
+		     t_surf = t_surf + delta_t_surf
+	     endif
+	     
+end if
+
+if ((.not.do_sc_sst).or.(do_sc_sst.and.(.not.specify_sst_over_ocean_only))) then
+  !s use the land_sea_heat_capacity calculated in mixed_layer_init
 
 
 	! Now update the mixed layer surface temperature using an implicit step
@@ -580,7 +590,11 @@ else   !s use the land_sea_heat_capacity calculated in mixed_layer_init
 
 	delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
 
-	t_surf = t_surf + delta_t_surf
+    if(specify_sst_over_ocean_only) then
+		 where (.not.land) t_surf = t_surf + delta_t_surf			 
+    else
+	     t_surf = t_surf + delta_t_surf
+	endif
 
 endif !s end of if(do_sc_sst).
 
