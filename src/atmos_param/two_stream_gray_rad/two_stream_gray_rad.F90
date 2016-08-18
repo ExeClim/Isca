@@ -99,6 +99,11 @@ real    :: ir_tau_wv       = 351.48
 real    :: window          = 0.3732
 real    :: carbon_conc     = 360.0
 
+! parameters for Byrne and OGorman radiation scheme
+real :: bog_a = 0.8678
+real :: bog_b = 1997.9
+real :: bog_mu = 1.0
+
 real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 !s albedo now defined in mixed_layer_init
 real, allocatable, dimension(:,:)   :: b_surf
 real, allocatable, dimension(:,:,:) :: b, tdt_rad, tdt_solar
@@ -125,7 +130,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
            ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme, &
-           do_read_co2, co2_file, solday, equinox_day
+           do_read_co2, co2_file, solday, equinox_day, bog_a, bog_b, bog_mu
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -350,10 +355,6 @@ integer :: seconds, year_in_s
 real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday
 logical :: used
 
-! Byrne + O'Gorman rad scheme parameters
-real :: bog_a = 0.8678
-real :: bog_b = 1997.9
-real :: bog_mu = 1.0
 
 real ,dimension(size(q,1),size(q,2),size(q,3)) :: co2f
 
