@@ -484,6 +484,7 @@ end subroutine mixed_layer_init
 
 subroutine mixed_layer (                                               &
      Time,                                                             &
+     Time_next,                                                        &
      t_surf,                                                           &
      flux_t,                                                           &
      flux_q,                                                           &
@@ -500,7 +501,7 @@ subroutine mixed_layer (                                               &
      dedq_atm)
 
 ! ---- arguments -----------------------------------------------------------
-type(time_type), intent(in)       :: Time
+type(time_type), intent(in)       :: Time, Time_next
 real, intent(in),  dimension(:,:) :: &
      net_surf_sw_down, surf_lw_down
 real, intent(in), dimension(:,:) :: &
@@ -545,7 +546,7 @@ beta_q = dedt_surf + dedq_atm * en_q
 beta_lw = drdt_surf
 
 ! If time-varying qflux then update value
-if(load_qflux.and.time_varying_qflux) then 
+if(load_qflux.and.time_varying_qflux) then
          call interpolator( qflux_interp, Time, ocean_qflux, trim(qflux_file_name) )
 endif
 
@@ -563,7 +564,8 @@ endif
 !s Surface heat_capacity calculation based on that in MiMA by mj
 
 if(do_sc_sst) then !mj sst read from input file
-         call interpolator( sst_interp, Time, sst_new, trim(sst_file) )
+         ! read at the new time, as that is what we are stepping to
+         call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
          delta_t_surf = sst_new - t_surf
          t_surf = t_surf + delta_t_surf
 else   !s use the land_sea_heat_capacity calculated in mixed_layer_init
@@ -594,13 +596,13 @@ if (evaporation) Tri_surf%delta_tr(:,:,nhum) = fn_q + en_q * delta_t_surf
 !
 ! Note:
 ! When using an implicit step there is not a clearly defined flux for a given timestep
-!
-if(id_t_surf > 0) used = send_data(id_t_surf, t_surf, Time)
-if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time)
-if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q, Time)
-if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time)
+! We have taken a time-step, send the values at the next time level.
+if(id_t_surf > 0) used = send_data(id_t_surf, t_surf, Time_next)
+if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time_next)
+if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q, Time_next)
+if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time_next)
 
-if(id_delta_t_surf > 0)   used = send_data(id_delta_t_surf, delta_t_surf, Time)
+if(id_delta_t_surf > 0)   used = send_data(id_delta_t_surf, delta_t_surf, Time_next)
 
 end subroutine mixed_layer
 

@@ -857,7 +857,7 @@ if(turb) then
 ! update surface temperature
 !
    call mixed_layer(                                                       &
-                              Time,                                        &
+                              Time, Time+Time_step,                        &
                               t_surf(:,:),                                 & ! t_surf is intent(inout)
                               flux_t(:,:),                                 &
                               flux_q(:,:),                                 &
