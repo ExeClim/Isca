@@ -174,6 +174,8 @@ real, allocatable, dimension(:,:)   ::                                        &
      land_sea_heat_capacity,&
      sst_new                    ! mj input SST
 
+logical, allocatable, dimension(:,:) ::      land_mask
+
 
 !mj read sst from input file
   type(interpolate_type),save :: sst_interp
@@ -253,6 +255,7 @@ allocate(land_sea_heat_capacity  (is:ie, js:je))
 !allocate(land_sea_heat_capacity  (ie-is+1, je-js+1))
 allocate(zsurf                  (is:ie, js:je))
 allocate(sst_new                 (is:ie, js:je))
+allocate(land_mask                 (is:ie, js:je)); land_mask=land
 !
 !see if restart file exists for the surface temperature
 !
@@ -428,7 +431,7 @@ if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
 
 
 !s begin surface heat capacity calculation
-   if(.not.do_sc_sst) then
+   if(.not.do_sc_sst.or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
          land_sea_heat_capacity = depth*RHO_CP
 	if(trim(land_option) .ne. 'input') then
          if ( trop_capacity .ne. depth*RHO_CP .or. np_cap_factor .ne. 1. ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0.
@@ -565,17 +568,18 @@ endif
 
 if(do_sc_sst) then !mj sst read from input file
          call interpolator( sst_interp, Time, sst_new, trim(sst_file) )
-         delta_t_surf = sst_new - t_surf
-         
+
          if(specify_sst_over_ocean_only) then
-			 where (.not.land) t_surf = t_surf + delta_t_surf			 
-		 else
-		     t_surf = t_surf + delta_t_surf
-	     endif
+	     where (.not.land_mask) delta_t_surf = sst_new - t_surf
+             where (.not.land_mask) t_surf = t_surf + delta_t_surf			 
+	 else
+	     delta_t_surf = sst_new - t_surf
+	     t_surf = t_surf + delta_t_surf
+	 endif
 	     
 end if
 
-if ((.not.do_sc_sst).or.(do_sc_sst.and.(.not.specify_sst_over_ocean_only))) then
+if ((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
   !s use the land_sea_heat_capacity calculated in mixed_layer_init
 
 
@@ -588,13 +592,13 @@ if ((.not.do_sc_sst).or.(do_sc_sst.and.(.not.specify_sst_over_ocean_only))) then
 	  call error_mesg('mixed_layer', 'Avoiding division by zero',fatal)
 	end if
 
-	delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-
-    if(specify_sst_over_ocean_only) then
-		 where (.not.land) t_surf = t_surf + delta_t_surf			 
+    if(do_sc_sst.and.specify_sst_over_ocean_only) then
+        where (land_mask) delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
+	where (land_mask) t_surf = t_surf + delta_t_surf			 
     else
-	     t_surf = t_surf + delta_t_surf
-	endif
+        delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
+	t_surf = t_surf + delta_t_surf
+    endif
 
 endif !s end of if(do_sc_sst).
 
