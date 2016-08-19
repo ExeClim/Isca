@@ -34,7 +34,6 @@ module two_stream_gray_rad_mod
 
    use    time_manager_mod,   only: time_type, length_of_year, length_of_day, &
                                     operator(+), operator(-), operator(/=), get_time
-   ! use rrtm_astro,            only: compute_zenith, astro_init, solday
 
    use astronomy_mod,         only: astronomy_init, diurnal_solar
 
@@ -81,6 +80,8 @@ real    :: linear_tau      = 0.1
 real    :: wv_exponent     = 4.0
 real    :: solar_exponent  = 4.0
 logical :: do_seasonal     = .false.
+integer :: solday          = -10 !s Day of year to run perpetually if do_seasonal=True and solday>0
+real    :: equinox_day     = 0.0 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months).
 
 character(len=32) :: rad_scheme = 'frierson'
 
@@ -97,6 +98,11 @@ real    :: ir_tau_co2      = 0.154925
 real    :: ir_tau_wv       = 351.48
 real    :: window          = 0.3732
 real    :: carbon_conc     = 360.0
+
+! parameters for Byrne and OGorman radiation scheme
+real :: bog_a = 0.8678
+real :: bog_b = 1997.9
+real :: bog_mu = 1.0
 
 real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 !s albedo now defined in mixed_layer_init
 real, allocatable, dimension(:,:)   :: b_surf
@@ -124,8 +130,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
            ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme, &
-           do_read_co2,co2_file
-
+           do_read_co2, co2_file, solday, equinox_day, bog_a, bog_b, bog_mu
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -335,9 +340,6 @@ end subroutine two_stream_gray_rad_init
 subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, lon, p_half, t,         &
                            net_surf_sw_down, surf_lw_down, albedo, q)
 
-  ! use rrtm_astro, only:      compute_zenith,use_dyofyr,solr_cnst,&
-  !                            solrad,solday,equinox_day
-
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
 
@@ -350,13 +352,9 @@ real, intent(in), dimension(:,:,:)  :: t, q,  p_half
 integer :: i, j, k, n, dyofyr
 
 integer :: seconds, year_in_s
-real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s
+real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday
 logical :: used
 
-! Byrne + O'Gorman rad scheme parameters
-real :: bog_a = 0.8678
-real :: bog_b = 1997.9
-real :: bog_mu = 1.0
 
 real ,dimension(size(q,1),size(q,2),size(q,3)) :: co2f
 
@@ -377,9 +375,18 @@ if (do_seasonal) then
   r_seconds = real(seconds)
   day_in_s = length_of_day()
   frac_of_day = r_seconds / day_in_s
-  frac_of_year = r_seconds / year_in_s
+  
+  if(solday .ge. 0) then
+      r_solday=real(solday)
+      frac_of_year = (r_solday*day_in_s) / year_in_s
+  else
+      frac_of_year = r_seconds / year_in_s
+  endif
+
   gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
-  time_since_ae = abs(mod(frac_of_year, 1.0)) * 2.0 * pi
+
+  time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
+
   call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
   insolation = solar_constant * coszen
 else

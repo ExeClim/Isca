@@ -519,7 +519,7 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
        kd=num_levels
        call rrtmg_lw_ini(cp_air)
        call rrtmg_sw_ini(cp_air)
-       call rrtm_radiation_init(axes,Time,id*jd,kd,rad_lonb_2d,rad_latb_2d)
+       call rrtm_radiation_init(axes,Time,id*jd,kd,rad_lonb_2d,rad_latb_2d, Time_step_in)
        id_z_tg = register_diag_field(mod_name, 'interp_t',        &
             axes(1:3), Time, 'temperature interp','T/s')
     endif
@@ -857,7 +857,7 @@ if(turb) then
 ! update surface temperature
 !
    call mixed_layer(                                                       &
-                              Time,                                        &
+                              Time, Time+Time_step,                        &
                               t_surf(:,:),                                 & ! t_surf is intent(inout)
                               flux_t(:,:),                                 &
                               flux_q(:,:),                                 &
