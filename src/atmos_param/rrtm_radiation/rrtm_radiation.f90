@@ -675,6 +675,8 @@
              call interpolator( co2_interp, Time_loc, p_half, co2f, trim(co2_file))
 	     co2f_temp = co2f*1.e-6
              co2f = co2f_temp
+          else
+             co2f=co2ppmv*1.e-6
           endif
 
           !interactive albedo: zonal mean of precipitation
