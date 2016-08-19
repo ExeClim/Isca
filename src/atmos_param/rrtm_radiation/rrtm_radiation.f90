@@ -169,11 +169,19 @@
                                                               !  full precipitation ('full')
                                                               !  only large scale condensation ('lscale')
                                                               !  only convection ('conv')
-!---------------------------------------------------------------------------------------------------------------
+
+        logical            :: use_dyofyr = .false.            ! use day of the year to compute Earth-Sun distance?
+                                                              !  this is done within RRTM, and assumes 365days/year!
+        real(kind=rb)      :: solrad=1.0                      ! distance Earth-Sun [AU] if use_dyofyr=.false.
+        integer(kind=im)   :: solday=0                        ! if >0, do perpetual run corresponding to
+                                                              !  day of the year = solday \in [0,days per year]
+        real(kind=rb)      :: equinox_day=0.75                ! fraction of the year defining NH autumn equinox \in [0,1]
+        real(kind=rb)      :: solr_cnst= 1368.22              ! solar constant [W/m2]
+!-------------------------------------------------s--------------------------------------------------------------
 !
 !-------------------- diagnostics fields -------------------------------
 
-        integer :: id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2
+        integer :: id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_fracday
         character(len=14), parameter :: mod_name_rad = 'rrtm_radiation' !s changed parameter name from mod_name to mod_name_rad as compiler objected, presumably because mod_name also defined in idealized_moist_physics.F90 after use rrtm_vars is included. 
         real :: missing_value = -999.
 
@@ -189,26 +197,27 @@
              &slowdown_rad, &
              &store_intermediate_rad, do_rad_time_avg, dt_rad, dt_rad_avg, &
              &lonstep, do_zm_tracers, do_zm_rad, &
-             &do_precip_albedo, precip_albedo_mode, precip_albedo, precip_lat, &
-             &do_read_co2, co2_file
+             &do_precip_albedo, precip_albedo_mode, precip_albedo, precip_lat,&
+             &do_read_co2, co2_file, use_dyofyr, solrad, solday, equinox_day,solr_cnst
 
       end module rrtm_vars
 !*****************************************************************************************
 !*****************************************************************************************
       module rrtm_radiation
         use parkind, only : im => kind_im, rb => kind_rb
+        use constants_mod,         only: pi
         implicit none
     
       contains
 
 !*****************************************************************************************
-        subroutine rrtm_radiation_init(axes,Time,ncols,nlay,lonb,latb)
+        subroutine rrtm_radiation_init(axes,Time,ncols,nlay,lonb,latb, Time_step)
 !
 ! Initialize diagnostics, allocate variables, set constants
 !
 ! Modules
           use rrtm_vars
-          use rrtm_astro, only:       astro_init,solday
+          use astronomy_mod,         only: astronomy_init
           use parrrtm, only:          nbndlw
           use parrrsw, only:          nbndsw
           use diag_manager_mod, only: register_diag_field, send_data
@@ -217,20 +226,22 @@
           use fms_mod, only:          open_namelist_file, check_nml_error,  &
                                       &mpp_pe, mpp_root_pe, close_file, &
                                       &write_version_number, stdlog, &
-                                      &error_mesg, NOTE, WARNING
-          use time_manager_mod, only: time_type
+                                      &error_mesg, NOTE, WARNING, FATAL
+          use time_manager_mod, only: time_type, length_of_day, get_time
 	  use transforms_mod,   only: get_grid_domain
 ! Local variables
           implicit none
           
           integer, intent(in), dimension(4) :: axes
-          type(time_type), intent(in)       :: Time
+          type(time_type), intent(in)       :: Time, Time_step
           integer(kind=im),intent(in)       :: ncols,nlay
           real(kind=rb),dimension(:,:),intent(in),optional :: lonb,latb !s Changed to 2d arrays as 2013 interpolator expects this. 
 
-          integer :: i,k,seconds
+          integer :: i,k,seconds, time_step_seconds,res
 
           integer :: ierr, io, unit, is, ie, js, je
+
+          real :: day_in_s_check
 
 
 ! read namelist and copy to logfile
@@ -286,7 +297,10 @@
                register_diag_field ( mod_name_rad, 'co2', axes(1:3), Time, &
                  'Co2', &
                  'mmr', missing_value=missing_value               )
-
+          id_fracday  = &
+               register_diag_field ( mod_name_rad, 'fracday', axes(1:2), Time, &
+                 'fracday', &
+                 'none', missing_value=missing_value               )
 ! 
 !------------ make sure namelist choices are consistent -------
 ! this does not work at the moment, as dt_atmos from coupler_mod induces a circular dependency at compilation
@@ -326,9 +340,31 @@
           ncols_rrt = ncols/lonstep
           nlay_rrt  = nlay
 
+          call get_time(Time_step,time_step_seconds)
+
+	    if (dt_rad .gt. time_step_seconds) then
+	        res=mod(dt_rad, time_step_seconds)
+
+		if (res.ne.0) then
+			call error_mesg( 'rrtm_gases_init', &
+        	         'dt_rad must be an integer multiple of dt_atmos', FATAL)
+		endif
+
+		day_in_s_check=length_of_day()
+	        res=mod(int(day_in_s_check), dt_rad)
+
+		if (res.ne.0) then
+			call error_mesg( 'rrtm_gases_init', &
+        	         'dt_rad does not fit into one day an integer number of times', WARNING)
+		endif
+
+
+	    endif
+
           if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
 
 !------------ allocate arrays to be used later  -------
+
           call get_grid_domain(is, ie, js, je)
           allocate(t_half(size(lonb,1)-1,size(latb,2)-1,nlay+1)) !s changed all size(latb) to size(latb,2) as latb now 2d in 2013, where it was 1d in MiMA.
 
@@ -400,7 +436,7 @@
              num_precip  = 0
           endif
 
-          call astro_init
+	  call astronomy_init
 
           if(solday .gt. 0)then
              call error_mesg( mod_name_rad, &
@@ -453,6 +489,7 @@
              enddo
           enddo    
 
+
         end subroutine interp_temp
 !*****************************************************************************************
 !*****************************************************************************************
@@ -467,20 +504,22 @@
           use mpp_mod, only:         mpp_pe,mpp_root_pe
           use rrtmg_lw_rad, only:    rrtmg_lw
           use rrtmg_sw_rad, only:    rrtmg_sw
-          use rrtm_astro, only:      compute_zenith,use_dyofyr,solr_cnst,&
-                                     solrad,solday,equinox_day
+          use astronomy_mod,         only: diurnal_solar
           use rrtm_vars
-          use time_manager_mod,only: time_type,get_time,set_time
+          use time_manager_mod,only: time_type,get_time,set_time, length_of_year, length_of_day
           use interpolator_mod,only: interpolator
 
           use diag_manager_mod, only: register_diag_field, send_data
           use time_manager_mod,only:  time_type
+          use transforms_mod,only:    area_weighted_global_mean
 !---------------------------------------------------------------------------------------------------------------
 ! In/Out variables
           implicit none
 
           integer, intent(in)                               :: is, js          ! index range for each CPU
+
           type(time_type),intent(in)                        :: Time            ! global time in calendar
+
           real(kind=rb),dimension(:,:,:),intent(in)         :: p_full,p_half   ! pressure, full and half levels
                                                                                ! dimension (lat x lon x p*)
           real(kind=rb),dimension(:,:,:),intent(in)         :: q               ! water vapor mixing ratio [g/g]
@@ -519,6 +558,13 @@
           type(time_type) :: Time_loc
           real(kind=rb),dimension(size(q,1),size(q,2)) :: albedo_loc
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: q_tmp
+          real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
+
+	  integer :: year_in_s
+          real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
+
+
+
 ! debug
           integer :: indx2(2),indx(3),ii,ji,ki
           logical :: used
@@ -557,14 +603,35 @@
           else
              Time_loc = Time
           endif
+
 !
 ! compute zenith angle
 !  this is also an output, so need to compute even if we read radiation from file
+	     call get_time(Time_loc, seconds)
+	     call get_time(length_of_year(), year_in_s)
+	     day_in_s = length_of_day()
+	     r_seconds=real(seconds)
+	     frac_of_day = r_seconds / day_in_s
+
+             if(solday > 0) then
+                 r_solday=real(solday)
+                 frac_of_year=(r_solday*day_in_s)/year_in_s
+	     else
+!	         frac_of_year = real(days*day_in_s) / real(year_in_s) !s This is the way MJ's astro.f90 does it.
+	         frac_of_year = r_seconds / year_in_s
+             endif
+	     gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
+	     time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
+
           if(do_rad_time_avg) then
-             call compute_zenith(Time_loc,equinox_day,dt_rad_avg,lat,lon,coszen,dyofyr)
+	     r_dt_rad_avg=real(dt_rad_avg)
+	     dt_rad_radians = (r_dt_rad_avg/day_in_s)*2.0*pi
+	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun,dt_rad_radians)
           else
-             call compute_zenith(Time_loc,equinox_day,0     ,lat,lon,coszen,dyofyr)
+	     ! Seasonal Cycle: Use astronomical parameters to calculate insolation
+	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
           end if
+
 ! input files: only deal with case where we don't need to call radiation at all
           if(do_read_radiation .and. do_read_sw_flux .and. do_read_lw_flux) then
              call interpolator( rad_interp, Time_loc, p_half, tdt_rrtm, trim(radiation_file))
@@ -608,6 +675,8 @@
              call interpolator( co2_interp, Time_loc, p_half, co2f, trim(co2_file))
 	     co2f_temp = co2f*1.e-6
              co2f = co2f_temp
+          else
+             co2f=co2ppmv*1.e-6
           endif
 
           !interactive albedo: zonal mean of precipitation
@@ -685,7 +754,7 @@
           !h2o=h2o_lower_limit
           ! SW seems to have a problem with too small coszen values. 
           ! anything lower than 0.01 (about 15min) is set to zero
-          where(cosz_rr < 1.e-2)cosz_rr=0.
+!          where(cosz_rr < 1.e-2)cosz_rr=0.
           
           if(include_secondary_gases)then
              call rrtmg_sw &
@@ -719,13 +788,13 @@
           
           ! make sure we don't have SW radiation at night
           ! there is some optimization possible here: only feed grid points to rrtm_sw where cosz_rr>0
-          do i=1,size(swhr,2)
-             where( cosz_rr <= 0.)
-                swuflx(:,i) = 0.
-                swdflx(:,i) = 0.
-                swhr  (:,i) = 0.
-             endwhere
-          enddo
+!          do i=1,size(swhr,2)
+!             where( cosz_rr <= 0.)
+!                swuflx(:,i) = 0.
+!                swdflx(:,i) = 0.
+!                swhr  (:,i) = 0.
+!             endwhere
+!          enddo
              
           swijk   = reshape(swhr(:,sk:1:-1),(/ si/lonstep,sj,sk /))*daypersec
 
@@ -838,31 +907,32 @@
           ! check if we want surface albedo as a function of precipitation
           !  call diagnostics accordingly
           if(do_precip_albedo)then
-             call write_diag_rrtm(Time,is,js,o3f,co2f,albedo_loc)
+             call write_diag_rrtm(Time,is,js,o3f,co2f,fracsun,albedo_loc)
           else
-             call write_diag_rrtm(Time,is,js,o3f,co2f)
+             call write_diag_rrtm(Time,is,js,o3f,co2f,fracsun)
           endif
         end subroutine run_rrtmg
 
 !*****************************************************************************************
 !*****************************************************************************************
-        subroutine write_diag_rrtm(Time,is,js,ozone,cotwo,albedo_loc)
+        subroutine write_diag_rrtm(Time,is,js,ozone,cotwo,fracday,albedo_loc)
 ! 
 ! write out diagnostics fields
 !
 ! Modules
           use rrtm_vars,only:         sw_flux,lw_flux,zencos,tdt_rad,tdt_sw_rad,tdt_lw_rad,&
                                       &id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,&
-                                      &id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2
+                                      &id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_fracday
           use diag_manager_mod, only: register_diag_field, send_data
           use time_manager_mod,only:  time_type
+
 ! Input variables
           implicit none
           type(time_type)               ,intent(in)          :: Time
           integer                       ,intent(in)          :: is, js
           real(kind=rb),dimension(:,:,:),intent(in),optional :: ozone
           real(kind=rb),dimension(:,:,:),intent(in),optional :: cotwo
-          real(kind=rb),dimension(:,:  ),intent(in),optional :: albedo_loc
+          real(kind=rb),dimension(:,:  ),intent(in),optional :: albedo_loc,fracday
 ! Local variables
           logical :: used
 
@@ -883,7 +953,6 @@
           endif
 !------- cosine of zenith angle                ------------
           if ( id_coszen > 0 ) then
-!             used = send_data ( id_coszen, zencos, Time, is, js )
              used = send_data ( id_coszen, zencos, Time)
           endif
 !------- Net SW surface flux                   ------------
@@ -909,8 +978,13 @@
 !------- Co2                                   ------------
           if ( present(cotwo) .and. id_co2 > 0 ) then
              used = send_data ( id_co2, cotwo, Time)
-!	    if(maxval(cotwo) .ne. minval(cotwo)) write(6,*) 'warning, difference', maxval(cotwo)-minval(cotwo)
           endif
+
+!------- Fracday                                 ------------
+          if ( present(fracday) .and. id_fracday > 0 ) then
+             used = send_data ( id_fracday, fracday, Time)
+          endif
+
         end subroutine write_diag_rrtm
 !*****************************************************************************************
 

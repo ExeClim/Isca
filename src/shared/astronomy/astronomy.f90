@@ -120,7 +120,9 @@ end interface
 !---------------------------------------------------------------------
 !-------- namelist  ---------
 
-real    :: ecc   = 0.01671   ! eccentricity of orbital ellipse
+
+!real   :: ecc   = 0.01671   ! eccentricity of orbital ellipse
+real    :: ecc   = 0.0       ! eccentricity of orbital ellipse !s changed default eccentricity to zero, as this is how most 'simplified' models are run.
                              ! [ non-dimensional ]
 real    :: obliq = 23.439    ! obliquity [ degrees ]
 real    :: per   = 102.932   ! longitude of perihelion with respect
@@ -1182,7 +1184,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
       Lallow_negative = .false.
       if (present(allow_negative_cosz)) then
          if (allow_negative_cosz) Lallow_negative = .true.
-      end if
+      end if 
 
 !---------------------------------------------------------------------
 !    perform a time integration to obtain cosz and fracday if desired.
@@ -1211,8 +1213,13 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    case 2: averaging period begins before sunrise, ends after sunrise
 !    but before sunset
 !-------------------------------------------------------------------
-        where ( (tt+h) /= 0.0 .and.   t < -h .and. abs(tt) <= h)   &
-             cosz = aa + bb*(stt + sh)/ (tt + h)
+! t < -h first time is before sunrise
+! abs(tt) <= h for tt>0 this means tt < h, meaning it's before sunset.
+! abs(tt) <= h for tt<0 this means tt > -h, meaning it's after sunrise.
+! Time average is between t and tt, so the denominator is (tt-t). But in the numerator sin(t) will be < 0 as t is after sunset. So only use up to sin(-h), which gives (stt - sin(-h)) - > stt+sh.
+
+	where ( t < -h .and. abs(tt) <= h)   &
+             cosz = (aa*(tt+h)/(tt-t)) + bb*(stt +sh)/ (tt-t)
 
 !-------------------------------------------------------------------
 !    case 3: averaging period begins before sunrise, ends after sunset,
@@ -1226,6 +1233,9 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !-------------------------------------------------------------------
 !    case 4: averaging period begins after sunrise, ends before sunset.
 !-------------------------------------------------------------------
+! abs(t) <= h for t>0 this means t < h, meaning it's before sunset.
+! abs(t) <= h for t<0 this means t > -h, meaning it's after sunrise.
+
         where ( abs(t) <= h .and. abs(tt) <= h)    &
              cosz = aa + bb*(stt - st)/ (tt - t)
 
@@ -1233,17 +1243,25 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    case 5: averaging period begins after sunrise, ends after sunset.
 !    modify when averaging period extends past the next day's sunrise.
 !-------------------------------------------------------------------
-        where ((h-t) /= 0.0 .and. abs(t) <= h .and.  h < tt)    &
-              cosz = aa + bb*(sh - st)/(h-t)
+! tt > h final time is after sunset
+! abs(t) <= h for t>0 this means t < h, meaning it's before sunset.
+! abs(t) <= h for t<0 this means t > -h, meaning it's after sunrise.
+! (sh - st) / (tt - t) b/c we're averaging from start time to sunset.
+
+
+        where ( abs(t) <= h .and.  h < tt)    &
+              cosz = (aa*(h-t)/(tt-t)) + bb*(sh - st)/(tt-t)
 
 !-------------------------------------------------------------------
 !    case 6: averaging period begins after sunrise , ends after the
 !    next day's sunrise. note that this includes the case when the
 !    day length is one day (h = pi).
 !-------------------------------------------------------------------
-        where (twopi - h < tt .and. (tt+h-twopi) /= 0.0 .and. t <= h ) &
-           cosz = (cosz*(h - t) + (aa*(tt + h - twopi) +     &
-            bb*(stt + sh))) / ((h - t) + (tt + h - twopi))
+! twopi-h is the time of the next day's sunrise. So tt > twopi - h means end time is after the next day's sunrise.
+! t<=h beginning time is after sunrise if t < 0 here(?!)
+
+        where (twopi - h < tt .and. t <= h ) &
+	   cosz = aa*((tt+(2.*h)-t-twopi)/(tt-t)) + bb*(((sh-st)/(tt-t)) + ((stt+sh)/(tt-t))) 
 
 !-------------------------------------------------------------------
 !    case 7: averaging period begins after sunset and ends before the
@@ -1264,8 +1282,6 @@ real, dimension(:,:), intent(out), optional :: half_day_out
         else
            cosz = aa + bb*(stt - st)/ (tt - t)
         end if
-
-
 
 !-------------------------------------------------------------------
 !    day fraction is the fraction of the averaging period contained
@@ -1310,8 +1326,6 @@ real, dimension(:,:), intent(out), optional :: half_day_out
       end if
 
 !--------------------------------------------------------------------
-
-
 
 end subroutine diurnal_solar_2d
 
@@ -3155,7 +3169,7 @@ real, intent(in) :: ang
 !    its square (r_inv_squared) to the calling routine.
 !--------------------------------------------------------------------
       rad_per       = per*deg_to_rad
-      r             = (1 - ecc**2)/(1. + ecc*cos(ang - rad_per))
+      r             = (1. - ecc**2)/(1. + ecc*cos(ang - rad_per))
       r_inv_squared = r**(-2)
 
 
