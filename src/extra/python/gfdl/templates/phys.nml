@@ -96,10 +96,9 @@
      co2ppmv                = 300.,
      do_read_ozone          = .true.,
      ozone_file             = 'ozone_1990',
+     solr_cnst              = 1360.
      dt_rad                 =  4500/
 
- &astro_nml
-     solr_cnst   = 1360. /
 
  &betts_miller_nml
        tau_bm = 7200.,
