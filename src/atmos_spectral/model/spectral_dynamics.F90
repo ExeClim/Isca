@@ -969,38 +969,29 @@ endif
 ! all partially complete diagnostics are written to netcdf output.
 if (graceful_shutdown) then
   if (pe == mpp_root_pe()) then
-    !write(*,*) 'root pe', mpp_root_pe()
     do p = 0, npes-1
       ! wait for all nodes to report they are error free
       if (p.ne.pe) then
-        !write(*,*) 'waiting on', p
         call mpp_recv(r_pe_is_valid, p)
         if (.not.r_pe_is_valid .or. .not.pe_is_valid) then
           ! node reports error, tell all the others to shutdown
           r_pe_is_valid = .false.
-          write (*,*) 'error in pe', p
           exit
         end if
       end if
     end do
-     !write (*, *) 'done waiting'
     ! tell all the nodes to continue, or not
     do p =0, npes-1
       if (p.ne.pe) call mpp_send(r_pe_is_valid, p)
     end do
-    !write (*, *) 'done broadcasting'
   else
-    !write (*, *) 'pe sending', pe
     call mpp_send(pe_is_valid, mpp_root_pe())
     ! wait to hear back from root that all are ok to continue
-    !write (*, *) 'pe waiting', pe
     call mpp_recv(r_pe_is_valid, mpp_root_pe())
-    !write (*,*) 'root pe tells', pe, 'that status is ', r_pe_is_valid
   endif
   if (.not.r_pe_is_valid) then
     ! one of the nodes has broken the condition.  gracefully shutdown diagnostics
-    ! and then call
-    write (*,*) 'error. shutting down', pe
+    ! and then raise a fatal error after all have hit the sync point.
     call diag_manager_end(Time)
     call mpp_sync()
     call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
@@ -1854,13 +1845,13 @@ month_name=(/' Jan',' Feb',' Mar',' Apr',' May',' Jun',' Jul',' Aug',' Sep',' Oc
 if(mpp_pe() == mpp_root_pe()) then
   if(get_calendar_type() == NO_CALENDAR) then
     call get_time(Time, seconds, days)
-    write(*,100) days, seconds, maxval(t_grid), minval(t_grid), maxval(abs(u_grid))
+    write(*,100) days, seconds
   else
     call get_date(Time, year, month, days, hours, minutes, seconds)
     write(*,200) year, month_name(month), days, hours, minutes, seconds
   endif
 endif
-100 format(' Integration completed through',i6,' days',i6,' seconds. Tmax=',f5.1,' Tmin=',f5.1, ' Umax=',f5.1)
+100 format(' Integration completed through',i6,' days',i6,' seconds')
 200 format(' Integration completed through',i5,a4,i3,2x,i2,':',i2,':',i2)
 
 end subroutine global_integrals
