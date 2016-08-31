@@ -18,7 +18,7 @@ use           vert_diff_mod, only: vert_diff_init, gcm_vert_diff_down, gcm_vert_
 
 use two_stream_gray_rad_mod, only: two_stream_gray_rad_init, two_stream_gray_rad_down, two_stream_gray_rad_up, two_stream_gray_rad_end
 
-use         mixed_layer_mod, only: mixed_layer_init, mixed_layer, mixed_layer_end
+use         mixed_layer_mod, only: mixed_layer_init, mixed_layer, mixed_layer_end, albedo_calc
 
 use         lscale_cond_mod, only: lscale_cond_init, lscale_cond, lscale_cond_end
 
@@ -873,6 +873,7 @@ if(turb) then
                             dhdt_atm(:,:),                                 &
                             dedq_atm(:,:))
 
+   call albedo_calc(albedo,Time+Time_step)
 
    call gcm_vert_diff_up (1, 1, delta_t, Tri_surf, dt_tg(:,:,:), dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:))
 
