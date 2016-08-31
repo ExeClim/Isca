@@ -70,7 +70,7 @@ character(len=128), parameter :: mod_name='mixed_layer'
 
 !=================================================================================================================================
 
-public :: mixed_layer_init, mixed_layer, mixed_layer_end
+public :: mixed_layer_init, mixed_layer, mixed_layer_end, albedo_calc
 
 !=================================================================================================================================
 
@@ -115,6 +115,11 @@ real,dimension(10) :: slandlon=0,slandlat=0,elandlon=-1,elandlat=-1
 character(len=256) :: qflux_file_name  = 'INPUT/ocean_qflux.nc'
 character(len=256) :: qflux_field_name = 'ocean_qflux'
 
+character(len=256) :: ice_file_name  = 'siconc_clim_amip'
+real    :: ice_albedo_value = 0.7
+logical :: update_albedo_from_ice = .false.
+
+
 namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               delta_T, prescribe_initial_dist,albedo_value,  &
                               land_depth,trop_depth,                         &  !mj
@@ -127,7 +132,9 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               elandlon,elandlat,                             &  !mj
                               land_h_capacity_prefactor,                     &  !s
                               land_albedo_prefactor,                         &  !s
-			      load_qflux,qflux_file_name,time_varying_qflux
+			      load_qflux,qflux_file_name,time_varying_qflux, &
+			      update_albedo_from_ice, ice_file_name,         &
+			      ice_albedo_value
 
 !=================================================================================================================================
 
@@ -144,10 +151,12 @@ integer ::                                                                    &
      id_flux_t,            &   ! sensible heat flux at surface
      id_heat_cap,          &   ! heat capacity
      id_albedo,            &   ! mj albedo
+     id_ice_conc,          &   ! st ice concentration
      id_delta_t_surf
 
 real, allocatable, dimension(:,:)   ::                                        &
      ocean_qflux,           &   ! Q-flux
+     ice_concentration,     &   ! ice_concentration
      rad_lat_2d                 ! latitude in radians
 
 real, allocatable, dimension(:)   :: deg_lat, deg_lon
@@ -171,12 +180,14 @@ real, allocatable, dimension(:,:)   ::                                        &
      delta_t_surf,          &   ! Increment in surface temperature
      zsurf,                 &   ! mj know about topography
      land_sea_heat_capacity,&
-     sst_new                    ! mj input SST
+     sst_new,               &   ! mj input SST
+     albedo_initial
 
 
 !mj read sst from input file
   type(interpolate_type),save :: sst_interp
   type(interpolate_type),save :: qflux_interp
+  type(interpolate_type),save :: ice_interp
 
 real inv_cp_air
 
@@ -229,6 +240,7 @@ enddo
 
 allocate(rad_lat_2d              (is:ie, js:je))
 allocate(ocean_qflux             (is:ie, js:je))
+allocate(ice_concentration       (is:ie, js:je))
 allocate(deg_lat                 (js:je))
 allocate(deg_lon                 (is:ie))
 allocate(gamma_t                 (is:ie, js:je))
@@ -247,10 +259,9 @@ allocate(delta_t_surf            (is:ie, js:je))
 allocate(eff_heat_capacity       (is:ie, js:je))
 allocate(corrected_flux          (is:ie, js:je))
 allocate(t_surf_dependence       (is:ie, js:je))
-!allocate (albedo                (ie-is+1, je-js+1))
+allocate (albedo_initial         (is:ie, js:je))
 allocate(land_sea_heat_capacity  (is:ie, js:je))
-!allocate(land_sea_heat_capacity  (ie-is+1, je-js+1))
-allocate(zsurf                  (is:ie, js:je))
+allocate(zsurf                   (is:ie, js:je))
 allocate(sst_new                 (is:ie, js:je))
 !
 !see if restart file exists for the surface temperature
@@ -322,9 +333,15 @@ id_heat_cap = register_static_field(mod_name, 'ml_heat_cap',        &
                                  axes(1:2), 'mixed layer heat capacity','joules/m^2/deg C')
 id_delta_t_surf = register_diag_field(mod_name, 'delta_t_surf',        &
                                  axes(1:2), Time, 'change in sst','K')
-
-id_albedo = register_static_field(mod_name, 'albedo',    &
+if (update_albedo_from_ice) then
+	id_albedo = register_diag_field(mod_name, 'albedo',    &
+                                 axes(1:2), Time, 'surface albedo', 'none')
+	id_ice_conc = register_diag_field(mod_name, 'siconc',    &
+                                 axes(1:2), Time, 'ice_concentration', 'none')
+else
+	id_albedo = register_static_field(mod_name, 'albedo',    &
                                  axes(1:2), 'surface albedo', 'none')
+endif
 
 ocean_qflux = 0.
 
@@ -423,8 +440,14 @@ select case (albedo_choice)
      enddo
 end select
 
-if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
+albedo_initial=albedo
 
+if (update_albedo_from_ice) then
+	call interpolator_init( ice_interp, trim(ice_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+	call albedo_calc(albedo,Time)
+else
+	if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
+endif
 
 !s begin surface heat capacity calculation
    if(.not.do_sc_sst) then
@@ -606,6 +629,29 @@ if(id_delta_t_surf > 0)   used = send_data(id_delta_t_surf, delta_t_surf, Time_n
 
 end subroutine mixed_layer
 
+!=================================================================================================================================
+
+subroutine albedo_calc(albedo_inout,Time)
+
+real, intent(out), dimension(:,:) :: albedo_inout
+type(time_type), intent(in)       :: Time
+
+albedo_inout=albedo_initial
+
+if(update_albedo_from_ice) then
+
+	call interpolator( ice_interp, Time, ice_concentration, trim(ice_file_name) )
+
+	where(ice_concentration.gt.0.0) 
+		albedo_inout=ice_albedo_value
+	end where
+
+	if ( id_ice_conc > 0 ) used = send_data ( id_ice_conc, ice_concentration, Time )
+	if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo_inout, Time )
+
+endif
+
+end subroutine albedo_calc
 !=================================================================================================================================
 
 subroutine mixed_layer_end(t_surf)
