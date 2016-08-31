@@ -340,7 +340,7 @@ id_delta_t_surf = register_diag_field(mod_name, 'delta_t_surf',        &
 if (update_albedo_from_ice) then
 	id_albedo = register_diag_field(mod_name, 'albedo',    &
                                  axes(1:2), Time, 'surface albedo', 'none')
-	id_ice_conc = register_diag_field(mod_name, 'siconc',    &
+	id_ice_conc = register_diag_field(mod_name, 'ice_conc',    &
                                  axes(1:2), Time, 'ice_concentration', 'none')
 else
 	id_albedo = register_static_field(mod_name, 'albedo',    &
@@ -448,6 +448,7 @@ albedo_initial=albedo
 
 if (update_albedo_from_ice) then
 	call interpolator_init( ice_interp, trim(ice_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+        call read_ice_conc(Time)
 	call albedo_calc(albedo,Time)
 else
 	if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
@@ -525,7 +526,8 @@ subroutine mixed_layer (                                               &
      dedq_surf,                                                        &
      drdt_surf,                                                        &
      dhdt_atm,                                                         &
-     dedq_atm)
+     dedq_atm,                                                         &
+     albedo_out)
 
 ! ---- arguments -----------------------------------------------------------
 type(time_type), intent(in)       :: Time, Time_next
@@ -538,12 +540,28 @@ real, intent(in), dimension(:,:) :: &
    dhdt_surf, dedt_surf, dedq_surf, &
    drdt_surf, dhdt_atm, dedq_atm
 real, intent(in) :: dt
+real, intent(out), dimension(:,:) :: albedo_out
 type(surf_diff_type), intent(inout) :: Tri_surf
+logical, dimension(size(land_mask,1),size(land_mask,2)) :: land_ice_mask
 
 
 if(.not.module_is_initialized) then
   call error_mesg('mixed_layer','mixed_layer module is not initialized',FATAL)
 endif
+
+if(update_albedo_from_ice) then
+	call read_ice_conc(Time_next)
+	land_ice_mask=.false.
+	where(land_mask.or.(ice_concentration.gt.0.0))
+		land_ice_mask=.true.
+	end where
+else
+	land_ice_mask=land_mask
+endif
+
+call albedo_calc(albedo_out,Time_next)
+
+
 
 ! Need to calculate the implicit changes to the lowest level delta_q and delta_t
 ! - see the discussion in vert_diff.tech.ps
@@ -595,8 +613,8 @@ if(do_sc_sst) then !mj sst read from input file
          call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
 
          if(specify_sst_over_ocean_only) then
-	     where (.not.land_mask) delta_t_surf = sst_new - t_surf
-             where (.not.land_mask) t_surf = t_surf + delta_t_surf			 
+	     where (.not.land_ice_mask) delta_t_surf = sst_new - t_surf
+             where (.not.land_ice_mask) t_surf = t_surf + delta_t_surf			 
 	 else
 	     delta_t_surf = sst_new - t_surf
 	     t_surf = t_surf + delta_t_surf
@@ -617,8 +635,8 @@ if ((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
 	end if
 
     if(do_sc_sst.and.specify_sst_over_ocean_only) then
-        where (land_mask) delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-	where (land_mask) t_surf = t_surf + delta_t_surf			 
+        where (land_ice_mask) delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
+	where (land_ice_mask) t_surf = t_surf + delta_t_surf			 
     else
         delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
 	t_surf = t_surf + delta_t_surf
@@ -631,7 +649,6 @@ endif !s end of if(do_sc_sst).
 !
 Tri_surf%delta_t = fn_t + en_t * delta_t_surf
 if (evaporation) Tri_surf%delta_tr(:,:,nhum) = fn_q + en_q * delta_t_surf
-
 
 !
 ! Note:
@@ -657,8 +674,6 @@ albedo_inout=albedo_initial
 
 if(update_albedo_from_ice) then
 
-	call interpolator( ice_interp, Time, ice_concentration, trim(ice_file_name) )
-
 	where(ice_concentration.gt.0.0) 
 		albedo_inout=ice_albedo_value
 	end where
@@ -669,6 +684,17 @@ if(update_albedo_from_ice) then
 endif
 
 end subroutine albedo_calc
+!=================================================================================================================================
+
+subroutine read_ice_conc(Time)
+
+type(time_type), intent(in)       :: Time
+
+
+call interpolator( ice_interp, Time, ice_concentration, trim(ice_file_name) )
+if ( id_ice_conc > 0 ) used = send_data ( id_ice_conc, ice_concentration, Time )
+
+end subroutine read_ice_conc
 !=================================================================================================================================
 
 subroutine mixed_layer_end(t_surf)

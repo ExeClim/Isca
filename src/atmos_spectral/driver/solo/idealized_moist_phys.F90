@@ -871,9 +871,8 @@ if(turb) then
                            dedq_surf(:,:),                                 &
                            drdt_surf(:,:),                                 &
                             dhdt_atm(:,:),                                 &
-                            dedq_atm(:,:))
-
-   call albedo_calc(albedo,Time+Time_step)
+                            dedq_atm(:,:),                                 &
+                              albedo(:,:))
 
    call gcm_vert_diff_up (1, 1, delta_t, Tri_surf, dt_tg(:,:,:), dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:))
 
