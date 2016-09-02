@@ -193,7 +193,7 @@ real    :: damping_coeff       = 1.15740741e-4, & ! (one tenth day)**-1
            initial_sphum       = 0.0, &
      reference_sea_level_press =  101325.,&
         water_correction_limit = 0.0, & !mj
-           raw_filter_coeff    = 0.5     !st
+           raw_filter_coeff    = 1.0     !st Default value of 1.0 turns the RAW part of the filtering off. 0.5 is the desired value, but this appears unstable. Requires further testing.
 
 !===============================================================================================
 
