@@ -41,7 +41,7 @@ use      field_manager_mod, only: MODEL_ATMOS, parse
 
 use     tracer_manager_mod, only: get_number_tracers, query_method, get_tracer_index, get_tracer_names, NO_TRACER
 
-use       diag_manager_mod, only: diag_axis_init, register_diag_field, register_static_field, send_data
+use       diag_manager_mod, only: diag_axis_init, register_diag_field, register_static_field, send_data, diag_manager_end
 
 use         transforms_mod, only: transforms_init,         transforms_end,            &
                                   get_grid_boundaries,     area_weighted_global_mean, &
@@ -81,6 +81,7 @@ use        tracer_type_mod, only: tracer_type, tracer_type_version, tracer_type_
 use every_step_diagnostics_mod, only: every_step_diagnostics_init, every_step_diagnostics, every_step_diagnostics_end
 
 use        mpp_domains_mod, only: mpp_global_field
+use        mpp_mod,         only: NULL_PE, mpp_transmit, mpp_sync, mpp_send, mpp_broadcast, mpp_recv
 
 use       polvani_2004_mod, only: polvani_2004
 use       polvani_2007_mod, only: polvani_2007, polvani_2007_tracer_init, get_polvani_2007_tracers
@@ -153,7 +154,8 @@ logical :: do_mass_correction     = .true. , &
            do_energy_correction   = .true. , &
            use_virtual_temperature= .false., &
            use_implicit           = .true.,  &
-           triang_trunc           = .true.
+           triang_trunc           = .true.,  &
+           graceful_shutdown      = .false.
 
 integer :: damping_order       = 2, &
            damping_order_vor   =-1, &
@@ -211,8 +213,9 @@ namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option,       
                                  p_press, p_sigma, exponent, ocean_topog_smoothing, initial_sphum,   &
                                  valid_range_t, eddy_sponge_coeff, zmu_sponge_coeff, zmv_sponge_coeff,&
                                  print_interval, num_steps, initial_state_option,                    &
-                                 water_correction_limit,                                             & !mj										 
-                                 raw_filter_coeff !st
+                                 water_correction_limit,                                             & !mj
+                                 raw_filter_coeff,                                                   & !st
+                                 graceful_shutdown
 
 contains
 
@@ -800,7 +803,7 @@ real, dimension(is:ie, js:je                         ) :: dt_psg_tmp
 real, dimension(is:ie, js:je, num_levels             ) :: dt_ug_tmp, dt_vg_tmp, dt_tg_tmp
 real, dimension(is:ie, js:je, num_levels, num_tracers) :: dt_tracers_tmp
 
-integer :: j, k, time_level, seconds, days
+integer :: j, k, time_level, seconds, days, p
 real    :: delta_t
 !mj error message
 real    :: extrtmp
@@ -812,6 +815,9 @@ complex, dimension(ms:me, ns:ne, num_levels  ) :: part_filt_vors, part_filt_divs
 complex, dimension(ms:me, ns:ne, num_levels, num_tracers) :: part_filt_trs
 real, dimension(is:ie, js:je, num_levels, num_tracers) :: part_filt_tr
 ! < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < >
+
+logical :: pe_is_valid = .true.
+logical :: r_pe_is_valid = .true.
 
 if(.not.module_is_initialized) then
   call error_mesg('spectral_dynamics','dynamics has not been initialized ', FATAL)
@@ -926,6 +932,7 @@ call trans_spherical_to_grid(ln_ps(:,:,  future), ln_psg)
 psg(:,:,future) = exp(ln_psg)
 
 if(minval(tg(:,:,:,future)) < valid_range_t(1) .or. maxval(tg(:,:,:,future)) > valid_range_t(2)) then
+  pe_is_valid = .false.
 !mj !s This doesn't affect the normal running of the code in any way. It simply allows identification of the point where temp violation has occured.
    if(minval(tg(:,:,:,future)) < valid_range_t(1))then
       extrtmp = minval(tg(:,:,:,future))
@@ -953,7 +960,42 @@ if(minval(tg(:,:,:,future)) < valid_range_t(1) .or. maxval(tg(:,:,:,future)) > v
         &,ug(ii,jj,kk,current)&
         &,ug(ii,jj,kk,future)
 !jm
-  call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
+  if (.not.graceful_shutdown) then
+    call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
+  endif
+endif
+
+! synchronisation between nodes.  THIS WILL SLOW DOWN THE RUN but ensures
+! all partially complete diagnostics are written to netcdf output.
+if (graceful_shutdown) then
+  if (pe == mpp_root_pe()) then
+    do p = 0, npes-1
+      ! wait for all nodes to report they are error free
+      if (p.ne.pe) then
+        call mpp_recv(r_pe_is_valid, p)
+        if (.not.r_pe_is_valid .or. .not.pe_is_valid) then
+          ! node reports error, tell all the others to shutdown
+          r_pe_is_valid = .false.
+          exit
+        end if
+      end if
+    end do
+    ! tell all the nodes to continue, or not
+    do p =0, npes-1
+      if (p.ne.pe) call mpp_send(r_pe_is_valid, p)
+    end do
+  else
+    call mpp_send(pe_is_valid, mpp_root_pe())
+    ! wait to hear back from root that all are ok to continue
+    call mpp_recv(r_pe_is_valid, mpp_root_pe())
+  endif
+  if (.not.r_pe_is_valid) then
+    ! one of the nodes has broken the condition.  gracefully shutdown diagnostics
+    ! and then raise a fatal error after all have hit the sync point.
+    call diag_manager_end(Time)
+    call mpp_sync()
+    call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
+  endif
 endif
 
 call update_tracers(tracer_attributes, dt_tracers_tmp, wg, p_half, delta_t, part_filt_trs, part_filt_tr)
@@ -1120,13 +1162,13 @@ do ntr = 1, num_tracers
       robert_complete_for_tracers = .false.
     else
       part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)+tr_future
-      
+
       grid_tracers(:,:,:,current,ntr) = grid_tracers(:,:,:,current,ntr) + &
       tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr))*raw_filter_coeff
-      
+
       grid_tracers(:,:,:,future,ntr) = tr_future + &
       tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr))*(raw_filter_coeff-1.0)
-      
+
       robert_complete_for_tracers = .true.
     endif
     grid_tracers(:,:,:,future,ntr) = tr_future
@@ -1636,7 +1678,7 @@ do ntr=1,num_tracers
   call get_tracer_names(MODEL_ATMOS, ntr, tname, longname, units)
   id_tr(ntr) = register_diag_field(mod_name, tname, axes_3d_full, Time, longname, units)
   id_utr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_u'), axes_3d_full, Time, trim(longname)//trim(' x u'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
-  id_vtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_v'), axes_3d_full, Time, trim(longname)//trim(' x v'), trim(units)//trim(' m/s')) !Add additional diagnostics RG 
+  id_vtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_v'), axes_3d_full, Time, trim(longname)//trim(' x v'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
   id_wtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_w'), axes_3d_full, Time, trim(longname)//trim(' x w'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
 enddo
 
