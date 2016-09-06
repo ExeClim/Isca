@@ -6,7 +6,7 @@ module idealized_moist_phys_mod
   use fms_mod, only: open_namelist_file, close_file
 #endif
 
-use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, FATAL, read_data, field_size, uppercase
+use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, FATAL, read_data, field_size, uppercase, mpp_pe
 
 use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS !mj cp_air needed for rrtmg !s pstd_mks needed for pref calculation
 
@@ -213,12 +213,13 @@ integer ::           &
      id_precip,      &   ! rain and snow from condensation and convection
      id_conv_dt_tg,  &   ! temperature tendency from convection
      id_conv_dt_qg,  &   ! temperature tendency from convection
-     id_cond_dt_tg,  &   ! temperature tendency from convection
-     id_cond_dt_qg,  &   ! temperature tendency from convection
+     id_cond_dt_tg,  &   ! temperature tendency from condensation
+     id_cond_dt_qg,  &   ! temperature tendency from condensation
      id_rh,          & 	 ! Relative humidity
      id_diss_heat_ray,&  ! Heat dissipated by rayleigh bottom drag if gp_surface=.True.
-
-     id_z_tg       	 ! Relative humidity
+     id_z_tg,        &   ! Relative humidity
+     id_cape,        &
+     id_cin
 
 integer, allocatable, dimension(:,:) :: & convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
@@ -458,7 +459,7 @@ endif
       if(do_damping) then
          call pressure_variables(p_half_1d,ln_p_half_1d,pref(1:num_levels),ln_p_full_1d,PSTD_MKS)
 	 pref(num_levels+1) = PSTD_MKS
-         call damping_driver_init (rad_lonb_2d(:,js),rad_latb_2d(is,:), pref(:), get_axis_id(), Time, & !s note that in the original this is pref(:,1), which is the full model pressure levels and the surface pressure at the bottom. There is pref(:2) in this version with 81060 as surface pressure??
+         call damping_driver_init (rad_lonb_2d(:,1),rad_latb_2d(1,:), pref(:), get_axis_id(), Time, & !s note that in the original this is pref(:,1), which is the full model pressure levels and the surface pressure at the bottom. There is pref(:2) in this version with 81060 as surface pressure??
                                 sgsmtn)
 
       endif
@@ -469,7 +470,8 @@ if(mixed_layer_bc) then
   ! choose an unstable initial condition to allow moisture
   ! to quickly enter the atmosphere avoiding problems with the convection scheme
   t_surf = t_surf_init + 1.0
-  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, get_axis_id(), Time, albedo, rad_lonb_2d(:,:), rad_latb_2d(:,:), land) ! t_surf is intent(inout) !s albedo distribution set here.
+
+  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, get_axis_id(), Time, albedo, rad_lonb_2d, rad_latb_2d, land) ! t_surf is intent(inout) !s albedo distribution set here.
   
 elseif(gp_surface) then
   albedo=0.0
@@ -498,6 +500,10 @@ id_cond_rain = register_diag_field(mod_name, 'condensation_rain',          &
      axes(1:2), Time, 'Rain from condensation','kg/m/m/s')
 id_precip = register_diag_field(mod_name, 'precipitation',          &
      axes(1:2), Time, 'Precipitation from resolved, parameterised and snow','kg/m/m/s')
+id_cape = register_diag_field(mod_name, 'cape',          &
+     axes(1:2), Time, 'Convective Available Potential Energy','J/kg')
+id_cin = register_diag_field(mod_name, 'cin',          &
+     axes(1:2), Time, 'Convective Inhibition','J/kg')
 
 select case(r_conv_scheme)
 
@@ -523,7 +529,7 @@ end select
 !endif
 
 
-if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time)
+if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time, rad_lonb_2d, rad_latb_2d)
 
 #ifdef RRTM_NO_COMPILE
     if (do_rrtm_radiation) then
@@ -536,7 +542,7 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
        kd=num_levels
        call rrtmg_lw_ini(cp_air)
        call rrtmg_sw_ini(cp_air)
-       call rrtm_radiation_init(axes,Time,id*jd,kd,rad_lonb_2d,rad_latb_2d)
+       call rrtm_radiation_init(axes,Time,id*jd,kd,rad_lonb_2d,rad_latb_2d, Time_step_in)
        id_z_tg = register_diag_field(mod_name, 'interp_t',        &
             axes(1:3), Time, 'temperature interp','T/s')
     endif
@@ -609,6 +615,8 @@ case(MOIST_QE_CONV)
    if(id_conv_dt_qg > 0) used = send_data(id_conv_dt_qg, conv_dt_qg, Time)
    if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
    if(id_conv_rain  > 0) used = send_data(id_conv_rain, rain, Time)
+   if(id_cape  > 0) used = send_data(id_cape, cape, Time)
+   if(id_cin  > 0) used = send_data(id_cin, cin, Time)
 
 case(BETTS_MILLER_CONV)
    call betts_miller (          delta_t,           tg(:,:,:,previous),       &
@@ -634,18 +642,20 @@ case(BETTS_MILLER_CONV)
    if(id_conv_dt_qg > 0) used = send_data(id_conv_dt_qg, conv_dt_qg, Time)
    if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
    if(id_conv_rain  > 0) used = send_data(id_conv_rain, rain, Time)
+   if(id_cape  > 0) used = send_data(id_cape, cape, Time)
+   if(id_cin  > 0) used = send_data(id_cin, cin, Time)
 
 case(DRY_CONV)
     call dry_convection(Time, tg(:, :, :, previous),                         &
                         p_full(:,:,:,previous), p_half(:,:,:,previous),      &
-                        conv_dt_tg)
+                        conv_dt_tg, cape, cin)
 
-    tg_tmp = conv_dt_tg + tg(:,:,:,previous)
+    tg_tmp = conv_dt_tg*delta_t + tg(:,:,:,previous)
     qg_tmp = grid_tracers(:,:,:,previous,nsphum)
 
-    conv_dt_tg = conv_dt_tg/delta_t
     if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
-
+    if(id_cape  > 0) used = send_data(id_cape, cape, Time)
+    if(id_cin  > 0) used = send_data(id_cin, cin, Time)
 
 case(NO_CONV)
    tg_tmp = tg(:,:,:,previous)
@@ -686,6 +696,40 @@ dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
   if(id_precip     > 0) used = send_data(id_precip, precip, Time)
 
 !endif
+=======
+
+end select
+
+! Add the T and q tendencies due to convection to the timestep
+dt_tg = dt_tg + conv_dt_tg
+dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
+
+! Perform large scale convection
+if (r_conv_scheme .ne. DRY_CONV) then
+  ! Large scale convection is a function of humidity only.  This is
+  ! inconsistent with the dry convection scheme, don't run it!
+  rain = 0.0; snow = 0.0
+  call lscale_cond (         tg_tmp,                          qg_tmp,        &
+             p_full(:,:,:,previous),          p_half(:,:,:,previous),        &
+                              coldT,                            rain,        &
+                               snow,                      cond_dt_tg,        &
+                         cond_dt_qg )
+
+  cond_dt_tg = cond_dt_tg/delta_t
+  cond_dt_qg = cond_dt_qg/delta_t
+  rain       = rain/delta_t
+  snow       = snow/delta_t
+  precip     = precip + rain + snow
+
+  dt_tg = dt_tg + cond_dt_tg
+  dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + cond_dt_qg
+
+  if(id_cond_dt_qg > 0) used = send_data(id_cond_dt_qg, cond_dt_qg, Time)
+  if(id_cond_dt_tg > 0) used = send_data(id_cond_dt_tg, cond_dt_tg, Time)
+  if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
+  if(id_precip     > 0) used = send_data(id_precip, precip, Time)
+
+endif
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
@@ -893,7 +937,7 @@ if(turb) then
 !
    if(mixed_layer_bc) then	
    call mixed_layer(                                                       &
-                              Time,                                        &
+                              Time, Time+Time_step,                        &
                               t_surf(:,:),                                 & ! t_surf is intent(inout)
                               flux_t(:,:),                                 &
                               flux_q(:,:),                                 &

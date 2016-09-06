@@ -34,9 +34,10 @@ module two_stream_gray_rad_mod
 
    use    time_manager_mod,   only: time_type, length_of_year, length_of_day, &
                                     operator(+), operator(-), operator(/=), get_time
-   ! use rrtm_astro,            only: compute_zenith, astro_init, solday
 
    use astronomy_mod,         only: astronomy_init, diurnal_solar
+
+   use interpolator_mod,      only: interpolate_type, interpolator_init, interpolator, ZERO, interpolator_end
 
 !==================================================================================
 implicit none
@@ -79,6 +80,8 @@ real    :: linear_tau      = 0.1
 real    :: wv_exponent     = 4.0
 real    :: solar_exponent  = 4.0
 logical :: do_seasonal     = .false.
+integer :: solday          = -10 !s Day of year to run perpetually if do_seasonal=True and solday>0
+real    :: equinox_day     = 0.0 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months).
 
 character(len=32) :: rad_scheme = 'frierson'
 
@@ -106,8 +109,12 @@ real    :: sw_tau_exponent_gp = 1.0
 real    :: diabatic_acce = 1.0
 real,save :: gp_albedo, Ga_asym, g_asym
 
+! parameters for Byrne and OGorman radiation scheme
+real :: bog_a = 0.8678
+real :: bog_b = 1997.9
+real :: bog_mu = 1.0
 
-real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0
+real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 !s albedo now defined in mixed_layer_init
 real, allocatable, dimension(:,:)   :: b_surf, b_surf_gp
 real, allocatable, dimension(:,:,:) :: b, tdt_rad, tdt_solar
 real, allocatable, dimension(:,:,:) :: lw_up, lw_down, lw_flux, sw_up, sw_down, sw_flux, rad_flux
@@ -121,14 +128,20 @@ real, allocatable, dimension(:,:)   :: sw_wv, del_sol_tau, sw_tau_k, lw_del_tau,
 
 real, save :: pi, deg_to_rad , rad_to_deg
 
+!extras for reading in co2 concentration
+logical                             :: do_read_co2=.false.
+type(interpolate_type),save         :: co2_interp           ! use external file for co2
+character(len=256)                  :: co2_file='co2'       !  file name of co2 file to read
+
+
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            ir_tau_eq, ir_tau_pole, atm_abs, sw_diff, &
            linear_tau, del_sw, wv_exponent, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
-           ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme,&
+           ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme, &
+           do_read_co2, co2_file, solday, equinox_day, bog_a, bog_b, bog_mu,&
 	   diabatic_acce !Schneider Liu values
-
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -149,12 +162,13 @@ contains
 ! ==================================================================================
 
 
-subroutine two_stream_gray_rad_init(is, ie, js, je, num_levels, axes, Time)
+subroutine two_stream_gray_rad_init(is, ie, js, je, num_levels, axes, Time, lonb, latb)
 
 !-------------------------------------------------------------------------------------
 integer, intent(in), dimension(4) :: axes
 type(time_type), intent(in)       :: Time
 integer, intent(in)               :: is, ie, js, je, num_levels
+real ,dimension(:,:),intent(in),optional :: lonb,latb !s Changed to 2d arrays as 2013 interpolator expects this.
 !-------------------------------------------------------------------------------------
 integer, dimension(3) :: half = (/1,2,4/)
 integer :: ierr, io, unit
@@ -181,6 +195,11 @@ deg_to_rad = pi/180.
 rad_to_deg = 180./pi
 
 call astronomy_init
+
+if(do_read_co2)then
+   call interpolator_init (co2_interp, trim(co2_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+endif
+
 
 if(uppercase(trim(rad_scheme)) == 'GEEN') then
   lw_scheme = B_GEEN
@@ -347,9 +366,6 @@ end subroutine two_stream_gray_rad_init
 subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, lon, p_half, t,         &
                            net_surf_sw_down, surf_lw_down, albedo, q)
 
-  ! use rrtm_astro, only:      compute_zenith,use_dyofyr,solr_cnst,&
-  !                            solrad,solday,equinox_day
-
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
 
@@ -362,15 +378,15 @@ real, intent(in), dimension(:,:,:)  :: t, q,  p_half
 integer :: i, j, k, n, dyofyr
 
 integer :: seconds, year_in_s
-real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s
+real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday
 logical :: used
 
-! Byrne + O'Gorman rad scheme parameters
-real :: bog_a = 0.8678
-real :: bog_b = 1997.9
-real :: bog_mu = 1.0
+
+real ,dimension(size(q,1),size(q,2),size(q,3)) :: co2f
 
 n = size(t,3)
+
+
 
 ! albedo(:,:) = albedo_value !s albedo now set in mixed_layer_init.
 
@@ -385,16 +401,25 @@ if (do_seasonal) then
   r_seconds = real(seconds)
   day_in_s = length_of_day()
   frac_of_day = r_seconds / day_in_s
-  frac_of_year = r_seconds / year_in_s
+  
+  if(solday .ge. 0) then
+      r_solday=real(solday)
+      frac_of_year = (r_solday*day_in_s) / year_in_s
+  else
+      frac_of_year = r_seconds / year_in_s
+  endif
+
   gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
-  time_since_ae = abs(mod(frac_of_year, 1.0)) * 2.0 * pi
+
+  time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
+
   call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
   insolation = solar_constant * coszen
 else
-  ! Default: Permanent equinox at all longitudes
+  ! Default: Averaged Earth insolation at all longitudes
 !  p2          = (1. - 3.*sin(lat)**2)/4.
 !  insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
-   insolation = (solar_constant/pi)*cos(lat)
+  insolation = (solar_constant/pi)*cos(lat)
 end if
 
 select case(sw_scheme)
@@ -405,7 +430,7 @@ case(B_GEEN)
     sw_wv = sw_tau_k + 0.5194
     sw_wv = exp( 0.01887 / (sw_tau_k + 0.009522)                      &
                  + 1.603 / ( sw_wv*sw_wv ) )
-    del_sol_tau(:,:) = ( 0.0596 + 0.0029 * log(carbon_conc/360)       &
+    del_sol_tau(:,:) = ( 0.0596 + 0.0029 * log(carbon_conc/360.)       &
                                 + sw_wv(:,:) * q(:,:,k) )             &
                      * ( p_half(:,:,k+1) - p_half(:,:,k) ) / p_half(:,:,n+1)
     sw_dtrans(:,:,k) = exp( - del_sol_tau(:,:) )
@@ -459,16 +484,22 @@ end select
 b = stefan*t**4
 lw_dtrans_win = 1.
 
+if(do_read_co2)then
+  call interpolator( co2_interp, Time_diag, p_half, co2f, trim(co2_file))
+  carbon_conc = maxval(co2f) !Needs maxval just because co2f is a 3d array of a constant, so maxval is just a way to pick out one number
+endif
+
+
 select case(lw_scheme)
 case(B_GEEN)
   ! split LW in 2 bands: water-vapour window and remaining = non-window
   ! ref: Ruth Geen etal, GRL 2016 (supp. information).
   do k = 1, n
-    lw_del_tau    = ( ir_tau_co2 + 0.2023 * log(carbon_conc/360)                  &
+    lw_del_tau    = ( ir_tau_co2 + 0.2023 * log(carbon_conc/360.)                  &
                     + ir_tau_wv*sqrt(q(:,:,k)) )                               &
                * ( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1)
     lw_dtrans(:,:,k) = exp( - lw_del_tau )
-    lw_del_tau_win   = ( ir_tau_co2_win + 0.0954 * log(carbon_conc/360)           &
+    lw_del_tau_win   = ( ir_tau_co2_win + 0.0954 * log(carbon_conc/360.)           &
                                      + ir_tau_wv_win1*q(:,:,k)                 &
                                      + ir_tau_wv_win2*q(:,:,k)*q(:,:,k) )      &
                   * ( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1)
@@ -494,8 +525,9 @@ case(B_BYRNE)
   !      Land–ocean warming contrast over a wide range of climates:
   !      Convective quasi-equilibrium theory and idealized simulations.
   !      J. Climate 26, 4000–4106 (2013).
+
   do k = 1, n
-    lw_del_tau    = (bog_a*bog_mu + bog_b*q(:,:,k)) * (( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1))
+    lw_del_tau    = (bog_a*bog_mu + 0.17 * log(carbon_conc/360.)  + bog_b*q(:,:,k)) * (( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1))
     lw_dtrans(:,:,k) = exp( - lw_del_tau )
 
   end do
@@ -728,6 +760,8 @@ endif
 if(lw_scheme.eq.B_SCHNEIDER_LIU) then
 	deallocate (b_surf_gp)
 endif
+
+if(do_read_co2)call interpolator_end(co2_interp)
 
 end subroutine two_stream_gray_rad_end
 

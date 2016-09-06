@@ -54,7 +54,6 @@ atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_taumol.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_cldprmc.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_k_g.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_rtrnmr.f90
-atmos_param/rrtm_radiation/astro.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/parkind.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/parrrsw.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/rrsw_aer.f90

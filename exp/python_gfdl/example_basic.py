@@ -7,12 +7,12 @@ import numpy as np
 
 import gfdl.experiment
 
-# create an experiment based on the code version tagged `exoplan0.3`
 exp = gfdl.experiment.Experiment('ref_earth_grey',
-    repo='git@github.com:jamesp/GFDLmoistModel.git',
-    commit='exoplan0.3')
+    repo='git@github.com:ExeClim/GFDLmoistModel.git',
+    commit='master')
 
 # compiles source code to exp.execdir
+exp.disable_rrtm()
 exp.compile()
 
 # setup the namelist:

@@ -41,7 +41,7 @@ use      field_manager_mod, only: MODEL_ATMOS, parse
 
 use     tracer_manager_mod, only: get_number_tracers, query_method, get_tracer_index, get_tracer_names, NO_TRACER
 
-use       diag_manager_mod, only: diag_axis_init, register_diag_field, register_static_field, send_data
+use       diag_manager_mod, only: diag_axis_init, register_diag_field, register_static_field, send_data, diag_manager_end
 
 use         transforms_mod, only: transforms_init,         transforms_end,            &
                                   get_grid_boundaries,     area_weighted_global_mean, &
@@ -81,6 +81,7 @@ use        tracer_type_mod, only: tracer_type, tracer_type_version, tracer_type_
 use every_step_diagnostics_mod, only: every_step_diagnostics_init, every_step_diagnostics, every_step_diagnostics_end
 
 use        mpp_domains_mod, only: mpp_global_field
+use        mpp_mod,         only: NULL_PE, mpp_transmit, mpp_sync, mpp_send, mpp_broadcast, mpp_recv
 
 use       polvani_2004_mod, only: polvani_2004
 use       polvani_2007_mod, only: polvani_2007, polvani_2007_tracer_init, get_polvani_2007_tracers
@@ -106,7 +107,7 @@ character(len=128), parameter :: tagname = '$Name: siena_201211 $'
 integer :: id_ps, id_u, id_v, id_t, id_vor, id_div, id_omega, id_wspd, id_slp
 integer :: id_pres_full, id_pres_half, id_zfull, id_zhalf, id_vort_norm, id_EKE
 integer :: id_uu, id_vv, id_tt, id_omega_omega, id_uv, id_omega_t, id_vw, id_uw, id_ut, id_vt
-integer, allocatable, dimension(:) :: id_tr
+integer, allocatable, dimension(:) :: id_tr, id_utr, id_vtr, id_wtr !extra advection diags added by RG
 real :: gamma, expf, expf_inverse
 character(len=8) :: mod_name = 'dynamics'
 integer, dimension(4) :: axis_id
@@ -153,7 +154,8 @@ logical :: do_mass_correction     = .true. , &
            do_energy_correction   = .true. , &
            use_virtual_temperature= .false., &
            use_implicit           = .true.,  &
-           triang_trunc           = .true.
+           triang_trunc           = .true.,  &
+           graceful_shutdown      = .false.
 
 integer :: damping_order       = 2, &
            damping_order_vor   =-1, &
@@ -193,7 +195,9 @@ real    :: damping_coeff       = 1.15740741e-4, & ! (one tenth day)**-1
          ocean_topog_smoothing = .93, &
            initial_sphum       = 0.0, &
      reference_sea_level_press =  101325.,&
-        water_correction_limit = 0.0 !mj
+        water_correction_limit = 0.0, & !mj
+           raw_filter_coeff    = 1.0     !st Default value of 1.0 turns the RAW part of the filtering off. 0.5 is the desired value, but this appears unstable. Requires further testing.
+
 !===============================================================================================
 
 real, dimension(2) :: valid_range_t = (/100.,500./)
@@ -210,7 +214,9 @@ namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option, cutoff
                                  p_press, p_sigma, exponent, ocean_topog_smoothing, initial_sphum,   &
                                  valid_range_t, eddy_sponge_coeff, zmu_sponge_coeff, zmv_sponge_coeff,&
                                  print_interval, num_steps, initial_state_option,                    &
-                                 water_correction_limit !mj
+                                 water_correction_limit,                                             & !mj
+                                 raw_filter_coeff,                                                   & !st
+                                 graceful_shutdown
 
 contains
 
@@ -798,13 +804,21 @@ real, dimension(is:ie, js:je                         ) :: dt_psg_tmp
 real, dimension(is:ie, js:je, num_levels             ) :: dt_ug_tmp, dt_vg_tmp, dt_tg_tmp
 real, dimension(is:ie, js:je, num_levels, num_tracers) :: dt_tracers_tmp
 
-integer :: j, k, time_level, seconds, days
+integer :: j, k, time_level, seconds, days, p
 real    :: delta_t
 !mj error message
 real    :: extrtmp
 integer :: ii,jj,kk,i1,j1,k1
 
+!st RAW filter implementation
+complex, dimension(ms:me, ns:ne              ) :: part_filt_ln_ps
+complex, dimension(ms:me, ns:ne, num_levels  ) :: part_filt_vors, part_filt_divs, part_filt_ts
+complex, dimension(ms:me, ns:ne, num_levels, num_tracers) :: part_filt_trs
+real, dimension(is:ie, js:je, num_levels, num_tracers) :: part_filt_tr
 ! < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < >
+
+logical :: pe_is_valid = .true.
+logical :: r_pe_is_valid = .true.
 
 if(.not.module_is_initialized) then
   call error_mesg('spectral_dynamics','dynamics has not been initialized ', FATAL)
@@ -898,16 +912,16 @@ if(.not.robert_complete_for_tracers) then
 endif
 
 if(step_number == num_steps) then
-  call leapfrog_2level_A(ln_ps, dt_ln_ps, previous, current, future, delta_t, robert_coeff)
-  call leapfrog_2level_A(vors,  dt_vors,  previous, current, future, delta_t, robert_coeff)
-  call leapfrog_2level_A(divs,  dt_divs,  previous, current, future, delta_t, robert_coeff)
-  call leapfrog_2level_A(ts,    dt_ts,    previous, current, future, delta_t, robert_coeff)
+  call leapfrog_2level_A(ln_ps, dt_ln_ps, previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_ln_ps)
+  call leapfrog_2level_A(vors,  dt_vors,  previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_vors)
+  call leapfrog_2level_A(divs,  dt_divs,  previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_divs)
+  call leapfrog_2level_A(ts,    dt_ts,    previous, current, future, delta_t, robert_coeff, raw_filter_coeff, part_filt_ts)
   robert_complete_for_fields = .false.
 else
-  call leapfrog         (ln_ps, dt_ln_ps, previous, current, future, delta_t, robert_coeff)
-  call leapfrog         (vors , dt_vors , previous, current, future, delta_t, robert_coeff)
-  call leapfrog         (divs , dt_divs , previous, current, future, delta_t, robert_coeff)
-  call leapfrog         (ts   , dt_ts   , previous, current, future, delta_t, robert_coeff)
+  call leapfrog         (ln_ps, dt_ln_ps, previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
+  call leapfrog         (vors , dt_vors , previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
+  call leapfrog         (divs , dt_divs , previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
+  call leapfrog         (ts   , dt_ts   , previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
   robert_complete_for_fields = .true.
 endif
 
@@ -919,6 +933,7 @@ call trans_spherical_to_grid(ln_ps(:,:,  future), ln_psg)
 psg(:,:,future) = exp(ln_psg)
 
 if(minval(tg(:,:,:,future)) < valid_range_t(1) .or. maxval(tg(:,:,:,future)) > valid_range_t(2)) then
+  pe_is_valid = .false.
 !mj !s This doesn't affect the normal running of the code in any way. It simply allows identification of the point where temp violation has occured.
    if(minval(tg(:,:,:,future)) < valid_range_t(1))then
       extrtmp = minval(tg(:,:,:,future))
@@ -946,10 +961,45 @@ if(minval(tg(:,:,:,future)) < valid_range_t(1) .or. maxval(tg(:,:,:,future)) > v
         &,ug(ii,jj,kk,current)&
         &,ug(ii,jj,kk,future)
 !jm
-  call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
+  if (.not.graceful_shutdown) then
+    call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
+  endif
 endif
 
-call update_tracers(tracer_attributes, dt_tracers_tmp, wg, p_half, delta_t)
+! synchronisation between nodes.  THIS WILL SLOW DOWN THE RUN but ensures
+! all partially complete diagnostics are written to netcdf output.
+if (graceful_shutdown) then
+  if (pe == mpp_root_pe()) then
+    do p = 0, npes-1
+      ! wait for all nodes to report they are error free
+      if (p.ne.pe) then
+        call mpp_recv(r_pe_is_valid, p)
+        if (.not.r_pe_is_valid .or. .not.pe_is_valid) then
+          ! node reports error, tell all the others to shutdown
+          r_pe_is_valid = .false.
+          exit
+        end if
+      end if
+    end do
+    ! tell all the nodes to continue, or not
+    do p =0, npes-1
+      if (p.ne.pe) call mpp_send(r_pe_is_valid, p)
+    end do
+  else
+    call mpp_send(pe_is_valid, mpp_root_pe())
+    ! wait to hear back from root that all are ok to continue
+    call mpp_recv(r_pe_is_valid, mpp_root_pe())
+  endif
+  if (.not.r_pe_is_valid) then
+    ! one of the nodes has broken the condition.  gracefully shutdown diagnostics
+    ! and then raise a fatal error after all have hit the sync point.
+    call diag_manager_end(Time)
+    call mpp_sync()
+    call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
+  endif
+endif
+
+call update_tracers(tracer_attributes, dt_tracers_tmp, wg, p_half, delta_t, part_filt_trs, part_filt_tr)
 
 !mj add a vertical limit to water correction
 !call compute_corrections(delta_t, tracer_attributes)
@@ -971,6 +1021,9 @@ ug_final  =  ug(:,:,:,current)
 vg_final  =  vg(:,:,:,current)
 tg_final  =  tg(:,:,:,current)
 grid_tracers_final(:,:,:,time_level_out,:) = grid_tracers(:,:,:,current,:)
+
+
+call complete_robert_filter(tracer_attributes, part_filt_ln_ps, part_filt_vors, part_filt_divs, part_filt_ts, part_filt_trs, part_filt_tr)
 
 return
 end subroutine spectral_dynamics
@@ -1055,12 +1108,15 @@ end subroutine four_in_one
 
 !================================================================================
 
-subroutine update_tracers(tracer_attributes, dt_tr, wg, p_half, delta_t)
+subroutine update_tracers(tracer_attributes, dt_tr, wg, p_half, delta_t, part_filt_trs_out, part_filt_tr_out)
 
 type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
 real   , intent(inout), dimension(:,:,:,:) :: dt_tr
 real   , intent(in   ), dimension(:,:,:  ) :: wg, p_half
 real   , intent(in   )  :: delta_t
+complex, intent(out  ), dimension(ms:me, ns:ne, num_levels, num_tracers) :: part_filt_trs_out
+real, intent(out  ), dimension(is:ie, js:je, num_levels, num_tracers) :: part_filt_tr_out
+
 
 complex, dimension(ms:me, ns:ne, num_levels) :: dt_trs
 real,    dimension(is:ie, js:je, num_levels) :: dp, dt_tmp, tr_future
@@ -1084,10 +1140,10 @@ do ntr = 1, num_tracers
     call trans_grid_to_spherical  (dt_tr(:,:,:,ntr), dt_trs)
     call compute_spectral_damping (spec_tracers(:,:,:,previous,ntr), dt_trs, delta_t)
     if(step_number == num_steps) then
-      call leapfrog_2level_A(spec_tracers(:,:,:,:,ntr),dt_trs,previous,current,future,delta_t,tracer_attributes(ntr)%robert_coeff)
+      call leapfrog_2level_A(spec_tracers(:,:,:,:,ntr),dt_trs,previous,current,future,delta_t,tracer_attributes(ntr)%robert_coeff, raw_filter_coeff, part_filt_trs_out(:,:,:,ntr))
       robert_complete_for_tracers = .false.
     else
-      call leapfrog(spec_tracers(:,:,:,:,ntr),dt_trs,previous,current,future,delta_t,tracer_attributes(ntr)%robert_coeff)
+      call leapfrog(spec_tracers(:,:,:,:,ntr),dt_trs,previous,current,future,delta_t,tracer_attributes(ntr)%robert_coeff, raw_filter_coeff)
       robert_complete_for_tracers = .true.
     endif
     call trans_spherical_to_grid  (spec_tracers(:,:,:,future,ntr), grid_tracers(:,:,:,future,ntr))
@@ -1100,12 +1156,20 @@ do ntr = 1, num_tracers
     call vert_advection(delta_t, wg, dp, tr_future, dt_tmp, scheme=tracer_vert_advect_scheme(ntr), form=ADVECTIVE_FORM)
     tr_future = tr_future + delta_t*dt_tmp
     if(step_number == num_steps) then
+      part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)
+
       grid_tracers(:,:,:,current,ntr) = grid_tracers(:,:,:,current,ntr) + &
-      tracer_attributes(ntr)%robert_coeff*(grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr))
+      tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr))*raw_filter_coeff
       robert_complete_for_tracers = .false.
     else
+      part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)+tr_future
+
       grid_tracers(:,:,:,current,ntr) = grid_tracers(:,:,:,current,ntr) + &
-      tracer_attributes(ntr)%robert_coeff*(grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr) + tr_future)
+      tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr))*raw_filter_coeff
+
+      grid_tracers(:,:,:,future,ntr) = tr_future + &
+      tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr))*(raw_filter_coeff-1.0)
+
       robert_complete_for_tracers = .true.
     endif
     grid_tracers(:,:,:,future,ntr) = tr_future
@@ -1384,17 +1448,24 @@ enddo
 return
 end subroutine complete_update_of_future
 !================================================================================
-subroutine complete_robert_filter(tracer_attributes)
+subroutine complete_robert_filter(tracer_attributes, part_filt_ln_ps, part_filt_vors, part_filt_divs, part_filt_ts, part_filt_trs, part_filt_tr)
+
 type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
+complex, intent(in), dimension(:,:) :: part_filt_ln_ps
+complex, intent(in), dimension(:,:,:) :: part_filt_vors, part_filt_divs, part_filt_ts
+complex, intent(in), dimension(:,:,:,:) :: part_filt_trs
+real, intent(in), dimension(:,:,:,:) :: part_filt_tr
+
+
 integer :: ntr
 
 if(robert_complete_for_fields) then
   call error_mesg('complete_robert_filter','This routine should not be called when robert_complete_for_fields=.true.',FATAL)
 endif
-call leapfrog_2level_B(ln_ps, previous, current, robert_coeff)
-call leapfrog_2level_B(vors,  previous, current, robert_coeff)
-call leapfrog_2level_B(divs,  previous, current, robert_coeff)
-call leapfrog_2level_B(ts,    previous, current, robert_coeff)
+call leapfrog_2level_B(ln_ps, part_filt_ln_ps, previous, current, robert_coeff, raw_filter_coeff)
+call leapfrog_2level_B(vors,  part_filt_vors,  previous, current, robert_coeff, raw_filter_coeff)
+call leapfrog_2level_B(divs,  part_filt_divs,  previous, current, robert_coeff, raw_filter_coeff)
+call leapfrog_2level_B(ts,    part_filt_ts,    previous, current, robert_coeff, raw_filter_coeff)
 robert_complete_for_fields=.true.
 
 if(num_tracers > 0 .and. robert_complete_for_tracers) then
@@ -1403,9 +1474,9 @@ endif
 
 do ntr = 1, num_tracers
   if(uppercase(trim(tracer_attributes(ntr)%numerical_representation)) == 'SPECTRAL') then
-    call leapfrog_2level_B(spec_tracers(:,:,:,:,ntr), previous, current, tracer_attributes(ntr)%robert_coeff)
+    call leapfrog_2level_B(spec_tracers(:,:,:,:,ntr), part_filt_trs(:,:,:,ntr), previous, current, tracer_attributes(ntr)%robert_coeff, raw_filter_coeff)
   else
-    call leapfrog_2level_B(grid_tracers(:,:,:,:,ntr), previous, current, tracer_attributes(ntr)%robert_coeff)
+    call leapfrog_2level_B(grid_tracers(:,:,:,:,ntr), part_filt_tr(:,:,:,ntr), previous, current, tracer_attributes(ntr)%robert_coeff, raw_filter_coeff)
   endif
   robert_complete_for_tracers=.true.
 enddo
@@ -1601,9 +1672,15 @@ if(id_slp > 0) then
 endif
 
 allocate(id_tr(num_tracers))
+allocate(id_utr(num_tracers)) !Add additional diagnostics RG
+allocate(id_vtr(num_tracers)) !Add additional diagnostics RG
+allocate(id_wtr(num_tracers)) !Add additional diagnostics RG
 do ntr=1,num_tracers
   call get_tracer_names(MODEL_ATMOS, ntr, tname, longname, units)
   id_tr(ntr) = register_diag_field(mod_name, tname, axes_3d_full, Time, longname, units)
+  id_utr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_u'), axes_3d_full, Time, trim(longname)//trim(' x u'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
+  id_vtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_v'), axes_3d_full, Time, trim(longname)//trim(' x v'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
+  id_wtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_w'), axes_3d_full, Time, trim(longname)//trim(' x w'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
 enddo
 
 id_vort_norm = register_diag_field(mod_name, 'vort_norm', Time, 'vorticity norm', '1/(m*sec)')
@@ -1702,6 +1779,12 @@ if(size(tr_grid,5) /= num_tracers) then
 endif
 do ntr=1,num_tracers
   if(id_tr(ntr) > 0) used = send_data(id_tr(ntr), tr_grid(:,:,:,time_level,ntr), Time)
+  worka3d = tr_grid(:,:,:,time_level,ntr)*u_grid
+  if(id_utr(ntr) > 0) used = send_data(id_utr(ntr), worka3d, Time)
+  worka3d = tr_grid(:,:,:,time_level,ntr)*v_grid
+  if(id_vtr(ntr) > 0) used = send_data(id_vtr(ntr), worka3d, Time)
+  worka3d = tr_grid(:,:,:,time_level,ntr)*wg_full
+  if(id_wtr(ntr) > 0) used = send_data(id_wtr(ntr), worka3d, Time)
 enddo
 
 if(id_slp > 0) then

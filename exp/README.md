@@ -42,8 +42,6 @@ The module will now be available in your Python environment.  The advantage of i
 
 ### Usage
 
-Experiment scripts should be placed in the `exp/` directory.
-
 The most basic experiment would be:
 ```
 from gfdl.experiment import Experiment, DiagTable
@@ -69,10 +67,10 @@ diag.add_field('two_stream', 'flux_lw')
 exp.use_diag_table(diag)
 
 # compile the source code to $work_dir/exec
+exp.disable_rrtm()	# when using two-stream gray rad we don't need rrtm
 exp.compile()
 
 exp.clear_rundir()
-
 
 # set some values in the namelist
 # overwrite the whole main_nml section
@@ -93,6 +91,6 @@ for i in range(2, 13):
   exp.runmonth(2)  # use the restart i-1 by default
 ```
 
-For examples of creating experiments with custom `diag_tables`, changing namelists and looping over several namelist configurations see `exp/jp492/exp{1,2,3}....py`.
+For examples of creating experiments with custom `diag_tables`, changing namelists and looping over several namelist configurations see `exp/python_gfdl/example....py`.
 
 For further documentation, dig into the source! It should be documented and fairly obvious how it works.  The entire `Experiment` and `DiagTables` objects are found in `src/extra/python/gfdl/experiment.py`.

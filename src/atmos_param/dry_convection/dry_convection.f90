@@ -10,6 +10,7 @@
 !! ### Namelist parameters
 !! @param tau The relaxation timescale to the lapse rate gamma.
 !! @param gamma The prescribed lapse rate.
+!!              When gamma = 1, parcel lifting temperature is dry potential temperature.
 !!
 !! @see https://github.com/tapios/fms-idealized
 !!
@@ -31,7 +32,7 @@ module dry_convection_mod
 
 !                             ---  namelist ---
   real :: tau, &            !< relaxation timescale [seconds]
-          gamma             !< prescibed lapse rate [K/km]
+          gamma             !< prescibed lapse rate [non-dim]
 
   namelist /dry_convection_nml/ tau, gamma
 
@@ -70,10 +71,10 @@ module dry_convection_mod
       if(mpp_pe() == mpp_root_pe()) write (stdlog(), nml=dry_convection_nml)
 
       id_cape = register_diag_field ( mod_name, 'CAPE', axes(1:2), Time, &
-           'CAPE', 'J', missing_value=missing_value)
+           'CAPE', 'J/kg', missing_value=missing_value)
 
       id_cin = register_diag_field ( mod_name, 'CIN', axes(1:2), Time, &
-           'CIN', 'J', missing_value=missing_value)
+           'CIN', 'J/kg', missing_value=missing_value)
 
       id_dp = register_diag_field ( mod_name, 'dp', axes(1:2), Time, &
            'Pressure interval', 'Pa', missing_value=missing_value)
@@ -111,7 +112,9 @@ module dry_convection_mod
 !! @param[in] p_full Pressure values on full levels
 !! @param[in] p_half Pressure values on half levels
 !! @param[out] dt_tg Calculated temperature tendency
-  subroutine dry_convection(Time, tg, p_full, p_half, dt_tg)
+!! @param[out] cape Convective Available Potential Energy
+!! @param[out] cin Convective Inhibition
+  subroutine dry_convection(Time, tg, p_full, p_half, dt_tg, cape, cin)
 
     type(time_type), intent(in) :: Time
 
@@ -122,11 +125,12 @@ module dry_convection_mod
 
     real, intent(out), dimension(:,:,:) ::                                    &
          dt_tg                 ! temperature tendency
+    real, intent(out), dimension(size(tg,1),size(tg,2)) ::                    &
+        cape,              &   !< convectively available potential energy
+        cin                    !< convective inhibition
 
 !                         ---  local variables ---
     real, dimension(size(tg,1),size(tg,2)) ::                                 &
-         cape,             &   !< convectively available potential energy
-         cin,              &   !< convective inhibition
          dp,               &   !< pressure interval from ground to LZB
          ener_int              !< energy integral from ground to LZB
 
@@ -260,7 +264,7 @@ module dry_convection_mod
 
           ! lift parcel with lapse rate given by gamma
           do k = btm(i,j)-1, 1, -1
-             zdpkpk = exp( cons1 * alog(p_full(i,j,k)/p_full(i,j,k+1)))
+             zdpkpk = exp( cons1 * alog(p_full(i,j,k)/p_full(i,j,k+1)))  !< equiv. to (pfull[k]/pfull[k+1])^cons1
              tp(i,j,k) = tp(i,j,k+1) +                                        &
                   gamma * (tp(i,j,k+1)*zdpkpk - tp(i,j,k+1))
           end do
@@ -271,7 +275,7 @@ module dry_convection_mod
                 if(lzb(i,j) == btm(i,j)) then ! not above a lower cloud
                    ! calculate CAPE
                    cape(i,j) = cape(i,j) +                                    &
-                        (tp(i,j,k)-tg(i,j,k))*dp_half(i,j,k)/p_full(i,j,k)
+                        rdgas*(tp(i,j,k)-tg(i,j,k))*log(p_half(i,j,k+1)/p_half(i,j,k))
 
                    ! set LCL if parcel is stable at next lower level
                    if(tp(i,j,k+1) < tg(i,j,k+1)) lcl(i,j) = k
@@ -289,7 +293,7 @@ module dry_convection_mod
                    if(lcl(i,j) == btm(i,j)) then
                       ! calculate CIN (only if below LCL)
                       cin(i,j) = cin(i,j) -                                   &
-                           (tp(i,j,k)-tg(i,j,k))*dp_half(i,j,k)/p_full(i,j,k)
+                           rdgas*(tp(i,j,k)-tg(i,j,k))*log(p_half(i,j,k+1)/p_half(i,j,k))
                    end if
 
                 else ! set parcel temp to ambient
