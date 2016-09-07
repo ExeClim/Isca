@@ -593,6 +593,11 @@ beta_lw = drdt_surf
 ! If time-varying qflux then update value
 if(load_qflux.and.time_varying_qflux) then
          call interpolator( qflux_interp, Time, ocean_qflux, trim(qflux_file_name) )
+
+	 if(update_albedo_from_ice) then
+	      where (land_ice_mask) ocean_qflux=0.
+	 endif
+
 endif
 
 !
