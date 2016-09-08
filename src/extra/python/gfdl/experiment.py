@@ -137,8 +137,14 @@ class Experiment(object):
     def rm_workdir(self):
         try:
             sh.rm(['-r', self.workdir])
-        except sh.ErrorReturnCode_1:
+        except sh.ErrorReturnCode:
             log.warning('Tried to remove working directory but it doesnt exist')
+
+    def rm_datadir(self):
+        try:
+            sh.rm(['-r', self.datadir])
+        except sh.ErrorReturnCode:
+            log.warning('Tried to remove data directory but it doesnt exist')
 
     def clear_workdir(self):
         self.rm_workdir()
@@ -149,7 +155,7 @@ class Experiment(object):
         sh.cd(self.workdir)
         try:
             sh.rm(['-r', self.rundir])
-        except sh.ErrorReturnCode_1:
+        except sh.ErrorReturnCode:
             log.warning('Tried to remove run directory but it doesnt exist')
         mkdir(self.rundir)
         log.info('Emptied run directory %r' % self.rundir)
@@ -274,7 +280,7 @@ class Experiment(object):
         try:
             set_screen_title('compiling')
             sh.bash(P(self.workdir, 'compile.sh'), _out=clean_log_debug, _err=clean_log_debug)
-        except Exception as e:
+        except sh.ErrorReturnCode as e:
             log.critical('Compilation failed.')
             raise e
         log.debug('Compilation complete.')
@@ -372,7 +378,7 @@ class Experiment(object):
             log.info("Cleaning run directory.")
             self.clear_rundir()
             return False
-        except Exception as e:
+        except sh.ErrorReturnCode as e:
             log.error("Run failed for month %r" % month)
             proc.process.kill()
             raise e
@@ -394,10 +400,10 @@ class Experiment(object):
             if month > 1:
                 try:
                     sh.rm( P(self.restartdir, 'res_%d.cpio' % (month-1)))
-                except sh.ErrorReturnCode_1:
+                except sh.ErrorReturnCode:
                     log.warning('Previous months restart already removed')
                 sh.rm( P(self.datadir, 'run%d' % (month-1) , 'res_%d.cpio' % (month-1)))
-        else:    
+        else:
             sh.cp(['-a', self.rundir+'/.', outdir])
         self.clear_rundir()
         sh.cd(self.rundir)
@@ -439,14 +445,14 @@ class Experiment(object):
         for sec in new_vals:
             nml = self.namelist.setdefault(sec, {})
             nml.update(new_vals[sec])
-			
+
     def runinterp(self, month, infile, outfile, var_names = '-a', p_model = False, rm_input=False):
         import subprocess
         pprocess = P(GFDL_BASE,'postprocessing/plevel_interpolation/scripts')
         interper = 'source '+pprocess+'/plevel.sh -i '
         inputfile = P(self.datadir, 'run%d' % month, infile)
         outputfile = P(self.datadir, 'run%d' % month, outfile)
-        
+
         if p_model:
             plev = ' -p "2 9 18 38 71 125 206 319 471 665 904 1193 1532 1925 2375 2886 3464 4115 4850 5679 6615 7675 8877 10244 11801 13577 15607 17928 20585 23630 27119 31121 35711 40976 47016 53946 61898 71022 81491 93503" '
         else:
