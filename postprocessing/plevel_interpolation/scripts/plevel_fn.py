@@ -26,6 +26,13 @@ def plevel_call(nc_file_in,nc_file_out, var_names = '-a', p_levels='default'):
 def daily_average(nc_file_in, nc_file_out):
 	subprocess.call('cdo daymean '+nc_file_in+' '+nc_file_out, shell=True)
 
+def two_daily_average(nc_file_in, nc_file_out, avg_or_daily):
+	if avg_or_daily=='daily':
+		number_of_timesteps=2
+	elif avg_or_daily=='6hourly':
+		number_of_timesteps=8
+
+	subprocess.call('cdo timselmean,'+str(number_of_timesteps)+' '+nc_file_in+' '+nc_file_out, shell=True)
 
 def join_files(files_in, file_name_out):
 
