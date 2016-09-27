@@ -137,7 +137,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 
 integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
            id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun, &
-           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans
+           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2
 
 character(len=10), parameter :: mod_name = 'two_stream'
 
@@ -316,6 +316,12 @@ end select
                register_diag_field ( mod_name, 'fracsun', axes(1:2), Time, &
                  'daylight fraction of time interval', &
                  'none', missing_value=missing_value      )
+
+    id_co2  = &
+               register_diag_field ( mod_name, 'co2', Time, &
+                 'co2 concentration', &
+                 'ppmv', missing_value=missing_value      )
+
   if (lw_scheme.eq.B_GEEN) then
     id_lw_dtrans_win  = &
                register_diag_field ( mod_name, 'lw_dtrans_win', axes(1:3), Time, &
@@ -545,6 +551,11 @@ endif
 !------- cosine of zenith angle ------------
 if ( id_coszen > 0 ) then
    used = send_data ( id_coszen, coszen, Time_diag)
+endif
+
+!------- carbon dioxide concentration ------------
+if ( id_co2 > 0 ) then
+   used = send_data ( id_co2, carbon_conc, Time_diag)
 endif
 
 return
