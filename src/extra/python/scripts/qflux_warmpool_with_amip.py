@@ -7,16 +7,17 @@ from mpl_toolkits.basemap import Basemap
 t_res = 42
 
 lat_0 = 16.
-exp_name='/scratch/sit204/FMS2013/GFDLmoistModel/exp/amip_derived_qflux_control/'
+exp_name='/scratch/sit204/FMS2013/GFDLmoistModel/exp/amip_derived_qflux_control_ice_albedo_change/'
+base_qflux_file_name='sqflux_ctrl_ice_4320'
 
-seasonal_sst_anom='mam_mid' #Either 'always', 'djf', 'mam', 'jja', or 'son'
+seasonal_sst_anom='always' #Either 'always', 'djf', 'mam', 'jja', or 'son'
 
 do_shielded_anomaly=True
 
 month_dict={'jan':0, 'feb':1, 'mar':2, 'apr':3, 'may':4, 'jun':5, 'jul':6, 'aug':7, 'sep':8, 'oct':9, 'nov':10, 'dec':11}
 
 #read in grid from approriate file
-resolution_file = Dataset(exp_name+'input/seasonal_qflux_control_20m.nc', 'r', format='NETCDF3_CLASSIC')
+resolution_file = Dataset(exp_name+'input/'+base_qflux_file_name+'.nc', 'r', format='NETCDF3_CLASSIC')
 
 lons = resolution_file.variables['lon'][:]
 lats = resolution_file.variables['lat'][:]
@@ -24,7 +25,7 @@ lats = resolution_file.variables['lat'][:]
 lonbs = resolution_file.variables['lonb'][:]
 latbs = resolution_file.variables['latb'][:]
 
-seasonal_qflux = resolution_file.variables['seasonal_qflux_control_20m'][:]
+seasonal_qflux = resolution_file.variables[base_qflux_file_name][:]
 
 time_in = resolution_file.variables['time'][:]
 
@@ -50,8 +51,9 @@ for i in np.arange(len(lons)):
 #warmpool_lon_centre = 240.
 
 #warmpool_loc_list=[[30.,180.],[45.,180.], [60.,180.], [30.,300.],[30.,315.], [30.,330.]]
+warmpool_loc_list=[[0.,210.]]
 
-warmpool_loc_list=[ [30.,330.]]
+#warmpool_loc_list=[ [30.,330.]]
 
 for file_values in warmpool_loc_list:
 
@@ -64,7 +66,7 @@ for file_values in warmpool_loc_list:
 	print warmpool_lat_centre,warmpool_lon_centre
 
 	warmpool_width = 7.5
-	warmpool_width_lon = 7.5
+	warmpool_width_lon = 45.0
 	warmpool_amp = 200.
 
 
@@ -175,7 +177,7 @@ for file_values in warmpool_loc_list:
 	plt.yticks(np.linspace(-90,90,7))
 	cb = plt.colorbar(cs, shrink=0.5, extend='both')
 
-	description_string='sh_lon_'+str(int(warmpool_lon_centre))+'_lat_'+str(int(warmpool_lat_centre))+'_a_'+str(int(warmpool_amp))
+	description_string='ish_lon_'+str(int(warmpool_lon_centre))+'_lat_'+str(int(warmpool_lat_centre))+'_a_'+str(int(warmpool_amp))
 	
 	var_name_out=description_string+file_name_seasonal_addition
 
