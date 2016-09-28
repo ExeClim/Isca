@@ -561,7 +561,7 @@
           real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
 
 	  integer :: year_in_s
-          real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
+          real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
 
 
 
@@ -607,7 +607,7 @@
 !
 ! compute zenith angle
 !  this is also an output, so need to compute even if we read radiation from file
-	     call get_time(Time_loc, seconds)
+	     call get_time(Time_loc, seconds, days)
 	     call get_time(length_of_year(), year_in_s)
 	     day_in_s = length_of_day()
 	     r_seconds=real(seconds)
@@ -617,8 +617,9 @@
                  r_solday=real(solday)
                  frac_of_year=(r_solday*day_in_s)/year_in_s
 	     else
-!	         frac_of_year = real(days*day_in_s) / real(year_in_s) !s This is the way MJ's astro.f90 does it.
-	         frac_of_year = r_seconds / year_in_s
+		 r_days=real(days)
+		 r_total_seconds=r_seconds+(r_days*day_in_s)
+	         frac_of_year = r_total_seconds / year_in_s
              endif
 	     gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
 	     time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
@@ -672,7 +673,7 @@
 
           !get co2
           if(do_read_co2)then
-             call interpolator( co2_interp, Time_loc, p_half, co2f, trim(co2_file))
+             call interpolator( co2_interp, Time, p_half, co2f, trim(co2_file))
 	     co2f_temp = co2f*1.e-6
              co2f = co2f_temp
           else
