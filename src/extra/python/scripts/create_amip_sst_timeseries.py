@@ -22,6 +22,7 @@ for variable_name in output_name_list.iterkeys():
 		nfiles=1
 		folder_name=''
 		filename_prefix=variable_name+'_input4MIPs_SSTsAndSeaIce_CMIP_PCMDI-AMIP-1-1-0_gs1x1_187001-201512'
+		do_annual_mean=True
 
 	for file_tick in range(nfiles):
 
@@ -75,7 +76,6 @@ for variable_name in output_name_list.iterkeys():
 	time_arr = day_number_to_date(day_number, calendar_type = 'gregorian', units_in = 'days since 1870-1-1')
 	time_arr_adj=np.arange(15,360,30)
 
-
 	if len(sst_all.shape)==4:
 		sst_in=np.mean(sst_all,axis=0)
 	else:
@@ -83,6 +83,15 @@ for variable_name in output_name_list.iterkeys():
 		for month_tick in np.arange(1,13,1):
 			month_idx = np.where(time_arr.month==month_tick)[0]
 			sst_in[month_tick-1,:,:]=np.mean(sst_all[month_idx,:,:],axis=0)
+
+	annual_mean_name=''
+
+	if do_annual_mean:
+		sst_in_am=np.mean(sst_in,axis=0)
+		sst_in=np.zeros((12,180,360))
+		for month_tick in np.arange(1,13,1):
+			sst_in[month_tick-1,:,:]=sst_in_am
+		annual_mean_name='_am'
 
 	p_full=None
 	p_half=None
@@ -98,7 +107,7 @@ for variable_name in output_name_list.iterkeys():
 
 
 	#Output it to a netcdf file. 
-	file_name=output_name_list[variable_name]+'_clim_amip_'+amip_data_version+'.nc'
+	file_name=output_name_list[variable_name]+annual_mean_name+'_clim_amip_'+amip_data_version+'.nc'
 	variable_name=output_name_list[variable_name]+'_clim_amip'
 
 	number_dict={}
