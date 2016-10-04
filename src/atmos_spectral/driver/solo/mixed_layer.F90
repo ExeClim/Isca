@@ -118,6 +118,7 @@ character(len=256) :: qflux_field_name = 'ocean_qflux'
 
 character(len=256) :: ice_file_name  = 'siconc_clim_amip'
 real    :: ice_albedo_value = 0.7
+real    :: ice_concentration_threshold = 0.5
 logical :: update_albedo_from_ice = .false.
 
 
@@ -135,7 +136,8 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               land_albedo_prefactor,                         &  !s
 			      load_qflux,qflux_file_name,time_varying_qflux, &
 			      update_albedo_from_ice, ice_file_name,         &
-			      ice_albedo_value, specify_sst_over_ocean_only
+			      ice_albedo_value, specify_sst_over_ocean_only, &
+			      ice_concentration_threshold
 
 !=================================================================================================================================
 
@@ -552,7 +554,7 @@ endif
 if(update_albedo_from_ice) then
 	call read_ice_conc(Time_next)
 	land_ice_mask=.false.
-	where(land_mask.or.(ice_concentration.gt.0.0))
+	where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
 		land_ice_mask=.true.
 	end where
 else
@@ -679,7 +681,7 @@ albedo_inout=albedo_initial
 
 if(update_albedo_from_ice) then
 
-	where(ice_concentration.gt.0.0) 
+	where(ice_concentration.gt.ice_concentration_threshold) 
 		albedo_inout=ice_albedo_value
 	end where
 
