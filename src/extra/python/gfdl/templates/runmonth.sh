@@ -5,6 +5,10 @@ module purge
 source {{ srcdir }}/src/extra/loadmodule
 module list
 
+if [ {{ experiment_restart }} -ne False ]; then
+  echo 'Experiment restart is file: ', {{ experiment_restart }}
+fi
+
 ulimit -s unlimited
 
 debug={{ run_idb }}                                     # logical to identify if running in debug mode or not
