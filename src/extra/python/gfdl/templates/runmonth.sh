@@ -5,9 +5,9 @@ module purge
 source {{ srcdir }}/src/extra/loadmodule
 module list
 
-if [ {{ experiment_restart }} -ne False ]; then
+{% if experiment_restart %}
   echo 'Experiment restart is file: ', {{ experiment_restart }}
-fi
+{% endif %}
 
 ulimit -s unlimited
 
