@@ -122,6 +122,7 @@ real, save :: pi, deg_to_rad , rad_to_deg
 logical                             :: do_read_co2=.false.
 type(interpolate_type),save         :: co2_interp           ! use external file for co2
 character(len=256)                  :: co2_file='co2'       !  file name of co2 file to read
+character(len=256)                  :: co2_variable_name='co2'       !  file name of co2 file to read
 
 
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
@@ -130,7 +131,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
            ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme, &
-           do_read_co2, co2_file, solday, equinox_day, bog_a, bog_b, bog_mu
+           do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -453,7 +454,7 @@ b = stefan*t**4
 lw_dtrans_win = 1.
 
 if(do_read_co2)then
-  call interpolator( co2_interp, Time_diag, p_half, co2f, trim(co2_file))
+  call interpolator( co2_interp, Time_diag, p_half, co2f, trim(co2_variable_name))
   carbon_conc = maxval(co2f) !Needs maxval just because co2f is a 3d array of a constant, so maxval is just a way to pick out one number
 endif
 
