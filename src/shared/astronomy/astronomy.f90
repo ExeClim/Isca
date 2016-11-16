@@ -55,11 +55,10 @@ character(len=128)  :: tagname =  '$Name: testing $'
 !   - Problem with original v 17.0.10.1: when `diurnal_solar' was called with the time-averaging option, it returned
 !     time-averages over the _hours of daylight_ between the start (t) and the end (t+dt) of the averaging period.
 !
-!   - The dirunal_solar documentation below claimed it averaged between t and t+dt, where dt is the 
-!     time-averaging-period input into diurnal_solar. This average is not the same as the average it actually did over hours of
-!     daylight.
+!   - The dirunal_solar documentation below claimed it returned coszen averaged between t and t+dt, which is different to the
+!     coszen averaged over the hours of daylight that it actually returned.
 !
-!   - This inconsisency could have been corrected by multiplying coszen by the optional return array fracday (an array containing 
+!   - This inconsisency could have been corrected by multiplying coszen by the optional array 'fracday' (an array containing 
 !     the fraction of daylight experienced in each gridcell), but this was not explained.
 !
 !   - Therefore, if dirunal_solar was used without multiplying by fracday, it returned answers that were dependent on dt,
