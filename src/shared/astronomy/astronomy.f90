@@ -52,11 +52,12 @@ character(len=128)  :: tagname =  '$Name: testing $'
 ! Version Details
 ! [2016/11/16] <Stephen Thomson>:  Modified v 17.0.10.1 by changing the time averaging of coszen. 
 !
-!   - Problem with original v 17.0.10.1: when `diurnal_solar' was called with the time-averaging option, it returned
-!     time-averages over the _hours of daylight_ between the start (t) and the end (t+dt) of the averaging period.
+!   - Problem with original v 17.0.10.1: when `diurnal_solar' was called with the time-averaging option:
 !
-!   - The dirunal_solar documentation below claimed it returned coszen averaged between t and t+dt, which is different to the
-!     coszen averaged over the hours of daylight that it actually returned.
+!     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt)
+!
+!     diurnal_solar claimed to return coszen time-averaged over the period 'dt'. However, it actually returned coszen time-averaged
+!     over the _hours of daylight_ between the current time (t) and t+dt.
 !
 !   - This inconsisency could have been corrected by multiplying coszen by the optional array 'fracday' (an array containing 
 !     the fraction of daylight experienced in each gridcell), but this was not explained.
