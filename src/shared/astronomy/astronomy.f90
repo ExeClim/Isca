@@ -56,8 +56,8 @@ character(len=128)  :: tagname =  '$Name: testing $'
 !
 !     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt)
 !
-!     diurnal_solar claimed to return coszen time-averaged over the period 'dt'. However, it actually returned coszen time-averaged
-!     over the _hours of daylight_ between the current time (t) and t+dt.
+!     diurnal_solar claimed to return coszen time-averaged between the current time (t) and t+dt. 
+!     However, it actually returned coszen time-averaged over the _hours of daylight_ between t and t+dt.
 !
 !   - This inconsisency could have been corrected by multiplying coszen by the optional array 'fracday' (an array containing 
 !     the fraction of daylight experienced in each gridcell), but this was not explained.
