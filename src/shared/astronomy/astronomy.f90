@@ -59,13 +59,13 @@ character(len=128)  :: tagname =  '$Name: testing $'
 !     diurnal_solar claimed to return coszen time-averaged between the current time (t) and t+dt. 
 !     However, it actually returned coszen time-averaged over the _hours of daylight_ between t and t+dt.
 !
-!   - This inconsisency could have been corrected by multiplying coszen by the optional array 'fracday' (an array containing 
+!   - This inconsistency could have been corrected by multiplying coszen by the optional array 'fracday' (an array containing 
 !     the fraction of daylight experienced in each gridcell), but this was not explained.
 !
-!   - Therefore, if dirunal_solar was used without multiplying by fracday, it returned answers that were dependent on dt,
+!   - Therefore, if diurnal_solar was used without multiplying by fracday, it returned answers that were dependent on dt,
 !     meaning runs with different radiation timesteps were inconsistent.
 !
-!   - The time averaging was therefore modified so that dirunal_solar now returns coszen time-averaged between t and t+dt,
+!   - The time averaging was therefore modified so that diurnal_solar now returns coszen time-averaged between t and t+dt,
 !     meaning that runs with different radiation timesteps are now consistent, and _multiplication by fracday is not necessary_.
 !
 !   - Extra documentation has been added to the time-averaged calculation (shown by !st_doc)
@@ -1226,7 +1226,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
         if (.not. Lallow_negative) then
 
 !st_doc-------------------------------------------------------------
-!     ************** BASIC DIRUNAL SOLAR EXPLANATION ***************
+!     ************** BASIC diurnal SOLAR EXPLANATION ***************
 !     Key to understanding code is that coszen is not just coszen = aa + bb*cos(time), but is really max(aa+bb*cos(time),0.).
 !     Essentially this is because if it is night-time, the incoming solar = 0, but if it's day time, it's = aa+bb*cos(time).
 !     When time-averaging between t and tt=t+dt, this must be accounted for. 
@@ -1240,7 +1240,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !     
 !     This comes out to be:
 !     coszen_time_av = aa + bb(sin(tt) - sin(t))/(tt-t) = aa + bb(stt-st)/(tt-t)
-!     because aa and bb are independent of time (or at least, we consider the declanation not to change with time).
+!     because aa and bb are independent of time (or at least, we consider the declination not to change with time).
 !
 !     Other cases are more complicated, because the averaging periods are between two times that include periods of day and night.
 !     For example, case 2 has t that is before sunrise and tt that is before sunset.
@@ -1263,7 +1263,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !     and t+dt, which was not what the code claimed to return.
 !     
 !     I have therefore changed all the denominators in the code below to be (tt-t), so that the time-averaging takes place
-!     over the time-period t->t+dt. This means that the coszen returned by `dirunal_solar' is a true time-average over dt.
+!     over the time-period t->t+dt. This means that the coszen returned by `diurnal_solar' is a true time-average over dt.
 !     An equivalent way of doing this with the old code would be to multiply coszen by fracday, where fracday is the fraction of
 !     the time period that is daylight.
 !end st_doc
