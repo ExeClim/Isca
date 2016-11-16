@@ -7,12 +7,13 @@ from mpl_toolkits.basemap import Basemap
 t_res = 42
 
 lat_0 = 16.
-exp_name='/scratch/sit204/FMS2013/GFDLmoistModel/exp/amip_derived_qflux_control_ice_albedo_change/'
-base_qflux_file_name='sqflux_ctrl_ice_4320'
+exp_name='/scratch/sit204/FMS2013/GFDLmoistModel/exp/annual_mean_ice_princeton_qflux_control/'
+base_qflux_file_name='ami_qflux_ctrl_ice_4320'
+base_sea_ice_file_name = '/scratch/sit204/Data_2013/annual_mean_ice_princeton_qflux_control_1/run001/atmos_monthly_test.nc'
 
-seasonal_sst_anom='always' #Either 'always', 'djf', 'mam', 'jja', or 'son'
+seasonal_sst_anom='mam_mid' #Either 'always', 'djf', 'mam', 'jja', or 'son'
 
-do_shielded_anomaly=True
+do_shielded_anomaly=False
 
 month_dict={'jan':0, 'feb':1, 'mar':2, 'apr':3, 'may':4, 'jun':5, 'jul':6, 'aug':7, 'sep':8, 'oct':9, 'nov':10, 'dec':11}
 
@@ -51,9 +52,10 @@ for i in np.arange(len(lons)):
 #warmpool_lon_centre = 240.
 
 #warmpool_loc_list=[[30.,180.],[45.,180.], [60.,180.], [30.,300.],[30.,315.], [30.,330.]]
-warmpool_loc_list=[[0.,210.]]
+#warmpool_loc_list=[[0.,210.]]
 
 #warmpool_loc_list=[ [30.,330.]]
+warmpool_loc_list=[ [45.,345.]]
 
 for file_values in warmpool_loc_list:
 
@@ -66,7 +68,7 @@ for file_values in warmpool_loc_list:
 	print warmpool_lat_centre,warmpool_lon_centre
 
 	warmpool_width = 7.5
-	warmpool_width_lon = 45.0
+	warmpool_width_lon = 7.5
 	warmpool_amp = 200.
 
 
@@ -93,6 +95,22 @@ for file_values in warmpool_loc_list:
 	land_array = land_file.variables['land_mask'][:]
 
 
+	if base_sea_ice_file_name is not None:
+		sea_ice_file = Dataset(base_sea_ice_file_name, 'r', format='NETCDF3_CLASSIC')
+
+		ice_array = sea_ice_file.variables['albedo'][:]
+
+		ice_array_one_month=ice_array[0,:,:].squeeze()
+		ice_array_one_month=np.round(ice_array_one_month, decimals=2)
+
+		ice_idx = (ice_array_one_month == 0.7)		
+
+		ice_mask=np.zeros_like(ice_array_one_month)
+
+		ice_mask[ice_idx]=1.0
+
+	else:
+		ice_mask = np.zeros_like(land_array)
 
 
 
@@ -100,7 +118,7 @@ for file_values in warmpool_loc_list:
 
 	if not do_shielded_anomaly:
 
-		cooling_idx = (ocean_array == 1.0) & (warmpool_array == 0.)
+		cooling_idx = (ocean_array == 1.0) & (warmpool_array == 0.) & (ice_mask == 0.0)
 
 		cooling_array = np.zeros((nlat,nlon))
 		cooling_array[cooling_idx] = 1.
@@ -177,7 +195,7 @@ for file_values in warmpool_loc_list:
 	plt.yticks(np.linspace(-90,90,7))
 	cb = plt.colorbar(cs, shrink=0.5, extend='both')
 
-	description_string='ish_lon_'+str(int(warmpool_lon_centre))+'_lat_'+str(int(warmpool_lat_centre))+'_a_'+str(int(warmpool_amp))
+	description_string='ami_lon_'+str(int(warmpool_lon_centre))+'_lat_'+str(int(warmpool_lat_centre))+'_a_'+str(int(warmpool_amp))
 	
 	var_name_out=description_string+file_name_seasonal_addition
 
@@ -224,6 +242,9 @@ for file_values in warmpool_loc_list:
 
 	warmpool_array_netcdf = warmpool_file.createVariable(var_name_out,'f4',('time','lat','lon',))
 
+	ice_mask_netcdf = warmpool_file.createVariable('ice_mask','f4',('lat','lon',))
+
+
 	latitudes[:] = lats
 	longitudes[:] = lons
 
@@ -232,6 +253,7 @@ for file_values in warmpool_loc_list:
 
 	times[:] = time_in
 	warmpool_array_netcdf[:] = warmpool_array_total
+	ice_mask_netcdf[:] = ice_mask
 
 	warmpool_file.close()
 
