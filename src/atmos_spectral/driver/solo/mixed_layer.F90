@@ -107,6 +107,7 @@ logical :: do_qflux         = .false. !mj
 logical :: do_warmpool      = .false. !mj
 logical :: do_read_sst      = .false. !mj
 logical :: do_sc_sst        = .false. !mj
+logical :: specify_sst_over_ocean_only = .false.
 character(len=256) :: sst_file
 character(len=256) :: land_option = 'none'
 real,dimension(10) :: slandlon=0,slandlat=0,elandlon=-1,elandlat=-1
@@ -127,7 +128,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               elandlon,elandlat,                             &  !mj
                               land_h_capacity_prefactor,                     &  !s
                               land_albedo_prefactor,                         &  !s
-			      load_qflux,qflux_file_name,time_varying_qflux
+			      load_qflux,qflux_file_name,time_varying_qflux, specify_sst_over_ocean_only
 
 !=================================================================================================================================
 
@@ -172,6 +173,8 @@ real, allocatable, dimension(:,:)   ::                                        &
      zsurf,                 &   ! mj know about topography
      land_sea_heat_capacity,&
      sst_new                    ! mj input SST
+
+logical, allocatable, dimension(:,:) ::      land_mask
 
 
 !mj read sst from input file
@@ -252,6 +255,7 @@ allocate(land_sea_heat_capacity  (is:ie, js:je))
 !allocate(land_sea_heat_capacity  (ie-is+1, je-js+1))
 allocate(zsurf                  (is:ie, js:je))
 allocate(sst_new                 (is:ie, js:je))
+allocate(land_mask                 (is:ie, js:je)); land_mask=land
 !
 !see if restart file exists for the surface temperature
 !
@@ -427,7 +431,7 @@ if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
 
 
 !s begin surface heat capacity calculation
-   if(.not.do_sc_sst) then
+   if(.not.do_sc_sst.or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
          land_sea_heat_capacity = depth*RHO_CP
 	if(trim(land_option) .ne. 'input') then
          if ( trop_capacity .ne. depth*RHO_CP .or. np_cap_factor .ne. 1. ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0.
@@ -566,10 +570,19 @@ endif
 if(do_sc_sst) then !mj sst read from input file
          ! read at the new time, as that is what we are stepping to
          call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
-         delta_t_surf = sst_new - t_surf
-         t_surf = t_surf + delta_t_surf
-else   !s use the land_sea_heat_capacity calculated in mixed_layer_init
 
+         if(specify_sst_over_ocean_only) then
+	     where (.not.land_mask) delta_t_surf = sst_new - t_surf
+             where (.not.land_mask) t_surf = t_surf + delta_t_surf			 
+	 else
+	     delta_t_surf = sst_new - t_surf
+	     t_surf = t_surf + delta_t_surf
+	 endif
+	     
+end if
+
+if ((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
+  !s use the land_sea_heat_capacity calculated in mixed_layer_init
 
 	! Now update the mixed layer surface temperature using an implicit step
 	!
@@ -580,9 +593,13 @@ else   !s use the land_sea_heat_capacity calculated in mixed_layer_init
 	  call error_mesg('mixed_layer', 'Avoiding division by zero',fatal)
 	end if
 
-	delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-
+    if(do_sc_sst.and.specify_sst_over_ocean_only) then
+        where (land_mask) delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
+	where (land_mask) t_surf = t_surf + delta_t_surf			 
+    else
+        delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
 	t_surf = t_surf + delta_t_surf
+    endif
 
 endif !s end of if(do_sc_sst).
 
