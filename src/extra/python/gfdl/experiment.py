@@ -7,6 +7,7 @@ import re
 import f90nml
 from jinja2 import Environment, FileSystemLoader
 import sh
+import pdb
 
 P = os.path.join
 _module_directory = os.path.dirname(os.path.realpath(__file__))
@@ -34,9 +35,11 @@ def clean_log_debug(s):
        log.debug(s.strip())
 
 try:
-    GFDL_BASE = os.environ['GFDL_BASE']
-    GFDL_WORK = os.environ['GFDL_WORK']
-    GFDL_DATA = os.environ['GFDL_DATA']
+    GFDL_BASE        = os.environ['GFDL_BASE']
+    GFDL_WORK        = os.environ['GFDL_WORK']
+    GFDL_DATA        = os.environ['GFDL_DATA']
+
+
 except Exception, e:
     print('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
     exit(0)
@@ -63,7 +66,7 @@ class CompilationError(Exception):
 
 class Experiment(object):
     """A basic GFDL experiment"""
-    def __init__(self, name, commit=None, repo=None, overwrite_data=False):
+    def __init__(self, name, commit=None, repo=None, overwrite_data=False,run_idb=False):
         super(Experiment, self).__init__()
         self.name = name
 
@@ -74,7 +77,13 @@ class Experiment(object):
         # These can be overridden e.g. if an experiment is to use
         # the same executable as another
         self.workdir = P(GFDL_WORK, self.name)
-        self.execdir = P(self.workdir, 'exec')        # where executable will be compiled to / fectched from
+
+        # where executable will be compiled to / fectched from
+        if run_idb:
+            self.execdir = P(self.workdir, 'exec_debug')  #compiled with debug flags        
+        else:
+            self.execdir = P(self.workdir, 'exec')        
+
         self.restartdir = P(self.workdir, 'restarts') # where restarts will be stored
         self.rundir = P(self.workdir, 'run')          # temporary area an individual run will be performed
         self.datadir = P(GFDL_DATA, self.name)        # where run data will be moved to upon completion
@@ -103,6 +112,12 @@ class Experiment(object):
 
         self.diag_table = DiagTable()
         self.field_table_file = P(self.template_dir, 'field_table')
+
+        if run_idb:
+            self.run_idb = P('true')
+        else:
+            self.run_idb = P('false')
+
 
         # Setup the path_names for compilation
         # 1. read the default path_names file
@@ -263,7 +278,8 @@ class Experiment(object):
             'template_dir': self.template_dir,
             'srcdir': self.srcdir,
             'workdir': self.workdir,
-            'compile_flags': ' '.join(self.compile_flags)
+            'compile_flags': ' '.join(self.compile_flags),
+            'run_idb': self.run_idb
         }
 
         self.check_path_names()
@@ -278,6 +294,7 @@ class Experiment(object):
             log.critical('Compilation failed.')
             raise e
         log.debug('Compilation complete.')
+
 
     def use_diag_table(self, diag_table):
         """Use a DiagTable object for the diagnostic output specification."""
@@ -307,9 +324,11 @@ class Experiment(object):
 
 
 
-    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False):
+    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False, run_idb=False, experiment_restart=None):
         indir = P(self.rundir, 'INPUT')
         outdir = P(self.datadir, 'run%03d' % month)
+
+
 
         if os.path.isdir(outdir):
             if self.overwrite_data or overwrite_data:
@@ -351,7 +370,9 @@ class Experiment(object):
             'execdir': self.execdir,
             'srcdir': self.srcdir,
             'restart_file': restart_file,
-            'num_cores': num_cores
+            'num_cores': num_cores,
+            'run_idb': run_idb,
+            'experiment_restart': experiment_restart
         }
 
         runmonth = self.templates.get_template('runmonth.sh')

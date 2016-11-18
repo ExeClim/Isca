@@ -9,6 +9,8 @@ mkmf={{ srcdir }}/bin/mkmf                             # path to executable mkmf
 sourcedir={{ srcdir }}/src                             # path to directory containing model source code
 pathnames={{ workdir }}/path_names                        # path to file containing list of source paths
 ppdir={{ srcdir }}/postprocessing                      # path to directory containing the tool for combining distributed diagnostic output files
+debug={{ run_idb }}                                     # logical to identify if running in debug mode or not
+template_debug={{ template_dir }}/mkmf.template.debug
 #-----------------------------------------------------------------------------------------------------
 execdir={{ execdir }}        # where code is compiled and executable is created
 executable=$execdir/fms_moist.x
@@ -44,9 +46,19 @@ ln -s $ppdir/mppnccombine.x {{ execdir }}/mppnccombine.x
 #--------------------------------------------------------------------------------------------------------
 
 cd $execdir
-# execute mkmf to create makefile
-cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 {{compile_flags}}"
-$mkmf -a $sourcedir -t $template -p `basename $executable` -c "$cppDefs" $pathnames $sourcedir/shared/include $sourcedir/shared/mpp/include
+
+if [ $debug == true ]; then
+
+  echo "Compiling in debug mode"
+
+  cppDefs="-Duse_netCDF  -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 {{compile_flags}}"
+  $mkmf  -a $sourcedir -t $template_debug -p `basename $executable` -c "$cppDefs" $pathnames $sourcedir/shared/include $sourcedir/shared/mpp/include
+
+else
+  # execute mkmf to create makefile
+  cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 {{compile_flags}}"
+  $mkmf  -a $sourcedir -t $template -p `basename $executable` -c "$cppDefs" $pathnames $sourcedir/shared/include $sourcedir/shared/mpp/include
+fi
 
 make
 
