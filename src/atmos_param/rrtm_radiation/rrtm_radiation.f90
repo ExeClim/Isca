@@ -79,7 +79,7 @@
         !  cloud & aerosol optical depths, cloud and aerosol specific parameters. Set to zero
         real(kind=rb),allocatable,dimension(:,:,:) :: taucld,tauaer, sw_zro, zro_sw
         ! heating rates and fluxes, zenith angle when in-between radiation time steps
-        real(kind=rb),allocatable,dimension(:,:)   :: sw_flux,lw_flux,zencos! surface fluxes, cos(zenith angle) 
+        real(kind=rb),allocatable,dimension(:,:)   :: sw_flux,lw_flux,zencos, olr, toa_sw! surface and TOA fluxes, cos(zenith angle) 
                                                                             ! dimension (lon x lat)
         real(kind=rb),allocatable,dimension(:,:,:) :: tdt_rad               ! heating rate [K/s]
                                                                             ! dimension (lon x lat x pfull)
@@ -181,7 +181,7 @@
 !
 !-------------------- diagnostics fields -------------------------------
 
-        integer :: id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_fracday
+        integer :: id_tdt_rad, id_tdt_sw, id_tdt_lw, id_coszen, id_flux_sw, id_flux_lw, id_olr, id_toa_sw, id_albedo,id_ozone, id_co2, id_fracday
         character(len=14), parameter :: mod_name_rad = 'rrtm_radiation' !s changed parameter name from mod_name to mod_name_rad as compiler objected, presumably because mod_name also defined in idealized_moist_physics.F90 after use rrtm_vars is included. 
         real :: missing_value = -999.
 
@@ -285,6 +285,14 @@
                register_diag_field ( mod_name_rad, 'flux_lw', axes(1:2), Time, &
                  'LW surface flux', &
                  'W/m2', missing_value=missing_value               )
+	      id_olr = &
+	           register_diag_field ( mod_name_rad, 'olr', axes(1:2), Time, &
+	             'Outgoing LW radiation', &
+	             'W/m2', missing_value=missing_value               )
+	      id_toa_sw = &
+	           register_diag_field ( mod_name_rad, 'toa_sw', axes(1:2), Time, &
+	             'Net TOA SW flux', &
+	             'W/m2', missing_value=missing_value               )
           id_albedo  = &
                register_diag_field ( mod_name_rad, 'rrtm_albedo', axes(1:2), Time, &
                  'Interactive albedo', &
@@ -425,6 +433,10 @@
                allocate(sw_flux(size(lonb,1)-1,size(latb,2)-1))
           if(store_intermediate_rad .or. id_flux_lw > 0) &
                allocate(lw_flux(size(lonb,1)-1,size(latb,2)-1))
+	      if(id_olr > 0) &
+	           allocate(olr(size(lonb,1)-1,size(latb,2)-1))
+	      if(id_toa_sw > 0) &
+	           allocate(toa_sw(size(lonb,1)-1,size(latb,2)-1))
           if(do_precip_albedo)allocate(rrtm_precip(size(lonb,1)-1,size(latb,2)-1))
           if(store_intermediate_rad .or. id_tdt_rad > 0)&
                allocate(tdt_rad(size(lonb,1)-1,size(latb,2)-1,nlay))
@@ -905,6 +917,40 @@
              if(id_coszen  > 0)zencos  = coszen
           endif
 
+          ! get the TOA fluxes (RG)
+		  ! OLR:		
+          if(id_olr > 0)then
+             lwflxijk = reshape(  uflx(:,sk+1)-dflx(:,sk+1),(/ si/lonstep,sj /)) ! OLR
+             dlon=1./lonstep
+             do i=1,size(swijk,1)
+                i1 = i+1
+                ! close toroidally
+                if(i1 > size(swijk,1)) i1=1
+                do ij=1,lonstep
+                   di = (ij-1)*dlon
+                   ij1 = (i-1)*lonstep + ij
+                   olr(ij1,:) = di*lwflxijk(i1,:) + (1.-di)*lwflxijk(i ,:)
+                enddo
+             enddo
+          endif
+		  ! TOA SW:
+          if(id_toa_sw > 0)then
+             swflxijk = reshape(swdflx(:,sk+1)-swuflx(:,sk+1),(/ si/lonstep,sj /)) ! net TOA SW flux, +ve down
+             dlon=1./lonstep
+             do i=1,size(swijk,1)
+                i1 = i+1
+                ! close toroidally
+                if(i1 > size(swijk,1)) i1=1
+                do ij=1,lonstep
+                   di = (ij-1)*dlon
+                   ij1 = (i-1)*lonstep + ij
+                   toa_sw(ij1,:) = di*swflxijk(i1,:) + (1.-di)*swflxijk(i ,:)
+                enddo
+             enddo
+          endif
+		  
+		  
+
           ! check if we want surface albedo as a function of precipitation
           !  call diagnostics accordingly
           if(do_precip_albedo)then
@@ -923,7 +969,8 @@
 ! Modules
           use rrtm_vars,only:         sw_flux,lw_flux,zencos,tdt_rad,tdt_sw_rad,tdt_lw_rad,&
                                       &id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,&
-                                      &id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_fracday
+                                      &id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_fracday,&
+									  &id_olr,id_toa_sw,olr,toa_sw
           use diag_manager_mod, only: register_diag_field, send_data
           use time_manager_mod,only:  time_type
 
@@ -966,6 +1013,14 @@
 !             used = send_data ( id_flux_lw, lw_flux, Time, is, js )
              used = send_data ( id_flux_lw, lw_flux, Time)
           endif
+!------- Net LW TOA flux                   ------------
+          if ( id_olr > 0 ) then
+		     used = send_data ( id_olr, olr, Time)
+		  endif
+!------- Net SW toa flux                   ------------
+		  if ( id_toa_sw > 0 ) then
+             used = send_data ( id_toa_sw, toa_sw, Time)
+           endif
 !------- Interactive albedo                    ------------
           if ( present(albedo_loc)) then
 !             used = send_data ( id_albedo, albedo_loc, Time, is, js )
