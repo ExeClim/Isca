@@ -1240,7 +1240,9 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !     
 !     This comes out to be:
 !     coszen_time_av = aa + bb(sin(tt) - sin(t))/(tt-t) = aa + bb(stt-st)/(tt-t)
-!     because aa and bb are independent of time (or at least, we consider the declination not to change with time).
+!     because aa and bb are independent of time (this is not strictly true, as the declanation, and hence aa and bb, does change 
+!     with time. However, we choose to approximate aa and bb as constant in the period t->t+dt, which is a reasonable approximation
+!     if dt is a small fraction of the annual cycle).
 !
 !     Other cases are more complicated, because the averaging periods are between two times that include periods of day and night.
 !     For example, case 2 has t that is before sunrise and tt that is before sunset.
