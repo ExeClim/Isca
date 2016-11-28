@@ -188,6 +188,8 @@ real, allocatable, dimension(:,:)   ::                                        &
 
 logical, allocatable, dimension(:,:) ::      land_mask
 
+logical, allocatable, dimension(:,:) ::      land_mask
+
 
 !mj read sst from input file
   type(interpolate_type),save :: sst_interp
