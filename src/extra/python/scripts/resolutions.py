@@ -15,7 +15,7 @@ def prime_factors(n):  # based on http://stackoverflow.com/questions/15347174/py
 
 lat_mult = 4     # choose from factors of nproc (e.g. 1 to find smallest nlat, nproc to load-balance) and/or factors matching lon (anti-aliasing: 2*nlat ~ nlon)?
 lon_maxprime = 2  # small for efficient FFTs: no higher than 3 or 5?
-latlon_maxprod = 1000000  # maximum grid size
+latlon_maxprod = 1024*1024  # maximum grid size
 
 nlat = lat_mult
 nlon = 1
