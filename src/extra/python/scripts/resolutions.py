@@ -30,9 +30,10 @@ print "T\tfou\tsph\tlat\tlon\tDsize\tlon factorization"
 
 prev_size = 0
 while 1:
-    while 2*nlat <= 3*nfou:
+    nsph = nfou + 1
+    while 2*nlat < 3*(nsph - 1) + 1:
         nlat += lat_mult
-    while nlon <= 3*nfou or prime_factors(nlon)[-1] > lon_maxprime:
+    while nlon < 3*nfou + 1 or prime_factors(nlon)[-1] > lon_maxprime:
         nlon += 1
     size = nlat*nlon
     if size > latlon_maxprod:
@@ -42,6 +43,5 @@ while 1:
         prev_size = size
     else:
         size_chg = ""
-    nsph = nfou + 1
     print "T"+str(nfou)+"\t"+str(nfou)+"\t"+str(nsph)+"\t"+str(nlat)+"\t"+str(nlon)+"\t"+size_chg+"\t"+str(prime_factors(nlon))
     nfou += 1
