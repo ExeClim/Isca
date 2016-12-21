@@ -21,6 +21,7 @@ def calculate_month_run_time(exp_dir_list):
 
 		#Finds all the months for particular experiment
 		months_to_check=os.listdir(exp_dir_full) 
+		months_to_check.sort()
 
 		delta_t_arr=np.zeros(len(months_to_check)-1)
 		end_t_arr=[]
