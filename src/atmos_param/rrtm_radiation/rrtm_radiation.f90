@@ -100,7 +100,7 @@
                                                                             ! used for alarm
 !---------------------------------------------------------------------------------------------------------------
 ! some constants
-        real(kind=rb)      :: daypersec=1./86400.,deg2rad
+        real(kind=rb)      :: daypersec=1./86400.,deg2rad   !RG: daypersec=1./86400. left in when conversion to non-specific day length made as this only converts heatrates from RRTM from K/day to K/sec
 ! no clouds in the radiative scheme
         integer(kind=im) :: icld=0,idrv=0, &
              inflglw=0,iceflglw=0,liqflglw=0, &
@@ -553,7 +553,7 @@
                                                                                ! need to have both or none!
 !---------------------------------------------------------------------------------------------------------------
 ! Local variables
-          integer k,j,i,ij,j1,i1,ij1,kend,dyofyr,seconds,days
+          integer k,j,i,ij,j1,i1,ij1,kend,dyofyr,seconds
           integer si,sj,sk,locmin(3)
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: o3f
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: co2f,co2f_temp
@@ -573,7 +573,7 @@
           real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
 
 	  integer :: year_in_s
-          real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
+          real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
 
 
 
@@ -588,8 +588,7 @@
 
 !check if we really want to recompute radiation (alarm,input file(s))
 ! alarm
-          call get_time(Time,seconds,days)
-          if(seconds < dt_last) dt_last=dt_last-86400 !it's a new day
+          call get_time(Time,seconds)
           if(seconds - dt_last .ge. dt_rad) then
              dt_last = seconds
           else
@@ -610,7 +609,6 @@
           if(solday > 0)then
              Time_loc = set_time(seconds,solday)
           elseif(slowdown_rad .ne. 1.0)then
-             seconds = days*86400 + seconds
              Time_loc = set_time(int(seconds*slowdown_rad))
           else
              Time_loc = Time
@@ -619,7 +617,7 @@
 !
 ! compute zenith angle
 !  this is also an output, so need to compute even if we read radiation from file
-	     call get_time(Time_loc, seconds, days)
+	     call get_time(Time_loc, seconds)
 	     call get_time(length_of_year(), year_in_s)
 	     day_in_s = length_of_day()
 	     r_seconds=real(seconds)
@@ -629,10 +627,8 @@
                  r_solday=real(solday)
                  frac_of_year=(r_solday*day_in_s)/year_in_s
 	     else
-		 r_days=real(days)
-		 r_total_seconds=r_seconds+(r_days*day_in_s)
-	         frac_of_year = r_total_seconds / year_in_s
-             endif
+	         frac_of_year = r_seconds / year_in_s
+         endif
 	     gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
 	     time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
 
