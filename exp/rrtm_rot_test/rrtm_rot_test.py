@@ -16,7 +16,10 @@ diag.add_field('dynamics', 'bk', time_avg=True, files=['atmos_monthly'])
 diag.add_field('dynamics', 'pk', time_avg=True, files=['atmos_monthly'])
 diag.add_field('dynamics', 'ucomp', time_avg=True, files=['atmos_monthly'])
 diag.add_field('rrtm_radiation', 'flux_sw', time_avg=True, files=['atmos_monthly'])
-
+        
+diag.add_file('atmos_6hrly', 6, 'hours')
+diag.add_field('rrtm_radiation', 'flux_sw', time_avg=True, files=['atmos_6hrly'])
+        
 baseexp.use_diag_table(diag)
 
 baseexp.compile()
@@ -60,10 +63,12 @@ if __name__ == '__main__':
         omega = rot*7.2921150e-5
         exp.namelist['constants_nml']['omega'] = omega
 
-        exp.runmonth(1, use_restart=False, num_cores=16,light=True)
-        for i in range(2, 24):  
-            exp.runmonth(i, num_cores=16, light=True)
-    
+        #exp.runmonth(1, use_restart=False, num_cores=16,light=True)
+        #for i in range(2, 24):  
+        #    exp.runmonth(i, num_cores=16, light=True)
+
+        exp.runmonth(24, num_cores=16, light=True)
+            
         
     
     
