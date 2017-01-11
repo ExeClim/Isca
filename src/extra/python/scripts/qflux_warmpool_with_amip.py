@@ -7,11 +7,21 @@ from mpl_toolkits.basemap import Basemap
 t_res = 42
 
 lat_0 = 16.
-exp_name='/scratch/sit204/FMS2013/GFDLmoistModel/exp/annual_mean_ice_princeton_qflux_control/'
-base_qflux_file_name='ami_qflux_ctrl_ice_4320'
-base_sea_ice_file_name = '/scratch/sit204/Data_2013/annual_mean_ice_princeton_qflux_control_1/run001/atmos_monthly_test.nc'
 
-seasonal_sst_anom='mam_mid' #Either 'always', 'djf', 'mam', 'jja', or 'son'
+simple_or_complex_continents = 'simple'
+
+if simple_or_complex_continents == 'simple':
+	exp_name='/scratch/sit204/FMS2013/GFDLmoistModel/exp/simple_continents_post_princeton_qflux_control/'
+	base_qflux_file_name='simp_p_prin_qflux'
+	base_sea_ice_file_name = None
+	file_prefix='simp_pp_lon_'
+else:
+	exp_name='/scratch/sit204/FMS2013/GFDLmoistModel/exp/annual_mean_ice_princeton_qflux_control/'
+	base_qflux_file_name='ami_qflux_ctrl_ice_4320'
+	base_sea_ice_file_name = '/scratch/sit204/Data_2013/annual_mean_ice_princeton_qflux_control_1/run001/atmos_monthly_test.nc'
+	file_prefix='ami_lon_'
+
+seasonal_sst_anom='always' #Either 'always', 'djf', 'mam', 'jja', or 'son'
 
 do_shielded_anomaly=False
 
@@ -51,11 +61,17 @@ for i in np.arange(len(lons)):
 #warmpool_lat_centre = 0.
 #warmpool_lon_centre = 240.
 
-#warmpool_loc_list=[[30.,180.],[45.,180.], [60.,180.], [30.,300.],[30.,315.], [30.,330.]]
+warmpool_loc_list=[
+[30.,165.], [30.,180.], [30.,195.],
+[50.,165.], [50.,180.], [50.,195.],
+[30.,300.], [30.,315.], [30.,330.],
+[50.,315.], [50.,330.], [50.,345.]
+]
+
 #warmpool_loc_list=[[0.,210.]]
 
 #warmpool_loc_list=[ [30.,330.]]
-warmpool_loc_list=[ [45.,345.]]
+#warmpool_loc_list=[ [45.,345.]]
 
 for file_values in warmpool_loc_list:
 
@@ -195,7 +211,7 @@ for file_values in warmpool_loc_list:
 	plt.yticks(np.linspace(-90,90,7))
 	cb = plt.colorbar(cs, shrink=0.5, extend='both')
 
-	description_string='ami_lon_'+str(int(warmpool_lon_centre))+'_lat_'+str(int(warmpool_lat_centre))+'_a_'+str(int(warmpool_amp))
+	description_string=file_prefix+str(int(warmpool_lon_centre))+'_lat_'+str(int(warmpool_lat_centre))+'_a_'+str(int(warmpool_amp))
 	
 	var_name_out=description_string+file_name_seasonal_addition
 
