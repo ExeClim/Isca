@@ -10,6 +10,11 @@ base_directory='/scratch/sit204/sst_amip_files/'
 amip_data_version='amip_data_version_1_1_0' #s 'amip_data_version_1_1_0' or 'amip_data_version_1_0_0'
 
 output_name_list  ={'tosbcs':'sst','siconc':'siconc'}
+#Note that we are using the bcs (boundary conditions) input4MIPs files, as instructed.
+# The theory is that by using the bcs files (which are mid-month values) the time-average
+# of the interpolated bcs files should be equal to the time-average data provided in 'tos'
+# files, not the 'tosbcs'. See http://www-pcmdi.llnl.gov/projects/amip/AMIP2EXPDSN/BCS/amip2bcs.php
+# and http://www-pcmdi.llnl.gov/projects/amip/AMIP2EXPDSN/BCS/amipbc_dwnld_files/360x180/v1.0.0/nc/readme_nc
 
 for variable_name in output_name_list.iterkeys():
 
