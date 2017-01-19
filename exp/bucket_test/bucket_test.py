@@ -7,7 +7,8 @@ from gfdl import Experiment, DiagTable
 
 baseexp = Experiment('bucket_test', overwrite_data=False)
 
-baseexp.inputfiles = [os.path.join(os.getcwd(),'input/land.nc'), '/scratch/rg419/GFDL_model/GFDLmoistModel/input/ozone_1990.nc']
+baseexp.inputfiles = [os.path.join(os.getcwd(),'input/land.nc'), '/scratch/rg419/GFDL_model/GFDLmoistModel/input/ozone_1990.nc',
+                      '/scratch/rg419/GFDL_model/GFDLmoistModel/input/ocean_qflux.nc' ]
 
 diag_spinup = DiagTable()
 diag_spinup.add_file('atmos_monthly', 30, 'days', time_units='days')
