@@ -31,7 +31,7 @@ use            fms_mod, only: set_domain, write_version_number, &
 use            fms_mod, only: stdlog, check_nml_error, close_file,&
                               open_namelist_file, stdout, file_exist, &
                               read_data, write_data, open_file, &
-                              nullify_domain, lowercase
+                              nullify_domain, lowercase, field_size
 
 use  field_manager_mod, only: MODEL_ATMOS
 
@@ -46,6 +46,8 @@ use   time_manager_mod, only: time_type
 use     transforms_mod, only: get_deg_lat, get_deg_lon, grid_domain
 
 use      vert_diff_mod, only: surf_diff_type
+
+use         mpp_domains_mod, only: mpp_get_global_domain !s added to enable qflux reading
 
 ! mj know about surface topography
 use spectral_dynamics_mod,only: get_surf_geopotential
@@ -76,6 +78,7 @@ logical :: evaporation = .true.
 real    :: qflux_amp = 0.0
 real    :: qflux_width = 16.0  ! width of qflux region in degrees
 logical :: load_qflux = .false.
+logical :: time_varying_qflux = .false.
 real    :: tconst = 305.0
 real    :: delta_T = 40.0
 logical :: prescribe_initial_dist = .false.
@@ -104,23 +107,28 @@ logical :: do_qflux         = .false. !mj
 logical :: do_warmpool      = .false. !mj
 logical :: do_read_sst      = .false. !mj
 logical :: do_sc_sst        = .false. !mj
+logical :: specify_sst_over_ocean_only = .false.
 character(len=256) :: sst_file
 character(len=256) :: land_option = 'none'
 real,dimension(10) :: slandlon=0,slandlat=0,elandlon=-1,elandlat=-1
 !s End mj extra options
 
+character(len=256) :: qflux_file_name  = 'INPUT/ocean_qflux.nc'
+character(len=256) :: qflux_field_name = 'ocean_qflux'
+
 namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               delta_T, prescribe_initial_dist,albedo_value,  &
                               land_depth,trop_depth,                         &  !mj
                               trop_cap_limit, heat_cap_limit, np_cap_factor, &  !mj
-			                        do_qflux,do_warmpool,                          &  !mj
+			                        do_qflux,do_warmpool,        &  !mj
                               albedo_choice,higher_albedo,albedo_exp,        &  !mj
                               albedo_cntr,albedo_wdth,lat_glacier,           &  !mj
                               do_read_sst,do_sc_sst,sst_file,                &  !mj
                               land_option,slandlon,slandlat,                 &  !mj
                               elandlon,elandlat,                             &  !mj
                               land_h_capacity_prefactor,                     &  !s
-                              land_albedo_prefactor                             !s
+                              land_albedo_prefactor,                         &  !s
+			      load_qflux,qflux_file_name,time_varying_qflux, specify_sst_over_ocean_only
 
 !=================================================================================================================================
 
@@ -136,7 +144,8 @@ integer ::                                                                    &
      id_flux_oceanq,       &   ! oceanic Q flux
      id_flux_t,            &   ! sensible heat flux at surface
      id_heat_cap,          &   ! heat capacity
-     id_albedo                 ! mj albedo
+     id_albedo,            &   ! mj albedo
+     id_delta_t_surf
 
 real, allocatable, dimension(:,:)   ::                                        &
      ocean_qflux,           &   ! Q-flux
@@ -165,9 +174,12 @@ real, allocatable, dimension(:,:)   ::                                        &
      land_sea_heat_capacity,&
      sst_new                    ! mj input SST
 
+logical, allocatable, dimension(:,:) ::      land_mask
+
 
 !mj read sst from input file
   type(interpolate_type),save :: sst_interp
+  type(interpolate_type),save :: qflux_interp
 
 real inv_cp_air
 
@@ -188,13 +200,14 @@ logical, intent(in), dimension(:,:) :: land
 
 integer :: j
 real    :: rad_qwidth
-integer:: ierr, io, unit, num_tr, n
+integer:: ierr, io, unit, num_tr, n, global_num_lon, global_num_lat
 character(32) :: tr_name
 
 ! mj shallower ocean in tropics, land-sea contrast
  real :: trop_capacity,land_capacity,lon,lat,loc_cap
  integer :: i,k
-
+integer, dimension(4) :: siz
+character(len=12) :: ctmp1='     by     ', ctmp2='     by     '
 
 if(module_is_initialized) return
 
@@ -243,6 +256,7 @@ allocate(land_sea_heat_capacity  (is:ie, js:je))
 !allocate(land_sea_heat_capacity  (ie-is+1, je-js+1))
 allocate(zsurf                  (is:ie, js:je))
 allocate(sst_new                 (is:ie, js:je))
+allocate(land_mask                 (is:ie, js:je)); land_mask=land
 !
 !see if restart file exists for the surface temperature
 !
@@ -266,6 +280,14 @@ call get_deg_lon(deg_lon)
    if(land_capacity .le. 0.) land_capacity = depth*RHO_CP
 !s End MiMA options
 
+	!mj read fixed SSTs
+	if( do_read_sst ) then
+	   call interpolator_init( sst_interp, trim(sst_file)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+	endif
+
+
+
+
 if (file_exist('INPUT/mixed_layer.res.nc')) then
 
    call nullify_domain()
@@ -280,6 +302,7 @@ else if (file_exist('INPUT/swamp.res')) then
   call error_mesg('mixed_layer','mixed_layer restart file not found, using swamp restart file', WARNING)
 
 else if( do_read_sst ) then !s Added so that if we are reading sst values then we can restart using them.
+
    call interpolator( sst_interp, Time, t_surf, trim(sst_file) )
 
 elseif (prescribe_initial_dist) then
@@ -303,19 +326,40 @@ id_flux_oceanq = register_diag_field(mod_name, 'flux_oceanq',        &
                                  axes(1:2), Time, 'oceanic Q-flux','watts/m2')
 id_heat_cap = register_static_field(mod_name, 'ml_heat_cap',        &
                                  axes(1:2), 'mixed layer heat capacity','joules/m^2/deg C')
+id_delta_t_surf = register_diag_field(mod_name, 'delta_t_surf',        &
+                                 axes(1:2), Time, 'change in sst','K')
+
 id_albedo = register_static_field(mod_name, 'albedo',    &
                                  axes(1:2), 'surface albedo', 'none')
 
-
-
-! calculate ocean Q flux
-rad_qwidth = qflux_width*PI/180.
-ocean_qflux = qflux_amp*(1-2.*rad_lat_2d**2/rad_qwidth**2) * &
-        exp(- ((rad_lat_2d)**2/(rad_qwidth)**2))
+ocean_qflux = 0.
 
 ! load Q flux
 if (load_qflux) then
-  call read_data('INPUT/ocean_qflux.nc', 'ocean_qflux',  ocean_qflux)
+
+	if (time_varying_qflux) then
+	   call interpolator_init( qflux_interp, trim(qflux_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+	else
+
+	   if(file_exist(trim(qflux_file_name))) then
+	     call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat)
+	     call field_size(trim(qflux_file_name), trim(qflux_field_name), siz)
+	     if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
+	       call read_data(trim(qflux_file_name), trim(qflux_field_name), ocean_qflux, grid_domain)
+	     else
+	       write(ctmp1(1: 4),'(i4)') siz(1)
+	       write(ctmp1(9:12),'(i4)') siz(2)
+	       write(ctmp2(1: 4),'(i4)') global_num_lon
+	       write(ctmp2(9:12),'(i4)') global_num_lat
+	       call error_mesg ('get_qflux','Qflux file contains data on a '// &
+	              ctmp1//' grid, but atmos model grid is '//ctmp2, FATAL)
+	     endif
+	   else
+	     call error_mesg('get_qflux','load_qflux="'//trim('True')//'"'// &
+	                     ' but '//trim(qflux_file_name)//' does not exist', FATAL)
+	   endif
+
+	endif
 endif
 
 !s Adding MiMA options for qfluxes.
@@ -323,9 +367,9 @@ endif
 if ( do_qflux .or. do_warmpool) then
    call qflux_init
 !mj q-flux as in Merlis et al (2013) [Part II]
-   if ( do_qflux ) call qflux(rad_latb_2d(is,:),ocean_qflux)
+   if ( do_qflux ) call qflux(rad_latb_2d(1,:),ocean_qflux)
 !mj q-flux to create a tropical temperature perturbation
-   if ( do_warmpool) call warmpool(rad_lonb_2d(:,js),rad_latb_2d(is,:),ocean_qflux)
+   if ( do_warmpool) call warmpool(rad_lonb_2d(:,1),rad_latb_2d(1,:),ocean_qflux)
 endif
 
 !s End MiMA options for qfluxes
@@ -388,14 +432,8 @@ end select
 if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
 
 
-
-!mj read fixed SSTs
-if( do_read_sst ) then
-   call interpolator_init( sst_interp, trim(sst_file)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
-endif
-
 !s begin surface heat capacity calculation
-   if(.not.do_sc_sst) then
+   if(.not.do_sc_sst.or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
          land_sea_heat_capacity = depth*RHO_CP
 	if(trim(land_option) .ne. 'input') then
          if ( trop_capacity .ne. depth*RHO_CP .or. np_cap_factor .ne. 1. ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0.
@@ -452,6 +490,7 @@ end subroutine mixed_layer_init
 
 subroutine mixed_layer (                                               &
      Time,                                                             &
+     Time_next,                                                        &
      t_surf,                                                           &
      flux_t,                                                           &
      flux_q,                                                           &
@@ -468,7 +507,7 @@ subroutine mixed_layer (                                               &
      dedq_atm)
 
 ! ---- arguments -----------------------------------------------------------
-type(time_type), intent(in)       :: Time
+type(time_type), intent(in)       :: Time, Time_next
 real, intent(in),  dimension(:,:) :: &
      net_surf_sw_down, surf_lw_down
 real, intent(in), dimension(:,:) :: &
@@ -512,6 +551,11 @@ beta_t = dhdt_surf * inv_cp_air + dhdt_atm * inv_cp_air * en_t
 beta_q = dedt_surf + dedq_atm * en_q
 beta_lw = drdt_surf
 
+! If time-varying qflux then update value
+if(load_qflux.and.time_varying_qflux) then
+         call interpolator( qflux_interp, Time, ocean_qflux, trim(qflux_file_name) )
+endif
+
 !
 ! Implement mixed layer surface boundary condition
 !
@@ -526,11 +570,21 @@ endif
 !s Surface heat_capacity calculation based on that in MiMA by mj
 
 if(do_sc_sst) then !mj sst read from input file
-         call interpolator( sst_interp, Time, sst_new, trim(sst_file) )
-         delta_t_surf = sst_new - t_surf
-         t_surf = t_surf + delta_t_surf
-else   !s use the land_sea_heat_capacity calculated in mixed_layer_init
+         ! read at the new time, as that is what we are stepping to
+         call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
 
+         if(specify_sst_over_ocean_only) then
+	     where (.not.land_mask) delta_t_surf = sst_new - t_surf
+             where (.not.land_mask) t_surf = t_surf + delta_t_surf			 
+	 else
+	     delta_t_surf = sst_new - t_surf
+	     t_surf = t_surf + delta_t_surf
+	 endif
+	     
+end if
+
+if ((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
+  !s use the land_sea_heat_capacity calculated in mixed_layer_init
 
 	! Now update the mixed layer surface temperature using an implicit step
 	!
@@ -541,9 +595,13 @@ else   !s use the land_sea_heat_capacity calculated in mixed_layer_init
 	  call error_mesg('mixed_layer', 'Avoiding division by zero',fatal)
 	end if
 
-	delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-
+    if(do_sc_sst.and.specify_sst_over_ocean_only) then
+        where (land_mask) delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
+	where (land_mask) t_surf = t_surf + delta_t_surf			 
+    else
+        delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
 	t_surf = t_surf + delta_t_surf
+    endif
 
 endif !s end of if(do_sc_sst).
 
@@ -551,17 +609,19 @@ endif !s end of if(do_sc_sst).
 ! Finally calculate the increments for the lowest atmospheric layer
 !
 Tri_surf%delta_t = fn_t + en_t * delta_t_surf
-Tri_surf%delta_tr(:,:,nhum) = fn_q + en_q * delta_t_surf
+if (evaporation) Tri_surf%delta_tr(:,:,nhum) = fn_q + en_q * delta_t_surf
 
 
 !
 ! Note:
 ! When using an implicit step there is not a clearly defined flux for a given timestep
-!
-if(id_t_surf > 0) used = send_data(id_t_surf, t_surf, Time)
-if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time)
-if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q, Time)
-if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time)
+! We have taken a time-step, send the values at the next time level.
+if(id_t_surf > 0) used = send_data(id_t_surf, t_surf, Time_next)
+if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time_next)
+if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q, Time_next)
+if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time_next)
+
+if(id_delta_t_surf > 0)   used = send_data(id_delta_t_surf, delta_t_surf, Time_next)
 
 end subroutine mixed_layer
 

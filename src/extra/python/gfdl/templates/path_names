@@ -15,6 +15,7 @@ atmos_param/qflux/qflux.f90
 atmos_param/monin_obukhov/monin_obukhov_interfaces.h
 atmos_param/monin_obukhov/monin_obukhov_kernel.F90
 atmos_param/monin_obukhov/monin_obukhov.F90
+atmos_param/dry_convection/dry_convection.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/modules/parkind.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/modules/parrrtm.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/modules/rrlw_cld.f90
@@ -53,7 +54,6 @@ atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_taumol.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_cldprmc.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_k_g.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_rtrnmr.f90
-atmos_param/rrtm_radiation/astro.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/parkind.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/parrrsw.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/rrsw_aer.f90

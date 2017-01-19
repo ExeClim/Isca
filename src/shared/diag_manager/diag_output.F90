@@ -171,6 +171,7 @@ CONTAINS
     CHARACTER(len=mxch)  :: axis_name, axis_units
     CHARACTER(len=mxchl) :: axis_long_name
     CHARACTER(len=1)     :: axis_cart_name
+    CHARACTER(len=17)    :: calendar_out_name
     INTEGER              :: axis_direction, axis_edges
     REAL, ALLOCATABLE    :: axis_data(:)
     INTEGER, ALLOCATABLE :: axis_extent(:), pelist(:)
@@ -243,8 +244,15 @@ CONTAINS
           time_axis_flag(num_axis_in_file) = .TRUE.
           id_time_axis = mpp_get_id(Axis_types(num_axis_in_file))
           calendar = get_calendar_type()
-          CALL mpp_write_meta(file_unit, id_time_axis, 'calendar_type', cval=TRIM(valid_calendar_types(calendar)))
-          CALL mpp_write_meta(file_unit, id_time_axis, 'calendar', cval=TRIM(valid_calendar_types(calendar)))
+          
+             if(TRIM(valid_calendar_types(calendar)).eq.'THIRTY_DAY_MONTHS') THEN
+                calendar_out_name='360_day'
+             else
+                calendar_out_name=TRIM(valid_calendar_types(calendar))
+             endif
+          
+          CALL mpp_write_meta(file_unit, id_time_axis, 'calendar_type', cval=calendar_out_name)
+          CALL mpp_write_meta(file_unit, id_time_axis, 'calendar', cval=calendar_out_name)
           IF ( time_ops1 ) THEN 
              CALL mpp_write_meta( file_unit, id_time_axis, 'bounds', cval = TRIM(axis_name)//'_bounds')        
           END IF

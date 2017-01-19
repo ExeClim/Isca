@@ -84,8 +84,9 @@ fi
 # location of executable
 
 #source /opt/modules/default/init/sh
-source ../../../src/extra/loadmodule
-executable=../exec/plev.x
+#source ../../../src/extra/loadmodule
+source $GFDL_BASE/src/extra/loadmodule
+executable=$GFDL_BASE/postprocessing/plevel_interpolation/exec/plev.x
 if [ ! -x "$executable" ]; then
    echo "ERROR: executable does not exist"
    echo "       executable=$executable"

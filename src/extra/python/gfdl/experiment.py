@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import copy
 import logging
 import os
 import re
@@ -6,6 +7,7 @@ import re
 import f90nml
 from jinja2 import Environment, FileSystemLoader
 import sh
+import pdb
 
 P = os.path.join
 _module_directory = os.path.dirname(os.path.realpath(__file__))
@@ -33,9 +35,11 @@ def clean_log_debug(s):
        log.debug(s.strip())
 
 try:
-    GFDL_BASE = os.environ['GFDL_BASE']
-    GFDL_WORK = os.environ['GFDL_WORK']
-    GFDL_DATA = os.environ['GFDL_DATA']
+    GFDL_BASE        = os.environ['GFDL_BASE']
+    GFDL_WORK        = os.environ['GFDL_WORK']
+    GFDL_DATA        = os.environ['GFDL_DATA']
+
+
 except Exception, e:
     print('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
     exit(0)
@@ -57,9 +61,12 @@ def set_screen_title(title):
             log.warning('Screen title could not be changed.')
             log.debug(e.message)
 
+class CompilationError(Exception):
+    pass
+
 class Experiment(object):
     """A basic GFDL experiment"""
-    def __init__(self, name, commit=None, repo=None, overwrite_data=False):
+    def __init__(self, name, commit=None, repo=None, overwrite_data=False,run_idb=False):
         super(Experiment, self).__init__()
         self.name = name
 
@@ -70,7 +77,13 @@ class Experiment(object):
         # These can be overridden e.g. if an experiment is to use
         # the same executable as another
         self.workdir = P(GFDL_WORK, self.name)
-        self.execdir = P(self.workdir, 'exec')        # where executable will be compiled to / fectched from
+
+        # where executable will be compiled to / fectched from
+        if run_idb:
+            self.execdir = P(self.workdir, 'exec_debug')  #compiled with debug flags        
+        else:
+            self.execdir = P(self.workdir, 'exec')        
+
         self.restartdir = P(self.workdir, 'restarts') # where restarts will be stored
         self.rundir = P(self.workdir, 'run')          # temporary area an individual run will be performed
         self.datadir = P(GFDL_DATA, self.name)        # where run data will be moved to upon completion
@@ -97,12 +110,25 @@ class Experiment(object):
 
         self.templates = Environment(loader=FileSystemLoader(self.template_dir))
 
-        self.diag_table_file = P(self.template_dir, 'diag_table.default')
-        self._diag_table = None
+        self.diag_table = DiagTable()
         self.field_table_file = P(self.template_dir, 'field_table')
 
-        self.path_names_file = P(self.template_dir, 'path_names')
-        self.path_names = self._get_default_path_names()
+        if run_idb:
+            self.run_idb = P('true')
+        else:
+            self.run_idb = P('false')
+
+
+        # Setup the path_names for compilation
+        # 1. read the default path_names file
+        # 2. self.path_names can be changed before compilation
+        # 3. when self.compile() is called, if more than
+        #    `missing_file_tol` paths are not found, abort the compilation.
+        #
+        # * set `missing_file_tol = -1` to ignore all missing files.
+        self.path_names = self._read_pathnames(P(self.template_dir, 'path_names'))
+        self.missing_file_tol = 3
+
 
         self.namelist_files = [P(self.template_dir, 'core.nml'), P(self.template_dir, 'phys.nml')]
         self.namelist = self.rebuild_namelist()
@@ -143,8 +169,8 @@ class Experiment(object):
         mkdir(self.rundir)
         log.info('Emptied run directory %r' % self.rundir)
 
-    def _get_default_path_names(self):
-        with open(self.path_names_file) as pn:
+    def _read_pathnames(self, path_names_file):
+        with open(path_names_file) as pn:
             return [l.strip() for l in pn]
 
     def rebuild_namelist(self):
@@ -189,13 +215,14 @@ class Experiment(object):
     def write_diag_table(self, outdir):
         outfile = P(outdir, 'diag_table')
         log.info('Writing diag_table to %r' % outfile)
-        if self._diag_table:
+        if len(self.diag_table.files):
             template = self.templates.get_template('diag_table')
             calendar = not self.namelist['main_nml']['calendar'].lower().startswith('no_calendar')
-            vars = {'calendar': calendar, 'outputfiles': self._diag_table.files.values()}
+            vars = {'calendar': calendar, 'outputfiles': self.diag_table.files.values()}
             template.stream(**vars).dump(outfile)
         else:
-            sh.cp(self.diag_table_file, P(outdir, 'diag_table'))
+            log.error("No output files defined in the DiagTable. Stopping.")
+            raise ValueError()
 
     def write_field_table(self, outdir):
         log.info('Writing field_table to %r' % P(outdir, 'field_table'))
@@ -227,17 +254,35 @@ class Experiment(object):
 
         log.info('RRTM compilation disabled.  Namelist set to gray radiation.')
 
+    def check_path_names(self):
+        new_path_names = []
+        missing_files = []
+        for f in self.path_names:
+            if os.path.isfile(os.path.join(self.srcdir, 'src', f)):
+                new_path_names.append(f)
+            else:
+                log.warn('"%r" in path_names but not found in checked out src' % f)
+                missing_files.append(f)
+        if len(missing_files) >= self.missing_file_tol >= 0:
+            log.error('Too many files in "path_names" not found.\nTo prevent this error set exp.missing_file_tol = -1')
+            for f in missing_files:
+                log.error('File "%r" not found.' % f)
+            raise CompilationError('Missing %d compilation files (tolerance %d).' % (len(missing_files), self.missing_file_tol))
+        else:
+            self.path_names = new_path_names
+
     def compile(self):
         mkdir(self.execdir)
-
         vars = {
             'execdir': self.execdir,
             'template_dir': self.template_dir,
             'srcdir': self.srcdir,
             'workdir': self.workdir,
-            'compile_flags': ' '.join(self.compile_flags)
+            'compile_flags': ' '.join(self.compile_flags),
+            'run_idb': self.run_idb
         }
 
+        self.check_path_names()
         self.write_path_names(self.workdir)
 
         self.templates.get_template('compile.sh').stream(**vars).dump(P(self.workdir, 'compile.sh'))
@@ -250,9 +295,10 @@ class Experiment(object):
             raise e
         log.debug('Compilation complete.')
 
+
     def use_diag_table(self, diag_table):
         """Use a DiagTable object for the diagnostic output specification."""
-        self._diag_table = diag_table
+        self.diag_table = diag_table.copy()
 
 
     _day_re = re.compile('Integration completed through\s+([0-9]+) days')
@@ -278,9 +324,11 @@ class Experiment(object):
 
 
 
-    def runmonth(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False):
+    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False, run_idb=False, experiment_restart=None):
         indir = P(self.rundir, 'INPUT')
-        outdir = P(self.datadir, 'run%d' % month)
+        outdir = P(self.datadir, 'run%03d' % month)
+
+
 
         if os.path.isdir(outdir):
             if self.overwrite_data or overwrite_data:
@@ -322,7 +370,9 @@ class Experiment(object):
             'execdir': self.execdir,
             'srcdir': self.srcdir,
             'restart_file': restart_file,
-            'num_cores': num_cores
+            'num_cores': num_cores,
+            'run_idb': run_idb,
+            'experiment_restart': experiment_restart
         }
 
         runmonth = self.templates.get_template('runmonth.sh')
@@ -334,10 +384,18 @@ class Experiment(object):
         self._cur_month = month
         try:
             set_screen_title('month:%d' % month)
-            sh.bash(P(self.rundir, 'runmonth.sh'), _out=self._log_runmonth, _err=self._log_runmonth)
+            proc = sh.bash(P(self.rundir, 'runmonth.sh'), _out=self._log_runmonth, _err=self._log_runmonth, _bg=True)
+            proc.wait()  # allow the background thread to complete
             log.info("Run for month %r complete" % month)
+        except KeyboardInterrupt:
+            log.error("Manual interrupt, killing process.")
+            proc.process.kill()
+            log.info("Cleaning run directory.")
+            self.clear_rundir()
+            return False
         except Exception as e:
             log.error("Run failed for month %r" % month)
+            proc.process.kill()
             raise e
 
         mkdir(outdir)
@@ -351,10 +409,76 @@ class Experiment(object):
         log.info("Saved restart file %r" % restart_file)
         sh.rm('-r', P(self.rundir, 'RESTART'))
 
-        sh.cp(['-a', self.rundir+'/.', outdir])
+        if light:
+            os.system("cp -a "+self.rundir+"/*.nc "+outdir)
+            sh.cp(['-a', P(self.restartdir, 'res_%d.cpio' % (month)), outdir])
+            if month > 1:
+                try:
+                    sh.rm( P(self.restartdir, 'res_%d.cpio' % (month-1)))
+                except sh.ErrorReturnCode_1:
+                    log.warning('Previous months restart already removed')
+                sh.rm( P(self.datadir, 'run%03d' % (month-1) , 'res_%d.cpio' % (month-1)))
+        else:    
+            sh.cp(['-a', self.rundir+'/.', outdir])
         self.clear_rundir()
         sh.cd(self.rundir)
         return True
+
+    runmonth = run
+
+    def derive(self, new_experiment_name):
+        """Derive a new experiment based on this one."""
+        new_exp = Experiment(new_experiment_name)
+        new_exp.execdir = self.execdir
+        new_exp.namelist = self.namelist.copy()
+        new_exp.use_diag_table(self.diag_table.copy())
+        return new_exp
+
+    def run_parameter_sweep(self, parameter_values, runs=10, num_cores=16):
+        # parameter_values should be a namelist fragment, with multiple values
+        # for each study e.g. to vary obliquity:
+        # exp.run_parameter_sweep({'astronomy_nml': {'obliq': [0.0, 5.0, 10.0, 15.0]}})
+        # will run 4 independent studies and create data e.g.
+        # <exp_name>/astronomy_nml_obliq_<0.0, 5.0 ...>/run[1-10]/daily.nc
+        params = [(sec, name, values) for sec, parameters in parameter_values.items()
+                        for name, values in parameters.items()]
+        # make a list of lists of namelist section, parameter names and values
+        params = [[(a,b,val) for val in values] for a,b,values in params]
+        parameter_space = itertools.product(params)
+        for combo in parameter_space:
+            title = '_'.join(['%s_%s_%r' % (sec[:3], name[:5], val) for sec, name, val in combo])
+            exp = self.derive(self.name + '_' + title)
+            for sec, name, val in combo:
+                exp.namelist[sec][name] = val
+            exp.clear_rundir()
+            exp.run(1, use_restart=False, num_cores=num_cores)
+            for i in range(runs-1):
+                exp.run(i+2)
+
+    def update_namelist(self, new_vals):
+        """Update the namelist sections, overwriting existing values."""
+        for sec in new_vals:
+            nml = self.namelist.setdefault(sec, {})
+            nml.update(new_vals[sec])
+			
+    def runinterp(self, month, infile, outfile, var_names = '-a', p_model = False, p_even = False, rm_input=False):
+        import subprocess
+        pprocess = P(GFDL_BASE,'postprocessing/plevel_interpolation/scripts')
+        interper = 'source '+pprocess+'/plevel.sh -i '
+        inputfile = P(self.datadir, 'run%03d' % month, infile)
+        outputfile = P(self.datadir, 'run%03d' % month, outfile)
+        
+        if p_model:
+            plev = ' -p "2 9 18 38 71 125 206 319 471 665 904 1193 1532 1925 2375 2886 3464 4115 4850 5679 6615 7675 8877 10244 11801 13577 15607 17928 20585 23630 27119 31121 35711 40976 47016 53946 61898 71022 81491 93503" '
+        elif p_even:
+            plev = ' -p "100000 95000 90000 85000 80000 75000 70000 65000 60000 55000 50000 45000 40000 35000 30000 25000 20000 15000 10000 5000" '
+        else:
+            plev = ' '
+        command = interper + inputfile + ' -o ' + outputfile + plev + var_names
+        subprocess.call([command], shell=True)
+        if rm_input:
+            sh.rm( inputfile)
+
 
 class DiagTable(object):
     def __init__(self):
@@ -382,3 +506,8 @@ class DiagTable(object):
                 'name': name,
                 'time_avg': time_avg
                 })
+
+    def copy(self):
+        d = DiagTable()
+        d.files = copy.deepcopy(self.files)
+        return d

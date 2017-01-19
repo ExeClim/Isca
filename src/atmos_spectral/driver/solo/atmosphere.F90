@@ -308,8 +308,6 @@ call spectral_dynamics(Time, psg(:,:,future), ug(:,:,:,future), vg(:,:,:,future)
                        dt_psg, dt_ug, dt_vg, dt_tg, dt_tracers, wg_full, &
                        p_full(:,:,:,current), p_half(:,:,:,current), z_full(:,:,:,current))
 
-call complete_robert_filter(tracer_attributes)
-
 if(dry_model) then
   call compute_pressures_and_heights(tg(:,:,:,future), psg(:,:,future), surf_geopotential, &
        z_full(:,:,:,future), z_half(:,:,:,future), p_full(:,:,:,future), p_half(:,:,:,future))
