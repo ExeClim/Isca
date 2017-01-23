@@ -63,11 +63,10 @@ if __name__ == '__main__':
         omega = rot*7.2921150e-5
         exp.namelist['constants_nml']['omega'] = omega
 
-        #exp.runmonth(1, use_restart=False, num_cores=16,light=True)
-        #for i in range(2, 24):  
-        #    exp.runmonth(i, num_cores=16, light=True)
+        exp.runmonth(1, use_restart=False, num_cores=16,light=True)
+        for i in range(2, 25):  
+            exp.runmonth(i, num_cores=16, light=True)
 
-        exp.runmonth(24, num_cores=16, light=True)
             
         
     
