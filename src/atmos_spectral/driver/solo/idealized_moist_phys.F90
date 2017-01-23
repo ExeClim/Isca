@@ -774,6 +774,7 @@ call surface_flux(                                                          &
                                   q_surf(:,:),                              & ! is intent(inout)
                                        bucket,                              &     ! RG Add bucket
                     bucket_depth(:,:,current),                              &     ! RG Add bucket
+                        max_bucket_depth_land,                              &     ! RG Add bucket
                          depth_change_lh(:,:),                              &     ! RG Add bucket
                        depth_change_conv(:,:),                              &     ! RG Add bucket
                        depth_change_cond(:,:),                              &     ! RG Add bucket

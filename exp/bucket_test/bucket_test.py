@@ -69,7 +69,7 @@ if __name__ == '__main__':
     
 
     #20m ERA land with topography and amip q fluxes
-    exp = baseexp.derive('full_qflux_bucket')
+    exp = baseexp.derive('full_qflux_bucket_scale')
     exp.inputfiles = ['/scratch/rg419/GFDL_model/GFDLmoistModel/input/ocean_qflux.nc',
                       '/scratch/rg419/GFDL_model/GFDLmoistModel/input/land.nc', 
                       '/scratch/rg419/GFDL_model/GFDLmoistModel/input/ozone_1990.nc']
@@ -81,7 +81,6 @@ if __name__ == '__main__':
     exp.namelist['mixed_layer_nml']['load_qflux'] = True
     exp.namelist['mixed_layer_nml']['qflux_file_name'] = 'ocean_qflux'
     exp.namelist['mixed_layer_nml']['time_varying_qflux'] = True
-    exp.namelist['surface_flux_nml']['land_humidity_prefactor'] = 0.6
     exp.namelist['idealized_moist_phys_nml']['land_option'] = 'input'
     exp.namelist['idealized_moist_phys_nml']['land_file_name'] = 'INPUT/land.nc'
     
