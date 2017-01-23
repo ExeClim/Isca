@@ -96,7 +96,7 @@
                                                                             ! dimension (lon x lat)
         integer(kind=im)                           :: num_precip            ! number of times precipitation
                                                                             ! has been summed in rrtm_precip
-        integer(kind=im)                           :: dt_last               ! time of last radiation calculation
+        real(kind=rb)                              :: dt_last               ! time of last radiation calculation
                                                                             ! used for alarm
 !---------------------------------------------------------------------------------------------------------------
 ! some constants
@@ -343,7 +343,7 @@
 
           deg2rad = acos(0.)/90.
 
-          dt_last = -dt_rad !make sure we are computing radiation at the first time step
+          dt_last = -real(dt_rad) !make sure we are computing radiation at the first time step
 
           ncols_rrt = ncols/lonstep
           nlay_rrt  = nlay
@@ -553,7 +553,7 @@
                                                                                ! need to have both or none!
 !---------------------------------------------------------------------------------------------------------------
 ! Local variables
-          integer k,j,i,ij,j1,i1,ij1,kend,dyofyr,seconds
+          integer k,j,i,ij,j1,i1,ij1,kend,dyofyr,seconds,days
           integer si,sj,sk,locmin(3)
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: o3f
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: co2f,co2f_temp
@@ -573,7 +573,7 @@
           real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
 
 	  integer :: year_in_s
-          real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
+          real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
 
 
 
@@ -588,9 +588,12 @@
 
 !check if we really want to recompute radiation (alarm,input file(s))
 ! alarm
-          call get_time(Time,seconds)
-          if(seconds - dt_last .ge. dt_rad) then
-             dt_last = seconds
+          call get_time(Time,seconds,days)
+		  r_days = real(days)
+		  r_seconds = real(seconds)
+		  r_total_seconds=r_seconds+(r_days*86400.)
+          if(r_total_seconds - dt_last .ge. dt_rad) then
+             dt_last = r_total_seconds
           else
              if(store_intermediate_rad)then
                 tdt_rrtm = tdt_rad
@@ -609,6 +612,7 @@
           if(solday > 0)then
              Time_loc = set_time(seconds,solday)
           elseif(slowdown_rad .ne. 1.0)then
+			 seconds = days*86400 + seconds
              Time_loc = set_time(int(seconds*slowdown_rad))
           else
              Time_loc = Time
@@ -617,17 +621,21 @@
 !
 ! compute zenith angle
 !  this is also an output, so need to compute even if we read radiation from file
-	     call get_time(Time_loc, seconds)
+	     call get_time(Time_loc, seconds, days)
 	     call get_time(length_of_year(), year_in_s)
 	     day_in_s = length_of_day()
+		 
 	     r_seconds=real(seconds)
-	     frac_of_day = r_seconds / day_in_s
+		 r_days=real(days)
+		 r_total_seconds=r_seconds+(r_days*86400.)
+		 
+	     frac_of_day = r_total_seconds / day_in_s
 
-             if(solday > 0) then
-                 r_solday=real(solday)
-                 frac_of_year=(r_solday*day_in_s)/year_in_s
+         if(solday > 0) then
+             r_solday=real(solday)
+             frac_of_year=(r_solday*day_in_s)/year_in_s
 	     else
-	         frac_of_year = r_seconds / year_in_s
+	         frac_of_year = r_total_seconds / year_in_s
          endif
 	     gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
 	     time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
