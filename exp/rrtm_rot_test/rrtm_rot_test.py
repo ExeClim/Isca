@@ -18,7 +18,7 @@ diag.add_field('dynamics', 'ucomp', time_avg=True, files=['atmos_monthly'])
 diag.add_field('rrtm_radiation', 'flux_sw', time_avg=True, files=['atmos_monthly'])
         
 diag.add_file('atmos_6hrly', 6, 'hours')
-diag.add_field('rrtm_radiation', 'flux_sw', time_avg=True, files=['atmos_6hrly'])
+diag.add_field('rrtm_radiation', 'flux_sw', files=['atmos_6hrly'])
         
 baseexp.use_diag_table(diag)
 
@@ -66,7 +66,21 @@ if __name__ == '__main__':
         exp.runmonth(1, use_restart=False, num_cores=16,light=True)
         for i in range(2, 25):  
             exp.runmonth(i, num_cores=16, light=True)
+    
+    #exp = baseexp.derive('thirty_day_check')
+    #exp.namelist['main_nml']['calendar'] = 'thirty_day'
+    #exp.runmonth(1, use_restart=False, num_cores=16,light=True)
+    #for i in range(2, 25):  
+    #    exp.runmonth(i, num_cores=16, light=True)
 
+
+    exp = baseexp.derive('70_plus_check')
+    exp.inputfiles = baseexp.inputfiles
+    exp.namelist['main_nml']['calendar'] = 'thirty_day'
+    exp.namelist['main_nml']['current_date'] = [1000,1,1,0,0,0]
+    exp.runmonth(1, use_restart=False, num_cores=16,light=True)
+    for i in range(2, 25):  
+        exp.runmonth(i, num_cores=16, light=True)
             
         
     
