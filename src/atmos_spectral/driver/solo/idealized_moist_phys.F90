@@ -275,15 +275,19 @@ else if(uppercase(trim(convection_scheme)) == 'MOIST_QE') then
   r_conv_scheme = MOIST_QE_CONV
   call error_mesg('idealized_moist_phys','Using Frierson Quasi-Equilibrium convection scheme.', NOTE)
   lwet_convection = .true.
+  do_bm           = .false.
 
 else if(uppercase(trim(convection_scheme)) == 'BETTS_MILLER') then
   r_conv_scheme = BETTS_MILLER_CONV
   call error_mesg('idealized_moist_phys','Using Betts-Miller convection scheme.', NOTE)
-  do_bm = .true.
+  do_bm           = .true.
+  lwet_convection = .false.
 
 else if(uppercase(trim(convection_scheme)) == 'DRY') then
   r_conv_scheme = DRY_CONV
   call error_mesg('idealized_moist_phys','Using dry convection scheme.', NOTE)
+  lwet_convection = .false.
+  do_bm           = .false.
 
 else if(uppercase(trim(convection_scheme)) == 'UNSET') then
   call error_mesg('idealized_moist_phys','determining convection scheme from flags', NOTE)
