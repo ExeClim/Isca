@@ -267,21 +267,27 @@ if(two_stream_gray .and. do_rrtm_radiation) &
 
 if(uppercase(trim(convection_scheme)) == 'NONE') then
   r_conv_scheme = NO_CONV
+  lwet_convection = .false.
+  do_bm           = .false.
   call error_mesg('idealized_moist_phys','No convective adjustment scheme used.', NOTE)
 
 else if(uppercase(trim(convection_scheme)) == 'MOIST_QE') then
   r_conv_scheme = MOIST_QE_CONV
   call error_mesg('idealized_moist_phys','Using Frierson Quasi-Equilibrium convection scheme.', NOTE)
   lwet_convection = .true.
+  do_bm           = .false.
 
 else if(uppercase(trim(convection_scheme)) == 'BETTS_MILLER') then
   r_conv_scheme = BETTS_MILLER_CONV
   call error_mesg('idealized_moist_phys','Using Betts-Miller convection scheme.', NOTE)
-  do_bm = .true.
+  do_bm           = .true.
+  lwet_convection = .false.
 
 else if(uppercase(trim(convection_scheme)) == 'DRY') then
   r_conv_scheme = DRY_CONV
   call error_mesg('idealized_moist_phys','Using dry convection scheme.', NOTE)
+  lwet_convection = .false.
+  do_bm           = .false.
 
 else if(uppercase(trim(convection_scheme)) == 'UNSET') then
   call error_mesg('idealized_moist_phys','determining convection scheme from flags', NOTE)
@@ -596,6 +602,7 @@ case(MOIST_QE_CONV)
    if(id_cin  > 0) used = send_data(id_cin, cin, Time)
 
 case(BETTS_MILLER_CONV)
+
    call betts_miller (          delta_t,           tg(:,:,:,previous),       &
     grid_tracers(:,:,:,previous,nsphum),       p_full(:,:,:,previous),       &
                  p_half(:,:,:,previous),                        coldT,       &
@@ -674,6 +681,7 @@ if (r_conv_scheme .ne. DRY_CONV) then
   if(id_precip     > 0) used = send_data(id_precip, precip, Time)
 
 endif
+
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
