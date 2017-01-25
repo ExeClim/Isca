@@ -286,6 +286,8 @@ else if(uppercase(trim(convection_scheme)) == 'BETTS_MILLER') then
 else if(uppercase(trim(convection_scheme)) == 'DRY') then
   r_conv_scheme = DRY_CONV
   call error_mesg('idealized_moist_phys','Using dry convection scheme.', NOTE)
+  lwet_convection = .false.
+  do_bm           = .false.
 
 else if(uppercase(trim(convection_scheme)) == 'UNSET') then
   call error_mesg('idealized_moist_phys','determining convection scheme from flags', NOTE)
