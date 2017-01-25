@@ -267,6 +267,8 @@ if(two_stream_gray .and. do_rrtm_radiation) &
 
 if(uppercase(trim(convection_scheme)) == 'NONE') then
   r_conv_scheme = NO_CONV
+  lwet_convection = .false.
+  do_bm           = .false.
   call error_mesg('idealized_moist_phys','No convective adjustment scheme used.', NOTE)
 
 else if(uppercase(trim(convection_scheme)) == 'MOIST_QE') then
@@ -596,6 +598,7 @@ case(MOIST_QE_CONV)
    if(id_cin  > 0) used = send_data(id_cin, cin, Time)
 
 case(BETTS_MILLER_CONV)
+
    call betts_miller (          delta_t,           tg(:,:,:,previous),       &
     grid_tracers(:,:,:,previous,nsphum),       p_full(:,:,:,previous),       &
                  p_half(:,:,:,previous),                        coldT,       &
@@ -674,6 +677,7 @@ if (r_conv_scheme .ne. DRY_CONV) then
   if(id_precip     > 0) used = send_data(id_precip, precip, Time)
 
 endif
+
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
