@@ -8,7 +8,7 @@ module idealized_moist_phys_mod
 
 use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, FATAL, read_data, field_size, uppercase, mpp_pe
 
-use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS !mj cp_air needed for rrtmg !s pstd_mks needed for pref calculation
+use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS, dens_h2o !mj cp_air needed for rrtmg !s pstd_mks needed for pref calculation
 
 use        time_manager_mod, only: time_type, get_time, operator( + )
 
@@ -111,12 +111,30 @@ character(len=256) :: land_option = 'none'
 character(len=256) :: land_file_name  = 'INPUT/land.nc'
 character(len=256) :: land_field_name = 'land_mask'
 
+! RG Add bucket
+logical :: bucket = .false. 
+integer :: future
+real :: init_bucket_depth = 20. ! default initial bucket depth in m LJJ
+real :: init_bucket_depth_land = 20. 
+real :: max_bucket_depth_land = 1000. ! default large value
+real :: robert_bucket = 0.04   ! default robert coefficient for bucket depth LJJ
+real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
+! end RG Add bucket
+
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, roughness_heat,  &
                                       two_stream_gray, do_rrtm_radiation, do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
                                       land_option, land_file_name, land_field_name,   & !s options for idealised land
-                                      land_roughness_prefactor, convection_scheme
+                                      land_roughness_prefactor, convection_scheme,   &
+                                      bucket, init_bucket_depth, init_bucket_depth_land, & !RG Add bucket 
+                                      max_bucket_depth_land, robert_bucket, raw_bucket
+
+
+integer, parameter :: num_time_levels = 2 !RG Add bucket - number of time levels added to allow timestepping in this module
+real, allocatable, dimension(:,:,:)   :: bucket_depth      ! RG Add bucket
+real, allocatable, dimension(:,:    ) :: dt_bucket, filt   ! RG Add bucket
+
 
 real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
@@ -127,6 +145,9 @@ real, allocatable, dimension(:,:)   ::                                        &
      rough_mom,            &   ! momentum roughness length for surface_flux
      rough_heat,           &   ! heat roughness length for surface_flux
      rough_moist,          &   ! moisture roughness length for surface_flux
+     depth_change_lh,      &   ! tendency in bucket depth due to latent heat transfer     ! RG Add bucket
+     depth_change_cond,    &   ! tendency in bucket depth due to condensation rain        ! RG Add bucket
+     depth_change_conv,    &   ! tendency in bucket depth due to convection rain          ! RG Add bucket
      gust,                 &   ! gustiness constant
      z_pbl,                &   ! gustiness constant
      flux_t,               &   ! surface sensible heat flux
@@ -209,6 +230,10 @@ integer ::           &
      id_conv_dt_qg,  &   ! temperature tendency from convection
      id_cond_dt_tg,  &   ! temperature tendency from condensation
      id_cond_dt_qg,  &   ! temperature tendency from condensation
+     id_bucket_depth,      &   ! bucket depth variable for output  - RG Add bucket
+     id_bucket_depth_conv, &   ! bucket depth variation induced by convection  - RG Add bucket
+     id_bucket_depth_cond, &   ! bucket depth variation induced by condensation  - RG Add bucket
+     id_bucket_depth_lh,   &   ! bucket depth variation induced by LH  - RG Add bucket
      id_rh,          & 	 ! Relative humidity
      id_z_tg,        &   ! Relative humidity
      id_cape,        &
@@ -318,6 +343,12 @@ call get_num_levels(num_levels)
 
 allocate(rad_lat     (is:ie, js:je)); rad_lat = rad_lat_2d
 allocate(rad_lon     (is:ie, js:je)); rad_lon = rad_lon_2d
+allocate (dt_bucket  (is:ie, js:je)); dt_bucket = 0.0         ! RG Add bucket
+allocate (filt       (is:ie, js:je)); filt = 0.0              ! RG Add bucket
+allocate(bucket_depth (is:ie, js:je, num_time_levels)); bucket_depth = init_bucket_depth        ! RG Add bucket
+allocate(depth_change_lh(is:ie, js:je))                       ! RG Add bucket
+allocate(depth_change_cond(is:ie, js:je))                     ! RG Add bucket
+allocate(depth_change_conv(is:ie, js:je))                     ! RG Add bucket
 allocate(z_surf      (is:ie, js:je))
 allocate(t_surf      (is:ie, js:je))
 allocate(q_surf      (is:ie, js:je)); q_surf = 0.0
@@ -443,6 +474,15 @@ if(trim(land_option) .eq. 'input') then
 
 endif
 
+!RG Add bucket - initialise bucket depth
+if(bucket) then
+where(land)
+  bucket_depth(:,:,1)  = init_bucket_depth_land
+  bucket_depth(:,:,2)  = init_bucket_depth_land
+end where
+endif
+!RG end Add bucket
+
 !s end option to alter surface roughness length over land
 
 
@@ -461,7 +501,7 @@ if(mixed_layer_bc) then
   ! choose an unstable initial condition to allow moisture
   ! to quickly enter the atmosphere avoiding problems with the convection scheme
   t_surf = t_surf_init + 1.0
-  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, get_axis_id(), Time, albedo, rad_lonb_2d, rad_latb_2d, land) ! t_surf is intent(inout) !s albedo distribution set here.
+  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, bucket_depth, get_axis_id(), Time, albedo, rad_lonb_2d(:,:), rad_latb_2d(:,:), land) ! t_surf is intent(inout) !s albedo distribution set here.
 endif
 
 if(turb) then
@@ -487,6 +527,17 @@ id_cape = register_diag_field(mod_name, 'cape',          &
      axes(1:2), Time, 'Convective Available Potential Energy','J/kg')
 id_cin = register_diag_field(mod_name, 'cin',          &
      axes(1:2), Time, 'Convective Inhibition','J/kg')
+
+if(bucket) then
+  id_bucket_depth = register_diag_field(mod_name, 'bucket_depth',            &         ! RG Add bucket
+       axes(1:2), Time, 'Depth of surface reservoir', 'm')
+  id_bucket_depth_conv = register_diag_field(mod_name, 'bucket_depth_conv',  &         ! RG Add bucket
+       axes(1:2), Time, 'Tendency of bucket depth induced by Convection', 'm/s')
+  id_bucket_depth_cond = register_diag_field(mod_name, 'bucket_depth_cond',  &         ! RG Add bucket
+       axes(1:2), Time, 'Tendency of bucket depth induced by Condensation', 'm/s')
+  id_bucket_depth_lh = register_diag_field(mod_name, 'bucket_depth_lh',      &         ! RG Add bucket
+       axes(1:2), Time, 'Tendency of bucket depth induced by LH', 'm/s')
+endif
 
 select case(r_conv_scheme)
 
@@ -570,6 +621,11 @@ else
    delta_t = 2*dt_real
 endif
 
+if (bucket) then
+  dt_bucket = 0.0                ! RG Add bucket
+  filt      = 0.0                ! RG Add bucket
+endif
+
 rain = 0.0; snow = 0.0; precip = 0.0
 
 select case(r_conv_scheme)
@@ -592,6 +648,7 @@ case(MOIST_QE_CONV)
 
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
+   depth_change_conv = rain/dens_h2o     ! RG Add bucket
    rain       = rain/delta_t
    precip     = rain
 
@@ -620,6 +677,7 @@ case(BETTS_MILLER_CONV)
 
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
+   depth_change_conv = rain/dens_h2o     ! RG Add bucket
    rain       = rain/delta_t
    precip     = rain
 
@@ -651,9 +709,11 @@ case default
 
 end select
 
+
 ! Add the T and q tendencies due to convection to the timestep
 dt_tg = dt_tg + conv_dt_tg
 dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
+
 
 ! Perform large scale convection
 if (r_conv_scheme .ne. DRY_CONV) then
@@ -668,6 +728,7 @@ if (r_conv_scheme .ne. DRY_CONV) then
 
   cond_dt_tg = cond_dt_tg/delta_t
   cond_dt_qg = cond_dt_qg/delta_t
+  depth_change_cond = rain/dens_h2o     ! RG Add bucket
   rain       = rain/delta_t
   snow       = snow/delta_t
   precip     = precip + rain + snow
@@ -719,6 +780,12 @@ call surface_flux(                                                          &
                                   t_surf(:,:),                              &
                                   t_surf(:,:),                              &
                                   q_surf(:,:),                              & ! is intent(inout)
+                                       bucket,                              &     ! RG Add bucket
+                    bucket_depth(:,:,current),                              &     ! RG Add bucket
+                        max_bucket_depth_land,                              &     ! RG Add bucket
+                         depth_change_lh(:,:),                              &     ! RG Add bucket
+                       depth_change_conv(:,:),                              &     ! RG Add bucket
+                       depth_change_cond(:,:),                              &     ! RG Add bucket
                                   u_surf(:,:),                              &
                                   v_surf(:,:),                              &
                                rough_mom(:,:),                              &
@@ -896,10 +963,66 @@ endif ! if(turb) then
    if(id_rh >0) used = send_data(id_rh, RH*100., Time)
 
 
+! RG Add bucket
+! Timestepping for bucket. 
+! NB In tapios github, all physics is still in atmosphere.F90 and this leapfrogging is done there. 
+!This part has been included here to avoid editing atmosphere.F90
+! Therefore define a future variable locally, but do not feedback any changes to timestepping variables upstream, so as to avoid messing with the model's overall timestepping.
+! Bucket diffusion has been cut for this version - could be incorporated later.
+
+if(bucket) then
+
+  if(previous == current) then
+    future = num_time_levels + 1 - current
+  else
+    future = previous
+  endif
+
+   ! bucket time tendency
+   dt_bucket = depth_change_cond + depth_change_conv - depth_change_lh
+   !change in bucket depth in one leapfrog timestep [m]                                 
+
+   ! use the raw filter in leapfrog time stepping
+
+   filt(:,:) = bucket_depth(:,:,previous) - 2.0 * bucket_depth(:,:,current)
+
+   if(previous == current) then
+      bucket_depth(:,:,future ) = bucket_depth(:,:,previous) + dt_bucket
+      bucket_depth(:,:,current) = bucket_depth(:,:,current ) + robert_bucket &
+        *(bucket_depth(:,:,previous) - 2.0*bucket_depth(:,:,current) + bucket_depth(:,:,future)) * raw_bucket
+   else
+      bucket_depth(:,:,current) = bucket_depth(:,:,current ) + robert_bucket &
+        *(bucket_depth(:,:,previous) - 2.0*bucket_depth(:,:,current)) * raw_bucket 
+      bucket_depth(:,:,future ) = bucket_depth(:,:,previous) + dt_bucket
+      bucket_depth(:,:,current) = bucket_depth(:,:,current) + robert_bucket * bucket_depth(:,:,future) * raw_bucket
+   endif
+
+   bucket_depth(:,:,future) = bucket_depth(:,:,future) + robert_bucket * (filt(:,:) + bucket_depth(:,:, future)) &
+                           * (raw_bucket - 1.0)  
+
+   where (bucket_depth <= 0.) bucket_depth = 0.
+
+   ! truncate surface reservoir over land points
+       where(land .and. (bucket_depth(:,:,future) > max_bucket_depth_land))
+            bucket_depth(:,:,future) = max_bucket_depth_land
+       end where
+
+   if(id_bucket_depth > 0) used = send_data(id_bucket_depth, bucket_depth(:,:,future), Time)
+   if(id_bucket_depth_conv > 0) used = send_data(id_bucket_depth_conv, depth_change_conv(:,:), Time)
+   if(id_bucket_depth_cond > 0) used = send_data(id_bucket_depth_cond, depth_change_cond(:,:), Time)
+   if(id_bucket_depth_lh > 0) used = send_data(id_bucket_depth_lh, depth_change_lh(:,:), Time)
+
+endif
+! end Add bucket section
+
+
+
+
 end subroutine idealized_moist_phys
 !=================================================================================================================================
 subroutine idealized_moist_phys_end
 
+deallocate (dt_bucket, filt)
 if(two_stream_gray)      call two_stream_gray_rad_end
 if(lwet_convection) call qe_moist_convection_end
 if(turb) then
@@ -907,7 +1030,7 @@ if(turb) then
    call vert_turb_driver_end
 endif
 call lscale_cond_end
-if(mixed_layer_bc)  call mixed_layer_end(t_surf)
+if(mixed_layer_bc)  call mixed_layer_end(t_surf, bucket_depth)
 if(do_damping) call damping_driver_end
 
 end subroutine idealized_moist_phys_end
