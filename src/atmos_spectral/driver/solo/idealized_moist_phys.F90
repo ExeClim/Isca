@@ -82,8 +82,8 @@ logical :: do_virtual = .false. ! whether virtual temp used in gcm_vert_diff
 character(len=256) :: convection_scheme = 'unset'  !< Use a specific convection scheme.  Valid options
 integer, parameter :: UNSET = -1,                & !! are NONE, MOIST_QE, BETTS_MILLER, DRY
                       NO_CONV = 0,               &
-                      MOIST_QE_CONV = 1,         &
-                      BETTS_MILLER_CONV = 2,     &
+                      SIMPLE_BETTS_CONV = 1,         &
+                      FULL_BETTS_MILLER_CONV = 2,     &
                       DRY_CONV = 3
 integer :: r_conv_scheme = UNSET  ! the selected convection scheme
 
@@ -272,13 +272,13 @@ if(uppercase(trim(convection_scheme)) == 'NONE') then
   call error_mesg('idealized_moist_phys','No convective adjustment scheme used.', NOTE)
 
 else if(uppercase(trim(convection_scheme)) == 'MOIST_QE') then
-  r_conv_scheme = MOIST_QE_CONV
+  r_conv_scheme = SIMPLE_BETTS_CONV
   call error_mesg('idealized_moist_phys','Using Frierson Quasi-Equilibrium convection scheme.', NOTE)
   lwet_convection = .true.
   do_bm           = .false.
 
 else if(uppercase(trim(convection_scheme)) == 'BETTS_MILLER') then
-  r_conv_scheme = BETTS_MILLER_CONV
+  r_conv_scheme = FULL_BETTS_MILLER_CONV
   call error_mesg('idealized_moist_phys','Using Betts-Miller convection scheme.', NOTE)
   do_bm           = .true.
   lwet_convection = .false.
@@ -292,11 +292,11 @@ else if(uppercase(trim(convection_scheme)) == 'DRY') then
 else if(uppercase(trim(convection_scheme)) == 'UNSET') then
   call error_mesg('idealized_moist_phys','determining convection scheme from flags', NOTE)
   if (lwet_convection) then
-    r_conv_scheme = MOIST_QE_CONV
+    r_conv_scheme = SIMPLE_BETTS_CONV
     call error_mesg('idealized_moist_phys','Using Frierson Quasi-Equilibrium convection scheme.', NOTE)
   end if
   if (do_bm) then
-    r_conv_scheme = BETTS_MILLER_CONV
+    r_conv_scheme = FULL_BETTS_MILLER_CONV
     call error_mesg('idealized_moist_phys','Using Betts-Miller convection scheme.', NOTE)
   end if
 else
@@ -490,10 +490,10 @@ id_cin = register_diag_field(mod_name, 'cin',          &
 
 select case(r_conv_scheme)
 
-case(MOIST_QE_CONV)
+case(SIMPLE_BETTS_CONV)
   call qe_moist_convection_init()
 
-case(BETTS_MILLER_CONV)
+case(FULL_BETTS_MILLER_CONV)
   call betts_miller_init()
 
 case(DRY_CONV)
@@ -574,7 +574,7 @@ rain = 0.0; snow = 0.0; precip = 0.0
 
 select case(r_conv_scheme)
 
-case(MOIST_QE_CONV)
+case(SIMPLE_BETTS_CONV)
 
    call qe_moist_convection ( delta_t,              tg(:,:,:,previous),      &
     grid_tracers(:,:,:,previous,nsphum),        p_full(:,:,:,previous),      &
@@ -601,7 +601,7 @@ case(MOIST_QE_CONV)
    if(id_cape  > 0) used = send_data(id_cape, cape, Time)
    if(id_cin  > 0) used = send_data(id_cin, cin, Time)
 
-case(BETTS_MILLER_CONV)
+case(FULL_BETTS_MILLER_CONV)
 
    call betts_miller (          delta_t,           tg(:,:,:,previous),       &
     grid_tracers(:,:,:,previous,nsphum),       p_full(:,:,:,previous),       &
