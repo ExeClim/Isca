@@ -80,7 +80,7 @@ logical :: do_virtual = .false. ! whether virtual temp used in gcm_vert_diff
 
 !s Convection scheme options
 character(len=256) :: convection_scheme = 'unset'  !< Use a specific convection scheme.  Valid options
-integer, parameter :: UNSET = -1,                & !! are NONE, MOIST_QE, BETTS_MILLER, DRY
+integer, parameter :: UNSET = -1,                & !! are NONE, SIMPLE_BETTS_MILLER, FULL_BETTS_MILLER, DRY
                       NO_CONV = 0,               &
                       SIMPLE_BETTS_CONV = 1,         &
                       FULL_BETTS_MILLER_CONV = 2,     &
@@ -271,13 +271,13 @@ if(uppercase(trim(convection_scheme)) == 'NONE') then
   do_bm           = .false.
   call error_mesg('idealized_moist_phys','No convective adjustment scheme used.', NOTE)
 
-else if(uppercase(trim(convection_scheme)) == 'MOIST_QE') then
+else if(uppercase(trim(convection_scheme)) == 'SIMPLE_BETTS_MILLER') then
   r_conv_scheme = SIMPLE_BETTS_CONV
   call error_mesg('idealized_moist_phys','Using Frierson Quasi-Equilibrium convection scheme.', NOTE)
   lwet_convection = .true.
   do_bm           = .false.
 
-else if(uppercase(trim(convection_scheme)) == 'BETTS_MILLER') then
+else if(uppercase(trim(convection_scheme)) == 'FULL_BETTS_MILLER') then
   r_conv_scheme = FULL_BETTS_MILLER_CONV
   call error_mesg('idealized_moist_phys','Using Betts-Miller convection scheme.', NOTE)
   do_bm           = .true.
@@ -301,7 +301,7 @@ else if(uppercase(trim(convection_scheme)) == 'UNSET') then
   end if
 else
   call error_mesg('idealized_moist_phys','"'//trim(convection_scheme)//'"'//' is not a valid convection scheme.'// &
-      ' Choices are NONE, MOIST_QE, BETTS_MILLER, DRY', FATAL)
+      ' Choices are NONE, SIMPLE_BETTS, FULL_BETTS_MILLER, DRY', FATAL)
 endif
 
 if(lwet_convection .and. do_bm) &
