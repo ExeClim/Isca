@@ -62,7 +62,7 @@ def add_sst_anomaly(sst_in, anomaly_type=None):
 
     return sst_with_anomaly, lons
 
-def apply_lat_lon_mask( unmasked_input, lat_range, lon_range_in, taper_length, power = 3):
+def apply_lat_lon_mask( unmasked_input, lat_range, lon_range_in, taper_length, power = 5):
 
     width         = np.abs(lon_range_in[1]-lon_range_in[0])
     central_point = (lon_range_in[1]+lon_range_in[0])/2.
@@ -223,9 +223,9 @@ def main():
 
         if add_anomaly and variable_name=='tosbcs':
             sst_in, shifted_lons = add_sst_anomaly(sst_in, anomaly_type)
-            anom_name = '_'+anomaly_type+'_'
+            anom_name = '_'+anomaly_type
         else:
-            anom_name = '_'
+            anom_name = ''
 
         p_full=None
         p_half=None
@@ -241,8 +241,8 @@ def main():
 
 
         #Output it to a netcdf file. 
-        file_name=output_name_list[variable_name]+annual_mean_name+'_clim_amip'+anom_name+amip_data_version+'.nc'
-        variable_name=output_name_list[variable_name]+'_clim_amip'
+        file_name=output_name_list[variable_name]+annual_mean_name+'_clim_amip'+anom_name+'_'+amip_data_version+'.nc'
+        variable_name=output_name_list[variable_name]+'_clim_amip'+anom_name
 
         number_dict={}
         number_dict['nlat']=nlat
