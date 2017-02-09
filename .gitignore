@@ -12,6 +12,7 @@ opt_exps
 frierson_comparison_*old*
 *.pyc
 exp/st_test*
+exp/archived/*
 *.DS_Store
 *.egg-info
 ._*
