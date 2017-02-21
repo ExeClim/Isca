@@ -9,6 +9,9 @@ from jinja2 import Environment, FileSystemLoader
 import sh
 import pdb
 
+import create_alert
+import getpass
+
 P = os.path.join
 _module_directory = os.path.dirname(os.path.realpath(__file__))
 
@@ -324,7 +327,8 @@ class Experiment(object):
 
 
 
-    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False, run_idb=False, experiment_restart=None):
+    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False, run_idb=False, experiment_restart=None, email_alerts=False):
+
         indir = P(self.rundir, 'INPUT')
         outdir = P(self.datadir, 'run%03d' % month)
 
@@ -379,6 +383,11 @@ class Experiment(object):
 
         # employ the template to create a runscript
         t = runmonth.stream(**vars).dump(P(self.rundir, 'runmonth.sh'))
+
+    # Check scratch space has enough disk space
+    if email_alerts:
+        email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
+        create_alert.run_alerts(self.execdir,email_address_for_alerts)
 
         log.info("Running GFDL for month %r" % month)
         self._cur_month = month
@@ -464,7 +473,7 @@ class Experiment(object):
         for sec in new_vals:
             nml = self.namelist.setdefault(sec, {})
             nml.update(new_vals[sec])
-			
+            
     def runinterp(self, month, infile, outfile, var_names = '-a', p_model = False, p_even = False, rm_input=False):
         import subprocess
         pprocess = P(GFDL_BASE,'postprocessing/plevel_interpolation/scripts')

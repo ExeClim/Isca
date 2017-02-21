@@ -199,10 +199,11 @@ real inv_cp_air
 contains
 !=================================================================================================================================
 
-subroutine mixed_layer_init(is, ie, js, je, num_levels, t_surf, axes, Time, albedo, rad_lonb_2d,rad_latb_2d, land)
+subroutine mixed_layer_init(is, ie, js, je, num_levels, t_surf, bucket_depth, axes, Time, albedo, rad_lonb_2d,rad_latb_2d, land)
 
 type(time_type), intent(in)       :: Time
 real, intent(out), dimension(:,:) :: t_surf, albedo
+real, intent(out), dimension(:,:,:) :: bucket_depth
 integer, intent(in), dimension(4) :: axes
 real, intent(in), dimension(:,:) :: rad_lonb_2d, rad_latb_2d
 integer, intent(in) :: is, ie, js, je, num_levels
@@ -303,6 +304,7 @@ if (file_exist('INPUT/mixed_layer.res.nc')) then
 
    call nullify_domain()
    call read_data(trim('INPUT/mixed_layer.res'), 't_surf',   t_surf, grid_domain)
+   call read_data(trim('INPUT/mixed_layer.res'), 'bucket_depth', bucket_depth, grid_domain)
 
 else if (file_exist('INPUT/swamp.res')) then
          unit = open_file (file='INPUT/swamp.res', &
@@ -703,9 +705,10 @@ if ( id_ice_conc > 0 ) used = send_data ( id_ice_conc, ice_concentration, Time )
 end subroutine read_ice_conc
 !=================================================================================================================================
 
-subroutine mixed_layer_end(t_surf)
+subroutine mixed_layer_end(t_surf, bucket_depth)
 
 real, intent(inout), dimension(:,:) :: t_surf
+real, intent(inout), dimension(:,:,:) :: bucket_depth
 integer:: unit
 
 if(.not.module_is_initialized) return
@@ -713,6 +716,7 @@ if(.not.module_is_initialized) return
 ! write a restart file for the surface temperature
 call nullify_domain()
 call write_data(trim('RESTART/mixed_layer.res'), 't_surf',   t_surf, grid_domain)
+call write_data(trim('RESTART/mixed_layer.res'), 'bucket_depth',   bucket_depth, grid_domain)
 
 module_is_initialized = .false.
 
