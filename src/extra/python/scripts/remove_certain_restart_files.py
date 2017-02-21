@@ -61,7 +61,7 @@ def keep_only_certain_restart_files_data_dir(exp_object, max_num_files, interval
             #Then we remove them.
         for entry in files_to_remove:
             try:
-                sh.rm(P(exp_object.datadir,exp_object.expname,'run'+str(entry),'INPUT','res'))
+                sh.rm(P(exp_object.datadir,exp_object.expname,'run%03d' % entry,'INPUT','res'))
 #                 print 'would be removing ' + P(exp_object.datadir,exp_object.expname,'run'+str(entry),'INPUT','res')
             except sh.ErrorReturnCode_1:
                 print 'Tried to remove some restart files, but number '+str(entry)+' does not exist'                
@@ -83,12 +83,12 @@ if __name__=="__main__":
 
 #     exp_name_list = ['giant_drag_exp_chai_values_1_bar_damping_without_dc_bug_latest_1', 'giant_drag_exp_chai_values_1_bar_damping_without_dc_bug_latest_2']
 
-    exp_name_list = ['annual_mean_ice_princeton_fixed_sst_1', 'annual_mean_ice_princeton_qflux_control_1']
+    exp_name_list = ['aquaplanet_fixed_sst_1']
 
 
     for exp_name_input in exp_name_list:    
         temp_obj = create_exp_object(exp_name_input)
-#         keep_only_certain_restart_files(temp_obj, max_num_files_input)
+        keep_only_certain_restart_files(temp_obj, max_num_files_input)
         keep_only_certain_restart_files_data_dir(temp_obj, max_num_files_input)
 
     
