@@ -385,9 +385,9 @@ class Experiment(object):
         t = runmonth.stream(**vars).dump(P(self.rundir, 'runmonth.sh'))
 
     # Check scratch space has enough disk space
-    if email_alerts:
-        email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
-        create_alert.run_alerts(self.execdir,email_address_for_alerts)
+        if email_alerts:
+            email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
+            create_alert.run_alerts(self.execdir,email_address_for_alerts)
 
         log.info("Running GFDL for month %r" % month)
         self._cur_month = month
