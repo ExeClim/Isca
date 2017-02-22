@@ -388,7 +388,7 @@ class Experiment(object):
         if email_alerts:
             if email_address_for_alerts is None:
                 email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
-            create_alert.run_alerts(self.execdir,email_address_for_alerts, disk_space_limit)
+            create_alert.run_alerts(self.execdir, GFDL_BASE, self.name, month, email_address_for_alerts, disk_space_limit)
 
         log.info("Running GFDL for month %r" % month)
         self._cur_month = month
