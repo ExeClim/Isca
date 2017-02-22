@@ -5,17 +5,7 @@ import socket
 import datetime
 import pdb
 
-def get_paz(basedir):
-
-    F = open(basedir+'/src/extra/python/gfdl/'+'mima_pz.txt','r')
-    
-    code = F.read()
-    
-    code = code.translate(None, '\n')    
-
-    return code
- 
-def send_email_fn(to_email,alert_message, basedir):
+def send_email_fn(to_email,alert_message):
 
     machine_name=socket.gethostname()
     current_time = datetime.datetime.now().isoformat()
@@ -31,11 +21,7 @@ def send_email_fn(to_email,alert_message, basedir):
     msg.attach(MIMEText(body, 'plain'))
 
     try:
-        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        server.ehlo()
-        code = get_paz(basedir)
-        server.login(from_email, code)
-
+        server = smtplib.SMTP('localhost')
         text = msg.as_string() 
         server.sendmail(from_email, to_email, text)
         server.quit()

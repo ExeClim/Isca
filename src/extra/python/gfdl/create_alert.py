@@ -3,12 +3,12 @@ from check_disk_space import disk_usage
 import os
 import pdb
 
-def run_alerts(execdir, basedir, exp_name, month, recipient_email_address, disk_space_limit):
+def run_alerts(execdir, exp_name, month, recipient_email_address, disk_space_limit):
 
-    disk_space_alert(execdir, basedir, exp_name, month, recipient_email_address, disk_space_limit)
+    disk_space_alert(execdir, exp_name, month, recipient_email_address, disk_space_limit)
 
 
-def disk_space_alert(dir, basedir, exp_name, month, recipient_email_address,limit):
+def disk_space_alert(dir, exp_name, month, recipient_email_address,limit):
 
     remaining_space_in_dir=disk_usage(dir)
     free_space_in_gb=remaining_space_in_dir.free/1e9
@@ -16,7 +16,7 @@ def disk_space_alert(dir, basedir, exp_name, month, recipient_email_address,limi
     if free_space_in_gb < limit:
         alert_message="Disk space less than "+str(limit)+"Gb before running month number "+str(month)+" in experiment "+exp_name
         print alert_message+", sending email"
-        send.send_email_fn(recipient_email_address, alert_message, basedir)
+        send.send_email_fn(recipient_email_address, alert_message)
     else:
         print 'Disk space more than ' + str(limit) + 'Gb - not sending alert email.'
         
