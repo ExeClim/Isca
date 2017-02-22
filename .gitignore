@@ -24,3 +24,4 @@ postprocessing/plevel_interpolation/scripts/archived/*
 *output.txt
 src/extra/python/scripts/*.nc
 src/extra/python/scripts/archived/
+mima_pz.txt
