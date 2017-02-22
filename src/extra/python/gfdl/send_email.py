@@ -4,6 +4,15 @@ from email.MIMEText import MIMEText
 import socket
 import datetime
 
+def get_paz():
+
+    F = open('mima_pz.txt','r')
+    
+    code = F.read()
+    
+    code = code.translate(None, '\n')    
+
+    return code
  
 def send_email_fn(to_email,alert_message):
 
@@ -23,7 +32,8 @@ def send_email_fn(to_email,alert_message):
     try:
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
         server.ehlo()
-        server.login(from_email, "mima101_win")
+        code = get_paz()
+        server.login(from_email, code)
 
         text = msg.as_string() 
         server.sendmail(from_email, to_email, text)
