@@ -2,12 +2,12 @@ import send_email as send
 from check_disk_space import disk_usage
 import os
 
-def run_alerts(dir,recipient_email_address):
+def run_alerts(dir,recipient_email_address, disk_space_limit):
 
-    disk_space_alert(dir,recipient_email_address)
+    disk_space_alert(dir,recipient_email_address, disk_space_limit)
 
 
-def disk_space_alert(dir,recipient_email_address,limit=20):
+def disk_space_alert(dir,recipient_email_address,limit):
 
     remaining_space_in_dir=disk_usage(dir)
     free_space_in_gb=remaining_space_in_dir.free/1e9
