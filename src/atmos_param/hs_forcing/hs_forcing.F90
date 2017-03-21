@@ -86,9 +86,9 @@ private
    logical :: relax_to_specified_wind = .false.
    character(len=256) :: u_wind_file='u', v_wind_file='v' ! Name of files relative to $work/INPUT  Used only when relax_to_specified_wind=.true.
 
-   character(len=256) :: equilibrium_t_option = 'Held_Suarez'
+   character(len=256) :: equilibrium_t_option = 'Held_Suarez'  ! Valid options are 'Held_Suarez', 'from_file', 'exoplanet'
    character(len=256) :: equilibrium_t_file='temp'  ! Name of file relative to $work/INPUT  Used only when equilibrium_t_option='from_file'
-   
+
 !-----------------------------------------------------------------------
 
    namelist /hs_forcing_nml/  no_forcing, t_zero, t_strat, delh, delv, eps,  &
@@ -200,7 +200,7 @@ contains
 !-----------------------------------------------------------------------
 !     thermal forcing for held & suarez (1994) benchmark calculation
 
-      call newtonian_damping ( Time, lat, ps, p_full, p_half, t, ttnd, teq, mask )
+      call newtonian_damping ( Time, lat, lon, ps, p_full, p_half, t, ttnd, teq, mask )
       tdt = tdt + ttnd
 !      if (id_newtonian_damping > 0) used = send_data(id_newtonian_damping, ttnd, Time, is, js)
       if (id_newtonian_damping > 0) used = send_data(id_newtonian_damping, ttnd, Time)
@@ -260,7 +260,7 @@ contains
            integer, intent(in) :: axes(4)
    type(time_type), intent(in) :: Time
    real, intent(in), optional, dimension(:,:) :: lonb, latb
-   
+
 
 !-----------------------------------------------------------------------
    integer  unit, io, ierr
@@ -309,7 +309,7 @@ contains
 
 ! If positive, damping time units are (1/s),  value is the inverse of damping time.
 ! If negative, damping time units are (days), value is the damping time. It is converted to (1/s)
-      
+
       if (ka < 0.) then
         tka = -1./(86400*ka)
       else
@@ -385,7 +385,7 @@ contains
 
 !#######################################################################
 
- subroutine hs_forcing_end 
+ subroutine hs_forcing_end
 
 !-----------------------------------------------------------------------
 !
@@ -393,7 +393,7 @@ contains
 !             (this routine currently does nothing)
 !
 !-----------------------------------------------------------------------
- 
+
  if(trim(local_heating_option) == 'from_file') then
    call interpolator_end(heating_source_interp)
  endif
@@ -406,14 +406,14 @@ contains
    call interpolator_end(u_interp)
    call interpolator_end(v_interp)
  endif
- 
+
  module_is_initialized = .false.
 
  end subroutine hs_forcing_end
 
 !#######################################################################
 
- subroutine newtonian_damping ( Time, lat, ps, p_full, p_half, t, tdt, teq, mask )
+ subroutine newtonian_damping ( Time, lat, lon, ps, p_full, p_half, t, tdt, teq, mask )
 
 !-----------------------------------------------------------------------
 !
@@ -423,7 +423,7 @@ contains
 !-----------------------------------------------------------------------
 
 type(time_type), intent(in)         :: Time
-real, intent(in),  dimension(:,:)   :: lat, ps
+real, intent(in),  dimension(:,:)   :: lat, ps, lon
 real, intent(in),  dimension(:,:,:) :: p_full, t, p_half
 real, intent(out), dimension(:,:,:) :: tdt, teq
 real, intent(in),  dimension(:,:,:), optional :: mask
@@ -432,7 +432,7 @@ real, intent(in),  dimension(:,:,:), optional :: mask
 
           real, dimension(size(t,1),size(t,2)) :: &
      sin_lat, sin_lat_2, cos_lat_2, t_star, cos_lat_4, &
-     tstr, sigma, the, tfactr, rps, p_norm
+     tstr, sigma, the, tfactr, rps, p_norm, day_mask, sin_sublon_2
 
        real, dimension(size(t,1),size(t,2),size(t,3)) :: tdamp
        real, dimension(size(t,2),size(t,3)) :: tz
@@ -470,6 +470,20 @@ real, intent(in),  dimension(:,:,:), optional :: mask
          enddo
          enddo
       else if(trim(equilibrium_t_option) == 'Held_Suarez') then
+         p_norm(:,:) = p_full(:,:,k)/pref
+         the   (:,:) = t_star(:,:) - delv*cos_lat_2(:,:)*log(p_norm(:,:))
+         teq(:,:,k) = the(:,:)*(p_norm(:,:))**KAPPA
+         teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
+      else if(trim(equilibrium_t_option) == 'exoplanet') then
+         day_mask = cos(lon(:,:))
+         where (day_mask < 0)
+            day_mask = 0
+         end where
+         day_mask = day_mask*day_mask
+         ! where (day_mask > 0)
+         !    day_mask = 0
+         ! end where
+         t_star(:,:) = t_zero - delh*(1 - cos_lat_2(:,:)*day_mask(:,:)) - eps*sin_lat(:,:)
          p_norm(:,:) = p_full(:,:,k)/pref
          the   (:,:) = t_star(:,:) - delv*cos_lat_2(:,:)*log(p_norm(:,:))
          teq(:,:,k) = the(:,:)*(p_norm(:,:))**KAPPA
