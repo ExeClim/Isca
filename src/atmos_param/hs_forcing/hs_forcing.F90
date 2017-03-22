@@ -46,6 +46,10 @@ use tracer_manager_mod, only: query_method, get_number_tracers
 use   interpolator_mod, only: interpolate_type, interpolator_init, &
                               interpolator, interpolator_end, &
                               CONSTANT, INTERP_WEIGHTED_P
+
+use      astronomy_mod, only: diurnal_exoplanet, astronomy_init
+
+
 implicit none
 private
 
@@ -379,6 +383,8 @@ contains
        call interpolator_init (v_interp,    trim(v_wind_file)//'.nc', lonb, latb, data_out_of_bounds=(/CONSTANT/))
      endif
 
+     call astronomy_init()
+
      module_is_initialized  = .true.
 
  end subroutine hs_forcing_init
@@ -432,10 +438,11 @@ real, intent(in),  dimension(:,:,:), optional :: mask
 
           real, dimension(size(t,1),size(t,2)) :: &
      sin_lat, sin_lat_2, cos_lat_2, t_star, cos_lat_4, &
-     tstr, sigma, the, tfactr, rps, p_norm, day_mask, sin_sublon_2
+     tstr, sigma, the, tfactr, rps, p_norm, sin_sublon_2, coszen, fracday
 
        real, dimension(size(t,1),size(t,2),size(t,3)) :: tdamp
        real, dimension(size(t,2),size(t,3)) :: tz
+       real :: rrsun
 
        integer :: k, i, j
        real    :: tcoeff, pref
@@ -474,16 +481,9 @@ real, intent(in),  dimension(:,:,:), optional :: mask
          the   (:,:) = t_star(:,:) - delv*cos_lat_2(:,:)*log(p_norm(:,:))
          teq(:,:,k) = the(:,:)*(p_norm(:,:))**KAPPA
          teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
-      else if(trim(equilibrium_t_option) == 'exoplanet') then
-         day_mask = cos(lon(:,:))
-         where (day_mask < 0)
-            day_mask = 0
-         end where
-         day_mask = day_mask*day_mask
-         ! where (day_mask > 0)
-         !    day_mask = 0
-         ! end where
-         t_star(:,:) = t_zero - delh*(1 - cos_lat_2(:,:)*day_mask(:,:)) - eps*sin_lat(:,:)
+      else if(uppercase(trim(equilibrium_t_option)) == 'EXOPLANET') then
+         call diurnal_exoplanet(lat, lon, Time, coszen, fracday, rrsun)
+         t_star(:,:) = t_zero - delh*(1 - cos_lat_2(:,:)*coszen(:,:)) - eps*sin_lat(:,:)
          p_norm(:,:) = p_full(:,:,k)/pref
          the   (:,:) = t_star(:,:) - delv*cos_lat_2(:,:)*log(p_norm(:,:))
          teq(:,:,k) = the(:,:)*(p_norm(:,:))**KAPPA
