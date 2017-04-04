@@ -31,7 +31,7 @@ character(len=NF90_MAX_NAME) ::    ps_name = 'ps',     &
                                    bk_name = 'bk',     &
                                    pk_name = 'pk',     &
                                   res_name = 'res',    &
-                                 hght_name = 'hght',   &
+                                 hght_name = 'height',   &
                                   slp_name = 'slp'
 
  character(len=NF90_MAX_NAME) :: pres_name_out = 'pfull'
@@ -473,12 +473,11 @@ real, parameter :: rgog = RDGAS*tlapse/GRAV
 !-------------- define new variables for output file -----------------
 
 !  ---- geopotential height ----
-
 if (do_hght) then
    mval_hght = -1000.
    if (use_default_missing_value) mval_hght = NF90_FILL_REAL4
 
-   call define_new_variable ( ncid_out, 'hght', NF90_REAL4, dimids_mass, varid_hght_out, &
+   call define_new_variable ( ncid_out, hght_name, NF90_REAL4, dimids_mass, varid_hght_out, &
                               units='m', long_name='height', missing_value=mval_hght,    &
                               time_avg_info=time_avg_info, cell_methods=cell_methods)
    
@@ -785,7 +784,7 @@ contains
 
   !---- interpolation setup for standard full pressure levels -----
    if (do_hght) then
-       if ( verbose > 1 ) print *, 'Computing field = hght'
+       if ( verbose > 1 ) print *, 'Computing field = height'
       !---- geopotential height (in meters) -----
        call compute_height ( zsurf, temp_in, sphum_in, pfull, phalf, hght_in, mask_in)
       !---- interpolate temp, sphum, hght ----
