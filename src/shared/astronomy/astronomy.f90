@@ -27,7 +27,7 @@ use time_manager_mod,  only: time_type, set_time, get_time, &
                              time_manager_init, &
                              operator(-), operator(+), &
                              operator( // ), operator(<), get_calendar_type, NO_CALENDAR
-use constants_mod,     only: constants_init, PI
+use constants_mod,     only: constants_init, PI, omega, orbital_rate, radius
 use mpp_mod,           only: input_nml_file
 
 !--------------------------------------------------------------------
@@ -1171,7 +1171,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !---------------------------------------------------------------------
       if (time_since_ae < 0.0 .or. time_since_ae > twopi) then
           call error_mesg('astronomy_mod', &
-                    'time_since_ae snot between 0 and 2pi', FATAL)
+                    'time_since_ae not between 0 and 2pi', FATAL)
       end if
 !--------------------------------------------------------------------
 !    be sure the time at longitude = 0.0 is legitimate.
@@ -3668,6 +3668,7 @@ subroutine diurnal_exoplanet(lat, lon, Time, coszen, fracsun, rrsun, &
   ! An exoplanet is assumed to have no calendar, and may have an arbitrary
   ! length day and year, determined by its rotation rate and orbital period
   ! defined in constants_mod.
+  ! Allows for a planet and it's orbital direction to be arbitrary.
 
   real, dimension(:,:), intent(in)           :: lat, lon
   type(time_type),      intent(in)           :: Time
@@ -3678,19 +3679,28 @@ subroutine diurnal_exoplanet(lat, lon, Time, coszen, fracsun, rrsun, &
   real, dimension(:,:), intent(out), optional :: half_day_out
 
   integer :: seconds, year_in_s
-  real :: r_seconds, day_in_s, gmt, time_since_ae, frac_of_day, frac_of_year
+  real :: r_seconds, day_in_s, gmt, time_since_ae, frac_of_day, frac_of_year, substellar_lon
 
   call get_time(Time, seconds)
-  call get_time(length_of_year(), year_in_s)
-  r_seconds = real(seconds)
-  day_in_s = length_of_day()
+  substellar_lon = (orbital_rate - omega)*seconds
+  ! negative sign because time relative to gmt = -substellar_lon position
+  gmt = modulo(-substellar_lon, 2.*pi)
+  ! if ( mpp_pe() == mpp_root_pe() ) then
+  !      write (*,*) seconds, substellar_lon, gmt
+  ! endif
+  frac_of_year = modulo(orbital_rate*seconds, 1.0)
+  time_since_ae = frac_of_year * 2.0 * pi
+  ! call get_time(length_of_year(), year_in_s)
+  ! r_seconds = real(seconds)
+  ! day_in_s = length_of_day()
 
-  frac_of_day = r_seconds / day_in_s
-  frac_of_year = r_seconds / year_in_s
 
-  gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
+  !frac_of_day = r_seconds / day_in_s
+  !frac_of_year = r_seconds / year_in_s
 
-  time_since_ae = modulo(frac_of_year,1.0) * 2.0 * pi
+  !gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
+
+  !time_since_ae = modulo(frac_of_year,1.0) * 2.0 * pi
   call diurnal_solar_2d(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun,  &
                      dt, allow_negative_cosz, half_day_out)
 
