@@ -96,11 +96,11 @@
                                                                             ! dimension (lon x lat)
         integer(kind=im)                           :: num_precip            ! number of times precipitation
                                                                             ! has been summed in rrtm_precip
-        integer(kind=im)                           :: dt_last               ! time of last radiation calculation
+        real(kind=rb)                              :: dt_last               ! time of last radiation calculation
                                                                             ! used for alarm
 !---------------------------------------------------------------------------------------------------------------
 ! some constants
-        real(kind=rb)      :: daypersec=1./86400.,deg2rad
+        real(kind=rb)      :: daypersec=1./86400.,deg2rad   !RG: daypersec=1./86400. left in when conversion to non-specific day length made as this only converts heatrates from RRTM from K/day to K/sec
 ! no clouds in the radiative scheme
         integer(kind=im) :: icld=0,idrv=0, &
              inflglw=0,iceflglw=0,liqflglw=0, &
@@ -343,7 +343,7 @@
 
           deg2rad = acos(0.)/90.
 
-          dt_last = -dt_rad !make sure we are computing radiation at the first time step
+          dt_last = -real(dt_rad) !make sure we are computing radiation at the first time step
 
           ncols_rrt = ncols/lonstep
           nlay_rrt  = nlay
@@ -589,9 +589,11 @@
 !check if we really want to recompute radiation (alarm,input file(s))
 ! alarm
           call get_time(Time,seconds,days)
-          if(seconds < dt_last) dt_last=dt_last-86400 !it's a new day
-          if(seconds - dt_last .ge. dt_rad) then
-             dt_last = seconds
+		  r_days = real(days)
+		  r_seconds = real(seconds)
+		  r_total_seconds=r_seconds+(r_days*86400.)
+          if(r_total_seconds - dt_last .ge. dt_rad) then
+             dt_last = r_total_seconds
           else
              if(store_intermediate_rad)then
                 tdt_rrtm = tdt_rad
@@ -610,7 +612,7 @@
           if(solday > 0)then
              Time_loc = set_time(seconds,solday)
           elseif(slowdown_rad .ne. 1.0)then
-             seconds = days*86400 + seconds
+			 seconds = days*86400 + seconds
              Time_loc = set_time(int(seconds*slowdown_rad))
           else
              Time_loc = Time
@@ -622,17 +624,19 @@
 	     call get_time(Time_loc, seconds, days)
 	     call get_time(length_of_year(), year_in_s)
 	     day_in_s = length_of_day()
+		 
 	     r_seconds=real(seconds)
-	     frac_of_day = r_seconds / day_in_s
-
-             if(solday > 0) then
-                 r_solday=real(solday)
-                 frac_of_year=(r_solday*day_in_s)/year_in_s
-	     else
 		 r_days=real(days)
-		 r_total_seconds=r_seconds+(r_days*day_in_s)
+		 r_total_seconds=r_seconds+(r_days*86400.)
+		 
+	     frac_of_day = r_total_seconds / day_in_s
+
+         if(solday > 0) then
+             r_solday=real(solday)
+             frac_of_year=(r_solday*day_in_s)/year_in_s
+	     else
 	         frac_of_year = r_total_seconds / year_in_s
-             endif
+         endif
 	     gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
 	     time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
 
