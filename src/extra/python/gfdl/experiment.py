@@ -66,6 +66,30 @@ class CompilationError(Exception):
 
 class Experiment(object):
     """A basic GFDL experiment"""
+
+    RESOLUTIONS = {
+        'T170': {
+            'num_lon': 512,
+            'num_lat': 256,
+            'num_fourier': 170,
+            'num_spherical': 171
+        },
+
+        'T85': {
+            'num_lon': 256,
+            'num_lat': 128,
+            'num_fourier': 85,
+            'num_spherical': 86
+        },
+
+        'T42': {
+            'num_lon': 128,
+            'num_lat': 64,
+            'num_fourier': 42,
+            'num_spherical': 43,
+        },
+    }
+
     def __init__(self, name, commit=None, repo=None, overwrite_data=False,run_idb=False):
         super(Experiment, self).__init__()
         self.name = name
@@ -218,6 +242,10 @@ class Experiment(object):
         log.info('Writing namelist to %r' % P(outdir, 'input.nml'))
         self.namelist.write(P(outdir, 'input.nml'))
 
+    def set_resolution(self, res):
+        delta = self.RESOLUTIONS[res]
+        self.update_namelist({'spectral_dynamics_nml': delta})
+
     def write_diag_table(self, outdir):
         outfile = P(outdir, 'diag_table')
         log.info('Writing diag_table to %r' % outfile)
@@ -255,8 +283,8 @@ class Experiment(object):
         self.compile_flags.append('-DRRTM_NO_COMPILE')
 
         # set the namelist to use gray radiation scheme
-        self.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
-        self.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
+        # self.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
+        # self.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
 
         log.info('RRTM compilation disabled.  Namelist set to gray radiation.')
 
@@ -333,8 +361,6 @@ class Experiment(object):
     def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False, run_idb=False, experiment_restart=None):
         indir = P(self.rundir, 'INPUT')
         outdir = P(self.datadir, 'run%03d' % month)
-
-
 
         if os.path.isdir(outdir):
             if self.overwrite_data or overwrite_data:
@@ -464,18 +490,10 @@ class Experiment(object):
     def update_namelist(self, new_vals):
         """Update the namelist sections, overwriting existing values."""
         for sec in new_vals:
-            nml = self.namelist.setdefault(sec, {})
+            if sec not in self.namelist:
+                self.namelist[sec] = {}
+            nml = self.namelist[sec]
             nml.update(new_vals[sec])
-<<<<<<< HEAD
-
-    def runinterp(self, month, infile, outfile, var_names = '-a', p_model = False, rm_input=False):
-        import subprocess
-        pprocess = P(GFDL_BASE,'postprocessing/plevel_interpolation/scripts')
-        interper = 'source '+pprocess+'/plevel.sh -i '
-        inputfile = P(self.datadir, 'run%d' % month, infile)
-        outputfile = P(self.datadir, 'run%d' % month, outfile)
-
-=======
 
     def runinterp(self, month, infile, outfile, var_names = '-a', p_model = False, p_even = False, rm_input=False):
         import subprocess
@@ -484,7 +502,6 @@ class Experiment(object):
         inputfile = P(self.datadir, 'run%03d' % month, infile)
         outputfile = P(self.datadir, 'run%03d' % month, outfile)
 
->>>>>>> dde848416d61cdf22c35dbede5fc5d27fe713d2e
         if p_model:
             plev = ' -p "2 9 18 38 71 125 206 319 471 665 904 1193 1532 1925 2375 2886 3464 4115 4850 5679 6615 7675 8877 10244 11801 13577 15607 17928 20585 23630 27119 31121 35711 40976 47016 53946 61898 71022 81491 93503" '
         elif p_even:
