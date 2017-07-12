@@ -1222,6 +1222,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
         stt = sin(tt)
         sh  = sin(h)
         cosz = 0.0
+        fracday = 0.0
 
         if (.not. Lallow_negative) then
 
@@ -1301,7 +1302,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    a half- day (pi) that circumstance will never occur.
 !-------------------------------------------------------------------
         where (t < -h .and. h /= 0.0 .and. h < tt)    
-              cosz = aa + bb*( sh + sh)/(h+h)
+              cosz = aa*(2.*h)/(tt-t) + bb*( sh + sh)/(tt-t)
               fracday = 3.
         end where
 
@@ -1365,7 +1366,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    circumstance will never occur.
 !-----------------------------------------------------------------
         where(  h <  t .and. twopi - h < tt  )
-          cosz = aa + bb*(stt + sh) / (tt + h - twopi)
+          cosz = aa*(tt + h - twopi)/(tt-t) + bb*(stt + sh) / (tt -t )
           fracday=8.
         end where
 
