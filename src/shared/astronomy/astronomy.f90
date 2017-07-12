@@ -1273,7 +1273,10 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !-------------------------------------------------------------------
 !    case 1: entire averaging period is before sunrise.
 !-------------------------------------------------------------------
-        where (t < -h .and. tt < -h) cosz = 0.0
+        where (t < -h .and. tt < -h) 
+        cosz = 0.0
+        fracday = 1.
+        end where
 
 !-------------------------------------------------------------------
 !    case 2: averaging period begins before sunrise, ends after sunrise
@@ -1286,8 +1289,10 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 ! Time average is between t and tt, so the denominator is (tt-t). But in the numerator sin(t) will be < 0 as t is after sunset. So only use up to sin(-h), which gives (stt - sin(-h)) - > stt+sh.
 ! end st_doc
 
-	where ( t < -h .and. abs(tt) <= h)   &
+	where ( t < -h .and. abs(tt) <= h)  
              cosz = (aa*(tt+h)/(tt-t)) + bb*(stt +sh)/ (tt-t)
+             fracday = 2.
+    end where
 
 !-------------------------------------------------------------------
 !    case 3: averaging period begins before sunrise, ends after sunset,
@@ -1295,8 +1300,10 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    past the next day's sunrise, but if averaging period is less than
 !    a half- day (pi) that circumstance will never occur.
 !-------------------------------------------------------------------
-        where (t < -h .and. h /= 0.0 .and. h < tt)    &
+        where (t < -h .and. h /= 0.0 .and. h < tt)    
               cosz = aa + bb*( sh + sh)/(h+h)
+              fracday = 3.
+        end where
 
 !-------------------------------------------------------------------
 !    case 4: averaging period begins after sunrise, ends before sunset.
@@ -1306,8 +1313,10 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 ! abs(t) <= h for t<0 this means t > -h, meaning it's after sunrise.
 ! end st_doc
 
-        where ( abs(t) <= h .and. abs(tt) <= h)    &
+        where ( abs(t) <= h .and. abs(tt) <= h)    
              cosz = aa + bb*(stt - st)/ (tt - t)
+             fracday = 4.
+        end where
 
 !-------------------------------------------------------------------
 !    case 5: averaging period begins after sunrise, ends after sunset.
@@ -1320,8 +1329,10 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 ! (sh - st) / (tt - t) b/c we're averaging from start time to sunset.
 ! end st_doc
 
-        where ( abs(t) <= h .and.  h < tt)    &
-              cosz = (aa*(h-t)/(tt-t)) + bb*(sh - st)/(tt-t)
+        where ( abs(t) <= h .and.  h < tt)
+        cosz = (aa*(h-t)/(tt-t)) + bb*(sh - st)/(tt-t)
+        fracday = 5.
+        end where
 
 !-------------------------------------------------------------------
 !    case 6: averaging period begins after sunrise , ends after the
@@ -1333,14 +1344,19 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 ! t<=h beginning time is after sunrise if t < 0 here(?!)
 ! end st_doc
 
-        where (twopi - h < tt .and. t <= h ) &
-	   cosz = aa*((tt+(2.*h)-t-twopi)/(tt-t)) + bb*(((sh-st)/(tt-t)) + ((stt+sh)/(tt-t))) 
+        where (twopi - h < tt .and. t <= h )
+        cosz = aa*((tt+(2.*h)-t-twopi)/(tt-t)) + bb*(((sh-st)/(tt-t)) + ((stt+sh)/(tt-t))) 
+        fracday = 6.
+        end where
 
 !-------------------------------------------------------------------
 !    case 7: averaging period begins after sunset and ends before the
 !    next day's sunrise
 !-------------------------------------------------------------------
-        where(  h <  t .and. twopi - h >= tt  ) cosz = 0.0
+        where(  h <  t .and. twopi - h >= tt  ) 
+        cosz = 0.0
+        fracday = 7.
+        end where
 
 !-------------------------------------------------------------------
 !    case 8: averaging period begins after sunset and ends after the
@@ -1350,6 +1366,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !-----------------------------------------------------------------
         where(  h <  t .and. twopi - h < tt  )
           cosz = aa + bb*(stt + sh) / (tt + h - twopi)
+          fracday=8.
         end where
 
         else
@@ -1360,15 +1377,15 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    day fraction is the fraction of the averaging period contained
 !    within the (-h,h) period.
 !-------------------------------------------------------------------
-        where (t < -h .and.      tt < -h)      fracday = 0.0
-        where (t < -h .and. abs(tt) <= h)      fracday = (tt + h )/dt
-        where (t < -h .and.       h < tt)      fracday = ( h + h )/dt
-        where (abs(t) <= h .and. abs(tt) <= h) fracday = (tt - t )/dt
-        where (abs(t) <= h .and.       h < tt) fracday = ( h - t )/dt
-        where (      h <  t                 )  fracday = 0.0
-        where (twopi - h < tt)                 fracday = fracday +  &
-                                                         (tt + h - &
-                                                         twopi)/dt
+!         where (t < -h .and.      tt < -h)      fracday = 0.0
+!         where (t < -h .and. abs(tt) <= h)      fracday = (tt + h )/dt
+!         where (t < -h .and.       h < tt)      fracday = ( h + h )/dt
+!         where (abs(t) <= h .and. abs(tt) <= h) fracday = (tt - t )/dt
+!         where (abs(t) <= h .and.       h < tt) fracday = ( h - t )/dt
+!         where (      h <  t                 )  fracday = 0.0
+!         where (twopi - h < tt)                 fracday = fracday +  &
+!                                                          (tt + h - &
+!                                                          twopi)/dt
 !----------------------------------------------------------------------
 !    if instantaneous values are desired, define cosz at time t.
 !----------------------------------------------------------------------
@@ -2065,8 +2082,9 @@ subroutine daily_mean_solar_2d (lat, time_since_ae, cosz, h_out, rr_out)
 !----------------------------------------------------------------------
 real, dimension(:,:), intent(in)   :: lat
 real,                 intent(in)   :: time_since_ae
-real, dimension(:,:), intent(out)  :: cosz, h_out
-real,                 intent(out)  :: rr_out
+real, dimension(:,:), intent(out)  :: cosz
+real, dimension(:,:), intent(out), optional  :: h_out
+real,                 intent(out), optional  :: rr_out
 !----------------------------------------------------------------------
 
 !--------------------------------------------------------------------
@@ -2097,13 +2115,14 @@ real,                 intent(out)  :: rr_out
 !    use the standard formula. define the daylight fraction and earth-
 !    sun distance.
 !---------------------------------------------------------------------
-      where (h == 0.0)
-        cosz = 0.0
-      elsewhere
-        cosz = sin(lat)*sin(dec) + cos(lat)*cos(dec)*sin(h)/h
-      end where
-      h_out = h/PI
-      rr_out = rr
+        cosz = sin(lat)*sin(dec)*(h)/(PI) + cos(lat)*cos(dec)*sin(h)/(PI)
+
+        where (cosz < 0.)
+        cosz = 0.
+        end where
+        
+!       h_out = h/PI
+!       rr_out = rr
 !--------------------------------------------------------------------
 
 end subroutine daily_mean_solar_2d
