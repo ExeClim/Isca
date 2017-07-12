@@ -1296,7 +1296,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    a half- day (pi) that circumstance will never occur.
 !-------------------------------------------------------------------
         where (t < -h .and. h /= 0.0 .and. h < tt)    &
-              cosz = aa + bb*( sh + sh)/(h+h)
+              cosz = aa*(2.*h)/(tt-t) + bb*( sh + sh)/(tt-t)
 
 !-------------------------------------------------------------------
 !    case 4: averaging period begins after sunrise, ends before sunset.
@@ -1349,7 +1349,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    circumstance will never occur.
 !-----------------------------------------------------------------
         where(  h <  t .and. twopi - h < tt  )
-          cosz = aa + bb*(stt + sh) / (tt + h - twopi)
+          cosz = aa*(tt + h - twopi)/(tt-t) + bb*(stt + sh) / (tt -t )
         end where
 
         else
@@ -2097,11 +2097,12 @@ real,                 intent(out)  :: rr_out
 !    use the standard formula. define the daylight fraction and earth-
 !    sun distance.
 !---------------------------------------------------------------------
-      where (h == 0.0)
-        cosz = 0.0
-      elsewhere
-        cosz = sin(lat)*sin(dec) + cos(lat)*cos(dec)*sin(h)/h
-      end where
+        cosz = sin(lat)*sin(dec)*(h)/(PI) + cos(lat)*cos(dec)*sin(h)/(PI)
+
+        where (cosz < 0.)
+        cosz = 0.
+        end where
+        
       h_out = h/PI
       rr_out = rr
 !--------------------------------------------------------------------
