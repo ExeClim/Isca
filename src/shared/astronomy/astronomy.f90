@@ -1348,10 +1348,16 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    averaging period is less than a half-day (pi) the latter
 !    circumstance will never occur.
 !-----------------------------------------------------------------
-        where(  h <  t .and. twopi - h < tt  )
-          cosz = aa*(tt + h - twopi)/(tt-t) + bb*(stt + sh) / (tt -t )
-        end where
+        where(  h <  t .and. twopi - h < tt .and. tt < twopi+h )  cosz = aa*(tt + h - twopi)/(tt-t) + bb*(stt + sh) / (tt -t )
 
+!-------------------------------------------------------------------
+!    case 9: averaging period begins after sunset and ends after the
+!    next day's sunset. if the
+!    averaging period is less than a half-day (pi) the latter
+!    circumstance will never occur.
+!-----------------------------------------------------------------
+        where(  h <  t .and. twopi - h < tt .and. tt > twopi+h )  cosz = aa*(2.*h)/(tt-t) + bb*(sh + sh) / (tt -t )
+        
         else
            cosz = aa + bb*(stt - st)/ (tt - t)
         end if
