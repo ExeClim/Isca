@@ -121,6 +121,9 @@ real    :: ice_albedo_value = 0.7
 real    :: ice_concentration_threshold = 0.5
 logical :: update_albedo_from_ice = .false.
 
+logical :: add_latent_heat_flux_anom = .false.
+character(len=256) :: flux_q_anom_file_name  = 'INPUT/flux_q_anom.nc'
+character(len=256) :: flux_q_anom_field_name = 'flux_q_anom'
 
 namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               delta_T, prescribe_initial_dist,albedo_value,  &
@@ -134,11 +137,13 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               elandlon,elandlat,                             &  !mj
                               land_h_capacity_prefactor,                     &  !s
                               land_albedo_prefactor,                         &  !s
-			      load_qflux,qflux_file_name,time_varying_qflux, &
-			      update_albedo_from_ice, ice_file_name,         &
-			      ice_albedo_value, specify_sst_over_ocean_only, &
-			      ice_concentration_threshold
-
+                              load_qflux,qflux_file_name,time_varying_qflux, &
+                              update_albedo_from_ice, ice_file_name,         &
+                              ice_albedo_value, specify_sst_over_ocean_only, &
+                              ice_concentration_threshold,                   &
+                              add_latent_heat_flux_anom,flux_q_anom_file_name,&
+                              flux_q_anom_field_name
+                              
 !=================================================================================================================================
 
 
@@ -160,7 +165,8 @@ integer ::                                                                    &
 real, allocatable, dimension(:,:)   ::                                        &
      ocean_qflux,           &   ! Q-flux
      ice_concentration,     &   ! ice_concentration
-     rad_lat_2d                 ! latitude in radians
+     rad_lat_2d,            &   ! latitude in radians
+     flux_q_anom, flux_q_total
 
 real, allocatable, dimension(:)   :: deg_lat, deg_lon
 
@@ -192,6 +198,7 @@ logical, allocatable, dimension(:,:) ::      land_mask
   type(interpolate_type),save :: sst_interp
   type(interpolate_type),save :: qflux_interp
   type(interpolate_type),save :: ice_interp
+  type(interpolate_type),save :: flux_q_anom_interp  
 
 real inv_cp_air
 
@@ -248,6 +255,8 @@ enddo
 allocate(rad_lat_2d              (is:ie, js:je))
 allocate(ocean_qflux             (is:ie, js:je))
 allocate(ice_concentration       (is:ie, js:je))
+allocate(flux_q_anom             (is:ie, js:je))
+allocate(flux_q_total             (is:ie, js:je))
 allocate(deg_lat                 (js:je))
 allocate(deg_lon                 (is:ie))
 allocate(gamma_t                 (is:ie, js:je))
@@ -396,6 +405,11 @@ if ( do_qflux .or. do_warmpool) then
 endif
 
 !s End MiMA options for qfluxes
+
+if (add_latent_heat_flux_anom) then
+	   call interpolator_init( flux_q_anom_interp, trim(flux_q_anom_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+endif
+
 
 
 inv_cp_air = 1.0 / CP_AIR
@@ -569,6 +583,14 @@ endif
 
 call albedo_calc(albedo_out,Time_next)
 
+!s Add latent heat flux anomalies before any of the calculations take place
+
+if (add_latent_heat_flux_anom) then
+    call interpolator( flux_q_anom_interp, Time, flux_q_anom, trim(flux_q_anom_file_name) )
+    flux_q_total = flux_q + flux_q_anom
+else
+    flux_q_total = flux_q
+endif
 
 
 ! Need to calculate the implicit changes to the lowest level delta_q and delta_t
@@ -581,7 +603,7 @@ gamma_t = 1.0 / (1.0 - Tri_surf%dtmass * (Tri_surf%dflux_t + dhdt_atm * inv_cp_a
 gamma_q = 1.0 / (1.0 - Tri_surf%dtmass * (Tri_surf%dflux_tr(:,:,nhum) + dedq_atm))
 
 fn_t = gamma_t * (Tri_surf%delta_t + Tri_surf%dtmass * flux_t * inv_cp_air)
-fn_q = gamma_q * (Tri_surf%delta_tr(:,:,nhum) + Tri_surf%dtmass * flux_q)
+fn_q = gamma_q * (Tri_surf%delta_tr(:,:,nhum) + Tri_surf%dtmass * flux_q_total)
 
 en_t = gamma_t * Tri_surf%dtmass * dhdt_surf * inv_cp_air
 en_q = gamma_q * Tri_surf%dtmass * dedt_surf
@@ -591,7 +613,7 @@ en_q = gamma_q * Tri_surf%dtmass * dedt_surf
 ! Note drdt_atm is not used - should be fixed
 !
 alpha_t = flux_t * inv_cp_air + dhdt_atm * inv_cp_air * fn_t
-alpha_q = flux_q + dedq_atm * fn_q
+alpha_q = flux_q_total + dedq_atm * fn_q
 alpha_lw = flux_r
 
 beta_t = dhdt_surf * inv_cp_air + dhdt_atm * inv_cp_air * en_t
@@ -669,7 +691,7 @@ if (evaporation) Tri_surf%delta_tr(:,:,nhum) = fn_q + en_q * delta_t_surf
 ! We have taken a time-step, send the values at the next time level.
 if(id_t_surf > 0) used = send_data(id_t_surf, t_surf, Time_next)
 if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time_next)
-if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q, Time_next)
+if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q_total, Time_next)
 if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time_next)
 
 if(id_delta_t_surf > 0)   used = send_data(id_delta_t_surf, delta_t_surf, Time_next)
