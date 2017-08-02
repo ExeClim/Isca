@@ -141,8 +141,6 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               update_albedo_from_ice, ice_file_name,         &
                               ice_albedo_value, specify_sst_over_ocean_only, &
                               ice_concentration_threshold,                   &
-                              add_latent_heat_flux_anom,flux_q_anom_file_name,&
-                              flux_q_anom_field_name,                        &
                               add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
                               flux_lhe_anom_field_name
 
