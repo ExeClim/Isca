@@ -122,8 +122,8 @@ real    :: ice_concentration_threshold = 0.5
 logical :: update_albedo_from_ice = .false.
 
 logical :: add_latent_heat_flux_anom = .false.
-character(len=256) :: flux_q_anom_file_name  = 'INPUT/flux_q_anom.nc'
-character(len=256) :: flux_q_anom_field_name = 'flux_q_anom'
+character(len=256) :: flux_lhe_anom_file_name  = 'INPUT/flux_lhe_anom.nc'
+character(len=256) :: flux_lhe_anom_field_name = 'flux_lhe_anom'
 
 namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               delta_T, prescribe_initial_dist,albedo_value,  &
@@ -142,8 +142,10 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               ice_albedo_value, specify_sst_over_ocean_only, &
                               ice_concentration_threshold,                   &
                               add_latent_heat_flux_anom,flux_q_anom_file_name,&
-                              flux_q_anom_field_name
-                              
+                              flux_q_anom_field_name,                        &
+                              add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
+                              flux_lhe_anom_field_name
+
 !=================================================================================================================================
 
 
@@ -166,7 +168,7 @@ real, allocatable, dimension(:,:)   ::                                        &
      ocean_qflux,           &   ! Q-flux
      ice_concentration,     &   ! ice_concentration
      rad_lat_2d,            &   ! latitude in radians
-     flux_q_anom, flux_q_total
+     flux_lhe_anom, flux_q_total
 
 real, allocatable, dimension(:)   :: deg_lat, deg_lon
 
@@ -198,7 +200,7 @@ logical, allocatable, dimension(:,:) ::      land_mask
   type(interpolate_type),save :: sst_interp
   type(interpolate_type),save :: qflux_interp
   type(interpolate_type),save :: ice_interp
-  type(interpolate_type),save :: flux_q_anom_interp  
+  type(interpolate_type),save :: flux_lhe_anom_interp  
 
 real inv_cp_air
 
@@ -255,8 +257,8 @@ enddo
 allocate(rad_lat_2d              (is:ie, js:je))
 allocate(ocean_qflux             (is:ie, js:je))
 allocate(ice_concentration       (is:ie, js:je))
-allocate(flux_q_anom             (is:ie, js:je))
-allocate(flux_q_total             (is:ie, js:je))
+allocate(flux_lhe_anom           (is:ie, js:je))
+allocate(flux_q_total            (is:ie, js:je))
 allocate(deg_lat                 (js:je))
 allocate(deg_lon                 (is:ie))
 allocate(gamma_t                 (is:ie, js:je))
@@ -407,7 +409,7 @@ endif
 !s End MiMA options for qfluxes
 
 if (add_latent_heat_flux_anom) then
-	   call interpolator_init( flux_q_anom_interp, trim(flux_q_anom_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+	   call interpolator_init( flux_lhe_anom_interp, trim(flux_lhe_anom_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
 endif
 
 
@@ -586,8 +588,8 @@ call albedo_calc(albedo_out,Time_next)
 !s Add latent heat flux anomalies before any of the calculations take place
 
 if (add_latent_heat_flux_anom) then
-    call interpolator( flux_q_anom_interp, Time, flux_q_anom, trim(flux_q_anom_file_name) )
-    flux_q_total = flux_q + flux_q_anom
+    call interpolator( flux_lhe_anom_interp, Time, flux_lhe_anom, trim(flux_lhe_anom_file_name) )
+    flux_q_total = flux_q + flux_lhe_anom
 else
     flux_q_total = flux_q
 endif
