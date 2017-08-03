@@ -82,6 +82,8 @@ real    :: solar_exponent  = 4.0
 logical :: do_seasonal     = .false.
 integer :: solday          = -10 !s Day of year to run perpetually if do_seasonal=True and solday>0
 real    :: equinox_day     = 0.0 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months).
+logical :: use_time_average_coszen = .false. !s if .true., then time-averaging is done on coszen so that insolation doesn't depend on timestep
+real    :: dt_rad_avg     = -1
 
 character(len=32) :: rad_scheme = 'frierson'
 
@@ -130,7 +132,8 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
            ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme, &
-           do_read_co2, co2_file, solday, equinox_day, bog_a, bog_b, bog_mu
+           do_read_co2, co2_file, solday, equinox_day, bog_a, bog_b, bog_mu, &
+           use_time_average_coszen, dt_rad_avg
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -151,13 +154,14 @@ contains
 ! ==================================================================================
 
 
-subroutine two_stream_gray_rad_init(is, ie, js, je, num_levels, axes, Time, lonb, latb)
+subroutine two_stream_gray_rad_init(is, ie, js, je, num_levels, axes, Time, lonb, latb, dt_real)
 
 !-------------------------------------------------------------------------------------
 integer, intent(in), dimension(4) :: axes
 type(time_type), intent(in)       :: Time
 integer, intent(in)               :: is, ie, js, je, num_levels
 real ,dimension(:,:),intent(in),optional :: lonb,latb !s Changed to 2d arrays as 2013 interpolator expects this.
+real, intent(in)                  :: dt_real !s atmospheric timestep, used for radiation averaging
 !-------------------------------------------------------------------------------------
 integer, dimension(3) :: half = (/1,2,4/)
 integer :: ierr, io, unit
@@ -184,6 +188,8 @@ deg_to_rad = pi/180.
 rad_to_deg = 180./pi
 
 call astronomy_init
+
+if(dt_rad_avg .le. 0) dt_rad_avg = dt_real !s if dt_rad_avg is set to a value in nml then it will be used instead of dt_real
 
 if(do_read_co2)then
    call interpolator_init (co2_interp, trim(co2_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
@@ -358,7 +364,7 @@ real, intent(in), dimension(:,:,:)  :: t, q,  p_half
 integer :: i, j, k, n, dyofyr
 
 integer :: seconds, year_in_s
-real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday
+real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday, r_dt_rad_avg, dt_rad_radians
 logical :: used
 
 
@@ -393,8 +399,18 @@ if (do_seasonal) then
 
   time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
 
-  call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
-  insolation = solar_constant * coszen
+  if(use_time_average_coszen) then
+     
+     r_dt_rad_avg=real(dt_rad_avg)
+     dt_rad_radians = (r_dt_rad_avg/day_in_s)*2.0*pi
+     
+     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians)
+  else
+     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
+  end if
+
+     insolation = solar_constant * coszen
+
 else
   ! Default: Averaged Earth insolation at all longitudes
   p2          = (1. - 3.*sin(lat)**2)/4.
