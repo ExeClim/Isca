@@ -563,7 +563,7 @@ end select
 !endif
 
 
-if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time, rad_lonb_2d, rad_latb_2d)
+if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, dt_real)
 
 #ifdef RRTM_NO_COMPILE
     if (do_rrtm_radiation) then
