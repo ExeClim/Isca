@@ -69,6 +69,30 @@ class CompilationError(Exception):
 
 class Experiment(object):
     """A basic GFDL experiment"""
+
+    RESOLUTIONS = {
+        'T170': {
+            'num_lon': 512,
+            'num_lat': 256,
+            'num_fourier': 170,
+            'num_spherical': 171
+        },
+
+        'T85': {
+            'num_lon': 256,
+            'num_lat': 128,
+            'num_fourier': 85,
+            'num_spherical': 86
+        },
+
+        'T42': {
+            'num_lon': 128,
+            'num_lat': 64,
+            'num_fourier': 42,
+            'num_spherical': 43,
+        },
+    }
+
     def __init__(self, name, commit=None, repo=None, overwrite_data=False,run_idb=False):
         super(Experiment, self).__init__()
         self.name = name
@@ -83,9 +107,9 @@ class Experiment(object):
 
         # where executable will be compiled to / fectched from
         if run_idb:
-            self.execdir = P(self.workdir, 'exec_debug')  #compiled with debug flags        
+            self.execdir = P(self.workdir, 'exec_debug')  #compiled with debug flags
         else:
-            self.execdir = P(self.workdir, 'exec')        
+            self.execdir = P(self.workdir, 'exec')
 
         self.restartdir = P(self.workdir, 'restarts') # where restarts will be stored
         self.rundir = P(self.workdir, 'run')          # temporary area an individual run will be performed
@@ -155,8 +179,14 @@ class Experiment(object):
     def rm_workdir(self):
         try:
             sh.rm(['-r', self.workdir])
-        except sh.ErrorReturnCode_1:
+        except sh.ErrorReturnCode:
             log.warning('Tried to remove working directory but it doesnt exist')
+
+    def rm_datadir(self):
+        try:
+            sh.rm(['-r', self.datadir])
+        except sh.ErrorReturnCode:
+            log.warning('Tried to remove data directory but it doesnt exist')
 
     def clear_workdir(self):
         self.rm_workdir()
@@ -167,7 +197,7 @@ class Experiment(object):
         sh.cd(self.workdir)
         try:
             sh.rm(['-r', self.rundir])
-        except sh.ErrorReturnCode_1:
+        except sh.ErrorReturnCode:
             log.warning('Tried to remove run directory but it doesnt exist')
         mkdir(self.rundir)
         log.info('Emptied run directory %r' % self.rundir)
@@ -215,6 +245,10 @@ class Experiment(object):
         log.info('Writing namelist to %r' % P(outdir, 'input.nml'))
         self.namelist.write(P(outdir, 'input.nml'))
 
+    def set_resolution(self, res):
+        delta = self.RESOLUTIONS[res]
+        self.update_namelist({'spectral_dynamics_nml': delta})
+
     def write_diag_table(self, outdir):
         outfile = P(outdir, 'diag_table')
         log.info('Writing diag_table to %r' % outfile)
@@ -252,8 +286,8 @@ class Experiment(object):
         self.compile_flags.append('-DRRTM_NO_COMPILE')
 
         # set the namelist to use gray radiation scheme
-        self.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
-        self.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
+        # self.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
+        # self.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
 
         log.info('RRTM compilation disabled.  Namelist set to gray radiation.')
 
@@ -293,7 +327,7 @@ class Experiment(object):
         try:
             set_screen_title('compiling')
             sh.bash(P(self.workdir, 'compile.sh'), _out=clean_log_debug, _err=clean_log_debug)
-        except Exception as e:
+        except sh.ErrorReturnCode as e:
             log.critical('Compilation failed.')
             raise e
         log.debug('Compilation complete.')
@@ -331,8 +365,6 @@ class Experiment(object):
 
         indir = P(self.rundir, 'INPUT')
         outdir = P(self.datadir, 'run%03d' % month)
-
-
 
         if os.path.isdir(outdir):
             if self.overwrite_data or overwrite_data:
@@ -403,7 +435,7 @@ class Experiment(object):
             log.info("Cleaning run directory.")
             self.clear_rundir()
             return False
-        except Exception as e:
+        except sh.ErrorReturnCode as e:
             log.error("Run failed for month %r" % month)
             proc.process.kill()
             raise e
@@ -425,11 +457,12 @@ class Experiment(object):
             if month > 1:
                 try:
                     sh.rm( P(self.restartdir, 'res_%d.cpio' % (month-1)))
-                except sh.ErrorReturnCode_1:
+                except sh.ErrorReturnCode:
                     log.warning('Previous months restart already removed')
+
                 try:
                     sh.rm( P(self.datadir, 'run03%d' % (month-1) , 'res_%d.cpio' % (month-1)))
-                except sh.ErrorReturnCode_1:
+                except sh.ErrorReturnCode:
                     log.warning('Previous months restart already removed')
 
         else:
@@ -472,9 +505,11 @@ class Experiment(object):
     def update_namelist(self, new_vals):
         """Update the namelist sections, overwriting existing values."""
         for sec in new_vals:
-            nml = self.namelist.setdefault(sec, {})
+            if sec not in self.namelist:
+                self.namelist[sec] = {}
+            nml = self.namelist[sec]
             nml.update(new_vals[sec])
-            
+
     def runinterp(self, month, infile, outfile, var_names = '-a', p_levs = "EVEN", rm_input=False):
         """Interpolate data from sigma to pressure levels. Includes option to remove original file."""
         import subprocess
