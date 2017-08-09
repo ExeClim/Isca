@@ -361,7 +361,7 @@ class Experiment(object):
 
 
 
-    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False, run_idb=False, experiment_restart=None, email_alerts=True, email_address_for_alerts=None, disk_space_limit=20):
+    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False, run_idb=False, experiment_restart=None, email_alerts=True, email_address_for_alerts=None, disk_space_limit=20, disk_space_cutoff_limit=5):
 
         indir = P(self.rundir, 'INPUT')
         outdir = P(self.datadir, 'run%03d' % month)
@@ -420,7 +420,7 @@ class Experiment(object):
         if email_alerts:
             if email_address_for_alerts is None:
                 email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
-            create_alert.run_alerts(self.execdir, GFDL_BASE, self.name, month, email_address_for_alerts, disk_space_limit)
+            create_alert.run_alerts(self.execdir, GFDL_BASE, self.name, month, email_address_for_alerts, disk_space_limit, disk_space_cutoff_limit)
 
         log.info("Running GFDL for month %r" % month)
         self._cur_month = month
