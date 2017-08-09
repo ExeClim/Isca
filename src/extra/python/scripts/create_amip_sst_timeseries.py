@@ -135,8 +135,10 @@ def main():
     # files, not the 'tosbcs'. See http://www-pcmdi.llnl.gov/projects/amip/AMIP2EXPDSN/BCS/amip2bcs.php
     # and http://www-pcmdi.llnl.gov/projects/amip/AMIP2EXPDSN/BCS/amipbc_dwnld_files/360x180/v1.0.0/nc/readme_nc
 
-    add_anomaly = True
-    anomaly_type='el_nino'
+    add_anomaly = False
+#     anomaly_type='el_nino'
+    months_to_include='all'
+    months_to_include='DJF'    
 
     for variable_name in output_name_list.iterkeys():
 
@@ -204,15 +206,24 @@ def main():
         time_arr = day_number_to_date(day_number, calendar_type = 'gregorian', units_in = 'days since 1870-1-1')
         time_arr_adj=np.arange(15,360,30)
 
+        annual_mean_name=''
+
         if len(sst_all.shape)==4:
             sst_in=np.mean(sst_all,axis=0)
         else:
             sst_in=np.zeros((12,180,360))
-            for month_tick in np.arange(1,13,1):
-                month_idx = np.where(time_arr.month==month_tick)[0]
-                sst_in[month_tick-1,:,:]=np.mean(sst_all[month_idx,:,:],axis=0)
-
-        annual_mean_name=''
+            
+            if months_to_include=='all':
+                for month_tick in np.arange(1,13,1):
+                    month_idx = np.where(time_arr.month==month_tick)[0]
+                    sst_in[month_tick-1,:,:]=np.mean(sst_all[month_idx,:,:],axis=0)
+            
+            elif months_to_include=='DJF':
+                djf_idx = np.where(np.logical_or(np.logical_or(time_arr.month==1, time_arr.month==2), time_arr.month==12))
+                djf_mean = np.mean(sst_all[djf_idx[0],...], axis=0)
+                for month_tick in np.arange(1,13,1):
+                    sst_in[month_tick-1,...]=djf_mean
+                annual_mean_name='_djf'
 
         if do_annual_mean:
             sst_in_am=np.mean(sst_in,axis=0)
@@ -241,8 +252,9 @@ def main():
 
 
         #Output it to a netcdf file. 
-        file_name=output_name_list[variable_name]+annual_mean_name+'_clim_amip'+anom_name+'_'+amip_data_version+'.nc'
-        variable_name=output_name_list[variable_name]+'_clim_amip'+anom_name
+        variable_name=output_name_list[variable_name]+annual_mean_name+'_clim_amip'+anom_name        
+        file_name=variable_name+'_'+amip_data_version+'.nc'
+
 
         number_dict={}
         number_dict['nlat']=nlat
