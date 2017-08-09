@@ -35,13 +35,27 @@ def q_spinup(run_fol, var_to_integrate, start_month, end_month, plt_dir):
         files_temp=[data_dir+'/'+run_fol+'/run%03d/' % m for m in range(start_month, end_month+1)]
 
         names = [s + file_name for s in files_temp]
+
+        thd_files_exist=[os.path.isfile(s) for s in names]
+
         print names[0]
+
+        if not(all(thd_files_exist)):
+            raise EOFError('EXITING BECAUSE OF MISSING FILES', [names[elem] for elem in range(len(thd_files_exist)) if not thd_files_exist[elem]])
+        
         rundata = xr.open_dataset(names[0],
                      decode_times=False)  # no calendar so tell netcdf lib
     except RuntimeError:
         files_temp=[data_dir+'/'+run_fol+'/run%d/' % m for m in range(start_month, end_month+1)]
 
         names = [s + file_name for s in files_temp]
+
+        thd_files_exist=[os.path.isfile(s) for s in names]
+
+        print names[0]
+
+        if not(all(thd_files_exist)):
+            raise EOFError('EXITING BECAUSE OF MISSING FILES', [names[elem] for elem in range(len(thd_files_exist)) if not thd_files_exist[elem]])
 
         rundata = xr.open_dataset(names[0],
                      decode_times=False)  # no calendar so tell netcdf lib
@@ -113,7 +127,7 @@ if __name__ == "__main__":
 
     #number of years to read
     start_month_arr=[1, 1]
-    end_month_arr=[360, 163]
+    end_month_arr=[360, 292]
 
     len_list=[len(start_month_offset), len(exp_list), len(label_arr), len(start_month_arr), len(end_month_arr)]
 
