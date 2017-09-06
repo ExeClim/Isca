@@ -392,8 +392,7 @@ class Experiment(object):
         self.write_diag_table(self.rundir)
 
         for filename in self.inputfiles:
-            if filename!='':
-                sh.cp([filename, P(indir, os.path.split(filename)[1])])
+            sh.cp([filename, P(indir, os.path.split(filename)[1])])
 
 
         if use_restart:
@@ -467,7 +466,6 @@ class Experiment(object):
             git_hash_file.close()
         except:
             log.info("Could not output git commit hash")        
-            pass
         
         if light:
             os.system("cp -a "+self.rundir+"/*.nc "+outdir)
