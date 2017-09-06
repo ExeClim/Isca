@@ -133,6 +133,15 @@ class Experiment(object):
         else:
             self.srcdir = GFDL_BASE
 
+        try:
+            git_dir = self.srcdir+'/.git'
+            commit_id = sh.git("--git-dir="+git_dir, "log", "--pretty=format:'%H'", "-n 1")
+            commit_id = str(commit_id).split("'")[1]
+        except:
+            commit_id = None
+
+        self.commit_id = commit_id
+
         self.template_dir = P(_module_directory, 'templates')
 
         self.templates = Environment(loader=FileSystemLoader(self.template_dir))
@@ -451,6 +460,13 @@ class Experiment(object):
         log.info("Saved restart file %r" % restart_file)
         sh.rm('-r', P(self.rundir, 'RESTART'))
 
+        try:
+            git_hash_file = open(P(outdir, 'git_hash_used.txt'), "w")
+            git_hash_file.write(self.commit_id)
+            git_hash_file.close()
+        except:
+            log.info("Could not output git commit hash")        
+        
         if light:
             os.system("cp -a "+self.rundir+"/*.nc "+outdir)
             sh.cp(['-a', P(self.restartdir, 'res_%d.cpio' % (month)), outdir])
