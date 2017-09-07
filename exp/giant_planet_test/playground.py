@@ -46,7 +46,7 @@ baseexp.namelist['main_nml'] = {
      'calendar' : 'no_calendar'
 }
 
-
+baseexp.namelist['fms_nml']['domains_stack_size'] = 620000
 baseexp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
 baseexp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
 
@@ -73,10 +73,10 @@ baseexp.namelist['spectral_dynamics_nml']['exponent'] = 2.0
 baseexp.namelist['spectral_dynamics_nml']['scale_heights'] = 5.0
 baseexp.namelist['spectral_dynamics_nml']['valid_range_t'] =[50.,800.]
 
-baseexp.namelist['spectral_dynamics_nml']['num_fourier'] = 85
-baseexp.namelist['spectral_dynamics_nml']['num_spherical'] = 86
-baseexp.namelist['spectral_dynamics_nml']['lon_max'] = 256
-baseexp.namelist['spectral_dynamics_nml']['lat_max'] = 128
+baseexp.namelist['spectral_dynamics_nml']['num_fourier'] = 213
+baseexp.namelist['spectral_dynamics_nml']['num_spherical'] = 214
+baseexp.namelist['spectral_dynamics_nml']['lon_max'] = 1024
+baseexp.namelist['spectral_dynamics_nml']['lat_max'] = 320
 baseexp.namelist['spectral_dynamics_nml']['num_levels'] = 30
 
 baseexp.namelist['spectral_dynamics_nml']['do_water_correction'] = False
@@ -84,23 +84,22 @@ baseexp.namelist['spectral_dynamics_nml']['do_water_correction'] = False
 baseexp.namelist['spectral_dynamics_nml']['damping_option'] = 'exponential_cutoff'
 baseexp.namelist['spectral_dynamics_nml']['damping_order'] = 4
 baseexp.namelist['spectral_dynamics_nml']['damping_coeff'] = 1.3889e-04
-baseexp.namelist['spectral_dynamics_nml']['cutoff_wn'] = 30
-
-baseexp.namelist['spectral_init_cond_nml']['initial_temperature'] = 200.
-
-baseexp.namelist['rayleigh_bottom_drag_nml']['kf_days'] = 10.0
-baseexp.namelist['rayleigh_bottom_drag_nml']['do_drag_at_surface'] = False
-baseexp.namelist['rayleigh_bottom_drag_nml']['variable_drag'] = False
-
+baseexp.namelist['spectral_dynamics_nml']['cutoff_wn'] = 100
 baseexp.namelist['spectral_dynamics_nml']['initial_sphum'] = 0.0
-
-
+baseexp.namelist['spectral_init_cond_nml']['initial_temperature'] = 200.
 baseexp.namelist['idealized_moist_phys_nml']['convection_scheme'] = 'dry'
+
+baseexp.namelist['rayleigh_bottom_drag_nml']= {
+	'kf_days':10.0,
+	'do_drag_at_surface':True,
+	'variable_drag': False
+	}
 
 baseexp.namelist['dry_convection_nml'] = {
     'tau': 21600.,
     'gamma': 1.0, # K/km
 }
+
 
 kf_days_array    =[5.]
 
@@ -121,4 +120,15 @@ for exp_number in [1]:
     exp.namelist['rayleigh_bottom_drag_nml']['kf_days'] = kf_days_array[exp_number-1]
 
     for i in range(start_month_array[exp_number-1], end_month_array[exp_number-1]):
-        exp.runmonth(i,num_cores=16)
+        successful_run = exp.runmonth(i,num_cores=32)
+
+        if successful_run:
+            print 'cleaning'
+            max_num_files_input = np.max([0, i-5])
+
+            temp_obj = rem.create_exp_object(exp.name)
+            rem.keep_only_certain_restart_files(temp_obj, max_num_files_input)
+            rem.keep_only_certain_restart_files_data_dir(temp_obj, max_num_files_input)
+            rem.keep_only_certain_daily_data_uninterp(temp_obj, max_num_files_input, file_name = 'fms_moist.x')
+            rem.keep_only_certain_daily_data_uninterp(temp_obj, max_num_files_input, file_name = 'INPUT/spectral_dynamics.res.nc')
+            rem.keep_only_certain_daily_data_uninterp(temp_obj, max_num_files_input, file_name = 'INPUT/atmosphere.res.nc')
