@@ -113,15 +113,8 @@ start_month_array=[2]
 end_month_array  =[1202]
 
 for exp_number in [1]:
-    exp = Experiment('giant_drag_exp_chai_values_1_bar_damping_%d' % exp_number, overwrite_data=False)
+    exp = baseexp.derive('giant_drag_exp_chai_values_1_bar_damping_%d' % exp_number)
     exp.clear_rundir()
-
-    exp.use_diag_table(diag)
-    exp.execdir = baseexp.execdir
-
-    exp.inputfiles = baseexp.inputfiles
-
-    exp.namelist = baseexp.namelist.copy()
 
     exp.namelist['rayleigh_bottom_drag_nml']['kf_days'] = kf_days_array[exp_number-1]
 
