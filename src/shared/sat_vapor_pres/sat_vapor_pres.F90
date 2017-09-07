@@ -528,6 +528,8 @@ private
 
  integer :: tcmin = -160  ! minimum temperature (degC) in lookup table !Note that this value is overwritten if do_simple = .true.
  integer :: tcmax =  100  ! maximum temperature (degC) in lookup table !Note that this value is overwritten if do_simple = .true.
+ integer :: tcmin_simple = -173  ! minimum temperature (degC) in lookup table !Used if do_simple=.true.
+ integer :: tcmax_simple =  350  ! maximum temperature (degC) in lookup table !Used if do_simple=.true.
  integer :: esres =  10   ! table resolution (increments per degree)
  integer :: nsize  ! (tcmax-tcmin)*esres+1    !  lookup table size
  integer :: nlim   ! nsize-1
@@ -550,7 +552,8 @@ private
                                  use_exact_qs, do_simple, &
                                  construct_table_wrt_liq, &
                                  construct_table_wrt_liq_and_ice, &
-                                 do_not_calculate
+                                 do_not_calculate, &
+                                 tcmin, tcmax, tcmin_simple, tcmax_simple !s added in order that these might be changed for non-earth simulations
 
 contains
 
@@ -2301,8 +2304,8 @@ real,  intent(in),              optional :: hc
 
 
   if(do_simple) then
-    tcmin = -223
-    tcmax =  350
+    tcmin = tcmin_simple
+    tcmax = tcmax_simple
   endif
   nsize = (tcmax-tcmin)*esres+1
   nlim  = nsize-1
