@@ -437,11 +437,12 @@ if (do_seasonal) then
 
      insolation = solar_constant * coszen
 
+else if (sw_scheme==B_SCHNEIDER_LIU) then
+  insolation = (solar_constant/pi)*cos(lat)
 else
   ! Default: Averaged Earth insolation at all longitudes
-!  p2          = (1. - 3.*sin(lat)**2)/4.
-!  insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
-  insolation = (solar_constant/pi)*cos(lat)
+  p2          = (1. - 3.*sin(lat)**2)/4.
+  insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
 end if
 
 select case(sw_scheme)
