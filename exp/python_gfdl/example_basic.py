@@ -3,17 +3,19 @@
 # - Grey radiation scheme
 # - No seasonal cycle - p2 like insolation profile
 
+import sys
 import numpy as np
 
 import gfdl.experiment
 
-exp = gfdl.experiment.Experiment('ref_earth_grey',
-    repo='git@github.com:ExeClim/GFDLmoistModel.git',
-    commit='master')
+exp = gfdl.experiment.Experiment('ref_earth_grey')
+#    repo='git@github.com:ExeClim/GFDLmoistModel.git',
+#    commit='master')
 
 # compiles source code to exp.execdir
 exp.disable_rrtm()
-exp.compile()
+if 'compile' in sys.ARGV:
+    exp.compile()
 
 # setup the namelist:
 # - Frierson gray radiation
@@ -66,8 +68,8 @@ exp.use_diag_table(diag)
 exp.clear_rundir()
 
 # run month 1 from a cold start
-exp.runmonth(1, use_restart=False)
-for i in range(2, 40):
+exp.runmonth(1, use_restart=False, num_cores=8)
+#for i in range(2, 40):
     # run subsequent months (default is to find the previous month
     # and use that as restart).
-    exp.runmonth(i)
+    # exp.runmonth(i)

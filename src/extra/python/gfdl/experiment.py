@@ -9,7 +9,7 @@ from jinja2 import Environment, FileSystemLoader
 import sh
 import pdb
 
-import create_alert
+# from gfdl import create_alert
 import getpass
 
 P = os.path.join
@@ -41,12 +41,16 @@ try:
     GFDL_BASE        = os.environ['GFDL_BASE']
     GFDL_WORK        = os.environ['GFDL_WORK']
     GFDL_DATA        = os.environ['GFDL_DATA']
-
-
-except Exception, e:
-    print('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
+except Exception as e:
+    log.error('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
     exit(0)
 
+try:
+    GFDL_ENV = os.environ['GFDL_ENV']
+except:
+    import socket
+    GFDL_ENV = socket.getfqdn()
+    log.info('Environment variable GFDL_ENV not set, using "%s".' % GFDL_ENV)
 
 try:
     _screen_window = os.environ['WINDOW']
@@ -62,7 +66,7 @@ def set_screen_title(title):
             sh.screen('-X', 'redisplay')
         except Exception as e:
             log.warning('Screen title could not be changed.')
-            log.debug(e.message)
+            log.debug(e)
 
 class CompilationError(Exception):
     pass
@@ -97,7 +101,6 @@ class Experiment(object):
         super(Experiment, self).__init__()
         self.name = name
 
-
         # set the default locations of working directory,
         # executable directory, restart file storage, and
         # output data directory.
@@ -114,6 +117,7 @@ class Experiment(object):
         self.restartdir = P(self.workdir, 'restarts') # where restarts will be stored
         self.rundir = P(self.workdir, 'run')          # temporary area an individual run will be performed
         self.datadir = P(GFDL_DATA, self.name)        # where run data will be moved to upon completion
+        self.env_source = P(GFDL_BASE, 'src', 'extra', 'env', GFDL_ENV)
 
         self.log = log
 
@@ -152,12 +156,12 @@ class Experiment(object):
             commit_id_base = sh.git("--git-dir="+git_dir, "log", "--pretty=format:'%H'", "-n 1")
             commit_id_base = str(commit_id_base).split("'")[1]
             git_diff_output = sh.git("--no-pager", "--git-dir="+git_dir, "--work-tree="+self.srcdir, "diff", "--no-color", self.srcdir)
-            git_diff_output = str(git_diff_output).split("\n")            
+            git_diff_output = str(git_diff_output).split("\n")
         except:
             commit_id_base = None
             git_diff_output  = None
-            
-        self.git_diff_output   = git_diff_output            
+
+        self.git_diff_output   = git_diff_output
 
         if commit_id==commit_id_base:
             self.commit_id_base = self.commit_id
@@ -178,8 +182,8 @@ class Experiment(object):
                 git_status_final = None
         else:
             git_status_final = ['run using specific commit, as specified above, so no git status output for f90 or inc files']
-        
-        self.git_status_output = git_status_final      
+
+        self.git_status_output = git_status_final
 
         self.template_dir = P(_module_directory, 'templates')
 
@@ -249,11 +253,11 @@ class Experiment(object):
 	    files_to_remove=range(0,max_num_files)
 
             #Then defines a list of the ones we want to KEEP
-	    files_to_keep  =range(0,max_num_files,interval) 
+	    files_to_keep  =range(0,max_num_files,interval)
 
             #Then we remove the files we want to keep from the list of all files, giving a list of those we wish to remove
 	    for x in files_to_keep:
-               files_to_remove.remove(x) 
+               files_to_remove.remove(x)
 
             #Then we remove them.
 	    for entry in files_to_remove:
@@ -288,7 +292,7 @@ class Experiment(object):
             sh.git.status()
         except Exception as e:
             log.info('Repository not found at %r. Cloning.' % self.srcdir)
-            log.debug(e.message)
+            log.debug(e)
             try:
                 sh.git.clone(self.repo, self.srcdir)
             except Exception as e:
@@ -385,7 +389,8 @@ class Experiment(object):
             'srcdir': self.srcdir,
             'workdir': self.workdir,
             'compile_flags': ' '.join(self.compile_flags),
-            'run_idb': self.run_idb
+            'run_idb': self.run_idb,
+            'env_source': self.env_source
         }
 
         self.check_path_names()
@@ -474,6 +479,7 @@ class Experiment(object):
             'rundir': self.rundir,
             'execdir': self.execdir,
             'srcdir': self.srcdir,
+            'env_source': self.env_source,
             'restart_file': restart_file,
             'num_cores': num_cores,
             'run_idb': run_idb,
@@ -486,10 +492,10 @@ class Experiment(object):
         t = runmonth.stream(**vars).dump(P(self.rundir, 'runmonth.sh'))
 
     # Check scratch space has enough disk space
-        if email_alerts:
-            if email_address_for_alerts is None:
-                email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
-            create_alert.run_alerts(self.execdir, GFDL_BASE, self.name, month, email_address_for_alerts, disk_space_limit, disk_space_cutoff_limit)
+        #if email_alerts:
+        #    if email_address_for_alerts is None:
+        #        email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
+        #    create_alert.run_alerts(self.execdir, GFDL_BASE, self.name, month, email_address_for_alerts, disk_space_limit)
 
         log.info("Running GFDL for month %r" % month)
         self._cur_month = month
@@ -525,10 +531,10 @@ class Experiment(object):
             if self.commit_id!=self.commit_id_base:
                 git_hash_file.write("*---hash of specified commit used for fortran code in workdir---*:\n")
                 git_hash_file.write(self.commit_id)
-                git_hash_file.write("\n")                 
+                git_hash_file.write("\n")
                 git_hash_file.write("\n*---hash of commit used for code in GFDL_BASE, including this python script---*:\n")
                 git_hash_file.write(self.commit_id_base)
-                git_hash_file.write("\n")            
+                git_hash_file.write("\n")
             else:
                 git_hash_file.write("*---hash of commit used for code in GFDL_BASE, including this python script---*:\n")
                 git_hash_file.write(self.commit_id)
@@ -537,12 +543,12 @@ class Experiment(object):
                 git_hash_file.write("\n"+"*---git status output (only f90 and inc files)---*:\n")
                 git_hash_file.writelines( line_out+"\n" for line_out in self.git_status_output)
             if self.git_diff_output is not None:
-                git_hash_file.write("\n"+"*---git diff output run in GFDL_BASE (everything)---*:\n")            
-                git_hash_file.writelines( line_out+"\n" for line_out in self.git_diff_output)                                
+                git_hash_file.write("\n"+"*---git diff output run in GFDL_BASE (everything)---*:\n")
+                git_hash_file.writelines( line_out+"\n" for line_out in self.git_diff_output)
             git_hash_file.close()
         except:
-            log.info("Could not output git commit hash")        
-        
+            log.info("Could not output git commit hash")
+
         if light:
             os.system("cp -a "+self.rundir+"/*.nc "+outdir)
             sh.cp(['-a', P(self.restartdir, 'res_%d.cpio' % (month)), outdir])
@@ -573,9 +579,9 @@ class Experiment(object):
         new_exp.use_diag_table(self.diag_table.copy())
         new_exp.inputfiles = self.inputfiles
         new_exp.commit_id = self.commit_id
-        new_exp.commit_id_base = self.commit_id_base        
+        new_exp.commit_id_base = self.commit_id_base
         new_exp.git_status_output = self.git_status_output
-        new_exp.git_diff_output   = self.git_diff_output        
+        new_exp.git_diff_output   = self.git_diff_output
         return new_exp
 
     def run_parameter_sweep(self, parameter_values, runs=10, num_cores=16):
@@ -614,7 +620,7 @@ class Experiment(object):
         interper = 'source '+pprocess+'/plevel.sh -i '
         inputfile = P(self.datadir, 'run%03d' % month, infile)
         outputfile = P(self.datadir, 'run%03d' % month, outfile)
-        
+
         # Select from pre-chosen pressure levels, or input new ones in hPa in the format below.
         if p_levs == "MODEL":
             plev = ' -p "2 9 18 38 71 125 206 319 471 665 904 1193 1532 1925 2375 2886 3464 4115 4850 5679 6615 7675 8877 10244 11801 13577 15607 17928 20585 23630 27119 31121 35711 40976 47016 53946 61898 71022 81491 93503" '
