@@ -131,6 +131,7 @@ if __name__ == "__main__":
 		#return integral of area mean q over stratosphere and whole atmosphere
 		q_strat, q_vint, time = q_spinup(run_fol, variable_to_integrate, start_month_arr[idx]+start_month_offset[idx], end_month_arr[idx]+start_month_offset[idx], plt_dir)
 		plt.plot(time,q_vint,label=label_arr[idx])
+		plt.plot(time,q_strat,label=label_arr[idx]+'_strat')
 
 	plt.xlabel('time (months)')
 	plt.ylabel('Global average '+variable_to_integrate)
