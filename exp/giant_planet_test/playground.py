@@ -70,6 +70,8 @@ baseexp.namelist['constants_nml']['PSTD'] = 3.0E+06
 baseexp.namelist['constants_nml']['PSTD_MKS'] = 3.0E+05
 baseexp.namelist['constants_nml']['rdgas'] = 3605.38
 
+baseexp.namelist['sat_vapor_pres_nml']['tcmin_simple'] = -223
+
 baseexp.namelist['spectral_dynamics_nml']['reference_sea_level_press'] = 3.0e5
 baseexp.namelist['spectral_dynamics_nml']['vert_coord_option'] = 'even_sigma'
 baseexp.namelist['spectral_dynamics_nml']['surf_res'] = 0.1
