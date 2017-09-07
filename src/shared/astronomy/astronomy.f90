@@ -23,11 +23,11 @@ use fms_mod,           only: open_namelist_file, fms_init, &
                              FATAL, NOTE, WARNING, close_file
 use time_manager_mod,  only: time_type, set_time, get_time, &
                              get_date_julian, set_date_julian, &
-                             set_date, length_of_year, &
+                             set_date, length_of_year, length_of_day, &
                              time_manager_init, &
                              operator(-), operator(+), &
                              operator( // ), operator(<), get_calendar_type, NO_CALENDAR
-use constants_mod,     only: constants_init, PI
+use constants_mod,     only: constants_init, PI, omega, orbital_rate, radius
 use mpp_mod,           only: input_nml_file
 
 !--------------------------------------------------------------------
@@ -50,16 +50,16 @@ character(len=128)  :: version =  '$Id: astronomy.F90,v 17.0.10.1 2010/08/31 14:
 character(len=128)  :: tagname =  '$Name: testing $'
 
 ! Version Details
-! [2016/11/16] <Stephen Thomson>:  Modified v 17.0.10.1 by changing the time averaging of coszen. 
+! [2016/11/16] <Stephen Thomson>:  Modified v 17.0.10.1 by changing the time averaging of coszen.
 !
 !   - Problem with original v 17.0.10.1: when `diurnal_solar' was called with the time-averaging option:
 !
 !     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt)
 !
-!     diurnal_solar claimed to return coszen time-averaged between the current time (t) and t+dt. 
+!     diurnal_solar claimed to return coszen time-averaged between the current time (t) and t+dt.
 !     However, it actually returned coszen time-averaged over the _hours of daylight_ between t and t+dt.
 !
-!   - This inconsistency could have been corrected by multiplying coszen by the optional array 'fracday' (an array containing 
+!   - This inconsistency could have been corrected by multiplying coszen by the optional array 'fracday' (an array containing
 !     the fraction of daylight experienced in each gridcell), but this was not explained.
 !
 !   - Therefore, if diurnal_solar was used without multiplying by fracday, it returned answers that were dependent on dt,
@@ -78,7 +78,7 @@ public       &
               set_orbital_parameters, get_orbital_parameters, &
               set_ref_date_of_ae, get_ref_date_of_ae,  &
               diurnal_solar, daily_mean_solar, annual_mean_solar,  &
-              astronomy_end, universal_time, orbital_time
+              astronomy_end, universal_time, orbital_time, diurnal_exoplanet
 
 interface diurnal_solar
    module procedure diurnal_solar_2d
@@ -1169,10 +1169,10 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !--------------------------------------------------------------------
 !    be sure the time in the annual cycle is legitimate.
 !---------------------------------------------------------------------
-      if (time_since_ae < 0.0 .or. time_since_ae > twopi) &
+      if (time_since_ae < 0.0 .or. time_since_ae > twopi) then
           call error_mesg('astronomy_mod', &
                     'time_since_ae not between 0 and 2pi', FATAL)
-
+      end if
 !--------------------------------------------------------------------
 !    be sure the time at longitude = 0.0 is legitimate.
 !---------------------------------------------------------------------
@@ -1204,7 +1204,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
       Lallow_negative = .false.
       if (present(allow_negative_cosz)) then
          if (allow_negative_cosz) Lallow_negative = .true.
-      end if 
+      end if
 
 !---------------------------------------------------------------------
 !    perform a time integration to obtain cosz and fracday if desired.
@@ -1229,7 +1229,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !     ************** BASIC diurnal SOLAR EXPLANATION ***************
 !     Key to understanding code is that coszen is not just coszen = aa + bb*cos(time), but is really max(aa+bb*cos(time),0.).
 !     Essentially this is because if it is night-time, the incoming solar = 0, but if it's day time, it's = aa+bb*cos(time).
-!     When time-averaging between t and tt=t+dt, this must be accounted for. 
+!     When time-averaging between t and tt=t+dt, this must be accounted for.
 !     To illustrate this, I will compare two example cases from the 8 cases used in the calculation of `diurnal_solar':
 !     Case 4 below is simple, t is after sunrise, and tt is before sunset, so there is daylight for the entire averaging period.
 !     Therefore we time-average by doing:
@@ -1237,10 +1237,10 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !     \int_t^tt cosz dt' / (tt-t) = (\int_t^tt aa dt') / (tt-t) + bb*(\int_t^tt cos(t') dt')/ (tt - t)
 !
 !     where t' is a dummy variable and \int_t^tt is the integral between t and tt.
-!     
+!
 !     This comes out to be:
 !     coszen_time_av = aa + bb(sin(tt) - sin(t))/(tt-t) = aa + bb(stt-st)/(tt-t)
-!     because aa and bb are independent of time (this is not strictly true, as the declination, and hence aa and bb, does change 
+!     because aa and bb are independent of time (this is not strictly true, as the declination, and hence aa and bb, does change
 !     with time. However, we choose to approximate aa and bb as constant in the period t->t+dt, which is a reasonable approximation
 !     if dt is a small fraction of the annual cycle).
 !
@@ -1250,7 +1250,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 
 !     \int_t^tt cosz dt' / (tt-t) = \int_t^-h 0 dt' / (tt-t) + \int_-h^tt cosz dt' / (tt-t)
 !     where the first integral on the RHS is from t until sunrise (-h). This is night, so we have zero contribution
-!     from this period. The second integral is during the day, so is from sunrise (-h) to tt. 
+!     from this period. The second integral is during the day, so is from sunrise (-h) to tt.
 !     The final answer is then:
 !     coszen_time_av = aa(tt-(-h))/(tt-t) + bb(sin(tt) - sin(-h))/(tt-t) = aa*(tt+h)/(tt-t) + bb*(stt+sh)/(tt-t)
 !
@@ -1263,7 +1263,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !     coszen_time_av = aa + bb(stt+sh)/(tt-t)
 !     This meant that the original code returned time-averages that were not from t->t+dt, but over the daylight hours between t
 !     and t+dt, which was not what the code claimed to return.
-!     
+!
 !     I have therefore changed all the denominators in the code below to be (tt-t), so that the time-averaging takes place
 !     over the time-period t->t+dt. This means that the coszen returned by `diurnal_solar' is a true time-average over dt.
 !     An equivalent way of doing this with the old code would be to multiply coszen by fracday, where fracday is the fraction of
@@ -1296,7 +1296,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    a half- day (pi) that circumstance will never occur.
 !-------------------------------------------------------------------
         where (t < -h .and. h /= 0.0 .and. h < tt)    &
-              cosz = aa + bb*( sh + sh)/(h+h)
+              cosz = aa*(2.*h)/(tt-t) + bb*( sh + sh)/(tt-t)
 
 !-------------------------------------------------------------------
 !    case 4: averaging period begins after sunrise, ends before sunset.
@@ -1334,7 +1334,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 ! end st_doc
 
         where (twopi - h < tt .and. t <= h ) &
-	   cosz = aa*((tt+(2.*h)-t-twopi)/(tt-t)) + bb*(((sh-st)/(tt-t)) + ((stt+sh)/(tt-t))) 
+	   cosz = aa*((tt+(2.*h)-t-twopi)/(tt-t)) + bb*(((sh-st)/(tt-t)) + ((stt+sh)/(tt-t)))
 
 !-------------------------------------------------------------------
 !    case 7: averaging period begins after sunset and ends before the
@@ -1348,10 +1348,16 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !    averaging period is less than a half-day (pi) the latter
 !    circumstance will never occur.
 !-----------------------------------------------------------------
-        where(  h <  t .and. twopi - h < tt  )
-          cosz = aa + bb*(stt + sh) / (tt + h - twopi)
-        end where
+        where(  h <  t .and. twopi - h < tt .and. tt < twopi+h )  cosz = aa*(tt + h - twopi)/(tt-t) + bb*(stt + sh) / (tt -t )
 
+!-------------------------------------------------------------------
+!    case 9: averaging period begins after sunset and ends after the
+!    next day's sunset. if the
+!    averaging period is less than a half-day (pi) the latter
+!    circumstance will never occur.
+!-----------------------------------------------------------------
+        where(  h <  t .and. twopi - h < tt .and. tt > twopi+h )  cosz = aa*(2.*h)/(tt-t) + bb*(sh + sh) / (tt -t )
+        
         else
            cosz = aa + bb*(stt - st)/ (tt - t)
         end if
@@ -2097,11 +2103,12 @@ real,                 intent(out)  :: rr_out
 !    use the standard formula. define the daylight fraction and earth-
 !    sun distance.
 !---------------------------------------------------------------------
-      where (h == 0.0)
-        cosz = 0.0
-      elsewhere
-        cosz = sin(lat)*sin(dec) + cos(lat)*cos(dec)*sin(h)/h
-      end where
+        cosz = sin(lat)*sin(dec)*(h)/(PI) + cos(lat)*cos(dec)*sin(h)/(PI)
+
+        where (cosz < 0.)
+        cosz = 0.
+        end where
+        
       h_out = h/PI
       rr_out = rr
 !--------------------------------------------------------------------
@@ -3661,6 +3668,50 @@ real                        :: t
 
 end function universal_time
 
+subroutine diurnal_exoplanet(lat, lon, Time, coszen, fracsun, rrsun, &
+                             dt, allow_negative_cosz, half_day_out)
+
+  ! Returns the diurnal phase on an 'exoplanet'.
+  ! An exoplanet is assumed to have no calendar, and may have an arbitrary
+  ! length day and year, determined by its rotation rate and orbital period
+  ! defined in constants_mod.
+  ! Allows for a planet and it's orbital direction to be arbitrary.
+
+  real, dimension(:,:), intent(in)           :: lat, lon
+  type(time_type),      intent(in)           :: Time
+  real, dimension(:,:), intent(out)          :: coszen, fracsun
+  real,                 intent(out)          :: rrsun
+  real,                 intent(in), optional :: dt
+  logical,              intent(in), optional :: allow_negative_cosz
+  real, dimension(:,:), intent(out), optional :: half_day_out
+
+  integer :: seconds, year_in_s
+  real :: r_seconds, day_in_s, gmt, time_since_ae, frac_of_day, frac_of_year, substellar_lon
+
+  call get_time(Time, seconds)
+  substellar_lon = (orbital_rate - omega)*seconds
+  ! negative sign because time relative to gmt = -substellar_lon position
+  gmt = modulo(-substellar_lon, 2.*pi)
+  ! if ( mpp_pe() == mpp_root_pe() ) then
+  !      write (*,*) seconds, substellar_lon, gmt
+  ! endif
+  frac_of_year = modulo(orbital_rate*seconds, 1.0)
+  time_since_ae = frac_of_year * 2.0 * pi
+  ! call get_time(length_of_year(), year_in_s)
+  ! r_seconds = real(seconds)
+  ! day_in_s = length_of_day()
+
+
+  !frac_of_day = r_seconds / day_in_s
+  !frac_of_year = r_seconds / year_in_s
+
+  !gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
+
+  !time_since_ae = modulo(frac_of_year,1.0) * 2.0 * pi
+  call diurnal_solar_2d(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun,  &
+                     dt, allow_negative_cosz, half_day_out)
+
+end subroutine diurnal_exoplanet
 
 !#####################################################################
 

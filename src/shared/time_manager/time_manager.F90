@@ -2921,7 +2921,7 @@ function length_of_year_exoplanet()
 type(time_type) :: length_of_year_exoplanet
 integer :: int_period
 
-int_period = orbital_period
+int_period = abs(orbital_period)
 length_of_year_exoplanet = set_time(int_period, 0)
 
 end function length_of_year_exoplanet

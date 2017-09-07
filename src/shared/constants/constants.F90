@@ -251,7 +251,7 @@ real, public :: GRAV   = EARTH_GRAV
 real, public :: OMEGA  = EARTH_OMEGA                         ! planetary rotation rate in s^-1
 real, public :: ORBITAL_PERIOD = EARTH_ORBITAL_PERIOD        ! orbital period (periapse -> periapse) in s
 real, public :: SECONDS_PER_SOL = SECONDS_PER_DAY
-
+real, public :: orbital_rate  ! this is calculated from 2pi/orbital_period
 real, public :: solar_const = 1368.22             ! solar constant [ W/m2 ]
 real, public :: orbit_radius=1.0                  ! distance Earth-Sun [ AU ]
 
@@ -273,7 +273,6 @@ contains
 
 subroutine constants_init
     integer :: ierr, io, unit
-    real :: orbit_rate
 
     if (constants_initialised) return
 
@@ -293,8 +292,8 @@ subroutine constants_init
     !! (The concept of seconds_per_day is kept as seconds per earth day
     !! as this is too integral to the model calendar to change.)
     !! For Earth parameters, SECONDS_PER_SOL == SECONDS_PER_DAY
-    orbit_rate = 2*pi / orbital_period
-    seconds_per_sol = 2*pi / (omega - orbit_rate)
+    orbital_rate = 2*pi / orbital_period
+    seconds_per_sol = abs(2*pi / (orbital_rate - omega))
 
     constants_initialised = .true.
 
