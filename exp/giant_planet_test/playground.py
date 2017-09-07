@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import remove_certain_restart_and_data_files as rem
 
 from gfdl.experiment import Experiment, DiagTable
 
@@ -65,6 +66,9 @@ baseexp.namelist['constants_nml']['radius'] = 69860.0e3
 baseexp.namelist['constants_nml']['grav'] = 26.0
 baseexp.namelist['constants_nml']['omega'] = 1.7587e-4
 baseexp.namelist['constants_nml']['orbital_period'] = 4332.589*86400.
+baseexp.namelist['constants_nml']['PSTD'] = 3.0E+06
+baseexp.namelist['constants_nml']['PSTD_MKS'] = 3.0E+05
+baseexp.namelist['constants_nml']['rdgas'] = 3605.38
 
 baseexp.namelist['spectral_dynamics_nml']['reference_sea_level_press'] = 3.0e5
 baseexp.namelist['spectral_dynamics_nml']['vert_coord_option'] = 'even_sigma'

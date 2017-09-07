@@ -260,7 +260,7 @@ integer           :: id_wentr_rad, id_wentr_pbl, id_radf,id_parcelkick,&
 
 logical         :: entrain_on = .false.
 real, parameter :: small  = 1.e-4      
-real, parameter :: d608 = (rvgas-rdgas)/rdgas
+real :: d608 = 0.
 
 !-----------------------------------------------------------------------
 !
@@ -397,6 +397,8 @@ real                           :: dellat, dellon
             Write (unit,nml=entrain_nml)
        endif
 
+!s initialise here as rdgas no longer a paramter
+d608 = (rvgas-rdgas)/rdgas
        
 !-----------------------------------------------------------------------
 !    allocate and initialize a flag array which indicates the latitudes

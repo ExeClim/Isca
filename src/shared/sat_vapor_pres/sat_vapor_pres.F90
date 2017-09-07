@@ -520,8 +520,8 @@ private
 !-----------------------------------------------------------------------
 !  parameters for use in computing qs and mrs
 
- real, parameter    :: EPSILO = RDGAS/RVGAS
- real, parameter    :: ZVIR = RVGAS/RDGAS - 1.0
+ real    :: EPSILO = 0
+ real    :: ZVIR =   0
 
 !-----------------------------------------------------------------------
 !  parameters for table size and resolution
@@ -2290,6 +2290,15 @@ real,  intent(in),              optional :: hc
   call write_version_number (version, tagname)
   unit = stdlog()
   if (mpp_pe() == mpp_root_pe()) write (unit, nml=sat_vapor_pres_nml)
+
+!-----------------------------------------------------------------------
+!  parameters for use in computing qs and mrs
+!  need to initialise here as rdgas not a paramter, so cannot have EPSILO or ZVIR as parameter
+ EPSILO = RDGAS/RVGAS
+ ZVIR = RVGAS/RDGAS - 1.0
+ 
+!----------------------------------------------------------------------- 
+
 
   if(do_simple) then
     tcmin = -223

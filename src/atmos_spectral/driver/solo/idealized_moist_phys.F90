@@ -251,7 +251,11 @@ real,    allocatable, dimension(:) :: pref, p_half_1d, ln_p_half_1d, p_full_1d,l
 real,    allocatable, dimension(:,:) :: capeflag !s Added for Betts Miller scheme (rather than the simplified Betts Miller scheme).
 
 type(surf_diff_type) :: Tri_surf ! used by gcm_vert_diff
-
+	
+!s initialise constants ready to be used in rh_calc	
+real :: d622 = 0.
+real :: d378 = 0.
+	
 logical :: used, doing_edt, doing_entrain
 integer, dimension(4) :: axes
 integer :: is, ie, js, je, num_levels, nsphum, dt_integer
@@ -291,6 +295,10 @@ call write_version_number(version, tagname)
 #endif
 stdlog_unit = stdlog()
 write(stdlog_unit, idealized_moist_phys_nml)
+
+!s initialise variables for rh_calc
+d622 = rdgas/rvgas
+d378 = 1.-d622
 
 !s need to make sure that gray radiation and rrtm radiation are not both called.
 if(two_stream_gray .and. do_rrtm_radiation) &
@@ -1090,9 +1098,6 @@ subroutine rh_calc(pfull,T,qv,RH) !s subroutine copied from 2006 FMS MoistModel 
         REAL, INTENT (OUT),   DIMENSION(:,:,:) :: RH
 
         REAL, DIMENSION(SIZE(T,1),SIZE(T,2),SIZE(T,3)) :: esat
-
-	real, parameter :: d622 = rdgas/rvgas
-	real, parameter :: d378 = 1.-d622
 
 !-----------------------------------------------------------------------
 !       Calculate RELATIVE humidity.

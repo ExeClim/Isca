@@ -221,9 +221,9 @@ logical         :: edt_on = .false.
 logical         :: init = .false.
 real, parameter :: small  = 1.e-8      
 real, parameter :: fpi  = 3.14159     ! pi
-real, parameter :: d608 = (rvgas-rdgas)/rdgas
-real, parameter :: d622 = rdgas/rvgas
-real, parameter :: d378 = 1. - d622
+real :: d608 = 0.
+real :: d622 = 0.
+real :: d378 = 0.
 real, parameter :: frac_sfclyr = 0.1  ! height of surface layer top as a 
                                       ! fraction of the pbl height
 
@@ -235,7 +235,7 @@ real, parameter :: frac_sfclyr = 0.1  ! height of surface layer top as a
 
 real, parameter :: ntzero  = 1.e-10   ! not zero, used to set min value
                                       ! to s2, shear-squared.
-real, parameter :: zvir    = d608  
+real :: zvir    = 0.
 
 real, parameter :: b1      =   5.8    ! TKE dissipation = e^3/(b1*leng)
 real            :: b123    =   3.2281 ! b1**(2/3)
@@ -381,7 +381,13 @@ integer, dimension(3) :: full = (/1,2,3/), half = (/1,2,4/)
        logunit = stdlog()
        write (logunit, nml=edt_nml)
    endif
-    
+
+!s initialised here as rdgas now an namelist parameter
+d608 = (rvgas-rdgas)/rdgas
+d622 = rdgas/rvgas
+d378 = 1. - d622
+zvir    = d608      
+
 !---------------------------------------------------------------------
 !    allocate and initialize a flag array which indicates the latitudes
 !    containing columns where radiation diagnostics are desired.

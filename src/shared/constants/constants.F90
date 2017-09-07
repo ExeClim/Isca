@@ -79,9 +79,9 @@ real :: realnumber
 ! </DATA>
 
 real, public, parameter :: EARTH_GRAV = 9.80
-real, public, parameter :: RDGAS  = 3605.38
-real, public, parameter :: KAPPA  = 2./7.
-real, public, parameter :: CP_AIR = RDGAS/KAPPA
+real, public, parameter :: EARTH_RDGAS  = 287.04
+real, public, parameter :: EARTH_KAPPA  = 2./7.
+real, public, parameter :: EARTH_CP_AIR = EARTH_RDGAS/EARTH_KAPPA
 real, public, parameter :: CP_OCEAN = 3989.24495292815
 real, public, parameter :: RHO0    = 1.035e3
 real, public, parameter :: RHO0R   = 1.0/RHO0
@@ -162,7 +162,7 @@ real, public, parameter :: TFREEZE = 273.16
 ! </DATA>
 
 real, public, parameter :: WTMAIR = 2.896440E+01
-real, public, parameter :: WTMH2O = WTMAIR*(RDGAS/RVGAS) !pjp OK to change value because not used yet.
+real, public, parameter :: WTMH2O = WTMAIR*(EARTH_RDGAS/RVGAS) !pjp OK to change value because not used yet.
 !real, public, parameter :: WTMO3  = 47.99820E+01
 real, public, parameter :: WTMOZONE =  47.99820
 real, public, parameter :: WTMC     =  12.00000
@@ -173,8 +173,6 @@ real, public, parameter :: WTMCFC12 = 120.9135
 real, public, parameter :: DIFFAC = 1.660000E+00
 real, public, parameter :: SECONDS_PER_DAY  = 8.640000E+04, SECONDS_PER_HOUR = 3600., SECONDS_PER_MINUTE=60.
 real, public, parameter :: AVOGNO = 6.023000E+23
-real, public, parameter :: PSTD   = 3.0E+06
-real, public, parameter :: PSTD_MKS    = 3.0E+05
 !real, public, parameter :: REARTH  = 6.356766E+08 !pjp Not used anywhere.
 
 ! <DATA NAME="RADCON" UNITS="deg sec/(cm day)" TYPE="real" DEFAULT="((1.0E+02*GRAV)/(1.0E+04*CP_AIR))*SECONDS_PER_DAY">
@@ -196,8 +194,8 @@ real, public, parameter :: PSTD_MKS    = 3.0E+05
 
 !jp not sure that RADCON and RADCON_MKS make any sense when the diurnal cycle and
 !   gravity are changed... so setting them to use Earth values
-real, public, parameter :: RADCON = ((1.0E+02*EARTH_GRAV)/(1.0E+04*CP_AIR))*SECONDS_PER_DAY
-real, public, parameter :: RADCON_MKS  = (EARTH_GRAV/CP_AIR)*SECONDS_PER_DAY
+real, public, parameter :: RADCON = ((1.0E+02*EARTH_GRAV)/(1.0E+04*EARTH_CP_AIR))*SECONDS_PER_DAY
+real, public, parameter :: RADCON_MKS  = (EARTH_GRAV/EARTH_CP_AIR)*SECONDS_PER_DAY
 real, public, parameter :: O2MIXRAT    = 2.0953E-01
 real, public, parameter :: RHOAIR      = 1.292269
 real, public, parameter :: ALOGMIN     = -50.0
@@ -254,9 +252,13 @@ real, public :: SECONDS_PER_SOL = SECONDS_PER_DAY
 real, public :: orbital_rate  ! this is calculated from 2pi/orbital_period
 real, public :: solar_const = 1368.22             ! solar constant [ W/m2 ]
 real, public :: orbit_radius=1.0                  ! distance Earth-Sun [ AU ]
+real, public :: PSTD   = 1.013250E+06
+real, public :: PSTD_MKS    = 101325.0
+real, public :: RDGAS  = EARTH_RDGAS
+real, public :: KAPPA = EARTH_KAPPA
+real, public :: CP_AIR = EARTH_CP_AIR
 
-
-namelist/constants_nml/ radius, grav, omega, orbital_period
+namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa
 
 !-----------------------------------------------------------------------
 ! version and tagname published
@@ -294,6 +296,8 @@ subroutine constants_init
     !! For Earth parameters, SECONDS_PER_SOL == SECONDS_PER_DAY
     orbital_rate = 2*pi / orbital_period
     seconds_per_sol = abs(2*pi / (orbital_rate - omega))
+
+    CP_AIR = RDGAS/KAPPA
 
     constants_initialised = .true.
 

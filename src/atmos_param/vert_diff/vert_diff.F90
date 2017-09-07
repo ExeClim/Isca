@@ -97,7 +97,7 @@ character(len=128) :: version = '$Id: vert_diff.F90,v 19.0 2012/01/06 20:27:29 f
 character(len=128) :: tagname = '$Name: siena_201211 $'
 logical            :: module_is_initialized = .false.
 
-real, parameter :: d608 = (RVGAS-RDGAS)/RDGAS
+real :: d608 = 0.
 
 contains
 
@@ -120,6 +120,9 @@ subroutine vert_diff_init (Tri_surf, idim, jdim, kdim,    &
  integer :: n, logunit
 
     call write_version_number ( version, tagname )
+
+    !s initialise constants here as rdgas no longer a parameter.
+    d608 = (RVGAS-RDGAS)/RDGAS
 
 ! get the number of prognostic tracers
     call get_number_tracers( MODEL_ATMOS, num_prog=ntprog)
