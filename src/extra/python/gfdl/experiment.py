@@ -140,6 +140,11 @@ class Experiment(object):
         except:
             commit_id = None
 
+        if commit:
+            commit_consistency_check = commit_id[0:len(commit)]==commit
+            if not commit_consistency_check:
+                raise ValueError('commit id specified and commit id actually used are not the same:' +commit+commit_id[0:len(commit)])
+
         self.commit_id = commit_id
 
         self.template_dir = P(_module_directory, 'templates')
@@ -490,6 +495,7 @@ class Experiment(object):
         new_exp.execdir = self.execdir
         new_exp.namelist = self.namelist.copy()
         new_exp.use_diag_table(self.diag_table.copy())
+        new_exp.commit_id = self.commit_id
         return new_exp
 
     def run_parameter_sweep(self, parameter_values, runs=10, num_cores=16):
