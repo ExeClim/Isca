@@ -119,6 +119,8 @@ for exp_number in [1]:
 
     exp.namelist['rayleigh_bottom_drag_nml']['kf_days'] = kf_days_array[exp_number-1]
 
+    exp.runmonth(1,num_cores=16, use_restart=False)
+
     for i in range(start_month_array[exp_number-1], end_month_array[exp_number-1]):
         successful_run = exp.runmonth(i,num_cores=32)
 
