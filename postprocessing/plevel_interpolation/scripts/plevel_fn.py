@@ -49,6 +49,15 @@ def two_daily_average(nc_file_in, nc_file_out, avg_or_daily):
 def join_files(files_in, file_name_out):
 
     subprocess.call('cdo mergetime '+files_in+' '+file_name_out, shell=True)
+    
+def climatology(file_in, file_name_out):
+    subprocess.call('cdo mergetime '+files_in+' '+file_name_out, shell=True)
+
+def monthly_climatology(file_in, file_name_out):
+    subprocess.call('cdo ymonmean '+files_in+' '+file_name_out, shell=True)
+    
+def merge_two_netcdf_files(file_in_1, file_in_2, file_name_out):
+    subprocess.call('cdo merge '+files_in_1+' '+file_name_out, shell=True)
 
 def check_gfdl_directories_set():
 
