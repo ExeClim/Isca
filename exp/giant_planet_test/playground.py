@@ -5,16 +5,8 @@ from gfdl.experiment import Experiment, DiagTable
 
 baseexp = Experiment('giant_planet_test', overwrite_data=False)
 
-#s Define input files for experiment - by default they are found in exp_dir/input/
-
-#baseexp.inputfiles = []
-
-#s Define srcmods - by default they are found in exp_dir/srcmods/
-baseexp.path_names.insert(0, os.path.join(os.getcwd(),'../../src/atmos_param/rayleigh_bottom_drag/rayleigh_bottom_drag.F90'))
-
 diag = DiagTable()
 
-#diag.add_file('atmos_daily', 1, 'days', time_units='days')
 diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 
 # Define diag table entries 
@@ -31,17 +23,9 @@ diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'omega', time_avg=True)
 diag.add_field('dynamics', 'height', time_avg=True)
 diag.add_field('dynamics', 'EKE', time_avg=True)
-
 diag.add_field('two_stream', 'tdt_rad', time_avg=True)
-
-diag.add_field('atmosphere', 'convection_rain', time_avg=True)
-diag.add_field('atmosphere', 'condensation_rain', time_avg=True)
-
 diag.add_field('atmosphere', 'diss_heat_ray', time_avg=True)
-
 diag.add_field('damping', 'diss_heat_rdamp', time_avg=True)
-
-
 
 baseexp.disable_rrtm()
 
@@ -73,12 +57,9 @@ baseexp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = 'Schneider'
 baseexp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False
 
 baseexp.namelist['two_stream_gray_rad_nml']['solar_constant'] = 50.7
-baseexp.namelist['two_stream_gray_rad_nml']['diabatic_acce'] = 10.0
+baseexp.namelist['two_stream_gray_rad_nml']['diabatic_acce'] = 1.0
 
-baseexp.namelist['surface_flux_nml']['diabatic_acce'] = 10.0
-
-baseexp.namelist['betts_miller_nml']['tau_bm'] = 21600.
-baseexp.namelist['betts_miller_nml']['rhbm'] = 0.0
+baseexp.namelist['surface_flux_nml']['diabatic_acce'] = 1.0
 
 baseexp.namelist['constants_nml']['radius'] = 69860.0e3
 baseexp.namelist['constants_nml']['grav'] = 26.0
@@ -108,15 +89,26 @@ baseexp.namelist['spectral_dynamics_nml']['cutoff_wn'] = 30
 baseexp.namelist['spectral_init_cond_nml']['initial_temperature'] = 200.
 
 baseexp.namelist['rayleigh_bottom_drag_nml']['kf_days'] = 10.0
-baseexp.namelist['rayleigh_bottom_drag_nml']['sigma_b'] = 0.9
-baseexp.namelist['rayleigh_bottom_drag_nml']['rc'] = 0.84
-baseexp.namelist['rayleigh_bottom_drag_nml']['H_lambda'] = 1000.0e3
+baseexp.namelist['rayleigh_bottom_drag_nml']['do_drag_at_surface'] = False
+baseexp.namelist['rayleigh_bottom_drag_nml']['variable_drag'] = False
+
+baseexp.namelist['spectral_dynamics_nml']['initial_sphum'] = 0.0
 
 
-baseexp.namelist['spectral_dynamics_nml']['initial_sphum'] = 1.e-20
+baseexp.namelist['idealized_moist_phys_nml']['convection_scheme'] = 'dry'
 
-for exp_number in [24,25]:
-    exp = Experiment('giant_planet_test_%d' % exp_number, overwrite_data=False)
+baseexp.namelist['dry_convection_nml'] = {
+    'tau': 21600.,
+    'gamma': 1.0, # K/km
+}
+
+kf_days_array    =[5.]
+
+start_month_array=[2]
+end_month_array  =[1202]
+
+for exp_number in [1]:
+    exp = Experiment('giant_drag_exp_chai_values_1_bar_damping_%d' % exp_number, overwrite_data=False)
     exp.clear_rundir()
 
     exp.use_diag_table(diag)
@@ -126,16 +118,7 @@ for exp_number in [24,25]:
 
     exp.namelist = baseexp.namelist.copy()
 
-    if exp_number==24:
-    	exp.namelist['rayleigh_bottom_drag_nml']['variable_drag'] = True
-    else:
-    	exp.namelist['rayleigh_bottom_drag_nml']['variable_drag'] = False
+    exp.namelist['rayleigh_bottom_drag_nml']['kf_days'] = kf_days_array[exp_number-1]
 
-    exp.runmonth(1,num_cores=4, use_restart=False)
-    for i in range(2, 649):
-	
-        if i>240:
-		exp.namelist['two_stream_gray_rad_nml']['diabatic_acce'] = 1.0
-		exp.namelist['surface_flux_nml']['diabatic_acce'] = 1.0
-
-        exp.runmonth(i,num_cores=4)
+    for i in range(start_month_array[exp_number-1], end_month_array[exp_number-1]):
+        exp.runmonth(i,num_cores=16)
