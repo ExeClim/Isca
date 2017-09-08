@@ -521,6 +521,7 @@ class Experiment(object):
         new_exp.execdir = self.execdir
         new_exp.namelist = self.namelist.copy()
         new_exp.use_diag_table(self.diag_table.copy())
+        new_exp.inputfiles = self.inputfiles
         new_exp.commit_id = self.commit_id
         return new_exp
 
