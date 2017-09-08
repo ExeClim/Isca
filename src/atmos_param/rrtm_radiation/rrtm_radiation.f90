@@ -128,7 +128,7 @@
         character(len=256) :: h2o_file='h2o'                  !  file name of h2o file to read
         logical            :: do_read_co2=.false.             ! read co2 concentration from an external file?
         character(len=256) :: co2_file='co2'                  !  file name of co2 file to read
-        character(len=256) :: co2_field_name='co2'         !  field name of co2 file to read
+        character(len=256) :: co2_variable_name='co2'         !  field name of co2 file to read
 
 ! secondary gases (CH4,N2O,O2,CFC11,CFC12,CFC22,CCL4)
         logical            :: include_secondary_gases=.false. ! non-zero values for above listed secondary gases?
@@ -199,7 +199,7 @@
              &store_intermediate_rad, do_rad_time_avg, dt_rad, dt_rad_avg, &
              &lonstep, do_zm_tracers, do_zm_rad, &
              &do_precip_albedo, precip_albedo_mode, precip_albedo, precip_lat,&
-             &do_read_co2, co2_file, co2_field_name, use_dyofyr, solrad, &
+             &do_read_co2, co2_file, co2_variable_name, use_dyofyr, solrad, &
              &solday, equinox_day,solr_cnst
 
       end module rrtm_vars
@@ -691,7 +691,7 @@
 
           !get co2
           if(do_read_co2)then
-             call interpolator( co2_interp, Time, p_half, co2f, trim(co2_field_name))
+             call interpolator( co2_interp, Time, p_half, co2f, trim(co2_variable_name))
 	     co2f_temp = co2f*1.e-6
              co2f = co2f_temp
           else
