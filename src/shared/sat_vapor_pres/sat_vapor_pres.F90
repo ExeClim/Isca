@@ -520,14 +520,16 @@ private
 !-----------------------------------------------------------------------
 !  parameters for use in computing qs and mrs
 
- real, parameter    :: EPSILO = RDGAS/RVGAS
- real, parameter    :: ZVIR = RVGAS/RDGAS - 1.0
+ real    :: EPSILO = 0
+ real    :: ZVIR =   0
 
 !-----------------------------------------------------------------------
 !  parameters for table size and resolution
 
- integer :: tcmin = -160  ! minimum temperature (degC) in lookup table
- integer :: tcmax =  100  ! maximum temperature (degC) in lookup table
+ integer :: tcmin = -160  ! minimum temperature (degC) in lookup table !Note that this value is overwritten if do_simple = .true.
+ integer :: tcmax =  100  ! maximum temperature (degC) in lookup table !Note that this value is overwritten if do_simple = .true.
+ integer :: tcmin_simple = -173  ! minimum temperature (degC) in lookup table !Used if do_simple=.true.
+ integer :: tcmax_simple =  350  ! maximum temperature (degC) in lookup table !Used if do_simple=.true.
  integer :: esres =  10   ! table resolution (increments per degree)
  integer :: nsize  ! (tcmax-tcmin)*esres+1    !  lookup table size
  integer :: nlim   ! nsize-1
@@ -550,7 +552,8 @@ private
                                  use_exact_qs, do_simple, &
                                  construct_table_wrt_liq, &
                                  construct_table_wrt_liq_and_ice, &
-                                 do_not_calculate
+                                 do_not_calculate, &
+                                 tcmin, tcmax, tcmin_simple, tcmax_simple !s added in order that these might be changed for non-earth simulations
 
 contains
 
@@ -2291,9 +2294,18 @@ real,  intent(in),              optional :: hc
   unit = stdlog()
   if (mpp_pe() == mpp_root_pe()) write (unit, nml=sat_vapor_pres_nml)
 
+!-----------------------------------------------------------------------
+!  parameters for use in computing qs and mrs
+!  need to initialise here as rdgas not a paramter, so cannot have EPSILO or ZVIR as parameter
+ EPSILO = RDGAS/RVGAS
+ ZVIR = RVGAS/RDGAS - 1.0
+ 
+!----------------------------------------------------------------------- 
+
+
   if(do_simple) then
-    tcmin = -173
-    tcmax =  350
+    tcmin = tcmin_simple
+    tcmax = tcmax_simple
   endif
   nsize = (tcmax-tcmin)*esres+1
   nlim  = nsize-1

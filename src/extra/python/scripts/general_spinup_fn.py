@@ -113,12 +113,6 @@ if __name__ == "__main__":
 
     start_month_offset=[0, 0]
 
-#    exp_list=['without_dry_convection_bug/giant_drag_exp_chai_values_1', 'giant_drag_exp_chai_values_1',
-#          'without_dry_convection_bug/giant_drag_exp_chai_values_1_bar_damping_1', 'giant_drag_exp_chai_values_1_bar_damping_1']
-
-#    label_arr=['without bug chai 1','with bug chai 1',
-#           'without bug chai 1 bar 1','with bug chai 1 bar 1']
-
     exp_list=['no_ice_flux_lhe_exps_fixed_sst_1', 'no_ice_flux_q_exps_qflux_control_1']
     
     label_arr=['fixed DJF sst no ice', 'q-flux control DJF no ice']

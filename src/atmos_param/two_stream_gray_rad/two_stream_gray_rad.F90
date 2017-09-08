@@ -88,7 +88,7 @@ real    :: dt_rad_avg     = -1
 character(len=32) :: rad_scheme = 'frierson'
 
 integer, parameter :: B_GEEN = 1,      B_FRIERSON = 2, &
-                      B_BYRNE = 3
+                      B_BYRNE = 3, B_SCHNEIDER_LIU=4
 integer, private :: sw_scheme = B_FRIERSON
 integer, private :: lw_scheme = B_FRIERSON
 
@@ -101,13 +101,23 @@ real    :: ir_tau_wv       = 351.48
 real    :: window          = 0.3732
 real    :: carbon_conc     = 360.0
 
+! constants for SCHNEIDER_LIU radiation version
+real    :: single_albedo      = 0.8
+real    :: back_scatter       = 0.398
+real    :: lw_tau_0_gp        = 80.0
+real    :: sw_tau_0_gp        = 3.0
+real    :: lw_tau_exponent_gp = 2.0 
+real    :: sw_tau_exponent_gp = 1.0
+real    :: diabatic_acce = 1.0
+real,save :: gp_albedo, Ga_asym, g_asym
+
 ! parameters for Byrne and OGorman radiation scheme
 real :: bog_a = 0.8678
 real :: bog_b = 1997.9
 real :: bog_mu = 1.0
 
 real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 !s albedo now defined in mixed_layer_init
-real, allocatable, dimension(:,:)   :: b_surf
+real, allocatable, dimension(:,:)   :: b_surf, b_surf_gp
 real, allocatable, dimension(:,:,:) :: b, tdt_rad, tdt_solar
 real, allocatable, dimension(:,:,:) :: lw_up, lw_down, lw_flux, sw_up, sw_down, sw_flux, rad_flux
 real, allocatable, dimension(:,:,:) :: lw_tau, sw_tau, lw_dtrans
@@ -133,8 +143,9 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
            ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme, &
-           do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
-           use_time_average_coszen, dt_rad_avg
+           do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &           
+           use_time_average_coszen, dt_rad_avg,&
+           diabatic_acce !Schneider Liu values           
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -207,10 +218,23 @@ else if(uppercase(trim(rad_scheme)) == 'FRIERSON') then
 else if(uppercase(trim(rad_scheme)) == 'BYRNE') then
   lw_scheme = B_BYRNE
   call error_mesg('two_stream_gray_rad','Using Byrne & OGorman (2013) radiation scheme.', NOTE)
+else if(uppercase(trim(rad_scheme)) == 'SCHNEIDER') then
+  lw_scheme = B_SCHNEIDER_LIU
+  call error_mesg('two_stream_gray_rad','Using Schneider & Liu (2009) radiation scheme for GIANT PLANETS.', NOTE)  
 else
   call error_mesg('two_stream_gray_rad','"'//trim(rad_scheme)//'"'//' is not a valid radiation scheme.', FATAL)
 endif
 sw_scheme = lw_scheme
+
+
+if(lw_scheme == B_SCHNEIDER_LIU) then
+	g_asym          = 1 - 2.*back_scatter;                 ! asymmetry factor
+	gp_albedo     = ( sqrt(1. - g_asym*single_albedo) - sqrt(1. - single_albedo) )        &
+           / ( sqrt(1. - g_asym*single_albedo) + sqrt(1. - single_albedo) );
+	Ga_asym         = 2.*sqrt( (1. - single_albedo) * (1. - g_asym*single_albedo) );
+endif
+
+
 
 initialized = .true.
 
@@ -237,7 +261,6 @@ allocate (net_lw_surf      (ie-is+1, je-js+1))
 allocate (toa_sw_in        (ie-is+1, je-js+1))
 
 allocate (insolation       (ie-is+1, je-js+1))
-!allocate (albedo           (ie-is+1, je-js+1)) !s albedo now set in mixed_layer_init
 allocate (p2               (ie-is+1, je-js+1))
 allocate (coszen           (ie-is+1, je-js+1))
 allocate (fracsun          (ie-is+1, je-js+1)) !jp from astronomy.f90 : fraction of sun on surface
@@ -259,6 +282,9 @@ case(B_GEEN)
 
 case(B_BYRNE)
   allocate (lw_del_tau       (ie-is+1, je-js+1))
+  
+case(B_SCHNEIDER_LIU)
+	allocate (b_surf_gp      (ie-is+1, je-js+1))
 end select
 
 
@@ -414,6 +440,8 @@ if (do_seasonal) then
 
      insolation = solar_constant * coszen
 
+else if (sw_scheme==B_SCHNEIDER_LIU) then
+  insolation = (solar_constant/pi)*cos(lat)
 else
   ! Default: Averaged Earth insolation at all longitudes
   p2          = (1. - 3.*sin(lat)**2)/4.
@@ -454,6 +482,20 @@ case(B_FRIERSON, B_BYRNE)
   ! compute downward shortwave flux
   do k = 1, n+1
      sw_down(:,:,k)   = insolation(:,:) * exp(-sw_tau(:,:,k))
+  end do
+
+case(B_SCHNEIDER_LIU)
+  ! Schneider & Liu 2009 Giant planet scheme
+  ! SW optical thickness
+  
+  ! compute optical depths for each model level
+  do k = 1, n+1
+    sw_tau(:,:,k) = sw_tau_0_gp * (p_half(:,:,k)/pstd_mks)**sw_tau_exponent_gp
+  end do
+
+  ! compute downward shortwave flux
+  do k = 1, n+1
+     sw_down(:,:,k)   = insolation(:,:) * (1.0-gp_albedo)* exp(- Ga_asym * sw_tau(:,:,k))
   end do
 
 case default
@@ -543,6 +585,25 @@ case(B_FRIERSON)
      lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
   end do
 
+case(B_SCHNEIDER_LIU)
+
+  ! compute optical depths for each model level
+  do k = 1, n+1
+  lw_tau(:,:,k) = lw_tau_0_gp * (p_half(:,:,k)/pstd_mks)**lw_tau_exponent_gp
+  end do
+
+  ! longwave differential transmissivity
+  do k = 1, n
+     lw_dtrans(:,:,k) = exp( -(lw_tau(:,:,k+1) - lw_tau(:,:,k)) )
+  end do
+
+  ! compute downward longwave flux by integrating downward
+  lw_down(:,:,1)      = 0.
+  do k = 1, n
+     lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
+  end do
+
+
 case default
  call error_mesg('two_stream_gray_rad','invalid radiation scheme',FATAL)
 
@@ -553,6 +614,11 @@ surf_lw_down     = lw_down(:, :, n+1)
 toa_sw_in        = sw_down(:, :, 1)
 net_surf_sw_down = sw_down(:, :, n+1) * (1. - albedo)
 ! =================================================================================
+
+if(lw_scheme.eq.B_SCHNEIDER_LIU) then
+	b_surf_gp=surf_lw_down(:,:)+net_surf_sw_down(:,:)
+endif
+
 
 !------- downward lw flux surface -------
 if ( id_lwdn_sfc > 0 ) then
@@ -620,6 +686,14 @@ case(B_FRIERSON, B_BYRNE)
      lw_up(:,:,k)   = lw_up(:,:,k+1)*lw_dtrans(:,:,k) + b(:,:,k)*(1.0 - lw_dtrans(:,:,k))
   end do
 
+case(B_SCHNEIDER_LIU)
+  ! compute upward longwave flux by integrating upward
+
+  lw_up(:,:,n+1)    = b_surf_gp
+  do k = n, 1, -1
+     lw_up(:,:,k)   = lw_up(:,:,k+1)*lw_dtrans(:,:,k) + b(:,:,k)*(1.0 - lw_dtrans(:,:,k))
+  end do
+
 case default
  call error_mesg('two_stream_gray_rad','invalid radiation scheme',FATAL)
 
@@ -636,7 +710,7 @@ sw_flux  = sw_up - sw_down
 rad_flux = lw_flux + sw_flux
 
 do k = 1, n
-   tdt_rad(:,:,k)   = ( rad_flux(:,:,k+1) - rad_flux(:,:,k) )  &
+   tdt_rad(:,:,k)   = diabatic_acce * ( rad_flux(:,:,k+1) - rad_flux(:,:,k) )  &
         * grav/( cp_air*(p_half(:,:,k+1) - p_half(:,:,k)) )
 
    tdt_solar(:,:,k) = ( sw_flux(:,:,k+1) - sw_flux(:,:,k) )  &
@@ -713,6 +787,9 @@ if (sw_scheme.eq.B_GEEN) then
 endif
 if (lw_scheme.eq.B_BYRNE) then
   deallocate (lw_del_tau)
+endif
+if(lw_scheme.eq.B_SCHNEIDER_LIU) then
+	deallocate (b_surf_gp)
 endif
 
 if(do_read_co2)call interpolator_end(co2_interp)

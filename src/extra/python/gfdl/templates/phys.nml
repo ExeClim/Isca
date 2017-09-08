@@ -117,7 +117,8 @@
  &constants_nml
      /
 
- &astronomy_nml
+ &rayleigh_bottom_drag_nml
      /
 
-
+ &astronomy_nml
+     /

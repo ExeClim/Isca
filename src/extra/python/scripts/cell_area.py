@@ -81,4 +81,3 @@ if __name__ == "__main__":
     base_dir= '/scratch/sit204/FMS2013/GFDLmoistModel/'
     #return area_array
     area_array=cell_area(t_res,base_dir)
-

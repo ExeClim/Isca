@@ -34,7 +34,7 @@ use          transforms_mod, only: get_grid_domain
 
 use   spectral_dynamics_mod, only: get_axis_id, get_num_levels, get_surf_geopotential
 
-use        surface_flux_mod, only: surface_flux
+use        surface_flux_mod, only: surface_flux, gp_surface_flux
 
 use      sat_vapor_pres_mod, only: lookup_es !s Have added this to allow relative humdity to be calculated in a consistent way.
 
@@ -45,6 +45,8 @@ use    press_and_geopot_mod, only: pressure_variables
 use         mpp_domains_mod, only: mpp_get_global_domain !s added to enable land reading
 
 use          transforms_mod, only: grid_domain
+
+use rayleigh_bottom_drag_mod, only: rayleigh_bottom_drag_init, compute_rayleigh_bottom_drag
 
 #ifdef RRTM_NO_COMPILE
     ! RRTM_NO_COMPILE not included
@@ -99,6 +101,8 @@ logical :: do_damping = .false.
 
 
 logical :: mixed_layer_bc = .false.
+logical :: gp_surface = .false. !s Use Schneider & Liu 2009's prescription of lower-boundary heat flux
+
 logical :: do_simple = .false. !s Have added this to enable relative humidity to be calculated correctly below.
 real :: roughness_heat = 0.05
 real :: roughness_moist = 0.05
@@ -126,7 +130,8 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, roughness_he
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
                                       land_option, land_file_name, land_field_name,   & !s options for idealised land
-                                      land_roughness_prefactor, convection_scheme,   &
+                                      land_roughness_prefactor,               &
+                                      gp_surface, convection_scheme,          &
                                       bucket, init_bucket_depth, init_bucket_depth_land, & !RG Add bucket 
                                       max_bucket_depth_land, robert_bucket, raw_bucket
 
@@ -134,7 +139,6 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, roughness_he
 integer, parameter :: num_time_levels = 2 !RG Add bucket - number of time levels added to allow timestepping in this module
 real, allocatable, dimension(:,:,:)   :: bucket_depth      ! RG Add bucket
 real, allocatable, dimension(:,:    ) :: dt_bucket, filt   ! RG Add bucket
-
 
 real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
@@ -181,6 +185,7 @@ real, allocatable, dimension(:,:,:) ::                                        &
      diff_t,               &   ! temperature diffusion coeff.
      tdtlw,                &   ! place holder. appears in calling arguments of vert_turb_driver but not used unless do_edt=.true. -- pjp
      diss_heat,            &   ! heat dissipated by vertical diffusion
+     diss_heat_ray,        &   ! heat dissipated by rayleigh bottom drag (used when gp_surface=.True.)
      non_diff_dt_ug,       &   ! zonal wind tendency except from vertical diffusion
      non_diff_dt_vg,       &   ! merid. wind tendency except from vertical diffusion
      non_diff_dt_tg,       &   ! temperature tendency except from vertical diffusion
@@ -235,6 +240,7 @@ integer ::           &
      id_bucket_depth_cond, &   ! bucket depth variation induced by condensation  - RG Add bucket
      id_bucket_depth_lh,   &   ! bucket depth variation induced by LH  - RG Add bucket
      id_rh,          & 	 ! Relative humidity
+     id_diss_heat_ray,&  ! Heat dissipated by rayleigh bottom drag if gp_surface=.True.
      id_z_tg,        &   ! Relative humidity
      id_cape,        &
      id_cin
@@ -245,7 +251,11 @@ real,    allocatable, dimension(:) :: pref, p_half_1d, ln_p_half_1d, p_full_1d,l
 real,    allocatable, dimension(:,:) :: capeflag !s Added for Betts Miller scheme (rather than the simplified Betts Miller scheme).
 
 type(surf_diff_type) :: Tri_surf ! used by gcm_vert_diff
-
+	
+!s initialise constants ready to be used in rh_calc	
+real :: d622 = 0.
+real :: d378 = 0.
+	
 logical :: used, doing_edt, doing_entrain
 integer, dimension(4) :: axes
 integer :: is, ie, js, je, num_levels, nsphum, dt_integer
@@ -285,6 +295,10 @@ call write_version_number(version, tagname)
 #endif
 stdlog_unit = stdlog()
 write(stdlog_unit, idealized_moist_phys_nml)
+
+!s initialise variables for rh_calc
+d622 = rdgas/rvgas
+d378 = 1.-d622
 
 !s need to make sure that gray radiation and rrtm radiation are not both called.
 if(two_stream_gray .and. do_rrtm_radiation) &
@@ -387,6 +401,7 @@ allocate(rough       (is:ie, js:je))
 allocate(diff_t      (is:ie, js:je, num_levels))
 allocate(diff_m      (is:ie, js:je, num_levels))
 allocate(diss_heat   (is:ie, js:je, num_levels))
+allocate(diss_heat_ray   (is:ie, js:je, num_levels)) !s added for rayleigh_bottom_drag, used when gp_surface=.True.
 allocate(tdtlw       (is:ie, js:je, num_levels)); tdtlw = 0.0
 
 allocate(non_diff_dt_ug  (is:ie, js:je, num_levels))
@@ -416,7 +431,6 @@ allocate(convect      (is:ie, js:je)); convect = .false.
 allocate(t_ref (is:ie, js:je, num_levels)); t_ref = 0.0
 allocate(q_ref (is:ie, js:je, num_levels)); q_ref = 0.0
 
-!allocate (albedo      (ie-is+1, je-js+1)) !s allocate for albedo, to be set in mixed_layer_init.
 allocate (albedo      (is:ie, js:je)) !s allocate for albedo, to be set in mixed_layer_init.
 allocate(coszen       (is:ie, js:je)) !s allocate coszen to be set in run_rrtmg
 allocate(pbltop       (is:ie, js:je)) !s allocate coszen to be set in run_rrtmg
@@ -486,6 +500,14 @@ endif
 !s end option to alter surface roughness length over land
 
 
+if (gp_surface) then
+call rayleigh_bottom_drag_init(get_axis_id(), Time)
+axes = get_axis_id()
+id_diss_heat_ray = register_diag_field(mod_name, 'diss_heat_ray', &
+                   axes(1:3), Time, 'dissipated heat from Rayleigh drag', 'K/s')
+endif
+
+
 !    initialize damping_driver_mod.
       if(do_damping) then
          call pressure_variables(p_half_1d,ln_p_half_1d,pref(1:num_levels),ln_p_full_1d,PSTD_MKS)
@@ -501,7 +523,15 @@ if(mixed_layer_bc) then
   ! choose an unstable initial condition to allow moisture
   ! to quickly enter the atmosphere avoiding problems with the convection scheme
   t_surf = t_surf_init + 1.0
+
   call mixed_layer_init(is, ie, js, je, num_levels, t_surf, bucket_depth, get_axis_id(), Time, albedo, rad_lonb_2d(:,:), rad_latb_2d(:,:), land, bucket) ! t_surf is intent(inout) !s albedo distribution set here.
+  
+elseif(gp_surface) then
+  albedo=0.0
+  call error_mesg('idealized_moist_phys','Because gp_surface=.True., setting albedo=0.0', NOTE)
+
+  call error_mesg('idealized_moist_phys','Note that if grey radiation scheme != Schneider is used, model will seg-fault b/c gp_surface does not define a t_surf, which is required by most grey schemes.', NOTE)
+
 endif
 
 if(turb) then
@@ -687,7 +717,6 @@ case(FULL_BETTS_MILLER_CONV)
    if(id_cape  > 0) used = send_data(id_cape, cape, Time)
    if(id_cin  > 0) used = send_data(id_cin, cin, Time)
 
-
 case(DRY_CONV)
     call dry_convection(Time, tg(:, :, :, previous),                         &
                         p_full(:,:,:,previous), p_half(:,:,:,previous),      &
@@ -769,6 +798,7 @@ if(.not.mixed_layer_bc) then
 !!$  t_surf = surface_temperature(tg(:,:,:,previous), p_full(:,:,:,current), p_half(:,:,:,current))
 end if
 
+if(.not.gp_surface) then 
 call surface_flux(                                                          &
                   tg(:,:,num_levels,previous),                              &
  grid_tracers(:,:,num_levels,previous,nsphum),                              &
@@ -817,6 +847,7 @@ call surface_flux(                                                          &
                                     land(:,:),                              &
                                .not.land(:,:),                              &
                                    avail(:,:)  )
+endif
 
 ! Now complete the radiation calculation by computing the upward and net fluxes.
 
@@ -841,6 +872,27 @@ if(do_rrtm_radiation) then
    call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),coszen,net_surf_sw_down(:,:),surf_lw_down(:,:))
 endif
 #endif
+
+
+
+if(gp_surface) then
+
+	call gp_surface_flux (dt_tg(:,:,:), p_half(:,:,:,current), num_levels)
+	
+    call compute_rayleigh_bottom_drag( 1,                     ie-is+1, &
+                                       1,                     je-js+1, &
+                                     Time,                    delta_t, &
+                   rad_lat(:,:),         dt_ug(:,:,:      ), &
+                        dt_vg(:,:,:     ),                             &
+                       ug(:,:,:,previous),         vg(:,:,:,previous), &
+                     p_half(:,:,:,previous),     p_full(:,:,:,previous), &
+                     dt_tg, diss_heat_ray )
+
+	if(id_diss_heat_ray > 0) used = send_data(id_diss_heat_ray, diss_heat_ray, Time)
+endif
+
+
+
 
 !----------------------------------------------------------------------
 !    Copied from MiMA physics_driver.f90
@@ -898,7 +950,7 @@ if(turb) then
 !!$   dhdt_atm   = 0.0
 !!$   dedq_atm   = 0.0
 
-   if(.not.mixed_layer_bc) then
+   if(.not.(mixed_layer_bc.or.gp_surface)) then
      call error_mesg('atmosphere','no diffusion implentation for non-mixed layer b.c.',FATAL)
    endif
 
@@ -931,6 +983,7 @@ if(turb) then
 !
 ! update surface temperature
 !
+   if(mixed_layer_bc) then	
    call mixed_layer(                                                       &
                               Time, Time+Time_step,                        &
                               t_surf(:,:),                                 & ! t_surf is intent(inout)
@@ -948,6 +1001,7 @@ if(turb) then
                             dhdt_atm(:,:),                                 &
                             dedq_atm(:,:),                                 &
                               albedo(:,:))
+   endif
 
    call gcm_vert_diff_up (1, 1, delta_t, Tri_surf, dt_tg(:,:,:), dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:))
 
@@ -1045,9 +1099,6 @@ subroutine rh_calc(pfull,T,qv,RH) !s subroutine copied from 2006 FMS MoistModel 
         REAL, INTENT (OUT),   DIMENSION(:,:,:) :: RH
 
         REAL, DIMENSION(SIZE(T,1),SIZE(T,2),SIZE(T,3)) :: esat
-
-	real, parameter :: d622 = rdgas/rvgas
-	real, parameter :: d378 = 1.-d622
 
 !-----------------------------------------------------------------------
 !       Calculate RELATIVE humidity.

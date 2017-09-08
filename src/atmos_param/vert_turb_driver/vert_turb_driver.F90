@@ -87,9 +87,9 @@ logical            :: module_is_initialized = .false.
 !-----------------------------------------------------------------------
  real, parameter :: p00    = 1000.0E2
  real, parameter :: p00inv = 1./p00
- real, parameter :: d622   = rdgas/rvgas
- real, parameter :: d378   = 1.-d622
- real, parameter :: d608   = d378/d622
+ real :: d622   = 0.
+ real :: d378   = 0.
+ real :: d608   = 0.
 
 !---------------- private data -------------------
 
@@ -619,7 +619,12 @@ subroutine vert_turb_driver_init (lonb, latb, id, jd, kd, axes, Time, &
            'molecular diffusion with EDT', FATAL)
 
 !-----------------------------------------------------------------------
-        
+!s initialise these here as rdgas no longer a parameter
+d622   = rdgas/rvgas
+d378   = 1.-d622
+d608   = d378/d622
+!-----------------------------------------------------------------------
+         
        if (strat_cloud_on) then
 ! get tracer indices for stratiform cloud variables
           nql = get_tracer_index ( MODEL_ATMOS, 'liq_wat' )

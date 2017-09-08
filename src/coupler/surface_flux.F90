@@ -46,7 +46,7 @@ implicit none
 private
 
 ! ==== public interface ======================================================
-public  surface_flux
+public  surface_flux, gp_surface_flux
 ! ==== end of public interface ===============================================
 
 ! <INTERFACE NAME="surface_flux">
@@ -263,6 +263,10 @@ logical :: do_simple             = .false.
 
 real    :: land_humidity_prefactor  =  1.0    !s Default is that land makes no difference to evaporative fluxes
 
+real    :: flux_heat_gp  =  5.7    !s Default value for Jupiter of 5.7 Wm^-2
+real    :: diabatic_acce =  1.0    !s Diabatic acceleration??
+
+
 namelist /surface_flux_nml/ no_neg_q,             &
                             use_virtual_temp,     &
                             alt_gustiness,        &
@@ -274,7 +278,9 @@ namelist /surface_flux_nml/ no_neg_q,             &
                             ncar_ocean_flux_orig, &
                             raoult_sat_vap,       &
                             do_simple,            &
-                            land_humidity_prefactor !s Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
+                            land_humidity_prefactor, & !s Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
+                            flux_heat_gp,         &    !s prescribed lower boundary heat flux on a giant planet
+			    diabatic_acce
 
 
 
@@ -963,6 +969,21 @@ real   , intent(inout), dimension(:) :: cd, ch, ce, ustar, bstar
   endif
 
 end subroutine ncar_ocean_fluxes
+
+subroutine gp_surface_flux (dt_tg, p_half, num_levels)
+
+real   , intent(inout), dimension(:,:,:) :: dt_tg
+real   , intent(in), dimension(:,:,:) :: p_half
+integer   , intent(in) :: num_levels
+
+
+! add the internal heat flux
+dt_tg(:,:,num_levels) = dt_tg(:,:,num_levels)                          &
+  + diabatic_acce*grav*flux_heat_gp/(cp_air*(p_half(:,:,num_levels+1)    &
+  - p_half(:,:,num_levels)))
+
+
+end subroutine gp_surface_flux
 
 
 end module surface_flux_mod
