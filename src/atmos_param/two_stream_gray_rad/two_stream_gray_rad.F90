@@ -134,6 +134,7 @@ real, save :: pi, deg_to_rad , rad_to_deg
 logical                             :: do_read_co2=.false.
 type(interpolate_type),save         :: co2_interp           ! use external file for co2
 character(len=256)                  :: co2_file='co2'       !  file name of co2 file to read
+character(len=256)                  :: co2_variable_name='co2'       !  file name of co2 file to read
 
 
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
@@ -142,7 +143,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
            ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme, &
-           do_read_co2, co2_file, solday, equinox_day, bog_a, bog_b, bog_mu,&
+           do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &           
            use_time_average_coszen, dt_rad_avg,&
            diabatic_acce !Schneider Liu values           
 
@@ -389,8 +390,8 @@ real, intent(out), dimension(:,:)   :: surf_lw_down
 real, intent(in), dimension(:,:,:)  :: t, q,  p_half
 integer :: i, j, k, n, dyofyr
 
-integer :: seconds, year_in_s
-real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday, r_dt_rad_avg, dt_rad_radians
+integer :: seconds, year_in_s, days
+real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday, r_total_seconds, r_days, r_dt_rad_avg, dt_rad_radians
 logical :: used
 
 
@@ -408,7 +409,7 @@ n = size(t,3)
 ! insolation at TOA
 if (do_seasonal) then
   ! Seasonal Cycle: Use astronomical parameters to calculate insolation
-  call get_time(Time_diag, seconds)
+  call get_time(Time_diag, seconds, days)
   call get_time(length_of_year(), year_in_s)
   r_seconds = real(seconds)
   day_in_s = length_of_day()
@@ -418,7 +419,9 @@ if (do_seasonal) then
       r_solday=real(solday)
       frac_of_year = (r_solday*day_in_s) / year_in_s
   else
-      frac_of_year = r_seconds / year_in_s
+      r_days=real(days)
+      r_total_seconds=r_seconds+(r_days*day_in_s)
+      frac_of_year = r_total_seconds / year_in_s
   endif
 
   gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
@@ -508,7 +511,7 @@ b = stefan*t**4
 lw_dtrans_win = 1.
 
 if(do_read_co2)then
-  call interpolator( co2_interp, Time_diag, p_half, co2f, trim(co2_file))
+  call interpolator( co2_interp, Time_diag, p_half, co2f, trim(co2_variable_name))
   carbon_conc = maxval(co2f) !Needs maxval just because co2f is a 3d array of a constant, so maxval is just a way to pick out one number
 endif
 
