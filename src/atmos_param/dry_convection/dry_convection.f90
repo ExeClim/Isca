@@ -37,7 +37,7 @@ module dry_convection_mod
   namelist /dry_convection_nml/ tau, gamma
 
   integer :: i, j, jit, k, num_levels
-  real, parameter :: cons1 = rdgas/cp_air  !< Potential temperature exponent (R/Cp)
+  real :: cons1 = 0.  !< Potential temperature exponent (R/Cp)
 
   integer :: id_cape, id_cin, id_lzb, id_lcl, id_tp, id_n_tp, &
        id_dp, id_amb, id_dt
@@ -69,6 +69,9 @@ module dry_convection_mod
 20    call close_file (unit)
 
       if(mpp_pe() == mpp_root_pe()) write (stdlog(), nml=dry_convection_nml)
+
+      !s initialise here as rdgas no longer a paramter
+      cons1 = rdgas/cp_air  !< Potential temperature exponent (R/Cp)
 
       id_cape = register_diag_field ( mod_name, 'CAPE', axes(1:2), Time, &
            'CAPE', 'J/kg', missing_value=missing_value)

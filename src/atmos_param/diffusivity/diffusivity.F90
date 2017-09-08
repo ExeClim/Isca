@@ -163,8 +163,7 @@ real    :: beta   = 1.458e-06
 real    :: rbop1  = 110.4
 real    :: rbop2  = 1.405
 
-real, parameter :: d608 = (rvgas-rdgas)/rdgas
-
+real    :: d608   = 0
 
 contains
 
@@ -234,7 +233,8 @@ integer :: unit, ierr, io, logunit
 
   ! initialise from constants
   gcp = grav/cp_air
-
+  d608 = (rvgas-rdgas)/rdgas
+  
 !---------- output namelist to log-------------------------------------
 
       if ( mpp_pe() == mpp_root_pe() ) then

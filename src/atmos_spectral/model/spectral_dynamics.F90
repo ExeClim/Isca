@@ -160,6 +160,7 @@ logical :: do_mass_correction     = .true. , &
 integer :: damping_order       = 2, &
            damping_order_vor   =-1, &
            damping_order_div   =-1, &
+           cutoff_wn           = 15,  & ! T42
            lon_max             = 128, & ! T42
            lat_max             = 64,  & ! T42
            num_fourier         = 42,  & ! T42
@@ -201,7 +202,7 @@ real    :: damping_coeff       = 1.15740741e-4, & ! (one tenth day)**-1
 
 real, dimension(2) :: valid_range_t = (/100.,500./)
 
-namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option,                            &
+namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option, cutoff_wn,                 &
                                  damping_order, damping_coeff, damping_order_vor, damping_coeff_vor, &
                                  damping_order_div, damping_coeff_div, do_mass_correction,           &
                                  do_water_correction, do_energy_correction, vert_advect_uv,          &
@@ -455,7 +456,7 @@ do k=1,size(pk,1)-1
   dbk(k) = bk(k+1) - bk(k)
 enddo
 
-call spectral_damping_init(damping_coeff, damping_order, damping_option, num_fourier, num_spherical, &
+call spectral_damping_init(damping_coeff, damping_order, damping_option, cutoff_wn, num_fourier, num_spherical, &
                            num_levels, eddy_sponge_coeff, zmu_sponge_coeff, zmv_sponge_coeff,        &
                            damping_coeff_vor=damping_coeff_vor, damping_order_vor=damping_order_vor, &
                            damping_coeff_div=damping_coeff_div, damping_order_div=damping_order_div)

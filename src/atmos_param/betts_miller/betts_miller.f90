@@ -30,8 +30,8 @@ private
 !-----------------------------------------------------------------------
 !   ---- local/private data ----
 
-    real, parameter :: d622 = rdgas/rvgas
-    real, parameter :: d378 = 1.-d622
+    real :: d622 = 0.
+    real :: d378 = 0.
 
     logical :: do_init=.true.
 
@@ -878,6 +878,10 @@ integer  i, j, k, ix, jx, kx, klzb, ktop, klzb2
       if ( mpp_pe() == mpp_root_pe() ) then
            write (stdlog(),nml=betts_miller_nml)
       endif
+
+   !s initialise here as rdgas no longer a parameter
+   d622 = rdgas/rvgas
+   d378 = 1.-d622
 
       do_init=.false.
 

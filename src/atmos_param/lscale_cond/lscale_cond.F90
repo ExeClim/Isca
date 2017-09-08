@@ -46,8 +46,8 @@ private
 !-----------------------------------------------------------------------
 !   ---- local/private data ----
 
-    real, parameter :: d622 = rdgas/rvgas
-    real, parameter :: d378 = 1.-d622
+    real :: d622 = 0.
+    real :: d378 = 0.
 
 
 !-----------------------------------------------------------------------
@@ -289,6 +289,10 @@ subroutine precip_evap (pmass, tin, qin, qsat, dqsat, hlcp, &
            logunit = stdlog()
            write (logunit,nml=lscale_cond_nml)
       endif
+
+   !s initialise here as rdgas no longer a parameter
+   d622 = rdgas/rvgas
+   d378 = 1.-d622
 
       module_is_initialized=.true.
 
