@@ -9,6 +9,9 @@ from jinja2 import Environment, FileSystemLoader
 import sh
 import pdb
 
+import create_alert
+import getpass
+
 P = os.path.join
 _module_directory = os.path.dirname(os.path.realpath(__file__))
 
@@ -66,6 +69,30 @@ class CompilationError(Exception):
 
 class Experiment(object):
     """A basic GFDL experiment"""
+
+    RESOLUTIONS = {
+        'T170': {
+            'num_lon': 512,
+            'num_lat': 256,
+            'num_fourier': 170,
+            'num_spherical': 171
+        },
+
+        'T85': {
+            'num_lon': 256,
+            'num_lat': 128,
+            'num_fourier': 85,
+            'num_spherical': 86
+        },
+
+        'T42': {
+            'num_lon': 128,
+            'num_lat': 64,
+            'num_fourier': 42,
+            'num_spherical': 43,
+        },
+    }
+
     def __init__(self, name, commit=None, repo=None, overwrite_data=False,run_idb=False):
         super(Experiment, self).__init__()
         self.name = name
@@ -80,9 +107,9 @@ class Experiment(object):
 
         # where executable will be compiled to / fectched from
         if run_idb:
-            self.execdir = P(self.workdir, 'exec_debug')  #compiled with debug flags        
+            self.execdir = P(self.workdir, 'exec_debug')  #compiled with debug flags
         else:
-            self.execdir = P(self.workdir, 'exec')        
+            self.execdir = P(self.workdir, 'exec')
 
         self.restartdir = P(self.workdir, 'restarts') # where restarts will be stored
         self.rundir = P(self.workdir, 'run')          # temporary area an individual run will be performed
@@ -105,6 +132,20 @@ class Experiment(object):
             self.clone_and_checkout()
         else:
             self.srcdir = GFDL_BASE
+
+        try:
+            git_dir = self.srcdir+'/.git'
+            commit_id = sh.git("--git-dir="+git_dir, "log", "--pretty=format:'%H'", "-n 1")
+            commit_id = str(commit_id).split("'")[1]
+        except:
+            commit_id = None
+
+        if commit:
+            commit_consistency_check = commit_id[0:len(commit)]==commit
+            if not commit_consistency_check:
+                raise ValueError('commit id specified and commit id actually used are not the same:' +commit+commit_id[0:len(commit)])
+
+        self.commit_id = commit_id
 
         self.template_dir = P(_module_directory, 'templates')
 
@@ -152,8 +193,14 @@ class Experiment(object):
     def rm_workdir(self):
         try:
             sh.rm(['-r', self.workdir])
-        except sh.ErrorReturnCode_1:
+        except sh.ErrorReturnCode:
             log.warning('Tried to remove working directory but it doesnt exist')
+
+    def rm_datadir(self):
+        try:
+            sh.rm(['-r', self.datadir])
+        except sh.ErrorReturnCode:
+            log.warning('Tried to remove data directory but it doesnt exist')
 
     def clear_workdir(self):
         self.rm_workdir()
@@ -164,7 +211,7 @@ class Experiment(object):
         sh.cd(self.workdir)
         try:
             sh.rm(['-r', self.rundir])
-        except sh.ErrorReturnCode_1:
+        except sh.ErrorReturnCode:
             log.warning('Tried to remove run directory but it doesnt exist')
         mkdir(self.rundir)
         log.info('Emptied run directory %r' % self.rundir)
@@ -212,6 +259,10 @@ class Experiment(object):
         log.info('Writing namelist to %r' % P(outdir, 'input.nml'))
         self.namelist.write(P(outdir, 'input.nml'))
 
+    def set_resolution(self, res):
+        delta = self.RESOLUTIONS[res]
+        self.update_namelist({'spectral_dynamics_nml': delta})
+
     def write_diag_table(self, outdir):
         outfile = P(outdir, 'diag_table')
         log.info('Writing diag_table to %r' % outfile)
@@ -249,8 +300,8 @@ class Experiment(object):
         self.compile_flags.append('-DRRTM_NO_COMPILE')
 
         # set the namelist to use gray radiation scheme
-        self.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
-        self.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
+        # self.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
+        # self.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
 
         log.info('RRTM compilation disabled.  Namelist set to gray radiation.')
 
@@ -290,7 +341,7 @@ class Experiment(object):
         try:
             set_screen_title('compiling')
             sh.bash(P(self.workdir, 'compile.sh'), _out=clean_log_debug, _err=clean_log_debug)
-        except Exception as e:
+        except sh.ErrorReturnCode as e:
             log.critical('Compilation failed.')
             raise e
         log.debug('Compilation complete.')
@@ -324,11 +375,10 @@ class Experiment(object):
 
 
 
-    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False, run_idb=False, experiment_restart=None):
+    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False, run_idb=False, experiment_restart=None, email_alerts=True, email_address_for_alerts=None, disk_space_limit=20, disk_space_cutoff_limit=5):
+
         indir = P(self.rundir, 'INPUT')
         outdir = P(self.datadir, 'run%03d' % month)
-
-
 
         if os.path.isdir(outdir):
             if self.overwrite_data or overwrite_data:
@@ -380,6 +430,12 @@ class Experiment(object):
         # employ the template to create a runscript
         t = runmonth.stream(**vars).dump(P(self.rundir, 'runmonth.sh'))
 
+    # Check scratch space has enough disk space
+        if email_alerts:
+            if email_address_for_alerts is None:
+                email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
+            create_alert.run_alerts(self.execdir, GFDL_BASE, self.name, month, email_address_for_alerts, disk_space_limit, disk_space_cutoff_limit)
+
         log.info("Running GFDL for month %r" % month)
         self._cur_month = month
         try:
@@ -393,7 +449,7 @@ class Experiment(object):
             log.info("Cleaning run directory.")
             self.clear_rundir()
             return False
-        except Exception as e:
+        except sh.ErrorReturnCode as e:
             log.error("Run failed for month %r" % month)
             proc.process.kill()
             raise e
@@ -409,16 +465,24 @@ class Experiment(object):
         log.info("Saved restart file %r" % restart_file)
         sh.rm('-r', P(self.rundir, 'RESTART'))
 
+        try:
+            git_hash_file = open(P(outdir, 'git_hash_used.txt'), "w")
+            git_hash_file.write(self.commit_id)
+            git_hash_file.close()
+        except:
+            log.info("Could not output git commit hash")        
+        
         if light:
             os.system("cp -a "+self.rundir+"/*.nc "+outdir)
             sh.cp(['-a', P(self.restartdir, 'res_%d.cpio' % (month)), outdir])
             if month > 1:
                 try:
                     sh.rm( P(self.restartdir, 'res_%d.cpio' % (month-1)))
-                except sh.ErrorReturnCode_1:
+                except sh.ErrorReturnCode:
                     log.warning('Previous months restart already removed')
+
                 try:
-                    sh.rm( P(self.datadir, 'run%d' % (month-1) , 'res_%d.cpio' % (month-1)))
+                    sh.rm( P(self.datadir, 'run%03d' % (month-1) , 'res_%d.cpio' % (month-1)))
                 except sh.ErrorReturnCode_1:
                     log.warning('Previous months restart already removed')
 
@@ -436,6 +500,7 @@ class Experiment(object):
         new_exp.execdir = self.execdir
         new_exp.namelist = self.namelist.copy()
         new_exp.use_diag_table(self.diag_table.copy())
+        new_exp.commit_id = self.commit_id
         return new_exp
 
     def run_parameter_sweep(self, parameter_values, runs=10, num_cores=16):
@@ -462,20 +527,26 @@ class Experiment(object):
     def update_namelist(self, new_vals):
         """Update the namelist sections, overwriting existing values."""
         for sec in new_vals:
-            nml = self.namelist.setdefault(sec, {})
+            if sec not in self.namelist:
+                self.namelist[sec] = {}
+            nml = self.namelist[sec]
             nml.update(new_vals[sec])
-			
-    def runinterp(self, month, infile, outfile, var_names = '-a', p_model = False, rm_input=False):
+
+    def runinterp(self, month, infile, outfile, var_names = '-a', p_levs = "EVEN", rm_input=False):
+        """Interpolate data from sigma to pressure levels. Includes option to remove original file."""
         import subprocess
         pprocess = P(GFDL_BASE,'postprocessing/plevel_interpolation/scripts')
         interper = 'source '+pprocess+'/plevel.sh -i '
-        inputfile = P(self.datadir, 'run%d' % month, infile)
-        outputfile = P(self.datadir, 'run%d' % month, outfile)
+        inputfile = P(self.datadir, 'run%03d' % month, infile)
+        outputfile = P(self.datadir, 'run%03d' % month, outfile)
         
-        if p_model:
+        # Select from pre-chosen pressure levels, or input new ones in hPa in the format below.
+        if p_levs == "MODEL":
             plev = ' -p "2 9 18 38 71 125 206 319 471 665 904 1193 1532 1925 2375 2886 3464 4115 4850 5679 6615 7675 8877 10244 11801 13577 15607 17928 20585 23630 27119 31121 35711 40976 47016 53946 61898 71022 81491 93503" '
+        elif p_levs == "EVEN":
+            plev = ' -p "100000 95000 90000 85000 80000 75000 70000 65000 60000 55000 50000 45000 40000 35000 30000 25000 20000 15000 10000 5000" '
         else:
-            plev = ' '
+            plev = p_levs
         command = interper + inputfile + ' -o ' + outputfile + plev + var_names
         subprocess.call([command], shell=True)
         if rm_input:
