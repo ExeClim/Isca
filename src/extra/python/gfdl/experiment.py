@@ -480,7 +480,12 @@ class Experiment(object):
                     sh.rm( P(self.restartdir, 'res_%d.cpio' % (month-1)))
                 except sh.ErrorReturnCode:
                     log.warning('Previous months restart already removed')
-                sh.rm( P(self.datadir, 'run%03d' % (month-1) , 'res_%d.cpio' % (month-1)))
+
+                try:
+                    sh.rm( P(self.datadir, 'run%03d' % (month-1) , 'res_%d.cpio' % (month-1)))
+                except sh.ErrorReturnCode_1:
+                    log.warning('Previous months restart already removed')
+
         else:
             sh.cp(['-a', self.rundir+'/.', outdir])
         self.clear_rundir()
