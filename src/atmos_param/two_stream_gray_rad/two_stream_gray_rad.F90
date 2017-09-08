@@ -396,7 +396,6 @@ if (do_seasonal) then
       r_days=real(days)
       r_total_seconds=r_seconds+(r_days*day_in_s)
       frac_of_year = r_total_seconds / year_in_s
-!      frac_of_year = r_seconds / year_in_s
   endif
 
   gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
