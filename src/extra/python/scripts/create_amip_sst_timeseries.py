@@ -19,7 +19,7 @@ def add_sst_anomaly(sst_in, anomaly_type=None):
         end_month_idx = 483
         sst_anom_orig_order = dataset_el_nino['t_surf_anom'][start_month_idx:(end_month_idx+1),...]
         
-        print 'Selecting months between ' + str(dataset_el_nino.time.values[start_month_idx]) + ' to ' + str(dataset_el_nino.time.values[end_month_idx])
+        print(('Selecting months between ' + str(dataset_el_nino.time.values[start_month_idx]) + ' to ' + str(dataset_el_nino.time.values[end_month_idx])))
 
 
         lat_range_keep = [-30., 15.]
@@ -44,7 +44,7 @@ def add_sst_anomaly(sst_in, anomaly_type=None):
         
         sst_anom_all_shifted = sst_anom_orig_order_shift_lon[:,::-1,:]
 
-        print ' reordering months to line up with input file'
+        print(' reordering months to line up with input file')
                 
         start_month = dataset_el_nino.months.values[start_month_idx]
         end_month = dataset_el_nino.months.values[end_month_idx]
@@ -140,7 +140,7 @@ def main():
     months_to_include='all'
     months_to_include='DJF'    
 
-    for variable_name in output_name_list.iterkeys():
+    for variable_name in list(output_name_list.keys()):
 
         if amip_data_version=='amip_data_version_1_0_0':
             nfiles=50
