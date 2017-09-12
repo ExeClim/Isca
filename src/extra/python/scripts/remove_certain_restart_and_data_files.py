@@ -29,10 +29,10 @@ def keep_only_certain_restart_files(exp_object, max_num_files, interval=12):
     #        sh.ls(sh.glob(P(self.workdir,'restarts','res_*.cpio'))) #TODO get max_num_files calculated in line, rather than a variable to pass.
 
             #First defines a list of ALL the restart file numbers
-        files_to_remove=range(0,max_num_files)
+        files_to_remove=list(range(0,max_num_files))
 
             #Then defines a list of the ones we want to KEEP
-        files_to_keep  =range(0,max_num_files,interval) 
+        files_to_keep  =list(range(0,max_num_files,interval)) 
 
             #Then we remove the files we want to keep from the list of all files, giving a list of those we wish to remove
         for x in files_to_keep:
@@ -53,10 +53,10 @@ def keep_only_certain_restart_files_data_dir(exp_object, max_num_files, interval
     #        sh.ls(sh.glob(P(self.workdir,'restarts','res_*.cpio'))) #TODO get max_num_files calculated in line, rather than a variable to pass.
 
             #First defines a list of ALL the restart file numbers
-        files_to_remove=range(0,max_num_files)
+        files_to_remove=list(range(0,max_num_files))
 
             #Then defines a list of the ones we want to KEEP
-        files_to_keep  =range(0,max_num_files,interval) 
+        files_to_keep  =list(range(0,max_num_files,interval)) 
 
             #Then we remove the files we want to keep from the list of all files, giving a list of those we wish to remove
         for x in files_to_keep:
@@ -76,11 +76,11 @@ def keep_only_certain_daily_data_uninterp(exp_object, max_num_files, interval=No
     #        sh.ls(sh.glob(P(self.workdir,'restarts','res_*.cpio'))) #TODO get max_num_files calculated in line, rather than a variable to pass.
 
             #First defines a list of ALL the restart file numbers
-        files_to_remove=range(0,max_num_files)
+        files_to_remove=list(range(0,max_num_files))
 
         if interval is not None:
             #Then defines a list of the ones we want to KEEP
-            files_to_keep  =range(0,max_num_files,interval) 
+            files_to_keep  =list(range(0,max_num_files,interval)) 
             #Then we remove the files we want to keep from the list of all files, giving a list of those we wish to remove
             for x in files_to_keep:
                    files_to_remove.remove(x) 
@@ -89,7 +89,7 @@ def keep_only_certain_daily_data_uninterp(exp_object, max_num_files, interval=No
         for entry in files_to_remove:           
             try:
                 sh.rm(P(exp_object.datadir,exp_object.expname,'run%03d' % entry,file_name))
-                print 'Removed '+P(exp_object.datadir,exp_object.expname,'run%03d' % entry,file_name)        
+                print(('Removed '+P(exp_object.datadir,exp_object.expname,'run%03d' % entry,file_name)))        
             except sh.ErrorReturnCode_1:
                 pass
 #                 print 'Tried to remove some atmos_daily files, but number '+str(entry)+' does not exist'
