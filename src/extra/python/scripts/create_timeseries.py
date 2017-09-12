@@ -50,11 +50,11 @@ def create_pressures():
 #	p_half = [0., 0.046817, 0.115544, 0.254986, 0.510238, 0.937468, 1.599324, 2.558913, 3.874132, 5.593891, 7.756986, 10.393581, 13.528609, 17.186225, 21.394476, 26.18965, 31.62002, 37.748946, 44.657459, 52.446517, 61.23914, 71.182614, 82.450941, 95.247663, 109.809174, 126.408616, 145.360464, 167.025894, 191.81904, 220.214288, 252.754733, 290.062007, 332.84765, 381.926291, 438.230874, 502.830259, 576.949493, 661.993148, 759.57212, 871.53435, 1000., 1200.]
 	
 	if(np.min(p_half)!=0.):
-		print 'Must have minimum p_half level = 0., as otherwise model data will be missing near the top levels.'
+		print('Must have minimum p_half level = 0., as otherwise model data will be missing near the top levels.')
 		sys.exit(0)
 
 	if(np.max(p_half)<=1000.):
-		print 'Must have maximum p_half level > 1000., as otherwise vertical interpolation will fail near the surface when p_surf>1000.'
+		print('Must have maximum p_half level > 1000., as otherwise vertical interpolation will fail near the surface when p_surf>1000.')
 		sys.exit(0)
 
 	npfull=len(p_full)
@@ -67,13 +67,13 @@ def create_time_arr(num_years,is_climatology,time_spacing):
 
 	if(is_climatology):
 		if(num_years!=1.):
-			print 'note that for climatology file only one year is required, so setting num_years=1.'
+			print('note that for climatology file only one year is required, so setting num_years=1.')
 		num_days=360.
 		num_years=1.
 #		time_spacing=num_days//10
 		day_number = np.linspace(0,num_days,time_spacing+1)[1:]-(num_days/(2.*time_spacing))
 		time_units='days since 0000-01-01 00:00:00.0'
-		print 'when creating a climatology file, the year of the time units must be zero. This is how the model knows it is a climatology.'
+		print('when creating a climatology file, the year of the time units must be zero. This is how the model knows it is a climatology.')
 	else:
 		num_days=num_years*360.
 #		time_spacing=num_years
