@@ -148,7 +148,7 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
         elif 'tibet' in mountains:
             topo_array[idx_tibet] =  h_arr_tibet[idx_tibet]
         else:
-            print 'No valid mountain options detected for Sauliere 2012 topography'
+            print('No valid mountain options detected for Sauliere 2012 topography')
 
             
     elif topo_mode == 'gaussian':
@@ -168,7 +168,7 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
         topo_array[idx] = height* np.exp(-(rsqd_array[idx]**2.)/(2.*std_dev**2.))
         
     else:
-        print 'Invalid topography option given'
+        print('Invalid topography option given')
         
 
     if waterworld != True:      #Leave flexibility to allow aquamountains!
@@ -190,7 +190,7 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
     topo_array_netcdf[:] = topo_array
     land_array_netcdf[:] = land_array
     topo_file.close()
-    print 'Output written to: ' + topo_filename
+    print('Output written to: ' + topo_filename)
 
 
     #Show configuration on screen to allow checking
