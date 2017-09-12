@@ -45,7 +45,7 @@ def perform_adj(data_array):
 	nt, ny, nx = np.shape(data_array)
 
 	for j in range(ny):
-		print j
+		print(j)
 
 		for i in range(nx):
 			output_array[:,j,i] = adjust_data(data_array[:,j,i])
