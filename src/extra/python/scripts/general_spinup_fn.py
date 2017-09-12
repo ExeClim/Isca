@@ -45,7 +45,7 @@ def q_spinup(run_fol, var_to_integrate, start_month, end_month, plt_dir):
         
         rundata = xr.open_dataset(names[0],
                      decode_times=False)  # no calendar so tell netcdf lib
-    except RuntimeError:
+    except (RuntimeError, OSError):
         files_temp=[data_dir+'/'+run_fol+'/run%d/' % m for m in range(start_month, end_month+1)]
 
         names = [s + file_name for s in files_temp]
