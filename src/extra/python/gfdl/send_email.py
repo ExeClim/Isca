@@ -1,6 +1,6 @@
 import smtplib
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText 
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import socket
 import datetime
 import pdb
@@ -37,7 +37,7 @@ def send_email_fn(to_email,alert_message, basedir):
         try:
             code = get_paz(basedir)
         except IOError as error_msg:
-            print 'Password file is missing - email will not send. Error message: '+ error_msg.strerror+': '+error_msg.filename
+            print('Password file is missing - email will not send. Error message: '+ error_msg.strerror+': '+error_msg.filename)
             raise         
         server.login(from_email, code)
     
@@ -46,4 +46,4 @@ def send_email_fn(to_email,alert_message, basedir):
         server.sendmail(from_email, to_email, text)
         server.quit()
     except:
-        print 'something went wrong with sending the email'
+        print('something went wrong with sending the email')
