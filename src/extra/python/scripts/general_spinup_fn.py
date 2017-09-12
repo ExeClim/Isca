@@ -38,7 +38,7 @@ def q_spinup(run_fol, var_to_integrate, start_month, end_month, plt_dir):
 
         thd_files_exist=[os.path.isfile(s) for s in names]
 
-        print names[0]
+        print((names[0]))
 
         if not(all(thd_files_exist)):
             raise EOFError('EXITING BECAUSE OF MISSING FILES', [names[elem] for elem in range(len(thd_files_exist)) if not thd_files_exist[elem]])
@@ -52,7 +52,7 @@ def q_spinup(run_fol, var_to_integrate, start_month, end_month, plt_dir):
 
         thd_files_exist=[os.path.isfile(s) for s in names]
 
-        print names[0]
+        print((names[0]))
 
         if not(all(thd_files_exist)):
             raise EOFError('EXITING BECAUSE OF MISSING FILES', [names[elem] for elem in range(len(thd_files_exist)) if not thd_files_exist[elem]])
@@ -65,7 +65,7 @@ def q_spinup(run_fol, var_to_integrate, start_month, end_month, plt_dir):
     dp = xr.DataArray( np.diff(rundata.phalf), [('pfull',rundata.pfull) ])
 
         #read data into xarray 
-    print 'opening dataset'
+    print('opening dataset')
     rundata = xr.open_mfdataset( names,
                  decode_times=False,  # no calendar so tell netcdf lib
             # choose how data will be broken down into manageable chunks.
@@ -85,7 +85,7 @@ def q_spinup(run_fol, var_to_integrate, start_month, end_month, plt_dir):
     try:
         q_avs.pfull
     except AttributeError:
-        print 'data is 2d'
+        print('data is 2d')
         q_vint=q_avs
         q_vint.load()
         q_strat=q_vint
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     len_list=[len(start_month_offset), len(exp_list), len(label_arr), len(start_month_arr), len(end_month_arr)]
 
     if not all(x==len_list[0] for x in len_list):
-        raise IndexError, "Input arrays to routine are not all the same length"
+        raise IndexError("Input arrays to routine are not all the same length")
 
 
     variable_to_integrate='temp'
@@ -140,7 +140,7 @@ if __name__ == "__main__":
         if not os.path.exists(plt_dir):
             os.makedirs(plt_dir)
         idx=exp_list.index(exp_number)
-        print 'running ', exp_number
+        print(('running ', exp_number))
         #return integral of area mean q over stratosphere and whole atmosphere
         q_strat, q_vint, time = q_spinup(run_fol, variable_to_integrate, start_month_arr[idx]+start_month_offset[idx], end_month_arr[idx]+start_month_offset[idx], plt_dir)
         plt.plot(time,q_vint,label=label_arr[idx])

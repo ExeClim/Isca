@@ -62,12 +62,12 @@ def process_input_file(file_name, atmosphere_or_spectral_dynamics, num_fourier_o
         z_axis_2_in = dataset.zaxis_2.values #Number of full levels (30)
 
         longitudes_in  = np.arange(0., 360., (360./x_axis_2_in.shape[0]))
-        latitudes_in  = gg.gaussian_latitudes(y_axis_2_in.shape[0]/2)[0]        
+        latitudes_in  = gg.gaussian_latitudes(int(y_axis_2_in.shape[0]/2))[0]        
         
         axes_out = {'xaxis_1':x_axis_1_in, 'xaxis_2':np.arange(1.,num_x_out+1), 'yaxis_1':y_axis_1_in, 'yaxis_2':np.arange(1.,num_y_out+1), 'zaxis_1':dataset.zaxis_1.values, 'zaxis_2':dataset.zaxis_2.values, 'Time':Time_in}        
 
-        y_axis_name = u'yaxis_2'
-        x_axis_name = u'xaxis_2'
+        y_axis_name = 'yaxis_2'
+        x_axis_name = 'xaxis_2'
         
     elif atmosphere_or_spectral_dynamics=='spectral_dynamics':    
         x_axis_1_in = dataset.xaxis_1.values #Just a single value - 1.0
@@ -83,38 +83,38 @@ def process_input_file(file_name, atmosphere_or_spectral_dynamics, num_fourier_o
         z_axis_2_in = dataset.zaxis_2.values #Number of full levels (30)
 
         longitudes_in  = np.arange(0., 360., (360./x_axis_4_in.shape[0]))
-        latitudes_in  = gg.gaussian_latitudes(y_axis_3_in.shape[0]/2)[0]
+        latitudes_in  = gg.gaussian_latitudes(int(y_axis_3_in.shape[0]/2))[0]
 
         axes_out = {'xaxis_1':x_axis_1_in, 'xaxis_2':x_axis_2_in, 'xaxis_3':np.arange(1.,num_spherical_out+1), 'xaxis_4':np.arange(1.,num_x_out+1), 'yaxis_1':y_axis_1_in, 'yaxis_2':np.arange(1.,num_spherical_out+2), 'yaxis_3':np.arange(1.,num_y_out+1), 'zaxis_1':dataset.zaxis_1.values, 'zaxis_2':dataset.zaxis_2.values, 'Time':Time_in}
 
-        y_axis_name = u'yaxis_3'
-        x_axis_name = u'xaxis_4'
+        y_axis_name = 'yaxis_3'
+        x_axis_name = 'xaxis_4'
 
     longitudes_out = np.arange(0., 360., (360./num_x_out))
-    latitudes_out = gg.gaussian_latitudes(num_y_out/2)[0]    
+    latitudes_out = gg.gaussian_latitudes(int(num_y_out/2))[0]    
 
-    for var in dataset_out.data_vars.iterkeys():
+    for var in list(dataset_out.data_vars.keys()):
         dataset_out.__delitem__(var)
 
-    for coord in dataset_out.coords.iterkeys():
+    for coord in list(dataset_out.coords.keys()):
         dataset_out[coord] = axes_out[coord]
         dataset_out[coord].attrs = dataset[coord].attrs
 
-    for var in dataset.data_vars.iterkeys():
+    for var in list(dataset.data_vars.keys()):
 
         var_dims = dataset[var].dims
 
         if var_dims[2:4] == (y_axis_name, x_axis_name):
-            print var, 'physical grid'
+            print((var, 'physical grid'))
             new_var = linear_interpolate_for_regrid(longitudes_in, latitudes_in, longitudes_out, latitudes_out, dataset[var].load().values)
             dataset_out[var] = (dataset[var].dims, new_var)
     
-        elif var_dims[2:4] == (u'yaxis_2', u'xaxis_3'):    
-            print var, 'spectral grid'
+        elif var_dims[2:4] == ('yaxis_2', 'xaxis_3'):    
+            print((var, 'spectral grid'))
             new_var = populate_new_spherical_harmonic_field(x_axis_2_in, y_axis_2_in, axes_out['xaxis_3'], axes_out['yaxis_2'], dataset[var].values)
             dataset_out[var] = ((dataset[var].dims, new_var))
         else:
-            print var, 'neither'
+            print((var, 'neither'))
             dataset_out[var] = ((dataset[var].dims, dataset[var].values))
             
         dataset_out[var].attrs = dataset[var].attrs
@@ -163,9 +163,9 @@ def remove_fill_value_attribute(in_file_name, out_file_name):
 if __name__=="__main__":
 
     #Specify the number of fourier modes and lon and lat dimensions for the output
-    num_fourier_out = 213
-    num_x_out = 1024
-    num_y_out = 320
+    num_fourier_out = 85
+    num_x_out = 256
+    num_y_out = 128
 
     #Specify the name of the input files that you want to regrid
     atmosphere_file_name = 'atmosphere_old'
@@ -173,7 +173,7 @@ if __name__=="__main__":
     atmos_model_file_name = 'atmos_model.res'
     
     #Specify the name of the output cpio archive    
-    restart_file_out_name = 'res_213_onescript'
+    restart_file_out_name = 'res_85_onescript'
     
     #Regridding atmosphere file
     atmosphere_out_file_name = process_input_file(atmosphere_file_name,        'atmosphere',        num_fourier_out, num_x_out, num_y_out)
