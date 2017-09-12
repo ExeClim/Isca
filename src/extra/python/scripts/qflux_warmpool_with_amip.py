@@ -8,7 +8,7 @@ t_res = 42
 
 lat_0 = 16.
 
-simple_or_complex_continents = 'aquaplanet'
+simple_or_complex_continents = 'complex'
 
 if simple_or_complex_continents == 'simple':
     exp_name='/scratch/sit204/FMS2013/GFDLmoistModel/exp/simple_continents_post_princeton_qflux_control/'
@@ -98,7 +98,7 @@ for file_values in warmpool_loc_list:
     warmpool_lat_centre=file_values[0]
     warmpool_lon_centre=file_values[1]
 
-    print warmpool_lat_centre,warmpool_lon_centre
+    print((warmpool_lat_centre,warmpool_lon_centre))
 
     warmpool_width = 7.5
     warmpool_width_lon = 7.5
@@ -127,7 +127,7 @@ for file_values in warmpool_loc_list:
         land_file = Dataset(exp_name+'/input/land.nc', 'r', format='NETCDF3_CLASSIC')
         land_array = land_file.variables['land_mask'][:]
     except:
-        print 'No land file'
+        print('No land file')
 
 
     if base_sea_ice_file_name is not None:
@@ -168,8 +168,8 @@ for file_values in warmpool_loc_list:
 
     warmpool_integral_adj = np.sum(area_array*warmpool_array)
 
-    print 'warmpool_integral', warmpool_integral
-    print 'warmpool_integral_adj', warmpool_integral_adj
+    print(('warmpool_integral', warmpool_integral))
+    print(('warmpool_integral_adj', warmpool_integral_adj))
 
 
 
