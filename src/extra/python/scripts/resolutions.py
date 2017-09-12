@@ -21,12 +21,12 @@ nlat = lat_mult
 nlon = 1
 nfou = 1
 
-print "Each row indicates, for the corresponding triangular truncation, the minimum lat & lon grid sizes"
-print "satisfying both the anti-aliasing constraints and any (lat) multiple or (lon) factorization constraints."
-print "The T number is the minimum num_fourier but is set by num_spherical - 1 (e.g. num_spherical = 43 for T42)."
-print "Dsize is a measure of the percentage change in grid size from the previous row."
-print
-print "T\tfou\tsph\tlat\tlon\tDsize\tlon factorization"
+print("Each row indicates, for the corresponding triangular truncation, the minimum lat & lon grid sizes")
+print("satisfying both the anti-aliasing constraints and any (lat) multiple or (lon) factorization constraints.")
+print("The T number is the minimum num_fourier but is set by num_spherical - 1 (e.g. num_spherical = 43 for T42).")
+print("Dsize is a measure of the percentage change in grid size from the previous row.")
+print()
+print("T\tfou\tsph\tlat\tlon\tDsize\tlon factorization")
 
 prev_size = 0
 while 1:
@@ -43,5 +43,5 @@ while 1:
         prev_size = size
     else:
         size_chg = ""
-    print "T"+str(nfou)+"\t"+str(nfou)+"\t"+str(nsph)+"\t"+str(nlat)+"\t"+str(nlon)+"\t"+size_chg+"\t"+str(prime_factors(nlon))
+    print(("T"+str(nfou)+"\t"+str(nfou)+"\t"+str(nsph)+"\t"+str(nlat)+"\t"+str(nlon)+"\t"+size_chg+"\t"+str(prime_factors(nlon))))
     nfou += 1
