@@ -35,15 +35,15 @@ if __name__ == "__main__":
 
     cdftime = utime('hours since 0001-01-01 00:00:00')
     date = datetime.now()
-    print date
+    print(date)
     t = cdftime.date2num(date)
-    print t
+    print(t)
     date = cdftime.num2date(t)
-    print date
+    print(date)
 
     time = 1772.5
     date_equivalent = day_number_to_date(time)
-    print date_equivalent
+    print(date_equivalent)
 
 
 
