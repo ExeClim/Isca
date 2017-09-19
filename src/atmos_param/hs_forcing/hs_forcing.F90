@@ -117,7 +117,7 @@ private
                               equilibrium_t_file, peri_time, smaxis, albedo, &
                               lapse, h_a, tau_s, orbital_period,         &
                               heat_capacity, ml_depth, spinup_time, stratosphere_t_option,&
-                              lapse_rate
+                              lapse_rate, P00
 
 !-----------------------------------------------------------------------
 
