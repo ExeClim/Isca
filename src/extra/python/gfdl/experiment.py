@@ -147,6 +147,19 @@ class Experiment(object):
 
         self.commit_id = commit_id
 
+        try:
+            git_dir = self.srcdir+'/.git'
+            git_status_output = sh.git("--git-dir="+git_dir, "--work-tree="+self.srcdir, "status", "-b", "--porcelain")
+            git_status_output = str(git_status_output)
+            git_status_output = git_status_output.split("\n")
+            git_status_final = [git_status_output[0]]
+            git_status_relevant = [str_entry for str_entry in git_status_output if 'f90' in str_entry.lower()]
+            git_status_final.extend(git_status_relevant)
+        except:
+            git_status_final = None
+        
+        self.git_status_output = git_status_final
+
         self.template_dir = P(_module_directory, 'templates')
 
         self.templates = Environment(loader=FileSystemLoader(self.template_dir))
@@ -489,6 +502,8 @@ class Experiment(object):
         try:
             git_hash_file = open(P(outdir, 'git_hash_used.txt'), "w")
             git_hash_file.write(self.commit_id)
+            git_hash_file.write("\n")            
+            git_hash_file.writelines( "\n"+line_out for line_out in self.git_status_output)
             git_hash_file.close()
         except:
             log.info("Could not output git commit hash")        
@@ -523,6 +538,8 @@ class Experiment(object):
         new_exp.use_diag_table(self.diag_table.copy())
         new_exp.inputfiles = self.inputfiles
         new_exp.commit_id = self.commit_id
+        new_exp.git_status_output = self.git_status_output
+        
         return new_exp
 
     def run_parameter_sweep(self, parameter_values, runs=10, num_cores=16):
