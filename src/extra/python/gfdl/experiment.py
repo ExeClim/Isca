@@ -502,8 +502,9 @@ class Experiment(object):
         try:
             git_hash_file = open(P(outdir, 'git_hash_used.txt'), "w")
             git_hash_file.write(self.commit_id)
-            git_hash_file.write("\n")            
-            git_hash_file.writelines( "\n"+line_out for line_out in self.git_status_output)
+            git_hash_file.write("\n")     
+            if self.git_status_output is not None:
+                git_hash_file.writelines( "\n"+line_out for line_out in self.git_status_output)
             git_hash_file.close()
         except:
             log.info("Could not output git commit hash")        
@@ -539,7 +540,6 @@ class Experiment(object):
         new_exp.inputfiles = self.inputfiles
         new_exp.commit_id = self.commit_id
         new_exp.git_status_output = self.git_status_output
-        
         return new_exp
 
     def run_parameter_sweep(self, parameter_values, runs=10, num_cores=16):
