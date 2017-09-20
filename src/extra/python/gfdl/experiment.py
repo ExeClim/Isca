@@ -154,7 +154,6 @@ class Experiment(object):
             git_status_output = git_status_output.split("\n")
             git_status_final = [git_status_output[0]]
             for suffix_to_search_for in ['.f90', '.inc']:
-                pdb.set_trace()
                 git_status_relevant = [str_entry for str_entry in git_status_output if suffix_to_search_for in str_entry.lower()]
                 git_status_final.extend(git_status_relevant)
         except:
