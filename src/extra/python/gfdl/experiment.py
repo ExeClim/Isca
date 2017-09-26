@@ -153,7 +153,7 @@ class Experiment(object):
                 git_status_output = sh.git("--git-dir="+git_dir, "--work-tree="+self.srcdir, "status", "-b", "--porcelain")
                 git_status_output = str(git_status_output)
                 git_status_output = git_status_output.split("\n")
-                git_status_final = [git_status_output[0]]
+                git_status_final = ["Running from GFDL_BASE repo, so adding git status output.\n", git_status_output[0]]
                 for suffix_to_search_for in ['.f90', '.inc']:
                     git_status_relevant = [str_entry for str_entry in git_status_output if suffix_to_search_for in str_entry.lower()]
                     git_status_final.extend(git_status_relevant)
@@ -515,10 +515,10 @@ class Experiment(object):
             git_hash_file.write(self.commit_id)
             git_hash_file.write("\n")     
             if self.git_status_output is not None:
-                git_hash_file.write("\n"+"*---git status output---*:\n")
+                git_hash_file.write("\n"+"*---git status output (only f90 and inc files)---*:\n")
                 git_hash_file.writelines( line_out+"\n" for line_out in self.git_status_output)
             if self.git_diff_output is not None:
-                git_hash_file.write("\n"+"*---git diff output---*:\n")            
+                git_hash_file.write("\n"+"*---git diff output (everything)---*:\n")            
                 git_hash_file.writelines( line_out+"\n" for line_out in self.git_diff_output)                                
             git_hash_file.close()
         except:
