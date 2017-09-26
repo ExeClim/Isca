@@ -163,8 +163,8 @@ class Experiment(object):
                 git_status_final = None
                 git_diff_output  = None
         else:
-            git_status_final = ['run using specific commit, as specified above']
-            git_diff_output  = None
+            git_status_final = ['run using specific commit, as specified above, so no git status or git diff output to show']
+            git_diff_output  = git_status_final
         
         self.git_status_output = git_status_final
         self.git_diff_output   = git_diff_output
