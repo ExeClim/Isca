@@ -523,14 +523,14 @@ class Experiment(object):
         try:
             git_hash_file = open(P(outdir, 'git_hash_used.txt'), "w")
             if self.commit_id!=self.commit_id_base:
-                git_hash_file.write("*---hash of specified commit used for code in workdir---*:\n")
+                git_hash_file.write("*---hash of specified commit used for fortran code in workdir---*:\n")
                 git_hash_file.write(self.commit_id)
                 git_hash_file.write("\n")                 
-                git_hash_file.write("\n*---hash of commit used for GFDL_BASE code---*:\n")
+                git_hash_file.write("\n*---hash of commit used for code in GFDL_BASE, including this python script---*:\n")
                 git_hash_file.write(self.commit_id_base)
                 git_hash_file.write("\n")            
             else:
-                git_hash_file.write("*---hash of commit used for code in GFDL_BASE---*:\n")
+                git_hash_file.write("*---hash of commit used for code in GFDL_BASE, including this python script---*:\n")
                 git_hash_file.write(self.commit_id)
                 git_hash_file.write("\n")
             if self.git_status_output is not None:
