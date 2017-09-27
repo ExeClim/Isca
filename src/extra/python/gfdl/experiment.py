@@ -147,6 +147,23 @@ class Experiment(object):
 
         self.commit_id = commit_id
 
+        try:
+            git_dir = GFDL_BASE+'/.git'
+            commit_id_base = sh.git("--git-dir="+git_dir, "log", "--pretty=format:'%H'", "-n 1")
+            commit_id_base = str(commit_id_base).split("'")[1]
+            git_diff_output = sh.git("--no-pager", "--git-dir="+git_dir, "--work-tree="+self.srcdir, "diff", "--no-color", self.srcdir)
+            git_diff_output = str(git_diff_output).split("\n")            
+        except:
+            commit_id_base = None
+            git_diff_output  = None
+            
+        self.git_diff_output   = git_diff_output            
+
+        if commit_id==commit_id_base:
+            self.commit_id_base = self.commit_id
+        else:
+            self.commit_id_base = commit_id_base
+
         if not (repo and commit):
             try:
                 git_dir = self.srcdir+'/.git'
@@ -157,18 +174,12 @@ class Experiment(object):
                 for suffix_to_search_for in ['.f90', '.inc']:
                     git_status_relevant = [str_entry for str_entry in git_status_output if suffix_to_search_for in str_entry.lower()]
                     git_status_final.extend(git_status_relevant)
-                git_diff_output = sh.git("--no-pager", "--git-dir="+git_dir, "--work-tree="+self.srcdir, "diff", "--no-color", self.srcdir)
-                git_diff_output = str(git_diff_output).split("\n")
             except:
                 git_status_final = None
-                git_diff_output  = None
         else:
-            git_status_final = ['run using specific commit, as specified above, so no git status or git diff output to show']
-            git_diff_output  = git_status_final
+            git_status_final = ['run using specific commit, as specified above, so no git status output for f90 or inc files']
         
-        self.git_status_output = git_status_final
-        self.git_diff_output   = git_diff_output
-        
+        self.git_status_output = git_status_final      
 
         self.template_dir = P(_module_directory, 'templates')
 
@@ -511,14 +522,22 @@ class Experiment(object):
 
         try:
             git_hash_file = open(P(outdir, 'git_hash_used.txt'), "w")
-            git_hash_file.write("*---hash of most recent commit---*:\n")
-            git_hash_file.write(self.commit_id)
-            git_hash_file.write("\n")     
+            if self.commit_id!=self.commit_id_base:
+                git_hash_file.write("*---hash of specified commit used for code in workdir---*:\n")
+                git_hash_file.write(self.commit_id)
+                git_hash_file.write("\n")                 
+                git_hash_file.write("\n*---hash of commit used for GFDL_BASE code---*:\n")
+                git_hash_file.write(self.commit_id_base)
+                git_hash_file.write("\n")            
+            else:
+                git_hash_file.write("*---hash of commit used for code in GFDL_BASE---*:\n")
+                git_hash_file.write(self.commit_id)
+                git_hash_file.write("\n")
             if self.git_status_output is not None:
                 git_hash_file.write("\n"+"*---git status output (only f90 and inc files)---*:\n")
                 git_hash_file.writelines( line_out+"\n" for line_out in self.git_status_output)
             if self.git_diff_output is not None:
-                git_hash_file.write("\n"+"*---git diff output (everything)---*:\n")            
+                git_hash_file.write("\n"+"*---git diff output run in GFDL_BASE (everything)---*:\n")            
                 git_hash_file.writelines( line_out+"\n" for line_out in self.git_diff_output)                                
             git_hash_file.close()
         except:
@@ -554,6 +573,7 @@ class Experiment(object):
         new_exp.use_diag_table(self.diag_table.copy())
         new_exp.inputfiles = self.inputfiles
         new_exp.commit_id = self.commit_id
+        new_exp.commit_id_base = self.commit_id_base        
         new_exp.git_status_output = self.git_status_output
         new_exp.git_diff_output   = self.git_diff_output        
         return new_exp
