@@ -241,13 +241,13 @@ def sub_ncdate(date1, date0, units='hours since 1900-01-01 00:00',
         try:
             time0 = nc.date2num(date0, units, calendar)
         except (ValueError, AttributeError) as e:
-            print 'ERROR {}'.format(e)
+            print(('ERROR {}'.format(e)))
             raise KeyError(date0)
 
         try:
             time1 = nc.date2num(date1, units, calendar)
         except (ValueError, AttributeError) as e:
-            print 'ERROR {}'.format(e)
+            print(('ERROR {}'.format(e)))
             raise KeyError(date1)
 
         # Determine units of dates, since TimedeltaIndex

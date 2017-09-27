@@ -21,7 +21,7 @@ def plevel_call(nc_file_in,nc_file_out, var_names = '-a', p_levels='default', ma
     else:
         plev=p_levels
         command = interper + nc_file + out_file + plev +' '+mask_below_surface_option+ var_names
-    print command
+    print(command)
     subprocess.call([command], shell=True)
 
 def daily_average(nc_file_in, nc_file_out):
@@ -49,6 +49,15 @@ def two_daily_average(nc_file_in, nc_file_out, avg_or_daily):
 def join_files(files_in, file_name_out):
 
     subprocess.call('cdo mergetime '+files_in+' '+file_name_out, shell=True)
+    
+def climatology(file_in, file_name_out):
+    subprocess.call('cdo mergetime '+files_in+' '+file_name_out, shell=True)
+
+def monthly_climatology(file_in, file_name_out):
+    subprocess.call('cdo ymonmean '+files_in+' '+file_name_out, shell=True)
+    
+def merge_two_netcdf_files(file_in_1, file_in_2, file_name_out):
+    subprocess.call('cdo merge '+files_in_1+' '+file_name_out, shell=True)
 
 def check_gfdl_directories_set():
 
@@ -56,6 +65,6 @@ def check_gfdl_directories_set():
         GFDL_BASE = os.environ['GFDL_BASE']
         GFDL_WORK = os.environ['GFDL_WORK']
         GFDL_DATA = os.environ['GFDL_DATA']
-    except Exception, e:
+    except Exception as e:
         print('Exiting: Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA are not set')
         sys.exit(0)

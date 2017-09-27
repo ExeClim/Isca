@@ -11,8 +11,8 @@ import pdb
 def copy_netcdf_attrs(dsin, dsout, copy_vars = True):
     
     #Copy dimensions
-    for dname, the_dim in dsin.dimensions.iteritems():
-        print dname, len(the_dim)
+    for dname, the_dim in list(dsin.dimensions.items()):
+        print((dname, len(the_dim)))
         if dname!='Time':
             dsout.createDimension(dname, len(the_dim) if not the_dim.isunlimited() else None)
         else:
@@ -20,9 +20,9 @@ def copy_netcdf_attrs(dsin, dsout, copy_vars = True):
 
     if copy_vars:
         # Copy variables
-        for v_name, varin in dsin.variables.iteritems():
+        for v_name, varin in list(dsin.variables.items()):
             outVar = dsout.createVariable(v_name, varin.datatype, varin.dimensions)
-            print varin.datatype
+            print((varin.datatype))
     
             # Copy variable attributes
             for k in varin.ncattrs():

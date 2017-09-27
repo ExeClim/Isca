@@ -70,7 +70,7 @@ character(len=128), parameter :: mod_name='mixed_layer'
 
 !=================================================================================================================================
 
-public :: mixed_layer_init, mixed_layer, mixed_layer_end
+public :: mixed_layer_init, mixed_layer, mixed_layer_end, albedo_calc
 
 !=================================================================================================================================
 
@@ -116,6 +116,15 @@ real,dimension(10) :: slandlon=0,slandlat=0,elandlon=-1,elandlat=-1
 character(len=256) :: qflux_file_name  = 'INPUT/ocean_qflux.nc'
 character(len=256) :: qflux_field_name = 'ocean_qflux'
 
+character(len=256) :: ice_file_name  = 'siconc_clim_amip'
+real    :: ice_albedo_value = 0.7
+real    :: ice_concentration_threshold = 0.5
+logical :: update_albedo_from_ice = .false.
+
+logical :: add_latent_heat_flux_anom = .false.
+character(len=256) :: flux_lhe_anom_file_name  = 'INPUT/flux_lhe_anom.nc'
+character(len=256) :: flux_lhe_anom_field_name = 'flux_lhe_anom'
+
 namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               delta_T, prescribe_initial_dist,albedo_value,  &
                               land_depth,trop_depth,                         &  !mj
@@ -128,7 +137,12 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               elandlon,elandlat,                             &  !mj
                               land_h_capacity_prefactor,                     &  !s
                               land_albedo_prefactor,                         &  !s
-			      load_qflux,qflux_file_name,time_varying_qflux, specify_sst_over_ocean_only
+                              load_qflux,qflux_file_name,time_varying_qflux, &
+                              update_albedo_from_ice, ice_file_name,         &
+                              ice_albedo_value, specify_sst_over_ocean_only, &
+                              ice_concentration_threshold,                   &
+                              add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
+                              flux_lhe_anom_field_name
 
 !=================================================================================================================================
 
@@ -145,11 +159,14 @@ integer ::                                                                    &
      id_flux_t,            &   ! sensible heat flux at surface
      id_heat_cap,          &   ! heat capacity
      id_albedo,            &   ! mj albedo
+     id_ice_conc,          &   ! st ice concentration
      id_delta_t_surf
 
 real, allocatable, dimension(:,:)   ::                                        &
      ocean_qflux,           &   ! Q-flux
-     rad_lat_2d                 ! latitude in radians
+     ice_concentration,     &   ! ice_concentration
+     rad_lat_2d,            &   ! latitude in radians
+     flux_lhe_anom, flux_q_total
 
 real, allocatable, dimension(:)   :: deg_lat, deg_lon
 
@@ -172,14 +189,16 @@ real, allocatable, dimension(:,:)   ::                                        &
      delta_t_surf,          &   ! Increment in surface temperature
      zsurf,                 &   ! mj know about topography
      land_sea_heat_capacity,&
-     sst_new                    ! mj input SST
+     sst_new,               &   ! mj input SST
+     albedo_initial
 
 logical, allocatable, dimension(:,:) ::      land_mask
-
 
 !mj read sst from input file
   type(interpolate_type),save :: sst_interp
   type(interpolate_type),save :: qflux_interp
+  type(interpolate_type),save :: ice_interp
+  type(interpolate_type),save :: flux_lhe_anom_interp  
 
 real inv_cp_air
 
@@ -235,6 +254,9 @@ enddo
 
 allocate(rad_lat_2d              (is:ie, js:je))
 allocate(ocean_qflux             (is:ie, js:je))
+allocate(ice_concentration       (is:ie, js:je))
+allocate(flux_lhe_anom           (is:ie, js:je))
+allocate(flux_q_total            (is:ie, js:je))
 allocate(deg_lat                 (js:je))
 allocate(deg_lon                 (is:ie))
 allocate(gamma_t                 (is:ie, js:je))
@@ -253,10 +275,9 @@ allocate(delta_t_surf            (is:ie, js:je))
 allocate(eff_heat_capacity       (is:ie, js:je))
 allocate(corrected_flux          (is:ie, js:je))
 allocate(t_surf_dependence       (is:ie, js:je))
-!allocate (albedo                (ie-is+1, je-js+1))
+allocate (albedo_initial         (is:ie, js:je))
 allocate(land_sea_heat_capacity  (is:ie, js:je))
-!allocate(land_sea_heat_capacity  (ie-is+1, je-js+1))
-allocate(zsurf                  (is:ie, js:je))
+allocate(zsurf                   (is:ie, js:je))
 allocate(sst_new                 (is:ie, js:je))
 allocate(land_mask                 (is:ie, js:je)); land_mask=land
 !
@@ -333,9 +354,15 @@ id_heat_cap = register_static_field(mod_name, 'ml_heat_cap',        &
                                  axes(1:2), 'mixed layer heat capacity','joules/m^2/deg C')
 id_delta_t_surf = register_diag_field(mod_name, 'delta_t_surf',        &
                                  axes(1:2), Time, 'change in sst','K')
-
-id_albedo = register_static_field(mod_name, 'albedo',    &
+if (update_albedo_from_ice) then
+	id_albedo = register_diag_field(mod_name, 'albedo',    &
+                                 axes(1:2), Time, 'surface albedo', 'none')
+	id_ice_conc = register_diag_field(mod_name, 'ice_conc',    &
+                                 axes(1:2), Time, 'ice_concentration', 'none')
+else
+	id_albedo = register_static_field(mod_name, 'albedo',    &
                                  axes(1:2), 'surface albedo', 'none')
+endif
 
 ocean_qflux = 0.
 
@@ -378,6 +405,11 @@ if ( do_qflux .or. do_warmpool) then
 endif
 
 !s End MiMA options for qfluxes
+
+if (add_latent_heat_flux_anom) then
+	   call interpolator_init( flux_lhe_anom_interp, trim(flux_lhe_anom_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+endif
+
 
 
 inv_cp_air = 1.0 / CP_AIR
@@ -434,8 +466,15 @@ select case (albedo_choice)
      enddo
 end select
 
-if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
+albedo_initial=albedo
 
+if (update_albedo_from_ice) then
+	call interpolator_init( ice_interp, trim(ice_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+        call read_ice_conc(Time)
+	call albedo_calc(albedo,Time)
+else
+	if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
+endif
 
 !s begin surface heat capacity calculation
    if(.not.do_sc_sst.or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
@@ -509,7 +548,8 @@ subroutine mixed_layer (                                               &
      dedq_surf,                                                        &
      drdt_surf,                                                        &
      dhdt_atm,                                                         &
-     dedq_atm)
+     dedq_atm,                                                         &
+     albedo_out)
 
 ! ---- arguments -----------------------------------------------------------
 type(time_type), intent(in)       :: Time, Time_next
@@ -522,12 +562,36 @@ real, intent(in), dimension(:,:) :: &
    dhdt_surf, dedt_surf, dedq_surf, &
    drdt_surf, dhdt_atm, dedq_atm
 real, intent(in) :: dt
+real, intent(out), dimension(:,:) :: albedo_out
 type(surf_diff_type), intent(inout) :: Tri_surf
+logical, dimension(size(land_mask,1),size(land_mask,2)) :: land_ice_mask
 
 
 if(.not.module_is_initialized) then
   call error_mesg('mixed_layer','mixed_layer module is not initialized',FATAL)
 endif
+
+if(update_albedo_from_ice) then
+	call read_ice_conc(Time_next)
+	land_ice_mask=.false.
+	where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
+		land_ice_mask=.true.
+	end where
+else
+	land_ice_mask=land_mask
+endif
+
+call albedo_calc(albedo_out,Time_next)
+
+!s Add latent heat flux anomalies before any of the calculations take place
+
+if (add_latent_heat_flux_anom) then
+    call interpolator( flux_lhe_anom_interp, Time, flux_lhe_anom, trim(flux_lhe_anom_file_name) )
+    flux_q_total = flux_q + flux_lhe_anom
+else
+    flux_q_total = flux_q
+endif
+
 
 ! Need to calculate the implicit changes to the lowest level delta_q and delta_t
 ! - see the discussion in vert_diff.tech.ps
@@ -539,7 +603,7 @@ gamma_t = 1.0 / (1.0 - Tri_surf%dtmass * (Tri_surf%dflux_t + dhdt_atm * inv_cp_a
 gamma_q = 1.0 / (1.0 - Tri_surf%dtmass * (Tri_surf%dflux_tr(:,:,nhum) + dedq_atm))
 
 fn_t = gamma_t * (Tri_surf%delta_t + Tri_surf%dtmass * flux_t * inv_cp_air)
-fn_q = gamma_q * (Tri_surf%delta_tr(:,:,nhum) + Tri_surf%dtmass * flux_q)
+fn_q = gamma_q * (Tri_surf%delta_tr(:,:,nhum) + Tri_surf%dtmass * flux_q_total)
 
 en_t = gamma_t * Tri_surf%dtmass * dhdt_surf * inv_cp_air
 en_q = gamma_q * Tri_surf%dtmass * dedt_surf
@@ -549,7 +613,7 @@ en_q = gamma_q * Tri_surf%dtmass * dedt_surf
 ! Note drdt_atm is not used - should be fixed
 !
 alpha_t = flux_t * inv_cp_air + dhdt_atm * inv_cp_air * fn_t
-alpha_q = flux_q + dedq_atm * fn_q
+alpha_q = flux_q_total + dedq_atm * fn_q
 alpha_lw = flux_r
 
 beta_t = dhdt_surf * inv_cp_air + dhdt_atm * inv_cp_air * en_t
@@ -559,6 +623,11 @@ beta_lw = drdt_surf
 ! If time-varying qflux then update value
 if(load_qflux.and.time_varying_qflux) then
          call interpolator( qflux_interp, Time, ocean_qflux, trim(qflux_file_name) )
+
+	 if(update_albedo_from_ice) then
+	      where (land_ice_mask) ocean_qflux=0.
+	 endif
+
 endif
 
 !
@@ -579,8 +648,8 @@ if(do_sc_sst) then !mj sst read from input file
          call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
 
          if(specify_sst_over_ocean_only) then
-	     where (.not.land_mask) delta_t_surf = sst_new - t_surf
-             where (.not.land_mask) t_surf = t_surf + delta_t_surf			 
+	     where (.not.land_ice_mask) delta_t_surf = sst_new - t_surf
+             where (.not.land_ice_mask) t_surf = t_surf + delta_t_surf			 
 	 else
 	     delta_t_surf = sst_new - t_surf
 	     t_surf = t_surf + delta_t_surf
@@ -601,8 +670,8 @@ if ((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
 	end if
 
     if(do_sc_sst.and.specify_sst_over_ocean_only) then
-        where (land_mask) delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-	where (land_mask) t_surf = t_surf + delta_t_surf			 
+        where (land_ice_mask) delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
+	where (land_ice_mask) t_surf = t_surf + delta_t_surf			 
     else
         delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
 	t_surf = t_surf + delta_t_surf
@@ -616,20 +685,51 @@ endif !s end of if(do_sc_sst).
 Tri_surf%delta_t = fn_t + en_t * delta_t_surf
 if (evaporation) Tri_surf%delta_tr(:,:,nhum) = fn_q + en_q * delta_t_surf
 
-
 !
 ! Note:
 ! When using an implicit step there is not a clearly defined flux for a given timestep
 ! We have taken a time-step, send the values at the next time level.
 if(id_t_surf > 0) used = send_data(id_t_surf, t_surf, Time_next)
 if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time_next)
-if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q, Time_next)
+if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q_total, Time_next)
 if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time_next)
 
 if(id_delta_t_surf > 0)   used = send_data(id_delta_t_surf, delta_t_surf, Time_next)
 
 end subroutine mixed_layer
 
+!=================================================================================================================================
+
+subroutine albedo_calc(albedo_inout,Time)
+
+real, intent(out), dimension(:,:) :: albedo_inout
+type(time_type), intent(in)       :: Time
+
+albedo_inout=albedo_initial
+
+if(update_albedo_from_ice) then
+
+	where(ice_concentration.gt.ice_concentration_threshold) 
+		albedo_inout=ice_albedo_value
+	end where
+
+	if ( id_ice_conc > 0 ) used = send_data ( id_ice_conc, ice_concentration, Time )
+	if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo_inout, Time )
+
+endif
+
+end subroutine albedo_calc
+!=================================================================================================================================
+
+subroutine read_ice_conc(Time)
+
+type(time_type), intent(in)       :: Time
+
+
+call interpolator( ice_interp, Time, ice_concentration, trim(ice_file_name) )
+if ( id_ice_conc > 0 ) used = send_data ( id_ice_conc, ice_concentration, Time )
+
+end subroutine read_ice_conc
 !=================================================================================================================================
 
 subroutine mixed_layer_end(t_surf, bucket_depth, restart_file_bucket_depth)

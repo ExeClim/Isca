@@ -106,7 +106,7 @@ character(len=128), parameter :: tagname = '$Name: siena_201211 $'
 ! variables needed for diagnostics
 integer :: id_ps, id_u, id_v, id_t, id_vor, id_div, id_omega, id_wspd, id_slp
 integer :: id_pres_full, id_pres_half, id_zfull, id_zhalf, id_vort_norm, id_EKE
-integer :: id_uu, id_vv, id_tt, id_omega_omega, id_uv, id_omega_t, id_vw, id_uw, id_ut, id_vt
+integer :: id_uu, id_vv, id_tt, id_omega_omega, id_uv, id_omega_t, id_vw, id_uw, id_ut, id_vt, id_v_vor
 integer, allocatable, dimension(:) :: id_tr, id_utr, id_vtr, id_wtr !extra advection diags added by RG
 real :: gamma, expf, expf_inverse
 character(len=8) :: mod_name = 'dynamics'
@@ -1626,6 +1626,9 @@ id_ut  = register_diag_field(mod_name, &
 id_vt  = register_diag_field(mod_name, &
       'vcomp_temp', axes_3d_full, Time, 'meridional wind * temperature', 'm*K/sec')
 
+id_v_vor  = register_diag_field(mod_name, &
+      'vcomp_vor', axes_3d_full, Time, 'meridional wind * vorticity', 'm/sec**2')
+
 id_omega_t = register_diag_field(mod_name, &
       'omega_temp',axes_3d_full,     Time, 'dp/dt * temperature',          'Pa*K/sec')
 
@@ -1742,6 +1745,10 @@ endif
 if(id_uv > 0) then
   worka3d = u_grid*v_grid
   used = send_data(id_uv, worka3d, Time)
+endif
+if(id_v_vor > 0) then
+  worka3d = v_grid*vorg
+  used = send_data(id_v_vor, worka3d, Time)
 endif
 if(id_tt > 0) then
   worka3d = t_grid**2

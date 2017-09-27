@@ -12,13 +12,16 @@ opt_exps
 frierson_comparison_*old*
 *.pyc
 exp/st_test*
+exp/archived/*
 *.DS_Store
 *.egg-info
 ._*
 *.mod
 postprocessing/plevel_interpolation/scripts/*.nc
 postprocessing/plevel_interpolation/scripts/*.nml
+postprocessing/plevel_interpolation/scripts/archived/*
 *land_world_mountains.nc
 *output.txt
 src/extra/python/scripts/*.nc
+src/extra/python/scripts/archived/
 mima_pz.txt
