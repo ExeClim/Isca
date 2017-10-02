@@ -5,6 +5,7 @@ import os
 import re
 
 import f90nml
+from f90nml import Namelist
 from jinja2 import Environment, FileSystemLoader
 import sh
 import pdb
