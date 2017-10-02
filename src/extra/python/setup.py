@@ -1,22 +1,22 @@
-# This file provides the installation of the python library 'gfdl'
+# This file provides the installation of the python library 'isca'
 # Suggested installation procedure:
 #       $ cd $GFDL_BASE/src/extra/python
 #       $ pip install -e .
 # This installs the package in *development mode* i.e. any changes you make to the python files
 # or any additional files you add will be immediately available.
 # In a new python console, from any directory, you can now access the execlim code:
-#       >>> from gfdl import experiment
+#       >>> from isca import experiment
 #       >>> exp = experiment.Experiment()
 #       ...
 
 from distutils.core import setup
 
-setup(name='GFDL',
-      version='0.1',
-      description='GFDL utilities for running experiments and performing data analysis',
-      author='James Penn',
-      url='https://github.com/ExeClim/GFDLMoistModel',
-      packages=['gfdl'],
+setup(name='Isca',
+      version='0.2',
+      description='Isca utilities for running experiments and performing data analysis',
+      author='Isca Team',
+      url='https://github.com/ExeClim/Isca',
+      packages=['isca'],
       install_requires=[
         'sh',
         'jinja2',
