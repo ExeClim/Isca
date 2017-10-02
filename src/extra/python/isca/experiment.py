@@ -46,28 +46,24 @@ except Exception as e:
     log.error('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
     exit(0)
 
+# GFDL_ENV: The environment on which the model is being run.
+# Primarily, this determines which compilers and libraries are to be used
+# to compile the code.
+# A file with matching name in GFDL_BASE/src/extra/env is sourced before
+# compilation or the model is run.  For example, if the user has `export GFDL_ENV=emps-gv`
+# then before compilation or running the code, GFDL_BASE/src/extra/env/emps-gv
+# is sourced to ensure that the same libraries will be used to run the code
+# as those against which it was compiled.  To get the python scripts working
+# on a new computer with different compilers, a new environment script will
+# need to be developed and placed in this directory.
 try:
     GFDL_ENV = os.environ['GFDL_ENV']
 except:
+    # if the user doesn't have the environment variable set, use the computer's
+    # fully qualified domain name as GFDL_ENV
     import socket
     GFDL_ENV = socket.getfqdn()
     log.info('Environment variable GFDL_ENV not set, using "%s".' % GFDL_ENV)
-
-try:
-    _screen_window = os.environ['WINDOW']
-    _using_screen = True
-except:
-    _using_screen = False
-
-
-def set_screen_title(title):
-    if _using_screen:
-        try:
-            sh.screen('-p', _screen_window, '-X', 'title', title)
-            sh.screen('-X', 'redisplay')
-        except Exception as e:
-            log.warning('Screen title could not be changed.')
-            log.debug(e)
 
 class CompilationError(Exception):
     pass
@@ -400,7 +396,7 @@ class Experiment(object):
         self.templates.get_template('compile.sh').stream(**vars).dump(P(self.workdir, 'compile.sh'))
         log.info('Running compiler')
         try:
-            set_screen_title('compiling')
+            #set_screen_title('compiling')
             sh.bash(P(self.workdir, 'compile.sh'), _out=clean_log_debug, _err=clean_log_debug)
         except sh.ErrorReturnCode as e:
             log.critical('Compilation failed.')
@@ -420,15 +416,15 @@ class Experiment(object):
         m = self._day_re.search(s)
         try:
             days = int(m.group(1))
-            set_screen_title('%s:%d:%d' %
-                (self.screen_runmonth_prefix, self._cur_month, days))
+            # set_screen_title('%s:%d:%d' %
+            #     (self.screen_runmonth_prefix, self._cur_month, days))
         except:
             pass
         m = self._month_re.search(s)
         try:
             date = m.group(1)
-            set_screen_title('%s:%s' %
-                (self.screen_runmonth_prefix, date.strip()))
+            # set_screen_title('%s:%s' %
+                # (self.screen_runmonth_prefix, date.strip()))
         except:
             pass
         return clean_log_debug(outputstring)
@@ -501,7 +497,7 @@ class Experiment(object):
         log.info("Running GFDL for month %r" % month)
         self._cur_month = month
         try:
-            set_screen_title('month:%d' % month)
+            #set_screen_title('month:%d' % month)
             proc = sh.bash(P(self.rundir, 'runmonth.sh'), _out=self._log_runmonth, _err=self._log_runmonth, _bg=True)
             proc.wait()  # allow the background thread to complete
             log.info("Run for month %r complete" % month)
