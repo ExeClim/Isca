@@ -13,36 +13,15 @@ import pdb
 # from gfdl import create_alert
 import getpass
 
-from isca import GFDL_BASE, GFDL_ENV, GFDL_WORK, GFDL_DATA, _module_directory
+from isca import GFDL_BASE, GFDL_ENV, GFDL_WORK, GFDL_DATA, _module_directory, get_env_file
+from isca.loghandler import Logger
 
 P = os.path.join
-
-
-mkdir = sh.mkdir.bake('-p')
-
-log = logging.getLogger('gfdl')
-log.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-log.addHandler(ch)
-
-def clean_log_info(s):
-    if s.strip():
-       log.info(s.strip())
-
-def clean_log_error(s):
-    if s.strip():
-       log.error(s.strip())
-
-def clean_log_debug(s):
-    if s.strip():
-       log.debug(s.strip())
 
 class CompilationError(Exception):
     pass
 
-class Experiment(object):
+class Experiment(Logger):
     """A basic GFDL experiment"""
 
     RESOLUTIONS = {
@@ -68,45 +47,26 @@ class Experiment(object):
         },
     }
 
-    def __init__(self, name, commit=None, repo=None, overwrite_data=False,run_idb=False):
+    def __init__(self, name, codebase):
         super(Experiment, self).__init__()
         self.name = name
 
         # set the default locations of working directory,
         # executable directory, restart file storage, and
         # output data directory.
-        # These can be overridden e.g. if an experiment is to use
-        # the same executable as another
-        self.workdir = P(GFDL_WORK, self.name)
-
-        # where executable will be compiled to / fectched from
-        if run_idb:
-            self.execdir = P(self.workdir, 'exec_debug')  #compiled with debug flags
-        else:
-            self.execdir = P(self.workdir, 'exec')
+        self.workdir = P(GFDL_WORK, 'experiment', self.name)
+        self.codebase = codebase
 
         self.restartdir = P(self.workdir, 'restarts') # where restarts will be stored
         self.rundir = P(self.workdir, 'run')          # temporary area an individual run will be performed
         self.datadir = P(GFDL_DATA, self.name)        # where run data will be moved to upon completion
-        self.env_source = P(GFDL_BASE, 'src', 'extra', 'env', GFDL_ENV)
-
-        self.log = log
+        self.env_source = get_env_file()
 
         if os.path.isdir(self.workdir):
             log.warning('Working directory for exp %r already exists' % self.name)
         else:
             log.debug('Making directory %r' % self.workdir)
             mkdir(self.workdir)
-
-        # Running an experiment from a git repo
-        self.repo = repo
-        self.commit = commit
-        if repo and commit:
-            # do a checkout of the specific code and work from that source tree
-            self.srcdir = P(self.workdir, 'source')
-            self.clone_and_checkout()
-        else:
-            self.srcdir = GFDL_BASE
 
         try:
             git_dir = self.srcdir+'/.git'

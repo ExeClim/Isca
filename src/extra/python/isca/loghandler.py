@@ -1,11 +1,24 @@
 import logging
 
-log = logging.getLogger('gfdl')
+log = logging.getLogger('isca')
 log.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 log.addHandler(ch)
+
+def clean_log_info(s):
+    if s.strip():
+       log.info(s.strip())
+
+def clean_log_error(s):
+    if s.strip():
+       log.error(s.strip())
+
+def clean_log_debug(s):
+    if s.strip():
+       log.debug(s.strip())
+
 
 
 class Logger(object):

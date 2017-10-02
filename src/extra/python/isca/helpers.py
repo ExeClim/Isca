@@ -5,7 +5,7 @@ import sh
 
 mkdir = sh.mkdir.bake('-p')
 cd = sh.cd
-git = sh.git
+git = sh.git.bake('--no-pager')
 
 P = os.path.join
 
@@ -43,3 +43,18 @@ def url_to_folder(url):
         for sym in ('/:@'):
             url = url.replace(sym, '-')
         return url
+
+def get_git_commit_id(directory):
+    try:
+        git_dir = P(directory, '.git')
+        commit_id = git("--git-dir="+git_dir, "log", "--pretty=format:'%H'", "-n 1")
+        commit_id = str(commit_id).split("'")[1]
+    except:
+        commit_id = None
+    return commit_id
+
+def git_diff(directory):
+    git_diff_output = sh.git("-C", directory, "diff", "--no-color", ".")
+    git_diff_output = str(git_diff_output).split("\n")
+    return git_diff_output
+

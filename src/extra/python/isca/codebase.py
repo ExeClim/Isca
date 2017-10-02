@@ -33,7 +33,7 @@ class CodeBase(Logger):
     def from_directory(cls, directory, **kwargs):
         return cls(directory=directory, **kwargs)
 
-    def __init__(self, repo=None, commit=None, directory=None, storedir=GFDL_WORK, safe_mode=False):
+    def __init__(self, repo=None, commit=None, directory=None, storedir=P(GFDL_WORK, 'codebase'), safe_mode=False):
         """Create a new CodeBase object.
 
         A CodeBase can be created with either a git repository or a file directory as it's source.
@@ -58,47 +58,71 @@ class CodeBase(Logger):
             self.log.error('Too many sources. Cannot create a CodeBase with both a source directory and a source repository.')
             raise AttributeError('Either repo= or directory= required to create CodeBase.')
 
-        self.storedir = storedir
+
         self.safe_mode = safe_mode
+        self.storedir = storedir
+
 
         if directory is not None:
             self.directory = directory
-            self.commit = '__current'
-            self.is_repo = False
+            self.repo = None
+            self.commit = None
+            self.link_source_to(directory)
+            sourcedir = url_to_folder(directory)
         else:
             self.repo = repo
+            self.directory = None
             self.commit = 'HEAD' if commit is None else commit
-            self.is_repo = True
+            sourcedir = url_to_folder(self.repo) + '-' + self.commit
+
+        self.git = git.bake('-C', self.codedir)
 
         # check if the code is available.  If it's not, checkout the repo.
         if not self.code_is_available:
-            if self.is_repo:
+            if self.repo:
                 self.log.info('Code not found. Checking out git repo.')
                 self.checkout()
             else:
                 self.log.error('Code not found at directory %r' % self.directory)
                 raise AttributeError('Invalid code directory %r' % self.directory)
 
-        self.templates = Environment(loader=FileSystemLoader(P(_module_directory, 'templates')))
+        # check that the code is clean i.e. no files modified or out of version control.
+        # By default, all directory checkouts are considered dirty.
+
+
+        self.templates = Environment(loader=FileSystemLoader(self.templatedir))
 
         # read path names from the default file
         self.path_names = []
         self.compile_flags = []  # users can append to this to add additional compiler options
 
+
+    # USEFUL Directory Shortcuts
     @property
     def workdir(self):
-        if self.is_repo:
-            d = 'REPO_' + url_to_folder(self.repo)
+        """Base directory of CodeBase actions."""
+
+        # JP: This is too complicated and only matters if someone is trying
+        # to run multiple compiles *at the same time* from different directories
+        # or different repository locations.
+        # Replace with simpler below, and re-visit this if it becomes a big problem.
+        # if self.is_repo:
+        #     d = 'REPO' + url_to_folder(self.repo)
+        # else:
+        #     d = 'DIR' + url_to_folder(self.directory)
+        if self.repo:
+            d = url_to_folder(self.repo) + '-' + self.commit
         else:
-            d = 'DIR_' + url_to_folder(self.directory)
-        return P(self.storedir, d, self.commit)
+            d = url_to_folder(self.directory)
+        return P(self.storedir, d)
+
+    @property
+    def codedir(self):
+        return P(self.workdir, 'code')
 
     @property
     def srcdir(self):
-        if self.is_repo:
-            return P(self.workdir, 'src')
-        else:
-            return P(self.directory, 'src')
+        return P(self.codedir, 'src')
 
     @property
     def builddir(self):
@@ -106,7 +130,7 @@ class CodeBase(Logger):
 
     @property
     def templatedir(self):
-        return P(self.srcdir, 'extra', 'python', 'isca', 'templates')
+        return P(_module_directory, 'templates')
 
     @property
     def executable_fullpath(self):
@@ -118,8 +142,28 @@ class CodeBase(Logger):
         points to a valid source directory.
         """
         # use the existence of the python directory as a simple test
-        print(P(self.srcdir, 'extra', 'python'))
         return os.path.isdir(P(self.srcdir, 'extra', 'python'))
+
+    @property
+    def is_clean(self):
+        """Returns False if there are modified files or new files outside
+        of git version control in the source directory."""
+        pass
+
+    @property
+    def git_commit(self):
+        return self.git.log('-1', '--format="%H"')
+
+    # @property
+    # def git_diff(self):
+    #     """Returns the output of `git diff` run in the base directory, comparing to the existing commit."""
+    #     return self.git.diff('--no-color')
+        # if commit:
+        #     commit_consistency_check = commit_id[0:len(commit)]==commit
+        #     if not commit_consistency_check:
+        #         raise ValueError('commit id specified and commit id actually used are not the same:' +commit+commit_id[0:len(commit)])
+
+        # self.commit_id = commit_id
 
     def read_path_names(self, path_names_file):
         with open(path_names_file) as pn:
@@ -135,19 +179,29 @@ class CodeBase(Logger):
 
     @useworkdir
     @destructive
+    def link_source_to(self, directory):
+        # link workdir/code to the directory codebase for simplified paths
+        if os.path.exists(self.codedir):
+            self.log.info("Relinking %s to %s" % (self.codedir, directory))
+            sh.rm(self.codedir)
+        else:
+            self.log.info("Linking %s to %s" % (self.codedir, directory))
+        sh.ln('-s', directory, self.codedir)
+
+    @useworkdir
+    @destructive
     def checkout(self):
-        if not self.is_repo:
+        if self.repo is None:
             self.log.warn('Cannot checkout a directory.  Use a CodeBase(repo="...") object instead.')
             return None
 
         try:
-            cd(self.srcdir)
-            sh.git.status()
+            self.git.status()
         except Exception as e:
-            self.log.info('Repository not found at %r. Cloning.' % self.srcdir)
-            self.log.debug(e.message)
+            self.log.info('Repository not found at %r. Cloning.' % self.codedir)
+            # self.log.debug(e.message)
             try:
-                sh.git.clone(self.repo, self.srcdir)
+                git.clone(self.repo, self.codedir)
             except Exception as e:
                 self.log.error('Unable to clone repository %r' % self.repo)
                 raise e
@@ -155,11 +209,18 @@ class CodeBase(Logger):
         if self.commit is not None:
             try:
                 self.log.info('Checking out commit %r' % self.commit)
-                cd(self.srcdir)
-                sh.git.checkout(self.commit)
+                self.git.checkout(self.commit)
             except Exception as e:
                 self.log.error('Unable to checkout commit %r' % self.commit)
                 raise e
+
+    def _log_line(self, line):
+        line = self.clean_log(line)
+        if line is not None:
+            if "warning" in line.lower():
+                self.log.warn(line)
+            else:
+                self.log.info(line)
 
     @useworkdir
     @destructive
@@ -198,19 +259,9 @@ class CodeBase(Logger):
         self.templates.get_template('compile.sh').stream(**vars).dump(P(self.builddir, 'compile.sh'))
         self.log.info('Running compiler')
         for line in sh.bash(P(self.builddir, 'compile.sh'), _iter=True, _err_to_out=True):
-            line = self.clean_log(line)
-            if line is not None:
-                if "warning" in line.lower():
-                    self.log.warn(line)
-                else:
-                    self.log.info(line)
+            self._log_line(line)
 
-        # try:
-        #     sh.bash(P(self.builddir, 'compile.sh'), _out=self._on_stdout, _err=self._on_stderr)
-        # except Exception as e:
-        #     self.log.critical('Compilation failed.')
-        #     raise e
-        self.log.debug('Compilation complete.')
+        self.log.info('Compilation complete.')
 
 
 
