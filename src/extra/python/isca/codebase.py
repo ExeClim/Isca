@@ -1,0 +1,266 @@
+from contextlib import contextmanager
+import os
+import socket
+
+from jinja2 import Environment, FileSystemLoader
+import sh
+
+from isca import GFDL_WORK, _module_directory, get_env_file
+from .loghandler import Logger
+from .helpers import url_to_folder, destructive, useworkdir, mkdir, cd, git, P
+
+
+class CodeBase(Logger):
+    """The CodeBase.
+
+    A CodeBase is a subset of the full FMS source code that is used to
+    form a complete model. It can be used to compile a specific version from
+    git source control, or compile from an existing directory.
+
+    The CodeBase is a base class, use the derived models such as
+    IscaCodeBase or ShallowCodeBase to compile codes.
+    """
+    # override these parameters in subclasses
+    #templatedir = P(_module_directory, 'templates')
+    path_names_file = None
+    executable_name = None
+
+    @classmethod
+    def from_repo(cls, repo, commit=None, **kwargs):
+        return cls(repo=repo, commit=commit, **kwargs)
+
+    @classmethod
+    def from_directory(cls, directory, **kwargs):
+        return cls(directory=directory, **kwargs)
+
+    def __init__(self, repo=None, commit=None, directory=None, storedir=GFDL_WORK, safe_mode=False):
+        """Create a new CodeBase object.
+
+        A CodeBase can be created with either a git repository or a file directory as it's source.
+        For example, to compile from a local directory where you are developing and changing the code:
+
+            cb = gfdl.CodeBase(directory='/my/working/GFDLmoistModel')
+
+        Alternatively code can be fetched from a git repository for a specfic commit hash, tag or branch:
+
+            cb = gfdl.CodeBase(repo='git@github.com:execlim/GFDLmoistModel', commit='mytag0.2')
+
+        Each directory or repo-commit can be compiled separately, allowing for multiple
+        executables and prevent overwriting of known good states.
+        The typical use of a CodeBase is to easily compile a model on a specfic
+        computer/cluster, and then pass to an `Experiment` object for running.
+        """
+
+        if repo is None and directory is None:
+            self.log.error('Not enough sources. Cannot create a CodeBase without either a source directory or source repository.')
+            raise AttributeError('Either repo= or directory= required to create CodeBase.')
+        if repo is not None and directory is not None:
+            self.log.error('Too many sources. Cannot create a CodeBase with both a source directory and a source repository.')
+            raise AttributeError('Either repo= or directory= required to create CodeBase.')
+
+        self.storedir = storedir
+        self.safe_mode = safe_mode
+
+        if directory is not None:
+            self.directory = directory
+            self.commit = '__current'
+            self.is_repo = False
+        else:
+            self.repo = repo
+            self.commit = 'HEAD' if commit is None else commit
+            self.is_repo = True
+
+        # check if the code is available.  If it's not, checkout the repo.
+        if not self.code_is_available:
+            if self.is_repo:
+                self.log.info('Code not found. Checking out git repo.')
+                self.checkout()
+            else:
+                self.log.error('Code not found at directory %r' % self.directory)
+                raise AttributeError('Invalid code directory %r' % self.directory)
+
+        self.templates = Environment(loader=FileSystemLoader(P(_module_directory, 'templates')))
+
+        # read path names from the default file
+        self.path_names = []
+        self.compile_flags = []  # users can append to this to add additional compiler options
+
+    @property
+    def workdir(self):
+        if self.is_repo:
+            d = 'REPO_' + url_to_folder(self.repo)
+        else:
+            d = 'DIR_' + url_to_folder(self.directory)
+        return P(self.storedir, d, self.commit)
+
+    @property
+    def srcdir(self):
+        if self.is_repo:
+            return P(self.workdir, 'src')
+        else:
+            return P(self.directory, 'src')
+
+    @property
+    def builddir(self):
+        return P(self.workdir, 'build', self.executable_name.split('.')[0])
+
+    @property
+    def templatedir(self):
+        return P(self.srcdir, 'extra', 'python', 'isca', 'templates')
+
+    @property
+    def executable_fullpath(self):
+        return P(self.builddir, self.executable_name)
+
+    @property
+    def code_is_available(self):
+        """Returns True if the repo has been checked out, or the directory
+        points to a valid source directory.
+        """
+        # use the existence of the python directory as a simple test
+        print(P(self.srcdir, 'extra', 'python'))
+        return os.path.isdir(P(self.srcdir, 'extra', 'python'))
+
+    def read_path_names(self, path_names_file):
+        with open(path_names_file) as pn:
+            return [l.strip() for l in pn]
+
+    @useworkdir
+    @destructive
+    def write_path_names(self, path_names):
+        outfile = P(self.builddir, 'path_names')
+        self.log.info('Writing path_names to %r' % outfile)
+        with open(outfile, 'w') as pn:
+            pn.writelines('\n'.join(path_names))
+
+    @useworkdir
+    @destructive
+    def checkout(self):
+        if not self.is_repo:
+            self.log.warn('Cannot checkout a directory.  Use a CodeBase(repo="...") object instead.')
+            return None
+
+        try:
+            cd(self.srcdir)
+            sh.git.status()
+        except Exception as e:
+            self.log.info('Repository not found at %r. Cloning.' % self.srcdir)
+            self.log.debug(e.message)
+            try:
+                sh.git.clone(self.repo, self.srcdir)
+            except Exception as e:
+                self.log.error('Unable to clone repository %r' % self.repo)
+                raise e
+
+        if self.commit is not None:
+            try:
+                self.log.info('Checking out commit %r' % self.commit)
+                cd(self.srcdir)
+                sh.git.checkout(self.commit)
+            except Exception as e:
+                self.log.error('Unable to checkout commit %r' % self.commit)
+                raise e
+
+    @useworkdir
+    @destructive
+    def compile(self, debug=False, optimisation=None):
+        env = get_env_file()
+        mkdir(self.builddir)
+
+        compile_flags = []
+        # if debug:
+        #     compile_flags.append('-g')
+        #     compile_flags.append('-traceback')
+        #     compile_flags.append('-debug all')
+
+        # if optimisation is not None:
+        #     compile_flags.append('-O%d' % optimisation)
+
+        compile_flags.extend(self.compile_flags)
+        compile_flags_str = ' '.join(compile_flags)
+
+        # get path_names from the directory
+        path_names = self.read_path_names(P(self.srcdir, 'extra', 'model', self.name, 'path_names'))
+        self.write_path_names(path_names)
+        path_names_str = P(self.builddir, 'path_names')
+
+        vars = {
+            'execdir': self.builddir,
+            'template_dir': self.templatedir,
+            'srcdir': self.srcdir,
+            'workdir': self.workdir,
+            'compile_flags': compile_flags_str,
+            'env_source': env,
+            'path_names': path_names_str,
+            'executable_name': self.executable_name,
+        }
+
+        self.templates.get_template('compile.sh').stream(**vars).dump(P(self.builddir, 'compile.sh'))
+        self.log.info('Running compiler')
+        for line in sh.bash(P(self.builddir, 'compile.sh'), _iter=True, _err_to_out=True):
+            line = self.clean_log(line)
+            if line is not None:
+                if "warning" in line.lower():
+                    self.log.warn(line)
+                else:
+                    self.log.info(line)
+
+        # try:
+        #     sh.bash(P(self.builddir, 'compile.sh'), _out=self._on_stdout, _err=self._on_stderr)
+        # except Exception as e:
+        #     self.log.critical('Compilation failed.')
+        #     raise e
+        self.log.debug('Compilation complete.')
+
+
+
+class IscaCodeBase(CodeBase):
+    """The Full Isca Stack.
+    This includes moist dynamics and the RRTM radiation scheme.
+    """
+    name = 'isca'
+    executable_name = 'isca.x'
+
+class GreyCodeBase(CodeBase):
+    """The Frierson model.
+    This is the closest to the Frierson model, with moist dynamics and a
+    choice of grey radiation schemes.
+
+    The Isca code can be configured to be run in exactly the same configuration
+    as the Grey codebase, but doing so requires compilation of RRTM which
+    can take a while during a development cycle.
+    """
+    #path_names_file = P(_module_directory, 'templates', 'moist_path_names')
+    name = 'grey'
+    executable_name = 'grey_isca.x'
+
+    def disable_rrtm(self):
+        # remove all rrtm paths
+        self.path_names = [p for p in self.path_names if not 'rrtm' in p]
+        # add no compile flag
+        self.compile_flags.append('-DRRTM_NO_COMPILE')
+        self.log.info('RRTM compilation disabled.')
+
+    def __init__(self, *args, **kwargs):
+        super(GreyCodeBase, self).__init__(*args, **kwargs)
+        self.disable_rrtm()
+
+
+class DryCodeBase(CodeBase):
+    """The Held-Suarez model.
+
+    Where the moist codebase uses a radiation scheme, incoming solar radiation
+    and SSTs to force the model, the Dry model uses a prescribed 'equilibrium'
+    temperature profile (Teq).  The model is relaxed towards Teq, generating
+    a circulation in response.
+    """
+    #path_names_file = P(_module_directory, 'templates', 'dry_path_names')
+    name = 'dry'
+    executable_name = 'held_suarez.x'
+
+
+# class ShallowCodeBase(CodeBase):
+#     """The Shallow Water Equations.
+#     """
+#     name = 'shallow'
+#     executable_name = 'shallow.x'

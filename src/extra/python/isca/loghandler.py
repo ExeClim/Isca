@@ -8,10 +8,8 @@ ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(me
 log.addHandler(ch)
 
 
-class MixIn(object): pass
-
-class Logger(MixIn):
-    """A Mixin for objects that wrap underlying processes that output to stdout."""
+class Logger(object):
+    """A mixin for objects that wrap underlying processes that output to stdout."""
     log = log
     def clean_log(self, line):
         # Tidy up a std out line.  Returns None if blank.

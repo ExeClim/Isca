@@ -7,5 +7,3 @@ module load git/2.1.2
 
 export F90=mpifort
 export CC=mpicc
-
-module list
