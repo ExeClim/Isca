@@ -62,18 +62,24 @@ class CodeBase(Logger):
         self.safe_mode = safe_mode
         self.storedir = storedir
 
-
         if directory is not None:
             self.directory = directory
             self.repo = None
             self.commit = None
-            self.link_source_to(directory)
-            sourcedir = url_to_folder(directory)
+            workdir = url_to_folder(directory)
         else:
             self.repo = repo
             self.directory = None
             self.commit = 'HEAD' if commit is None else commit
-            sourcedir = url_to_folder(self.repo) + '-' + self.commit
+            workdir = url_to_folder(self.repo) + '-' + self.commit
+
+        # useful directory shortcuts
+        self.workdir =  P(self.storedir, workdir)   # base for all codebase I/O actions
+        self.codedir =  P(self.workdir, 'code')     # where code is checked out / symlinked to directory
+        self.srcdir  =  P(self.codedir, 'src')      # ISCA_CODE/src
+        self.builddir = P(self.workdir, 'build', self.executable_name.split('.')[0])
+        self.templatedir = P(_module_directory, 'templates')  # templates are stored with the python isca module
+        self.executable_fullpath = P(self.builddir, self.executable_name)
 
         self.git = git.bake('-C', self.codedir)
 
@@ -83,58 +89,13 @@ class CodeBase(Logger):
                 self.log.info('Code not found. Checking out git repo.')
                 self.checkout()
             else:
-                self.log.error('Code not found at directory %r' % self.directory)
-                raise AttributeError('Invalid code directory %r' % self.directory)
-
-        # check that the code is clean i.e. no files modified or out of version control.
-        # By default, all directory checkouts are considered dirty.
-
+                self.link_source_to(directory)
 
         self.templates = Environment(loader=FileSystemLoader(self.templatedir))
 
         # read path names from the default file
         self.path_names = []
         self.compile_flags = []  # users can append to this to add additional compiler options
-
-
-    # USEFUL Directory Shortcuts
-    @property
-    def workdir(self):
-        """Base directory of CodeBase actions."""
-
-        # JP: This is too complicated and only matters if someone is trying
-        # to run multiple compiles *at the same time* from different directories
-        # or different repository locations.
-        # Replace with simpler below, and re-visit this if it becomes a big problem.
-        # if self.is_repo:
-        #     d = 'REPO' + url_to_folder(self.repo)
-        # else:
-        #     d = 'DIR' + url_to_folder(self.directory)
-        if self.repo:
-            d = url_to_folder(self.repo) + '-' + self.commit
-        else:
-            d = url_to_folder(self.directory)
-        return P(self.storedir, d)
-
-    @property
-    def codedir(self):
-        return P(self.workdir, 'code')
-
-    @property
-    def srcdir(self):
-        return P(self.codedir, 'src')
-
-    @property
-    def builddir(self):
-        return P(self.workdir, 'build', self.executable_name.split('.')[0])
-
-    @property
-    def templatedir(self):
-        return P(_module_directory, 'templates')
-
-    @property
-    def executable_fullpath(self):
-        return P(self.builddir, self.executable_name)
 
     @property
     def code_is_available(self):
@@ -148,7 +109,7 @@ class CodeBase(Logger):
     def is_clean(self):
         """Returns False if there are modified files or new files outside
         of git version control in the source directory."""
-        pass
+        raise NotImplementedError
 
     @property
     def git_commit(self):
