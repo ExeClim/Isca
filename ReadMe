@@ -1,5 +1,24 @@
-The idealised GFDL moist model was downloaded from: ftp://ftp.gfdl.noaa.gov/pub/projects/ on 04 Oct 2015.
+Isca is a framework for the idealized modelling of the global circulation of
+planetary atmospheres at varying levels of complexity and realism. The
+framework is an outgrowth of models from GFDL designed for Earth's atmosphere,
+but it may readily be extended into other planetary regimes. Various forcing
+and radiation options are available. At the simple end of the spectrum a
+Held-Suarez case is available. An idealized grey radiation scheme, a grey
+scheme with moisture feedback, a two-band scheme and a multi-band scheme are
+also available, all with simple moist effects and astronomically-based solar
+forcing. At the complex end of the spectrum the framework provides a direct
+connection to comprehensive atmospheric general circulation models.
 
-The last modified date for the code was 08/08/13 and the latest modules are written for version 19.0.
+For Earth modelling, options include an aqua-planet and configurable (idealized
+or realistic) continents with idealized or realistic topography. Continents may
+be defined by changing albedo, heat capacity and evaporative parameters, and/or
+by using a simple bucket hydrology model. Oceanic Q-fluxes may be added to
+reproduce specified sea-surface temperatures, with any continents or on an
+aquaplanet. Planetary atmospheres may be configured by changing planetary size,
+solar forcing, atmospheric mass, radiative, and other parameters.
 
-More information on this model can be found here: doc/quickstart.html or online here: http://www.gfdl.noaa.gov/idealized-moist-spectral-atmospheric-model-quickstart
+The underlying model is written in Fortran and may largely be configured with
+Python scripts, with internal coding changes required for non-standard cases.
+Python scripts are also used to run the model on different architectures, to
+archive the output, and for diagnostics, graphics, and post-processing. All of
+these features are publicly available on a Git-based repository.
