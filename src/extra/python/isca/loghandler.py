@@ -48,3 +48,4 @@ class Logger(object):
                 self.on_stdout(line)
             else:
                 self.log.warn(line)
+

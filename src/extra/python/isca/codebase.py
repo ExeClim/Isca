@@ -247,8 +247,6 @@ class GreyCodeBase(CodeBase):
     executable_name = 'grey_isca.x'
 
     def disable_rrtm(self):
-        # remove all rrtm paths
-        self.path_names = [p for p in self.path_names if not 'rrtm' in p]
         # add no compile flag
         self.compile_flags.append('-DRRTM_NO_COMPILE')
         self.log.info('RRTM compilation disabled.')
@@ -258,7 +256,7 @@ class GreyCodeBase(CodeBase):
         self.disable_rrtm()
 
 
-class DryCodeBase(CodeBase):
+class DryCodeBase(GreyCodeBase):
     """The Held-Suarez model.
 
     Where the moist codebase uses a radiation scheme, incoming solar radiation
@@ -269,6 +267,7 @@ class DryCodeBase(CodeBase):
     #path_names_file = P(_module_directory, 'templates', 'dry_path_names')
     name = 'dry'
     executable_name = 'held_suarez.x'
+
 
 
 # class ShallowCodeBase(CodeBase):

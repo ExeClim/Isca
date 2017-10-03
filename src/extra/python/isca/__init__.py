@@ -1,6 +1,5 @@
 import os
-
-from isca.loghandler import log
+from collections import defaultdict
 
 _module_directory = os.path.dirname(os.path.realpath(__file__))
 
@@ -39,3 +38,42 @@ def get_env_file(env=GFDL_ENV):
     else:
         log.error('Environment file %s not found' % filepath)
         raise IOError('Environment file %s not found' % filepath)
+
+class EventEmitter(object):
+    """A very simple event driven object to make it easier
+    to tie custom functionality into the model."""
+    def __init__(self):
+        self._events = defaultdict(list)
+
+    def on(self, event, fn=None):
+        """Assign function `fn` to be called when `event` is triggered.
+
+        Can be used in two ways:
+        1. As a normal function:
+            exp.on('start', fn)
+        2. As a decorator:
+            @exp.on('start')
+            def fn(*args):
+                pass
+        """
+        def _on(fn):
+            self._events[event].append(fn)
+            return fn
+
+        if fn is None:
+            return _on     # used as a decorator
+        else:
+            return _on(fn) # used as a normal function
+
+    def emit(self, event, *args, **kwargs):
+        """Trigger an event."""
+        handled = False
+        for callback in self._events[event]:
+            callback(*args, **kwargs)
+            handled = True
+        return handled
+
+
+from isca.loghandler import log
+from experiment import Experiment, DiagTable, Namelist
+from codebase import IscaCodeBase, DryCodeBase, GreyCodeBase #, ShallowCodeBase

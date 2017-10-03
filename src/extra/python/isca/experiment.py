@@ -1,27 +1,27 @@
-from contextlib import contextmanager
-import copy
-import logging
 import os
 import re
 
-import f90nml
 from f90nml import Namelist
 from jinja2 import Environment, FileSystemLoader
+import glob
 import sh
 import pdb
+import tarfile
 
 # from gfdl import create_alert
-import getpass
+# import getpass
 
-from isca import GFDL_BASE, GFDL_ENV, GFDL_WORK, GFDL_DATA, _module_directory, get_env_file
-from isca.loghandler import Logger
+from isca import GFDL_WORK, GFDL_DATA, _module_directory, get_env_file, EventEmitter
+from isca.diagtable import DiagTable
+from isca.loghandler import Logger, clean_log_debug
+from isca.helpers import destructive, useworkdir, mkdir
 
 P = os.path.join
 
 class CompilationError(Exception):
     pass
 
-class Experiment(Logger):
+class Experiment(Logger, EventEmitter):
     """A basic GFDL experiment"""
 
     RESOLUTIONS = {
@@ -47,494 +47,76 @@ class Experiment(Logger):
         },
     }
 
-    def __init__(self, name, codebase):
+    def __init__(self, name, codebase, safe_mode=False, workbase=GFDL_WORK, database=GFDL_DATA):
         super(Experiment, self).__init__()
         self.name = name
+        self.codebase = codebase
+        self.safe_mode = safe_mode
 
         # set the default locations of working directory,
         # executable directory, restart file storage, and
         # output data directory.
-        self.workdir = P(GFDL_WORK, 'experiment', self.name)
-        self.codebase = codebase
-
+        self.workdir = P(workbase, 'experiment', self.name)
         self.restartdir = P(self.workdir, 'restarts') # where restarts will be stored
         self.rundir = P(self.workdir, 'run')          # temporary area an individual run will be performed
-        self.datadir = P(GFDL_DATA, self.name)        # where run data will be moved to upon completion
-        self.env_source = get_env_file()
-
-        if os.path.isdir(self.workdir):
-            log.warning('Working directory for exp %r already exists' % self.name)
-        else:
-            log.debug('Making directory %r' % self.workdir)
-            mkdir(self.workdir)
-
-        try:
-            git_dir = self.srcdir+'/.git'
-            commit_id = sh.git("--git-dir="+git_dir, "log", "--pretty=format:'%H'", "-n 1")
-            commit_id = str(commit_id).split("'")[1]
-        except:
-            commit_id = None
-
-        if commit:
-            commit_consistency_check = commit_id[0:len(commit)]==commit
-            if not commit_consistency_check:
-                raise ValueError('commit id specified and commit id actually used are not the same:' +commit+commit_id[0:len(commit)])
-
-        self.commit_id = commit_id
-
-        try:
-            git_dir = GFDL_BASE+'/.git'
-            commit_id_base = sh.git("--git-dir="+git_dir, "log", "--pretty=format:'%H'", "-n 1")
-            commit_id_base = str(commit_id_base).split("'")[1]
-            git_diff_output = sh.git("--no-pager", "--git-dir="+git_dir, "--work-tree="+self.srcdir, "diff", "--no-color", self.srcdir)
-            git_diff_output = str(git_diff_output).split("\n")
-        except:
-            commit_id_base = None
-            git_diff_output  = None
-
-        self.git_diff_output   = git_diff_output
-
-        if commit_id==commit_id_base:
-            self.commit_id_base = self.commit_id
-        else:
-            self.commit_id_base = commit_id_base
-
-        if not (repo and commit):
-            try:
-                git_dir = self.srcdir+'/.git'
-                git_status_output = sh.git("--git-dir="+git_dir, "--work-tree="+self.srcdir, "status", "-b", "--porcelain")
-                git_status_output = str(git_status_output)
-                git_status_output = git_status_output.split("\n")
-                git_status_final = ["Running from GFDL_BASE repo, so adding git status output.\n", git_status_output[0]]
-                for suffix_to_search_for in ['.f90', '.inc']:
-                    git_status_relevant = [str_entry for str_entry in git_status_output if suffix_to_search_for in str_entry.lower()]
-                    git_status_final.extend(git_status_relevant)
-            except:
-                git_status_final = None
-        else:
-            git_status_final = ['run using specific commit, as specified above, so no git status output for f90 or inc files']
-
-        self.git_status_output = git_status_final
-
+        self.datadir = P(database, self.name)        # where run data will be moved to upon completion
         self.template_dir = P(_module_directory, 'templates')
+
+        self.env_source = get_env_file()
 
         self.templates = Environment(loader=FileSystemLoader(self.template_dir))
 
         self.diag_table = DiagTable()
-        self.field_table_file = P(self.template_dir, 'field_table')
-
-        if run_idb:
-            self.run_idb = P('true')
-        else:
-            self.run_idb = P('false')
-
-
-        # Setup the path_names for compilation
-        # 1. read the default path_names file
-        # 2. self.path_names can be changed before compilation
-        # 3. when self.compile() is called, if more than
-        #    `missing_file_tol` paths are not found, abort the compilation.
-        #
-        # * set `missing_file_tol = -1` to ignore all missing files.
-        self.path_names = self._read_pathnames(P(self.template_dir, 'path_names'))
-        self.missing_file_tol = 3
-
-
-        self.namelist_files = [P(self.template_dir, 'core.nml'), P(self.template_dir, 'phys.nml')]
-        self.namelist = self.rebuild_namelist()
-
+        self.field_table_file = P(self.codebase.srcdir, 'extra', 'model', self.codebase.name, 'field_table')
         self.inputfiles = []
 
-        self.compile_flags=[]
+        self.namelist = Namelist()
 
-        self.overwrite_data = overwrite_data
-
-        # a short prefix to go before the month and day in
-        # the `screen` title. Default rm is for "runmonth".
-        self.screen_runmonth_prefix = 'rm'
-
-    def use_template_file(self, filename, values):
-        """Use a template file for compilation of the code"""
-        new_pathname = P(self.rundir, filename)
-        self.templates.get_template(filename).stream(values).dump(new_pathname)
-        self.path_names.insert(0, new_pathname)
-
+    @destructive
     def rm_workdir(self):
         try:
             sh.rm(['-r', self.workdir])
         except sh.ErrorReturnCode:
-            log.warning('Tried to remove working directory but it doesnt exist')
+            self.log.warning('Tried to remove working directory but it doesnt exist')
 
+    @destructive
     def rm_datadir(self):
         try:
             sh.rm(['-r', self.datadir])
         except sh.ErrorReturnCode:
-            log.warning('Tried to remove data directory but it doesnt exist')
+            self.log.warning('Tried to remove data directory but it doesnt exist')
 
+    @destructive
+    @useworkdir
     def clear_workdir(self):
         self.rm_workdir()
         mkdir(self.workdir)
-        log.info('Emptied working directory %r' % self.workdir)
+        self.log.info('Emptied working directory %r' % self.workdir)
 
-    def keep_only_certain_restart_files(self, max_num_files, interval=12):
-        try:
-#	    sh.ls(sh.glob(P(self.workdir,'restarts','res_*.cpio'))) #TODO get max_num_files calculated in line, rather than a variable to pass.
-
-            #First defines a list of ALL the restart file numbers
-	    files_to_remove=range(0,max_num_files)
-
-            #Then defines a list of the ones we want to KEEP
-	    files_to_keep  =range(0,max_num_files,interval)
-
-            #Then we remove the files we want to keep from the list of all files, giving a list of those we wish to remove
-	    for x in files_to_keep:
-               files_to_remove.remove(x)
-
-            #Then we remove them.
-	    for entry in files_to_remove:
-                sh.rm(P(self.workdir,'restarts','res_'+str(entry)+'.cpio'))
-
-        except sh.ErrorReturnCode_1:
-            log.warning('Tried to remove some restart files, but the last one doesnt exist')
-
+    @destructive
+    @useworkdir
     def clear_rundir(self):
         sh.cd(self.workdir)
         try:
             sh.rm(['-r', self.rundir])
         except sh.ErrorReturnCode:
-            log.warning('Tried to remove run directory but it doesnt exist')
+            self.log.warning('Tried to remove run directory but it doesnt exist')
         mkdir(self.rundir)
-        log.info('Emptied run directory %r' % self.rundir)
+        self.log.info('Emptied run directory %r' % self.rundir)
 
-    def _read_pathnames(self, path_names_file):
-        with open(path_names_file) as pn:
-            return [l.strip() for l in pn]
+    def get_restart_file(self, i):
+        return P(self.restartdir, 'res%04d.tar.gz' % i)
 
-    def rebuild_namelist(self):
-        namelist = f90nml.read(self.namelist_files[0])
-        for nl in self.namelist_files[1:]:
-            namelist.update(f90nml.read(nl))
-        return namelist
-
-    def clone_and_checkout(self, commit=None):
-        c = commit or self.commit
-        try:
-            sh.cd(self.srcdir)
-            sh.git.status()
-        except Exception as e:
-            log.info('Repository not found at %r. Cloning.' % self.srcdir)
-            log.debug(e)
-            try:
-                sh.git.clone(self.repo, self.srcdir)
-            except Exception as e:
-                log.error('Unable to clone repository %r' % self.repo)
-                raise e
-        try:
-            log.info('Checking out commit %r' % c)
-            sh.cd(self.srcdir)
-            sh.git.checkout(c)
-        except Exception as e:
-            log.error('Unable to checkout commit %r' % c)
-            raise e
-
-    def get_restart_file(self, month):
-        return P(self.restartdir, 'res_%d.cpio' % (month))
-
-    def write_path_names(self, outdir):
-        log.info('Writing path_names to %r' % P(outdir, 'path_names'))
-        with open(P(outdir, 'path_names'), 'w') as pn:
-            pn.writelines('\n'.join(self.path_names))
-
-    def write_namelist(self, outdir):
-        log.info('Writing namelist to %r' % P(outdir, 'input.nml'))
-        self.namelist.write(P(outdir, 'input.nml'))
-
-    def set_resolution(self, res):
+    def set_resolution(self, res, num_levels=None):
+        """Set the resolution of the model, based on the standard triangular
+        truncations of the spectral core.  For example,
+            exp.set_resolution('T85', 25)
+        creates a spectral core with enough modes to natively correspond to
+        a 256x128 lon-lat resolution."""
         delta = self.RESOLUTIONS[res]
+        if num_levels is not None:
+            delta['num_levels'] = num_levels
         self.update_namelist({'spectral_dynamics_nml': delta})
-
-    def write_diag_table(self, outdir):
-        outfile = P(outdir, 'diag_table')
-        log.info('Writing diag_table to %r' % outfile)
-        if len(self.diag_table.files):
-            template = self.templates.get_template('diag_table')
-            calendar = not self.namelist['main_nml']['calendar'].lower().startswith('no_calendar')
-            vars = {'calendar': calendar, 'outputfiles': self.diag_table.files.values()}
-            template.stream(**vars).dump(outfile)
-        else:
-            log.error("No output files defined in the DiagTable. Stopping.")
-            raise ValueError()
-
-    def write_field_table(self, outdir):
-        log.info('Writing field_table to %r' % P(outdir, 'field_table'))
-        sh.cp(self.field_table_file, P(outdir, 'field_table'))
-
-    def write_details_file(self, outdir):
-        info = self.get_info()
-        with open(P(outdir, 'details.txt'), 'w') as f:
-            f.writelines(info)
-
-    def get_info(self):
-        git_commit = sh.git(['rev-parse', 'HEAD'])
-        git_branch = sh.git(['symbolic-ref', 'HEAD'])
-        git_desc   = sh.git(['describe', '--always'])
-        git_show   = sh.git.show('--pretty')
-        return {'git_desc': git_desc,
-                'git_show': git_show}
-
-    def disable_rrtm(self):
-        # remove all rrtm paths
-        self.path_names = [p for p in self.path_names if not 'rrtm' in p]
-
-        # add no compile flag
-        self.compile_flags.append('-DRRTM_NO_COMPILE')
-
-        # set the namelist to use gray radiation scheme
-        # self.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True
-        # self.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False
-
-        log.info('RRTM compilation disabled.  Namelist set to gray radiation.')
-
-    def check_path_names(self):
-        new_path_names = []
-        missing_files = []
-        for f in self.path_names:
-            if os.path.isfile(os.path.join(self.srcdir, 'src', f)):
-                new_path_names.append(f)
-            else:
-                log.warn('"%r" in path_names but not found in checked out src' % f)
-                missing_files.append(f)
-        if len(missing_files) >= self.missing_file_tol >= 0:
-            log.error('Too many files in "path_names" not found.\nTo prevent this error set exp.missing_file_tol = -1')
-            for f in missing_files:
-                log.error('File "%r" not found.' % f)
-            raise CompilationError('Missing %d compilation files (tolerance %d).' % (len(missing_files), self.missing_file_tol))
-        else:
-            self.path_names = new_path_names
-
-    def compile(self):
-        mkdir(self.execdir)
-        vars = {
-            'execdir': self.execdir,
-            'template_dir': self.template_dir,
-            'srcdir': self.srcdir,
-            'workdir': self.workdir,
-            'compile_flags': ' '.join(self.compile_flags),
-            'run_idb': self.run_idb,
-            'env_source': self.env_source
-        }
-
-        self.check_path_names()
-        self.write_path_names(self.workdir)
-
-        self.templates.get_template('compile.sh').stream(**vars).dump(P(self.workdir, 'compile.sh'))
-        log.info('Running compiler')
-        try:
-            #set_screen_title('compiling')
-            sh.bash(P(self.workdir, 'compile.sh'), _out=clean_log_debug, _err=clean_log_debug)
-        except sh.ErrorReturnCode as e:
-            log.critical('Compilation failed.')
-            raise e
-        log.debug('Compilation complete.')
-
-
-    def use_diag_table(self, diag_table):
-        """Use a DiagTable object for the diagnostic output specification."""
-        self.diag_table = diag_table.copy()
-
-
-    _day_re = re.compile('Integration completed through\s+([0-9]+) days')
-    _month_re = re.compile('Integration completed through\s+([\w\s]+)\s([0-9]+:)')
-    def _log_runmonth(self, outputstring):
-        s = outputstring.strip()
-        m = self._day_re.search(s)
-        try:
-            days = int(m.group(1))
-            # set_screen_title('%s:%d:%d' %
-            #     (self.screen_runmonth_prefix, self._cur_month, days))
-        except:
-            pass
-        m = self._month_re.search(s)
-        try:
-            date = m.group(1)
-            # set_screen_title('%s:%s' %
-                # (self.screen_runmonth_prefix, date.strip()))
-        except:
-            pass
-        return clean_log_debug(outputstring)
-
-
-
-
-    def run(self, month, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False, run_idb=False, experiment_restart=None, email_alerts=True, email_address_for_alerts=None, disk_space_limit=20, disk_space_cutoff_limit=5):
-
-        indir = P(self.rundir, 'INPUT')
-        outdir = P(self.datadir, 'run%03d' % month)
-
-        if os.path.isdir(outdir):
-            if self.overwrite_data or overwrite_data:
-                log.warning('Data for month %d already exists and overwrite_data is True. Overwriting.' % month)
-                sh.rm('-r', outdir)
-            else:
-                log.error('Data for month %d already exists but overwrite_data is False. Stopping.' % month)
-                # exit(4)
-                return False
-
-        # make the output run folder and copy over the input files
-        mkdir([indir, P(self.rundir, 'RESTART'), self.restartdir])
-
-        self.write_namelist(self.rundir)
-        self.write_field_table(self.rundir)
-        self.write_diag_table(self.rundir)
-
-        for filename in self.inputfiles:
-            sh.cp([filename, P(indir, os.path.split(filename)[1])])
-
-
-        if use_restart:
-            if not restart_file:
-                # get the restart from previous month
-                restart_file = self.get_restart_file(month - 1)
-            if not os.path.isfile(restart_file):
-                log.error('Restart file not found, expecting file %r' % restart_file)
-                exit(2)
-            else:
-                log.info('Using restart file %r' % restart_file)
-        else:
-            log.info('Running month %r without restart file' % month)
-            restart_file = None
-
-        vars = {
-            'month': month,
-            'datadir': outdir,
-            'rundir': self.rundir,
-            'execdir': self.execdir,
-            'srcdir': self.srcdir,
-            'env_source': self.env_source,
-            'restart_file': restart_file,
-            'num_cores': num_cores,
-            'run_idb': run_idb,
-            'experiment_restart': experiment_restart
-        }
-
-        runmonth = self.templates.get_template('runmonth.sh')
-
-        # employ the template to create a runscript
-        t = runmonth.stream(**vars).dump(P(self.rundir, 'runmonth.sh'))
-
-    # Check scratch space has enough disk space
-        #if email_alerts:
-        #    if email_address_for_alerts is None:
-        #        email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
-        #    create_alert.run_alerts(self.execdir, GFDL_BASE, self.name, month, email_address_for_alerts, disk_space_limit)
-
-        log.info("Running GFDL for month %r" % month)
-        self._cur_month = month
-        try:
-            #set_screen_title('month:%d' % month)
-            proc = sh.bash(P(self.rundir, 'runmonth.sh'), _out=self._log_runmonth, _err=self._log_runmonth, _bg=True)
-            proc.wait()  # allow the background thread to complete
-            log.info("Run for month %r complete" % month)
-        except KeyboardInterrupt:
-            log.error("Manual interrupt, killing process.")
-            proc.process.kill()
-            log.info("Cleaning run directory.")
-            self.clear_rundir()
-            return False
-        except sh.ErrorReturnCode as e:
-            log.error("Run failed for month %r" % month)
-            proc.process.kill()
-            raise e
-
-        mkdir(outdir)
-
-        #restart_file = P(self.restartdir, 'res_%d.tar.gz' % month)
-        #sh.tar('zcvf', restart_file, 'RESTART')
-        restart_file = P(self.restartdir, 'res_%d.cpio' % month)
-        sh.cd(P(self.rundir, 'RESTART'))
-        state_files = sh.glob('*.res*')
-        sh.cpio('-ov', _in='\n'.join(state_files), _out=restart_file)
-        log.info("Saved restart file %r" % restart_file)
-        sh.rm('-r', P(self.rundir, 'RESTART'))
-
-        try:
-            git_hash_file = open(P(outdir, 'git_hash_used.txt'), "w")
-            if self.commit_id!=self.commit_id_base:
-                git_hash_file.write("*---hash of specified commit used for fortran code in workdir---*:\n")
-                git_hash_file.write(self.commit_id)
-                git_hash_file.write("\n")
-                git_hash_file.write("\n*---hash of commit used for code in GFDL_BASE, including this python script---*:\n")
-                git_hash_file.write(self.commit_id_base)
-                git_hash_file.write("\n")
-            else:
-                git_hash_file.write("*---hash of commit used for code in GFDL_BASE, including this python script---*:\n")
-                git_hash_file.write(self.commit_id)
-                git_hash_file.write("\n")
-            if self.git_status_output is not None:
-                git_hash_file.write("\n"+"*---git status output (only f90 and inc files)---*:\n")
-                git_hash_file.writelines( line_out+"\n" for line_out in self.git_status_output)
-            if self.git_diff_output is not None:
-                git_hash_file.write("\n"+"*---git diff output run in GFDL_BASE (everything)---*:\n")
-                git_hash_file.writelines( line_out+"\n" for line_out in self.git_diff_output)
-            git_hash_file.close()
-        except:
-            log.info("Could not output git commit hash")
-
-        if light:
-            os.system("cp -a "+self.rundir+"/*.nc "+outdir)
-            sh.cp(['-a', P(self.restartdir, 'res_%d.cpio' % (month)), outdir])
-            if month > 1:
-                try:
-                    sh.rm( P(self.restartdir, 'res_%d.cpio' % (month-1)))
-                except sh.ErrorReturnCode:
-                    log.warning('Previous months restart already removed')
-
-                try:
-                    sh.rm( P(self.datadir, 'run03%d' % (month-1) , 'res_%d.cpio' % (month-1)))
-                except sh.ErrorReturnCode:
-                    log.warning('Previous months restart already removed')
-
-        else:
-            sh.cp(['-a', self.rundir+'/.', outdir])
-        self.clear_rundir()
-        sh.cd(self.rundir)
-        return True
-
-    runmonth = run
-
-    def derive(self, new_experiment_name):
-        """Derive a new experiment based on this one."""
-        new_exp = Experiment(new_experiment_name)
-        new_exp.execdir = self.execdir
-        new_exp.namelist = self.namelist.copy()
-        new_exp.use_diag_table(self.diag_table.copy())
-        new_exp.inputfiles = self.inputfiles
-        new_exp.commit_id = self.commit_id
-        new_exp.commit_id_base = self.commit_id_base
-        new_exp.git_status_output = self.git_status_output
-        new_exp.git_diff_output   = self.git_diff_output
-        return new_exp
-
-    def run_parameter_sweep(self, parameter_values, runs=10, num_cores=16):
-        # parameter_values should be a namelist fragment, with multiple values
-        # for each study e.g. to vary obliquity:
-        # exp.run_parameter_sweep({'astronomy_nml': {'obliq': [0.0, 5.0, 10.0, 15.0]}})
-        # will run 4 independent studies and create data e.g.
-        # <exp_name>/astronomy_nml_obliq_<0.0, 5.0 ...>/run[1-10]/daily.nc
-        params = [(sec, name, values) for sec, parameters in parameter_values.items()
-                        for name, values in parameters.items()]
-        # make a list of lists of namelist section, parameter names and values
-        params = [[(a,b,val) for val in values] for a,b,values in params]
-        parameter_space = itertools.product(params)
-        for combo in parameter_space:
-            title = '_'.join(['%s_%s_%r' % (sec[:3], name[:5], val) for sec, name, val in combo])
-            exp = self.derive(self.name + '_' + title)
-            for sec, name, val in combo:
-                exp.namelist[sec][name] = val
-            exp.clear_rundir()
-            exp.run(1, use_restart=False, num_cores=num_cores)
-            for i in range(runs-1):
-                exp.run(i+2)
 
     def update_namelist(self, new_vals):
         """Update the namelist sections, overwriting existing values."""
@@ -544,55 +126,231 @@ class Experiment(Logger):
             nml = self.namelist[sec]
             nml.update(new_vals[sec])
 
-    def runinterp(self, month, infile, outfile, var_names = '-a', p_levs = "EVEN", rm_input=False):
-        """Interpolate data from sigma to pressure levels. Includes option to remove original file."""
-        import subprocess
-        pprocess = P(GFDL_BASE,'postprocessing/plevel_interpolation/scripts')
-        interper = 'source '+pprocess+'/plevel.sh -i '
-        inputfile = P(self.datadir, 'run%03d' % month, infile)
-        outputfile = P(self.datadir, 'run%03d' % month, outfile)
+    def write_namelist(self, outdir):
+        namelist_file = P(outdir, 'input.nml')
+        self.log.info('Writing namelist to %r' % namelist_file)
+        self.namelist.write(namelist_file)
 
-        # Select from pre-chosen pressure levels, or input new ones in hPa in the format below.
-        if p_levs == "MODEL":
-            plev = ' -p "2 9 18 38 71 125 206 319 471 665 904 1193 1532 1925 2375 2886 3464 4115 4850 5679 6615 7675 8877 10244 11801 13577 15607 17928 20585 23630 27119 31121 35711 40976 47016 53946 61898 71022 81491 93503" '
-        elif p_levs == "EVEN":
-            plev = ' -p "100000 95000 90000 85000 80000 75000 70000 65000 60000 55000 50000 45000 40000 35000 30000 25000 20000 15000 10000 5000" '
+    def write_diag_table(self, outdir):
+        outfile = P(outdir, 'diag_table')
+        self.log.info('Writing diag_table to %r' % outfile)
+        if len(self.diag_table.files):
+            template = self.templates.get_template('diag_table')
+            calendar = not self.namelist['main_nml']['calendar'].lower().startswith('no_calendar')
+            vars = {'calendar': calendar, 'outputfiles': self.diag_table.files.values()}
+            template.stream(**vars).dump(outfile)
         else:
-            plev = p_levs
-        command = interper + inputfile + ' -o ' + outputfile + plev + var_names
-        subprocess.call([command], shell=True)
-        if rm_input:
-            sh.rm( inputfile)
+            self.log.error("No output files defined in the DiagTable. Stopping.")
+            raise ValueError()
 
+    def write_field_table(self, outdir):
+        self.log.info('Writing field_table to %r' % P(outdir, 'field_table'))
+        sh.cp(self.field_table_file, P(outdir, 'field_table'))
 
-class DiagTable(object):
-    def __init__(self):
-        super(DiagTable, self).__init__()
-        self.files = {}
+    _day_re = re.compile('Integration completed through\s+([0-9]+) days')
+    _month_re = re.compile('Integration completed through\s+([\w\s]+)\s([0-9]+:)')
+    def log_output(self, outputstring):
+        line = outputstring.strip()
+        if 'warning' in line.lower():
+            self.log.warn(line)
+        else:
+            self.log.debug(line)
+        return clean_log_debug(outputstring)
 
-    def add_file(self, name, freq, units="hours", time_units=None):
-        if time_units is None:
-            time_units = units
-        self.files[name] = {
-            'name': name,
-            'freq': freq,
-            'units': units,
-            'time_units': time_units,
-            'fields': []
+    @destructive
+    @useworkdir
+    def run(self, i, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False, run_idb=False, experiment_restart=None, email_alerts=True, email_address_for_alerts=None, disk_space_limit=20, disk_space_cutoff_limit=5):
+
+        indir =  P(self.rundir, 'INPUT')
+        outdir = P(self.datadir, 'run%04d' % i)
+        resdir = P(self.rundir, 'RESTART')
+
+        if os.path.isdir(outdir):
+            if overwrite_data:
+                self.log.warning('Data for run %d already exists and overwrite_data is True. Overwriting.' % i)
+                sh.rm('-r', outdir)
+            else:
+                self.log.warn('Data for run %d already exists but overwrite_data is False. Stopping.' % i)
+                return False
+
+        # make the output run folder and copy over the input files
+        mkdir([indir, resdir, self.restartdir])
+
+        self.write_namelist(self.rundir)
+        self.write_field_table(self.rundir)
+        self.write_diag_table(self.rundir)
+
+        for filename in self.inputfiles:
+            sh.cp([filename, P(indir, os.path.split(filename)[1])])
+
+        if use_restart:
+            if not restart_file:
+                # get the restart from previous iteration
+                restart_file = self.get_restart_file(i - 1)
+            if not os.path.isfile(restart_file):
+                self.log.error('Restart file not found, expecting file %r' % restart_file)
+                exit(2)
+            else:
+                self.log.info('Using restart file %r' % restart_file)
+
+            self.extract_restart_archive(restart_file, indir)
+        else:
+            self.log.info('Running without restart file')
+            restart_file = None
+
+        vars = {
+            'rundir': self.rundir,
+            'execdir': self.codebase.builddir,
+            'executable': self.codebase.executable_name,
+            'env_source': self.env_source,
+            'num_cores': num_cores,
+            'run_idb': run_idb,
         }
 
-    def add_field(self, module, name, time_avg=False, files=None):
-        if files is None:
-            files = self.files.keys()
+        runscript = self.templates.get_template('run.sh')
 
-        for fname in files:
-            self.files[fname]['fields'].append({
-                'module': module,
-                'name': name,
-                'time_avg': time_avg
-                })
+        # employ the template to create a runscript
+        t = runscript.stream(**vars).dump(P(self.rundir, 'run.sh'))
 
-    def copy(self):
-        d = DiagTable()
-        d.files = copy.deepcopy(self.files)
-        return d
+    # Check scratch space has enough disk space
+        #if email_alerts:
+        #    if email_address_for_alerts is None:
+        #        email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
+        #    create_alert.run_alerts(self.execdir, GFDL_BASE, self.name, month, email_address_for_alerts, disk_space_limit)
+
+        self.emit('run:ready', self)
+        self.log.info("Beginning run %d" % i)
+        try:
+            for line in sh.bash(P(self.rundir, 'run.sh'), _iter=True, _err_to_out=True):
+                handled = self.emit('run:output', self, line)
+                if not handled: # only log the output when no event handler is used
+                    self.log_output(line)
+            completed = True
+        except sh.ErrorReturnCode as e:
+            completed = False
+            self.log.error("Run %d failed. See log for details." % i)
+            self.log.error("Error: %r" % e)
+            self.emit('run:failed', self)
+            raise e
+
+        self.emit('run:completed', self, i)
+        mkdir(outdir)
+
+        if num_cores > 1:
+            combinetool = sh.Command(P(self.codebase.builddir, 'mppnccombine.x'))
+            # use postprocessing tool to combine the output from several cores
+            for file in self.diag_table.files:
+                netcdf_file = '%s.nc' % file
+                filebase = P(self.rundir, netcdf_file)
+                combinetool(filebase)
+                # copy the combined netcdf file into the data archive directory
+                sh.cp(filebase, P(outdir, netcdf_file))
+                # remove all netcdf fragments from the run directory
+                sh.rm(glob.glob(filebase+'*'))
+                self.log.debug('%s combined and copied to data directory' % netcdf_file)
+
+            for restart in glob.glob(P(resdir, '*.res.nc.0000')):
+                restartfile = restart.replace('.0000', '')
+                combinetool(restartfile)
+                sh.rm(glob.glob(restartfile+'.????'))
+                self.log.debug("Restart file %s combined" % restartfile)
+
+            self.emit('run:combined', self)
+
+        # make the restart archive and delete the restart files
+        self.make_restart_archive(self.get_restart_file(i), resdir)
+        sh.rm('-r', resdir)
+
+        sh.cp(['-a', self.rundir, outdir])
+        self.clear_rundir()
+
+        # TODO: Update this
+        # try:
+        #     git_hash_file = open(P(outdir, 'git_hash_used.txt'), "w")
+        #     if self.commit_id!=self.commit_id_base:
+        #         git_hash_file.write("*---hash of specified commit used for fortran code in workdir---*:\n")
+        #         git_hash_file.write(self.commit_id)
+        #         git_hash_file.write("\n")
+        #         git_hash_file.write("\n*---hash of commit used for code in GFDL_BASE, including this python script---*:\n")
+        #         git_hash_file.write(self.commit_id_base)
+        #         git_hash_file.write("\n")
+        #     else:
+        #         git_hash_file.write("*---hash of commit used for code in GFDL_BASE, including this python script---*:\n")
+        #         git_hash_file.write(self.commit_id)
+        #         git_hash_file.write("\n")
+        #     if self.git_status_output is not None:
+        #         git_hash_file.write("\n"+"*---git status output (only f90 and inc files)---*:\n")
+        #         git_hash_file.writelines( line_out+"\n" for line_out in self.git_status_output)
+        #     if self.git_diff_output is not None:
+        #         git_hash_file.write("\n"+"*---git diff output run in GFDL_BASE (everything)---*:\n")
+        #         git_hash_file.writelines( line_out+"\n" for line_out in self.git_diff_output)
+        #     git_hash_file.close()
+        # except:
+        #     log.info("Could not output git commit hash")
+
+        # TODO: replace this with util function
+        # if light:
+        #     os.system("cp -a "+self.rundir+"/*.nc "+outdir)
+        #     sh.cp(['-a', P(self.restartdir, 'res_%d.cpio' % (month)), outdir])
+        #     if month > 1:
+        #         try:
+        #             sh.rm( P(self.restartdir, 'res_%d.cpio' % (month-1)))
+        #         except sh.ErrorReturnCode:
+        #             log.warning('Previous months restart already removed')
+
+        #         try:
+        #             sh.rm( P(self.datadir, 'run03%d' % (month-1) , 'res_%d.cpio' % (month-1)))
+        #         except sh.ErrorReturnCode:
+        #             log.warning('Previous months restart already removed')
+
+        # else:
+        #     sh.cp(['-a', self.rundir+'/.', outdir])
+        # self.clear_rundir()
+        # sh.cd(self.rundir)
+        return True
+
+    def make_restart_archive(self, archive_file, restart_directory):
+        with tarfile.open(archive_file, 'w:gz') as tar:
+            tar.add(restart_directory, arcname='.')
+        self.log.info("Restart archive created at %s" % archive_file)
+
+    def extract_restart_archive(self, archive_file, input_directory):
+        with tarfile.open(archive_file, 'r:gz') as tar:
+            tar.extractall(path=input_directory)
+        self.log.info("Restart %s extracted to %s" % (archive_file, input_directory))
+
+    def derive(self, new_experiment_name):
+        """Derive a new experiment based on this one."""
+        new_exp = Experiment(new_experiment_name, self.codebase)
+        new_exp.namelist = self.namelist.copy()
+        new_exp.diag_table = self.diag_table.copy()
+        new_exp.inputfiles = self.inputfiles.copy()
+        # TODO: fix this
+        # new_exp.commit_id = self.commit_id
+        # new_exp.commit_id_base = self.commit_id_base
+        # new_exp.git_status_output = self.git_status_output
+        # new_exp.git_diff_output   = self.git_diff_output
+        return new_exp
+
+    # TODO: replace this with util functionality
+    # def run_parameter_sweep(self, parameter_values, runs=10, num_cores=16):
+    #     # parameter_values should be a namelist fragment, with multiple values
+    #     # for each study e.g. to vary obliquity:
+    #     # exp.run_parameter_sweep({'astronomy_nml': {'obliq': [0.0, 5.0, 10.0, 15.0]}})
+    #     # will run 4 independent studies and create data e.g.
+    #     # <exp_name>/astronomy_nml_obliq_<0.0, 5.0 ...>/run[1-10]/daily.nc
+    #     params = [(sec, name, values) for sec, parameters in parameter_values.items()
+    #                     for name, values in parameters.items()]
+    #     # make a list of lists of namelist section, parameter names and values
+    #     params = [[(a,b,val) for val in values] for a,b,values in params]
+    #     parameter_space = itertools.product(params)
+    #     for combo in parameter_space:
+    #         title = '_'.join(['%s_%s_%r' % (sec[:3], name[:5], val) for sec, name, val in combo])
+    #         exp = self.derive(self.name + '_' + title)
+    #         for sec, name, val in combo:
+    #             exp.namelist[sec][name] = val
+    #         exp.clear_rundir()
+    #         exp.run(1, use_restart=False, num_cores=num_cores)
+    #         for i in range(runs-1):
+    #             exp.run(i+2)
+
