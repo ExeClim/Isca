@@ -69,7 +69,7 @@ private
    logical :: no_forcing = .false.
 
    real :: t_zero=315., t_strat=200., delh=60., delv=10., eps=0., sigma_b=0.7
-   real :: P00 = 1.e5
+   real :: P00 = 1.e5, p_trop  = 1.e4, alpha = KAPPA
 
    real :: ka = -40., ks =  -4., kf = -1. ! negative sign is a flag indicating that the units are days
 
@@ -103,7 +103,7 @@ private
                               local_heating_vert_decay, local_heating_option,&
                               local_heating_file, relax_to_specified_wind,   &
                               u_wind_file, v_wind_file, equilibrium_t_option,&
-                              equilibrium_t_file
+                              equilibrium_t_file, p_trop, alpha
 
 !-----------------------------------------------------------------------
 
@@ -339,7 +339,7 @@ contains
 
       id_teq = register_diag_field ( mod_name, 'teq', axes(1:3), Time, &
                       'equilibrium temperature (deg K)', 'deg_K'   , &
-                      missing_value=missing_value, range=(/100.,400./) )
+                      missing_value=missing_value, range=(/100.,800./) )
 
       id_newtonian_damping = register_diag_field ( mod_name, 'tdt_ndamp', axes(1:3), Time, &
                       'Heating due to newtonian damping (deg/sec)', 'deg/sec' ,    &
@@ -437,7 +437,7 @@ real, intent(in),  dimension(:,:,:), optional :: mask
 !-----------------------------------------------------------------------
 
           real, dimension(size(t,1),size(t,2)) :: &
-     sin_lat, sin_lat_2, cos_lat_2, t_star, cos_lat_4, &
+     sin_lat, cos_lat, sin_lat_2, cos_lat_2, t_star, cos_lat_4, &
      tstr, sigma, the, tfactr, rps, p_norm, sin_sublon_2, coszen, fracday
 
        real, dimension(size(t,1),size(t,2),size(t,3)) :: tdamp
@@ -451,6 +451,7 @@ real, intent(in),  dimension(:,:,:), optional :: mask
 !------------latitudinal constants--------------------------------------
 
       sin_lat  (:,:) = sin(lat(:,:))
+      cos_lat (:,:) = cos(lat(:,:))
       sin_lat_2(:,:) = sin_lat(:,:)*sin_lat(:,:)
       cos_lat_2(:,:) = 1.0-sin_lat_2(:,:)
       cos_lat_4(:,:) = cos_lat_2(:,:)*cos_lat_2(:,:)
@@ -488,6 +489,12 @@ real, intent(in),  dimension(:,:,:), optional :: mask
          the   (:,:) = t_star(:,:) - delv*cos_lat_2(:,:)*coszen(:,:)*log(p_norm(:,:))
          teq(:,:,k) = the(:,:)*(p_norm(:,:))**KAPPA
          teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
+      else if(uppercase(trim(equilibrium_t_option)) == 'EXOPLANET2') then
+         call diurnal_exoplanet(lat, lon, Time, coszen, fracday, rrsun)
+         t_star(:,:) = t_strat
+         p_norm(:,:) = p_full(:,:,k)/p_trop
+         teq(:,:,k) = t_star(:,:)*cos_lat(:,:)*(p_norm(:,:))**alpha
+         teq(:,:,k) = max( teq(:,:,k), t_strat )
       else
          call error_mesg ('hs_forcing_nml', &
          '"'//trim(equilibrium_t_option)//'"  is not a valid value for equilibrium_t_option',FATAL)

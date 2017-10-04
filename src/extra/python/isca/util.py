@@ -27,8 +27,8 @@ def runinterp(self, month, infile, outfile, var_names = '-a', p_levs = "EVEN", r
     import subprocess
     pprocess = P(GFDL_BASE,'postprocessing/plevel_interpolation/scripts')
     interper = 'source '+pprocess+'/plevel.sh -i '
-    inputfile = P(self.datadir, 'run%03d' % month, infile)
-    outputfile = P(self.datadir, 'run%03d' % month, outfile)
+    inputfile = P(self.datadir, 'run%04d' % month, infile)
+    outputfile = P(self.datadir, 'run%04d' % month, outfile)
 
     # Select from pre-chosen pressure levels, or input new ones in hPa in the format below.
     if p_levs == "MODEL":
