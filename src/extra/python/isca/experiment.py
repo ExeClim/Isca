@@ -26,22 +26,22 @@ class Experiment(Logger, EventEmitter):
 
     RESOLUTIONS = {
         'T170': {
-            'num_lon': 512,
-            'num_lat': 256,
+            'lon_max': 512,
+            'lat_max': 256,
             'num_fourier': 170,
             'num_spherical': 171
         },
 
         'T85': {
-            'num_lon': 256,
-            'num_lat': 128,
+            'lon_max': 256,
+            'lat_max': 128,
             'num_fourier': 85,
             'num_spherical': 86
         },
 
         'T42': {
-            'num_lon': 128,
-            'num_lat': 64,
+            'lon_max': 128,
+            'lat_max': 64,
             'num_fourier': 42,
             'num_spherical': 43,
         },
