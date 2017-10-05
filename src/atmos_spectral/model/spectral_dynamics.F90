@@ -81,7 +81,7 @@ use        tracer_type_mod, only: tracer_type, tracer_type_version, tracer_type_
 use every_step_diagnostics_mod, only: every_step_diagnostics_init, every_step_diagnostics, every_step_diagnostics_end
 
 use        mpp_domains_mod, only: mpp_global_field
-use        mpp_mod,         only: NULL_PE, mpp_transmit, mpp_sync, mpp_send, mpp_broadcast, mpp_recv
+use        mpp_mod,         only: NULL_PE, mpp_transmit, mpp_sync, mpp_send, mpp_broadcast, mpp_recv, mpp_max
 
 use       polvani_2004_mod, only: polvani_2004
 use       polvani_2007_mod, only: polvani_2007, polvani_2007_tracer_init, get_polvani_2007_tracers
@@ -198,6 +198,7 @@ real    :: damping_coeff       = 1.15740741e-4, & ! (one tenth day)**-1
         water_correction_limit = 0.0, & !mj
            raw_filter_coeff    = 1.0     !st Default value of 1.0 turns the RAW part of the filtering off. 0.5 is the desired value, but this appears unstable. Requires further testing.
 
+logical :: json_logging = .false.    ! print steps to std out in a machine readable format
 !===============================================================================================
 
 real, dimension(2) :: valid_range_t = (/100.,500./)
@@ -216,7 +217,7 @@ namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option, cutoff
                                  print_interval, num_steps, initial_state_option,                    &
                                  water_correction_limit,                                             & !mj
                                  raw_filter_coeff,                                                   & !st
-                                 graceful_shutdown
+                                 graceful_shutdown, json_logging
 
 contains
 
@@ -1848,19 +1849,40 @@ real, intent(in), dimension(is:ie, js:je, num_levels, num_tracers) :: tr_grid
 integer :: year, month, days, hours, minutes, seconds
 character(len=4), dimension(12) :: month_name
 
+real, dimension(is:ie, js:je, num_levels) :: speed
+real :: max_speed, avgT
+
 month_name=(/' Jan',' Feb',' Mar',' Apr',' May',' Jun',' Jul',' Aug',' Sep',' Oct',' Nov',' Dec'/)
+
+speed = sqrt(u_grid*u_grid + v_grid*v_grid)
+max_speed = maxval(speed)
+call mpp_max(max_speed)
+
+avgT = area_weighted_global_mean(t_grid(:,:, num_levels))
 
 if(mpp_pe() == mpp_root_pe()) then
   if(get_calendar_type() == NO_CALENDAR) then
     call get_time(Time, seconds, days)
-    write(*,100) days, seconds
+    if (json_logging) then
+      write(*, 300) days, seconds, max_speed, avgT
+    else
+      write(*,100) days, seconds
+    end if
   else
     call get_date(Time, year, month, days, hours, minutes, seconds)
-    write(*,200) year, month_name(month), days, hours, minutes, seconds
+    if (json_logging) then
+      write(*,400) year, month, days, hours, minutes, seconds, max_speed, avgT
+    else
+      write(*,200) year, month_name(month), days, hours, minutes, seconds
+    end if
   endif
 endif
 100 format(' Integration completed through',i6,' days',i6,' seconds')
 200 format(' Integration completed through',i5,a4,i3,2x,i2,':',i2,':',i2)
+300 format(1x, '{"day":',i6,2x,',"second":', i6, &
+    2x,',"max_speed":',e13.6,3x,',"avg_T":',e13.6, 3x '}')
+400 format(1x, '{"date": "',i0.4,'-',i0.2,'-',i0.2, &
+  '", "time": "', i0.2,':', i0.2,':', i0.2, '", "max_speed":',f6.1,3x,',"avg_T":',f6.1, 3x '}')
 
 end subroutine global_integrals
 !===================================================================================
