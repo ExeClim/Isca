@@ -154,9 +154,6 @@ real, public, parameter :: TFREEZE = 273.16
 ! <DATA NAME="AVOGNO" UNITS="atoms/mole" TYPE="real" DEFAULT="6.023000E+23">
 !  Avogadro's number
 ! </DATA>
-! <DATA NAME="PSTD" UNITS="dynes/cm^2" TYPE="real" DEFAULT="1.013250E+06">
-!  mean sea level pressure
-! </DATA>
 ! <DATA NAME="PSTD_MKS" UNITS="Newtons/m^2" TYPE="real" DEFAULT="101325.0">
 !  mean sea level pressure
 ! </DATA>
@@ -252,13 +249,12 @@ real, public :: SECONDS_PER_SOL = SECONDS_PER_DAY
 real, public :: orbital_rate  ! this is calculated from 2pi/orbital_period
 real, public :: solar_const = 1368.22             ! solar constant [ W/m2 ]
 real, public :: orbit_radius=1.0                  ! distance Earth-Sun [ AU ]
-real, public :: PSTD   = 1.013250E+06
 real, public :: PSTD_MKS    = 101325.0
 real, public :: RDGAS  = EARTH_RDGAS
 real, public :: KAPPA = EARTH_KAPPA
 real, public :: CP_AIR = EARTH_CP_AIR
 
-namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa
+namelist/constants_nml/ radius, grav, omega, orbital_period, pstd_mks, rdgas, kappa
 
 !-----------------------------------------------------------------------
 ! version and tagname published
