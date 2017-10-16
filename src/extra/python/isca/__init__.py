@@ -1,6 +1,8 @@
 import os
 from collections import defaultdict
 
+from isca.loghandler import log
+
 _module_directory = os.path.dirname(os.path.realpath(__file__))
 
 try:
@@ -74,6 +76,5 @@ class EventEmitter(object):
         return handled
 
 
-from isca.loghandler import log
 from experiment import Experiment, DiagTable, Namelist
 from codebase import IscaCodeBase, DryCodeBase, GreyCodeBase #, ShallowCodeBase

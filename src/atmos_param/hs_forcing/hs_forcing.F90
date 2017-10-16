@@ -484,9 +484,9 @@ real, intent(in),  dimension(:,:,:), optional :: mask
          teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
       else if(uppercase(trim(equilibrium_t_option)) == 'EXOPLANET') then
          call diurnal_exoplanet(lat, lon, Time, coszen, fracday, rrsun)
-         t_star(:,:) = t_zero - delh*(1 - cos_lat_2(:,:)*coszen(:,:)) - eps*sin_lat(:,:)
+         t_star(:,:) = t_zero - delh*(1 - cos_lat(:,:)*coszen(:,:)) - eps*sin_lat(:,:)
          p_norm(:,:) = p_full(:,:,k)/pref
-         the   (:,:) = t_star(:,:) - delv*cos_lat_2(:,:)*coszen(:,:)*log(p_norm(:,:))
+         the   (:,:) = t_star(:,:) - delv*cos_lat(:,:)*coszen(:,:)*log(p_norm(:,:))
          teq(:,:,k) = the(:,:)*(p_norm(:,:))**KAPPA
          teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
       else if(uppercase(trim(equilibrium_t_option)) == 'EXOPLANET2') then
