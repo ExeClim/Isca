@@ -41,7 +41,7 @@ def useworkdir(fn):
 def url_to_folder(url):
         """Convert a url to a valid folder name."""
         for sym in ('/:@'):
-            url = url.replace(sym, '-')
+            url = url.replace(sym, '_')
         return url
 
 def get_git_commit_id(directory):

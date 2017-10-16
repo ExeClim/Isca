@@ -28,17 +28,17 @@ export MALLOC_CHECK_=0
 if [ ! -e "{{ execdir }}/mppnccombine.x" ]; then
   echo "Compiling postprocessing tools"
   cd $ppdir
-  cc -O -c `nc-config --cflags` mppnccombine.c
-  if [ $? != 0 ]; then
-      echo "ERROR: could not compile combine tool"
-      exit 1
-  fi
-  cc -O -o mppnccombine.x `nc-config --libs`  mppnccombine.o
-  if [ $? != 0 ]; then
-      echo "ERROR: could not compile combine tool"
-      exit 1
-  fi
-  #./compile_mppn.sh
+  ./compile_mppn.sh
+  # cc -O -c `nc-config --cflags` mppnccombine.c
+  # if [ $? != 0 ]; then
+  #     echo "ERROR: could not compile combine tool"
+  #     exit 1
+  # fi
+  # cc -O -o mppnccombine.x `nc-config --libs`  mppnccombine.o
+  # if [ $? != 0 ]; then
+  #     echo "ERROR: could not compile combine tool"
+  #     exit 1
+  # fi
 
   ln -s $ppdir/mppnccombine.x {{ execdir }}/mppnccombine.x
 fi
