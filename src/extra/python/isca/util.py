@@ -6,7 +6,7 @@ from tqdm import tqdm
 import sh
 
 @contextmanager
-def exp_progress(exp):
+def exp_progress(exp, description='DAY {day}'):
     """Create a progress bar on the terminal output.
 
     DAY 39:  39%|====           | 39/100 [00:32<00:46,  1.31it/s, avgT=261, spd=40.6]
@@ -28,13 +28,17 @@ def exp_progress(exp):
             try:
                 data = json.loads(line)
                 pbar.update(1)
-                pbar.set_description('DAY %d' % data['day'])
+                pbar.set_description(description.format(**data))
                 pbar.set_postfix(spd=data['max_speed'], avgT=data['avg_T'])
             except ValueError as e:
                 # wasn't valid JSON, just output as normal
                 exp.log_output(line)
 
         yield pbar
+
+        # after yield, we clean up.
+        # we're done with logging so remove the temporary handler
+        exp._events['run:output'].remove(parse_output)
 
 def keep_only_certain_restart_files(exp, max_num_files, interval=12):
     try:

@@ -218,14 +218,24 @@ class Experiment(Logger, EventEmitter):
         #        email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
         #    create_alert.run_alerts(self.execdir, GFDL_BASE, self.name, month, email_address_for_alerts, disk_space_limit)
 
+        def _outhandler(line):
+            handled = self.emit('run:output', self, line)
+            if not handled: # only log the output when no event handler is used
+                self.log_output(line)
+
         self.emit('run:ready', self)
         self.log.info("Beginning run %d" % i)
         try:
-            for line in sh.bash(P(self.rundir, 'run.sh'), _iter=True, _err_to_out=True):
-                handled = self.emit('run:output', self, line)
-                if not handled: # only log the output when no event handler is used
-                    self.log_output(line)
+            #for line in sh.bash(P(self.rundir, 'run.sh'), _iter=True, _err_to_out=True):
+            proc = sh.bash(P(self.rundir, 'run.sh'), _bg=True, _out=_outhandler, _err_to_out=True)
+            proc.wait()
             completed = True
+        except KeyboardInterrupt as e:
+            self.log.error("Manual interrupt, killing process.")
+            proc.process.kill()
+            #log.info("Cleaning run directory.")
+            #self.clear_rundir()
+            raise e
         except sh.ErrorReturnCode as e:
             completed = False
             self.log.error("Run %d failed. See log for details." % i)
@@ -234,6 +244,7 @@ class Experiment(Logger, EventEmitter):
             raise e
 
         self.emit('run:completed', self, i)
+        self.log.info('Run %d complete' % i)
         mkdir(outdir)
 
         if num_cores > 1:
