@@ -29,7 +29,7 @@ use mpp_mod, only: input_nml_file
 use fms_mod, only: open_namelist_file
 #endif
 
-use     constants_mod, only: KAPPA, CP_AIR, GRAV, PI, SECONDS_PER_DAY
+use     constants_mod, only: KAPPA, EARTH_KAPPA, CP_AIR, GRAV, PI, SECONDS_PER_DAY
 
 use           fms_mod, only: error_mesg, FATAL, file_exist,       &
                              check_nml_error,                     &
@@ -69,7 +69,7 @@ private
    logical :: no_forcing = .false.
 
    real :: t_zero=315., t_strat=200., delh=60., delv=10., eps=0., sigma_b=0.7
-   real :: P00 = 1.e5, p_trop  = 1.e4, alpha = KAPPA
+   real :: P00 = 1.e5, p_trop  = 1.e4, alpha = EARTH_KAPPA
 
    real :: ka = -40., ks =  -4., kf = -1. ! negative sign is a flag indicating that the units are days
 

@@ -155,7 +155,7 @@ class Experiment(Logger, EventEmitter):
             self.log.warn(line)
         else:
             self.log.debug(line)
-        return clean_log_debug(outputstring)
+        #return clean_log_debug(outputstring)
 
     @destructive
     @useworkdir
