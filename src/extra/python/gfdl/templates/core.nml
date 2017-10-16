@@ -20,7 +20,6 @@
     longitude_origin        = 0.,
     robert_coeff            = .03,
     alpha_implicit          = .5,
-    reference_sea_level_press=1.e5,
     lon_max                 = 128,
     lat_max                 = 64,
     num_levels              = 40,
