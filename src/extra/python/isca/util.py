@@ -61,12 +61,6 @@ def email_alerts(exp, email_address, limit=2000, cutoff=5):
 
     exp._events.remove(check_disk_space)
 
-
-if email_alerts:
-   if email_address_for_alerts is None:
-       email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
-   create_alert.run_alerts(self.execdir, GFDL_BASE, self.name, month, email_address_for_alerts, disk_space_limit)
-
 def keep_only_certain_restart_files(exp, max_num_files, interval=12):
     try:
     #       sh.ls(sh.glob(P(exp.workdir,'restarts','res_*.cpio'))) #TODO get max_num_files calculated in line, rather than a variable to pass.

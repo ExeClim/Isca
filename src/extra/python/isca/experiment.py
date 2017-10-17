@@ -183,11 +183,11 @@ class Experiment(Logger, EventEmitter):
 
         """
 
+        self.clear_rundir()
+
         indir =  P(self.rundir, 'INPUT')
         outdir = P(self.datadir, self.runfmt % i)
         resdir = P(self.rundir, 'RESTART')
-
-        self.codebase.write_source_control_status(P(self.rundir, 'git_hash_used.txt'))
 
         if os.path.isdir(outdir):
             if overwrite_data:
@@ -200,6 +200,7 @@ class Experiment(Logger, EventEmitter):
         # make the output run folder and copy over the input files
         mkdir([indir, resdir, self.restartdir])
 
+        self.codebase.write_source_control_status(P(self.rundir, 'git_hash_used.txt'))
         self.write_namelist(self.rundir)
         self.write_field_table(self.rundir)
         self.write_diag_table(self.rundir)

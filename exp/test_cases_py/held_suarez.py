@@ -107,6 +107,7 @@ namelist = Namelist({
 exp.namelist = namelist
 exp.set_resolution('T42', num_levels=25)
 
-exp.run(1, use_restart=False)
-for i in range(2, 13):
-  exp.run(i)  # use the restart i-1 by default
+if __name__ == '__main__':
+    exp.run(1, use_restart=False)
+    for i in range(2, 13):
+      exp.run(i)  # use the restart i-1 by default

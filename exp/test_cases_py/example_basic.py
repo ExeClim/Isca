@@ -7,8 +7,6 @@ from isca import GreyCodeBase, Experiment, Namelist, DiagTable, GFDL_BASE
 
 import sys
 
-REPO = 'git@github.com:jamesp/isca.git'
-
 codebase = GreyCodeBase(directory=GFDL_BASE)
 exp = Experiment('ref_earth_grey_isca', codebase)
 
@@ -198,9 +196,10 @@ exp.namelist = nml
 #exp.set_resolution('T85', 25)
 exp.diag_table = diag
 
-exp.clear_rundir()
-exp.run(1, use_restart=False, num_cores=16)
-for i in range(2, 7):
-    exp.run(i, num_cores=16)
-    exp.delete_restart(i-1)
+if __name__ == '__main__':
+    exp.clear_rundir()
+    exp.run(1, use_restart=False, num_cores=16)
+    for i in range(2, 7):
+        exp.run(i, num_cores=16)
+        exp.delete_restart(i-1)
 
