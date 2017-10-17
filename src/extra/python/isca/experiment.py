@@ -21,6 +21,8 @@ P = os.path.join
 class CompilationError(Exception):
     pass
 
+class FailedRunError(Exception): pass
+
 class Experiment(Logger, EventEmitter):
     """A basic GFDL experiment"""
 
@@ -241,7 +243,7 @@ class Experiment(Logger, EventEmitter):
             self.log.error("Run %d failed. See log for details." % i)
             self.log.error("Error: %r" % e)
             self.emit('run:failed', self)
-            raise e
+            raise FailedRunError()
 
         self.emit('run:completed', self, i)
         self.log.info('Run %d complete' % i)
