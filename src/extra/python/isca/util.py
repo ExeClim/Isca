@@ -5,6 +5,8 @@ import numpy as np
 from tqdm import tqdm
 import sh
 
+from isca.create_alert import disk_space_alert
+
 @contextmanager
 def exp_progress(exp, description='DAY {day}'):
     """Create a progress bar on the terminal output.
@@ -40,6 +42,31 @@ def exp_progress(exp, description='DAY {day}'):
         # we're done with logging so remove the temporary handler
         exp._events['run:output'].remove(parse_output)
 
+
+@contextmanager
+def email_alerts(exp, email_address, limit=2000, cutoff=5):
+    """A context manager for email alerts.
+    e.g.
+
+    with email_alerts(exp, 'myemail@example.com'):
+        ...
+        exp.run(...)
+    """
+    # add a handler to ready events
+    @exp.on('run:ready')
+    def check_disk_space(exp, month):
+        dir = exp.datadir
+        disk_space_alert(exp.datadir, exp.name, month, email_address, limit, cutoff)
+    yield
+
+    exp._events.remove(check_disk_space)
+
+
+if email_alerts:
+   if email_address_for_alerts is None:
+       email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
+   create_alert.run_alerts(self.execdir, GFDL_BASE, self.name, month, email_address_for_alerts, disk_space_limit)
+
 def keep_only_certain_restart_files(exp, max_num_files, interval=12):
     try:
     #       sh.ls(sh.glob(P(exp.workdir,'restarts','res_*.cpio'))) #TODO get max_num_files calculated in line, rather than a variable to pass.
@@ -61,14 +88,40 @@ def keep_only_certain_restart_files(exp, max_num_files, interval=12):
     except sh.ErrorReturnCode_1:
         log.warning('Tried to remove some restart files, but the last one doesnt exist')
 
+def clean_datadir(exp, run, keep_files=['input.nml', 'diag_table', 'field_table', 'git_hash_used.txt']):
+    """Remove the `run` directory from output data, retaining only small
+    configuration files."""
+    outdir = exp.get_outputdir(run)
+    for file in keep_files:
+        filepath = P(outdir, 'run', file)
+        if os.path.isfile(filepath):
+            sh.cp(filepath, P(outdir, file))
+            exp.log.info('Copied %s to %s' % (file, outdir))
+    sh.rm('-r', P(outdir, 'run'))
+    exp.log.info('Deleted %s directory' % P(outdir, 'run'))
 
-def runinterp(self, month, infile, outfile, var_names = '-a', p_levs = "EVEN", rm_input=False):
+def delete_all_restarts(exp, exceptions=None):
+    """Remove the restart files for a given experiment except those given.
+
+    e.g. remove_restarts(exp, [3,6,9,12])"""
+    if exceptions:
+        exceptions = [exp.restartfmt % i for i in exceptions]
+    all_restarts = os.listdir(exp.restartdir)
+    restarts_to_remove = [file for file in all_restarts if file not in exceptions]
+    for file in restarts_to_remove:
+        sh.rm(P(exp.restartdir, file))
+        exp.log.info('Deleted restart file %s' % file)
+
+
+
+
+def runinterp(exp, month, infile, outfile, var_names = '-a', p_levs = "EVEN", rm_input=False):
     """Interpolate data from sigma to pressure levels. Includes option to remove original file."""
     import subprocess
     pprocess = P(GFDL_BASE,'postprocessing/plevel_interpolation/scripts')
     interper = 'source '+pprocess+'/plevel.sh -i '
-    inputfile = P(self.datadir, 'run%04d' % month, infile)
-    outputfile = P(self.datadir, 'run%04d' % month, outfile)
+    inputfile = P(exp.datadir, exp.runfmt % month, infile)
+    outputfile = P(exp.datadir, exp.runfmt % month, outfile)
 
     # Select from pre-chosen pressure levels, or input new ones in hPa in the format below.
     if p_levs == "MODEL":

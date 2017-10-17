@@ -49,6 +49,9 @@ class Experiment(Logger, EventEmitter):
         },
     }
 
+    runfmt = 'run%04d'
+    restartfmt = 'res%04d.tar.gz'
+
     def __init__(self, name, codebase, safe_mode=False, workbase=GFDL_WORK, database=GFDL_DATA):
         super(Experiment, self).__init__()
         self.name = name
@@ -59,9 +62,9 @@ class Experiment(Logger, EventEmitter):
         # executable directory, restart file storage, and
         # output data directory.
         self.workdir = P(workbase, 'experiment', self.name)
-        self.restartdir = P(self.workdir, 'restarts') # where restarts will be stored
         self.rundir = P(self.workdir, 'run')          # temporary area an individual run will be performed
         self.datadir = P(database, self.name)        # where run data will be moved to upon completion
+        self.restartdir = P(self.datadir, 'restarts') # where restarts will be stored
         self.template_dir = P(_module_directory, 'templates')
 
         self.env_source = get_env_file()
@@ -107,7 +110,10 @@ class Experiment(Logger, EventEmitter):
         self.log.info('Emptied run directory %r' % self.rundir)
 
     def get_restart_file(self, i):
-        return P(self.restartdir, 'res%04d.tar.gz' % i)
+        return P(self.restartdir, self.restartfmt % i)
+
+    def get_outputdir(self, run):
+        return P(self.datadir, self.runfmt % run)
 
     def set_resolution(self, res, num_levels=None):
         """Set the resolution of the model, based on the standard triangular
@@ -149,8 +155,6 @@ class Experiment(Logger, EventEmitter):
         self.log.info('Writing field_table to %r' % P(outdir, 'field_table'))
         sh.cp(self.field_table_file, P(outdir, 'field_table'))
 
-    _day_re = re.compile('Integration completed through\s+([0-9]+) days')
-    _month_re = re.compile('Integration completed through\s+([\w\s]+)\s([0-9]+:)')
     def log_output(self, outputstring):
         line = outputstring.strip()
         if 'warning' in line.lower():
@@ -159,12 +163,28 @@ class Experiment(Logger, EventEmitter):
             self.log.debug(line)
         #return clean_log_debug(outputstring)
 
+    def delete_restart(self, run):
+        resfile = self.get_restart_file(run)
+        if os.path.isfile(resfile):
+            sh.rm(resfile)
+            self.log.info('Deleted restart file %s' % resfile)
+
+
     @destructive
     @useworkdir
-    def run(self, i, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, light=False, run_idb=False, experiment_restart=None, email_alerts=True, email_address_for_alerts=None, disk_space_limit=20, disk_space_cutoff_limit=5):
+    def run(self, i, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, save_run=False, run_idb=False):
+        """Run the model.
+            `num_cores`: Number of mpi cores to distribute over.
+            `restart_file` (optional): A path to a valid restart archive.  If None and `use_restart=True`,
+                                       restart file (i-1) will be used.
+            `save_run`:  If True, copy the entire working directory over to GFDL_DATA
+                         so that the run can rerun without the python script.
+                         (This uses a lot of data storage!)
+
+        """
 
         indir =  P(self.rundir, 'INPUT')
-        outdir = P(self.datadir, 'run%04d' % i)
+        outdir = P(self.datadir, self.runfmt % i)
         resdir = P(self.rundir, 'RESTART')
 
         self.codebase.write_source_control_status(P(self.rundir, 'git_hash_used.txt'))
@@ -216,18 +236,12 @@ class Experiment(Logger, EventEmitter):
         # employ the template to create a runscript
         t = runscript.stream(**vars).dump(P(self.rundir, 'run.sh'))
 
-    # Check scratch space has enough disk space
-        #if email_alerts:
-        #    if email_address_for_alerts is None:
-        #        email_address_for_alerts = getpass.getuser()+'@exeter.ac.uk'
-        #    create_alert.run_alerts(self.execdir, GFDL_BASE, self.name, month, email_address_for_alerts, disk_space_limit)
-
         def _outhandler(line):
             handled = self.emit('run:output', self, line)
             if not handled: # only log the output when no event handler is used
                 self.log_output(line)
 
-        self.emit('run:ready', self)
+        self.emit('run:ready', self, i)
         self.log.info("Beginning run %d" % i)
         try:
             #for line in sh.bash(P(self.rundir, 'run.sh'), _iter=True, _err_to_out=True):
@@ -252,8 +266,8 @@ class Experiment(Logger, EventEmitter):
         mkdir(outdir)
 
         if num_cores > 1:
-            combinetool = sh.Command(P(self.codebase.builddir, 'mppnccombine.x'))
             # use postprocessing tool to combine the output from several cores
+            combinetool = sh.Command(P(self.codebase.builddir, 'mppnccombine.x'))
             for file in self.diag_table.files:
                 netcdf_file = '%s.nc' % file
                 filebase = P(self.rundir, netcdf_file)
@@ -276,30 +290,20 @@ class Experiment(Logger, EventEmitter):
         self.make_restart_archive(self.get_restart_file(i), resdir)
         sh.rm('-r', resdir)
 
-        sh.cp(['-a', self.rundir, outdir])
+        if save_run:
+            # copy the complete run directory to GFDL_DATA so that the run can
+            # be recreated without the python script if required
+            mkdir(resdir)
+            sh.cp(['-a', self.rundir, outdir])
+        else:
+            # just save some useful diagnostic information
+            self.write_namelist(outdir)
+            self.write_field_table(outdir)
+            self.write_diag_table(outdir)
+            self.codebase.write_source_control_status(P(outdir, 'git_hash_used.txt'))
+
         self.clear_rundir()
 
-
-
-        # TODO: replace this with util function
-        # if light:
-        #     os.system("cp -a "+self.rundir+"/*.nc "+outdir)
-        #     sh.cp(['-a', P(self.restartdir, 'res_%d.cpio' % (month)), outdir])
-        #     if month > 1:
-        #         try:
-        #             sh.rm( P(self.restartdir, 'res_%d.cpio' % (month-1)))
-        #         except sh.ErrorReturnCode:
-        #             log.warning('Previous months restart already removed')
-
-        #         try:
-        #             sh.rm( P(self.datadir, 'run03%d' % (month-1) , 'res_%d.cpio' % (month-1)))
-        #         except sh.ErrorReturnCode:
-        #             log.warning('Previous months restart already removed')
-
-        # else:
-        #     sh.cp(['-a', self.rundir+'/.', outdir])
-        # self.clear_rundir()
-        # sh.cd(self.rundir)
         return True
 
     def make_restart_archive(self, archive_file, restart_directory):
@@ -318,11 +322,7 @@ class Experiment(Logger, EventEmitter):
         new_exp.namelist = self.namelist.copy()
         new_exp.diag_table = self.diag_table.copy()
         new_exp.inputfiles = self.inputfiles.copy()
-        # TODO: fix this
-        # new_exp.commit_id = self.commit_id
-        # new_exp.commit_id_base = self.commit_id_base
-        # new_exp.git_status_output = self.git_status_output
-        # new_exp.git_diff_output   = self.git_diff_output
+
         return new_exp
 
     # TODO: replace this with util functionality
@@ -346,4 +346,8 @@ class Experiment(Logger, EventEmitter):
     #         exp.run(1, use_restart=False, num_cores=num_cores)
     #         for i in range(runs-1):
     #             exp.run(i+2)
+
+# class RunSpec(Logger):
+#     def __init__(self, exp):
+#         self.exp = exp
 

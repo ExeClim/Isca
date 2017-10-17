@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Run a single month
 
+rundir={{ rundir }}  # change this if you're rerunning from the output directory
+
 module purge
 source {{ env_source }}
 module list
@@ -9,7 +11,7 @@ ulimit -s unlimited
 
 debug={{ run_idb }}                                     # logical to identify if running in debug mode or not
 
-cd {{ rundir }}
+cd $rundir
 
 export MALLOC_CHECK_=0
 
