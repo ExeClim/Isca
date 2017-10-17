@@ -167,6 +167,8 @@ class Experiment(Logger, EventEmitter):
         outdir = P(self.datadir, 'run%04d' % i)
         resdir = P(self.rundir, 'RESTART')
 
+        self.codebase.write_source_control_status(P(self.rundir, 'git_hash_used.txt'))
+
         if os.path.isdir(outdir):
             if overwrite_data:
                 self.log.warning('Data for run %d already exists and overwrite_data is True. Overwriting.' % i)
@@ -277,29 +279,7 @@ class Experiment(Logger, EventEmitter):
         sh.cp(['-a', self.rundir, outdir])
         self.clear_rundir()
 
-        # TODO: Update this
-        # try:
-        #     git_hash_file = open(P(outdir, 'git_hash_used.txt'), "w")
-        #     if self.commit_id!=self.commit_id_base:
-        #         git_hash_file.write("*---hash of specified commit used for fortran code in workdir---*:\n")
-        #         git_hash_file.write(self.commit_id)
-        #         git_hash_file.write("\n")
-        #         git_hash_file.write("\n*---hash of commit used for code in GFDL_BASE, including this python script---*:\n")
-        #         git_hash_file.write(self.commit_id_base)
-        #         git_hash_file.write("\n")
-        #     else:
-        #         git_hash_file.write("*---hash of commit used for code in GFDL_BASE, including this python script---*:\n")
-        #         git_hash_file.write(self.commit_id)
-        #         git_hash_file.write("\n")
-        #     if self.git_status_output is not None:
-        #         git_hash_file.write("\n"+"*---git status output (only f90 and inc files)---*:\n")
-        #         git_hash_file.writelines( line_out+"\n" for line_out in self.git_status_output)
-        #     if self.git_diff_output is not None:
-        #         git_hash_file.write("\n"+"*---git diff output run in GFDL_BASE (everything)---*:\n")
-        #         git_hash_file.writelines( line_out+"\n" for line_out in self.git_diff_output)
-        #     git_hash_file.close()
-        # except:
-        #     log.info("Could not output git commit hash")
+
 
         # TODO: replace this with util function
         # if light:

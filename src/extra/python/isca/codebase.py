@@ -5,7 +5,7 @@ import socket
 from jinja2 import Environment, FileSystemLoader
 import sh
 
-from isca import GFDL_WORK, _module_directory, get_env_file
+from isca import GFDL_WORK, GFDL_BASE, _module_directory, get_env_file
 from .loghandler import Logger
 from .helpers import url_to_folder, destructive, useworkdir, mkdir, cd, git, P
 
@@ -81,6 +81,7 @@ class CodeBase(Logger):
         self.templatedir = P(_module_directory, 'templates')  # templates are stored with the python isca module
         self.executable_fullpath = P(self.builddir, self.executable_name)
 
+        # alias a version of git acting from within the code directory
         self.git = git.bake('-C', self.codedir)
 
         # check if the code is available.  If it's not, checkout the repo.
@@ -113,7 +114,7 @@ class CodeBase(Logger):
 
     @property
     def git_commit(self):
-        return self.git.log('-1', '--format="%H"')
+        return self.git.log('-1', '--format="%H"').stdout
 
     # @property
     # def git_diff(self):
@@ -125,6 +126,36 @@ class CodeBase(Logger):
         #         raise ValueError('commit id specified and commit id actually used are not the same:' +commit+commit_id[0:len(commit)])
 
         # self.commit_id = commit_id
+
+    def write_source_control_status(self, outfile):
+        """Write the current state of the source code to a file."""
+
+        gfdl_git = git.bake('-C', GFDL_BASE)
+        with open(outfile, 'w') as file:
+            # write out the git commit id of the compiled source code
+            file.write("*---commit hash used for fortran code in workdir---*:\n")
+            file.write(self.git_commit)
+
+            # write out the git commit id of GFDL_BASE
+            file.write("\n\n*---commit hash used for code in GFDL_BASE, including this python module---*:\n")
+            file.write(gfdl_git.log('-1', '--format="%H"').stdout)
+
+            # if there are any uncommited changes in the working directory,
+            # add those to the file too
+            source_status = self.git.status("-b", "--porcelain").stdout
+            # filter the source status for changes in specific files
+            filetypes = ('.f90', '.inc', '.c')
+            source_status = [line for line in source_status.split('\n')
+                    if any([suffix in line.lower() for suffix in filetypes])]
+
+            # write the status and diff only when something is modified
+            if source_status:
+                file.write("\n#### Code compiled from dirty commit ####\n")
+                file.write("*---git status output (only f90 and inc files)---*:\n")
+                file.write('\n'.join(source_status))
+                file.write('\n\n*---git diff output---*\n')
+                source_diff = self.git.diff('--no-color').stdout
+                file.write(source_diff)
 
     def read_path_names(self, path_names_file):
         with open(path_names_file) as pn:
