@@ -240,7 +240,7 @@ real, public, parameter :: EPSLN   = 1.0e-40
 
 real, public, parameter :: EARTH_OMEGA = 7.2921150e-5
 real, public, parameter :: EARTH_ORBITAL_PERIOD = 365.25*SECONDS_PER_DAY
-real, public, parameter :: PSTD_MKS_EARTH = 101325.0
+real, public, parameter :: PSTD_MKS_EARTH = 1.e5
 
 real, public :: RADIUS = 6376.0e3
 real, public :: GRAV   = EARTH_GRAV
