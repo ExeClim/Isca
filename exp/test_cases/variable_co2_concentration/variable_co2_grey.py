@@ -7,7 +7,9 @@ import f90nml
 base_dir=os.getcwd()
 GFDL_BASE        = os.environ['GFDL_BASE']
 
-baseexp = Experiment('frierson_test_experiment', overwrite_data=False)
+baseexp = Experiment('variable_co2_grey', overwrite_data=False)
+
+baseexp.inputfiles = [os.path.join(base_dir,'input/co2.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -50,7 +52,7 @@ baseexp.namelist['main_nml'] = f90nml.Namelist({
 })
 
 baseexp.namelist['mixed_layer_nml']['depth'] = 2.5                          #Depth of mixed layer used
-baseexp.namelist['mixed_layer_nml']['albedo_value'] = 0.31                  #Albedo value used
+baseexp.namelist['mixed_layer_nml']['albedo_value'] = 0.38                  #Albedo value used
 
 baseexp.namelist['spectral_dynamics_nml']['num_levels'] = 25               #How many model pressure levels to use
 baseexp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True     #Use the simple radiation scheme
@@ -60,10 +62,13 @@ baseexp.namelist['spectral_dynamics_nml']['vert_coord_option'] = 'input'   #Use 
 baseexp.namelist['damping_driver_nml']['sponge_pbottom'] = 5000.           #Bottom of the model's sponge down to 50hPa
 baseexp.namelist['damping_driver_nml']['trayfric'] = -0.25                 #Drag timescale for model's sponge
 
-baseexp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = 'frierson'        #Select radiation scheme to use
-baseexp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False          #do_seasonal=false uses the p2 insolation profile from Frierson 2006. do_seasonal=True uses the GFDL astronomy module to calculate seasonally-varying insolation.
+baseexp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = 'byrne'        #Select radiation scheme to use
+baseexp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = True          #do_seasonal=false uses the p2 insolation profile from Frierson 2006. do_seasonal=True uses the GFDL astronomy module to calculate seasonally-varying insolation.
+
+baseexp.namelist['two_stream_gray_rad_nml']['do_read_co2'] = True
+baseexp.namelist['two_stream_gray_rad_nml']['co2_file'] = 'co2'
 
 #Lets do a run!
-baseexp.runmonth(1, use_restart=False,num_cores=4, light=False)
+baseexp.runmonth(1, use_restart=False,num_cores=16, light=False)
 for i in range(2,121):
-    baseexp.runmonth(i, num_cores=4, light=False)
+    baseexp.runmonth(i, num_cores=16, light=False)
