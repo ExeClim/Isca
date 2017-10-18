@@ -7,9 +7,9 @@ import f90nml
 base_dir=os.getcwd()
 GFDL_BASE        = os.environ['GFDL_BASE']
 
-baseexp = Experiment('bucket_test_experiment', overwrite_data=False)
+baseexp = Experiment('variable_co2_rrtm', overwrite_data=False)
 
-baseexp.inputfiles = [os.path.join(base_dir,'input/land.nc'),os.path.join(base_dir,'input/ozone_1990.nc'),os.path.join(base_dir,'input/co2.nc')]
+baseexp.inputfiles = [os.path.join(base_dir,'input/ozone_1990.nc'),os.path.join(base_dir,'input/co2.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -27,6 +27,7 @@ diag.add_field('dynamics', 'vcomp')
 diag.add_field('dynamics', 'temp')
 diag.add_field('dynamics', 'vor')
 diag.add_field('dynamics', 'div')
+diag.add_field('rrtm_radiation', 'co2')
 
 baseexp.use_diag_table(diag)
 

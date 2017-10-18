@@ -27,6 +27,7 @@ diag.add_field('dynamics', 'vcomp')
 diag.add_field('dynamics', 'temp')
 diag.add_field('dynamics', 'vor')
 diag.add_field('dynamics', 'div')
+diag.add_field('two_stream', 'co2')
 
 baseexp.use_diag_table(diag)
 
