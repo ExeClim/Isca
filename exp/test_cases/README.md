@@ -47,7 +47,7 @@ Change horizontal resolution part-way through a run:
 Check if simulation is spun-up:
 `Isca/src/extra/python/scripts/general_spinup_fn.py`
 
-Alter input file so linear interpolator preserved monthly-means:
+Alter input file so model's linear interpolator preserves monthly-means:
 `Isca/src/extra/python/scripts/edit_nc_file_to_preserve_monthly_means.py`
 
 Plot how long a run is taking to calculate each month:
