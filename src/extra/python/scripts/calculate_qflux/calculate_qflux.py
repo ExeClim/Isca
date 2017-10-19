@@ -7,7 +7,6 @@ from xarray import ufuncs as xruf
 import time
 from scipy import stats
 from mpl_toolkits.basemap import shiftgrid
-import analyse as ana
 import area_average as aav
 import nc_file_io_xarray as io
 import matplotlib.pyplot as plt
@@ -46,6 +45,12 @@ def qflux_calc(dataset, model_params, output_file_name, ice_file_name=None, grou
         output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':output_file_name}            
         
     io.output_nc_file(dataset,'masked_ocean_transport', model_params, output_dict)
+
+def time_gradient(data_in, delta_t):
+
+    data_out=np.gradient(data_in, delta_t)
+
+    return data_out
     
 def ice_mask_calculation(dataset, land_array, ice_file_name, dayofyear_or_months='months'):
 
@@ -131,7 +136,7 @@ def upper_ocean_heat_content(dataset, model_params, time_varying_ice, dayofyear_
     if dayofyear_or_months!='all_time':
         for x in range(nx):
             for y in range(ny):
-                d_weighted_sst_data_dt[:,y,x]=ana.time_gradient(weighted_sst_data[:,y,x], delta_t)
+                d_weighted_sst_data_dt[:,y,x]=time_gradient(weighted_sst_data[:,y,x], delta_t)
 
     for time_tick in range(shape1[0]):
         if time_varying_ice:
@@ -239,10 +244,10 @@ if __name__ == "__main__":
     exp_name='no_ice_flux_lhe_exps_fixed_sst_1/'
     #ice_file_name=base_dir+'annual_mean_ice_albedo_change_test_mk2_4320_dt_rad_4/'+'run360/'+'atmos_monthly.nc'
     ice_file_name=None
-    output_file_name='complex_perp_djf_all_time'
+    output_file_name='complex_perp_djf_all_time_TEST'
 
     start_file=240
-    end_file=360
+    end_file=264
     land_present=True
     topo_present=False
 
