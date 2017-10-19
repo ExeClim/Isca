@@ -52,7 +52,7 @@ baseexp.namelist['main_nml'] = f90nml.Namelist({
 #Set physics scheme options
 baseexp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = False #Don't use grey radiation
 baseexp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = True #Do use RRTM radiation
-baseexp.namelist['idealized_moist_phys_nml']['convection_scheme'] = 'FULL_BETTS_MILLER' #Use the full betts-miller convection scheme
+baseexp.namelist['idealized_moist_phys_nml']['convection_scheme'] = 'SIMPLE_BETTS_MILLER' #Use the simple betts-miller convection scheme
 baseexp.namelist['damping_driver_nml']['sponge_pbottom'] = 150. #Setting the lower pressure boundary for the model sponge layer in Pa.
 baseexp.namelist['spectral_dynamics_nml']['surf_res'] = 0.2 #Parameter that sets the vertical distribution of sigma levels
 
@@ -64,7 +64,6 @@ baseexp.namelist['mixed_layer_nml']['land_option'] = 'input' #Tell mixed layer t
 baseexp.namelist['mixed_layer_nml']['land_h_capacity_prefactor'] = 0.1 #What factor to multiply mixed-layer depth by over land. 
 baseexp.namelist['mixed_layer_nml']['albedo_value'] = 0.25 #Ocean albedo value
 baseexp.namelist['mixed_layer_nml']['land_albedo_prefactor'] = 1.3 #What factor to multiply ocean albedo by over land
-baseexp.namelist['idealized_moist_phys_nml']['land_roughness_prefactor'] = 10.0 #How much rougher to make land than ocean
 baseexp.namelist['idealized_moist_phys_nml']['roughness_mom'] = 2.e-4 #Ocean roughness lengths
 baseexp.namelist['idealized_moist_phys_nml']['roughness_heat'] = 2.e-4 #Ocean roughness lengths
 baseexp.namelist['idealized_moist_phys_nml']['roughness_moist'] = 2.e-4 #Ocean roughness lengths
@@ -76,7 +75,7 @@ baseexp.namelist['idealized_moist_phys_nml']['max_bucket_depth_land'] = 2. #Set 
 baseexp.namelist['mixed_layer_nml']['do_qflux'] = False #Do not use prescribed qflux formula
 
 baseexp.namelist['rrtm_radiation_nml']['solr_cnst'] = 1360. #s set solar constant to 1360, rather than default of 1368.22
-baseexp.namelist['rrtm_radiation_nml']['dt_rad'] = 4320 #Set RRTM radiation timestep to 4320seconds, meaning it runs every 6 atmospheric timesteps
+baseexp.namelist['rrtm_radiation_nml']['dt_rad'] = 3600 #Set RRTM radiation timestep to 3600 seconds, meaning it runs every 5 atmospheric timesteps
 
 #Lets do a run!
 baseexp.runmonth(1, use_restart=False,num_cores=4, light=False)
