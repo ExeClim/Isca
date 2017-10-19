@@ -4,6 +4,8 @@ from cmip_time import FakeDT
 import numpy as np
 import pdb
 
+__author__='Stephen Thomson'
+
 def day_number_to_datetime_array(time_in, calendar_type, units_in):
 
     cdftime = utime(units_in, calendar = calendar_type)

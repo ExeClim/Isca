@@ -6,6 +6,8 @@ import sys
 import pdb
 import os
 
+__author__='Stephen Thomson'
+
 def create_grid(manual_grid_option):
 
     if(manual_grid_option):
