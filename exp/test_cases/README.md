@@ -35,6 +35,9 @@ Make time-varying q-fluxes:
 Make CO2 concentration input file:
 `Isca/src/extra/python/scripts/create_co2_timeseries.py`
 
+Interpolate from model sigma levels to pressure levels:
+`Isca/postprocessing/plevel_interpolation/scripts/run_plevel.py`
+
 Explore options for vertical co-ordinates:
 `Isca/src/extra/python/scripts/vert_coord_options.py`
 
