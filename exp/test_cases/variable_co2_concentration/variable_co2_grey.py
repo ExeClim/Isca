@@ -56,8 +56,8 @@ baseexp.namelist['mixed_layer_nml']['depth'] = 2.5                          #Dep
 baseexp.namelist['mixed_layer_nml']['albedo_value'] = 0.38                  #Albedo value used
 
 baseexp.namelist['spectral_dynamics_nml']['num_levels'] = 25               #How many model pressure levels to use
-baseexp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True     #Use the simple radiation scheme
-baseexp.namelist['idealized_moist_phys_nml']['convection_scheme'] ='SIMPLE_BETTS_MILLER'
+baseexp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True     #Use the grey radiation scheme
+baseexp.namelist['idealized_moist_phys_nml']['convection_scheme'] ='SIMPLE_BETTS_MILLER' #Use simple Betts miller convection
 
 baseexp.namelist['spectral_dynamics_nml']['vert_coord_option'] = 'input'   #Use the vertical levels from Frierson 2006
 baseexp.namelist['damping_driver_nml']['sponge_pbottom'] = 5000.           #Bottom of the model's sponge down to 50hPa
@@ -65,11 +65,12 @@ baseexp.namelist['damping_driver_nml']['trayfric'] = -0.25                 #Drag
 
 baseexp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = 'byrne'        #Select radiation scheme to use
 baseexp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = True          #do_seasonal=false uses the p2 insolation profile from Frierson 2006. do_seasonal=True uses the GFDL astronomy module to calculate seasonally-varying insolation.
+baseexp.namelist['two_stream_gray_rad_nml']['equinox_day'] = 0.75          #A calendar parameter to get autumn equinox in september, as in the standard earth calendar.
 
-baseexp.namelist['two_stream_gray_rad_nml']['do_read_co2'] = True
-baseexp.namelist['two_stream_gray_rad_nml']['co2_file'] = 'co2'
+baseexp.namelist['two_stream_gray_rad_nml']['do_read_co2'] = True #Read in CO2 timeseries from input file
+baseexp.namelist['two_stream_gray_rad_nml']['co2_file'] = 'co2' #Tell model name of co2 input file
 
 #Lets do a run!
-baseexp.runmonth(1, use_restart=False,num_cores=16, light=False)
+baseexp.runmonth(1, use_restart=False,num_cores=4, light=False)
 for i in range(2,121):
-    baseexp.runmonth(i, num_cores=16, light=False)
+    baseexp.runmonth(i, num_cores=4, light=False)

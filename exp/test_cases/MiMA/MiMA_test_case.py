@@ -47,20 +47,25 @@ baseexp.namelist['main_nml'] = f90nml.Namelist({
      'calendar' : 'thirty_day'
 })
 
+#Use RRTM radiation, not grey
 baseexp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = False
 baseexp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = True
+
+#Use the simple Betts Miller convection scheme
 baseexp.namelist['idealized_moist_phys_nml']['convection_scheme'] ='SIMPLE_BETTS_MILLER'
 
+#Use a large mixed-layer depth, and the Albedo of the CTRL case in Jucker & Gerber, 2017
 baseexp.namelist['mixed_layer_nml']['depth'] = 100.
 baseexp.namelist['mixed_layer_nml']['albedo_value'] = 0.205
 
+#Use the analytic formula for q-fluxes with an amplitude of 30 wm^-2
 baseexp.namelist['mixed_layer_nml']['do_qflux'] = True
 baseexp.namelist['qflux_nml']['qflux_amp'] = 30.0
 
 baseexp.namelist['rrtm_radiation_nml']['solr_cnst'] = 1360. #s set solar constant to 1360, rather than default of 1368.22
-baseexp.namelist['rrtm_radiation_nml']['dt_rad'] = 7200
+baseexp.namelist['rrtm_radiation_nml']['dt_rad'] = 7200 #Use long RRTM timestep
 
 #Lets do a run!
-baseexp.runmonth(1, use_restart=False,num_cores=16, light=False)
+baseexp.runmonth(1, use_restart=False,num_cores=4, light=False)
 for i in range(2,121):
-    baseexp.runmonth(i, num_cores=16, light=False)
+    baseexp.runmonth(i, num_cores=4, light=False)

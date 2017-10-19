@@ -48,23 +48,29 @@ baseexp.namelist['main_nml'] = f90nml.Namelist({
      'calendar' : 'thirty_day'
 })
 
+#Use RRTM, not grey radiation:
 baseexp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = False
 baseexp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = True
+
+#Use the full Betts-miller convection scheme
 baseexp.namelist['idealized_moist_phys_nml']['convection_scheme'] = 'FULL_BETTS_MILLER'
-baseexp.namelist['damping_driver_nml']['sponge_pbottom'] = 150.
-baseexp.namelist['spectral_dynamics_nml']['surf_res'] = 0.2
 
-baseexp.namelist['mixed_layer_nml']['depth'] = 5.
-baseexp.namelist['mixed_layer_nml']['albedo_value'] = 0.25
 
-baseexp.namelist['mixed_layer_nml']['do_qflux'] = False
+baseexp.namelist['damping_driver_nml']['sponge_pbottom'] = 150.  #Setting the lower pressure boundary for the model sponge layer in Pa.
+baseexp.namelist['spectral_dynamics_nml']['surf_res'] = 0.2 #Parameter that sets the vertical distribution of sigma levels
+
+baseexp.namelist['mixed_layer_nml']['depth'] = 5. #Use shallow mixed-layer depth
+baseexp.namelist['mixed_layer_nml']['albedo_value'] = 0.25 #set albedo value
+
+baseexp.namelist['mixed_layer_nml']['do_qflux'] = False #Do not use prescribed form for q-fluxes
 
 baseexp.namelist['rrtm_radiation_nml']['solr_cnst'] = 1360. #s set solar constant to 1360, rather than default of 1368.22
-baseexp.namelist['rrtm_radiation_nml']['dt_rad'] = 4320
-baseexp.namelist['rrtm_radiation_nml']['do_read_co2'] = True
-baseexp.namelist['rrtm_radiation_nml']['co2_file'] = 'co2'
+baseexp.namelist['rrtm_radiation_nml']['dt_rad'] = 4320 #Use 4320 as RRTM radiation timestep
+
+baseexp.namelist['rrtm_radiation_nml']['do_read_co2'] = True #Read in CO2 timeseries from input file
+baseexp.namelist['rrtm_radiation_nml']['co2_file'] = 'co2' #Tell model name of co2 input file
 
 #Lets do a run!
-baseexp.runmonth(1, use_restart=False,num_cores=16, light=False)
+baseexp.runmonth(1, use_restart=False,num_cores=4, light=False)
 for i in range(2,121):
-    baseexp.runmonth(i, num_cores=16, light=False)
+    baseexp.runmonth(i, num_cores=4, light=False)

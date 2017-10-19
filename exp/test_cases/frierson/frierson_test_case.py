@@ -53,15 +53,14 @@ baseexp.namelist['mixed_layer_nml']['depth'] = 2.5                          #Dep
 baseexp.namelist['mixed_layer_nml']['albedo_value'] = 0.31                  #Albedo value used
 
 baseexp.namelist['spectral_dynamics_nml']['num_levels'] = 25               #How many model pressure levels to use
-baseexp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True     #Use the simple radiation scheme
-baseexp.namelist['idealized_moist_phys_nml']['convection_scheme'] ='SIMPLE_BETTS_MILLER'
+baseexp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True     #Use grey radiation
+baseexp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = 'frierson'        #Select radiation scheme to use, which in this case is Frierson
+baseexp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False          #do_seasonal=false uses the p2 insolation profile from Frierson 2006. do_seasonal=True uses the GFDL astronomy module to calculate seasonally-varying insolation.
+baseexp.namelist['idealized_moist_phys_nml']['convection_scheme'] ='SIMPLE_BETTS_MILLER' #Use the simple Betts Miller convection scheme from Frierson
 
 baseexp.namelist['spectral_dynamics_nml']['vert_coord_option'] = 'input'   #Use the vertical levels from Frierson 2006
-baseexp.namelist['damping_driver_nml']['sponge_pbottom'] = 5000.           #Bottom of the model's sponge down to 50hPa
+baseexp.namelist['damping_driver_nml']['sponge_pbottom'] = 5000.           #Bottom of the model's sponge down to 50hPa (units are Pa)
 baseexp.namelist['damping_driver_nml']['trayfric'] = -0.25                 #Drag timescale for model's sponge
-
-baseexp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = 'frierson'        #Select radiation scheme to use
-baseexp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False          #do_seasonal=false uses the p2 insolation profile from Frierson 2006. do_seasonal=True uses the GFDL astronomy module to calculate seasonally-varying insolation.
 
 #Lets do a run!
 baseexp.runmonth(1, use_restart=False,num_cores=4, light=False)

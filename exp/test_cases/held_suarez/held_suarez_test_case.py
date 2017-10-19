@@ -66,6 +66,6 @@ baseexp.namelist['hs_forcing_nml'] = f90nml.Namelist({
     })
 
 #Lets do a run!
-baseexp.runmonth(1, use_restart=False,num_cores=16, light=False)
+baseexp.runmonth(1, use_restart=False,num_cores=4, light=False)
 for i in range(2,121):
-    baseexp.runmonth(i, num_cores=16, light=False)
+    baseexp.runmonth(i, num_cores=4, light=False)
