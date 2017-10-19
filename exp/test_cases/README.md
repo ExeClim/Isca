@@ -1,5 +1,8 @@
 # List of test cases with paper references:
 
+`MiMA`
+* CNTL case of the MiMA model described in <https://doi.org/10.1175/JCLI-D-17-0127.1>
+
 `bucket_hydrology`
 * As described in Isca paper (Vallis et al., 2017) but without q-fluxes
 
@@ -10,10 +13,7 @@
 * Control case of the Jupiter simulation in <https://doi.org/10.1175/2008JAS2798.1>
 
 `held_suarez`
-* Commonly-used dynamical-core test case described in https://doi.org/10.1175/1520-0477(1994)075<1825:APFTIO>2.0.CO;2
-
-`MiMA`
-* CNTL case of the MiMA model described in <https://doi.org/10.1175/JCLI-D-17-0127.1>
+* Commonly-used dynamical-core test case described [here][1]
 
 `realistic_continents`
 * Most complex configuration of Isca v1.0, including realistic continents, realistic topography, a simple ice model, and the option of prescribed AMIP SSTs or prescribed q-fluxes derived from AMIP ssts. Same setup used in Thomson & Vallis, 2017 (submitted), also described in Isca paper.
@@ -30,7 +30,7 @@ Make SST climatology:
 `Isca/src/extra/python/scripts/create_amip_sst_timeseries.py`
 
 Make time-varying q-fluxes:
-
+`Isca/src/extra/python/scripts/calculate_qflux/calculate_qflux.py`
 
 Make CO2 concentration input file:
 `Isca/src/extra/python/scripts/create_co2_timeseries.py`
@@ -43,3 +43,15 @@ Explore options for horizontal resolution:
 
 Change horizontal resolution part-way through a run:
 `Isca/src/extra/python/scripts/change_horizontal_resolution_of_restart_file.py`
+
+Check if simulation is spun-up:
+`Isca/src/extra/python/scripts/general_spinup_fn.py`
+
+Alter input file so linear interpolator preserved monthly-means:
+`Isca/src/extra/python/scripts/edit_nc_file_to_preserve_monthly_means.py`
+
+Plot how long a run is taking to calculate each month:
+`Isca/src/extra/python/scripts/modified_time_script.py`
+
+
+[1]: https://doi.org/10.1175/1520-0477(1994)075<1825:APFTIO>2.0.CO;2
