@@ -1,7 +1,6 @@
 """A method for calculating seasonally-varying qfluxes, as described in Russell et al 1985 DOI:10.1016/0377-0265(85)90022-3"""
     
 import numpy as np
-from cell_area import cell_area_all
 import xarray
 from xarray import ufuncs as xruf
 import time

@@ -1,6 +1,6 @@
 import numpy as np
 import pdb
-import cell_area_2 as carea
+import cell_area as carea
 
 def model_params_set(input_dir,res=42, delta_t=900., radius=6376.0e3, day_length=86400., ocean_rho=1.035e3, ocean_cp=3989.24495292815, ml_depth=10., sigma_sb=5.6734e-8, pref=1000.,kappa=2./7., g=9.8, rct=6376.0e3, omega=7.292e-5, rdgas=287.04, lat_name='lat', lon_name='lon', latb_name='latb', lonb_name='lonb'):
 
