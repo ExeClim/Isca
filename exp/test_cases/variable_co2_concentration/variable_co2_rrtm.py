@@ -9,7 +9,7 @@ GFDL_BASE        = os.environ['GFDL_BASE']
 
 baseexp = Experiment('variable_co2_rrtm', overwrite_data=False)
 
-baseexp.inputfiles = [os.path.join(base_dir,'input/ozone_1990.nc'),os.path.join(base_dir,'input/co2.nc')]
+baseexp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),os.path.join(base_dir,'input/co2.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()

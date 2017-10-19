@@ -9,7 +9,7 @@ GFDL_BASE        = os.environ['GFDL_BASE']
 
 baseexp = Experiment('realistic_continents_test_experiment', overwrite_data=False)
 
-baseexp.inputfiles = [os.path.join(base_dir,'input/land.nc'),os.path.join(base_dir,'input/ozone_1990.nc'),
+baseexp.inputfiles = [os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
                       os.path.join(base_dir,'input/ami_qflux_ctrl_ice_4320.nc'), os.path.join(base_dir,'input/siconc_clim_amip.nc')]
 
 #Tell model how to write diagnostics
@@ -55,9 +55,9 @@ baseexp.namelist['damping_driver_nml']['sponge_pbottom'] = 150. #Setting the low
 baseexp.namelist['spectral_dynamics_nml']['surf_res'] = 0.2 #Parameter that sets the vertical distribution of sigma levels
 
 baseexp.namelist['idealized_moist_phys_nml']['land_option'] = 'input' #Use land mask from input file
-baseexp.namelist['idealized_moist_phys_nml']['land_file_name'] = 'INPUT/land.nc' #Tell model where to find input file
+baseexp.namelist['idealized_moist_phys_nml']['land_file_name'] = 'INPUT/era_land_t42.nc' #Tell model where to find input file
 
-baseexp.namelist['spectral_init_cond_nml']['topog_file_name'] = 'land.nc' #Name of land input file, which will also contain topography if generated using Isca's `land_file_generator_fn.py' routine.
+baseexp.namelist['spectral_init_cond_nml']['topog_file_name'] = 'era_land_t42.nc' #Name of land input file, which will also contain topography if generated using Isca's `land_file_generator_fn.py' routine.
 baseexp.namelist['spectral_init_cond_nml']['topography_option'] = 'input' #Tell model to get topography from input file
 baseexp.namelist['spectral_dynamics_nml']['ocean_topog_smoothing'] = 0.8 #Use model's in-built spatial smoothing to smooth topography in order to prevent unwanted aliasing at low horizontal resolution
 
