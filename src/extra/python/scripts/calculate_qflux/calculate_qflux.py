@@ -9,6 +9,7 @@ from mpl_toolkits.basemap import shiftgrid
 import area_average as aav
 import nc_file_io_xarray as io
 import matplotlib.pyplot as plt
+import os
 
 __author__='Stephen Thomson'
 
@@ -236,14 +237,23 @@ if __name__ == "__main__":
     import nc_file_io_xarray as io
     import set_and_get_params as sagp
 
-    input_dir='/scratch/sit204/FMS2013/GFDLmoistModel/'
-    base_dir='/scratch/sit204/Data_2013/'
+    try:
+        GFDL_BASE        = os.environ['GFDL_BASE']
+        GFDL_WORK        = os.environ['GFDL_WORK']
+        GFDL_DATA        = os.environ['GFDL_DATA']        
+    except Exception, e:
+        print('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
+        exit(0)
+
+
+    input_dir=GFDL_BASE
+    base_dir=GFDL_DATA
     land_file='input/land.nc'
     base_exp_name='no_ice_flux_q_exps_fixed_sst/'
     exp_name='no_ice_flux_lhe_exps_fixed_sst_1/'
     #ice_file_name=base_dir+'annual_mean_ice_albedo_change_test_mk2_4320_dt_rad_4/'+'run360/'+'atmos_monthly.nc'
     ice_file_name=None
-    output_file_name='complex_perp_djf_all_time_TEST'
+    output_file_name='calculate_qflux_TEST'
 
     start_file=240
     end_file=264
