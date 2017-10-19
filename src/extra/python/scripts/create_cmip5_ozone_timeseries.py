@@ -20,7 +20,7 @@ lonb_temp = [0., 360.]
 latb_temp=np.zeros(lats.shape[0]+1)
 
 for tick in np.arange(1,lats.shape[0]):
-	latb_temp[tick]=(lats[tick-1]+lats[tick])/2.
+    latb_temp[tick]=(lats[tick-1]+lats[tick])/2.
 
 latb_temp[0]=-90.
 latb_temp[-1]=90.
@@ -51,9 +51,9 @@ mol_to_kg_factor=(3.*16.)/(28.97)
 
 #time average ozone by month
 for month in np.arange(0,12):
-	time_idx=date_arr==month
-	ozone_new[month,:,:]=np.mean(zm_ozone_in[time_idx,:,:],axis=0)*(mol_to_kg_factor)
-	date_arr_new[month]=np.mean(date_arr[time_idx])
+    time_idx=date_arr==month
+    ozone_new[month,:,:]=np.mean(zm_ozone_in[time_idx,:,:],axis=0)*(mol_to_kg_factor)
+    date_arr_new[month]=np.mean(date_arr[time_idx])
 
 p_half_temp=np.zeros(p_full.shape[0]+1)
 
@@ -61,7 +61,7 @@ p_half_temp[0]=1200.
 
 for tick in np.arange(1,p_full.shape[0]):
 
-	p_half_temp[tick]=(p_full[tick-1]+p_full[tick])/2.
+    p_half_temp[tick]=(p_full[tick-1]+p_full[tick])/2.
 
 
 p_half=p_half_temp
