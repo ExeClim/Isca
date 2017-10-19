@@ -5,7 +5,7 @@ from netCDF4 import Dataset, date2num
 import pdb
 import create_timeseries as cts
 
-resolution_file = Dataset('/scratch/sit204/ozone_cmip5_data/Ozone_CMIP5_ACC_SPARC_1990-1999_T3M_O3.nc', 'r')
+resolution_file = Dataset('/scratch/sit204/ozone_cmip5_files/Ozone_CMIP5_ACC_SPARC_1990-1999_T3M_O3.nc', 'r')
 
 lons = resolution_file.variables['lon'][:]
 lats = resolution_file.variables['lat'][:]

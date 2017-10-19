@@ -111,7 +111,7 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
 
     output_file = Dataset(file_name, 'w', format='NETCDF3_CLASSIC')
 
-    if p_full==None:
+    if p_full is None:
         is_thd=False
     else:
         is_thd=True

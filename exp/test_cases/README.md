@@ -53,5 +53,4 @@ Alter input file so linear interpolator preserved monthly-means:
 Plot how long a run is taking to calculate each month:
 `Isca/src/extra/python/scripts/modified_time_script.py`
 
-
 [1]: https://doi.org/10.1175/1520-0477(1994)075<1825:APFTIO>2.0.CO;2
