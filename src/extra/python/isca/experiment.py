@@ -172,7 +172,7 @@ class Experiment(Logger, EventEmitter):
 
     @destructive
     @useworkdir
-    def run(self, i, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, save_run=False, run_idb=False):
+    def run(self, i, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, save_run=False, run_idb=False, nice_score=0):
         """Run the model.
             `num_cores`: Number of mpi cores to distribute over.
             `restart_file` (optional): A path to a valid restart archive.  If None and `use_restart=True`,
@@ -230,6 +230,7 @@ class Experiment(Logger, EventEmitter):
             'env_source': self.env_source,
             'num_cores': num_cores,
             'run_idb': run_idb,
+            'nice_score': nice_score
         }
 
         runscript = self.templates.get_template('run.sh')
