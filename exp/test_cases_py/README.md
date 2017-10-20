@@ -22,7 +22,7 @@ prepending /scratch/jp492/envs/jpisca/bin to PATH
 (jpisca)jp492@emps-gv4:~$  export GFDL_WORK=/scratch/jp492/gfdl_work
 (jpisca)jp492@emps-gv4:~$  export GFDL_BASE=/scratch/jp492/isca
 (jpisca)jp492@emps-gv4:~$  export GFDL_DATA=/scratch/jp492/gfdl_data
-(jpisca)jp492@emps-gv4:~$  export GFDL_ENV=/scratch/jp492/gfdl_data
+(jpisca)jp492@emps-gv4:~$  export GFDL_ENV=emps-gv
 ```
 3. Navigate to `src/extra/python` and install the `isca` library in development mode:
 ```
