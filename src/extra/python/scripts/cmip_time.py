@@ -37,12 +37,20 @@ class FakeDT(object):
             self.day = dates.day
             self.hour = dates.hour
             self.minute = dates.minute
+            try:
+                    self.dayofyear = dates.timetuple().tm_yday
+            except AttributeError:
+                    self.dayofyear = dates.timetuple()[7]
         else:
             self.year = np.array([dk.year for dk in dates])
             self.month = np.array([dk.month for dk in dates])
             self.day = np.array([dk.day for dk in dates])
             self.hour = np.array([dk.hour for dk in dates])
             self.minute = np.array([dk.minute for dk in dates])
+            try:
+                    self.dayofyear = np.array([dk.timetuple().tm_yday for dk in dates])
+            except AttributeError:
+                    self.dayofyear = np.array([dk.timetuple()[7] for dk in dates])
 
     def __getitem__(self, idx):
         # If <idx> is array_like, return a new FakeDT object restricted to those
@@ -241,13 +249,13 @@ def sub_ncdate(date1, date0, units='hours since 1900-01-01 00:00',
         try:
             time0 = nc.date2num(date0, units, calendar)
         except (ValueError, AttributeError) as e:
-            print(('ERROR {}'.format(e)))
+            print('ERROR {}'.format(e))
             raise KeyError(date0)
 
         try:
             time1 = nc.date2num(date1, units, calendar)
         except (ValueError, AttributeError) as e:
-            print(('ERROR {}'.format(e)))
+            print('ERROR {}'.format(e))
             raise KeyError(date1)
 
         # Determine units of dates, since TimedeltaIndex
