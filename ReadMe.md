@@ -35,7 +35,7 @@ copyright notice is reproduced on each copy made. This model is provided as is w
 any express or implied warranties.
 
 The parts of Isca provided by GFDL are also released under a GNU GPL license. A copy of the 
-relevant GFDL license statment is provided below.
+relevant GFDL license statement is provided below.
 
 ```
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
