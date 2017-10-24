@@ -119,6 +119,8 @@ integer :: fourier_max, fourier_inc, num_fourier, num_spherical
 integer :: ms, me, ns, ne
 logical :: module_is_initialized = .false.
 
+logical :: make_symmetric_local
+
 real, allocatable, dimension(:,:) :: coef_uvm
 real, allocatable, dimension(:,:) :: coef_uvc
 real, allocatable, dimension(:,:) :: coef_uvp
@@ -132,10 +134,11 @@ real, allocatable, dimension(:,:) :: triangle_mask
 contains
 
 !--------------------------------------------------------------------------
-subroutine spherical_init(radius, num_fourier_in, fourier_inc_in, num_spherical_in)
+subroutine spherical_init(radius, num_fourier_in, fourier_inc_in, num_spherical_in, make_symmetric)
 
 real,    intent(in) :: radius
 integer, intent(in) :: num_fourier_in, fourier_inc_in, num_spherical_in
+logical, intent(in), optional :: make_symmetric
 
 integer :: m,n
 
@@ -149,6 +152,12 @@ num_fourier = num_fourier_in
 fourier_inc = fourier_inc_in
 fourier_max = fourier_inc*num_fourier
 num_spherical = num_spherical_in
+
+if(present(make_symmetric)) then
+  make_symmetric_local = make_symmetric
+else
+  make_symmetric_local = .false.
+end if
 
 allocate(eigen_laplacian(0:num_fourier,0:num_spherical))
 allocate(epsilon        (0:num_fourier,0:num_spherical))
@@ -173,6 +182,7 @@ do n=0,num_spherical
     fourier_wave(m,n)   = m*fourier_inc
     spherical_wave(m,n) = fourier_wave(m,n) + n
     if(spherical_wave(m,n).gt.num_spherical-1) triangle_mask(m,n) = 0.0
+	if(make_symmetric_local .AND. m.gt.0) triangle_mask(m,n) = 0.0 !GC make zonally symmetric
   end do
 end do
 
