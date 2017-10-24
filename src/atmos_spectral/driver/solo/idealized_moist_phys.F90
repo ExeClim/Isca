@@ -661,11 +661,7 @@ case(RAS_CONV)
 !    by that scheme.
 !----------------------------------------------------------------------
 
-        write (6,*) 'RAS testing - before ras_init' ,tracers_in_ras
-
         call ras_init (do_strat, axes,Time,tracers_in_ras) 
-
-        write (6,*) 'RAS testing - after ras_init' 
 
 end select
 
@@ -824,8 +820,6 @@ case(DRY_CONV)
     if(id_cin  > 0) used = send_data(id_cin, cin, Time)
 
 case(RAS_CONV)
-
-    write (6,*) 'RAS testing - about to enter call' 
 
     call ras   (is,   js,     Time,                                                  &  
                 tg(:,:,:,previous),   grid_tracers(:,:,:,previous,nsphum),           &

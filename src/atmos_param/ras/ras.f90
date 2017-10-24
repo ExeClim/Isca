@@ -614,8 +614,6 @@ end subroutine ras_end
        cuprc3d, dtemp_ev0, dqvap_ev0
 
 
-    write (6,*) 'RAS testing - entered ras' 
-
 
 
 !=====================================================================
@@ -663,8 +661,6 @@ end subroutine ras_end
    snow_ev0 = 0.0
     cuprc3d = 0.0
 
-    write (6,*) 'RAS testing - before declarations 1', Lda0
-
 
   if ( Lda0 ) then
       Da0 = 0.0
@@ -672,13 +668,9 @@ end subroutine ras_end
       Di0 = 0.0
   end if
 
-    write (6,*) 'RAS testing - before declarations 2 ',Lmc0
-
   if ( Lmc0 ) then
       mc0 = 0.0
   end if
-
-    write (6,*) 'RAS testing - before declarations 3'
 
 
 ! Initialize the tracer tendencies
@@ -689,8 +681,6 @@ end subroutine ras_end
     if (present (qtrras)) then
     qtrras = 0.0
     endif
-
-    write (6,*) 'RAS testing - declarations' 
 
   do k=1,kmax
     pmass(:,:,k) = (pres0_int(:,:,k+1)-pres0_int(:,:,k))/GRAV
@@ -766,8 +756,6 @@ end subroutine ras_end
   do j = 1,jmax
   do i = 1,imax
 ! TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
-
-    write (6,*) 'RAS testing - cloud_index' 
 
 
 ! --- Set order in which clouds are to be done                   
@@ -859,8 +847,6 @@ end subroutine ras_end
 
   setras  = .true.
 
-    write (6,*) 'RAS testing - cloud_exist' 
-
 ! --- Test for convective instability in column             
  CALL RAS_CLOUD_EXIST( klcl, qvap,   qvap_sat, theta,    &
                        pi,   pi_int, ic,       ncmax,    &
@@ -882,8 +868,6 @@ end subroutine ras_end
       beta(:) = dqvap_sat(:) * pi(:)
      gamma(:) = 1.0 / ( ( 1.0 + ( Hl * dqvap_sat(:) / Cp_Air ) ) * pi(:) )
  endif
-
-    write (6,*) 'RAS testing - cloud' 
 
 ! --- Do adjustment
   if ( Lda0 ) then
@@ -968,8 +952,6 @@ end subroutine ras_end
       dtevap(:) = 0.0
       dqevap(:) = 0.0
       dpevap    = 0.0
-
-    write (6,*) 'RAS testing - cloud evap' 
 
 
   if( evap_on .and. ( dpcu > 0.0 ) ) then
@@ -1131,8 +1113,6 @@ endif
   end do  ! for each i
   end do  ! for each j
 ! TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
-
-    write (6,*) 'RAS testing - end i, j' 
 
 
 !------- update input values and compute tendency -----------
