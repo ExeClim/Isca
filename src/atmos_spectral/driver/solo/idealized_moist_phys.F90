@@ -649,17 +649,13 @@ case(RAS_CONV)
        !   do_tracers_in_ras = .false.
        ! endif
 
-       ! write (6,*) 'RAS testing -  vars', num_tracers,num_ras_tracers
-       ! write (6,*) 'RAS testing -  model', MODEL_ATMOS
-       ! write (6,*) 'RAS testing -  scheme', scheme
-       ! write (6,*) 'RAS testing -  vars',  do_tracers_in_ras, tracers_in_ras,tracers_in_ras
-!----------------------------------------------------------------------
-!    for each tracer, determine if it is to be transported by convect-
-!    ion, and the convection schemes that are to transport it. set a 
-!    logical flag to .true. for each tracer that is to be transported by
-!    each scheme and increment the count of tracers to be transported
-!    by that scheme.
-!----------------------------------------------------------------------
+       !----------------------------------------------------------------------
+       !    for each tracer, determine if it is to be transported by convect-
+       !    ion, and the convection schemes that are to transport it. set a 
+       !    logical flag to .true. for each tracer that is to be transported by
+       !    each scheme and increment the count of tracers to be transported
+       !    by that scheme.
+       !----------------------------------------------------------------------
 
         call ras_init (do_strat, axes,Time,tracers_in_ras) 
 
