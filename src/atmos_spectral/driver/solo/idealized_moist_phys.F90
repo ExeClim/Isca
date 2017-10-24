@@ -346,7 +346,7 @@ else if(uppercase(trim(convection_scheme)) == 'FULL_BETTS_MILLER') then
   
 
 else if(uppercase(trim(convection_scheme)) == 'RAS') then
-  r_conv_scheme = FULL_BETTS_MILLER_CONV
+  r_conv_scheme = RAS_CONV
   call error_mesg('idealized_moist_phys','Using relaxed Arakawa Schubert convection scheme.', NOTE)
   do_ras          = .true.
   do_bm           = .false.
@@ -736,7 +736,7 @@ real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_int
 real, intent(in) , dimension(:,:,:), optional :: mask
 integer, intent(in) , dimension(:,:),   optional :: kbot
 
-real, dimension(1,1,1)):: tracer, tracertnd
+real, dimension(1,1,1):: tracer, tracertnd
 integer :: nql, nqi, nqa   ! tracer indices for stratiform clouds
 
 if(current == previous) then
@@ -836,9 +836,9 @@ case(RAS_CONV)
                 !OPTIONAL 
                 mask,  kbot,                                                         &
                 !OPTIONAL OUT
-                mc,   tracer(:,:,:,nql), tracer(:,:,:,nqi),                          &
-               tracer(:,:,:,nqa),  tracertnd(:,:,:,nql),                             &
-               tracertnd(:,:,:,nqi), tracertnd(:,:,:,nqa))
+                mc,   tracer(:,:,:), tracer(:,:,:),                          &
+               tracer(:,:,:),  tracertnd(:,:,:),                             &
+               tracertnd(:,:,:), tracertnd(:,:,:))
                 
 
       !update tendencies - dT and dq are done after cases

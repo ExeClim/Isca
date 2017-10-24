@@ -49,8 +49,8 @@
 
  logical :: module_is_initialized = .false.
 
- real, parameter :: d622        = rdgas/rvgas
- real, parameter :: d378        = 1.0-d622
+ real            :: d622        = 0.
+ real            :: d378        = 0.
  
 !---------------------------------------------------------------------
 ! --- Climatological cloud work function data
@@ -276,6 +276,8 @@ logical  :: do_ras_tracer = .false.
 ! --- Initialize constants
 !---------------------------------------------------------------------
 
+  d622        = rdgas/rvgas
+  d378        = 1.0-d622
   
   cp_div_grav = Cp_Air / Grav
 
