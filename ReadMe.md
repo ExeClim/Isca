@@ -34,6 +34,9 @@ This software may be used, copied, or redistributed as long as it is not sold an
 copyright notice is reproduced on each copy made. This model is provided as is without 
 any express or implied warranties.
 
+The `check_disk_space.py` script, which is used as part of the email-alerts functionality
+of the `gfdl` module, was written by Giampaolo Rodola and is released under the MIT license.
+
 The parts of Isca provided by GFDL are also released under a GNU GPL license. A copy of the 
 relevant GFDL license statement is provided below.
 
