@@ -100,7 +100,7 @@ private
    real :: lapse=6.5, h_a=2, tau_s=5      
    real :: heat_capacity=4.2e6      ! equivalent to a 1m mixed layer water ocean
    real :: ml_depth=1               ! depth for heat capacity calculation
-   real :: spinup_time=1080000.     ! number of days to spin up heat capacity for - req. multiple of orbital_period
+   real :: spinup_time=10800.     ! number of days to spin up heat capacity for - req. multiple of orbital_period
 
    
 !-----------------------------------------------------------------------
@@ -217,7 +217,7 @@ contains
 
 !-----------------------------------------------------------------------
 !     thermal forcing for held & suarez (1994) benchmark calculation
-      if (trim(equilibrium_t_option) == 'top_down_new') then
+      if (trim(equilibrium_t_option) == 'top_down') then
          call top_down_newtonian_damping(Time, lat, ps, p_full, p_half, t, ttnd, teq, dt, h_trop, zfull, mask )
       else
          call newtonian_damping ( Time, lat, lon, ps, p_full, p_half, t, ttnd, teq, mask )
@@ -326,7 +326,7 @@ contains
       
    ! ---- spin-up simple heat capacity used in top-down code ----
    
-  if (equilibrium_t_option == 'top_down') then
+  if (trim(equilibrium_t_option) == 'top_down') then
   if(file_exist(trim('INPUT/hs_forcing.res.nc'))) then  
      !call nullify_domain()  
      call read_data(trim('INPUT/hs_forcing.res.nc'), 'tg_prev', tg_prev, grid_domain)
