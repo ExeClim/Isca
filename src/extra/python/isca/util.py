@@ -8,7 +8,7 @@ import sh
 from isca.create_alert import disk_space_alert
 
 @contextmanager
-def exp_progress(exp, description='DAY {day}'):
+def exp_progress(exp, description='DAY {n}'):
     """Create a progress bar on the terminal output.
 
     DAY 39:  39%|====           | 39/100 [00:32<00:46,  1.31it/s, avgT=261, spd=40.6]
@@ -23,18 +23,26 @@ def exp_progress(exp, description='DAY {day}'):
 
     """
     exp.update_namelist({'spectral_dynamics_nml': {'json_logging': True}})
-    with tqdm(total=exp.namelist['main_nml']['days']) as pbar:
+    main = exp.namelist['main_nml']
+    total_days = int(main.get('seconds', 0) / 86400.0
+        + main.get('days', 0)
+        + main.get('months', 0)*30
+        + main.get('years', 0)*360)
+    with tqdm(total=total_days) as pbar:
         # handle the run output
         @exp.on('run:output')
         def parse_output(exp, line):
             try:
                 data = json.loads(line)
-                pbar.update(1)
-                pbar.set_description(description.format(**data))
-                pbar.set_postfix(spd=data['max_speed'], avgT=data['avg_T'])
             except ValueError as e:
                 # wasn't valid JSON, just output as normal
                 exp.log_output(line)
+            else:
+                pbar.update(1)
+                data.update({'n': pbar.n})
+                pbar.set_description(description.format(**data))
+                if data.get('max_speed'):
+                    pbar.set_postfix(spd=data['max_speed'], avgT=data['avg_T'])
 
         yield pbar
 
