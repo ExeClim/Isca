@@ -843,6 +843,10 @@ case(RAS_CONV)
 
       precip     = precip + rain + snow
 
+   if(id_conv_dt_qg > 0) used = send_data(id_conv_dt_qg, conv_dt_qg, Time)
+   if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
+   if(id_conv_rain  > 0) used = send_data(id_conv_rain, precip, Time)
+
 
 case(NO_CONV)
    tg_tmp = tg(:,:,:,previous)
