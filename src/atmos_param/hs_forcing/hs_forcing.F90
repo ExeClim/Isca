@@ -269,7 +269,7 @@ contains
 
 !#######################################################################
 
- subroutine hs_forcing_init ( axes, Time, lonb, latb, is, ie, js, je, lat )
+ subroutine hs_forcing_init ( axes, Time, lonb, latb, lat )
 
 !-----------------------------------------------------------------------
 !
@@ -282,7 +282,7 @@ contains
    type(time_type), intent(in) :: Time
    real, intent(in), dimension(:,:) :: lat
    real, intent(in), optional, dimension(:,:) :: lonb, latb
-   integer, intent(inout)                     :: is, ie, js, je
+   
 
 !-----------------------------------------------------------------------
    integer  unit, io, ierr
@@ -290,6 +290,7 @@ contains
    real, dimension(size(lat,1),size(lat,2)) :: s, t_radbal, t_trop, h_trop, t_surf, hour_angle, tg
    integer :: spin_count, seconds, days, dt_integer
    real :: dec, orb_dist, step_days
+   integer :: is, ie, js, je
    
    
    call get_grid_domain(is, ie, js, je)
@@ -490,7 +491,6 @@ contains
  
  call set_domain(grid_domain)
  if (trim(equilibrium_t_option) == 'top_down') then
-   print *, size(tg_prev,1), size(tg_prev,2)
    call write_data(trim('RESTART/hs_forcing.res'), 'tg_prev', tg_prev, grid_domain)
    deallocate (tg_prev)
  endif
