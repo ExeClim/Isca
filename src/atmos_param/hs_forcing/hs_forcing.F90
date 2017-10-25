@@ -29,15 +29,16 @@ use mpp_mod, only: input_nml_file
 use fms_mod, only: open_namelist_file
 #endif
 
-use     constants_mod, only: KAPPA, CP_AIR, GRAV, PI, SECONDS_PER_DAY
+use     constants_mod, only: KAPPA, CP_AIR, GRAV, PI, SECONDS_PER_DAY, &
+                            orbital_period, stefan, solar_const
 
 use           fms_mod, only: error_mesg, FATAL, file_exist,       &
                              check_nml_error,                     &
                              mpp_pe, mpp_root_pe, close_file,     &
                              write_version_number, stdlog,        &
-                             uppercase
+                             uppercase, read_data, write_data, set_domain
 
-use  time_manager_mod, only: time_type
+use  time_manager_mod, only: time_type, get_time
 
 use  diag_manager_mod, only: register_diag_field, send_data
 
@@ -47,7 +48,8 @@ use   interpolator_mod, only: interpolate_type, interpolator_init, &
                               interpolator, interpolator_end, &
                               CONSTANT, INTERP_WEIGHTED_P
 
-use      astronomy_mod, only: diurnal_exoplanet, astronomy_init
+use      astronomy_mod, only: diurnal_exoplanet, astronomy_init, obliq, ecc
+use     transforms_mod, only: grid_domain, get_grid_domain
 
 
 implicit none
@@ -92,7 +94,15 @@ private
 
    character(len=256) :: equilibrium_t_option = 'Held_Suarez'  ! Valid options are 'Held_Suarez', 'from_file', 'exoplanet'
    character(len=256) :: equilibrium_t_file='temp'  ! Name of file relative to $work/INPUT  Used only when equilibrium_t_option='from_file'
+   character(len=256) :: stratosphere_t_option = 'extend_tp' 
+   
+   real :: peri_time=0.25, smaxis=1.5e6, albedo=0.3
+   real :: lapse=6.5, h_a=2, tau_s=5      
+   real :: heat_capacity=4.2e6      ! equivalent to a 1m mixed layer water ocean
+   real :: ml_depth=1               ! depth for heat capacity calculation
+   real :: spinup_time=10800.     ! number of days to spin up heat capacity for - req. multiple of orbital_period
 
+   
 !-----------------------------------------------------------------------
 
    namelist /hs_forcing_nml/  no_forcing, t_zero, t_strat, delh, delv, eps,  &
@@ -103,7 +113,9 @@ private
                               local_heating_vert_decay, local_heating_option,&
                               local_heating_file, relax_to_specified_wind,   &
                               u_wind_file, v_wind_file, equilibrium_t_option,&
-                              equilibrium_t_file
+                              equilibrium_t_file, peri_time, smaxis, albedo, &
+                              lapse, h_a, tau_s, orbital_period,         &
+                              heat_capacity, ml_depth, spinup_time, stratosphere_t_option
 
 !-----------------------------------------------------------------------
 
@@ -112,8 +124,10 @@ private
 
    real :: tka, tks, vkf
    real :: trdamp, twopi
+   
+   real, allocatable, dimension(:,:) :: tg_prev
 
-   integer :: id_teq, id_tdt, id_udt, id_vdt, id_tdt_diss, id_diss_heat, id_local_heating, id_newtonian_damping
+   integer :: id_teq, id_h_trop, id_tdt, id_udt, id_vdt, id_tdt_diss, id_diss_heat, id_local_heating, id_newtonian_damping
    real    :: missing_value = -1.e10
    real    :: xwidth, ywidth, xcenter, ycenter ! namelist values converted from degrees to radians
    real    :: srfamp ! local_heating_srfamp converted from deg/day to deg/sec
@@ -128,7 +142,7 @@ contains
 !#######################################################################
 
  subroutine hs_forcing ( is, ie, js, je, dt, Time, lon, lat, p_half, p_full, &
-                         u, v, t, r, um, vm, tm, rm, udt, vdt, tdt, rdt,&
+                         u, v, t, r, um, vm, tm, rm, udt, vdt, tdt, rdt, zfull,&
                          mask, kbot )
 
 !-----------------------------------------------------------------------
@@ -137,7 +151,7 @@ contains
  type(time_type), intent(in)                  :: Time
       real, intent(in),    dimension(:,:)     :: lon, lat
       real, intent(in),    dimension(:,:,:)   :: p_half, p_full
-      real, intent(in),    dimension(:,:,:)   :: u, v, t, um, vm, tm
+      real, intent(in),    dimension(:,:,:)   :: u, v, t, um, vm, tm, zfull
       real, intent(in),    dimension(:,:,:,:) :: r, rm
       real, intent(inout), dimension(:,:,:)   :: udt, vdt, tdt
       real, intent(inout), dimension(:,:,:,:) :: rdt
@@ -145,7 +159,7 @@ contains
       real, intent(in),    dimension(:,:,:), optional :: mask
    integer, intent(in),    dimension(:,:)  , optional :: kbot
 !-----------------------------------------------------------------------
-   real, dimension(size(t,1),size(t,2))           :: ps, diss_heat
+   real, dimension(size(t,1),size(t,2))           :: ps, diss_heat, h_trop
    real, dimension(size(t,1),size(t,2),size(t,3)) :: ttnd, utnd, vtnd, teq, pmass
    real, dimension(size(r,1),size(r,2),size(r,3)) :: rst, rtnd
    integer :: i, j, k, kb, n, num_tracers
@@ -203,8 +217,11 @@ contains
 
 !-----------------------------------------------------------------------
 !     thermal forcing for held & suarez (1994) benchmark calculation
-
-      call newtonian_damping ( Time, lat, lon, ps, p_full, p_half, t, ttnd, teq, mask )
+      if (trim(equilibrium_t_option) == 'top_down') then
+         call top_down_newtonian_damping(Time, lat, ps, p_full, p_half, t, ttnd, teq, dt, h_trop, zfull, mask )
+      else
+         call newtonian_damping ( Time, lat, lon, ps, p_full, p_half, t, ttnd, teq, mask )
+      endif
       tdt = tdt + ttnd
 !      if (id_newtonian_damping > 0) used = send_data(id_newtonian_damping, ttnd, Time, is, js)
       if (id_newtonian_damping > 0) used = send_data(id_newtonian_damping, ttnd, Time)
@@ -220,7 +237,7 @@ contains
       if (id_tdt > 0) used = send_data ( id_tdt, tdt, Time)
 !      if (id_teq > 0) used = send_data ( id_teq, teq, Time, is, js)
       if (id_teq > 0) used = send_data ( id_teq, teq, Time)
-
+      if (id_h_trop > 0) used = send_data ( id_h_trop, h_trop, Time) !, is, js)
 !-----------------------------------------------------------------------
 !     -------- tracers -------
 
@@ -252,7 +269,7 @@ contains
 
 !#######################################################################
 
- subroutine hs_forcing_init ( axes, Time, lonb, latb )
+ subroutine hs_forcing_init ( axes, Time, lonb, latb, lat )
 
 !-----------------------------------------------------------------------
 !
@@ -263,11 +280,25 @@ contains
 
            integer, intent(in) :: axes(4)
    type(time_type), intent(in) :: Time
+   real, intent(in), dimension(:,:) :: lat
    real, intent(in), optional, dimension(:,:) :: lonb, latb
-
+   
 
 !-----------------------------------------------------------------------
    integer  unit, io, ierr
+   
+   real, dimension(size(lat,1),size(lat,2)) :: s, t_radbal, t_trop, h_trop, t_surf, hour_angle, tg
+   integer :: spin_count, seconds, days, dt_integer
+   real :: dec, orb_dist, step_days
+   integer :: is, ie, js, je
+   
+   
+   call get_grid_domain(is, ie, js, je)
+   call set_domain(grid_domain)
+   call get_time(Time, seconds, days)
+   dt_integer = 86400*days + seconds
+   
+   allocate(tg_prev       (size(lonb,1)-1, size(latb,2)-1))
 
 !     ----- read namelist -----
 
@@ -293,6 +324,45 @@ contains
       if (no_forcing) return
 
       twopi = 2*PI
+      
+   ! ---- spin-up simple heat capacity used in top-down code ----
+   
+  if (trim(equilibrium_t_option) == 'top_down') then
+  if(file_exist(trim('INPUT/hs_forcing.res.nc'))) then  
+     !call nullify_domain()  
+     call read_data(trim('INPUT/hs_forcing.res.nc'), 'tg_prev', tg_prev, grid_domain)
+	 print *, 'READING PREVIOUS HEAT CAPACITY DATA'
+  else
+	print *, 'SPINNING UP HEAT CAPACITY'
+	! spin up the surface temps with heat capacity
+	print *, 'Depth:', ml_depth
+  	tg = 250        ! starting temperature for surface
+	spin_count = 0
+	step_days = 1
+	do
+		tg_prev = tg
+		dt_integer = dt_integer + 86400*step_days		! step by a day at a time
+		spin_count = spin_count + 1
+		call update_orbit(dt_integer, dec, orb_dist)
+		call calc_hour_angle(lat, dec, hour_angle)
+		s(:,:) = solar_const/pi*(hour_angle*sin(lat)*sin(dec) + cos(lat)*cos(dec)*sin(hour_angle))
+		t_radbal = ((1-albedo)*s(:,:)/stefan)**0.25
+		t_trop(:,:) = t_radbal(:,:)/(2**0.25)
+		
+		h_trop = 1.0/(16*lapse)*(1.3863*t_trop + sqrt((1.3863*t_trop)**2 + 32*lapse*tau_s*h_a*t_trop))
+		t_surf = t_trop + h_trop*lapse
+	
+		tg(:,:) =  stefan*86400*step_days/(ml_depth*heat_capacity)*(t_surf**4 - tg_prev**4) + tg_prev
+
+		if (spin_count >= spinup_time) then
+			print *, 'SPINUP COMPLETE AFTER ', spin_count, 'ITERATIONS'
+			exit
+		endif
+
+	 enddo
+	 
+  endif
+  endif
 
 !     ----- convert local heating variables from degrees to radians -----
 
@@ -339,7 +409,13 @@ contains
 
       id_teq = register_diag_field ( mod_name, 'teq', axes(1:3), Time, &
                       'equilibrium temperature (deg K)', 'deg_K'   , &
-                      missing_value=missing_value, range=(/100.,400./) )
+                      missing_value=missing_value, range=(/0.,700./) )
+                      
+      if (trim(equilibrium_t_option) == 'top_down') then
+      id_h_trop = register_diag_field ( mod_name, 'h_trop', axes(1:2), Time, &
+                      'tropopause height (km)', 'km'   , &
+                      missing_value=missing_value, range=(/0.,200./) )
+      endif
 
       id_newtonian_damping = register_diag_field ( mod_name, 'tdt_ndamp', axes(1:3), Time, &
                       'Heating due to newtonian damping (deg/sec)', 'deg/sec' ,    &
@@ -411,6 +487,12 @@ contains
  if(relax_to_specified_wind) then
    call interpolator_end(u_interp)
    call interpolator_end(v_interp)
+ endif
+ 
+ call set_domain(grid_domain)
+ if (trim(equilibrium_t_option) == 'top_down') then
+   call write_data(trim('RESTART/hs_forcing.res'), 'tg_prev', tg_prev, grid_domain)
+   deallocate (tg_prev)
  endif
 
  module_is_initialized = .false.
@@ -716,6 +798,220 @@ do k=1,size(p_half,3)-1
 enddo
 enddo
 end subroutine get_zonal_mean_temp
+
 !#######################################################################
+!#######################################################################
+
+! Functions for top-down newtonian forcing
+! Future work will integrate these with astronomy_mod and
+! other existing code.
+
+!#######################################################################
+!#######################################################################
+
+subroutine update_orbit(current_time, dec, orb_dist)
+
+integer, intent(in)					:: current_time
+real, intent(out)					:: dec, orb_dist
+
+real :: theta, mean_anomaly, ecc_anomaly, true_anomaly
+
+
+	mean_anomaly = 2*pi/(orbital_period*86400)*(current_time-peri_time*orbital_period*86400)
+    call calc_ecc_anomaly(mean_anomaly, ecc, ecc_anomaly)
+    true_anomaly = 2*atan(((1 + ecc)/(1 - ecc))**0.5 * tan(ecc_anomaly/2))
+    orb_dist = smaxis * (1 - ecc**2)/(1 + ecc*cos(true_anomaly))
+    theta = 2*pi*current_time/(orbital_period*86400)
+    dec = asin(sin(obliq*pi/180)*sin(theta))
+	
+end subroutine update_orbit
+
+!########################################################################
+
+subroutine calc_hour_angle(lat, dec, hour_angle)
+
+real, intent(in) 					:: dec
+real, intent(in), dimension(:,:) 	:: lat
+real, intent(out), dimension(:,:)	:: hour_angle
+
+real, dimension(size(lat,1), size(lat,2)) :: inv_hour_angle
+
+inv_hour_angle = -tan(lat(:,:))*tan(dec)
+where (inv_hour_angle > 1)
+	inv_hour_angle = 1
+endwhere
+where (inv_hour_angle < -1)
+    inv_hour_angle = -1
+endwhere
+           
+hour_angle = acos(inv_hour_angle)
+
+end subroutine calc_hour_angle
+
+!#######################################################################
+
+ subroutine calc_ecc_anomaly( mean_anomaly, ecc, ecc_anomaly)
+
+ real, intent(in) :: mean_anomaly, ecc
+ real, intent(out) :: ecc_anomaly
+ real :: dE, d
+ integer, parameter :: maxiter = 30
+ real, parameter :: tol = 1.d-10
+ integer :: k
+
+ ecc_anomaly = mean_anomaly
+ d = ecc_anomaly - ecc*sin(ecc_anomaly) - mean_anomaly
+ do k=1,maxiter
+        dE = d/(1 - ecc*cos(ecc_anomaly))
+        ecc_anomaly = ecc_anomaly - dE
+        d = ecc_anomaly - ecc*sin(ecc_anomaly) - mean_anomaly 
+        if (abs(d) < tol) then
+                exit
+        endif
+ enddo
+
+ if (k > maxiter) then
+        if (abs(d) > tol) then
+                print *, '*** Warning: eccentric anomaly has not converged'
+        endif
+ endif
+
+ end subroutine calc_ecc_anomaly
+
+!################################################################### 
+
+subroutine top_down_newtonian_damping ( Time, lat, ps, p_full, p_half, t, tdt, teq, dt, h_trop, zfull, mask )
+
+!-----------------------------------------------------------------------
+!
+!   routine to compute thermal forcing a top-down, tropopause defined model
+!
+!-----------------------------------------------------------------------
+
+type(time_type), intent(in)         :: Time
+real, intent(in)                    :: dt
+real, intent(in),  dimension(:,:)   :: lat, ps
+real, intent(in),  dimension(:,:,:) :: p_full, t, p_half, zfull
+real, intent(out), dimension(:,:,:) :: tdt, teq
+real, intent(out), dimension(:,:)   :: h_trop
+real, intent(in),  dimension(:,:,:), optional :: mask
+
+!-----------------------------------------------------------------------
+
+          real, dimension(size(t,1),size(t,2)) :: &
+     sin_lat, sin_lat_2, cos_lat, cos_lat_2, cos_lat_4, &
+     tstr, sigma, the, tfactr, rps, p_norm, sin_sublon_2, &
+     coszen, fracday, t_trop, s, hour_angle, t_surf, tg, t_radbal
+
+       real, dimension(size(t,1),size(t,2),size(t,3)) :: tdamp, heights
+       real, dimension(size(t,2),size(t,3)) :: tz
+       real :: rrsun
+
+       integer :: k, i, j
+       real    :: tcoeff, pref,  dec, orb_dist
+       integer :: days, seconds, dt_integer
+
+
+!-----------------------------------------------------------------------
+!------------find out the time------------------------------------------
+
+       call get_time(Time, seconds, days)
+       dt_integer = 86400*days + seconds
+
+!-----------------------------------------------------------------------
+!------------latitudinal constants--------------------------------------
+
+      sin_lat  (:,:) = sin(lat(:,:))
+      cos_lat  (:,:) = cos(lat(:,:))
+      sin_lat_2(:,:) = sin_lat(:,:)*sin_lat(:,:)
+      cos_lat_2(:,:) = 1.0-sin_lat_2(:,:)
+      cos_lat_4(:,:) = cos_lat_2(:,:)*cos_lat_2(:,:)
+
+!-----------------------------------------------------------------------
+!----------- orbital calculations --------------------------------------
+
+    call update_orbit(dt_integer, dec, orb_dist)
+
+
+    call calc_hour_angle(lat, dec, hour_angle)
+     
+    s(:,:) = solar_const/pi*(hour_angle*sin_lat*sin(dec) + cos_lat*cos(dec)*sin(hour_angle))
+
+    t_radbal = ((1-albedo)*s(:,:)/stefan)**0.25
+			
+            
+    ! --- compute tropopause height (h_trop) and apply heat capacity
+    t_trop(:,:) = t_radbal(:,:)/(2**0.25)        
+    h_trop = 1.0/(16*lapse)*(1.3863*t_trop + sqrt((1.3863*t_trop)**2 + 32*lapse*tau_s*h_a*t_trop))
+
+	t_surf = t_trop(:,:) + h_trop*lapse
+	tg(:,:) = stefan*dt/(ml_depth*heat_capacity)*(t_surf**4 - tg_prev**4) + tg_prev
+	tg_prev = tg
+	t_trop(:,:) = tg(:,:) - h_trop*lapse
+
+
+	!----- stratosphere temperature ------------
+      tstr  (:,:) = t_strat - eps*sin_lat(:,:)
+   
+
+    ! ---- relaxation coefficient ----
+      tcoeff = (tks-tka)/(1.0-sigma_b)
+      pref = P00
+      rps  = 1./ps
+      
+
+    do k = 1, size(t,3)
+
+!  ----- compute equilibrium temperature (teq) -----
+
+
+        teq(:,:,k) = t_trop + lapse*(h_trop-zfull(:,:,k)/1000)
+        if (stratosphere_t_option == 'c_above_tp') then
+            do i=1, size(t,1)
+            do j=1, size(t,2)
+                if(zfull(i,j,k)/1000 >= h_trop(i,j)) then
+                 	teq(i,j,k) = tstr(i,j)
+                endif
+            enddo
+            enddo
+        elseif (stratosphere_t_option == 'hs_like') then
+                teq(:,:,k) = max(teq(:,:,k), tstr(:,:))
+		elseif (stratosphere_t_option == 'extend_tp') then
+			do i=1,size(t,1)
+			do j=1,size(t,1)
+                if (zfull(i,j,k)/1000 >= h_trop(i,j)) then
+                    teq(i,j,k) = t_trop(i,j)
+                endif
+			enddo
+			enddo
+		else
+			teq(:,:,k) = max(teq(:,:,k), 0.)
+        endif
+!  ----- compute damping -----
+! ------ is symmetric about the equator, change this?? -----
+        sigma(:,:) = p_full(:,:,k)*rps(:,:)
+        where (sigma(:,:) <= 1.0 .and. sigma(:,:) > sigma_b)
+            tfactr(:,:) = tcoeff*(sigma(:,:)-sigma_b)
+            tdamp(:,:,k) = tka + cos_lat_4(:,:)*tfactr(:,:)
+        elsewhere
+            tdamp(:,:,k) = tka
+        endwhere
+
+    enddo
+
+      do k=1,size(t,3)
+         tdt(:,:,k) = -tdamp(:,:,k)*(t(:,:,k)-teq(:,:,k))
+      enddo
+      
+      !print *, maxval(tdt), maxval(teq), maxval(h_trop)
+      
+      if (present(mask)) then
+         tdt = tdt * mask
+         teq = teq * mask
+      endif
+
+!-----------------------------------------------------------------------
+
+ end subroutine top_down_newtonian_damping
 
 end module hs_forcing_mod
