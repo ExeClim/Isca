@@ -12,6 +12,9 @@
 `giant_planet`
 * Control case of the Jupiter simulation in <https://doi.org/10.1175/2008JAS2798.1>
 
+`axisymmetric`
+* Model setup with zonal-mean dynamics enforced, i.e. a run without eddies. Uses prescribed SSTs and vertical diffusion.
+
 `held_suarez`
 * Commonly-used dynamical-core test case described [here][1]
 
