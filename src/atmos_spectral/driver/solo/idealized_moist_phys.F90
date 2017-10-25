@@ -633,9 +633,12 @@ case(RAS_CONV)
        call get_number_tracers (MODEL_ATMOS, num_tracers= num_tracers)
 
        allocate (tracers_in_ras(num_tracers))
+       ! Instead of finding out which of the tracers need to be advected, manually set this to .false.
        tracers_in_ras = .false.
        do_strat = .false.
 
+       !Commented code not used such that tracers are not advected by RAS. Could implement in future.
+       
        ! do n=1, num_tracers
        !   if (query_method ('convection', MODEL_ATMOS, n, scheme)) then
        !    num_ras_tracers = num_ras_tracers + 1
