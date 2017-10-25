@@ -15,6 +15,9 @@
 `held_suarez`
 * Commonly-used dynamical-core test case described [here][1]
 
+`top_down`
+* A general thermal relaxation scheme allowing seasonal variation, dependent on atmospheric and orbital parameters.
+
 `realistic_continents`
 * Most complex configuration of Isca v1.0, including realistic continents, realistic topography, a simple ice model, and the option of prescribed AMIP SSTs or prescribed q-fluxes derived from AMIP ssts. Same setup used in Thomson & Vallis, 2017 (submitted), also described in Isca paper.
 
