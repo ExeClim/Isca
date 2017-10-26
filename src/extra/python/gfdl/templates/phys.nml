@@ -115,7 +115,7 @@
      qflux_amp        = 30. /
 
  &constants_nml
-     /
+    pstd_mks = 1.e5 /
 
  &rayleigh_bottom_drag_nml
      /

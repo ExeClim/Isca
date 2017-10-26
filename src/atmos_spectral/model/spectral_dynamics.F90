@@ -32,7 +32,7 @@ use                fms_mod, only: mpp_pe, mpp_root_pe, error_mesg, NOTE, FATAL, 
                                   read_data, write_data, check_nml_error, lowercase, uppercase, mpp_npes,     &
                                   field_size
 
-use          constants_mod, only: rdgas, rvgas, grav, cp_air, omega, radius, pi
+use          constants_mod, only: rdgas, rvgas, grav, cp_air, omega, radius, pi, pstd_mks
 
 use       time_manager_mod, only: time_type, get_time, set_time, get_calendar_type, NO_CALENDAR, &
                                   get_date, interval_alarm, operator( - ), operator( + )
@@ -210,7 +210,7 @@ namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option, cutoff
                                  do_water_correction, do_energy_correction, vert_advect_uv,          &
                                  vert_advect_t, use_implicit, longitude_origin, robert_coeff,        &
                                  alpha_implicit, vert_difference_option,                             &
-                                 reference_sea_level_press, lon_max, lat_max, num_levels,            &
+                                 lon_max, lat_max, num_levels,            &
                                  num_fourier, num_spherical, fourier_inc, triang_trunc,              &
                                  vert_coord_option, scale_heights, surf_res,                         & 
                                  p_press, p_sigma, exponent, ocean_topog_smoothing, initial_sphum,   &
@@ -263,6 +263,8 @@ if(module_is_initialized) return
 call write_version_number(version, tagname)
 if(mpp_pe() == mpp_root_pe()) write (stdlog(), nml=spectral_dynamics_nml)
 call write_version_number(tracer_type_version, tracer_type_tagname)
+
+reference_sea_level_press = pstd_mks
 
 Time_step  = Time_step_in
 Alarm_interval = set_time(print_interval(2), print_interval(1))

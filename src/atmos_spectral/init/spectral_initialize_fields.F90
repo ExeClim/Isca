@@ -128,7 +128,7 @@ call trans_spherical_to_grid(divs, divg)
 !  compute and print mean surface pressure
 global_mean_psg = area_weighted_global_mean(psg)
 if(mpp_pe() == mpp_root_pe()) then
-  print '("mean surface pressure=",f9.4," mb")',.01*global_mean_psg
+  print '("mean surface pressure=",f15.4," mb")',.01*global_mean_psg
 endif
 
 return
