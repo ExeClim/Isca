@@ -1,4 +1,4 @@
-                      module astronomy_mod
+module astronomy_mod
 ! <CONTACT EMAIL="Fei.Liu@noaa.gov">
 !  fil
 ! </CONTACT>
@@ -142,9 +142,9 @@ end interface
 
 
 !real   :: ecc   = 0.01671   ! eccentricity of orbital ellipse
-real    :: ecc   = 0.0       ! eccentricity of orbital ellipse !s changed default eccentricity to zero, as this is how most 'simplified' models are run.
+real, public    :: ecc   = 0.0       ! eccentricity of orbital ellipse !s changed default eccentricity to zero, as this is how most 'simplified' models are run.
                              ! [ non-dimensional ]
-real    :: obliq = 23.439    ! obliquity [ degrees ]
+real, public    :: obliq = 23.439    ! obliquity [ degrees ]
 real    :: per   = 102.932   ! longitude of perihelion with respect
                              ! to autumnal equinox in NH [ degrees ]
 integer :: period = 0        ! specified length of year [ seconds ] ;

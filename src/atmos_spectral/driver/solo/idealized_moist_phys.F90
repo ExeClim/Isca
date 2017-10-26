@@ -24,6 +24,8 @@ use         lscale_cond_mod, only: lscale_cond_init, lscale_cond, lscale_cond_en
 
 use qe_moist_convection_mod, only: qe_moist_convection_init, qe_moist_convection, qe_moist_convection_end
 
+use                 ras_mod, only: ras_init, ras_end, ras
+
 use        betts_miller_mod, only: betts_miller, betts_miller_init
 
 use      dry_convection_mod, only: dry_convection_init, dry_convection
@@ -45,6 +47,10 @@ use    press_and_geopot_mod, only: pressure_variables
 use         mpp_domains_mod, only: mpp_get_global_domain !s added to enable land reading
 
 use          transforms_mod, only: grid_domain
+
+use tracer_manager_mod, only: get_number_tracers, query_method
+
+use  field_manager_mod, only: MODEL_ATMOS
 
 use rayleigh_bottom_drag_mod, only: rayleigh_bottom_drag_init, compute_rayleigh_bottom_drag
 
@@ -84,13 +90,16 @@ logical :: do_virtual = .false. ! whether virtual temp used in gcm_vert_diff
 character(len=256) :: convection_scheme = 'unset'  !< Use a specific convection scheme.  Valid options
 integer, parameter :: UNSET = -1,                & !! are NONE, SIMPLE_BETTS_MILLER, FULL_BETTS_MILLER, DRY
                       NO_CONV = 0,               &
-                      SIMPLE_BETTS_CONV = 1,         &
-                      FULL_BETTS_MILLER_CONV = 2,     &
-                      DRY_CONV = 3
+                      SIMPLE_BETTS_CONV = 1,     &
+                      FULL_BETTS_MILLER_CONV = 2,&
+                      DRY_CONV = 3,              &
+                      RAS_CONV = 4
+                      
 integer :: r_conv_scheme = UNSET  ! the selected convection scheme
 
 logical :: lwet_convection = .false.
 logical :: do_bm = .false.
+logical :: do_ras = .false.
 
 !s Radiation options
 logical :: two_stream_gray = .true.
@@ -125,7 +134,7 @@ real :: robert_bucket = 0.04   ! default robert coefficient for bucket depth LJJ
 real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
 ! end RG Add bucket
 
-namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, roughness_heat,  &
+namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
                                       two_stream_gray, do_rrtm_radiation, do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
@@ -256,7 +265,7 @@ type(surf_diff_type) :: Tri_surf ! used by gcm_vert_diff
 real :: d622 = 0.
 real :: d378 = 0.
 	
-logical :: used, doing_edt, doing_entrain
+logical :: used, doing_edt, doing_entrain, do_strat
 integer, dimension(4) :: axes
 integer :: is, ie, js, je, num_levels, nsphum, dt_integer
 real :: dt_real
@@ -279,6 +288,15 @@ integer, dimension(4) :: siz
 integer :: global_num_lon, global_num_lat
 character(len=12) :: ctmp1='     by     ', ctmp2='     by     '
 !s end added for land reading
+
+! Added for RAS
+integer :: num_tracers=0,num_ras_tracers=0,n=0
+logical :: do_tracers_in_ras = .false.
+
+logical, dimension(:), allocatable :: tracers_in_ras
+
+character(len=80)  :: scheme
+! End Added for RAS
 
 if(module_is_initialized) return
 
@@ -308,6 +326,7 @@ if(uppercase(trim(convection_scheme)) == 'NONE') then
   r_conv_scheme = NO_CONV
   lwet_convection = .false.
   do_bm           = .false.
+  do_ras          = .false.
   call error_mesg('idealized_moist_phys','No convective adjustment scheme used.', NOTE)
 
 else if(uppercase(trim(convection_scheme)) == 'SIMPLE_BETTS_MILLER') then
@@ -315,11 +334,22 @@ else if(uppercase(trim(convection_scheme)) == 'SIMPLE_BETTS_MILLER') then
   call error_mesg('idealized_moist_phys','Using Frierson Quasi-Equilibrium convection scheme.', NOTE)
   lwet_convection = .true.
   do_bm           = .false.
+  do_ras          = .false.
+  
 
 else if(uppercase(trim(convection_scheme)) == 'FULL_BETTS_MILLER') then
   r_conv_scheme = FULL_BETTS_MILLER_CONV
   call error_mesg('idealized_moist_phys','Using Betts-Miller convection scheme.', NOTE)
   do_bm           = .true.
+  lwet_convection = .false.
+  do_ras          = .false.
+  
+
+else if(uppercase(trim(convection_scheme)) == 'RAS') then
+  r_conv_scheme = RAS_CONV
+  call error_mesg('idealized_moist_phys','Using relaxed Arakawa Schubert convection scheme.', NOTE)
+  do_ras          = .true.
+  do_bm           = .false.
   lwet_convection = .false.
 
 else if(uppercase(trim(convection_scheme)) == 'DRY') then
@@ -327,6 +357,7 @@ else if(uppercase(trim(convection_scheme)) == 'DRY') then
   call error_mesg('idealized_moist_phys','Using dry convection scheme.', NOTE)
   lwet_convection = .false.
   do_bm           = .false.
+  do_ras          = .false.  
 
 else if(uppercase(trim(convection_scheme)) == 'UNSET') then
   call error_mesg('idealized_moist_phys','determining convection scheme from flags', NOTE)
@@ -338,13 +369,23 @@ else if(uppercase(trim(convection_scheme)) == 'UNSET') then
     r_conv_scheme = FULL_BETTS_MILLER_CONV
     call error_mesg('idealized_moist_phys','Using Betts-Miller convection scheme.', NOTE)
   end if
+  if (do_ras) then
+    r_conv_scheme = RAS_CONV
+    call error_mesg('idealized_moist_phys','Using  relaxed Arakawa Schubert convection scheme.', NOTE)
+  end if    
 else
   call error_mesg('idealized_moist_phys','"'//trim(convection_scheme)//'"'//' is not a valid convection scheme.'// &
-      ' Choices are NONE, SIMPLE_BETTS, FULL_BETTS_MILLER, DRY', FATAL)
+      ' Choices are NONE, SIMPLE_BETTS, FULL_BETTS_MILLER, RAS, DRY', FATAL)
 endif
 
 if(lwet_convection .and. do_bm) &
   call error_mesg('idealized_moist_phys','lwet_convection and do_bm cannot both be .true.',FATAL)
+  
+if(lwet_convection .and. do_ras) &
+  call error_mesg('idealized_moist_phys','lwet_convection and do_ras cannot both be .true.',FATAL)  
+
+if(do_bm .and. do_ras) &
+  call error_mesg('idealized_moist_phys','do_bm and do_ras cannot both be .true.',FATAL)  
 
 nsphum = nhum
 Time_step = Time_step_in
@@ -580,6 +621,47 @@ case(FULL_BETTS_MILLER_CONV)
 case(DRY_CONV)
   call dry_convection_init(axes, Time)
 
+case(RAS_CONV)
+
+        !run without startiform cloud scheme
+
+       !---------------------------------------------------------------------
+       !    retrieve the number of registered tracers in order to determine 
+       !    which tracers are to be convectively transported.
+       !---------------------------------------------------------------------
+
+       call get_number_tracers (MODEL_ATMOS, num_tracers= num_tracers)
+
+       allocate (tracers_in_ras(num_tracers))
+       ! Instead of finding out which of the tracers need to be advected, manually set this to .false.
+       tracers_in_ras = .false.
+       do_strat = .false.
+
+       !Commented code not used such that tracers are not advected by RAS. Could implement in future.
+       
+       ! do n=1, num_tracers
+       !   if (query_method ('convection', MODEL_ATMOS, n, scheme)) then
+       !    num_ras_tracers = num_ras_tracers + 1
+       !    tracers_in_ras(n) = .true.
+       !   endif
+       ! end do
+
+       ! if (num_ras_tracers > 0) then
+       !   do_tracers_in_ras = .true.
+       ! else
+       !   do_tracers_in_ras = .false.
+       ! endif
+
+       !----------------------------------------------------------------------
+       !    for each tracer, determine if it is to be transported by convect-
+       !    ion, and the convection schemes that are to transport it. set a 
+       !    logical flag to .true. for each tracer that is to be transported by
+       !    each scheme and increment the count of tracers to be transported
+       !    by that scheme.
+       !----------------------------------------------------------------------
+
+        call ras_init (do_strat, axes,Time,tracers_in_ras) 
+
 end select
 
 !jp not sure why these diag_fields are fenced when condensation ones above are not...
@@ -633,7 +715,7 @@ endif
 end subroutine idealized_moist_phys_init
 !=================================================================================================================================
 subroutine idealized_moist_phys(Time, p_half, p_full, z_half, z_full, ug, vg, tg, grid_tracers, &
-                                previous, current, dt_ug, dt_vg, dt_tg, dt_tracers)
+                                previous, current, dt_ug, dt_vg, dt_tg, dt_tracers, mask, kbot)
 
 type(time_type),            intent(in)    :: Time
 real, dimension(:,:,:,:),   intent(in)    :: p_half, p_full, z_half, z_full, ug, vg, tg
@@ -643,7 +725,14 @@ real, dimension(:,:,:),     intent(inout) :: dt_ug, dt_vg, dt_tg
 real, dimension(:,:,:,:),   intent(inout) :: dt_tracers
 
 real :: delta_t
-real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp
+real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
+
+
+real, intent(in) , dimension(:,:,:), optional :: mask
+integer, intent(in) , dimension(:,:),   optional :: kbot
+
+real, dimension(1,1,1):: tracer, tracertnd
+integer :: nql, nqi, nqa   ! tracer indices for stratiform clouds
 
 if(current == previous) then
    delta_t = dt_real
@@ -728,6 +817,35 @@ case(DRY_CONV)
     if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
     if(id_cape  > 0) used = send_data(id_cape, cape, Time)
     if(id_cin  > 0) used = send_data(id_cin, cin, Time)
+
+case(RAS_CONV)
+
+    call ras   (is,   js,     Time,                                                  &  
+                tg(:,:,:,previous),   grid_tracers(:,:,:,previous,nsphum),           &
+                ug(:,:,:,previous),  vg(:,:,:,previous),    p_full(:,:,:,previous),  &
+                p_half(:,:,:,previous), z_half(:,:,:,previous), coldT,  delta_t,     &
+                conv_dt_tg,   conv_dt_qg, dt_ug_conv,  dt_vg_conv,                   &
+                rain, snow,   do_strat,                                              &                                              
+                !OPTIONAL 
+                mask,  kbot,                                                         &
+                !OPTIONAL OUT
+                mc,   tracer(:,:,:), tracer(:,:,:),                          &
+               tracer(:,:,:),  tracertnd(:,:,:),                             &
+               tracertnd(:,:,:), tracertnd(:,:,:))
+                
+
+      !update tendencies - dT and dq are done after cases
+      tg_tmp = tg(:,:,:,previous) + conv_dt_tg
+      qg_tmp = grid_tracers(:,:,:,previous,nsphum) + conv_dt_qg
+      dt_ug = dt_ug + dt_ug_conv
+      dt_vg = dt_vg + dt_vg_conv
+
+      precip     = precip + rain + snow
+
+   if(id_conv_dt_qg > 0) used = send_data(id_conv_dt_qg, conv_dt_qg, Time)
+   if(id_conv_dt_tg > 0) used = send_data(id_conv_dt_tg, conv_dt_tg, Time)
+   if(id_conv_rain  > 0) used = send_data(id_conv_rain, precip, Time)
+
 
 case(NO_CONV)
    tg_tmp = tg(:,:,:,previous)
@@ -1078,7 +1196,9 @@ subroutine idealized_moist_phys_end
 
 deallocate (dt_bucket, filt)
 if(two_stream_gray)      call two_stream_gray_rad_end
-if(lwet_convection) call qe_moist_convection_end
+if(lwet_convection)      call qe_moist_convection_end
+if(do_ras)               call ras_end
+
 if(turb) then
    call vert_diff_end
    call vert_turb_driver_end

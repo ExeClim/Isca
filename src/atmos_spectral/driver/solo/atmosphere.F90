@@ -46,7 +46,7 @@ use    spectral_dynamics_mod, only: spectral_dynamics_init, spectral_dynamics, s
 
 use          tracer_type_mod, only: tracer_type
 
-use           hs_forcing_mod, only: hs_forcing_init, hs_forcing
+use           hs_forcing_mod, only: hs_forcing_init, hs_forcing, hs_forcing_end
 
 use        field_manager_mod, only: MODEL_ATMOS
 
@@ -249,7 +249,7 @@ enddo
 if(idealized_moist_model) then
    call idealized_moist_phys_init(Time, Time_step, nhum, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, tg(:,:,num_levels,current))
 else
-   call hs_forcing_init(get_axis_id(), Time, rad_lonb_2d, rad_latb_2d)
+   call hs_forcing_init(get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, rad_lat_2d)
 endif
 
 module_is_initialized = .true.
@@ -294,7 +294,7 @@ else
                     ug(:,:,:,previous),           vg(:,:,:,previous  ), &
                     tg(:,:,:,previous), grid_tracers(:,:,:,previous,:), &
                  dt_ug(:,:,:         ),        dt_vg(:,:,:           ), &
-                 dt_tg(:,:,:         ),   dt_tracers(:,:,:,:))
+                 dt_tg(:,:,:         ),   dt_tracers(:,:,:,:), z_full(:,:,:,current))
 endif
 
 if(previous == current) then
@@ -354,7 +354,11 @@ deallocate (dt_psg, dt_ug, dt_vg, dt_tg, dt_tracers)
 deallocate (deg_lon, rad_lon_2d, deg_lat, rad_lat_2d)
 
 call set_domain(grid_domain)
-if(idealized_moist_model) call idealized_moist_phys_end
+if(idealized_moist_model) then
+    call idealized_moist_phys_end
+else
+    call hs_forcing_end
+endif
 call spectral_dynamics_end(tracer_attributes)
 deallocate(tracer_attributes)
 
