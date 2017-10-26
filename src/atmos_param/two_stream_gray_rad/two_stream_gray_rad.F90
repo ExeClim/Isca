@@ -96,9 +96,9 @@ integer, private :: lw_scheme = B_FRIERSON
 real    :: ir_tau_co2_win  = 0.2150
 real    :: ir_tau_wv_win1  = 147.11
 real    :: ir_tau_wv_win2  = 1.0814e4
-real    :: ir_tau_co2      = 3.14
-real    :: ir_tau_wv1      = 199.25
-real    :: ir_tau_wv2      = 14.78
+real    :: ir_tau_co2      = 0.1
+real    :: ir_tau_wv1      = 23.8
+real    :: ir_tau_wv2      = 254.0
 real    :: window          = 0.3732
 real    :: carbon_conc     = 360.0
 
