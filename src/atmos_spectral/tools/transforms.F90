@@ -195,6 +195,7 @@ integer :: num_spherical=0
 
 logical :: south_to_north_local
 logical :: triang_trunc_local
+logical :: make_symmetric_local
 real :: longitude_origin_local
 
 integer :: trunc_fourier
@@ -223,7 +224,8 @@ subroutine transforms_init(radius,            &
                            num_spherical_in,  &
                            south_to_north,    &
                            triang_trunc,      &
-                           longitude_origin)
+                           longitude_origin,  &
+						   make_symmetric)  !
 !---------------------------------------------------------------------------
 
 real,    intent(in) :: radius
@@ -233,7 +235,7 @@ integer, intent(in) :: num_fourier_in
 integer, intent(in) :: fourier_inc_in
 integer, intent(in) :: num_spherical_in
 
-logical, intent(in), optional :: south_to_north, triang_trunc
+logical, intent(in), optional :: south_to_north, triang_trunc, make_symmetric
 real,    intent(in), optional :: longitude_origin
 integer :: namelist_unit, ierr, io
 
@@ -275,6 +277,12 @@ else
   south_to_north_local = .true.
 end if
 
+if(present(make_symmetric)) then
+  make_symmetric_local = make_symmetric
+else
+  make_symmetric_local = .false.
+end if
+
 if(present(triang_trunc)) then
   triang_trunc_local = triang_trunc
 else
@@ -293,7 +301,7 @@ call get_spec_domain(ms, me, ns, ne)
    
 ! initialize spherical_fourier (which initializes spherical)
 call spherical_fourier_init(radius, lat_max, num_fourier, fourier_inc, num_spherical, &
-                            south_to_north=south_to_north_local)   
+                            south_to_north=south_to_north_local, make_symmetric=make_symmetric_local)   
 
 trunc_fourier = num_fourier
 

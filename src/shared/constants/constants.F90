@@ -255,7 +255,7 @@ real, public :: RDGAS  = EARTH_RDGAS
 real, public :: KAPPA = EARTH_KAPPA
 real, public :: CP_AIR = EARTH_CP_AIR
 
-namelist/constants_nml/ radius, grav, omega, orbital_period, pstd_mks, rdgas, kappa
+namelist/constants_nml/ radius, grav, omega, orbital_period, pstd_mks, rdgas, kappa, solar_const
 
 !-----------------------------------------------------------------------
 ! version and tagname published
