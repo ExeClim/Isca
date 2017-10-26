@@ -5,18 +5,9 @@ from gfdl.experiment import Experiment, DiagTable
 
 baseexp = Experiment('top_down_test', overwrite_data=True)
 
-#s Define input files for experiment - by default they are found in exp_dir/input/
-
-
-#s Define srcmods - by default they are found in exp_dir/srcmods/
-
 diag = DiagTable()
 
-#diag.add_file('atmos_hourly', 1, 'hours', time_units='days')
-#diag.add_file('atmos_hourly_mk2', 1, 'hours', time_units='days')
 diag.add_file('atmos_daily', 1, 'days', time_units='days')
-#diag.add_file('atmos_daily_mk2', 1, 'days', time_units='days')
-
 
 # Define diag table entries 
 
@@ -28,41 +19,23 @@ diag.add_field('dynamics', 'div', time_avg=True, files=['atmos_daily'])
 diag.add_field('dynamics', 'ucomp', time_avg=True, files=['atmos_daily'])
 diag.add_field('dynamics', 'vcomp', time_avg=True, files=['atmos_daily'])
 diag.add_field('dynamics', 'temp', time_avg=True, files=['atmos_daily'])
-diag.add_field('atmosphere', 'rh', time_avg=True, files=['atmos_daily'])
 diag.add_field('dynamics', 'slp', time_avg=True, files=['atmos_daily'])
 diag.add_field('dynamics', 'omega', time_avg=True, files=['atmos_daily'])
 diag.add_field('dynamics', 'height', time_avg=True, files=['atmos_daily'])
 diag.add_field('dynamics', 'height_half', time_avg=True, files=['atmos_daily'])
-
-diag.add_field('atmosphere', 'convection_rain', time_avg=True, files=['atmos_daily'])
-diag.add_field('atmosphere', 'condensation_rain', time_avg=True, files=['atmos_daily'])
-
-
-diag.add_field('damping', 'udt_rdamp', time_avg=True, files=['atmos_daily'])
-diag.add_field('damping', 'vdt_rdamp', time_avg=True, files=['atmos_daily'])
-diag.add_field('damping', 'tdt_diss_rdamp', time_avg=True, files=['atmos_daily'])
-
-diag.add_field('vert_turb', 'z_pbl', time_avg=True, files=['atmos_daily'])
 
 diag.add_field('hs_forcing', 'teq', time_avg=True, files=['atmos_daily'])
 diag.add_field('hs_forcing', 'h_trop', time_avg=True, files=['atmos_daily'])
 
 baseexp.use_diag_table(diag)
 
+#Turn off the full, slow radiation scheme compilation
+
+baseexp.disable_rrtm()
+
 baseexp.compile()
 
 baseexp.clear_rundir()
-
-#s Namelist changes from default values
-# baseexp.namelist['main_nml'] = {
-     # 'days'   : 1,	
-     # 'hours'  : 0,
-     # 'minutes': 0,
-     # 'seconds': 0,			
-     # 'dt_atmos':720,
-     # 'current_date' : [0001,1,1,0,0,0],
-     # 'calendar' : 'thirty_day'
-# }
 
 baseexp.namelist['spectral_dynamics_nml'] = {
 	'num_levels': 30,
