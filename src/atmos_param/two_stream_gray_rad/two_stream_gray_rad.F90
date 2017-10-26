@@ -96,8 +96,9 @@ integer, private :: lw_scheme = B_FRIERSON
 real    :: ir_tau_co2_win  = 0.2150
 real    :: ir_tau_wv_win1  = 147.11
 real    :: ir_tau_wv_win2  = 1.0814e4
-real    :: ir_tau_co2      = 0.154925
-real    :: ir_tau_wv       = 351.48
+real    :: ir_tau_co2      = 3.14
+real    :: ir_tau_wv1      = 199.25
+real    :: ir_tau_wv2      = 14.78
 real    :: window          = 0.3732
 real    :: carbon_conc     = 360.0
 
@@ -142,7 +143,8 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            linear_tau, del_sw, wv_exponent, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
-           ir_tau_co2, ir_tau_wv, window, carbon_conc, rad_scheme, &
+           ir_tau_co2, ir_tau_wv1, ir_tau_wv2, &
+		   window, carbon_conc, rad_scheme, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &           
            use_time_average_coszen, dt_rad_avg,&
            diabatic_acce !Schneider Liu values           
@@ -522,7 +524,7 @@ case(B_GEEN)
   ! ref: Ruth Geen etal, GRL 2016 (supp. information).
   do k = 1, n
     lw_del_tau    = ( ir_tau_co2 + 0.2023 * log(carbon_conc/360.)                  &
-                    + ir_tau_wv*sqrt(q(:,:,k)) )                               &
+                    + ir_tau_wv1*log(ir_tau_wv2*q(:,:,k) + 1) )                    &
                * ( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1)
     lw_dtrans(:,:,k) = exp( - lw_del_tau )
     lw_del_tau_win   = ( ir_tau_co2_win + 0.0954 * log(carbon_conc/360.)           &
