@@ -7,7 +7,7 @@ import f90nml
 base_dir=os.getcwd()
 GFDL_BASE        = os.environ['GFDL_BASE']
 
-baseexp = Experiment('bucket_test_experiment_3', overwrite_data=False)
+baseexp = Experiment('bucket_test_experiment', overwrite_data=False)
 
 #Add any input files that are necessary for a particular experiment.
 baseexp.inputfiles = [os.path.join(base_dir,'input/land.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
