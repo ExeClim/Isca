@@ -23,6 +23,7 @@ atmos_param/cg_drag/cg_drag.f90
 atmos_param/topo_drag/topo_drag.f90
 atmos_param/vert_diff/vert_diff.F90
 atmos_param/vert_turb_driver/vert_turb_driver.F90
+atmos_param/ras/ras.f90
 atmos_shared/interpolator/interpolator.F90
 atmos_shared/vert_advection/vert_advection.F90
 atmos_solo/atmos_model.F90
