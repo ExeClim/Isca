@@ -155,7 +155,9 @@ logical :: do_mass_correction     = .true. , &
            use_virtual_temperature= .false., &
            use_implicit           = .true.,  &
            triang_trunc           = .true.,  &
-           graceful_shutdown      = .false.
+           graceful_shutdown      = .false., &
+		   make_symmetric         = .false. !GC/RG Add namelist option to run model as zonally symmetric
+
 
 integer :: damping_order       = 2, &
            damping_order_vor   =-1, &
@@ -211,13 +213,15 @@ namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option, cutoff
                                  alpha_implicit, vert_difference_option,                             &
                                  reference_sea_level_press, lon_max, lat_max, num_levels,            &
                                  num_fourier, num_spherical, fourier_inc, triang_trunc,              &
-                                 vert_coord_option, scale_heights, surf_res,      &
+                                 vert_coord_option, scale_heights, surf_res,                         &
                                  p_press, p_sigma, exponent, ocean_topog_smoothing, initial_sphum,   &
                                  valid_range_t, eddy_sponge_coeff, zmu_sponge_coeff, zmv_sponge_coeff,&
                                  print_interval, num_steps, initial_state_option,                    &
                                  water_correction_limit,                                             & !mj
                                  raw_filter_coeff,                                                   & !st
-                                 graceful_shutdown, json_logging
+                                 graceful_shutdown, json_logging,                                    &
+                                 graceful_shutdown,                                                  &
+								 make_symmetric                                                       !GC/RG add make_symmetric option
 
 contains
 
@@ -303,7 +307,7 @@ endif
 ! which is where domains are determined.
 
 call transforms_init(radius, lat_max, lon_max, num_fourier, fourier_inc, num_spherical, south_to_north=south_to_north, &
-                     triang_trunc=triang_trunc, longitude_origin=longitude_origin)
+                     triang_trunc=triang_trunc, longitude_origin=longitude_origin, make_symmetric=make_symmetric) !GC/RG add option to run zonally symmetric model
 
 call get_grid_domain(is, ie, js, je)
 call get_spec_domain(ms, me, ns, ne)

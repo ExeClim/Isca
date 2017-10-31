@@ -101,6 +101,7 @@ public :: compute_legendre, compute_gaussian
 integer :: fourier_max
 integer :: fourier_inc
 logical :: south_to_north_local
+logical :: make_symmetric_local
 
 integer :: lat_max
 integer :: num_fourier
@@ -127,7 +128,7 @@ contains
 
 !-----------------------------------------------------------------------
 subroutine spherical_fourier_init(radius, lat_max_in, num_fourier_in, &
-                   fourier_inc_in, num_spherical_in, south_to_north)
+                   fourier_inc_in, num_spherical_in, south_to_north, make_symmetric)
 !-----------------------------------------------------------------------
 
 real,    intent(in) :: radius
@@ -135,7 +136,7 @@ integer, intent(in) :: lat_max_in
 integer, intent(in) :: num_fourier_in
 integer, intent(in) :: fourier_inc_in
 integer, intent(in) :: num_spherical_in
-logical, intent(in), optional :: south_to_north
+logical, intent(in), optional :: south_to_north, make_symmetric
 
 call write_version_number(version, tagname)
 
@@ -143,6 +144,12 @@ if(present(south_to_north)) then
   south_to_north_local = south_to_north
 else
   south_to_north_local = .true.
+end if
+
+if(present(make_symmetric)) then
+  make_symmetric_local = make_symmetric
+else
+  make_symmetric_local = .false.
 end if
 
 call get_grid_domain(is, ie, js, je)
@@ -155,7 +162,7 @@ num_spherical = num_spherical_in
 num_fourier   = num_fourier_in
 fourier_max   = num_fourier*fourier_inc
 
-call spherical_init(radius, num_fourier, fourier_inc, num_spherical)
+call spherical_init(radius, num_fourier, fourier_inc, num_spherical, make_symmetric=make_symmetric_local)
 call define_gaussian
 call define_legendre
 

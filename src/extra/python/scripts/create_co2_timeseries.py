@@ -11,11 +11,10 @@ p_full,p_half,npfull,nphalf=cts.create_pressures()
 
 #create times
 is_climatology=False
-num_years=100	
+num_years=100
 time_spacing=num_years
 
-time_arr,day_number,ntime,time_units=cts.create_time_arr(num_years,is_climatology, time_spacing)
-
+time_arr,day_number,ntime,time_units, time_bounds=cts.create_time_arr(num_years,is_climatology, time_spacing)
 #create time series based on times
 co2 = np.zeros((ntime, npfull, nlat, nlon))
 
