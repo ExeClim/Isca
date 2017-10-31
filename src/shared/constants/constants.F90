@@ -36,7 +36,7 @@ module constants_mod
 !   Constants are accessed through the "use" statement.
 ! </DESCRIPTION>
 
-use fms_mod,               only: open_file, check_nml_error, mpp_pe, close_file, write_version_number
+use fms_mod,               only: open_file, check_nml_error, mpp_pe, close_file, write_version_number, error_mesg, NOTE
 
 implicit none
 private
@@ -257,8 +257,9 @@ real, public :: PSTD_MKS    = 101325.0
 real, public :: RDGAS  = EARTH_RDGAS
 real, public :: KAPPA = EARTH_KAPPA
 real, public :: CP_AIR = EARTH_CP_AIR
+logical :: earthday_multiple = .false.
 
-namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa, solar_const
+namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa, solar_const, earthday_multiple
 
 !-----------------------------------------------------------------------
 ! version and tagname published
@@ -295,8 +296,14 @@ subroutine constants_init
     !! as this is too integral to the model calendar to change.)
     !! For Earth parameters, SECONDS_PER_SOL == SECONDS_PER_DAY
     orbital_rate = 2*pi / orbital_period
-    seconds_per_sol = abs(2*pi / (orbital_rate - omega))
-
+	if (earthday_multiple) then
+	    call error_mesg( 'constants_init', &
+	              	         'earthday_multiple = True. Using modified seconds_per_sol', NOTE)
+	    seconds_per_sol = 86400. * earth_omega / omega
+	else
+	    seconds_per_sol = abs(2*pi / (orbital_rate - omega))
+	endif
+	
     CP_AIR = RDGAS/KAPPA
 
     constants_initialised = .true.
