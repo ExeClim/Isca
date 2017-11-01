@@ -1,15 +1,31 @@
-import numpy as np
 import os
-from gfdl.experiment import Experiment, DiagTable
-import f90nml
 
-#Define our base experiment to compile
-base_dir=os.getcwd()
-GFDL_BASE        = os.environ['GFDL_BASE']
+import numpy as np
 
-baseexp = Experiment('mima_test_experiment', overwrite_data=False)
+from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-baseexp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
+NCORES = 4
+
+# a CodeBase can be a directory on the computer,
+# useful for iterative development
+cb = IscaCodeBase.from_directory(GFDL_BASE)
+
+# or it can point to a specific git repo and commit id.
+# This method should ensure future, independent, reproducibility of results.
+# cb = DryCodeBase.from_repo(repo='https://github.com/isca/isca', commit='isca1.1')
+
+# compilation depends on computer specific settings.  The $GFDL_ENV
+# environment variable is used to determine which `$GFDL_BASE/src/extra/env` file
+# is used to load the correct compilers.  The env file is always loaded from
+# $GFDL_BASE and not the checked out git repo.
+
+cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
+
+# create an Experiment object to handle the configuration of model parameters
+# and output diagnostics
+exp = Experiment('mima_test_experiment', codebase=cb)
+
+exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -28,44 +44,70 @@ diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
 
-baseexp.use_diag_table(diag)
+exp.diag_table = diag
 
-#Compile model if not already compiled
-baseexp.compile()
 
 #Empty the run directory ready to run
-baseexp.clear_rundir()
+exp.clear_rundir()
 
 #Define values for the 'core' namelist
-baseexp.namelist['main_nml'] = f90nml.Namelist({
-     'days'   : 30,
-     'hours'  : 0,
-     'minutes': 0,
-     'seconds': 0,
-     'dt_atmos':600,
-     'current_date' : [0001,1,1,0,0,0],
-     'calendar' : 'thirty_day'
+exp.namelist = namelist = Namelist({
+    'main_nml': {
+        'days'   : 30,
+        'hours'  : 0,
+        'minutes': 0,
+        'seconds': 0,
+        'dt_atmos':600,
+        'current_date' : [0001,1,1,0,0,0],
+        'calendar' : 'thirty_day'
+    },
+
+    #Use RRTM radiation, not grey
+    'idealized_moist_phys_nml': {
+        'two_stream_gray': False,
+        'do_rrtm_radiation': True
+    },
+
+    #Use the simple Betts Miller convection scheme
+    'idealized_moist_phys_nml': {
+        'convection_scheme': 'SIMPLE_BETTS_MILLER'
+    },
+
+    #Use a large mixed-layer depth, and the Albedo of the CTRL case in Jucker & Gerber, 2017
+    'mixed_layer_nml': {
+        'depth': 100,
+        'albedo_value': 0.205
+    },
+
+    #Use the analytic formula for q-fluxes with an amplitude of 30 wm^-2
+    'mixed_layer_nml': {
+        'do_qflux': True
+    },
+
+    'qflux_nml': {
+        'qflux_amp': 30.0
+    },
+
+    'rrtm_radiation_nml': {
+        'solr_cnst': 1360,  #s set solar constant to 1360, rather than default of 1368.22
+        'dt_rad': 7200 #Use long RRTM timestep
+    },
+
+    # FMS Framework configuration
+    'diag_manager_nml': {
+        'mix_snapshot_average_fields': False  # time avg fields are labelled with time in middle of window
+    },
+
+    'fms_nml': {
+        'domains_stack_size': 600000                        # default: 0
+    },
+
+    'fms_io_nml': {
+        'threading_write': 'single',                         # default: multi
+        'fileset_write': 'single',                           # default: multi
+    }
 })
-
-#Use RRTM radiation, not grey
-baseexp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = False
-baseexp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = True
-
-#Use the simple Betts Miller convection scheme
-baseexp.namelist['idealized_moist_phys_nml']['convection_scheme'] ='SIMPLE_BETTS_MILLER'
-
-#Use a large mixed-layer depth, and the Albedo of the CTRL case in Jucker & Gerber, 2017
-baseexp.namelist['mixed_layer_nml']['depth'] = 100.
-baseexp.namelist['mixed_layer_nml']['albedo_value'] = 0.205
-
-#Use the analytic formula for q-fluxes with an amplitude of 30 wm^-2
-baseexp.namelist['mixed_layer_nml']['do_qflux'] = True
-baseexp.namelist['qflux_nml']['qflux_amp'] = 30.0
-
-baseexp.namelist['rrtm_radiation_nml']['solr_cnst'] = 1360. #s set solar constant to 1360, rather than default of 1368.22
-baseexp.namelist['rrtm_radiation_nml']['dt_rad'] = 7200 #Use long RRTM timestep
-
 #Lets do a run!
-baseexp.runmonth(1, use_restart=False,num_cores=4, light=False)
+exp.run(1, use_restart=False, num_cores=NCORES)
 for i in range(2,121):
-    baseexp.runmonth(i, num_cores=4, light=False)
+    exp.run(i, num_cores=NCORES)
