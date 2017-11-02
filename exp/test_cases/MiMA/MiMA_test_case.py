@@ -64,16 +64,16 @@ exp.namelist = namelist = Namelist({
 
     'idealized_moist_phys_nml': {
         'two_stream_gray': False,
-        'do_rrtm_radiation': True    #Use RRTM radiation, not grey
-        'convection_scheme': 'SIMPLE_BETTS_MILLER'     #Use the simple Betts Miller convection scheme
-        'do_damping': True
-        'turb':True
-        'mixed_layer_bc':True
-        'do_virtual' :False
-        'do_simple_true': True
-        'roughness_mom':3.21e-05
-        'roughness_heat':3.21e-05
-        'roughness_moist':3.21e-05                
+        'do_rrtm_radiation': True,    #Use RRTM radiation, not grey
+        'convection_scheme': 'SIMPLE_BETTS_MILLER',     #Use the simple Betts Miller convection scheme
+        'do_damping': True,
+        'turb':True,
+        'mixed_layer_bc':True,
+        'do_virtual' :False,
+        'do_simple_true': True,
+        'roughness_mom':3.21e-05,
+        'roughness_heat':3.21e-05,
+        'roughness_moist':3.21e-05,                
     },
 
     'vert_turb_driver_nml': {
@@ -118,7 +118,7 @@ exp.namelist = namelist = Namelist({
         'do_evap':True
     },
     
-    'sat_vapor_pres_nml':
+    'sat_vapor_pres_nml': {
         'do_simple':True
     },
     
@@ -160,13 +160,13 @@ exp.namelist = namelist = Namelist({
     'spectral_dynamics_nml': {
         'damping_order': 4,             
         'water_correction_limit': 200.e2,
-        'reference_sea_level_press':1.0e5
-        'num_levels':40
-        'valid_range_t':[100.,800.]
-        'initial_sphum':[2.e-6]
-        'vert_coord_option':'uneven_sigma'
-        'surf_res':0.2
-        'scale_heights' : 11.0
+        'reference_sea_level_press':1.0e5,
+        'num_levels':40,
+        'valid_range_t':[100.,800.],
+        'initial_sphum':[2.e-6],
+        'vert_coord_option':'uneven_sigma',
+        'surf_res':0.2,
+        'scale_heights' : 11.0,
         'exponent':7.0
     }
     
