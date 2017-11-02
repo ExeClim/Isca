@@ -70,7 +70,7 @@ exp.namelist = namelist = Namelist({
         'turb':True,
         'mixed_layer_bc':True,
         'do_virtual' :False,
-        'do_simple_true': True,
+        'do_simple': True,
         'roughness_mom':3.21e-05,
         'roughness_heat':3.21e-05,
         'roughness_moist':3.21e-05,                
@@ -81,6 +81,7 @@ exp.namelist = namelist = Namelist({
         'do_diffusivity': True,        # default: False
         'do_simple': True,             # default: False
         'constant_gust': 0.0,          # default: 1.0
+        'use_tau': False
     },
     
     'diffusivity_nml': {
@@ -102,9 +103,10 @@ exp.namelist = namelist = Namelist({
     'mixed_layer_nml': {
         'depth': 100,
         'albedo_value': 0.205,
-        't_const' : 285.,
+        'tconst' : 285.,
         'prescribe_initial_dist':True,
-        'evaporation':True
+        'evaporation':True,
+        'do_qflux': True        
     },
 
     'qe_moist_convection_nml': {
@@ -129,18 +131,15 @@ exp.namelist = namelist = Namelist({
         'do_conserve_energy': True,         
     },
 
-    #Use the analytic formula for q-fluxes with an amplitude of 30 wm^-2
-    'mixed_layer_nml': {
-        'do_qflux': True
-    },
-
     'qflux_nml': {
         'qflux_amp': 30.0
     },
 
     'rrtm_radiation_nml': {
         'solr_cnst': 1360,  #s set solar constant to 1360, rather than default of 1368.22
-        'dt_rad': 7200 #Use long RRTM timestep
+        'dt_rad': 7200, #Use long RRTM timestep
+        'do_read_ozone':True,
+        'ozone_file':'ozone_1990'
     },
 
     # FMS Framework configuration
@@ -165,9 +164,10 @@ exp.namelist = namelist = Namelist({
         'valid_range_t':[100.,800.],
         'initial_sphum':[2.e-6],
         'vert_coord_option':'uneven_sigma',
-        'surf_res':0.2,
+        'surf_res':0.5,
         'scale_heights' : 11.0,
-        'exponent':7.0
+        'exponent':7.0,
+        'robert_coeff':0.03
     }
     
     
