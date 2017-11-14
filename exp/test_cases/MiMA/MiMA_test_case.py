@@ -62,26 +62,73 @@ exp.namelist = namelist = Namelist({
         'calendar' : 'thirty_day'
     },
 
-    #Use RRTM radiation, not grey
     'idealized_moist_phys_nml': {
         'two_stream_gray': False,
-        'do_rrtm_radiation': True
+        'do_rrtm_radiation': True,    #Use RRTM radiation, not grey
+        'convection_scheme': 'SIMPLE_BETTS_MILLER',     #Use the simple Betts Miller convection scheme
+        'do_damping': True,
+        'turb':True,
+        'mixed_layer_bc':True,
+        'do_virtual' :False,
+        'do_simple': True,
+        'roughness_mom':3.21e-05,
+        'roughness_heat':3.21e-05,
+        'roughness_moist':3.21e-05,                
     },
 
-    #Use the simple Betts Miller convection scheme
-    'idealized_moist_phys_nml': {
-        'convection_scheme': 'SIMPLE_BETTS_MILLER'
+    'vert_turb_driver_nml': {
+        'do_mellor_yamada': False,     # default: True
+        'do_diffusivity': True,        # default: False
+        'do_simple': True,             # default: False
+        'constant_gust': 0.0,          # default: 1.0
+        'use_tau': False
+    },
+    
+    'diffusivity_nml': {
+        'do_entrain':False,
+        'do_simple': True,
+    },
+
+    'surface_flux_nml': {
+        'use_virtual_temp': False,
+        'do_simple': True,
+        'old_dtaudv': True    
+    },
+
+    'atmosphere_nml': {
+        'idealized_moist_model': True
     },
 
     #Use a large mixed-layer depth, and the Albedo of the CTRL case in Jucker & Gerber, 2017
     'mixed_layer_nml': {
         'depth': 100,
-        'albedo_value': 0.205
+        'albedo_value': 0.205,
+        'tconst' : 285.,
+        'prescribe_initial_dist':True,
+        'evaporation':True,
+        'do_qflux': True        
     },
 
-    #Use the analytic formula for q-fluxes with an amplitude of 30 wm^-2
-    'mixed_layer_nml': {
-        'do_qflux': True
+    'qe_moist_convection_nml': {
+        'rhbm':0.7,
+        'Tmin':160.,
+        'Tmax':350.   
+    },
+    
+    'lscale_cond_nml': {
+        'do_simple':True,
+        'do_evap':True
+    },
+    
+    'sat_vapor_pres_nml': {
+        'do_simple':True
+    },
+    
+    'damping_driver_nml': {
+        'do_rayleigh': True,
+        'trayfric': -0.5,              # neg. value: time in *days*
+        'sponge_pbottom':  50.,
+        'do_conserve_energy': True,         
     },
 
     'qflux_nml': {
@@ -90,7 +137,9 @@ exp.namelist = namelist = Namelist({
 
     'rrtm_radiation_nml': {
         'solr_cnst': 1360,  #s set solar constant to 1360, rather than default of 1368.22
-        'dt_rad': 7200 #Use long RRTM timestep
+        'dt_rad': 7200, #Use long RRTM timestep
+        'do_read_ozone':True,
+        'ozone_file':'ozone_1990'
     },
 
     # FMS Framework configuration
@@ -105,7 +154,23 @@ exp.namelist = namelist = Namelist({
     'fms_io_nml': {
         'threading_write': 'single',                         # default: multi
         'fileset_write': 'single',                           # default: multi
+    },
+
+    'spectral_dynamics_nml': {
+        'damping_order': 4,             
+        'water_correction_limit': 200.e2,
+        'reference_sea_level_press':1.0e5,
+        'num_levels':40,
+        'valid_range_t':[100.,800.],
+        'initial_sphum':[2.e-6],
+        'vert_coord_option':'uneven_sigma',
+        'surf_res':0.5,
+        'scale_heights' : 11.0,
+        'exponent':7.0,
+        'robert_coeff':0.03
     }
+    
+    
 })
 #Lets do a run!
 exp.run(1, use_restart=False, num_cores=NCORES)
