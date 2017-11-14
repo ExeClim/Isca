@@ -373,11 +373,11 @@ if (load_qflux) then
 	   call interpolator_init( qflux_interp, trim(qflux_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
 	else
 
-	   if(file_exist(trim(qflux_file_name))) then
+	   if(file_exist(trim('INPUT/'//qflux_file_name//'.nc'))) then
 	     call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat)
-	     call field_size(trim(qflux_file_name), trim(qflux_field_name), siz)
+	     call field_size(trim('INPUT/'//qflux_file_name//'.nc'), trim(qflux_field_name), siz)
 	     if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
-	       call read_data(trim(qflux_file_name), trim(qflux_field_name), ocean_qflux, grid_domain)
+	       call read_data(trim('INPUT/'//qflux_file_name//'.nc'), trim(qflux_field_name), ocean_qflux, grid_domain)
 	     else
 	       write(ctmp1(1: 4),'(i4)') siz(1)
 	       write(ctmp1(9:12),'(i4)') siz(2)
