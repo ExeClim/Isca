@@ -39,9 +39,7 @@ diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
 
-exp.use_diag_table(diag)
-
-#Turn off the full, slow radiation scheme compilation
+exp.diag_table = diag
 
 #Empty the run directory ready to run
 exp.clear_rundir()
@@ -58,70 +56,156 @@ exp.namelist = namelist = Namelist({
      'calendar' : 'no_calendar'
     },
 
-exp.namelist['fms_nml']['domains_stack_size'] = 620000 #Setting size of stack available to model, which needs to be higher than the default when running at high spatial resolution
-exp.namelist['idealized_moist_phys_nml']['two_stream_gray'] = True #Use grey radiation
-exp.namelist['idealized_moist_phys_nml']['do_rrtm_radiation'] = False #Don't use RRTM
-exp.namelist['idealized_moist_phys_nml']['convection_scheme'] = 'dry' #Use the dry convection scheme of Schneider & Walker
+    'idealized_moist_phys_nml': {
+        'do_damping': True,
+        'turb':True,
+        'mixed_layer_bc':True,
+        'do_virtual' :False,
+        'do_simple': True,
+        'roughness_mom':3.21e-05,
+        'roughness_heat':3.21e-05,
+        'roughness_moist':3.21e-05,     
+        'two_stream_gray':  True, #Use grey radiation
+        'do_rrtm_radiation':  False, #Don't use RRTM
+        'convection_scheme':  'dry', #Use the dry convection scheme of Schneider & Walker
+        'gp_surface':  True, #Use the giant-planet option for the surface, meaning it's not a mixed layer, and applies energy conservation and a bottom-boundary heat flux
+        'mixed_layer_bc':  False, #Don't use the mixed-layer surface
+                   
+    },
 
-exp.namelist['idealized_moist_phys_nml']['gp_surface'] = True #Use the giant-planet option for the surface, meaning it's not a mixed layer, and applies energy conservation and a bottom-boundary heat flux
-exp.namelist['idealized_moist_phys_nml']['mixed_layer_bc'] = False #Don't use the mixed-layer surface
+    'vert_turb_driver_nml': {
+        'do_mellor_yamada': False,     # default: True
+        'do_diffusivity': True,        # default: False
+        'do_simple': True,             # default: False
+        'constant_gust': 0.0,          # default: 1.0
+        'use_tau': False
+    },
+    
+    'diffusivity_nml': {
+        'do_entrain':False,
+        'do_simple': True,
+    },
 
-exp.namelist['two_stream_gray_rad_nml']['rad_scheme'] = 'Schneider' #Use the Schneider & Liu option for the grey scheme
-exp.namelist['two_stream_gray_rad_nml']['do_seasonal'] = False #Don't use seasonally-varying radiation 
+    'surface_flux_nml': {
+        'use_virtual_temp': False,
+        'do_simple': True,
+        'old_dtaudv': True, 
+        'diabatic_acce':  1.0, #Parameter to artificially accelerate the diabatic processes during spinup. 1.0 performs no such acceleration, >1.0 performs acceleration           
+    },
 
-exp.namelist['two_stream_gray_rad_nml']['solar_constant'] = 50.7 #Change solar constant
-exp.namelist['two_stream_gray_rad_nml']['diabatic_acce'] = 1.0 #Parameter to artificially accelerate the diabatic processes during spinup. 1.0 performs no such acceleration, >1.0 performs acceleration
-exp.namelist['surface_flux_nml']['diabatic_acce'] = 1.0 #Parameter to artificially accelerate the diabatic processes during spinup. 1.0 performs no such acceleration, >1.0 performs acceleration
+    'atmosphere_nml': {
+        'idealized_moist_model': True
+    },
 
+    #Use a large mixed-layer depth, and the Albedo of the CTRL case in Jucker & Gerber, 2017
+    'mixed_layer_nml': {
+        'tconst' : 285.,
+        'prescribe_initial_dist':True,
+        'evaporation':True,        
+    },
+    
+    'lscale_cond_nml': {
+        'do_simple':True,
+        'do_evap':True
+    },
+    
+    'sat_vapor_pres_nml': {
+        'do_simple':True,
+        'tcmin_simple':  -223 #Make sure low temperature limit of saturation vapour pressure is low enough that it doesn't cause an error (note that this giant planet has no moisture anyway, so doesn't directly affect calculation.        
+    },
+    
+    'damping_driver_nml': {
+        'do_rayleigh': True,
+        'trayfric': -0.5,              # neg. value: time in *days*
+        'sponge_pbottom':  50.,
+        'do_conserve_energy': True,         
+    },
+
+    'rrtm_radiation_nml': {
+        'do_read_ozone':True,
+        'ozone_file':'ozone_1990'
+    },
+
+    'two_stream_gray_rad_nml': {
+        'rad_scheme': 'Schneider', #Use the Schneider & Liu option for the grey scheme
+        'do_seasonal': False,               #Don't use seasonally-varying radiation 
+        'atm_abs': 0.2,                      # default: 0.0
+        'solar_constant':  50.7, #Change solar constant
+        'diabatic_acce':  1.0, #Parameter to artificially accelerate the diabatic processes during spinup. 1.0 performs no such acceleration, >1.0 performs acceleration        
+    },
+
+    # FMS Framework configuration
+    'diag_manager_nml': {
+        'mix_snapshot_average_fields': False  # time avg fields are labelled with time in middle of window
+    },
+
+    'fms_nml': {
+        'domains_stack_size': 620000 #Setting size of stack available to model, which needs to be higher than the default when running at high spatial resolution
+    },
+
+    'fms_io_nml': {
+        'threading_write': 'single',                         # default: multi
+        'fileset_write': 'single',                           # default: multi
+    },
+
+    'spectral_dynamics_nml': {
+        'damping_order': 4,             
+        'water_correction_limit': 200.e2,
+        'reference_sea_level_press':1.0e5,
+        'num_levels':40,
+        'valid_range_t':[50.,800.],
+        'initial_sphum':[2.e-6],
+        'vert_coord_option':'even_sigma', #Use equally-spaced sigma levels
+        'surf_res':0.1, #Parameter for setting vertical distribution of sigma levels
+        'scale_heights' : 5.0, #Number of vertical scale-heights to include
+        'exponent':2.0,#Parameter for setting vertical distribution of sigma levels
+        'robert_coeff':0.03,
+        'num_fourier':  213, #Number of Fourier modes
+        'num_spherical':  214, #Number of spherical harmonics in triangular truncation
+        'lon_max':  1024, #Lon grid points
+        'lat_max':  320, #Lat grid points
+        'num_levels':  30, #Number of vertical levels
+        'do_water_correction':  False, #Turn off enforced water conservation as model is dry
+        'damping_option':  'exponential_cutoff', #Use the high-wavenumber filter option
+        'damping_order':  4,
+        'damping_coeff':  1.3889e-04,
+        'cutoff_wn':  100,
+        'initial_sphum':  0.0, #No initial specific humidity   
+        'reference_sea_level_press':  3.0e5,     
+    },
+    
+    'constants_nml': {
 #Set Jupiter constants
-exp.namelist['constants_nml']['radius'] = 69860.0e3
-exp.namelist['constants_nml']['grav'] = 26.0
-exp.namelist['constants_nml']['omega'] = 1.7587e-4
-exp.namelist['constants_nml']['orbital_period'] = 4332.589*86400.
-exp.namelist['constants_nml']['PSTD'] = 3.0E+06
-exp.namelist['constants_nml']['PSTD_MKS'] = 3.0E+05
-exp.namelist['spectral_dynamics_nml']['reference_sea_level_press'] = 3.0e5
-exp.namelist['constants_nml']['rdgas'] = 3605.38
-
-exp.namelist['sat_vapor_pres_nml']['tcmin_simple'] = -223 #Make sure low temperature limit of saturation vapour pressure is low enough that it doesn't cause an error (note that this giant planet has no moisture anyway, so doesn't directly affect calculation.
-
-exp.namelist['spectral_dynamics_nml']['vert_coord_option'] = 'even_sigma' #Use equally-spaced sigma levels
-exp.namelist['spectral_dynamics_nml']['surf_res'] = 0.1 #Parameter for setting vertical distribution of sigma levels
-exp.namelist['spectral_dynamics_nml']['exponent'] = 2.0 #Parameter for setting vertical distribution of sigma levels
-exp.namelist['spectral_dynamics_nml']['scale_heights'] = 5.0 #Number of vertical scale-heights to include
-exp.namelist['spectral_dynamics_nml']['valid_range_t'] =[50.,800.] #Valid range of temperatures in Kelvin
-
-exp.namelist['spectral_dynamics_nml']['num_fourier'] = 213 #Number of Fourier modes
-exp.namelist['spectral_dynamics_nml']['num_spherical'] = 214 #Number of spherical harmonics in triangular truncation
-exp.namelist['spectral_dynamics_nml']['lon_max'] = 1024 #Lon grid points
-exp.namelist['spectral_dynamics_nml']['lat_max'] = 320 #Lat grid points
-exp.namelist['spectral_dynamics_nml']['num_levels'] = 30 #Number of vertical levels
-
-exp.namelist['spectral_dynamics_nml']['do_water_correction'] = False #Turn off enforced water conservation as model is dry
-
-exp.namelist['spectral_dynamics_nml']['damping_option'] = 'exponential_cutoff' #Use the high-wavenumber filter option
-exp.namelist['spectral_dynamics_nml']['damping_order'] = 4
-exp.namelist['spectral_dynamics_nml']['damping_coeff'] = 1.3889e-04
-exp.namelist['spectral_dynamics_nml']['cutoff_wn'] = 100
-
-#Set initial conditions
-exp.namelist['spectral_dynamics_nml']['initial_sphum'] = 0.0 #No initial specific humidity
-exp.namelist['spectral_init_cond_nml']['initial_temperature'] = 200. #Lower than normal initial temperature
+        'radius':  69860.0e3,
+        'grav':  26.0,
+        'omega':  1.7587e-4,
+        'orbital_period':  4332.589*86400.,
+        'PSTD':  3.0E+06,
+        'PSTD_MKS':  3.0E+05,
+        'rdgas':  3605.38,
+    },
 
 #Set parameters for near-surface Rayleigh drag
-exp.namelist['rayleigh_bottom_drag_nml']= f90nml.Namelist({
-	'kf_days':10.0,
-	'do_drag_at_surface':True,
-	'variable_drag': False
-	})
+    'rayleigh_bottom_drag_nml':{
+    	'kf_days':10.0,
+	    'do_drag_at_surface':True,
+	    'variable_drag': False
+	},
 
 #Set parameters for dry convection scheme
-exp.namelist['dry_convection_nml'] = f90nml.Namelist({
-    'tau': 21600.,
-    'gamma': 1.0, # K/km
+    'dry_convection_nml': {
+        'tau': 21600.,
+        'gamma': 1.0, # K/km
+    },
+
+    'spectral_init_cond_nml': {
+        'initial_temperature':  200., #Lower than normal initial temperature
+    }
+      
 })
 
+
 #Lets do a run!
-exp.runmonth(1, use_restart=False,num_cores=32, light=False)
+exp.run(1, use_restart=False, num_cores=NCORES)
 for i in range(2,121):
-    exp.runmonth(i, num_cores=32, light=False)
+    exp.run(i, num_cores=NCORES)
