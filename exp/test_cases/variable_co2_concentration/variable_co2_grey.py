@@ -32,18 +32,18 @@ diag = DiagTable()
 diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 
 #Tell model which diagnostics to write
-diag.add_field('dynamics', 'ps', time_avg=False)
+diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
-diag.add_field('atmosphere', 'precipitation', time_avg=False)
-diag.add_field('mixed_layer', 't_surf', time_avg=False)
-diag.add_field('dynamics', 'sphum', time_avg=False)
-diag.add_field('dynamics', 'ucomp', time_avg=False)
-diag.add_field('dynamics', 'vcomp', time_avg=False)
-diag.add_field('dynamics', 'temp', time_avg=False)
-diag.add_field('dynamics', 'vor', time_avg=False)
-diag.add_field('dynamics', 'div', time_avg=False)
-diag.add_field('two_stream', 'co2', time_avg=False)
+diag.add_field('atmosphere', 'precipitation', time_avg=True)
+diag.add_field('mixed_layer', 't_surf', time_avg=True)
+diag.add_field('dynamics', 'sphum', time_avg=True)
+diag.add_field('dynamics', 'ucomp', time_avg=True)
+diag.add_field('dynamics', 'vcomp', time_avg=True)
+diag.add_field('dynamics', 'temp', time_avg=True)
+diag.add_field('dynamics', 'vor', time_avg=True)
+diag.add_field('dynamics', 'div', time_avg=True)
+diag.add_field('two_stream', 'co2', time_avg=True)
 
 exp.diag_table = diag
 
@@ -103,7 +103,7 @@ exp.namelist = namelist = Namelist({
         'prescribe_initial_dist':True,
         'evaporation':True,  
         'depth': 2.5,                          #Depth of mixed layer used
-        'albedo_value': 0.38,                  #Albedo value used              
+        'albedo_value': 0.38,                  #Albedo value used      
     },
 
     'qe_moist_convection_nml': {
