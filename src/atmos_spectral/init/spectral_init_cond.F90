@@ -218,8 +218,12 @@ else if(trim(topography_option) == 'input') then
      call error_mesg('get_topography','topography_option="'//trim(topography_option)//'"'// &
                      ' but '//trim('INPUT/'//topog_file_name)//' does not exist', FATAL)
    endif
-
-   where(land_ones < 1.) ocean_mask = .true.
+    
+   where(land_ones > 0.)
+     ocean_mask = .false.
+   elsewhere
+     ocean_mask = .true.
+   end where
 
    surf_geopotential = grav*surf_height
 
