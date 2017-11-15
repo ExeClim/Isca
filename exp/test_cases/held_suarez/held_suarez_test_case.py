@@ -49,7 +49,7 @@ exp.diag_table = diag
 
 # define namelist values as python dictionary
 # wrapped as a namelist object.
-namelist = namelist_base
+namelist = namelist_base  # Calls some defaults from test_cases/namelist_basefile.py
 
 exp.update_namelist({
     'main_nml': {

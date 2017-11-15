@@ -50,7 +50,7 @@ exp.diag_table = diag
 exp.clear_rundir()
 
 #s Namelist changes from default values
-exp.namelist = namelist = namelist_base
+exp.namelist = namelist = namelist_base  # Calls some defaults from test_cases/namelist_basefile.py
     
 exp.update_namelist({
     'main_nml': {	
