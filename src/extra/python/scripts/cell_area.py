@@ -11,7 +11,7 @@ def cell_area_all(t_res,base_dir, radius=6376.0e3):
     lonb = resolution_file.variables['lonb'][:]
     latb = resolution_file.variables['latb'][:]
 
-    area_array,xsize_array,ysize_array = cell_area_calculate(lons, lats, lonb, latb)
+    area_array,xsize_array,ysize_array = cell_area_calculate(lons, lats, lonb, latb, radius)
 
 
     return area_array,xsize_array,ysize_array
