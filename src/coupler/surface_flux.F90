@@ -525,7 +525,10 @@ subroutine surface_flux_1d (                                           &
 	  where (avail)
 	      ! begin LJJ addition
   		where(land)
-            flux_q    =  (bucket_depth/max_bucket_depth_land) * rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
+			where (bucket_depth >= max_bucket_depth_land*0.75)
+				flux_q    =  rho_drag * (q_surf0 - q_atm)
+			elsewhere	
+                flux_q    =  bucket_depth/(max_bucket_depth_land*0.75) * rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
 		elsewhere
 	        flux_q    =  rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
 		end where
@@ -544,7 +547,10 @@ subroutine surface_flux_1d (                                           &
 	      dedq_surf = 0.
 	      dedq_atm = -rho_drag ! d(latent heat flux)/d(atmospheric mixing ratio)
 		  where(land)
- 	          dedt_surf =  (bucket_depth/max_bucket_depth_land) * rho_drag * (q_sat1 - q_sat) *del_temp_inv
+			  where (bucket_depth >= max_bucket_depth_land*0.75)
+				  dedt_surf =  rho_drag * (q_sat1 - q_sat) *del_temp_inv
+			  elsewhere
+      	          dedt_surf =  bucket_depth/(max_bucket_depth_land*0.75) * rho_drag * (q_sat1 - q_sat) *del_temp_inv
 		  elsewhere
  	          dedt_surf =  rho_drag * (q_sat1 - q_sat) *del_temp_inv
 		  end where
