@@ -323,7 +323,7 @@ class Experiment(Logger, EventEmitter):
         new_exp = Experiment(new_experiment_name, self.codebase)
         new_exp.namelist = self.namelist.copy()
         new_exp.diag_table = self.diag_table.copy()
-        new_exp.inputfiles = self.inputfiles.copy()
+        new_exp.inputfiles = self.inputfiles[:]
 
         return new_exp
 
