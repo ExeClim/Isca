@@ -82,7 +82,14 @@ class CodeBase(Logger):
         self.executable_fullpath = P(self.builddir, self.executable_name)
 
         # alias a version of git acting from within the code directory
-        self.git = git.bake('-C', self.codedir)
+        try:
+            codedir_git = git.bake('-C', self.codedir)        
+            git_test = codedir_git.log('-1', '--format="%H"').stdout
+            self.git = git.bake('-C', self.codedir)
+        except:
+            codedir_git = git.bake('--git-dir=', self.codedir+'.git', '--work-tree=', self.codedir)
+            git_test = codedir_git.log('-1', '--format="%H"').stdout
+            self.git = git.bake('--git-dir=', self.codedir+'.git', '--work-tree=', self.codedir)
 
         # check if the code is available.  If it's not, checkout the repo.
         if not self.code_is_available:
