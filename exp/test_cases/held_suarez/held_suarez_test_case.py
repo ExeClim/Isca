@@ -1,11 +1,9 @@
 import numpy as np
-
+import os
 from isca import DryCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-import sys
-sys.path.insert(0, '../')
+import f90nml
 
-from namelist_basefile import namelist_base
 
 NCORES = 16
 RESOLUTION = 'T42', 25  # T42 horizontal resolution, 25 levels in pressure
@@ -49,13 +47,20 @@ exp.diag_table = diag
 
 # define namelist values as python dictionary
 # wrapped as a namelist object.
-namelist = namelist_base  # Calls some defaults from test_cases/namelist_basefile.py
+#Define values for the 'core' namelist
+namelist_name = os.path.join(GFDL_BASE, 'exp/test_cases/namelist_basefile.nml')
+nml = f90nml.read(namelist_name)
+exp.namelist = nml
 
 exp.update_namelist({
     'main_nml': {
+        'days'   : 30,
+        'hours'  : 0,
+        'minutes': 0,
+        'seconds': 0,
         'dt_atmos': 600,
-        'days': 30,
-        'current_date': [2000,1,1,0,0,0]
+        'current_date': [2000,1,1,0,0,0],
+        'calendar' : 'thirty_day'
     },
 
     'atmosphere_nml': {
@@ -86,7 +91,7 @@ exp.update_namelist({
     }
 })
 
-exp.namelist = namelist
+namelist = exp.namelist 
 exp.set_resolution(*RESOLUTION)
 
 #Lets do a run!

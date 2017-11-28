@@ -2,12 +2,10 @@ import os
 
 import numpy as np
 
+import f90nml
+
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-import sys
-sys.path.insert(0, '../')
-
-from namelist_basefile import namelist_base
 
 NCORES = 16
 base_dir=os.getcwd()
@@ -56,9 +54,21 @@ exp.diag_table = diag
 exp.clear_rundir()
 
 #Define values for the 'core' namelist
-exp.namelist = namelist = namelist_base  # Calls some defaults from test_cases/namelist_basefile.py
+namelist_name = os.path.join(GFDL_BASE, 'exp/test_cases/namelist_basefile.nml')
+nml = f90nml.read(namelist_name)
+exp.namelist = nml
 
 exp.update_namelist({
+    'main_nml':{
+         'days'   : 30,
+         'hours'  : 0,
+         'minutes': 0,
+         'seconds': 0,
+         'dt_atmos':720,
+         'current_date' : [0001,1,1,0,0,0],
+         'calendar' : 'thirty_day'
+    },
+    
     'idealized_moist_phys_nml': {       
         'two_stream_gray': True,     #Use the grey radiation scheme
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            

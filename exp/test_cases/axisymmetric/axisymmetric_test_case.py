@@ -2,12 +2,10 @@ import os
 
 import numpy as np
 
+import f90nml
+
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-import sys
-sys.path.insert(0, '../')
-
-from namelist_basefile import namelist_base
 
 NCORES = 8
 base_dir=os.getcwd()
@@ -57,9 +55,21 @@ exp.diag_table = diag
 exp.clear_rundir()
 
 #Define values for the 'core' namelist
-exp.namelist = namelist = namelist_base  # Calls some defaults from test_cases/namelist_basefile.py
+namelist_name = os.path.join(GFDL_BASE, 'exp/test_cases/namelist_basefile.nml')
+nml = f90nml.read(namelist_name)
+exp.namelist = nml
 
 exp.update_namelist({
+    'main_nml':{
+         'days'   : 30,
+         'hours'  : 0,
+         'minutes': 0,
+         'seconds': 0,
+         'dt_atmos':720,
+         'current_date' : [0001,1,1,0,0,0],
+         'calendar' : 'thirty_day'
+    },
+        
     'idealized_moist_phys_nml': {            
         'two_stream_gray':  False, #Don't use grey radiation
         'do_rrtm_radiation':  True, #Do use RRTM radiation
@@ -81,8 +91,6 @@ exp.update_namelist({
     },
 
     'spectral_dynamics_nml': {   
-        'surf_res':0.2, #Parameter that sets the vertical distribution of sigma levels
-
 # RG The model can be made symmetric by setting the option below to True. However, with no eddies, the equinoctial state, with two (predominantly eddy driven) Hadley cells symmetric about the equator, is not stable. With a mixed layer ocean the model finds other solutions to avoid this state, e.g. keeping the ITCZ off the equator, and the SST becomes very flat in the tropics. Additionally, both with a mixed layer ocean and with fixed SSTs, the cells tend to develop pressure level scale vertical waves. I therefore recommend using prescribed SSTs, and including some vertical diffusion in the free atmosphere to help dissipate vertical waves. For this test case seasonally varying SSTs are provided.     
         'make_symmetric': True, # Make model zonally symmetric
     },  
