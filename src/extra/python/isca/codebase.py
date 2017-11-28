@@ -87,9 +87,9 @@ class CodeBase(Logger):
             git_test = codedir_git.log('-1', '--format="%H"').stdout
             self.git = git.bake('-C', self.codedir)
         except:
-            codedir_git = git.bake('--git-dir=', self.codedir+'.git', '--work-tree=', self.codedir)
+            codedir_git = git.bake('--git-dir='+self.codedir+'/.git', '--work-tree='+self.codedir)
             git_test = codedir_git.log('-1', '--format="%H"').stdout
-            self.git = git.bake('--git-dir=', self.codedir+'.git', '--work-tree=', self.codedir)
+            self.git = git.bake('--git-dir='+self.codedir+'/.git', '--work-tree='+self.codedir)
 
         # check if the code is available.  If it's not, checkout the repo.
         if not self.code_is_available:
@@ -141,7 +141,7 @@ class CodeBase(Logger):
             gfdl_git = git.bake('-C', GFDL_BASE)        
             git_test = gfdl_git.log('-1', '--format="%H"').stdout
         except:
-            gfdl_git = git.bake('--git-dir', GFDL_BASE+'.git', '--work-tree', GFDL_BASE)
+            gfdl_git = git.bake('--git-dir='+GFDL_BASE+'/.git', '--work-tree='+GFDL_BASE)
             git_test = gfdl_git.log('-1', '--format="%H"').stdout
                         
         
