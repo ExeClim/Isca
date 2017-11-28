@@ -7,7 +7,7 @@ import f90nml
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
 
-NCORES = 16 #4
+NCORES = 4
 base_dir = os.getcwd()
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
