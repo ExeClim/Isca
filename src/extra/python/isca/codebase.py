@@ -129,8 +129,15 @@ class CodeBase(Logger):
 
     def write_source_control_status(self, outfile):
         """Write the current state of the source code to a file."""
-
-        gfdl_git = git.bake('-C', GFDL_BASE)
+        
+        try:
+            gfdl_git = git.bake('-C', GFDL_BASE)        
+            git_test = gfdl_git.log('-1', '--format="%H"').stdout
+        except:
+            gfdl_git = git.bake('--git-dir', GFDL_BASE+'.git', '--work-tree', GFDL_BASE)
+            git_test = gfdl_git.log('-1', '--format="%H"').stdout
+                        
+        
         with open(outfile, 'w') as file:
             # write out the git commit id of the compiled source code
             file.write("*---commit hash used for fortran code in workdir---*:\n")
