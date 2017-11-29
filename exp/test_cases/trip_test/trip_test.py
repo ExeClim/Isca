@@ -152,9 +152,7 @@ if __name__=="__main__":
     base_commit  = '155661f8c7945049cbac0dcf2019bb17fe7a6a8d'
     later_commit = 'HEAD'
     
-#     exps_to_check = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_contients_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
-
-    exps_to_check = ['bucket_model', 'frierson']
+    exps_to_check = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_contients_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
 
     exp_outcome_dict = {}
 
@@ -170,6 +168,6 @@ if __name__=="__main__":
     if overall_result:
         print('Congratulations, all tests have passed')
     else:
-        print('Nightmares, some tests have failed')
+        print('Nightmare, some tests have failed')
         
         
