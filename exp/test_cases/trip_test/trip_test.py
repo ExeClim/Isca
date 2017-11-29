@@ -1,7 +1,7 @@
 # Run a parameter sweep of the Held Suarez model
 # by varying the rotation rate from 1% to 1000% of Earth's rot rate
 import numpy as np
-from isca import Experiment, DryCodeBase, FailedRunError, GFDL_BASE, DiagTable
+from isca import Experiment, IscaCodeBase, FailedRunError, GFDL_BASE, DiagTable
 from isca.util import exp_progress
 import xarray as xar
 import pdb
@@ -11,15 +11,51 @@ import sys
 # sys.path.insert(0, GFDL_BASE+'/test_cases/frierson/')
 
 def get_nml_diag(test_case_name):
+   
+    if 'axisymmetric' in test_case_name:
+        sys.path.insert(0, GFDL_BASE+'exp/test_cases/axisymmetric/')     
+        from axisymmetric_test_case import namelist as nml_out
+
+    if 'bucket_model' in test_case_name:
+        sys.path.insert(0, GFDL_BASE+'exp/test_cases/bucket_hydrology/')     
+        from bucket_model_test_case import namelist as nml_out        
+
+    if 'frierson' in test_case_name:
+        sys.path.insert(0, GFDL_BASE+'exp/test_cases/frierson/')     
+        from frierson_test_case import namelist as nml_out        
+        
+    if 'giant_planet' in test_case_name:
+        sys.path.insert(0, GFDL_BASE+'exp/test_cases/giant_planet/')     
+        from giant_planet_test_case import namelist as nml_out        
 
     if 'held_suarez' in test_case_name:
         sys.path.insert(0, GFDL_BASE+'exp/test_cases/held_suarez/')
         from held_suarez_test_case import namelist as nml_out
-       
-    if 'bucket_model' in test_case_name:
-        sys.path.insert(0, GFDL_BASE+'exp/test_cases/bucket_hydrology/')     
-        from bucket_model_test_case import namelist as nml_out
+
+    if 'MiMA' in test_case_name:
+        sys.path.insert(0, GFDL_BASE+'exp/test_cases/MiMA/')
+        from MiMA_test_case import namelist as nml_out               
         
+    if 'realistic_continents_fixed_sst' in test_case_name:
+        sys.path.insert(0, GFDL_BASE+'exp/test_cases/realistic_continents/')
+        from realistic_continents_fixed_sst_test_case import namelist as nml_out
+
+    if 'realistic_continents_variable_qflux' in test_case_name:
+        sys.path.insert(0, GFDL_BASE+'exp/test_cases/realistic_continents/')
+        from realistic_continents_variable_qflux_test_case import namelist as nml_out
+
+    if 'top_down_test' in test_case_name:
+        sys.path.insert(0, GFDL_BASE+'exp/test_cases/top_down_test/')
+        from top_down_test import namelist as nml_out
+
+    if 'variable_co2_grey' in test_case_name:
+        sys.path.insert(0, GFDL_BASE+'exp/test_cases/variable_co2_concentration/')
+        from variable_co2_grey import namelist as nml_out
+
+    if 'variable_co2_rrtm' in test_case_name:
+        sys.path.insert(0, GFDL_BASE+'exp/test_cases/variable_co2_concentration/')
+        from variable_co2_rrtm import namelist as nml_out
+                 
     return nml_out      
 
 def define_simple_diag_table():
@@ -44,10 +80,11 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
     data_dir_dict = {}
     nml_use  = get_nml_diag(test_case_name)
     diag_use = define_simple_diag_table()
+    test_pass = True    
 
     for s in [base_commit, later_commit]:
         exp_name = test_case_name+'_trip_test_'+s
-        cb = DryCodeBase(repo=repo_to_use, commit=s)
+        cb = IscaCodeBase(repo=repo_to_use, commit=s)
         cb.compile()
         exp = Experiment(exp_name, codebase=cb)        
         exp.namelist = nml_use.copy()
@@ -64,8 +101,7 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
                 exp.run(1, use_restart=False, num_cores=4)
 
         except FailedRunError as e:
-            # don't let a crash get in the way of good science
-            # (we could try and reduce timestep here if we wanted to be smarter)
+            test_pass = False
             continue
      
         data_dir_dict[s] = exp.datadir
@@ -79,14 +115,27 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
         for var in diff.data_vars.keys():
             maxval = np.abs(diff[var]).max()
             if maxval !=0.:
-                raise RuntimeError('Test failed for '+var+' '+str(maxval))
-            
-        print('Test passed for '+test_case_name+'. Commit '+later_commit+' gives the same answers as commit '+base_commit)
+                print('Test failed for '+var+' '+str(maxval))
+                test_pass = False
     
+    if test_pass:    
+        print('Test passed for '+test_case_name+'. Commit '+later_commit+' gives the same answer as commit '+base_commit)
+    else:
+        print('Test failed for '+test_case_name+'. Commit '+later_commit+' gives a different answer to commit '+base_commit)   
+    
+    return test_pass
     
 if __name__=="__main__":
     base_commit  = '155661f8c7945049cbac0dcf2019bb17fe7a6a8d'
     later_commit = 'HEAD'
     
-    conduct_comparison_on_test_case(base_commit, later_commit, 'held_suarez_test_case')
-    
+    exps_to_check = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_contients_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
+
+    exp_outcome_dict = {}
+
+    for exp_name in exps_to_check:
+        exp_outcome_dict[exp_name] = conduct_comparison_on_test_case(base_commit, later_commit, exp_name)
+        
+    print(exp_outcome_dict)
+        
+        
