@@ -1,3 +1,10 @@
+"""
+Script for comparing the results of test cases with two different commit IDs.
+Purpose is to make sure that any new commits keep the results of the test cases the same,
+or only change the test cases it expects to (e.g. a bug fix will change the result).
+
+When you submit a new pull request, please run this test and report the results in the pull request.
+"""
 import numpy as np
 from isca import Experiment, IscaCodeBase, FailedRunError, GFDL_BASE, DiagTable
 from isca.util import exp_progress
@@ -5,8 +12,6 @@ import xarray as xar
 import pdb
 import numpy as np
 import sys
-
-# sys.path.insert(0, GFDL_BASE+'/test_cases/frierson/')
 
 def get_nml_diag(test_case_name):
    """Gets the appropriate namelist and input files from each of the test case scripts in the test_cases folder"""
