@@ -14,8 +14,9 @@ import numpy as np
 import sys
 
 def get_nml_diag(test_case_name):
-   """Gets the appropriate namelist and input files from each of the test case scripts in the test_cases folder"""
-   
+    """Gets the appropriate namelist and input files from each of the test case scripts in the test_cases folder
+    """
+
     if 'axisymmetric' in test_case_name:
         sys.path.insert(0, GFDL_BASE+'exp/test_cases/axisymmetric/')     
         from axisymmetric_test_case import namelist as nml_out
@@ -39,6 +40,12 @@ def get_nml_diag(test_case_name):
         from giant_planet_test_case import namelist as nml_out
         from giant_planet_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles           
+        
+        #Make giant planet test case a lower resolution so that it runs in a finite time!
+        nml_out['spectral_dynamics_nml']['num_fourier']=42
+        nml_out['spectral_dynamics_nml']['num_spherical']=43
+        nml_out['spectral_dynamics_nml']['lon_max']=128
+        nml_out['spectral_dynamics_nml']['lat_max']=64
 
     if 'held_suarez' in test_case_name:
         sys.path.insert(0, GFDL_BASE+'exp/test_cases/held_suarez/')
@@ -170,7 +177,9 @@ if __name__=="__main__":
     later_commit = 'HEAD'
     
     #List of test cases to check
-    exps_to_check = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_contients_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
+#     exps_to_check = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_contients_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
+
+    exps_to_check = ['giant_planet']
 
     exp_outcome_dict = {}
 
