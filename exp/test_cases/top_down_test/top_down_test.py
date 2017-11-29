@@ -1,16 +1,30 @@
 import numpy as np
-import os
 
-from gfdl.experiment import Experiment, DiagTable
+from isca import DryCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
+from isca.util import exp_progress
 
-baseexp = Experiment('top_down_test', overwrite_data=True)
+NCORES = 16
 
+# a CodeBase can be a directory on the computer,
+# useful for iterative development
+cb = DryCodeBase.from_directory(GFDL_BASE)
+
+# or it can point to a specific git repo and commit id.
+# This method should ensure future, independent, reproducibility of results.
+# cb = DryCodeBase.from_repo(repo='https://github.com/isca/isca', commit='isca1.1')
+
+# compilation depends on computer specific settings.  The $GFDL_ENV
+# environment variable is used to determine which `$GFDL_BASE/src/extra/env` file
+# is used to load the correct compilers.  The env file is always loaded from
+# $GFDL_BASE and not the checked out git repo.
+
+cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
+
+# create a diagnostics output file for daily snapshots
 diag = DiagTable()
-
 diag.add_file('atmos_daily', 1, 'days', time_units='days')
 
-# Define diag table entries 
-
+# Define diag table entries
 diag.add_field('dynamics', 'ps', time_avg=True, files=['atmos_daily'])
 diag.add_field('dynamics', 'bk', time_avg=True, files=['atmos_daily'])
 diag.add_field('dynamics', 'pk', time_avg=True, files=['atmos_daily'])
@@ -27,73 +41,75 @@ diag.add_field('dynamics', 'height_half', time_avg=True, files=['atmos_daily'])
 diag.add_field('hs_forcing', 'teq', time_avg=True, files=['atmos_daily'])
 diag.add_field('hs_forcing', 'h_trop', time_avg=True, files=['atmos_daily'])
 
-baseexp.use_diag_table(diag)
+# define namelist values as python dictionary
+namelist = Namelist({
+    'main_nml': {
+        'dt_atmos': 300,
+        'days': 90,
+        'calendar': 'no_calendar'
+    },
 
-#Turn off the full, slow radiation scheme compilation
+    'atmosphere_nml': {
+        'idealized_moist_model': False  # False for Newtonian Cooling.  True for Isca/Frierson
+    },
 
-baseexp.disable_rrtm()
+    'spectral_dynamics_nml': {
+        'num_levels': 30,
+        'exponent': 2.5,
+        'scale_heights': 4,
+        'surf_res': 0.1,
+        'robert_coeff': 4e-2,
+        'do_water_correction': False,
+        'vert_coord_option': 'even_sigma',
+        'initial_sphum': 0.,
+        'valid_range_T': [0, 700]
+    },
 
-baseexp.compile()
+    # configure the relaxation profile
+    'hs_forcing_nml': {
+        'equilibrium_t_option' : 'top_down',
+        'ml_depth': 10.,
+        'spinup_time': 10800,
+        'ka': -20.,
+        'ks': -5.
+    },
 
-baseexp.clear_rundir()
+    'constants_nml': {
+        'orbital_period': 360,
+    },
 
-baseexp.namelist['spectral_dynamics_nml'] = {
-	'num_levels': 30,
-	'exponent': 2.5,
-	'scale_heights': 4,
-	'surf_res': 0.1,
-	'robert_coeff': 4e-2,
-	'do_water_correction': False,
-	'vert_coord_option': 'even_sigma',
-	'initial_sphum': 0.,
-	'valid_range_T': [0, 700]
-}
+    'astronomy_nml': {
+        'obliq' : 15
+    },
 
-baseexp.namelist['main_nml'] = {
-    'dt_atmos': 300,
-    'days': 90,
-    'calendar': 'no_calendar'
-}
+    'diag_manager_nml': {
+        'mix_snapshot_average_fields': False
+    },
 
-baseexp.namelist['atmosphere_nml']['idealized_moist_model'] = False
+    'fms_nml': {
+        'domains_stack_size': 600000                        # default: 0
+    },
 
-
-baseexp.namelist['hs_forcing_nml'] = {
-    'equilibrium_t_option' : 'top_down',
-    'ml_depth': 10.,
-    'spinup_time': 10800,
-    'ka': -20.,
-    'ks': -5.
- }
-
-baseexp.namelist['constants_nml'] = {
-    'orbital_period' : 360
- }
- 
-baseexp.namelist['astronomy_nml'] = {
-    'obliq' : 15
- }
+    'fms_io_nml': {
+        'threading_write': 'single',                         # default: multi
+        'fileset_write': 'single',                           # default: multi
+    }
+})
 
 obls = [15]
-
-#s End namelist changes from default values
-
-
 for obl in obls:
-    exp = Experiment('top_down_test_obliquity%d' % obl, overwrite_data=True)
+    exp = Experiment('top_down_test_obliquity%d' % obl, codebase=cb)
     exp.clear_rundir()
 
-    exp.use_diag_table(diag)
-    exp.execdir = baseexp.execdir
-
-    exp.inputfiles = baseexp.inputfiles
-
-    exp.namelist = baseexp.namelist.copy()
+    exp.diag_table = diag
+    exp.namelist = namelist.copy()
     exp.namelist['astronomy_nml']['obliq'] = obl
 
-    exp.runmonth(1, use_restart=False, num_cores=16)
-    for i in range(2, 21):  # 81, 161
-        exp.runmonth(i, num_cores=16)
-		
+    with exp_progress(exp, description='o%.0f d{day}' % obl):
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)
+    for i in range(2, 21):
+        with exp_progress(exp, description='o%.0f d{day}' % s):
+            exp.run(i, num_cores=NCORES, overwrite_data=True)
+
 
 

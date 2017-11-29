@@ -4,7 +4,7 @@ import numpy as np
 from isca import Experiment, DryCodeBase, FailedRunError, GFDL_BASE
 from isca.util import exp_progress
 
-from held_suarez import namelist, diag
+from held_suarez_test_case import namelist, diag
 
 cb = DryCodeBase.from_directory(GFDL_BASE)
 
@@ -26,10 +26,9 @@ for s in scales:
     exp.diag_table = diag
 
     exp.update_namelist({'constants_nml': {'omega': omega}})
-
     try:
+        # run with a progress bar with description showing omega
         with exp_progress(exp, description='o%.0f d{day}' % s) as pbar:
-            # run with a progress bar with description showing omega
             exp.run(1, use_restart=False, num_cores=16)
 
         for n in range(2, 11):
