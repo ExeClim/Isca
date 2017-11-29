@@ -1,5 +1,3 @@
-# Run a parameter sweep of the Held Suarez model
-# by varying the rotation rate from 1% to 1000% of Earth's rot rate
 import numpy as np
 from isca import Experiment, IscaCodeBase, FailedRunError, GFDL_BASE, DiagTable
 from isca.util import exp_progress
