@@ -269,11 +269,11 @@ class Experiment(Logger, EventEmitter):
 
         if num_cores > 1:
             # use postprocessing tool to combine the output from several cores
-            combinetool = sh.Command(P(self.codebase.builddir, 'mppnccombine.x'))
+            combinetool = sh.Command(P(self.codebase.builddir, 'mppnccombine_run.sh'))
             for file in self.diag_table.files:
                 netcdf_file = '%s.nc' % file
                 filebase = P(self.rundir, netcdf_file)
-                combinetool(filebase)
+                combinetool(self.codebase.builddir, filebase)
                 # copy the combined netcdf file into the data archive directory
                 sh.cp(filebase, P(outdir, netcdf_file))
                 # remove all netcdf fragments from the run directory
