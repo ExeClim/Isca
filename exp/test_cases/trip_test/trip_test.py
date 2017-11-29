@@ -9,6 +9,7 @@ import sys
 # sys.path.insert(0, GFDL_BASE+'/test_cases/frierson/')
 
 def get_nml_diag(test_case_name):
+   """Gets the appropriate namelist and input files from each of the test case scripts in the test_cases folder"""
    
     if 'axisymmetric' in test_case_name:
         sys.path.insert(0, GFDL_BASE+'exp/test_cases/axisymmetric/')     
@@ -79,7 +80,8 @@ def get_nml_diag(test_case_name):
     return nml_out, input_files  
 
 def define_simple_diag_table():
-
+    """Defines a simple diag table for the test cases."""
+    
     diag = DiagTable()
     diag.add_file('atmos_daily', 1, 'days', time_units='days')
 
@@ -96,12 +98,16 @@ def define_simple_diag_table():
     return diag
 
 def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, repo_to_use='git@github.com:execlim/Isca', num_cores_to_use=4):
+    """Process here is to checkout each commit in turn, compiles it if necessary, uses the appropriate nml for the test
+    case under consideration, and runs the code with the two commits in turn. The output is then compared for all variables
+    in the diag file. If there are any differences in the output variables then the test classed as a failure."""
 
     data_dir_dict = {}
     nml_use, input_files_use  = get_nml_diag(test_case_name)
     diag_use = define_simple_diag_table()
     test_pass = True    
 
+    #Do the run for each of the commits in turn
     for s in [base_commit, later_commit]:
         exp_name = test_case_name+'_trip_test_'+s
         cb = IscaCodeBase(repo=repo_to_use, commit=s)
@@ -111,28 +117,32 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
         exp.diag_table = diag_use
         exp.inputfiles = input_files_use
 
+        #Only run for 3 days to keep things short.
         exp.update_namelist({
         'main_nml': {
         'days': 3,
         }})
 
         try:
-            # run with a progress bar with description showing omega
+            # run with a progress bar
             with exp_progress(exp, description=s) as pbar:
                 exp.run(1, use_restart=False, num_cores=num_cores_to_use)
 
         except FailedRunError as e:
+            #If run fails then test automatically fails
             test_pass = False
             continue
      
         data_dir_dict[s] = exp.datadir
 
+    #For each of the diag files defined, compare the output
     for diag_file_entry in diag_use.files.keys():
         base_commit_dataset  = xar.open_dataset(data_dir_dict[base_commit] +'/run0001/'+diag_file_entry+'.nc', decode_times=False)
         later_commit_dataset = xar.open_dataset(data_dir_dict[later_commit]+'/run0001/'+diag_file_entry+'.nc', decode_times=False)
     
         diff = later_commit_dataset - base_commit_dataset
     
+        #Check each of the output variables for differences
         for var in diff.data_vars.keys():
             maxval = np.abs(diff[var]).max()
             if maxval !=0.:
@@ -149,18 +159,24 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
     return return_test_result
     
 if __name__=="__main__":
+    #Base commit is the earlier commit you want to compare against
     base_commit  = '155661f8c7945049cbac0dcf2019bb17fe7a6a8d'
+    #later commit is the newer commit you're wanting to test
     later_commit = 'HEAD'
     
+    #List of test cases to check
     exps_to_check = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_contients_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
 
     exp_outcome_dict = {}
 
+    #Run the test on each test case in turn
     for exp_name in exps_to_check:
         exp_outcome_dict[exp_name] = conduct_comparison_on_test_case(base_commit, later_commit, exp_name, num_cores_to_use=4)
     
+    #Decide if all tests passed or not
     overall_result = all([ k=='pass' for k in exp_outcome_dict.values() ])
     
+    #Print results of each test case in turn, then overall results
     print('Results for all of the test cases ran comparing '+base_commit+' and '+later_commit+' are as follows...')
     for exp_key in exp_outcome_dict.keys():
         print(exp_key, ':', exp_outcome_dict[exp_key])
