@@ -46,7 +46,7 @@ def get_nml_diag(test_case_name):
         nml_out['spectral_dynamics_nml']['num_spherical']=43
         nml_out['spectral_dynamics_nml']['lon_max']=128
         nml_out['spectral_dynamics_nml']['lat_max']=64
-        nml_out['spectral_dynamics_nml']['cutoff_wn']=20
+        nml_out['spectral_dynamics_nml']['cutoff_wn']=15
         
     if 'held_suarez' in test_case_name:
         sys.path.insert(0, GFDL_BASE+'exp/test_cases/held_suarez/')
@@ -109,6 +109,23 @@ def define_simple_diag_table():
 
     return diag
 
+def process_ids(base_commit_in, later_commit_in):
+
+
+    if len(base_commit_in)==40:
+        #Likely to be long-hash, rather than a tag
+        base_commit_short = base_commit_in[0:7]
+    else:
+        base_commit_short = base_commit_in
+    
+    if len(later_commit_in)==40:
+        #Likely to be long-hash, rather than a tag
+        later_commit_short = later_commit_in[0:7]
+    else:
+        later_commit_short = later_commit_in
+    
+    return base_commit_short, later_commit_short
+
 def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, repo_to_use='git@github.com:execlim/Isca', num_cores_to_use=4):
     """Process here is to checkout each commit in turn, compiles it if necessary, uses the appropriate nml for the test
     case under consideration, and runs the code with the two commits in turn. The output is then compared for all variables
@@ -122,7 +139,7 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
 
     #Do the run for each of the commits in turn
     for s in [base_commit, later_commit]:
-        exp_name = test_case_name+'_trip_test_20_'+s
+        exp_name = test_case_name+'_trip_test_21_'+s
         cb = IscaCodeBase(repo=repo_to_use, commit=s)
         cb.compile()
         exp = Experiment(exp_name, codebase=cb)        
@@ -178,13 +195,15 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
     
 if __name__=="__main__":
     #Base commit is the earlier commit you want to compare against
-    base_commit = '6551fc26781c22016ccdc0d113c72a4454ce638e'
+    base_commit = '155661f8c7945049cbac0dcf2019bb17fe7a6a8d'
     #later commit is the newer commit you're wanting to test
-    later_commit = 'a39efb8c9b8a6b6254de3791e0f8106630ae9e59'
-    
+    later_commit = 'ec29bf389cf5ac53b50b23c363040479a6392e52'
+
+    base_commit_short, later_commit_short = process_ids(base_commit, later_commit)
+
     #List of test cases to check
     exps_to_check = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
-    
+        
     exp_outcome_dict = {}
 
     #Run the test on each test case in turn
@@ -195,7 +214,7 @@ if __name__=="__main__":
     overall_result = all([ k=='pass' for k in exp_outcome_dict.values() ])
     
     #Print results of each test case in turn, then overall results
-    print('Results for all of the test cases ran comparing '+base_commit+' and '+later_commit+' are as follows...')
+    print('Results for all of the test cases ran comparing '+base_commit_short+' and '+later_commit_short+' are as follows...')
     for exp_key in exp_outcome_dict.keys():
         if exp_outcome_dict[exp_key]=='pass':
             print(exp_key+' : '+'\033[1;32m'+exp_outcome_dict[exp_key]+'\033[0;m')
