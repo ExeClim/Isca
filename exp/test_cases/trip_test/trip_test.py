@@ -74,8 +74,7 @@ def get_nml_diag(test_case_name):
     if 'top_down_test' in test_case_name:
         sys.path.insert(0, GFDL_BASE+'exp/test_cases/top_down_test/')
         from top_down_test import namelist as nml_out
-        from top_down_test import exp as exp_temp
-        input_files = exp_temp.inputfiles           
+        input_files = []        
 
     if 'variable_co2_grey' in test_case_name:
         sys.path.insert(0, GFDL_BASE+'exp/test_cases/variable_co2_concentration/')
@@ -174,7 +173,7 @@ if __name__=="__main__":
     #Base commit is the earlier commit you want to compare against
     base_commit  = '155661f8c7945049cbac0dcf2019bb17fe7a6a8d'
     #later commit is the newer commit you're wanting to test
-    later_commit = 'HEAD'
+    later_commit = 'ec29bf389cf5ac53b50b23c363040479a6392e52'
     
     #List of test cases to check
     exps_to_check = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
@@ -191,7 +190,10 @@ if __name__=="__main__":
     #Print results of each test case in turn, then overall results
     print('Results for all of the test cases ran comparing '+base_commit+' and '+later_commit+' are as follows...')
     for exp_key in exp_outcome_dict.keys():
-        print(exp_key, ':', exp_outcome_dict[exp_key])
+        if exp_outcome_dict[exp_key]=='pass':
+            print(exp_key+' : '+'\033[1;32m'+exp_outcome_dict[exp_key]+'\033[0;m')
+        else:
+            print(exp_key+' : '+'\033[1;31m'+exp_outcome_dict[exp_key]+'\033[0;m')            
         
     if overall_result:
         print('Congratulations, all tests have passed')
