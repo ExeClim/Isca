@@ -127,9 +127,9 @@ character(len=256) :: land_field_name = 'land_mask'
 ! RG Add bucket
 logical :: bucket = .false. 
 integer :: future
-real :: init_bucket_depth = 20. ! default initial bucket depth in m LJJ
+real :: init_bucket_depth = 1000. ! default large value
 real :: init_bucket_depth_land = 20. 
-real :: max_bucket_depth_land = 1000. ! default large value
+real :: max_bucket_depth_land = 0.15 ! default from Manabe 1969
 real :: robert_bucket = 0.04   ! default robert coefficient for bucket depth LJJ
 real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
 ! end RG Add bucket
