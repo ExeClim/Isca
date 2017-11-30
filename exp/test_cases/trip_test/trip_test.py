@@ -46,7 +46,8 @@ def get_nml_diag(test_case_name):
         nml_out['spectral_dynamics_nml']['num_spherical']=43
         nml_out['spectral_dynamics_nml']['lon_max']=128
         nml_out['spectral_dynamics_nml']['lat_max']=64
-
+        nml_out['spectral_dynamics_nml']['cutoff_wn']=20
+        
     if 'held_suarez' in test_case_name:
         sys.path.insert(0, GFDL_BASE+'exp/test_cases/held_suarez/')
         from held_suarez_test_case import namelist as nml_out
@@ -116,11 +117,12 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
     data_dir_dict = {}
     nml_use, input_files_use  = get_nml_diag(test_case_name)
     diag_use = define_simple_diag_table()
-    test_pass = True    
+    test_pass = True
+    run_complete = True
 
     #Do the run for each of the commits in turn
     for s in [base_commit, later_commit]:
-        exp_name = test_case_name+'_trip_test_'+s
+        exp_name = test_case_name+'_trip_test_20_'+s
         cb = IscaCodeBase(repo=repo_to_use, commit=s)
         cb.compile()
         exp = Experiment(exp_name, codebase=cb)        
@@ -138,46 +140,51 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             # run with a progress bar
             with exp_progress(exp, description=s) as pbar:
                 exp.run(1, use_restart=False, num_cores=num_cores_to_use)
-
         except FailedRunError as e:
             #If run fails then test automatically fails
+            run_complete = False
             test_pass = False
             continue
      
         data_dir_dict[s] = exp.datadir
+    if run_complete:
+        #For each of the diag files defined, compare the output
+        for diag_file_entry in diag_use.files.keys():
+            base_commit_dataset  = xar.open_dataset(data_dir_dict[base_commit] +'/run0001/'+diag_file_entry+'.nc', decode_times=False)
+            later_commit_dataset = xar.open_dataset(data_dir_dict[later_commit]+'/run0001/'+diag_file_entry+'.nc', decode_times=False)
+    
+            diff = later_commit_dataset - base_commit_dataset
+    
+            #Check each of the output variables for differences
+            for var in diff.data_vars.keys():
+                maxval = np.abs(diff[var]).max()
+                if maxval !=0.:
+                    print('Test failed for '+var+' max diff value = '+str(maxval.values))
+                    test_pass = False
+    
+        if test_pass:    
+            print('Test passed for '+test_case_name+'. Commit '+later_commit+' gives the same answer as commit '+base_commit)
+            return_test_result = 'pass'
+        else:
+            print('Test failed for '+test_case_name+'. Commit '+later_commit+' gives a different answer to commit '+base_commit)   
+            return_test_result = 'fail'
 
-    #For each of the diag files defined, compare the output
-    for diag_file_entry in diag_use.files.keys():
-        base_commit_dataset  = xar.open_dataset(data_dir_dict[base_commit] +'/run0001/'+diag_file_entry+'.nc', decode_times=False)
-        later_commit_dataset = xar.open_dataset(data_dir_dict[later_commit]+'/run0001/'+diag_file_entry+'.nc', decode_times=False)
-    
-        diff = later_commit_dataset - base_commit_dataset
-    
-        #Check each of the output variables for differences
-        for var in diff.data_vars.keys():
-            maxval = np.abs(diff[var]).max()
-            if maxval !=0.:
-                print('Test failed for '+var+' '+str(maxval))
-                test_pass = False
-    
-    if test_pass:    
-        print('Test passed for '+test_case_name+'. Commit '+later_commit+' gives the same answer as commit '+base_commit)
-        return_test_result = 'pass'
     else:
-        print('Test failed for '+test_case_name+'. Commit '+later_commit+' gives a different answer to commit '+base_commit)   
+        print('Test failed for '+test_case_name+' because the run crashed.')   
         return_test_result = 'fail'
+
     
     return return_test_result
     
 if __name__=="__main__":
     #Base commit is the earlier commit you want to compare against
-    base_commit  = '155661f8c7945049cbac0dcf2019bb17fe7a6a8d'
+    base_commit = '6551fc26781c22016ccdc0d113c72a4454ce638e'
     #later commit is the newer commit you're wanting to test
-    later_commit = 'ec29bf389cf5ac53b50b23c363040479a6392e52'
+    later_commit = 'a39efb8c9b8a6b6254de3791e0f8106630ae9e59'
     
     #List of test cases to check
     exps_to_check = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
-
+    
     exp_outcome_dict = {}
 
     #Run the test on each test case in turn
