@@ -44,5 +44,6 @@ while 1:
         print("Next grid size ("+str(size)+") exceeds specified maximum "+str(latlon_maxprod))
         break
     size_over = size - int(math.ceil(float(3*(nsph - 1) + 1)/2)*(3*nfou + 1))
-    print("T"+str(nfou)+"\t"+str(nfou)+"\t"+str(nsph)+"\t"+str(nlat)+"\t"+str(nlon)+"\t"+("%4.1f" % (float(100*size_over)/size))+"\t"+str(prime_factors(nlon)))
+    strover = "  - " if size_over == 0 else ("%4.1f" % (float(100*size_over)/size))
+    print("T"+str(nfou)+"\t"+str(nfou)+"\t"+str(nsph)+"\t"+str(nlat)+"\t"+str(nlon)+"\t"+strover+"\t"+str(prime_factors(nlon)))
     nfou += 1
