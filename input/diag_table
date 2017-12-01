@@ -1,0 +1,63 @@
+"FMS Model results"
+0 0 0 0 0 0
+# = output files =
+# file_name, output_freq, output_units, format, time_units, long_name
+ "4xday",   6, "hours", 1, "days", "time",
+ "1x20days",   480, "hours", 1, "days", "time",
+# = diagnostic field entries =
+# module_name, field_name, output_name, file_name, time_sampling, time_avg, other_opts, precision
+ "dynamics",        "ps",                  "ps",                 "4xday",       "all", .false., "none", 2,
+ "dynamics",        "bk",                  "bk",                 "4xday",       "all", .false., "none", 2,
+ "dynamics",        "pk",                  "pk",                 "4xday",       "all", .false., "none", 2,
+ "dynamics",        "vor",         	   "vor",	         "4xday",       "all", .false., "none", 2,
+ "dynamics",        "div",                 "div",                "4xday",       "all", .false., "none", 2,
+ "dynamics",        "temp",                "temp",               "4xday",       "all", .false., "none", 2,
+ "dynamics",        "sphum",               "sphum",              "4xday",       "all", .false., "none", 2,
+ "atmosphere",      "dt_qg_condensation",  "dt_qg_condensation", "4xday",       "all", .false., "none", 2,
+ "atmosphere",      "dt_qg_convection",    "dt_qg_convection",   "4xday",       "all", .false., "none", 2,
+ "atmosphere",      "convection_rain",     "convection_rain",    "4xday",       "all", .true.,  "none", 2,
+ "atmosphere",      "condensation_rain",   "condensation_rain",  "4xday",       "all", .true.,  "none", 2,
+ "two_stream",      "tdt_rad",             "tdt_rad",            "1x20days",    "all", .true.,  "none", 2,
+ "two_stream",      "flux_lw",             "flux_lw",            "1x20days",    "all", .true.,  "none", 2,
+ "two_stream",      "flux_sw",             "flux_sw",            "1x20days",    "all", .true.,  "none", 2,
+ "two_stream",      "swdn_toa",            "swdn_toa",           "1x20days",    "all", .true.,  "none", 2,
+ "atmosphere",      "dt_tg_diffusion",     "dt_tg_diffusion",    "1x20days",    "all", .true.,  "none", 2,
+ "atmosphere",      "dt_qg_diffusion",     "dt_qg_diffusion",    "1x20days",    "all", .true.,  "none", 2,
+ "atmosphere",      "dt_tg_condensation",  "dt_tg_condensation", "1x20days",    "all", .true.,  "none", 2,
+ "atmosphere",      "dt_tg_convection",    "dt_tg_convection",   "1x20days",    "all", .true.,  "none", 2,
+ "mixed_layer",     "t_surf",              "t_surf",             "1x20days",    "all", .true.,  "none", 2,
+ "mixed_layer",     "flux_t",              "flux_t",             "1x20days",    "all", .true.,  "none", 2,
+ "mixed_layer",     "flux_lhe",            "flux_lhe",           "1x20days",    "all", .true.,  "none", 2,
+ "mixed_layer",     "flux_oceanq",         "flux_oceanq",        "1x20days",    "all", .true.,  "none", 2,
+
+
+#=============================================================================================
+#
+#  FORMATS FOR FILE ENTRIES (not all input values are used)
+#  ------------------------
+#
+#"file_name", output_freq, "output_units", format, "time_units", "long_name"
+#
+#
+#   output_freq:  > 0  output frequency in "output_units"
+#                 = 0  output frequency every time step
+#                 =-1  output frequency at end of run
+#
+#   output_units = units used for output frequency
+#                  (years, months, days, minutes, hours, seconds)
+#
+#   time_units   = units used to label the time axis
+#                  (days, minutes, hours, seconds)
+#
+#
+#  FORMAT FOR FIELD ENTRIES (not all input values are used)
+#  ------------------------
+#
+#"module_name", "field_name", "output_name", "file_name", "time_sampling", time_avg, "other_opts", packing
+#
+#   time_avg = .true. or .false.
+#
+#   packing  = 1  double precision
+#            = 2  float
+#            = 4  packed 16-bit integers
+#            = 8  packed 1-byte (not tested?)

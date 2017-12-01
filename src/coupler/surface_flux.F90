@@ -565,9 +565,9 @@ subroutine surface_flux_1d (                                           &
   where (avail)
      where (land)
 !s      Simplified land model uses simple prefactor in front of qsurf0. Land is therefore basically the same as sea, but with this prefactor, hence the changes to dedq_surf and dedt_surf also.
-        flux_q    =  rho_drag * (land_humidity_prefactor*q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
+        flux_q    =  rho_drag * land_humidity_prefactor*(q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
         dedq_surf = 0
-        dedt_surf =  rho_drag * (land_humidity_prefactor*q_sat1 - q_sat) *del_temp_inv
+        dedt_surf =  rho_drag * land_humidity_prefactor*(q_sat1 - q_sat) *del_temp_inv
 !        dedq_surf = rho_drag
 !        dedt_surf = 0
      elsewhere

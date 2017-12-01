@@ -1,0 +1,180 @@
+
+#---------- physics namelist --------------
+#s For reference the corresponding \cite{Frierson2006} (Fr) eq numbers are given
+#
+# ************Stephen notes section*************************
+#
+#
+# simple_surface_nml:
+#      surface_choice   #s a value of 1 means the slab ocean heat capacity job. A value of 2 means the surface has no variable temperature (is it fixed?)
+#      heat_capacity    #s heat capacity of slab surface/ocean
+#      roughness_choice #s means a constant surface roughness for momentum, heat and moisture. 
+#      const_roughness  #s roughness length, as in Fr table.
+#      albedo_choice    #s albedo type choice - 1 means constant over the sphere, and 2 means you include an area with higher albedo corresponding to a glacier. 
+#      const_albedo     #s this is the value he chooses when there's some solar absorption (i.e. atm_abs \ne 0). Otherwise it should be 0.31.
+# 
+# grey_radiation_nml
+#     solar_constant   #s Albedo is set above as const_albedo
+#     del_sol          #s Fr eqn 2
+#     ir_tau_eq        #s Fr eqn 4
+#     ir_tau_pole      #s Fr eqn 4
+#     atm_abs          #s optical depth at surface experienced by incoming solar radiation.
+#     sw_diff          #s Adds a del_sw*sin(lat) term to Fr eq 2, i.e. a summer/winter hemisphere difference.
+#     linear_tau	   #s set as 0.1 in paper Fr eq 5
+#     lat_pert         #s to do with perturbations in the walker forcing - no effect if fcng_pert=0.
+#     lon_pert         #s to do with perturbations in the walker forcing - no effect if fcng_pert=0.
+#     del_lon          #s to do with perturbations in the walker forcing - no effect if fcng_pert=0.
+#     del_lat          #s to do with perturbations in the walker forcing - no effect if fcng_pert=0.	
+#     fcng_pert        #s size of walker_forcing
+# 
+#  moist_processes_nml
+#     do_sbms          #s Simplified version of the betts-miller scheme (with separated boundary layer)
+#     do_lsc           #s large-scale condensation scheme
+#     use_df_stuff     #s use_df_stuff also used in vert_turb_driver
+#
+# betts_miller_nml     #s this is the betts-miller scheme set by do_bm in moist_processes_nml. Not currently used as sbms used instead.
+# 
+# qe_moist_convection_nml #s this is the SIMPLIFIED betts-miller scheme currently being used (set by do_sbms in moist_processes_nml)
+# 	  tau_bm		   #s Looks to be the control value of tau_sbm in seconds, i.e. 2 hours in Frierson thesis section 7.4. 
+# 	  rhbm			   #s The control value of RH_BM=0.7 in Frierson thesis section 7.4.
+# 	  Tmin			   #s min temperature at the LCL
+# 	  Tmax			   #s max temperature at the LCL
+# 	  val_inc 		   #s increment in the lookup table for LCL temperatures.
+#  					   #s note that setting the latent heat of vaporisation for water is done in constants.f90, and es*0 from his paper in constants.f90. Saturation vapor pressure reference value of 610.78Pa set in simple_sat_vapor_pres.f90.
+# 
+# monin_obukhov_nml
+#        rich_crit 	   #s critical richardson number above which drag coeffs are set to drag_min - see eq 37 of monin_obukhov.tech.ps
+#        neutral	   #s if true we just make all the profiles neutral and logarithmic.
+#        drag_min      #s minimum drag
+#        relax_time
+#        stable_option #s two version for the similarity functions on the stable side, as described in section 3.2 of monin_obukhov.tech.ps
+#        zeta_trans    #s if stable_option = 2 there is a transition value of zeta between two functions - see eqs 38-39 of monin_obukhov.tech.ps
+# 
+# lscale_cond_nml
+#     do_evap		   #s it is currently doing re-evaporation of condensate!! As in Frierson thesis below equation 2.34.
+#     use_df_stuff	   #s use_df_stuff here - also used elsewhere! In this routine use_df_stuff makes everything rain, and has no snow?
+# 
+#  diffusivity_nml
+#     frac_inner       #s fraction of the pbl height that has constant flux. Region is where z<frac_inner * h(pbl height). frac_inner=f in Fr thesis equation 2.32.
+#     rich_crit_pbl   #s critical richardson number for calculation of boundary layer height
+#     do_entrain       #s this didn't have a . after `.false' Possible error? If ever true check do_entrain in vert_turb_driver_nml
+# 
+#  ras_nml 			   #s parameters for the Relaxed Arakawa/Schubert Cumulus Parameterization Scheme. Not currently used, so no worries!
+# 
+#  vert_turb_driver_nml
+#     use_df_stuff     #s effects the calculation of the vertical temperature profile using the DALR or not. Real use is as a switch to turn on an alternative definition of specific humidity. When true, specific humidity = (rdgas/rvgas)*esat/pressure. Defined in moist_processes.
+# 
+# physics_driver_nml
+#     do_grey_radiation #s determines whether we do grey radiation or not.
+#     do_damping       #s determines whether we do any rayleigh drag damping or not.
+#
+# ************End Stephen notes section*************************
+
+ &simple_surface_nml
+     surface_choice   = 1, 
+     heat_capacity    = 1.e07, 
+     roughness_choice = 1,
+     const_roughness  = 3.21e-05, 
+     albedo_choice    = 1,
+     const_albedo     = 0.38 /
+     
+ &grey_radiation_nml
+    solar_constant   = 1360,
+    del_sol          = 1.4, 
+    ir_tau_eq        = 6.0, 
+    ir_tau_pole      = 1.5, 
+    atm_abs          = 0.2, 
+    sw_diff          = 0.0, 
+    linear_tau       = 0.1,
+    lat_pert         = 0.0, 
+    lon_pert         = 180.,
+    del_lon          = 90.0,
+    del_lat          = 45.0,
+    fcng_pert        = 0.0/
+
+ &moist_processes_nml
+     do_bm           =.false.,
+     do_bmmass       =.false., 
+     do_bmomp        =.false.,
+     do_sbms         =.true.,
+     do_mca          =.false.,
+     do_lsc          =.true.,
+     do_strat        =.false., 
+     do_ras          =.false.,
+     do_diag_clouds  =.false.,
+     do_rh_clouds    =.false.,
+     use_df_stuff = .true. /
+
+&betts_miller_nml
+       tau_bm = 7200., 
+       rhbm   = .7   ,  
+       do_simp = .false., 
+       do_shallower = .true., 
+       do_changeqref = .false.,
+       do_envsat = .false., 
+       do_taucape = .false., 
+       capetaubm = 900., 
+       tau_min = 2400./
+
+&qe_moist_convection_nml
+	tau_bm= 7200.,
+	rhbm= 0.7,
+	Tmin= 173.,
+	Tmax= 335.,
+	val_inc= 0.01/
+
+ &moist_conv_nml
+       beta = 0.0,
+       use_df_stuff = .true./
+
+ &monin_obukhov_nml
+       rich_crit = 2.0,
+       neutral = .false., 
+       drag_min = 1.e-05,
+       relax_time = 0.,
+       stable_option = 1,
+       zeta_trans=0.5/
+
+ &lscale_cond_nml
+       do_evap = .true.,
+       use_df_stuff = .true. /
+
+ &vert_diff_driver_nml
+        do_conserve_energy = .true.,
+	use_virtual_temp_vert_diff = .false. /
+
+ &diffusivity_nml
+     frac_inner =  0.1,
+     rich_crit_pbl =  1.0,
+     do_entrain = .false.,
+     use_df_stuff = .true. /
+
+
+ &surface_flux_nml
+     use_virtual_temp = .false.,
+     use_df_stuff = .true.,
+     old_dtaudv = .true./
+
+ &ras_nml
+    rn_frac_bot = 0.25,
+    rn_pbot = 800.0e2,
+    rn_ptop = 500.0e2,
+    rn_frac_top = 0.99   /
+
+ &vert_turb_driver_nml
+    use_tau          = .false.,
+    gust_scheme      = 'constant',
+    constant_gust    = 0.,
+    do_mellor_yamada = .false.,
+    do_shallow_conv  = .false.,
+    use_df_stuff = .true.,
+    do_diffusivity = .true./
+
+ &ocean_rough_nml
+      rough_scheme = 'beljaars' /
+
+ &physics_driver_nml
+     do_grey_radiation = .true.,
+     do_damping = .false. /
+
+
