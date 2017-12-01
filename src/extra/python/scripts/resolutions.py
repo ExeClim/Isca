@@ -27,11 +27,11 @@ print("Each row indicates, for the corresponding triangular truncation, the mini
 print("satisfying both the anti-aliasing constraints and any (lat) multiple or (lon) factorization constraints.")
 print("The T number is the minimum num_fourier but is set by num_spherical - 1 (e.g. num_spherical = 43 for T42).")
 print("The percentage of the grid in excess of that required to satisfy only the anti-aliasing constraints is also shown.")
-print()
+print("")
 print("In this run: lat is a multiple of "+str(lat_mult)+", lon cannot have any prime factor exceeding "+str(lon_maxprime))
-print()
+print("")
 print("T\tfou\tsph\tlat\tlon\tover%\tlon factorization")
-print()
+print("")
 
 while 1:
     nsph = nfou + 1
