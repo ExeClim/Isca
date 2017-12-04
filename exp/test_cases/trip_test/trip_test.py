@@ -192,24 +192,12 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
 
     
     return return_test_result
-    
-if __name__=="__main__":
-    #Base commit is the earlier commit you want to compare against
-    base_commit = '155661f8c7945049cbac0dcf2019bb17fe7a6a8d'
-    #later commit is the newer commit you're wanting to test
-    later_commit = 'ec29bf389cf5ac53b50b23c363040479a6392e52'
+
+
+def output_results_function(exp_outcome_dict, base_commit, later_commit):
 
     base_commit_short, later_commit_short = process_ids(base_commit, later_commit)
 
-    #List of test cases to check
-    exps_to_check = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
-        
-    exp_outcome_dict = {}
-
-    #Run the test on each test case in turn
-    for exp_name in exps_to_check:
-        exp_outcome_dict[exp_name] = conduct_comparison_on_test_case(base_commit, later_commit, exp_name, num_cores_to_use=4)
-    
     #Decide if all tests passed or not
     overall_result = all([ k=='pass' for k in exp_outcome_dict.values() ])
     
@@ -225,5 +213,25 @@ if __name__=="__main__":
         print('Congratulations, all tests have passed')
     else:
         print('Nightmare, some tests have failed')
+
+def run_all_tests(base_commit, later_commit, exps_to_check):
+
+    exp_outcome_dict = {}
+
+    #Run the test on each test case in turn
+    for exp_name in exps_to_check:
+        exp_outcome_dict[exp_name] = conduct_comparison_on_test_case(base_commit, later_commit, exp_name, num_cores_to_use=4)
+    
+    output_results_function(exp_outcome_dict, base_commit, later_commit)
+    
+if __name__=="__main__":
+    #Base commit is the earlier commit you want to compare against
+    base_commit = '155661f8c7945049cbac0dcf2019bb17fe7a6a8d'
+    #later commit is the newer commit you're wanting to test
+    later_commit = 'ec29bf389cf5ac53b50b23c363040479a6392e52'
+
+
+    #List of test cases to check
+    exps_to_check = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
         
-        
+    run_all_tests(base_commit, later_commit, exps_to_check)
