@@ -221,12 +221,12 @@ def output_results_function(exp_outcome_dict, base_commit, later_commit):
     else:
         print('Nightmare, some tests have failed')
 
-def run_all_tests(base_commit, later_commit, exps_to_check, num_cores_to_use=4):
+def run_all_tests(base_commit, later_commit, exps_to_check, repo_to_use='git@github.com:execlim/Isca', num_cores_to_use=4):
 
     exp_outcome_dict = {}
 
     #Run the test on each test case in turn
     for exp_name in exps_to_check:
-        exp_outcome_dict[exp_name] = conduct_comparison_on_test_case(base_commit, later_commit, exp_name, num_cores_to_use=num_cores_to_use)
+        exp_outcome_dict[exp_name] = conduct_comparison_on_test_case(base_commit, later_commit, exp_name, repo_to_use = repo_to_use, num_cores_to_use=num_cores_to_use)
     
     output_results_function(exp_outcome_dict, base_commit, later_commit)

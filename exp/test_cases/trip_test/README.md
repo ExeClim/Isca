@@ -16,6 +16,10 @@ To specify a subset of the test cases, use the `-e` option:
 To change the number of cores Isca is run on, use the `-n` option:
 ```./trip_test_command_line 155661f ec29bf3 -e 'axisymmetric' 'bucket_model' 'frierson' -n 4```
 
+To specify the github repo used for the tests (e.g. your fork rather than `Execlim/Isca`), use the `-r` option:
+```./trip_test_command_line 155661f ec29bf3 -e 'axisymmetric' 'bucket_model' 'frierson' -r git@github.com:sit23/Isca```
+
+
 ## Example output
 
 Running the command
