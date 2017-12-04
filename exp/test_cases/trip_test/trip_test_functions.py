@@ -91,6 +91,13 @@ def get_nml_diag(test_case_name):
                  
     return nml_out, input_files  
 
+def list_all_test_cases_implemented_in_trip_test():
+
+    #List of test cases to check
+    exps_implemented = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
+
+    return exps_implemented
+
 def define_simple_diag_table():
     """Defines a simple diag table for the test cases."""
     
@@ -214,24 +221,12 @@ def output_results_function(exp_outcome_dict, base_commit, later_commit):
     else:
         print('Nightmare, some tests have failed')
 
-def run_all_tests(base_commit, later_commit, exps_to_check):
+def run_all_tests(base_commit, later_commit, exps_to_check, num_cores_to_use=4):
 
     exp_outcome_dict = {}
 
     #Run the test on each test case in turn
     for exp_name in exps_to_check:
-        exp_outcome_dict[exp_name] = conduct_comparison_on_test_case(base_commit, later_commit, exp_name, num_cores_to_use=4)
+        exp_outcome_dict[exp_name] = conduct_comparison_on_test_case(base_commit, later_commit, exp_name, num_cores_to_use=num_cores_to_use)
     
     output_results_function(exp_outcome_dict, base_commit, later_commit)
-    
-if __name__=="__main__":
-    #Base commit is the earlier commit you want to compare against
-    base_commit = '155661f8c7945049cbac0dcf2019bb17fe7a6a8d'
-    #later commit is the newer commit you're wanting to test
-    later_commit = 'ec29bf389cf5ac53b50b23c363040479a6392e52'
-
-
-    #List of test cases to check
-    exps_to_check = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
-        
-    run_all_tests(base_commit, later_commit, exps_to_check)
