@@ -21,7 +21,7 @@ To change the number of cores Isca is run on, use the `-n` option:
 Running the command
 ```./trip_test_command_line 155661f8c7945049cbac0dcf2019bb17fe7a6a8d ec29bf389cf5ac53b50b23c363040479a6392e52```
 
-Produces the following output:
+Produces the following summary output:
 
 ```
 Results for all of the test cases ran comparing 155661f and ec29bf3 are as follows...
@@ -39,4 +39,4 @@ giant_planet : pass
 Nightmare, some tests have failed
 ```
 
-The bucket test is the only one that fails in this instance. This is because the bucket model formulation was changed inbetween these two commits, and so it is expected that the results with the two commits will differ. However, we note that the other tests have their results unchanged, meaning this is a safe modification to the code.
+The bucket test is the only one that fails in this instance. This is because the bucket model formulation was changed between these two commits, and so it is expected that the results with the two commits will differ. However, we note that the other tests have their results unchanged, meaning this is a safe modification to the code. Any unexpected failures should be investigated before submitting a pull-request.
