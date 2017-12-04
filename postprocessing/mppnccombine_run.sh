@@ -7,4 +7,4 @@ module list
 
 # Run with input file as input taken from BASH script
 echo ${1}
-${1}/mppnccombine.x ${2}
+exec ${1}/mppnccombine.x ${2}
