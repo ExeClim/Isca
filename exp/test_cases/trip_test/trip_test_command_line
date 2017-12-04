@@ -18,9 +18,11 @@ import pdb
 
 parser = argparse.ArgumentParser(description='Run the Isca trip tests to check if a piece of code preserves test case results')
 
+available_options = "'"+"' '".join(list_all_test_cases_implemented_in_trip_test())+"'"
+
 parser.add_argument('base_commit', type=str, help='The original commit you would like to compare your new results with')
 parser.add_argument('later_commit', type=str, help='The newer commit you would like to test')
-parser.add_argument('-e', '--exp_list', nargs='+', help='List of the experiments to check. Default is to run all test cases', default='all')
+parser.add_argument('-e', '--exp_list', nargs='+', help="List of the experiments to check. Default is to run all test cases. Other options are: "+available_options, default=['all'])
 parser.add_argument('-n', '--num_cores', type=int, help='The number of cores to run the expriments on', default=4)
 
 args = parser.parse_args()
@@ -31,5 +33,7 @@ if args.exp_list==['all']:
     exps_to_check = list_all_test_cases_implemented_in_trip_test()
 else:
     exps_to_check = args.exp_list
+
+print('checking the following test experiments... ', exps_to_check)
 
 run_all_tests(args.base_commit, args.later_commit, exps_to_check, args.num_cores)
