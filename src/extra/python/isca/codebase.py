@@ -82,7 +82,7 @@ class CodeBase(Logger):
         self.executable_fullpath = P(self.builddir, self.executable_name)
 
         # alias a version of git acting from within the code directory
-        self.git = git_run_in_directory(self.codedir)
+        self.git = git_run_in_directory(GFDL_BASE, self.codedir)
 
         # check if the code is available.  If it's not, checkout the repo.
         if not self.code_is_available:
@@ -130,7 +130,7 @@ class CodeBase(Logger):
     def write_source_control_status(self, outfile):
         """Write the current state of the source code to a file."""
 
-        gfdl_git = git_run_in_directory(GFDL_BASE)                              
+        gfdl_git = git_run_in_directory(GFDL_BASE, GFDL_BASE)                              
         
         with open(outfile, 'w') as file:
             # write out the git commit id of the compiled source code
