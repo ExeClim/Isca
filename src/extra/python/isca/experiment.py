@@ -180,7 +180,7 @@ class Experiment(Logger, EventEmitter):
 
     @destructive
     @useworkdir
-    def run(self, i, restart_file=None, use_restart=True, num_cores=8, overwrite_data=False, save_run=False, run_idb=False, nice_score=0):
+    def run(self, i, restart_file=None, use_restart=True, multi_node=False, num_cores=8, overwrite_data=False, save_run=False, run_idb=False, nice_score=0):
         """Run the model.
             `num_cores`: Number of mpi cores to distribute over.
             `restart_file` (optional): A path to a valid restart archive.  If None and `use_restart=True`,
@@ -216,6 +216,11 @@ class Experiment(Logger, EventEmitter):
         for filename in self.inputfiles:
             sh.cp([filename, P(indir, os.path.split(filename)[1])])
 
+        mpirun_opts= ''
+
+        if multi_node:
+            mpirun_opts += ' -bootstrap pbsdsh -f $PBS_NODEFILE'
+
         if use_restart:
             if not restart_file:
                 # get the restart from previous iteration
@@ -236,6 +241,7 @@ class Experiment(Logger, EventEmitter):
             'execdir': self.codebase.builddir,
             'executable': self.codebase.executable_name,
             'env_source': self.env_source,
+            'mpirun_opts': mpirun_opts,
             'num_cores': num_cores,
             'run_idb': run_idb,
             'nice_score': nice_score
@@ -279,11 +285,11 @@ class Experiment(Logger, EventEmitter):
 
         if num_cores > 1:
             # use postprocessing tool to combine the output from several cores
-            combinetool = sh.Command(P(self.codebase.builddir, 'mppnccombine.x'))
+            combinetool = sh.Command(P(self.codebase.builddir, 'mppnccombine_run.sh'))
             for file in self.diag_table.files:
                 netcdf_file = '%s.nc' % file
                 filebase = P(self.rundir, netcdf_file)
-                combinetool(filebase)
+                combinetool(self.codebase.builddir, filebase)
                 # copy the combined netcdf file into the data archive directory
                 sh.cp(filebase, P(outdir, netcdf_file))
                 # remove all netcdf fragments from the run directory
