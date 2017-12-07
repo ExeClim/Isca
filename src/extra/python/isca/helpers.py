@@ -58,3 +58,19 @@ def git_diff(directory):
     git_diff_output = str(git_diff_output).split("\n")
     return git_diff_output
 
+def git_run_in_directory(GFDL_BASE_DIR, dir_in):
+    """Function that bakes in git command to run in a specified directory.
+       `Try except` is to catch different versions of this command
+       in versions of git >1.8 (`git -C`) and older versions for which
+       `git -C` is not a recognized command. """
+       
+    try:
+        codedir_git = git.bake('-C', GFDL_BASE_DIR)        
+        git_test = codedir_git.log('-1', '--format="%H"').stdout
+        baked_git_fn = git.bake('-C', dir_in)
+    except:
+        codedir_git = git.bake('--git-dir='+GFDL_BASE_DIR+'/.git', '--work-tree='+GFDL_BASE_DIR)
+        git_test = codedir_git.log('-1', '--format="%H"').stdout
+        baked_git_fn = git.bake('--git-dir='+dir_in+'/.git', '--work-tree='+dir_in)        
+        
+    return baked_git_fn        
