@@ -26,7 +26,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 exp = Experiment('full_continents_newbucket_fixedSSTs', codebase=cb)
 
 #Add any input files that are necessary for a particular experiment.
-exp.inputfiles = [os.path.join(base_dir,'input/all_continents/land.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),os.path.join(GFDL_BASE,'input/sst_clim_amip.nc')]
+exp.inputfiles = [os.path.join(GFDL_BASE,'input/all_continents/land.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),os.path.join(GFDL_BASE,'input/sst_clim_amip.nc')]
 #Tell model how to write diagnostics
 diag = DiagTable()
 diag.add_file('atmos_monthly', 30, 'days', time_units='days')
