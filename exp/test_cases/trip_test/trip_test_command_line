@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+
+""" A command-line method for running Isca's trip tests.
+
+The script takes a base commit and and a later commit as inputs, and then automatically
+runs all of the test cases implemented in `trip_test_functions'.
+
+Default settings:
+-e 'all' - Runs all test experiments
+-n 4     - Uses 4 cores to run Isca
+-r 'git@github.com:execlim/Isca' - Uses the online Isca repo to checkout commits from
+"""
+
+from trip_test_functions import run_all_tests, list_all_test_cases_implemented_in_trip_test
+import argparse
+import sys
+import pdb
+
+parser = argparse.ArgumentParser(description='Run the Isca trip tests to check if a piece of code preserves test case results')
+
+available_options = "'"+"' '".join(list_all_test_cases_implemented_in_trip_test())+"'"
+
+parser.add_argument('base_commit', type=str, help='The original commit you would like to compare your new results with')
+parser.add_argument('later_commit', type=str, help='The newer commit you would like to test')
+parser.add_argument('-e', '--exp_list', nargs='+', help="List of the experiments to check. Default is to run all test cases. Other options are: "+available_options, default=['all'])
+parser.add_argument('-n', '--num_cores', type=int, help='The number of cores to run the expriments on', default=4)
+parser.add_argument('-r', '--repo', type=str, help='The github repo address to use.', default='git@github.com:execlim/Isca')
+
+args = parser.parse_args()
+
+wdir = sys.path[0]  # get the directory of the script as per https://docs.python.org/3/library/sys.html#sys.path
+
+if args.exp_list==['all']:
+    exps_to_check = list_all_test_cases_implemented_in_trip_test()
+else:
+    exps_to_check = args.exp_list
+
+print('checking the following test experiments... ', exps_to_check)
+
+run_all_tests(args.base_commit, args.later_commit, exps_to_check, repo_to_use=args.repo, num_cores_to_use=args.num_cores)
