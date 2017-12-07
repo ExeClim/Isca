@@ -41,6 +41,7 @@ if [ ! -e "{{ execdir }}/mppnccombine.x" ]; then
   # fi
 
   ln -s $ppdir/mppnccombine.x {{ execdir }}/mppnccombine.x
+  ln -s $ppdir/mppnccombine_run.sh {{ execdir }}/mppnccombine_run.sh
 fi
 
 cd $execdir

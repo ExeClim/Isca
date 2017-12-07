@@ -96,20 +96,19 @@ namelist = Namelist({
     }
 })
 
-obls = [15]
-for obl in obls:
-    exp = Experiment('top_down_test_obliquity%d' % obl, codebase=cb)
-    exp.clear_rundir()
+if __name__=="__main__":
 
-    exp.diag_table = diag
-    exp.namelist = namelist.copy()
-    exp.namelist['astronomy_nml']['obliq'] = obl
+    obls = [15]
+    for obl in obls:
+        exp = Experiment('top_down_test_obliquity%d' % obl, codebase=cb)
+        exp.clear_rundir()
 
-    with exp_progress(exp, description='o%.0f d{day}' % obl):
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)
-    for i in range(2, 21):
-        with exp_progress(exp, description='o%.0f d{day}' % s):
-            exp.run(i, num_cores=NCORES, overwrite_data=True)
+        exp.diag_table = diag
+        exp.namelist = namelist.copy()
+        exp.namelist['astronomy_nml']['obliq'] = obl
 
-
-
+        with exp_progress(exp, description='o%.0f d{day}' % obl):
+            exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)
+        for i in range(2, 21):
+            with exp_progress(exp, description='o%.0f d{day}' % s):
+                exp.run(i, num_cores=NCORES, overwrite_data=True)
