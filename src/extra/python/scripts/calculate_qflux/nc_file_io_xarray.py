@@ -14,33 +14,46 @@ def read_data( base_dir, exp_name, start_file, end_file, avg_or_daily, topo_pres
 
     if model=='fms13':
 
-        files_temp=[base_dir+'/'+exp_name+'/run%03d' % m for m in range(start_file, end_file+1)]
+        possible_format_strs = [[base_dir+'/'+exp_name+'/run%03d' % m for m in range(start_file, end_file+1)],
+                                [base_dir+'/'+exp_name+'/run%04d' % m for m in range(start_file, end_file+1)],
+                                [base_dir+'/'+exp_name+'/run%d'   % m for m in range(start_file, end_file+1)]]
+
         if(topo_present):
             if avg_or_daily == 'monthly':
 #                 extra='_interp.nc'
-                extra='_interp_new_height.nc'            
+                extra='_interp_new_height.nc'
 
             else:
-                extra='_interp_new_height_temp.nc'            
+                extra='_interp_new_height_temp.nc'
         else:
             extra='.nc'
 
         thd_string = '/atmos_'+avg_or_daily+extra
 
-        thd_files = [s + thd_string for s in files_temp]
+        for format_str_files in possible_format_strs:
+            files_temp = format_str_files
 
-        thd_files_exist=[os.path.isfile(s) for s in thd_files]
-        
-        thd_file_size = [os.path.getsize(s) for s in thd_files]
+            thd_files = [s + thd_string for s in files_temp]
 
-        mode_file_size = stats.mode(thd_file_size).mode[0]
-        
-        thd_files_too_small = [thd_file_size[s] < 0.75*mode_file_size for s in range(len(thd_files))]
+            thd_files_exist=[os.path.isfile(s) for s in thd_files]
+
+            if thd_files_exist[0]:
+                break
+
+            if not thd_files_exist[0] and possible_format_strs.index(format_str_files)==(len(possible_format_strs)-1):
+                raise EOFError('EXITING BECAUSE NO APPROPRIATE FORMAT STR', [thd_files[elem] for elem in [0] if not thd_files_exist[elem]])
+
 
         print(thd_files[0])
 
         if not(all(thd_files_exist)):
             raise EOFError('EXITING BECAUSE OF MISSING FILES', [thd_files[elem] for elem in range(len(thd_files_exist)) if not thd_files_exist[elem]])
+
+        thd_file_size = [os.path.getsize(s) for s in thd_files]
+
+        mode_file_size = stats.mode(thd_file_size).mode[0]
+
+        thd_files_too_small = [thd_file_size[s] < 0.75*mode_file_size for s in range(len(thd_files))]
 
         if np.any(thd_files_too_small):
             raise EOFError('EXITING BECAUSE OF FILE TOO SMALL', [thd_files[elem] for elem in range(len(thd_files_exist)) if thd_files_too_small[elem]])
