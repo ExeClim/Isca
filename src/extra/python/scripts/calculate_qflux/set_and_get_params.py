@@ -1,5 +1,7 @@
 import numpy as np
 import pdb
+import sys
+sys.path.append('../')
 import cell_area as carea
 
 __author__='Stephen Thomson'
