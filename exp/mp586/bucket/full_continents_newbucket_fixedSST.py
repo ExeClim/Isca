@@ -54,6 +54,12 @@ diag.add_field('dynamics', 'slp', time_avg=True) # sea level pressure
 diag.add_field('dynamics', 'zsurf', time_avg=True) # geopotential height at surface
 diag.add_field('rrtm_radiation', 'toa_sw',time_avg=True)
 
+diag.add_field('rrtm_radiation', 'flux_sw', time_avg=True) # net SW surface flux
+diag.add_field('rrtm_radiation', 'flux_lw', time_avg=True) # net LW surface flux
+diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) # latent heat flux (up) at surface
+diag.add_field('mixed_layer', 'flux_t', time_avg=True) # sensible heat flux (up) at surface
+
+#MP added on 11 october 2017
 exp.diag_table = diag
 
 
