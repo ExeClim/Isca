@@ -10,6 +10,7 @@ import area_average as aav
 import nc_file_io_xarray as io
 import matplotlib.pyplot as plt
 import os
+import pdb
 
 __author__='Stephen Thomson'
 
@@ -232,6 +233,20 @@ def regrid_in_time(dataset, groupby_name):
         
         dataset['masked_ocean_transport'] = (('months_ax','lat','lon'), dataset_to_output)
 
+def check_surface_flux_dims(dataset):
+
+    fluxes_to_check = ['flux_sw', 'flux_lw']
+
+    for flux_name in fluxes_to_check:
+        flux_dims = dataset[flux_name].dims
+
+        if 'phalf' in flux_dims:
+            dataset.rename({flux_name:flux_name+'_3d'}, inplace=True)
+            max_pressure = dataset.phalf.max()
+            flux_at_bottom_phalf_level = dataset[flux_name+'_3d'].sel(phalf=max_pressure)
+            new_dims = ('time','lat','lon')
+            dataset[flux_name] = (new_dims, flux_at_bottom_phalf_level)
+
 if __name__ == "__main__":
 
     import nc_file_io_xarray as io
@@ -248,19 +263,23 @@ if __name__ == "__main__":
 
     input_dir=GFDL_BASE
     base_dir=GFDL_DATA
-    land_file='input/land.nc'
-    base_exp_name='no_ice_flux_q_exps_fixed_sst/'
-    exp_name='no_ice_flux_lhe_exps_fixed_sst_1/'
+    land_file='input/era_land_t42.nc'
+    base_exp_name='bog_global_warming/'
+    exp_name='bog_fixed_sst_control_experiment'
     #ice_file_name=base_dir+'annual_mean_ice_albedo_change_test_mk2_4320_dt_rad_4/'+'run360/'+'atmos_monthly.nc'
     ice_file_name=None
-    output_file_name='calculate_qflux_TEST'
+    output_file_name='qflux_bog_fixed_sst_control_experiment'
 
     start_file=240
-    end_file=264
+    end_file=360
     land_present=True
     topo_present=False
 
+    #Set time increments of input files (e.g. `monthly` for `atmos_monthly` files.
     avg_or_daily='monthly'
+
+    #Set the time frequency of output data. Valid options are 'months', 'all_time' or 'dayofyear'.
+    time_divisions_of_qflux_to_be_calculated='months'
 
     model_params = sagp.model_params_set(input_dir, delta_t=720., ml_depth=20.)
 
@@ -269,6 +288,8 @@ if __name__ == "__main__":
     land_array, topo_array = io.read_land(input_dir,base_exp_name,land_present,topo_present,size_list,land_file)
     dataset['land'] = (('lat','lon'),land_array)
 
-    qflux_calc(dataset, model_params, output_file_name, ice_file_name, groupby_name='all_time')
+    check_surface_flux_dims(dataset)
+
+    qflux_calc(dataset, model_params, output_file_name, ice_file_name, groupby_name=time_divisions_of_qflux_to_be_calculated)
 
 
