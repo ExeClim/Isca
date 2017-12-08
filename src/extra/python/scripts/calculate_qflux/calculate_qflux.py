@@ -268,7 +268,7 @@ if __name__ == "__main__":
     exp_name='bog_fixed_sst_control_experiment'
     #ice_file_name=base_dir+'annual_mean_ice_albedo_change_test_mk2_4320_dt_rad_4/'+'run360/'+'atmos_monthly.nc'
     ice_file_name=None
-    output_file_name='qflux_bog_fixed_sst_control_experiment'
+    output_file_name='qflux_'+exp_name
 
     start_file=240
     end_file=360
