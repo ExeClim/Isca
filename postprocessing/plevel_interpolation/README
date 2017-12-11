@@ -1,32 +1,6 @@
 Exeter instructions
 
-This set of scripts is able to take 3D data that is outputed on model sigma levels, and interpolate it to be on pressure levels. Basic instructions are as follows:
-
-cd postprocessing/plevel_interpolation/exec/
-
-source ../../../src/extra/loadmodule
-
-../bin/mkmf -p plev.x -t ../bin/mkmf.template.ia64 -c "-Duse_netCDF" -a ../src ../src/path_names ../src/shared/mpp/include ../src/shared/include
-
-make -f Makefile
-
-Once this is done the executable `plev.x` will be created in the exec folder.
-
-To execute the script, do
-
-cd ../scripts
-./plevel.sh INSERT OPTIONS HERE
-
-The runscript plevel.sh takes many different inputs, which are well documented in the file itself. A working example is
-
-./plevel.sh -i PATH_TO_FILE/atmos_daily.nc div height omega temp ucomp vcomp vor
-
-The -i option specifies the input netcdf file location. The variable names are those that you wish to interpolate. 
-
-The result is the file `plevel.nc` in postprocessing/plevel_interpolation/scripts 
-(the output file name can be changed in plevel.sh).
-
-plevel.nc will contain all of the 3D fields that have been interpolated. The pressure levels onto which the data is interpolated are set in plevel.sh and are in Pascal (not hecto pascal). 
+Use the `compile_plev_interpolation.sh` script in the `postprocessing` directory to compile plev.x. Then use `run_level.py` to run the interpolation.
 
 Known issues:
 
