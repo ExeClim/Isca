@@ -25,6 +25,88 @@ Python scripts are also used to run the model on different architectures, to
 archive the output, and for diagnostics, graphics, and post-processing. All of
 these features are publicly available on a Git-based repository.
 
+# Getting Started
+
+A python module `isca` is provided alongside the Fortran source code that should help to do a lot of the heavy-lifting of compiling, configuring and running the model for you.  Isca can be compiled, run and configured without using python, but using the python wrapper is recommended.
+
+## Installing the `isca` module
+
+To begin you'll need a copy of the source code. Either fork the Isca repository to your own github username, or clone directly from the execlim group.
+
+```{bash}
+$ git clone https://github.com/execlim/isca
+$ cd isca
+```
+
+The python module is found in the `src` directory and can be installed using `pip`.  It's recommended (but not essential) that you use some sort of python environment manager to do this, such as using the Anaconda distribution and creating an environment, or `virtualenv`.  This getting started will use Anaconda.
+
+```{bash}
+$ conda create -n isca_env python ipython
+...
+$ source activate isca_env
+(isca_env)$ cd src/extra/python
+(isca_env)$ pip install -r requirements.txt
+...
+Successfully installed MarkupSafe-1.0 f90nml jinja2-2.9.6 numpy-1.13.3 pandas-0.21.0 python-dateutil-2.6.1 pytz-2017.3 sh-1.12.14 six-1.11.0 xarray-0.9.6
+```
+
+Now install the `isca` module in "development mode".  This will allow you, if you wish, to edit the `src/extra/python/isca` files and have those changes be used when you next run an Isca script.
+
+```{bash}
+(isca_env)$ pip install -e .
+...
+Successfully installed Isca
+```
+
+## Compiling for the first time
+
+At Exeter University, Isca is compiled using:
+
+* Intel Compiler Suite 14.0
+* OpenMPI 10.0.1
+* NetCDF 4.3.3.1
+* git 2.1.2
+
+Different workstations/servers at different institutions will have different compilers and libraries available.  The Isca framework assumes you have something similar to our stack at Exeter, but provides a hook for you to configure the environment in which the model is run.
+
+Before Isca is compiled/run, an environment is first configured which loads the specific compilers and libraries necessary to build the code.  This done by setting the environment variable `GFDL_ENV` in your session.
+
+For example, on the EMPS workstations at Exeter, I have the following in my `~/.bashrc`:
+
+```{bash}
+# directory of the Isca source code
+export GFDL_BASE=/scratch/jamesp/isca 
+# "environment" configuration for emps-gv4
+export GFDL_ENV=emps-gv
+# temporary working directory used in running the model
+export GFDL_WORK=/scratch/jamesp/gfdl_work
+# directory for storing model output
+export GFDL_DATA=/scratch/jamesp/gfdl_data
+```
+
+The value of `GFDL_ENV` corresponds to a file in `src/extra/env` that is sourced before each run or compilation.  For an example that you could adapt to work on your machine, see `src/extra/env/emps-gv`.
+
+We are not able to provide support in configuring your environment at other institutions other than Exeter University - we suggest that you contact your friendly local sysops technician for guidance in getting the compilers and libraries collated if you are not sure how to proceed.
+
+If you work at another large institution and have successfully compiled and run Isca, we welcome you to commit your own environment config to `/src/extra/env/my-new-env` for future scientists to benefit from and avoid the pain of debugging compilation!
+
+## Running the model
+
+Once you have installed the `isca` python module you will most likely want to try a compilation and run a simple test case.  There are several test cases highlighting features of Isca in the `exp/test_cases` directory.
+
+A good place to start is the famous Held-Suarez dynamical core test case. Take a look at the python file for an idea of how an Isca experiment is constructed and then try to run it.
+```
+(isca_env)$ cd $GFDL_BASE/exp/test_cases/held_suarez
+(isca_env)$ python held_suarez_test_case.py
+```
+The `held_suarez_test_case.py` experiment script will attempt to compile the source code for the dry dynamical core and then run for several iterations.  
+
+It is likely that the first time you run the script, compilation will fail.  Debug, adjust your environment file as necessary, and then rerun the python script to try again.
+
+Once the code has sucessfully compiled, the script will continue on to run the model distributed over some number of cores.  Once it completes, netCDF diagnostic files will be saved to `$GFDL_DATA/held_suarez_test_case/run####`.
+
+Once you've got an environment file that works for your machine saved in `src/extra/env`, all of the test cases should now compile and run - you're now ready to start running your own experiments!
+
 # License
 
 Isca is distributed under a GNU GPLv3 license. See `Isca/LICENSE` file for details. 
