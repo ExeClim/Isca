@@ -97,11 +97,12 @@ private
    character(len=256) :: stratosphere_t_option = 'extend_tp' 
    
    real :: peri_time=0.25, smaxis=1.5e6, albedo=0.3
-   real :: lapse=6.5, h_a=2, tau_s=5      
+   real :: lapse=6.5, h_a=2, tau_s=5     ! lapse here is for top_down_newtonian_damping 
    real :: heat_capacity=4.2e6      ! equivalent to a 1m mixed layer water ocean
    real :: ml_depth=1               ! depth for heat capacity calculation
    real :: spinup_time=10800.     ! number of days to spin up heat capacity for - req. multiple of orbital_period
 
+   real :: lapse_rate = 1.          ! lapse rate normalized to dry lapse rate (for classic newtonian_damping)
    
 !-----------------------------------------------------------------------
 
@@ -115,7 +116,8 @@ private
                               u_wind_file, v_wind_file, equilibrium_t_option,&
                               equilibrium_t_file, peri_time, smaxis, albedo, &
                               lapse, h_a, tau_s, orbital_period,         &
-                              heat_capacity, ml_depth, spinup_time, stratosphere_t_option
+                              heat_capacity, ml_depth, spinup_time, stratosphere_t_option,&
+                              lapse_rate
 
 !-----------------------------------------------------------------------
 
@@ -561,14 +563,14 @@ real, intent(in),  dimension(:,:,:), optional :: mask
       else if(trim(equilibrium_t_option) == 'Held_Suarez') then
          p_norm(:,:) = p_full(:,:,k)/pref
          the   (:,:) = t_star(:,:) - delv*cos_lat_2(:,:)*log(p_norm(:,:))
-         teq(:,:,k) = the(:,:)*(p_norm(:,:))**KAPPA
+         teq(:,:,k) = the(:,:)*(p_norm(:,:))**(KAPPA*lapse_rate)
          teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
       else if(uppercase(trim(equilibrium_t_option)) == 'EXOPLANET') then
          call diurnal_exoplanet(lat, lon, Time, coszen, fracday, rrsun)
          t_star(:,:) = t_zero - delh*(1 - cos_lat_2(:,:)*coszen(:,:)) - eps*sin_lat(:,:)
          p_norm(:,:) = p_full(:,:,k)/pref
          the   (:,:) = t_star(:,:) - delv*cos_lat_2(:,:)*coszen(:,:)*log(p_norm(:,:))
-         teq(:,:,k) = the(:,:)*(p_norm(:,:))**KAPPA
+         teq(:,:,k) = the(:,:)*(p_norm(:,:))**(KAPPA*lapse_rate)
          teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
       else
          call error_mesg ('hs_forcing_nml', &
