@@ -120,8 +120,17 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
     lat = output_file.createDimension('lat', number_dict['nlat'])
     lon = output_file.createDimension('lon', number_dict['nlon'])
 
-    latb = output_file.createDimension('latb', number_dict['nlatb'])
-    lonb = output_file.createDimension('lonb', number_dict['nlonb'])
+    use_latbs=False
+    use_lonbs=False
+    
+    if latbs is not None:
+        latb = output_file.createDimension('latb', number_dict['nlatb'])
+        latitudebs = output_file.createVariable('latb','d',('latb',))
+        
+
+    if lonbs is not None:    
+        lonb = output_file.createDimension('lonb', number_dict['nlonb'])
+        longitudebs = output_file.createVariable('lonb','d',('lonb',))
 
     if is_thd:
         pfull = output_file.createDimension('pfull', number_dict['npfull'])
@@ -131,9 +140,7 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
 
     latitudes = output_file.createVariable('lat','d',('lat',))
     longitudes = output_file.createVariable('lon','d',('lon',))
-
-    latitudebs = output_file.createVariable('latb','d',('latb',))
-    longitudebs = output_file.createVariable('lonb','d',('lonb',))
+    
     if is_thd:
         pfulls = output_file.createVariable('pfull','d',('pfull',))
         phalfs = output_file.createVariable('phalf','d',('phalf',))
@@ -142,21 +149,23 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
 
     latitudes.units = 'degrees_N'.encode('utf-8')
     latitudes.cartesian_axis = 'Y'
-    latitudes.edges = 'latb'
     latitudes.long_name = 'latitude'
 
     longitudes.units = 'degrees_E'.encode('utf-8')
     longitudes.cartesian_axis = 'X'
-    longitudes.edges = 'lonb'
     longitudes.long_name = 'longitude'
 
-    latitudebs.units = 'degrees_N'.encode('utf-8')
-    latitudebs.cartesian_axis = 'Y'
-    latitudebs.long_name = 'latitude edges'
+    if use_latbs:
+        latitudes.edges = 'latb'
+        latitudebs.units = 'degrees_N'.encode('utf-8')
+        latitudebs.cartesian_axis = 'Y'
+        latitudebs.long_name = 'latitude edges'
 
-    longitudebs.units = 'degrees_E'.encode('utf-8')
-    longitudebs.cartesian_axis = 'X'
-    longitudebs.long_name = 'longitude edges'
+    if use_lonbs:
+        longitudes.edges = 'lonb'
+        longitudebs.units = 'degrees_E'.encode('utf-8')
+        longitudebs.cartesian_axis = 'X'
+        longitudebs.long_name = 'longitude edges'
 
     if is_thd:
         pfulls.units = 'hPa'
@@ -197,8 +206,10 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
     latitudes[:] = lats
     longitudes[:] = lons
 
-    latitudebs[:] = latbs
-    longitudebs[:] = lonbs
+    if use_latbs:
+        latitudebs[:] = latbs
+    if use_lonbs:
+        longitudebs[:] = lonbs
 
     if is_thd:
         pfulls[:]     = p_full
