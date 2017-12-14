@@ -256,7 +256,7 @@ if __name__ == "__main__":
         GFDL_BASE        = os.environ['GFDL_BASE']
         GFDL_WORK        = os.environ['GFDL_WORK']
         GFDL_DATA        = os.environ['GFDL_DATA']        
-    except Exception, e:
+    except Exception as e:
         print('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
         exit(0)
 

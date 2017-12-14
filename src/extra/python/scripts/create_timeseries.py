@@ -29,7 +29,7 @@ def create_grid(manual_grid_option):
 
         try:
             GFDL_BASE        = os.environ['GFDL_BASE']
-        except Exception, e:
+        except Exception as e:
             print('Environment variable GFDL_BASE must be set')
             exit(0)
 
