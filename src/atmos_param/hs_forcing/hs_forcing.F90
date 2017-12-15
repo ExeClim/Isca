@@ -97,12 +97,12 @@ private
    character(len=256) :: stratosphere_t_option = 'extend_tp'
 
    real :: peri_time=0.25, smaxis=1.5e6, albedo=0.3
-   real :: lapse=6.5, h_a=2, tau_s=5     ! lapse here is for top_down_newtonian_damping 
+   real :: lapse, h_a=2, tau_s=5     ! lapse here is for top_down_newtonian_damping; always overridden from lapse_rate
    real :: heat_capacity=4.2e6      ! equivalent to a 1m mixed layer water ocean
    real :: ml_depth=1               ! depth for heat capacity calculation
    real :: spinup_time=10800.     ! number of days to spin up heat capacity for - req. multiple of orbital_period
 
-   real :: lapse_rate = 1.          ! lapse rate normalized to dry lapse rate (for classic newtonian_damping)
+   real :: lapse_rate = 1.          ! lapse rate normalized to dry adiabatic lapse rate (for classic newtonian_damping)
    
 !-----------------------------------------------------------------------
 
@@ -115,7 +115,7 @@ private
                               local_heating_file, relax_to_specified_wind,   &
                               u_wind_file, v_wind_file, equilibrium_t_option,&
                               equilibrium_t_file, p_trop, peri_time, smaxis, albedo, &
-                              lapse, h_a, tau_s, orbital_period,         &
+                              h_a, tau_s, orbital_period,         &
                               heat_capacity, ml_depth, spinup_time, stratosphere_t_option,&
                               lapse_rate, P00
 
@@ -326,6 +326,8 @@ contains
       if (no_forcing) return
 
       twopi = 2*PI
+
+  lapse = 1E3*lapse_rate*GRAV/CP_AIR  ! lapse rate in K/km for top_down
 
    ! ---- spin-up simple heat capacity used in top-down code ----
 
