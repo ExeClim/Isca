@@ -71,7 +71,7 @@ private
    logical :: no_forcing = .false.
 
    real :: t_zero=315., t_strat=200., delh=60., delv=10., eps=0., sigma_b=0.7
-   real :: P00 = 1.e5, p_trop  = 1.e4
+   real :: P00 = 1.e5
 
    real :: ka = -40., ks =  -4., kf = -1. ! negative sign is a flag indicating that the units are days
 
@@ -114,7 +114,7 @@ private
                               local_heating_vert_decay, local_heating_option,&
                               local_heating_file, relax_to_specified_wind,   &
                               u_wind_file, v_wind_file, equilibrium_t_option,&
-                              equilibrium_t_file, p_trop, peri_time, smaxis, albedo, &
+                              equilibrium_t_file, peri_time, smaxis, albedo, &
                               h_a, tau_s, orbital_period,         &
                               heat_capacity, ml_depth, spinup_time, stratosphere_t_option,&
                               lapse_rate, P00
