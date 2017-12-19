@@ -40,15 +40,15 @@ pipeline {
 			}
 		}
 
-		stage('Test') {
-			steps {
-				sh """
-				module load python/anaconda
-				source activate jenkins
-				cd $GFDL_BASE/exp/test_cases/trip_test
-				./trip_test_command_line -r ${env.GIT_URL} -e held_suarez f3dd4ec6b3587de4fe5fcdb4d61003a8f499931d ${env.GIT_COMMIT}
-				"""
-			}
-		}
+		// stage('Test') {
+		// 	steps {
+		// 		sh """
+		// 		module load python/anaconda
+		// 		source activate jenkins
+		// 		cd $GFDL_BASE/exp/test_cases/trip_test
+		// 		./trip_test_command_line -r ${env.GIT_URL} -e held_suarez f3dd4ec6b3587de4fe5fcdb4d61003a8f499931d ${env.GIT_COMMIT}
+		// 		"""
+		// 	}
+		// }
 	}
 }
