@@ -13,7 +13,7 @@ pipeline {
 	stages {
 		stage('Setup') {
 			steps {
-				checkout scm
+				// checkout scm
 				sh """
 				# setup the python environment
 				module load python/anaconda
@@ -22,7 +22,7 @@ pipeline {
 				source activate jenkins
 				cd $GFDL_BASE/src/extra/python
 				pip install -r requirements.txt
-				conda install -y scipy xarray
+				conda install -y scipy xarray tqdm
 				pip install -e .
 				"""
 			}
