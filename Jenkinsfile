@@ -17,12 +17,12 @@ pipeline {
 				sh """
 				# setup the python environment
 				module load python/anaconda
-				mkdir -p $WORKSPACE/.env
-				conda config --append env_dirs $WORKSPACE/.env
+				conda remove -y --all --name jenkins
 				conda create -y -n jenkins python=2.7
 				source activate jenkins
 				cd $GFDL_BASE/src/extra/python
 				pip install -r requirements.txt
+				conda install -y scipy xarray
 				pip install -e .
 				"""
 			}
@@ -30,8 +30,8 @@ pipeline {
 
 		stage('Test') {
 			steps {
-				dir '${env.$GFDL_BASE}/exp/test_cases/trip_test'
-				sh './trip_test_command_line -r ${env.GIT_URL} f6c2ced2a773865f7acfb615c105bc39a799bf20 ${env.GIT_COMMIT} held_suarez'
+				dir "${env.$GFDL_BASE}/exp/test_cases/trip_test"
+				sh "./trip_test_command_line -r ${env.GIT_URL} f3dd4ec6b3587de4fe5fcdb4d61003a8f499931d ${env.GIT_COMMIT} held_suarez"
 			}
 		}
 	}
