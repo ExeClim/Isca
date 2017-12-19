@@ -30,7 +30,7 @@ pipeline {
 
 		stage('Test') {
 			steps {
-				dir "${env.$GFDL_BASE}/exp/test_cases/trip_test"
+				dir "${env.GFDL_BASE}/exp/test_cases/trip_test"
 				sh "./trip_test_command_line -r ${env.GIT_URL} f3dd4ec6b3587de4fe5fcdb4d61003a8f499931d ${env.GIT_COMMIT} held_suarez"
 			}
 		}
