@@ -202,5 +202,5 @@ exp.namelist = namelist = Namelist({
 
 #Lets do a run!
 exp.run(1, use_restart=False, num_cores=NCORES)
-for i in range(2,241):
+for i in range(2,721):
     exp.run(i, num_cores=NCORES)
