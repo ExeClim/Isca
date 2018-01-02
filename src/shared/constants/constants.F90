@@ -243,6 +243,7 @@ real, public, parameter :: EPSLN   = 1.0e-40
 
 real, public, parameter :: EARTH_OMEGA = 7.2921150e-5
 real, public, parameter :: EARTH_ORBITAL_PERIOD = 365.25*SECONDS_PER_DAY
+real, public, parameter :: PSTD_MKS_EARTH = 101325.0
 
 real, public :: RADIUS = 6376.0e3
 real, public :: GRAV   = EARTH_GRAV
@@ -253,7 +254,7 @@ real, public :: orbital_rate  ! this is calculated from 2pi/orbital_period
 real, public :: solar_const = 1368.22             ! solar constant [ W/m2 ]
 real, public :: orbit_radius=1.0                  ! distance Earth-Sun [ AU ]
 real, public :: PSTD   = 1.013250E+06
-real, public :: PSTD_MKS    = 101325.0
+real, public :: PSTD_MKS    = PSTD_MKS_EARTH
 real, public :: RDGAS  = EARTH_RDGAS
 real, public :: KAPPA = EARTH_KAPPA
 real, public :: CP_AIR = EARTH_CP_AIR
