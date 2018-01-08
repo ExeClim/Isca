@@ -241,8 +241,17 @@ def read_land( base_dir,exp_name,land_present,topo_present,size_list,land_file='
 def output_nc_file(dataset, field_name, model_params, output_dict):
 
     #create grid
-
-    lons,lats,lonbs,latbs,nlon,nlat,nlonb,nlatb=cts.create_grid(output_dict['manual_grid_option'])
+    try:
+        lons = dataset.lon.values
+        lats = dataset.lat.values
+        latbs = dataset.latb.values
+        lonbs = dataset.lonb.values
+        nlon = lons.shape[0]
+        nlat = lats.shape[0]
+        nlatb = latbs.shape[0]
+        nlonb = lonbs.shape[0]
+    except:
+        lons,lats,lonbs,latbs,nlon,nlat,nlonb,nlatb=cts.create_grid(output_dict['manual_grid_option'])
 
     if output_dict['is_thd']:
         p_full,p_half,npfull,nphalf=cts.create_pressures()

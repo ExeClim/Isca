@@ -126,11 +126,12 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
     if latbs is not None:
         latb = output_file.createDimension('latb', number_dict['nlatb'])
         latitudebs = output_file.createVariable('latb','d',('latb',))
-        
+        use_latbs=True
 
     if lonbs is not None:    
         lonb = output_file.createDimension('lonb', number_dict['nlonb'])
         longitudebs = output_file.createVariable('lonb','d',('lonb',))
+        use_lonbs=True
 
     if is_thd:
         pfull = output_file.createDimension('pfull', number_dict['npfull'])

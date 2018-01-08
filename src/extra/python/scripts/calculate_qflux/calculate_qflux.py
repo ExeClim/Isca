@@ -264,11 +264,11 @@ if __name__ == "__main__":
     input_dir=GFDL_BASE
     base_dir=GFDL_DATA
     land_file='input/era_land_t42.nc'
-    base_exp_name='bog_global_warming/'
-    exp_name='bog_fixed_sst_control_experiment'
+    base_exp_name='laura_no_ice_fixed_sst_perp_djf/'
+    exp_name='no_ice_precip_targets_exps_t42_finished'
     #ice_file_name=base_dir+'annual_mean_ice_albedo_change_test_mk2_4320_dt_rad_4/'+'run360/'+'atmos_monthly.nc'
     ice_file_name=None
-    output_file_name='qflux_'+exp_name
+    output_file_name='qflux_laura_hadg'
 
     start_file=240
     end_file=360
@@ -279,9 +279,9 @@ if __name__ == "__main__":
     avg_or_daily='monthly'
 
     #Set the time frequency of output data. Valid options are 'months', 'all_time' or 'dayofyear'.
-    time_divisions_of_qflux_to_be_calculated='months'
+    time_divisions_of_qflux_to_be_calculated='all_time'
 
-    model_params = sagp.model_params_set(input_dir, delta_t=720., ml_depth=20.)
+    model_params = sagp.model_params_set(input_dir, delta_t=720., ml_depth=20., res=42)
 
     dataset, time_arr, size_list = io.read_data( base_dir,exp_name,start_file,end_file,avg_or_daily,topo_present)
 
@@ -289,7 +289,7 @@ if __name__ == "__main__":
     dataset['land'] = (('lat','lon'),land_array)
 
     check_surface_flux_dims(dataset)
-
+    
     qflux_calc(dataset, model_params, output_file_name, ice_file_name, groupby_name=time_divisions_of_qflux_to_be_calculated)
 
 
