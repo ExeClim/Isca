@@ -28,7 +28,7 @@ module two_stream_gray_rad_mod
                                     mpp_pe, close_file, error_mesg, &
                                     NOTE, FATAL,  uppercase
 
-   use constants_mod,         only: stefan, cp_air, grav, pstd_mks, seconds_per_sol, orbital_period
+   use constants_mod,         only: stefan, cp_air, grav, pstd_mks, pstd_mks_earth, seconds_per_sol, orbital_period
 
    use    diag_manager_mod,   only: register_diag_field, send_data
 
@@ -234,6 +234,10 @@ if(lw_scheme == B_SCHNEIDER_LIU) then
 	gp_albedo     = ( sqrt(1. - g_asym*single_albedo) - sqrt(1. - single_albedo) )        &
            / ( sqrt(1. - g_asym*single_albedo) + sqrt(1. - single_albedo) );
 	Ga_asym         = 2.*sqrt( (1. - single_albedo) * (1. - g_asym*single_albedo) );
+endif
+
+if ((lw_scheme == B_BYRNE).or.(lw_scheme == B_GEEN)) then
+    if (pstd_mks/=pstd_mks_earth) call error_mesg('two_stream_gray_rad','Pstd_mks and pstd_mks_earth are not the same in the this run, but lw scheme will use pstd_mks_earth because abs coeffs in Byrne and Geen schemes are non-dimensionalized by Earth surface pressure.', NOTE)  
 endif
 
 
@@ -525,12 +529,12 @@ case(B_GEEN)
   do k = 1, n
     lw_del_tau    = ( ir_tau_co2 + 0.2023 * log(carbon_conc/360.)                  &
                     + ir_tau_wv1*log(ir_tau_wv2*q(:,:,k) + 1) )                    &
-               * ( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1)
+               * ( p_half(:,:,k+1)-p_half(:,:,k) ) / pstd_mks_earth
     lw_dtrans(:,:,k) = exp( - lw_del_tau )
     lw_del_tau_win   = ( ir_tau_co2_win + 0.0954 * log(carbon_conc/360.)           &
                                      + ir_tau_wv_win1*q(:,:,k)                 &
                                      + ir_tau_wv_win2*q(:,:,k)*q(:,:,k) )      &
-                  * ( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1)
+                  * ( p_half(:,:,k+1)-p_half(:,:,k) ) / pstd_mks_earth
     lw_dtrans_win(:,:,k) = exp( - lw_del_tau_win )
   end do
 
@@ -555,7 +559,7 @@ case(B_BYRNE)
   !      J. Climate 26, 4000–4106 (2013).
 
   do k = 1, n
-    lw_del_tau    = (bog_a*bog_mu + 0.17 * log(carbon_conc/360.)  + bog_b*q(:,:,k)) * (( p_half(:,:,k+1)-p_half(:,:,k) ) / p_half(:,:,n+1))
+    lw_del_tau    = (bog_a*bog_mu + 0.17 * log(carbon_conc/360.)  + bog_b*q(:,:,k)) * (( p_half(:,:,k+1)-p_half(:,:,k) ) / pstd_mks_earth)
     lw_dtrans(:,:,k) = exp( - lw_del_tau )
 
   end do
