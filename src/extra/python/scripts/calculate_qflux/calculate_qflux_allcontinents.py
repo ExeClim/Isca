@@ -23,7 +23,7 @@ def qflux_calc(dataset, model_params, output_file_name, ice_file_name=None, grou
         deep_ocean_heat_content(dataset, model_params)
         ocean_transport(dataset, model_params)
 
-        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':output_file_name}
+        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':'ocean_qflux'}
         
     elif groupby_name=='dayofyear':
         time_varying_ice = ice_mask_calculation(dataset, dataset.land, ice_file_name)
@@ -32,7 +32,7 @@ def qflux_calc(dataset, model_params, output_file_name, ice_file_name=None, grou
         deep_ocean_heat_content(dataset, model_params)
         ocean_transport(dataset, model_params)
 
-        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':output_file_name}    
+        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':'ocean_qflux'}    
         
     elif groupby_name=='all_time':
         time_varying_ice = ice_mask_calculation(dataset, dataset.land, ice_file_name, dayofyear_or_months=groupby_name)
@@ -42,7 +42,7 @@ def qflux_calc(dataset, model_params, output_file_name, ice_file_name=None, grou
         ocean_transport(dataset, model_params, dayofyear_or_months=groupby_name)
         regrid_in_time(dataset, groupby_name)
 
-        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':output_file_name}            
+        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':'ocean_qflux'}            
         
     io.output_nc_file(dataset,'masked_ocean_transport', model_params, output_dict)
 
@@ -248,28 +248,28 @@ if __name__ == "__main__":
 
     input_dir=GFDL_BASE
     base_dir=GFDL_DATA
-    land_file='input/land.nc'
-    base_exp_name='no_ice_flux_q_exps_fixed_sst/'
-    exp_name='no_ice_flux_lhe_exps_fixed_sst_1/'
+    land_file='input/all_continents/land.nc'
+    base_exp_name='full_continents_newbucket_fixedSSTs' # work directory
+    exp_name='full_continents_newbucket_fixedSSTs' # data directory 
     #ice_file_name=base_dir+'annual_mean_ice_albedo_change_test_mk2_4320_dt_rad_4/'+'run360/'+'atmos_monthly.nc'
     ice_file_name=None
-    output_file_name='calculate_qflux_TEST'
+    output_file_name=GFDL_BASE+'/input/all_continents/ocean_qflux_new'
 
-    start_file=241
-    end_file=264
+    start_file=241 # needs to be January month
+    end_file=720 # needs to be December month 
     land_present=True
-    use_interpolated_data=False # If false uses the data on sigma levels as output by the model
-    # If True requires separate output files interpolated to pressure levels 
+    topo_present=False # this does not have anything to do with the topography, but whether the input data are interpolated to 
+    # pressure levels instead of the sigma levels (model output)
 
     avg_or_daily='monthly'
 
     model_params = sagp.model_params_set(input_dir, delta_t=720., ml_depth=20.)
 
-    dataset, time_arr, size_list = io.read_data( base_dir,exp_name,start_file,end_file,avg_or_daily,use_interpolated_data)
+    dataset, time_arr, size_list = io.read_data( base_dir,exp_name,start_file,end_file,avg_or_daily,topo_present)
 
-    land_array, topo_array = io.read_land(input_dir,base_exp_name,land_present,use_interpolated_data,size_list,land_file)
+    land_array, topo_array = io.read_land(input_dir,base_exp_name,land_present,topo_present,size_list,land_file)
     dataset['land'] = (('lat','lon'),land_array)
 
-    qflux_calc(dataset, model_params, output_file_name, ice_file_name, groupby_name='all_time')
+    qflux_calc(dataset, model_params, output_file_name, ice_file_name)
 
 

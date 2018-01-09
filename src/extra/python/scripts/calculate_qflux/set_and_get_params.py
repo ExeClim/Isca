@@ -1,5 +1,10 @@
 import numpy as np
 import pdb
+import os
+import sys
+GFDL_BASE = os.environ['GFDL_BASE']
+sys.path.insert(0, os.path.join(GFDL_BASE,'src/extra/python/scripts/')) 
+
 import cell_area as carea
 
 __author__='Stephen Thomson'
