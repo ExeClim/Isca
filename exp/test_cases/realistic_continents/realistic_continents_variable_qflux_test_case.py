@@ -8,7 +8,7 @@ import f90nml
 
 
 NCORES = 4
-base_dir=os.getcwd()
+base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
 cb = IscaCodeBase.from_directory(GFDL_BASE)
@@ -123,6 +123,7 @@ exp.update_namelist({
 })
 
 #Lets do a run!
-exp.run(1, use_restart=False, num_cores=NCORES)
-for i in range(2,121):
-    exp.run(i, num_cores=NCORES)
+if __name__=="__main__":
+    exp.run(1, use_restart=False, num_cores=NCORES)
+    for i in range(2,121):
+        exp.run(i, num_cores=NCORES)
