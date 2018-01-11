@@ -109,7 +109,7 @@ Once you've got an environment file that works for your machine saved in `src/ex
 
 # License
 
-Isca is distributed under a GNU GPLv3 license. See `Isca/LICENSE` file for details. 
+Isca is distributed under a GNU GPLv3 license. See `LICENSE` file for details. 
 
 RRTM/RRTMG: Copyright © 2002-2010, Atmospheric and Environmental Research, Inc. (AER, Inc.). 
 This software may be used, copied, or redistributed as long as it is not sold and this 
