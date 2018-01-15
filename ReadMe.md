@@ -38,7 +38,7 @@ $ git clone https://github.com/ExeClim/Isca
 $ cd Isca
 ```
 
-The python module is found in the `src` directory and can be installed using `pip`.  It's recommended (but not essential) that you use some sort of python environment manager to do this, such as using the Anaconda distribution and creating an environment (in the code below called "isca_env"), or using `virtualenv` instead.  This getting started will use Anaconda.
+The python module is found in the `src` directory and can be installed using `pip`.  It's recommended (but not essential) that you use some sort of python environment manager to do this, such as using the Anaconda distribution and creating an environment (in the code below called "`isca_env`"), or using `virtualenv` instead.  This getting started will use Anaconda.
 
 ```{bash}
 $ conda create -n isca_env python ipython
