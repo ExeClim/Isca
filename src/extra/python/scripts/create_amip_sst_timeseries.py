@@ -124,15 +124,12 @@ def apply_lat_lon_mask( unmasked_input, lat_range, lon_range_in, taper_length, p
 
 def main():
 
-    base_directory='/scratch/sit204/collab/laura_wilcox/'
-#     base_directory='/scratch/sit204/sst_amip_files/'
+    base_directory='/scratch/sit204/sst_amip_files/'
 
 
-    amip_data_version='hadgem_t_surf' #s 'amip_data_version_1_1_0' or 'amip_data_version_1_0_0'
-#     amip_data_version='amip_data_version_1_1_0'
+    amip_data_version='amip_data_version_1_1_0' #s 'amip_data_version_1_1_0' or 'amip_data_version_1_0_0'
 
-    output_name_list  ={'DJF':'sst'}
-#     output_name_list  ={'tosbcs':'sst'}
+    output_name_list  ={'tosbcs':'sst', 'siconc':'siconc'}
     #Note that we are using the bcs (boundary conditions) input4MIPs files, as instructed.
     # The theory is that by using the bcs files (which are mid-month values) the time-average
     # of the interpolated bcs files should be equal to the time-average data provided in 'tos'
@@ -141,7 +138,7 @@ def main():
 
     add_anomaly = False
 #     anomaly_type='el_nino'
-    months_to_include='only_month_available'
+    months_to_include='all'
 
     for variable_name in list(output_name_list.keys()):
 
