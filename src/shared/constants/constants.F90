@@ -36,7 +36,9 @@ module constants_mod
 !   Constants are accessed through the "use" statement.
 ! </DESCRIPTION>
 
-use fms_mod,               only: open_file, check_nml_error, mpp_pe, close_file, write_version_number, error_mesg, NOTE
+use fms_mod,               only: open_file, check_nml_error, &
+                                 mpp_pe, mpp_root_pe, stdlog, &
+                                 close_file, write_version_number, error_mesg, NOTE
 
 implicit none
 private
@@ -290,6 +292,7 @@ subroutine constants_init
     enddo
     10 call close_file (unit)
 
+    if (mpp_pe() == mpp_root_pe()) write (stdlog(),nml=constants_nml)
 
     !> SECONDS_PER_SOL is the exoplanet equivalent of seconds_per_day.
     !! It is the number of seconds between sucessive solar zeniths at longitude 0.
