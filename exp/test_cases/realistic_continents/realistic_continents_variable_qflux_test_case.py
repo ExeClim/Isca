@@ -55,7 +55,7 @@ exp.diag_table = diag
 exp.clear_rundir()
 
 #Define values for the 'core' namelist
-namelist_name = os.path.join(GFDL_BASE, 'exp/test_cases/namelist_basefile.nml')
+namelist_name = os.path.join(GFDL_BASE, 'exp/test_cases/realistic_continents/namelist_basefile.nml')
 nml = f90nml.read(namelist_name)
 exp.namelist = nml
 

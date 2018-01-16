@@ -1,5 +1,6 @@
-! For sets of experiments which will use predominantly the same parameters, it may be tidier to read these from an external namelist file. This example illustrates how to do this for two experiments configured with realistic continents, one using fixed SSTs, one using Q-fluxes.
-
+! For parameters which are frequently set, in order to keep python scripts tidy and clear, it may be useful to read these from an external namelist file.
+! This example illustrates how to do this for two experiments configured with realistic continents, where the only differences are the choice of surface condition, with one using fixed SSTs and the other Q-fluxes.
+! If you find you have a 'default' set of parameter choices, this method may be useful to ensure these are set consistently for all of your experiments. ! NB Note that this example is for a specific case, and would likely need modifying for your specific set-up.
 
  &main_nml
     days   = 30,
@@ -7,7 +8,7 @@
     minutes = 0,
     seconds = 0,
     dt_atmos = 720,
-    current_date = [0001,1,1,0,0,0],
+    current_date = 0001 1 1 0 0 0,
     calendar = 'thirty_day'/
 
  &idealized_moist_phys_nml
@@ -49,7 +50,7 @@
  &mixed_layer_nml
     tconst      = 285.,
     prescribe_initial_dist = .true.,
-    evaporation = .true.
+    evaporation = .true.,
     delta_T = 0.,                       !Set latitude contrast in initial temperature profile to zero
     depth = 20.,                        !Mixed layer depth
     land_option = 'input',              !Tell mixed layer to get land mask from input file
@@ -58,7 +59,7 @@
     land_albedo_prefactor = 1.3,        !What factor to multiply ocean albedo by over land    
     update_albedo_from_ice = .true.,    !Use the simple ice model to update surface albedo
     ice_albedo_value = 0.7,             !What value of albedo to use in regions of ice
-    ice_concentration_threshold' = 0.5/ !ice concentration threshold above which to make albedo equal to ice_albedo_value        
+    ice_concentration_threshold = 0.5/ !ice concentration threshold above which to make albedo equal to ice_albedo_value        
 
  &betts_miller_nml
        rhbm   = .7   , 
@@ -81,7 +82,7 @@
  &rrtm_radiation_nml
      do_read_ozone   = .true.,
      ozone_file      = 'ozone_1990',
-     solr_cnst       = 1360.
+     solr_cnst       = 1360.,
 	 dt_rad          = 4320/
 
 
