@@ -19,9 +19,9 @@ cp {{ execdir }}/{{ executable }} {{ executable }}
 
 if [ $debug == True ]; then
    echo "Opening idb for debugging"
-   idb -gdb  {{ executable}}
+   exec idb -gdb  {{ executable}}
 else
-  nice -{{nice_score}} mpirun {{mpirun_opts}} -np {{ num_cores }} {{ execdir }}/{{ executable }}
+  exec nice -{{nice_score}} mpirun {{mpirun_opts}} -np {{ num_cores }} {{ execdir }}/{{ executable }}
 fi
 
 err_code=$?
