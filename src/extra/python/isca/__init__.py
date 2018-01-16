@@ -76,5 +76,5 @@ class EventEmitter(object):
         return handled
 
 
-from experiment import Experiment, DiagTable, Namelist, FailedRunError
-from codebase import IscaCodeBase, DryCodeBase, GreyCodeBase #, ShallowCodeBase
+from isca.experiment import Experiment, DiagTable, Namelist, FailedRunError
+from isca.codebase import IscaCodeBase, DryCodeBase, GreyCodeBase #, ShallowCodeBase
