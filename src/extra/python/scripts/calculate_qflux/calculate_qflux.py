@@ -264,16 +264,16 @@ if __name__ == "__main__":
     input_dir=GFDL_BASE
     base_dir=GFDL_DATA
     land_file='input/era_land_t42.nc'
-    base_exp_name='laura_no_ice_fixed_sst_perp_djf/'
-    exp_name='no_ice_precip_targets_exps_t42_finished'
+    base_exp_name='laura_no_ice_fixed_sst_perp_djf/' #Folder containing the python script and input files that ran the experiment
+    exp_name='no_ice_precip_targets_exps_t42_finished' #Folder within the data directory where the files can be found
     #ice_file_name=base_dir+'annual_mean_ice_albedo_change_test_mk2_4320_dt_rad_4/'+'run360/'+'atmos_monthly.nc'
     ice_file_name=None
-    output_file_name='qflux_laura_hadg'
+    output_file_name='qflux_laura_hadg' #Proposed name of your output qflux file
 
     start_file=240
     end_file=360
     land_present=True
-    topo_present=False
+    use_interpolated_pressure_level_data = False #Conditions the script on whether to expect data on sigma levels (if False) or pressure levels (if True). Script should be insensitive to this choice if both sets of files exist. 
 
     #Set time increments of input files (e.g. `monthly` for `atmos_monthly` files.
     avg_or_daily='monthly'
@@ -283,9 +283,9 @@ if __name__ == "__main__":
 
     model_params = sagp.model_params_set(input_dir, delta_t=720., ml_depth=20., res=42)
 
-    dataset, time_arr, size_list = io.read_data( base_dir,exp_name,start_file,end_file,avg_or_daily,topo_present)
+    dataset, time_arr, size_list = io.read_data( base_dir,exp_name,start_file,end_file,avg_or_daily,use_interpolated_pressure_level_data)
 
-    land_array, topo_array = io.read_land(input_dir,base_exp_name,land_present,topo_present,size_list,land_file)
+    land_array, topo_array = io.read_land(input_dir,base_exp_name,land_present,use_interpolated_pressure_level_data,size_list,land_file)
     dataset['land'] = (('lat','lon'),land_array)
 
     check_surface_flux_dims(dataset)
