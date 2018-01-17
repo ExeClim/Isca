@@ -1,0 +1,23 @@
+"FMS Model results"
+0001 1 1 0 0 0
+# = output files =
+# file_name, output_freq, output_units, format, time_units, long_name
+
+"atmos_monthly", 30, "days", 1, "days", "time",
+
+# = diagnostic field entries =
+# module_name, field_name, output_name, file_name, time_sampling, time_avg, other_opts, precision
+
+
+"dynamics", "ps", "ps", "atmos_monthly", "all", .true., "none", 2,
+"dynamics", "bk", "bk", "atmos_monthly", "all", .false., "none", 2,
+"dynamics", "pk", "pk", "atmos_monthly", "all", .false., "none", 2,
+"atmosphere", "precipitation", "precipitation", "atmos_monthly", "all", .true., "none", 2,
+"mixed_layer", "t_surf", "t_surf", "atmos_monthly", "all", .true., "none", 2,
+"dynamics", "sphum", "sphum", "atmos_monthly", "all", .true., "none", 2,
+"dynamics", "ucomp", "ucomp", "atmos_monthly", "all", .true., "none", 2,
+"dynamics", "vcomp", "vcomp", "atmos_monthly", "all", .true., "none", 2,
+"dynamics", "temp", "temp", "atmos_monthly", "all", .true., "none", 2,
+"dynamics", "vor", "vor", "atmos_monthly", "all", .true., "none", 2,
+"dynamics", "div", "div", "atmos_monthly", "all", .true., "none", 2,
+
