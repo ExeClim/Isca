@@ -24,7 +24,7 @@ def qflux_calc(dataset, model_params, output_file_name, ice_file_name=None, grou
         deep_ocean_heat_content(dataset, model_params)
         ocean_transport(dataset, model_params)
 
-        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':output_file_name}
+        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':output_file_name} #Have specified that var name is the same as file name as this is what the fortran assumes.
         
     elif groupby_name=='dayofyear':
         time_varying_ice = ice_mask_calculation(dataset, dataset.land, ice_file_name)
@@ -268,7 +268,7 @@ if __name__ == "__main__":
     exp_name='no_ice_precip_targets_exps_t42_finished' #Folder within the data directory where the files can be found
     #ice_file_name=base_dir+'annual_mean_ice_albedo_change_test_mk2_4320_dt_rad_4/'+'run360/'+'atmos_monthly.nc'
     ice_file_name=None
-    output_file_name='qflux_laura_hadg' #Proposed name of your output qflux file
+    output_file_name='qflux_laura_hadg' #Proposed name of your output qflux file. Will also be qflux field name in q-flux netcdf file as the fortran assumes file-name = field name. No need to add '.nc' or any file paths in this variable as otherwise they will end up in the field name too. Output file will be stored in the same directory as this script.
 
     start_file=240
     end_file=360
