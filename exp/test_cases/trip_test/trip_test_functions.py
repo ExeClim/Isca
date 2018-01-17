@@ -74,7 +74,7 @@ def get_nml_diag(test_case_name):
         nml_out = exp_temp.namelist        
 
     if 'top_down_test' in test_case_name:
-        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/top_down_test/')
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/top_down_test/'))
         from top_down_test import namelist as nml_out
         input_files = []
 
