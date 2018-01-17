@@ -75,8 +75,8 @@ def get_nml_diag(test_case_name):
 
     if 'top_down_test' in test_case_name:
         sys.path.insert(0, GFDL_BASE+'exp/test_cases/top_down_test/')
-        input_files = exp_temp.inputfiles   
-        nml_out = exp_temp.namelist           
+        from top_down_test import namelist as nml_out
+        input_files = []
 
     if 'variable_co2_grey' in test_case_name:
         sys.path.insert(0, GFDL_BASE+'exp/test_cases/variable_co2_concentration/')
