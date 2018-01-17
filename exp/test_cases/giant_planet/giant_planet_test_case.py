@@ -2,7 +2,10 @@ import os
 
 import numpy as np
 
+import f90nml
+
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
+
 
 NCORES = 4
 
@@ -44,122 +47,58 @@ exp.diag_table = diag
 #Empty the run directory ready to run
 exp.clear_rundir()
 
-#s Namelist changes from default values
-exp.namelist = namelist = Namelist({
-    'main_nml': {
-     'days'   : 30,	
+#Define values for the 'core' namelist
+namelist_name = os.path.join(GFDL_BASE, 'exp/test_cases/namelist_basefile.nml')
+nml = f90nml.read(namelist_name)
+exp.namelist = nml
+    
+exp.update_namelist({
+    'main_nml': {	
+     'days'   : 30,
      'hours'  : 0,
      'minutes': 0,
-     'seconds': 0,			
+     'seconds': 0,
      'dt_atmos':1800,
      'current_date' : [0001,1,1,0,0,0],
      'calendar' : 'no_calendar'
     },
 
     'idealized_moist_phys_nml': {
-        'do_damping': True,
-        'turb':True,
-        'mixed_layer_bc':True,
-        'do_virtual' :False,
-        'do_simple': True,
-        'roughness_mom':3.21e-05,
-        'roughness_heat':3.21e-05,
-        'roughness_moist':3.21e-05,     
         'two_stream_gray':  True, #Use grey radiation
         'do_rrtm_radiation':  False, #Don't use RRTM
         'convection_scheme':  'dry', #Use the dry convection scheme of Schneider & Walker
         'gp_surface':  True, #Use the giant-planet option for the surface, meaning it's not a mixed layer, and applies energy conservation and a bottom-boundary heat flux
-        'mixed_layer_bc':  False, #Don't use the mixed-layer surface
-                   
-    },
-
-    'vert_turb_driver_nml': {
-        'do_mellor_yamada': False,     # default: True
-        'do_diffusivity': True,        # default: False
-        'do_simple': True,             # default: False
-        'constant_gust': 0.0,          # default: 1.0
-        'use_tau': False
-    },
-    
-    'diffusivity_nml': {
-        'do_entrain':False,
-        'do_simple': True,
+        'mixed_layer_bc':  False, #Don't use the mixed-layer surface         
     },
 
     'surface_flux_nml': {
-        'use_virtual_temp': False,
-        'do_simple': True,
-        'old_dtaudv': True, 
         'diabatic_acce':  1.0, #Parameter to artificially accelerate the diabatic processes during spinup. 1.0 performs no such acceleration, >1.0 performs acceleration           
-    },
-
-    'atmosphere_nml': {
-        'idealized_moist_model': True
-    },
-
-    #Use a large mixed-layer depth, and the Albedo of the CTRL case in Jucker & Gerber, 2017
-    'mixed_layer_nml': {
-        'tconst' : 285.,
-        'prescribe_initial_dist':True,
-        'evaporation':True,        
-    },
-    
-    'lscale_cond_nml': {
-        'do_simple':True,
-        'do_evap':True
     },
     
     'sat_vapor_pres_nml': {
-        'do_simple':True,
         'tcmin_simple':  -223 #Make sure low temperature limit of saturation vapour pressure is low enough that it doesn't cause an error (note that this giant planet has no moisture anyway, so doesn't directly affect calculation.        
     },
     
-    'damping_driver_nml': {
-        'do_rayleigh': True,
-        'trayfric': -0.5,              # neg. value: time in *days*
-        'sponge_pbottom':  50.,
-        'do_conserve_energy': True,         
-    },
-
-    'rrtm_radiation_nml': {
-        'do_read_ozone':True,
-        'ozone_file':'ozone_1990'
-    },
-
     'two_stream_gray_rad_nml': {
         'rad_scheme': 'Schneider', #Use the Schneider & Liu option for the grey scheme
         'do_seasonal': False,               #Don't use seasonally-varying radiation 
-        'atm_abs': 0.2,                      # default: 0.0
         'solar_constant':  50.7, #Change solar constant
-        'diabatic_acce':  1.0, #Parameter to artificially accelerate the diabatic processes during spinup. 1.0 performs no such acceleration, >1.0 performs acceleration        
+        'diabatic_acce':  1.0, #Parameter to artificially accelerate the diabatic processes during spinup. 1.0 performs no such acceleration, >1.0 performs acceleration 
     },
 
     # FMS Framework configuration
-    'diag_manager_nml': {
-        'mix_snapshot_average_fields': False  # time avg fields are labelled with time in middle of window
-    },
 
     'fms_nml': {
         'domains_stack_size': 620000 #Setting size of stack available to model, which needs to be higher than the default when running at high spatial resolution
     },
 
-    'fms_io_nml': {
-        'threading_write': 'single',                         # default: multi
-        'fileset_write': 'single',                           # default: multi
-    },
-
     'spectral_dynamics_nml': {
-        'damping_order': 4,             
-        'water_correction_limit': 200.e2,
-        'reference_sea_level_press':1.0e5,
-        'num_levels':40,
         'valid_range_t':[50.,800.],
         'initial_sphum':[2.e-6],
         'vert_coord_option':'even_sigma', #Use equally-spaced sigma levels
         'surf_res':0.1, #Parameter for setting vertical distribution of sigma levels
         'scale_heights' : 5.0, #Number of vertical scale-heights to include
         'exponent':2.0,#Parameter for setting vertical distribution of sigma levels
-        'robert_coeff':0.03,
         'num_fourier':  213, #Number of Fourier modes
         'num_spherical':  214, #Number of spherical harmonics in triangular truncation
         'lon_max':  1024, #Lon grid points

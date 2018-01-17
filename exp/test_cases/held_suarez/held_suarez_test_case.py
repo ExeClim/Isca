@@ -1,6 +1,9 @@
 import numpy as np
-
+import os
 from isca import DryCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
+
+import f90nml
+
 
 NCORES = 16
 RESOLUTION = 'T42', 25  # T42 horizontal resolution, 25 levels in pressure
@@ -44,12 +47,20 @@ exp.diag_table = diag
 
 # define namelist values as python dictionary
 # wrapped as a namelist object.
-namelist = Namelist({
+#Define values for the 'core' namelist
+namelist_name = os.path.join(GFDL_BASE, 'exp/test_cases/namelist_basefile.nml')
+nml = f90nml.read(namelist_name)
+exp.namelist = nml
+
+exp.update_namelist({
     'main_nml': {
+        'days'   : 30,
+        'hours'  : 0,
+        'minutes': 0,
+        'seconds': 0,
         'dt_atmos': 600,
-        'days': 30,
-        'calendar': 'thirty_day',
-        'current_date': [2000,1,1,0,0,0]
+        'current_date': [2000,1,1,0,0,0],
+        'calendar' : 'thirty_day'
     },
 
     'atmosphere_nml': {
@@ -57,15 +68,9 @@ namelist = Namelist({
     },
 
     'spectral_dynamics_nml': {
-        'damping_order'           : 4,                      # default: 2
-        'water_correction_limit'  : 200.e2,                 # default: 0
-        'reference_sea_level_press': 1.0e5,                  # default: 101325
-        'valid_range_t'           : [100., 800.],           # default: (100, 500)
         'initial_sphum'           : 0.0,                  # default: 0
-        'vert_coord_option'       : 'uneven_sigma',         # default: 'even_sigma'
         'scale_heights': 6.0,
         'exponent': 7.5,
-        'surf_res': 0.5
     },
 
     # configure the relaxation profile
@@ -83,23 +88,10 @@ namelist = Namelist({
         'kf':   -1.,       # BL momentum frictional timescale (default 1 days)
 
         'do_conserve_energy':   True,  # convert dissipated momentum into heat (default True)
-    },
-
-    'diag_manager_nml': {
-        'mix_snapshot_average_fields': False
-    },
-
-    'fms_nml': {
-        'domains_stack_size': 600000                        # default: 0
-    },
-
-    'fms_io_nml': {
-        'threading_write': 'single',                         # default: multi
-        'fileset_write': 'single',                           # default: multi
     }
 })
 
-exp.namelist = namelist
+namelist = exp.namelist 
 exp.set_resolution(*RESOLUTION)
 
 #Lets do a run!
