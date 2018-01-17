@@ -85,7 +85,6 @@
      solr_cnst       = 1360.,
 	 dt_rad          = 4320/
 
-
 ! FMS Framework configuration
       
  &diag_manager_nml
@@ -112,9 +111,6 @@
     exponent                = 7.0, 
 	ocean_topog_smoothing   = 0.8 / !Use model's in-built spatial smoothing to smooth topography in order to prevent unwanted aliasing at low horizontal resolution    
 
-
  &spectral_init_cond_nml
     topog_file_name = 'era_land_t42.nc', !Name of land input file, which will also contain topography if generated using Isca's `land_file_generator_fn.py' routine.
     topography_option = 'input'/ !Tell model to get topography from input file
-    
-    
