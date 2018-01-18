@@ -1,5 +1,5 @@
-import send_email as send
-from check_disk_space import disk_usage
+import isca.send_email as send
+from isca.check_disk_space import disk_usage
 
 import os
 import sys
