@@ -23,10 +23,12 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('full_continents_newbucket_fixedSSTs', codebase=cb)
+exp = Experiment('flat_continents_land_evap_pref1_qflux', codebase=cb)
+
+
 
 #Add any input files that are necessary for a particular experiment.
-exp.inputfiles = [os.path.join(GFDL_BASE,'input/all_continents/land.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),os.path.join(GFDL_BASE,'input/sst_clim_amip.nc')]
+exp.inputfiles = [os.path.join(GFDL_BASE,'input/all_continents/land.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),os.path.join(GFDL_BASE,'exp/mp586/bucket/input/flat_continents_newbucket/ocean_qflux.nc')]
 #Tell model how to write diagnostics
 diag = DiagTable()
 diag.add_file('atmos_monthly', 30, 'days', time_units='days')
@@ -36,10 +38,6 @@ diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
-diag.add_field('atmosphere', 'bucket_depth', time_avg=True)
-diag.add_field('atmosphere', 'bucket_depth_cond', time_avg=True)
-diag.add_field('atmosphere', 'bucket_depth_conv', time_avg=True)
-diag.add_field('atmosphere', 'bucket_depth_lh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
@@ -58,6 +56,8 @@ diag.add_field('rrtm_radiation', 'flux_sw', time_avg=True) # net SW surface flux
 diag.add_field('rrtm_radiation', 'flux_lw', time_avg=True) # net LW surface flux
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) # latent heat flux (up) at surface
 diag.add_field('mixed_layer', 'flux_t', time_avg=True) # sensible heat flux (up) at surface
+diag.add_field('mixed_layer', 'flux_oceanq', time_avg=True)
+
 
 #MP added on 11 october 2017
 exp.diag_table = diag
@@ -92,9 +92,7 @@ exp.namelist = namelist = Namelist({
         'convection_scheme':'SIMPLE_BETTS_MILLER', #Use the simple betts-miller convection scheme
         'land_option':'input', #Use land mask from input file
         'land_file_name': 'INPUT/land.nc', #Tell model where to find input file
-        'bucket':True, #Run with the bucket model
-        'init_bucket_depth_land':0.15, #Set initial bucket depth over land, default = 20
- #       'max_bucket_depth_land':2., #Set max bucket depth over land default = 0.15
+        'bucket':False
     },
 
     'vert_turb_driver_nml': {
@@ -113,7 +111,9 @@ exp.namelist = namelist = Namelist({
     'surface_flux_nml': {
         'use_virtual_temp': False,
         'do_simple': True,
-        'old_dtaudv': True    
+        'old_dtaudv': True,
+        'land_humidity_prefactor': 1., # no pre-factor inside brackets
+        'land_evap_prefactor': 1. # land evap = potential evap
     },
 
     'atmosphere_nml': {
@@ -131,10 +131,10 @@ exp.namelist = namelist = Namelist({
         'albedo_value': 0.25, #Ocean albedo value
         'land_albedo_prefactor' : 1.3, #What factor to multiply ocean albedo by over land
         'do_qflux' : False, #Do not use prescribed qflux formula
-        'do_read_sst' : True, #Read in sst values from input file
-        'do_sc_sst' : True, #Do specified ssts (need both to be true)
-        'sst_file' : 'sst_clim_amip', #Set name of sst input file
-        'specify_sst_over_ocean_only' : True, #Make sure sst only specified in regions of ocean.
+        'load_qflux': True,
+        'qflux_file_name':'ocean_qflux',
+        'time_varying_qflux': True # shouldn't this be false? what is 
+        # a non time varying qflux?
     },
 
     'qe_moist_convection_nml': {
@@ -197,5 +197,5 @@ exp.namelist = namelist = Namelist({
 
 #Lets do a run!
 exp.run(1, use_restart=False, num_cores=NCORES)
-for i in range(2,721):
+for i in range(2,241):
     exp.run(i, num_cores=NCORES)
