@@ -6,7 +6,7 @@ import sys
 from datetime import datetime
 
 
-def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True):
+def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True, file_to_use_for_timing = 'logfile.000000.out'):
     """A script that takes a list of experiment names as input, and plots the time taken to run each month in that experiment vs the wall time. """
 
     try:
@@ -21,7 +21,11 @@ def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True):
         exp_dir_full = GFDL_DATA+'/'+exp_dir+'/'
 
         #Finds all the months for particular experiment
-        months_to_check=os.listdir(exp_dir_full) 
+        months_to_check=os.listdir(exp_dir_full)
+        try:
+            months_to_check.remove('restarts')
+        except:
+            pass 
         months_to_check.sort()
         
         try:
@@ -35,7 +39,7 @@ def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True):
 
         for month in np.arange(len(months_to_check)-1)+1:
             #Calculates the time between the current month's folder being modified, and the previous month's folder being modified.
-            delta_t = os.path.getctime(exp_dir_full+months_to_check[month]+'/logfile.000000.out')-os.path.getctime(exp_dir_full+months_to_check[month-1]+'/logfile.000000.out')
+            delta_t = os.path.getctime(exp_dir_full+months_to_check[month]+'/'+file_to_use_for_timing)-os.path.getctime(exp_dir_full+months_to_check[month-1]+'/'+file_to_use_for_timing)
                        
             #Converts this time to minutes from seconds:
             delta_t_arr[month-1]=delta_t/60.
@@ -62,9 +66,9 @@ def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True):
 
 if __name__=="__main__":
 
-    exp_dir_list = ['no_ice_flux_lhe_exps_fixed_sst_1']
+    exp_dir_list = ['bog_fixed_sst_low_bog_a_ocean_topog_85']
 
-    calculate_month_run_time(exp_dir_list, plot_against_wall_time=False)
+    calculate_month_run_time(exp_dir_list, plot_against_wall_time=False, file_to_use_for_timing='git_hash_used.txt')
 
     plt.show()
 

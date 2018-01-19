@@ -11,6 +11,7 @@ from isca.util import exp_progress
 import xarray as xar
 import pdb
 import numpy as np
+import os
 import sys
 
 def get_nml_diag(test_case_name):
@@ -18,28 +19,28 @@ def get_nml_diag(test_case_name):
     """
 
     if 'axisymmetric' in test_case_name:
-        sys.path.insert(0, GFDL_BASE+'exp/test_cases/axisymmetric/')     
-        from axisymmetric_test_case import namelist as nml_out
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/axisymmetric/'))
         from axisymmetric_test_case import exp as exp_temp
-        input_files = exp_temp.inputfiles        
+        input_files = exp_temp.inputfiles   
+        nml_out = exp_temp.namelist             
 
     if 'bucket_model' in test_case_name:
-        sys.path.insert(0, GFDL_BASE+'exp/test_cases/bucket_hydrology/')     
-        from bucket_model_test_case import namelist as nml_out   
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/bucket_hydrology/'))
         from bucket_model_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist        
              
     if 'frierson' in test_case_name:
-        sys.path.insert(0, GFDL_BASE+'exp/test_cases/frierson/')     
-        from frierson_test_case import namelist as nml_out
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/frierson/'))
         from frierson_test_case import exp as exp_temp
-        input_files = exp_temp.inputfiles                 
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist        
         
     if 'giant_planet' in test_case_name:
-        sys.path.insert(0, GFDL_BASE+'exp/test_cases/giant_planet/')     
-        from giant_planet_test_case import namelist as nml_out
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/giant_planet/'))
         from giant_planet_test_case import exp as exp_temp
-        input_files = exp_temp.inputfiles           
+        input_files = exp_temp.inputfiles   
+        nml_out = exp_temp.namelist
         
         #Make giant planet test case a lower resolution so that it runs in a finite time!
         nml_out['spectral_dynamics_nml']['num_fourier']=42
@@ -47,47 +48,47 @@ def get_nml_diag(test_case_name):
         nml_out['spectral_dynamics_nml']['lon_max']=128
         nml_out['spectral_dynamics_nml']['lat_max']=64
         nml_out['spectral_dynamics_nml']['cutoff_wn']=15
-        
-    if 'held_suarez' in test_case_name:
-        sys.path.insert(0, GFDL_BASE+'exp/test_cases/held_suarez/')
-        from held_suarez_test_case import namelist as nml_out
-        from held_suarez_test_case import exp as exp_temp
-        input_files = exp_temp.inputfiles           
 
+    if 'held_suarez' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/held_suarez/'))
+        from held_suarez_test_case import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        
     if 'MiMA' in test_case_name:
-        sys.path.insert(0, GFDL_BASE+'exp/test_cases/MiMA/')
-        from MiMA_test_case import namelist as nml_out
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/MiMA/'))
         from MiMA_test_case import exp as exp_temp
-        input_files = exp_temp.inputfiles                      
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist        
         
     if 'realistic_continents_fixed_sst' in test_case_name:
-        sys.path.insert(0, GFDL_BASE+'exp/test_cases/realistic_continents/')
-        from realistic_continents_fixed_sst_test_case import namelist as nml_out
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/realistic_continents/'))
         from realistic_continents_fixed_sst_test_case import exp as exp_temp
-        input_files = exp_temp.inputfiles           
+        input_files = exp_temp.inputfiles   
+        nml_out = exp_temp.namelist        
 
     if 'realistic_continents_variable_qflux' in test_case_name:
-        sys.path.insert(0, GFDL_BASE+'exp/test_cases/realistic_continents/')
-        from realistic_continents_variable_qflux_test_case import namelist as nml_out
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/realistic_continents/'))
         from realistic_continents_variable_qflux_test_case import exp as exp_temp
-        input_files = exp_temp.inputfiles           
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist        
 
     if 'top_down_test' in test_case_name:
-        sys.path.insert(0, GFDL_BASE+'exp/test_cases/top_down_test/')
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/top_down_test/'))
         from top_down_test import namelist as nml_out
-        input_files = []        
+        input_files = []
 
     if 'variable_co2_grey' in test_case_name:
-        sys.path.insert(0, GFDL_BASE+'exp/test_cases/variable_co2_concentration/')
-        from variable_co2_grey import namelist as nml_out
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/variable_co2_concentration/'))
         from variable_co2_grey import exp as exp_temp
-        input_files = exp_temp.inputfiles           
+        input_files = exp_temp.inputfiles      
+        nml_out = exp_temp.namelist                        
 
     if 'variable_co2_rrtm' in test_case_name:
-        sys.path.insert(0, GFDL_BASE+'exp/test_cases/variable_co2_concentration/')
-        from variable_co2_rrtm import namelist as nml_out
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/variable_co2_concentration/'))
         from variable_co2_rrtm import exp as exp_temp
-        input_files = exp_temp.inputfiles           
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist                   
                  
     return nml_out, input_files  
 
@@ -100,7 +101,7 @@ def list_all_test_cases_implemented_in_trip_test():
 
 def define_simple_diag_table():
     """Defines a simple diag table for the test cases."""
-    
+
     diag = DiagTable()
     diag.add_file('atmos_daily', 1, 'days', time_units='days')
 
@@ -124,13 +125,13 @@ def process_ids(base_commit_in, later_commit_in):
         base_commit_short = base_commit_in[0:7]
     else:
         base_commit_short = base_commit_in
-    
+
     if len(later_commit_in)==40:
         #Likely to be long-hash, rather than a tag
         later_commit_short = later_commit_in[0:7]
     else:
         later_commit_short = later_commit_in
-    
+
     return base_commit_short, later_commit_short
 
 def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, repo_to_use='git@github.com:execlim/Isca', num_cores_to_use=4):
@@ -149,7 +150,7 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
         exp_name = test_case_name+'_trip_test_21_'+s
         cb = IscaCodeBase(repo=repo_to_use, commit=s)
         cb.compile()
-        exp = Experiment(exp_name, codebase=cb)        
+        exp = Experiment(exp_name, codebase=cb)
         exp.namelist = nml_use.copy()
         exp.diag_table = diag_use
         exp.inputfiles = input_files_use
@@ -169,35 +170,35 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             run_complete = False
             test_pass = False
             continue
-     
+
         data_dir_dict[s] = exp.datadir
     if run_complete:
         #For each of the diag files defined, compare the output
         for diag_file_entry in diag_use.files.keys():
             base_commit_dataset  = xar.open_dataset(data_dir_dict[base_commit] +'/run0001/'+diag_file_entry+'.nc', decode_times=False)
             later_commit_dataset = xar.open_dataset(data_dir_dict[later_commit]+'/run0001/'+diag_file_entry+'.nc', decode_times=False)
-    
+
             diff = later_commit_dataset - base_commit_dataset
-    
+
             #Check each of the output variables for differences
             for var in diff.data_vars.keys():
                 maxval = np.abs(diff[var]).max()
                 if maxval !=0.:
                     print('Test failed for '+var+' max diff value = '+str(maxval.values))
                     test_pass = False
-    
-        if test_pass:    
+
+        if test_pass:
             print('Test passed for '+test_case_name+'. Commit '+later_commit+' gives the same answer as commit '+base_commit)
             return_test_result = 'pass'
         else:
-            print('Test failed for '+test_case_name+'. Commit '+later_commit+' gives a different answer to commit '+base_commit)   
+            print('Test failed for '+test_case_name+'. Commit '+later_commit+' gives a different answer to commit '+base_commit)
             return_test_result = 'fail'
 
     else:
-        print('Test failed for '+test_case_name+' because the run crashed.')   
+        print('Test failed for '+test_case_name+' because the run crashed.')
         return_test_result = 'fail'
 
-    
+
     return return_test_result
 
 
@@ -207,15 +208,15 @@ def output_results_function(exp_outcome_dict, base_commit, later_commit):
 
     #Decide if all tests passed or not
     overall_result = all([ k=='pass' for k in exp_outcome_dict.values() ])
-    
+
     #Print results of each test case in turn, then overall results
     print('Results for all of the test cases ran comparing '+base_commit_short+' and '+later_commit_short+' are as follows...')
     for exp_key in exp_outcome_dict.keys():
         if exp_outcome_dict[exp_key]=='pass':
             print(exp_key+' : '+'\033[1;32m'+exp_outcome_dict[exp_key]+'\033[0;m')
         else:
-            print(exp_key+' : '+'\033[1;31m'+exp_outcome_dict[exp_key]+'\033[0;m')            
-        
+            print(exp_key+' : '+'\033[1;31m'+exp_outcome_dict[exp_key]+'\033[0;m')
+
     if overall_result:
         print('Congratulations, all tests have passed')
     else:
@@ -228,5 +229,5 @@ def run_all_tests(base_commit, later_commit, exps_to_check, repo_to_use='git@git
     #Run the test on each test case in turn
     for exp_name in exps_to_check:
         exp_outcome_dict[exp_name] = conduct_comparison_on_test_case(base_commit, later_commit, exp_name, repo_to_use = repo_to_use, num_cores_to_use=num_cores_to_use)
-    
+
     output_results_function(exp_outcome_dict, base_commit, later_commit)
