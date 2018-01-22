@@ -120,7 +120,7 @@ def delete_all_restarts(exp, exceptions=None):
 
 
 
-def interpolate_output(infile, outfile, var_names=None, p_levs = "input"):
+def interpolate_output(infile, outfile, all_fields=True, var_names=[], p_levs = "input"):
     """Interpolate data from sigma to pressure levels. Includes option to remove original file.
 
     This is a very thin wrapper around the plevel.sh script found in
@@ -132,7 +132,9 @@ def interpolate_output(infile, outfile, var_names=None, p_levs = "input"):
 
     infile: The path of a netcdf file to interpolate over.
     outfile: The path to save the output to.
-    var_names: a list of fields to interpolate. if None, process all the fields in the input.
+    all_fields: if True, interpolate all fields.
+    var_names: a list of fields to interpolate.  This is needed in addition to
+            `all_fields=True` if you wish to recalculate e.g. `slp` or `height`.
     p_levs: The list of pressure values, in pascals, to interpolate onto. Can be:
         * A list of integer pascal values
         * "input": Interpolate onto the pfull values in the input file
@@ -156,9 +158,8 @@ def interpolate_output(infile, outfile, var_names=None, p_levs = "input"):
         levels = p_levs
 
     plev = " ".join("{:.0f}".format(x) for x in reversed(sorted(levels)))
-    if var_names is None:
-        var_names = '-a'
-    else:
-        var_names = ' '.join(var_names)
+    if all_fields:
+        interpolator = interpolator.bake('-a')
+    var_names = ' '.join(var_names)
 
     interpolator('-i', infile, '-o', outfile, '-p', plev, var_names)
