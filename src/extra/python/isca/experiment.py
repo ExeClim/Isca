@@ -302,7 +302,7 @@ class Experiment(Logger, EventEmitter):
 
             for restart in glob.glob(P(resdir, '*.res.nc.0000')):
                 restartfile = restart.replace('.0000', '')
-                combinetool(restartfile)
+                combinetool(self.codebase.builddir, restartfile)
                 sh.rm(glob.glob(restartfile+'.????'))
                 self.log.debug("Restart file %s combined" % restartfile)
 

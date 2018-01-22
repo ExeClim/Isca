@@ -110,5 +110,5 @@ if __name__=="__main__":
         with exp_progress(exp, description='o%.0f d{day}' % obl):
             exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)
         for i in range(2, 21):
-            with exp_progress(exp, description='o%.0f d{day}' % s):
+            with exp_progress(exp, description='o%.0f d{day}' % obl):
                 exp.run(i, num_cores=NCORES, overwrite_data=True)

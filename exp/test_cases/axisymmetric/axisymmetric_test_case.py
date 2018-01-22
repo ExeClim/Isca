@@ -59,7 +59,7 @@ exp.namelist = namelist = Namelist({
      'minutes': 0,
      'seconds': 0,
      'dt_atmos':720,
-     'current_date' : [0001,1,1,0,0,0],
+     'current_date' : [1,1,1,0,0,0],
      'calendar' : 'thirty_day'
     },
 

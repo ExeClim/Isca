@@ -20,28 +20,28 @@ def get_nml_diag(test_case_name):
 
     if 'axisymmetric' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/axisymmetric/'))
-        from axisymmetric_test_case import namelist as nml_out
         from axisymmetric_test_case import exp as exp_temp
-        input_files = exp_temp.inputfiles
+        input_files = exp_temp.inputfiles   
+        nml_out = exp_temp.namelist             
 
     if 'bucket_model' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/bucket_hydrology/'))
-        from bucket_model_test_case import namelist as nml_out
         from bucket_model_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
-
+        nml_out = exp_temp.namelist        
+             
     if 'frierson' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/frierson/'))
-        from frierson_test_case import namelist as nml_out
         from frierson_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
-
+        nml_out = exp_temp.namelist        
+        
     if 'giant_planet' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/giant_planet/'))
-        from giant_planet_test_case import namelist as nml_out
         from giant_planet_test_case import exp as exp_temp
-        input_files = exp_temp.inputfiles
-
+        input_files = exp_temp.inputfiles   
+        nml_out = exp_temp.namelist
+        
         #Make giant planet test case a lower resolution so that it runs in a finite time!
         nml_out['spectral_dynamics_nml']['num_fourier']=42
         nml_out['spectral_dynamics_nml']['num_spherical']=43
@@ -51,27 +51,27 @@ def get_nml_diag(test_case_name):
 
     if 'held_suarez' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/held_suarez/'))
-        from held_suarez_test_case import namelist as nml_out
         from held_suarez_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
-
+        nml_out = exp_temp.namelist
+        
     if 'MiMA' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/MiMA/'))
-        from MiMA_test_case import namelist as nml_out
         from MiMA_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
-
+        nml_out = exp_temp.namelist        
+        
     if 'realistic_continents_fixed_sst' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/realistic_continents/'))
-        from realistic_continents_fixed_sst_test_case import namelist as nml_out
         from realistic_continents_fixed_sst_test_case import exp as exp_temp
-        input_files = exp_temp.inputfiles
+        input_files = exp_temp.inputfiles   
+        nml_out = exp_temp.namelist        
 
     if 'realistic_continents_variable_qflux' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/realistic_continents/'))
-        from realistic_continents_variable_qflux_test_case import namelist as nml_out
         from realistic_continents_variable_qflux_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist        
 
     if 'top_down_test' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/top_down_test/'))
@@ -80,17 +80,17 @@ def get_nml_diag(test_case_name):
 
     if 'variable_co2_grey' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/variable_co2_concentration/'))
-        from variable_co2_grey import namelist as nml_out
         from variable_co2_grey import exp as exp_temp
-        input_files = exp_temp.inputfiles
+        input_files = exp_temp.inputfiles      
+        nml_out = exp_temp.namelist                        
 
     if 'variable_co2_rrtm' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/variable_co2_concentration/'))
-        from variable_co2_rrtm import namelist as nml_out
         from variable_co2_rrtm import exp as exp_temp
         input_files = exp_temp.inputfiles
-
-    return nml_out, input_files
+        nml_out = exp_temp.namelist                   
+                 
+    return nml_out, input_files  
 
 def list_all_test_cases_implemented_in_trip_test():
 

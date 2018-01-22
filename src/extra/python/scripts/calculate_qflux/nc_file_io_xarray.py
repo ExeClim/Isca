@@ -10,37 +10,50 @@ from scipy import stats
 
 __author__='Stephen Thomson'
 
-def read_data( base_dir, exp_name, start_file, end_file, avg_or_daily, topo_present, model='fms13', file_name=None):
+def read_data( base_dir, exp_name, start_file, end_file, avg_or_daily, use_interpolated_pressure_level_data, model='fms13', file_name=None):
 
     if model=='fms13':
 
-        files_temp=[base_dir+'/'+exp_name+'/run%03d' % m for m in range(start_file, end_file+1)]
-        if(topo_present):
+        possible_format_strs = [[base_dir+'/'+exp_name+'/run%03d' % m for m in range(start_file, end_file+1)],
+                                [base_dir+'/'+exp_name+'/run%04d' % m for m in range(start_file, end_file+1)],
+                                [base_dir+'/'+exp_name+'/run%d'   % m for m in range(start_file, end_file+1)]]
+
+        if(use_interpolated_pressure_level_data):
             if avg_or_daily == 'monthly':
 #                 extra='_interp.nc'
-                extra='_interp_new_height.nc'            
+                extra='_interp_new_height.nc'
 
             else:
-                extra='_interp_new_height_temp.nc'            
+                extra='_interp_new_height_temp.nc'
         else:
             extra='.nc'
 
         thd_string = '/atmos_'+avg_or_daily+extra
 
-        thd_files = [s + thd_string for s in files_temp]
+        for format_str_files in possible_format_strs:
+            files_temp = format_str_files
 
-        thd_files_exist=[os.path.isfile(s) for s in thd_files]
-        
-        thd_file_size = [os.path.getsize(s) for s in thd_files]
+            thd_files = [s + thd_string for s in files_temp]
 
-        mode_file_size = stats.mode(thd_file_size).mode[0]
-        
-        thd_files_too_small = [thd_file_size[s] < 0.75*mode_file_size for s in range(len(thd_files))]
+            thd_files_exist=[os.path.isfile(s) for s in thd_files]
+
+            if thd_files_exist[0]:
+                break
+
+            if not thd_files_exist[0] and possible_format_strs.index(format_str_files)==(len(possible_format_strs)-1):
+                raise EOFError('EXITING BECAUSE NO APPROPRIATE FORMAT STR', [thd_files[elem] for elem in [0] if not thd_files_exist[elem]])
+
 
         print(thd_files[0])
 
         if not(all(thd_files_exist)):
             raise EOFError('EXITING BECAUSE OF MISSING FILES', [thd_files[elem] for elem in range(len(thd_files_exist)) if not thd_files_exist[elem]])
+
+        thd_file_size = [os.path.getsize(s) for s in thd_files]
+
+        mode_file_size = stats.mode(thd_file_size).mode[0]
+
+        thd_files_too_small = [thd_file_size[s] < 0.75*mode_file_size for s in range(len(thd_files))]
 
         if np.any(thd_files_too_small):
             raise EOFError('EXITING BECAUSE OF FILE TOO SMALL', [thd_files[elem] for elem in range(len(thd_files_exist)) if thd_files_too_small[elem]])
@@ -188,7 +201,7 @@ def init( nc_file_init):
     
     return    size_list
 
-def read_land( base_dir,exp_name,land_present,topo_present,size_list,land_file='input/land.nc', lats_in = None):
+def read_land( base_dir,exp_name,land_present, use_interpolated_pressure_level_data, size_list,land_file='input/land.nc', lats_in = None):
     "Function for reading in land mask."
     
     #Create thd (3D) and twd (2D) data stores.
@@ -196,7 +209,7 @@ def read_land( base_dir,exp_name,land_present,topo_present,size_list,land_file='
     topo_array=np.zeros((size_list['nlats'],size_list['nlons']))
     
     if land_file is not None:
-        if(land_present or topo_present):
+        if(land_present or use_interpolated_pressure_level_data):
             nc_file = base_dir+'exp/'+exp_name+land_file
             print(nc_file)
             try:
@@ -219,7 +232,7 @@ def read_land( base_dir,exp_name,land_present,topo_present,size_list,land_file='
                     if lats_in[0]!=lat_land[0]:
                         land_array=land_array[::-1,:]
                     
-            if topo_present:
+            if use_interpolated_pressure_level_data:
                 topo_array=fh.variables['zsurf'][:]
             fh.close()
 
@@ -228,8 +241,17 @@ def read_land( base_dir,exp_name,land_present,topo_present,size_list,land_file='
 def output_nc_file(dataset, field_name, model_params, output_dict):
 
     #create grid
-
-    lons,lats,lonbs,latbs,nlon,nlat,nlonb,nlatb=cts.create_grid(output_dict['manual_grid_option'])
+    try:
+        lons = dataset.lon.values
+        lats = dataset.lat.values
+        latbs = dataset.latb.values
+        lonbs = dataset.lonb.values
+        nlon = lons.shape[0]
+        nlat = lats.shape[0]
+        nlatb = latbs.shape[0]
+        nlonb = lonbs.shape[0]
+    except:
+        lons,lats,lonbs,latbs,nlon,nlat,nlonb,nlatb=cts.create_grid(output_dict['manual_grid_option'])
 
     if output_dict['is_thd']:
         p_full,p_half,npfull,nphalf=cts.create_pressures()
