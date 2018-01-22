@@ -20,10 +20,10 @@ landfile=Dataset(os.path.join(GFDL_BASE,'input/all_continents/land.nc'))
 landmask=landfile.variables['land_mask'][:]
 
 #input file
-dsin = Dataset('/scratch/mp586/Isca_DATA/full_continents_simple2mbucket_qflux/restarts/extract_res240/mixed_layer.res.nc')
+dsin = Dataset('/scratch/mp586/Isca_DATA/flat_continents_simple2mbucket_qflux/restarts/extract_res241/mixed_layer.res.nc')
 
 #output file
-dsout = Dataset('/scratch/mp586/Isca_DATA/full_continents_simple2mbucket_qflux/restarts/tocompile_240/mixed_layer.res.nc', "w", format="NETCDF3_CLASSIC") # This is to differentiate from _sqland, because that was NH SH symmetric in each month, not only in the annual mean! --> bug!
+dsout = Dataset('/scratch/mp586/Isca_DATA/flat_continents_simple2mbucket_qflux/restarts/tocompile_241/mixed_layer.res.nc', "w", format="NETCDF3_CLASSIC") # This is to differentiate from _sqland, because that was NH SH symmetric in each month, not only in the annual mean! --> bug!
 
 #Copy dimensions
 for dname, the_dim in dsin.dimensions.iteritems():
