@@ -113,8 +113,8 @@ character(len=256) :: land_option = 'none'
 real,dimension(10) :: slandlon=0,slandlat=0,elandlon=-1,elandlat=-1
 !s End mj extra options
 
-character(len=256) :: qflux_file_name  = 'INPUT/ocean_qflux.nc'
-character(len=256) :: qflux_field_name = 'ocean_qflux'
+character(len=256) :: qflux_file_name  = 'ocean_qflux'
+character(len=256) :: qflux_field_name = 'ocean_qflux' !Only used when using a non-time-varying q-flux. Otherwise code assumes field_name = file_name. 
 
 character(len=256) :: ice_file_name  = 'siconc_clim_amip'
 real    :: ice_albedo_value = 0.7

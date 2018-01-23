@@ -1,10 +1,13 @@
 from contextlib import contextmanager
 import json
+from os.path import join as P
 
 import numpy as np
 from tqdm import tqdm
+import xarray as xr
 import sh
 
+from isca import GFDL_BASE
 from isca.create_alert import disk_space_alert
 
 @contextmanager
@@ -117,22 +120,45 @@ def delete_all_restarts(exp, exceptions=None):
 
 
 
-def runinterp(exp, month, infile, outfile, var_names = '-a', p_levs = "EVEN", rm_input=False):
-    """Interpolate data from sigma to pressure levels. Includes option to remove original file."""
-    import subprocess
-    pprocess = P(GFDL_BASE,'postprocessing/plevel_interpolation/scripts')
-    interper = 'source '+pprocess+'/plevel.sh -i '
-    inputfile = P(exp.datadir, exp.runfmt % month, infile)
-    outputfile = P(exp.datadir, exp.runfmt % month, outfile)
+def interpolate_output(infile, outfile, var_names=None, p_levs = "input"):
+    """Interpolate data from sigma to pressure levels. Includes option to remove original file.
+
+    This is a very thin wrapper around the plevel.sh script found in
+    `postprocessing/plevel_interpolation/scripts/plevel.sh`.  Read the documentation
+    in that script for more information.
+
+    The interpolator must also be compiled before use.  See `postprocessing/plevel_interpolation/README`
+    for instructions.
+
+    infile: The path of a netcdf file to interpolate over.
+    outfile: The path to save the output to.
+    var_names: a list of fields to interpolate. if None, process all the fields in the input.
+    p_levs: The list of pressure values, in pascals, to interpolate onto. Can be:
+        * A list of integer pascal values
+        * "input": Interpolate onto the pfull values in the input file
+        * "even": Interpolate onto evenly spaced in Pa levels.
+    Outputs to outfile.
+    """
+    interpolator = sh.Command(P(GFDL_BASE, 'postprocessing', 'plevel_interpolation', 'scripts', 'plevel.sh'))
 
     # Select from pre-chosen pressure levels, or input new ones in hPa in the format below.
-    if p_levs == "MODEL":
-        plev = ' -p "2 9 18 38 71 125 206 319 471 665 904 1193 1532 1925 2375 2886 3464 4115 4850 5679 6615 7675 8877 10244 11801 13577 15607 17928 20585 23630 27119 31121 35711 40976 47016 53946 61898 71022 81491 93503" '
-    elif p_levs == "EVEN":
-        plev = ' -p "100000 95000 90000 85000 80000 75000 70000 65000 60000 55000 50000 45000 40000 35000 30000 25000 20000 15000 10000 5000" '
+    if isinstance(p_levs, str):
+        if p_levs.upper() == "INPUT":
+            with xr.open_dataset(infile, decode_times=False) as dat:
+                levels = dat.pfull.data * 100
+        elif p_levs.upper() == "MODEL":
+        #     plev = ' -p "2 9 18 38 71 125 206 319 471 665 904 1193 1532 1925 2375 2886 3464 4115 4850 5679 6615 7675 8877 10244 11801 13577 15607 17928 20585 23630 27119 31121 35711 40976 47016 53946 61898 71022 81491 93503" '
+            levels = [2, 9, 18, 38, 71, 125, 206, 319, 471, 665, 904, 1193, 1532, 1925, 2375, 2886, 3464, 4115, 4850, 5679, 6615, 7675, 8877, 10244, 11801, 13577, 15607, 17928, 20585, 23630, 27119, 31121, 35711, 40976, 47016, 53946, 61898, 71022, 81491, 93503]
+        elif p_levs.upper() == "EVEN":
+            #plev = ' -p "100000 95000 90000 85000 80000 75000 70000 65000 60000 55000 50000 45000 40000 35000 30000 25000 20000 15000 10000 5000" '
+            levels = [100000, 95000, 90000, 85000, 80000, 75000, 70000, 65000, 60000, 55000, 50000, 45000, 40000, 35000, 30000, 25000, 20000, 15000, 10000, 5000]
     else:
-        plev = p_levs
-    command = interper + inputfile + ' -o ' + outputfile + plev + var_names
-    subprocess.call([command], shell=True)
-    if rm_input:
-        sh.rm( inputfile)
+        levels = p_levs
+
+    plev = " ".join("{:.0f}".format(x) for x in reversed(sorted(levels)))
+    if var_names is None:
+        var_names = '-a'
+    else:
+        var_names = ' '.join(var_names)
+
+    interpolator('-i', infile, '-o', outfile, '-p', plev, var_names)

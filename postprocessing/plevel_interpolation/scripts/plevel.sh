@@ -57,7 +57,7 @@ Usage:  $name [-a] [-3] [-0] [-f] [-d #] -i file [-o ofile] [-m] [fields.....]
         -0        = When fields sphum or zsurf do not exist use zero, otherwise fail.
         -m        = Default missing value is used for all fields (the _FillValue).
         -x        = DO NOT set data extrapolated beneath the surface to missing values.
-        -i file   = Input netcdf file, the file must contain the required variables 
+        -i file   = Input netcdf file, the file must contain the required variables
                     (pk,bk,ps,...).
                     If the -i files option is omitted a usage message is printed.
         -o ofile  = The output file name. (Default: plevel.nc)
@@ -85,7 +85,7 @@ fi
 
 #source /opt/modules/default/init/sh
 #source ../../../src/extra/loadmodule
-source $GFDL_BASE/src/extra/loadmodule
+source $GFDL_BASE/src/extra/env/$GFDL_ENV
 executable=$GFDL_BASE/postprocessing/plevel_interpolation/exec/plev.x
 if [ ! -x "$executable" ]; then
    echo "ERROR: executable does not exist"
@@ -120,7 +120,7 @@ tloop=`echo ${tlist} | sed -e "s/,/ /g"`
 
 #-----------------------------------------------------------------------
 #   ---- namelist for pressure interp program ----
-    
+
     namelist="plev.input.nml"
 
     echo " &input" > $namelist
@@ -161,18 +161,18 @@ i=0
 for index in $tloop;
 do
     let "i=$i+1"
-    if [ $index -gt 0 ]; then 
+    if [ $index -gt 0 ]; then
        case $i in
           1) echo "    time_beg = $index" >> $namelist;;
           2) echo "    time_end = $index" >> $namelist;;
           3) echo "    time_inc = $index" >> $namelist;;
-       esac    
+       esac
     fi
 done
 
    echo " /" >> $namelist
 
-echo $executable 
+echo $executable
 
 ulimit -s unlimited
 

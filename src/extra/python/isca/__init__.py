@@ -11,7 +11,7 @@ try:
     GFDL_DATA        = os.environ['GFDL_DATA']
 except Exception as e:
     log.error('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
-    exit(0)
+    raise ValueError('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
 
 # GFDL_ENV: The environment on which the model is being run.
 # Primarily, this determines which compilers and libraries are to be used
@@ -30,7 +30,7 @@ except:
     # fully qualified domain name as GFDL_ENV
     import socket
     GFDL_ENV = socket.getfqdn()
-    log.info('Environment variable GFDL_ENV not set, using "%s".' % GFDL_ENV)
+    log.warning('Environment variable GFDL_ENV not set, using "%s".' % GFDL_ENV)
 
 
 def get_env_file(env=GFDL_ENV):
@@ -76,5 +76,5 @@ class EventEmitter(object):
         return handled
 
 
-from experiment import Experiment, DiagTable, Namelist, FailedRunError
-from codebase import IscaCodeBase, DryCodeBase, GreyCodeBase #, ShallowCodeBase
+from isca.experiment import Experiment, DiagTable, Namelist, FailedRunError
+from isca.codebase import IscaCodeBase, DryCodeBase, GreyCodeBase #, ShallowCodeBase

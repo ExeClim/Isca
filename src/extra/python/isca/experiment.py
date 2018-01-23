@@ -101,7 +101,7 @@ class Experiment(Logger, EventEmitter):
     @destructive
     @useworkdir
     def clear_rundir(self):
-        sh.cd(self.workdir)
+        #sh.cd(self.workdir)
         try:
             sh.rm(['-r', self.rundir])
         except sh.ErrorReturnCode:
@@ -142,11 +142,12 @@ class Experiment(Logger, EventEmitter):
     def write_diag_table(self, outdir):
         outfile = P(outdir, 'diag_table')
         self.log.info('Writing diag_table to %r' % outfile)
-        if len(self.diag_table.files):
-            template = self.templates.get_template('diag_table')
-            calendar = not self.namelist['main_nml']['calendar'].lower().startswith('no_calendar')
-            vars = {'calendar': calendar, 'outputfiles': self.diag_table.files.values()}
-            template.stream(**vars).dump(outfile)
+        if self.diag_table.is_valid():
+            if self.diag_table.calendar is None:
+                # diagnose the calendar from the namelist
+                cal = self.get_calendar()
+                self.diag_table.calendar = cal
+            self.diag_table.write(outfile)
         else:
             self.log.error("No output files defined in the DiagTable. Stopping.")
             raise ValueError()
@@ -169,6 +170,13 @@ class Experiment(Logger, EventEmitter):
             sh.rm(resfile)
             self.log.info('Deleted restart file %s' % resfile)
 
+    def get_calendar(self):
+        """Get the value of 'main_nml/calendar.
+        Returns a string name of calendar, or None if not set in namelist.'"""
+        if 'main_nml' in self.namelist:
+            return self.namelist['main_nml'].get('calendar')
+        else:
+            return None
 
     @destructive
     @useworkdir
@@ -219,7 +227,7 @@ class Experiment(Logger, EventEmitter):
                 restart_file = self.get_restart_file(i - 1)
             if not os.path.isfile(restart_file):
                 self.log.error('Restart file not found, expecting file %r' % restart_file)
-                exit(2)
+                raise IOError('Restart file not found, expecting file %r' % restart_file)
             else:
                 self.log.info('Using restart file %r' % restart_file)
 
@@ -254,11 +262,13 @@ class Experiment(Logger, EventEmitter):
         try:
             #for line in sh.bash(P(self.rundir, 'run.sh'), _iter=True, _err_to_out=True):
             proc = sh.bash(P(self.rundir, 'run.sh'), _bg=True, _out=_outhandler, _err_to_out=True)
+            self.log.info('process running as {}'.format(proc.process.pid))
             proc.wait()
             completed = True
         except KeyboardInterrupt as e:
             self.log.error("Manual interrupt, killing process.")
-            proc.process.kill()
+            proc.process.terminate()
+            proc.wait()
             #log.info("Cleaning run directory.")
             #self.clear_rundir()
             raise e
@@ -292,7 +302,7 @@ class Experiment(Logger, EventEmitter):
 
             for restart in glob.glob(P(resdir, '*.res.nc.0000')):
                 restartfile = restart.replace('.0000', '')
-                combinetool(restartfile)
+                combinetool(self.codebase.builddir, restartfile)
                 sh.rm(glob.glob(restartfile+'.????'))
                 self.log.debug("Restart file %s combined" % restartfile)
 
