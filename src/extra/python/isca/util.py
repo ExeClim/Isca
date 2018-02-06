@@ -1,6 +1,8 @@
 from contextlib import contextmanager
 import json
+import os
 from os.path import join as P
+import tarfile
 
 import numpy as np
 from tqdm import tqdm
@@ -162,3 +164,33 @@ def interpolate_output(infile, outfile, var_names=None, p_levs = "input"):
         var_names = ' '.join(var_names)
 
     interpolator('-i', infile, '-o', outfile, '-p', plev, var_names)
+
+
+@contextmanager
+def edit_restart_archive(restart_archive, outfile='./res_edit.tar.gz', tmp_dir='./restart_edit'):
+    with tarfile.open(restart_archive, 'r:gz') as tar:
+        tar.extractall(path=tmp_dir)
+        restart_files = [os.path.join(tmp_dir, x.split('/')[-1]) for x in  tar.getnames() if x != '.']
+    try:
+        yield {os.path.basename(f): f for f in restart_files}
+        if outfile is not None:
+            with tarfile.open(outfile, 'w:gz') as out:
+                for f in restart_files:
+                    out.add(f, arcname=os.path.basename(f))
+    finally:
+        for f in restart_files:
+            os.remove(f)
+        os.removedirs(tmp_dir)
+
+
+@contextmanager
+def edit_restart_file(filename):
+    ds = xr.open_dataset(filename, decode_cf=False)
+    try:
+        yield ds
+    finally:
+        # we can't write to the open file, so make a temporary one and
+        # swap them once written
+        ds.to_netcdf(filename+'.swp')
+        ds.close()
+        os.rename(filename+'.swp', filename)
