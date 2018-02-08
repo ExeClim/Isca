@@ -120,7 +120,7 @@ def delete_all_restarts(exp, exceptions=None):
 
 
 
-def interpolate_output(infile, outfile, var_names=None, p_levs = "input"):
+def interpolate_output(infile, outfile, all_fields=True, var_names=[], p_levs = "input"):
     """Interpolate data from sigma to pressure levels. Includes option to remove original file.
 
     This is a very thin wrapper around the plevel.sh script found in
@@ -132,7 +132,9 @@ def interpolate_output(infile, outfile, var_names=None, p_levs = "input"):
 
     infile: The path of a netcdf file to interpolate over.
     outfile: The path to save the output to.
-    var_names: a list of fields to interpolate. if None, process all the fields in the input.
+    all_fields: if True, interpolate all fields.
+    var_names: a list of fields to interpolate.  This is needed in addition to
+            `all_fields=True` if you wish to recalculate e.g. `slp` or `height`.
     p_levs: The list of pressure values, in pascals, to interpolate onto. Can be:
         * A list of integer pascal values
         * "input": Interpolate onto the pfull values in the input file
@@ -146,19 +148,17 @@ def interpolate_output(infile, outfile, var_names=None, p_levs = "input"):
         if p_levs.upper() == "INPUT":
             with xr.open_dataset(infile, decode_times=False) as dat:
                 levels = dat.pfull.data * 100
-        elif p_levs.upper() == "MODEL":
-        #     plev = ' -p "2 9 18 38 71 125 206 319 471 665 904 1193 1532 1925 2375 2886 3464 4115 4850 5679 6615 7675 8877 10244 11801 13577 15607 17928 20585 23630 27119 31121 35711 40976 47016 53946 61898 71022 81491 93503" '
-            levels = [2, 9, 18, 38, 71, 125, 206, 319, 471, 665, 904, 1193, 1532, 1925, 2375, 2886, 3464, 4115, 4850, 5679, 6615, 7675, 8877, 10244, 11801, 13577, 15607, 17928, 20585, 23630, 27119, 31121, 35711, 40976, 47016, 53946, 61898, 71022, 81491, 93503]
         elif p_levs.upper() == "EVEN":
             #plev = ' -p "100000 95000 90000 85000 80000 75000 70000 65000 60000 55000 50000 45000 40000 35000 30000 25000 20000 15000 10000 5000" '
             levels = [100000, 95000, 90000, 85000, 80000, 75000, 70000, 65000, 60000, 55000, 50000, 45000, 40000, 35000, 30000, 25000, 20000, 15000, 10000, 5000]
+        else:
+            raise ValueError("Unknown p_levs type '{}'".format(p_levs))
     else:
         levels = p_levs
 
     plev = " ".join("{:.0f}".format(x) for x in reversed(sorted(levels)))
-    if var_names is None:
-        var_names = '-a'
-    else:
-        var_names = ' '.join(var_names)
+    if all_fields:
+        interpolator = interpolator.bake('-a')
+    var_names = ' '.join(var_names)
 
     interpolator('-i', infile, '-o', outfile, '-p', plev, var_names)
