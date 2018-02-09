@@ -270,8 +270,8 @@ if __name__ == "__main__":
     ice_file_name=None
     output_file_name='qflux_laura_hadg' #Proposed name of your output qflux file. Will also be qflux field name in q-flux netcdf file as the fortran assumes file-name = field name. No need to add '.nc' or any file paths in this variable as otherwise they will end up in the field name too. Output file will be stored in the same directory as this script.
 
-    start_file=241
-    end_file=264
+    start_file=240
+    end_file=360
     land_present=True
     use_interpolated_pressure_level_data = False #Conditions the script on whether to expect data on sigma levels (if False) or pressure levels (if True). Script should be insensitive to this choice if both sets of files exist. 
 
@@ -286,7 +286,6 @@ if __name__ == "__main__":
     dataset, time_arr, size_list = io.read_data( base_dir,exp_name,start_file,end_file,avg_or_daily,use_interpolated_pressure_level_data)
 
     land_array, topo_array = io.read_land(input_dir,base_exp_name,land_present,use_interpolated_pressure_level_data,size_list,land_file)
-
     dataset['land'] = (('lat','lon'),land_array)
 
     check_surface_flux_dims(dataset)
