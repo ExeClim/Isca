@@ -10,7 +10,6 @@ import area_average as aav
 import nc_file_io_xarray as io
 import matplotlib.pyplot as plt
 import os
-import pdb
 
 __author__='Stephen Thomson'
 
@@ -24,7 +23,7 @@ def qflux_calc(dataset, model_params, output_file_name, ice_file_name=None, grou
         deep_ocean_heat_content(dataset, model_params)
         ocean_transport(dataset, model_params)
 
-        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':output_file_name} #Have specified that var name is the same as file name as this is what the fortran assumes.
+        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':'ocean_qflux'}
         
     elif groupby_name=='dayofyear':
         time_varying_ice = ice_mask_calculation(dataset, dataset.land, ice_file_name)
@@ -33,7 +32,7 @@ def qflux_calc(dataset, model_params, output_file_name, ice_file_name=None, grou
         deep_ocean_heat_content(dataset, model_params)
         ocean_transport(dataset, model_params)
 
-        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':output_file_name}    
+        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':'ocean_qflux'}    
         
     elif groupby_name=='all_time':
         time_varying_ice = ice_mask_calculation(dataset, dataset.land, ice_file_name, dayofyear_or_months=groupby_name)
@@ -43,7 +42,7 @@ def qflux_calc(dataset, model_params, output_file_name, ice_file_name=None, grou
         ocean_transport(dataset, model_params, dayofyear_or_months=groupby_name)
         regrid_in_time(dataset, groupby_name)
 
-        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':output_file_name}            
+        output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':'ocean_qflux'}            
         
     io.output_nc_file(dataset,'masked_ocean_transport', model_params, output_dict)
 
@@ -233,20 +232,6 @@ def regrid_in_time(dataset, groupby_name):
         
         dataset['masked_ocean_transport'] = (('months_ax','lat','lon'), dataset_to_output)
 
-def check_surface_flux_dims(dataset):
-
-    fluxes_to_check = ['flux_sw', 'flux_lw']
-
-    for flux_name in fluxes_to_check:
-        flux_dims = dataset[flux_name].dims
-
-        if 'phalf' in flux_dims:
-            dataset.rename({flux_name:flux_name+'_3d'}, inplace=True)
-            max_pressure = dataset.phalf.max()
-            flux_at_bottom_phalf_level = dataset[flux_name+'_3d'].sel(phalf=max_pressure)
-            new_dims = ('time','lat','lon')
-            dataset[flux_name] = (new_dims, flux_at_bottom_phalf_level)
-
 if __name__ == "__main__":
 
     import nc_file_io_xarray as io
@@ -256,41 +241,35 @@ if __name__ == "__main__":
         GFDL_BASE        = os.environ['GFDL_BASE']
         GFDL_WORK        = os.environ['GFDL_WORK']
         GFDL_DATA        = os.environ['GFDL_DATA']        
-    except Exception as e:
+    except Exception, e:
         print('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
         exit(0)
 
 
     input_dir=GFDL_BASE
     base_dir=GFDL_DATA
-    land_file='input/era_land_t42.nc'
-    base_exp_name='laura_no_ice_fixed_sst_perp_djf/' #Folder containing the python script and input files that ran the experiment
-    exp_name='no_ice_precip_targets_exps_t42_finished' #Folder within the data directory where the files can be found
+    land_file='input/all_continents/land.nc'
+    base_exp_name='full_continents_newbucket_fixedSSTs' # work directory
+    exp_name='full_continents_newbucket_fixedSSTs' # data directory 
     #ice_file_name=base_dir+'annual_mean_ice_albedo_change_test_mk2_4320_dt_rad_4/'+'run360/'+'atmos_monthly.nc'
     ice_file_name=None
-    output_file_name='qflux_laura_hadg' #Proposed name of your output qflux file. Will also be qflux field name in q-flux netcdf file as the fortran assumes file-name = field name. No need to add '.nc' or any file paths in this variable as otherwise they will end up in the field name too. Output file will be stored in the same directory as this script.
+    output_file_name=GFDL_BASE+'/input/all_continents/ocean_qflux_new'
 
-    start_file=241
-    end_file=264
+    start_file=241 # needs to be January month
+    end_file=720 # needs to be December month 
     land_present=True
-    use_interpolated_pressure_level_data = False #Conditions the script on whether to expect data on sigma levels (if False) or pressure levels (if True). Script should be insensitive to this choice if both sets of files exist. 
+    topo_present=False # this does not have anything to do with the topography, but whether the input data are interpolated to 
+    # pressure levels instead of the sigma levels (model output)
 
-    #Set time increments of input files (e.g. `monthly` for `atmos_monthly` files.
     avg_or_daily='monthly'
 
-    #Set the time frequency of output data. Valid options are 'months', 'all_time' or 'dayofyear'.
-    time_divisions_of_qflux_to_be_calculated='all_time'
+    model_params = sagp.model_params_set(input_dir, delta_t=720., ml_depth=20.)
 
-    model_params = sagp.model_params_set(input_dir, delta_t=720., ml_depth=20., res=42)
+    dataset, time_arr, size_list = io.read_data( base_dir,exp_name,start_file,end_file,avg_or_daily,topo_present)
 
-    dataset, time_arr, size_list = io.read_data( base_dir,exp_name,start_file,end_file,avg_or_daily,use_interpolated_pressure_level_data)
-
-    land_array, topo_array = io.read_land(input_dir,base_exp_name,land_present,use_interpolated_pressure_level_data,size_list,land_file)
-
+    land_array, topo_array = io.read_land(input_dir,base_exp_name,land_present,topo_present,size_list,land_file)
     dataset['land'] = (('lat','lon'),land_array)
 
-    check_surface_flux_dims(dataset)
-    
-    qflux_calc(dataset, model_params, output_file_name, ice_file_name, groupby_name=time_divisions_of_qflux_to_be_calculated)
+    qflux_calc(dataset, model_params, output_file_name, ice_file_name)
 
 
