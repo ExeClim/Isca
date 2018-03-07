@@ -1,6 +1,7 @@
 import argparse
 from contextlib import contextmanager
 import json
+import logging
 import os
 from os.path import join as P
 import tarfile
@@ -13,6 +14,7 @@ import sh
 
 from isca import GFDL_BASE
 from isca.create_alert import disk_space_alert
+from isca.loghandler import suppress_stdout
 
 @contextmanager
 def no_context(*args, **kwargs):
@@ -202,6 +204,15 @@ def edit_restart_file(filename):
         ds.close()
         os.rename(filename+'.swp', filename)
 
+
+def save_log(exp, filename, log_level=logging.DEBUG):
+    fh = logging.FileHandler(filename)
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    exp.log.addHandler(fh)
+    return fh
+
+
 def read_command_line_options(fail_if_underconditioned=True):
     """Read command line arguments and return a dict of configuration."""
     parser = argparse.ArgumentParser(description="Run an Isca experiment.")
@@ -215,6 +226,7 @@ def read_command_line_options(fail_if_underconditioned=True):
     parser.add_argument('--mpirun-opts', type=str, default='', help='(Advanced) Pass additional options to the mpi_run command.')
     parser.add_argument('--no-restart', action='store_true', default=False, help='Start the run without a restart file.')
     parser.add_argument('--progress-bar', action='store_true', default=False, help='Show a progress bar instead of daily output')
+    parser.add_argument('-l', '--log-file', type=str, default=None, help='Save the output log to a file.')
     args = parser.parse_args()
     run_config = {}
     config = {'run_config': run_config}
@@ -229,7 +241,7 @@ def read_command_line_options(fail_if_underconditioned=True):
     run_config['overwrite_data'] = args.force
     for f in ('mpirun_opts', 'nice_score', 'restart_file', 'num_cores'):
         run_config[f] = vars(args)[f]
-    for f in ('progress_bar', 'up_to', 'run', 'compile'):
+    for f in ('progress_bar', 'up_to', 'run', 'compile', 'log_file'):
         config[f] = vars(args)[f]
     return config
 
@@ -237,6 +249,8 @@ def read_command_line_options(fail_if_underconditioned=True):
 def run_cli(exp, fail_if_underconditioned=True):
     """Provide a basic command line interface to run the experiment."""
     config = read_command_line_options(fail_if_underconditioned)
+    if config['log_file']:
+        save_log(exp, config['log_file'])
     if config['compile']:
         exp.codebase.compile()
     if config['run']:
