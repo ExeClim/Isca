@@ -13,16 +13,16 @@ ppdir=./                 # path to directory containing the tool for combining d
 module purge
 source $GFDL_BASE/src/extra/env/$GFDL_ENV
 module list
-netcdf_flags=`nf-config --fflags --flibs`
+netcdf_flags=`nc-config --cflags --libs`
 #--------------------------------------------------------------------------------------------------------
 # compile combine tool
 #cd $ppdir
-$CC -O -c `nf-config --cflags` mppnccombine.c
+$CC -O -c mppnccombine.c $netcdf_flags
 if [ $? != 0 ]; then
     echo "ERROR: could not compile combine tool"
     exit 1
 fi
-$CC -O -o mppnccombine.x `nf-config --fflags --flibs`  mppnccombine.o
+$CC -O -o mppnccombine.x mppnccombine.o $netcdf_flags
 if [ $? != 0 ]; then
     echo "ERROR: could not compile combine tool"
     exit 1

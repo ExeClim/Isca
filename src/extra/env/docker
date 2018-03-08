@@ -1,0 +1,6 @@
+echo Loading Docker Environment
+
+export GFDL_COMPILER=gfort
+
+export F90=mpifort
+export CC=mpicc
