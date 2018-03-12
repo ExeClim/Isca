@@ -2,9 +2,7 @@
 # Compiles the Isca Model
 
 # 0. Source the environment file to load appropriate variables
-module purge
 source {{ env_source }}
-module list
 
 
 # 1. Configuration

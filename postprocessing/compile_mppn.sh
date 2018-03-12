@@ -10,9 +10,7 @@ ppdir=./                 # path to directory containing the tool for combining d
 
 
 # 2. Load the necessary tools into the environment
-module purge
 source $GFDL_BASE/src/extra/env/$GFDL_ENV
-module list
 netcdf_flags=`nc-config --cflags --libs`
 #--------------------------------------------------------------------------------------------------------
 # compile combine tool
