@@ -5,6 +5,9 @@ ENV GFDL_BASE /isca
 ENV GFDL_DATA /data
 ENV GFDL_ENV docker
 
+# ignore missing hardware needed lfor openMPI speedup
+ENV ["OMPI_MCA_btl", "^openib"]
+
 RUN useradd -ms /bin/bash isca
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y \
@@ -13,18 +16,11 @@ RUN apt-get install -y \
     libhdf5-openmpi-dev wget tcl tcl-dev \
     build-essential gcc gfortran
 
-# RUN wget https://sourceforge.net/projects/modules/files/Modules/modules-4.1.1/modules-4.1.1.tar.gz/download
-# RUN tar xvf download
-
-# RUN cd modules-4.1.1 && ./configure && make && make install
-# RUN /bin/bash -c "source /usr/local/Modules/init/profile.sh"
-
 COPY . /isca
 RUN chown -R isca /isca
 
 RUN pip3 install -r /isca/src/extra/python/requirements.txt
 RUN pip3 install -e /isca/src/extra/python
-
 
 RUN mkdir -p /data && chown -R isca /data
 VOLUME /data
