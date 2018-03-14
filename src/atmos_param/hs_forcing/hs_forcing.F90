@@ -584,21 +584,12 @@ real, intent(in),  dimension(:,:,:), optional :: mask
 
 !  ----- compute damping -----
       sigma(:,:) = p_full(:,:,k)*rps(:,:)
-      if(uppercase(trim(equilibrium_t_option)) == 'EXOPLANET') then
-        where (sigma(:,:) <= 1.0 .and. sigma(:,:) > sigma_b)
-          tfactr(:,:) = tcoeff*(sigma(:,:)-sigma_b)
-          tdamp(:,:,k) = tka + tfactr(:,:)
-        elsewhere
-          tdamp(:,:,k) = tka
-        endwhere
-      else
-        where (sigma(:,:) <= 1.0 .and. sigma(:,:) > sigma_b)
-          tfactr(:,:) = tcoeff*(sigma(:,:)-sigma_b)
-          tdamp(:,:,k) = tka + cos_lat_4(:,:)*tfactr(:,:)
-        elsewhere
-          tdamp(:,:,k) = tka
-        endwhere
-      endif
+      where (sigma(:,:) <= 1.0 .and. sigma(:,:) > sigma_b)
+        tfactr(:,:) = tcoeff*(sigma(:,:)-sigma_b)
+        tdamp(:,:,k) = tka + cos_lat_4(:,:)*tfactr(:,:)
+      elsewhere
+        tdamp(:,:,k) = tka
+      endwhere
 
       enddo
 
