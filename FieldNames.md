@@ -6,6 +6,10 @@
 |dynamics |	slp	    |sea level pressure	| (lat,lon)	| | pascals |
 |dynamics |	bk	    |vertical coordinate sigma values	| (phalf)	| if pk = 0, then bk = sigma | (dimensionless) |
 |dynamics |	pk	    |vertical coordinate pressure values	| (phalf)	| if bk = 0, then pk = pressure (i.e. phalf, BUT NB bk in Pa whereas phalf (& pfull) in hPa!) | pascals |
+|dynamics |	pres_full   |pressure at full model levels	| (pfull, lat, lon)	| | pascals |
+|dynamics |	pres_half   |pressure at half model levels	| (phalf, lat, lon)	| | pascals |
+|dynamics |	height      |geopotential height at full model levels	| (pfull, lat, lon)	| | m |
+|dynamics |	height_half |geopotential height at half model levels	| (phalf, lat, lon)	| | m |
 |dynamics |	vor	    |Vorticity	| (pfull, lat, lon)	| | sec**-1 |
 |dynamics |	div	    |Divergence	| (pfull, lat, lon)	| | sec**-1 |
 |dynamics |	temp	  |atmospheric tempertaure	| (pfull, lat, lon)	| | deg_k |
