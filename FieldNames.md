@@ -5,7 +5,7 @@
 |dynamics |	ps	    |surface pressure	| (lat, lon)	| slab | pascals |
 |dynamics |	slp	    |sea level pressure	| (lat,lon)	| | pascals |
 |dynamics |	bk	    |vertical coordinate sigma values	| (phalf)	| if pk = 0, then bk = sigma | (dimensionless) |
-|dynamics |	pk	    |vertical coordinate pressure values	| (phalf)	| if bk = 0, then pk = pressure (i.e. phalf, BUT NB bk is in Pa whereas phalf is in hPa!) | pascals |
+|dynamics |	pk	    |vertical coordinate pressure values	| (phalf)	| if bk = 0, then pk = pressure (i.e. phalf, BUT NB bk in Pa whereas phalf (& pfull) in hPa!) | pascals |
 |dynamics |	vor	    |Vorticity	| (pfull, lat, lon)	| | sec**-1 |
 |dynamics |	div	    |Divergence	| (pfull, lat, lon)	| | sec**-1 |
 |dynamics |	temp	  |atmospheric tempertaure	| (pfull, lat, lon)	| | deg_k |
