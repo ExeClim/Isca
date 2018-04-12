@@ -44,10 +44,12 @@
 |rrtm_radiation | 	tdt_sw	 | Temperature tendency due to SW radiation	| (pfull, lat, lon)	| | |
 |rrtm_radiation |	tdt_lw	| Temperature tendency due to LW radiation	| (pfull, lat, lon)	| | |
 |rrtm_radiation, two_stream |	tdt_rad	| Temperature tendency due to radiation | 	(pfull, lat, lon)	| | |
-|damping, hs_forcing |	tdt_diss_rdamp |	Dissipative heating from Rayleigh damping	| (pfull, lat, lon)	| | deg/sec |
 |damping, hs_forcing |	udt_rdamp |	u wind tendency for Rayleigh damping	| (pfull, lat, lon)	| | m/s2 |
 |damping, hs_forcing |	vdt_rdamp |	v wind tendency for Rayleigh damping	| (pfull, lat, lon)	| | m/s2 |
-|hs_forcing |   	tdt	| Total heating: newtonian damping + local heating | (pfull,lat,lon) | | deg/sec |
+|damping, hs_forcing |	tdt_diss_rdamp |	Dissipative heating from Rayleigh damping	| (pfull, lat, lon)	| | deg/sec |
+|hs_forcing |  	tdt_ndamp	| Heating due to newtonian damping | (pfull,lat,lon) | | deg/sec |
+|hs_forcing |  	local_heating	| Local heating  | (pfull,lat,lon) | | deg/sec |
+|hs_forcing |  	tdt	        | Total heating: newtonian damping + local heating | (pfull,lat,lon) | Also includes dissipative heating if applicable | deg/sec |
 |hs_forcing |   	teq	| Equilibration temperature | (pfull,lat,lon) | | deg_K |
 |vert_turb|	z_pbl	| depth of planetary boundary layer	| (lat, lon)| 	 | |
 
