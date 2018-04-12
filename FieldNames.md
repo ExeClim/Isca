@@ -1,7 +1,7 @@
 |Module name   	| Field name  	|  Field long name 	|  Dimension (not including time) 	| Description (if needed)  	|
 |---	          |---	          |---	              |---	                              |---	                      |
-|dynamics |	u_comp	|u wind	| (pfull, lat, lon)	| zonal component of the horizontal winds |
-|dynamics |	v_comp	|v wind	| (pfull, lat, lon)	| meridional component of the horizontal winds|
+|dynamics |	ucomp	|u wind	| (pfull, lat, lon)	| zonal component of the horizontal winds |
+|dynamics |	vcomp	|v wind	| (pfull, lat, lon)	| meridional component of the horizontal winds|
 |dynamics |	ps	    |surface pressure	| (lat, lon)	| slab |
 |dynamics |	slp	    |sea level pressure	| (lat,lon)	|
 |dynamics |	bk	    |vertical coordinate sigma values	| (phalf)	|
