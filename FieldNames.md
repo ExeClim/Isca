@@ -1,7 +1,7 @@
 |Module name   	| Field name  	|  Field long name 	|  Dimension (not including time) 	| Description (if needed)  	| Units |
 |---	          |---	          |---	              |---	                              |---	                      |--- |
-|dynamics |	ucomp	|u wind	| (pfull, lat, lon)	| zonal component of the horizontal winds | m/sec |
-|dynamics |	vcomp	|v wind	| (pfull, lat, lon)	| meridional component of the horizontal winds| m/sec |
+|dynamics |	ucomp	|zonal wind u	| (pfull, lat, lon)	| zonal component of the horizontal winds | m/sec |
+|dynamics |	vcomp	|meridional wind v	| (pfull, lat, lon)	| meridional component of the horizontal winds| m/sec |
 |dynamics |	ps	    |surface pressure	| (lat, lon)	| slab | pascals |
 |dynamics |	slp	    |sea level pressure	| (lat,lon)	| | pascals |
 |dynamics |	bk	    |vertical coordinate sigma values	| (phalf)	| if pk = 0, then bk = sigma | (dimensionless) |
@@ -9,8 +9,20 @@
 |dynamics |	vor	    |Vorticity	| (pfull, lat, lon)	| | sec**-1 |
 |dynamics |	div	    |Divergence	| (pfull, lat, lon)	| | sec**-1 |
 |dynamics |	temp	  |atmospheric tempertaure	| (pfull, lat, lon)	| | deg_k |
-|dynamics |	omega	  |vertical velocity	| (pfull, lat, lon)	| dp/dt | Pa/sec |
 |dynamics |	sphum	  | specific humidity	| (pfull, lat, lon)	| | |
+|dynamics |	omega	  |vertical velocity	| (pfull, lat, lon)	| dp/dt | Pa/sec |
+|dynamics |	wspd	| horizontal wind speed | (pfull, lat, lon)	| sqrt(u**2 + v**2) | m/sec |
+|dynamics |	ucomp_sq	|zonal wind squared	| (pfull, lat, lon)	|  | (m/sec)**2 |
+|dynamics |	ucomp_vcomp	|zonal wind * meridional wind	| (pfull, lat, lon)	|  | (m/sec)**2 |
+|dynamics |	ucomp_omega	|zonal wind * vertical wind	| (pfull, lat, lon)	|  | m*Pa/sec**2 |
+|dynamics |	vcomp_sq	|meridional wind squared	| (pfull, lat, lon)	|  | (m/sec)**2 |
+|dynamics |	vcomp_omega	|meridional wind * vertical wind	| (pfull, lat, lon)	|  | m*Pa/sec**2 |
+|dynamics |	omega_sq	|omega squared	| (pfull, lat, lon)	| | (Pa/sec)**2 |
+|dynamics |	ucomp_temp	|zonal wind * temperature	| (pfull, lat, lon)	|  | m*K/sec |
+|dynamics |	vcomp_temp	|meridional wind * temperature	| (pfull, lat, lon)	|  | m*K/sec |
+|dynamics |	omega_temp	|dp/dt * temperature	| (pfull, lat, lon)	|  | Pa*K/sec |
+|dynamics |	temp_sq	  |temp squared	| (pfull, lat, lon)	| | deg_k**2 |
+|dynamics |	vcomp_vor	|meridional wind * vorticity	| (pfull, lat, lon)	|  | m/sec**2 |
 |mixed_layer | t_surf |	surface temperature	| (lat, lon) | slab | |
 |mixed_layer | albedo | surface albedo | (lat, lon) | static | |
 |mixed_layer | ml_heat_cap | mixed layer heat capacity | (lat, lon) |  | |
