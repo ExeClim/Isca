@@ -15,7 +15,7 @@
 |dynamics |	temp	  |atmospheric tempertaure	| (pfull, lat, lon)	| | deg_k |
 |dynamics |	sphum	  | specific humidity	| (pfull, lat, lon)	| | |
 |dynamics |	omega	  |vertical velocity	| (pfull, lat, lon)	| dp/dt | Pa/sec |
-|dynamics |	wspd	| horizontal wind speed | (pfull, lat, lon)	| sqrt(u**2 + v**2) | m/sec |
+|dynamics |	wspd	| horizontal wind speed | (pfull, lat, lon)	| sqrt(u^2 + v^2) | m/sec |
 |dynamics |	ucomp_sq	|zonal wind squared	| (pfull, lat, lon)	|  | (m/sec)**2 |
 |dynamics |	ucomp_vcomp	|zonal wind * meridional wind	| (pfull, lat, lon)	|  | (m/sec)**2 |
 |dynamics |	ucomp_omega	|zonal wind * vertical wind	| (pfull, lat, lon)	|  | m*Pa/sec**2 |
