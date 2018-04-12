@@ -1,4 +1,4 @@
-|Module name   	| Field name  	|  Field long name 	|  Dimension (not including time) 	| Description (if needed)  	|
+|Module name   	| Field name  	|  Field long name 	|  Dimension (not including time) 	| Description (if needed)  	| Units |
 |---	          |---	          |---	              |---	                              |---	                      |
 |dynamics |	ucomp	|u wind	| (pfull, lat, lon)	| zonal component of the horizontal winds |
 |dynamics |	vcomp	|v wind	| (pfull, lat, lon)	| meridional component of the horizontal winds|
@@ -22,17 +22,18 @@
 |atmosphere |	condensation_rain |	Large scale resolved rain	| (lat, lon)	|
 |atmosphere |	precipitation |	Sum of resolved rain, resolved snow and parameterised rain 	| (lat, lon)	|
 |rrtm_radiation |  z_thalf 	|   	|   	|   	|
-|rrtm_radiation |	tdt_rad	| Temperature tendency due to radiation | 	(pfull, lat, lon)	|
 |rrtm_radiation |	flux_sw	| Net short wave surface flux	| (lat, lon)	|
 |rrtm_radiation |	flux_lw	| Long wave surface flux	| (lat, lon)	|
 |rrtm_radiation |	rrtm_albedo	 |Interactive albedo	| (lat, lon)	|
 |rrtm_radiation | 	tdt_sw	 | Temperature tendency due to SW radiation	| (pfull, lat, lon)	|
 |rrtm_radiation |	tdt_lw	| Temperature tendency due to LW radiation	| (pfull, lat, lon)	|
-|damping |	udt_rdamp |	u wind tendency for Rayleigh damping	| (pfull, lat, lon)	|
-|damping |	vdt_rdamp |	v wind tendency for Rayleigh damping	| (pfull, lat, lon)	|
-|damping |	tdt_diss_rdamp |	Dissipative heating from Rayleigh damping	| (pfull, lat, lon)	|
+|rrtm_radiation, two_stream |	tdt_rad	| Temperature tendency due to radiation | 	(pfull, lat, lon)	|
+|damping, hs_forcing |	tdt_diss_rdamp |	Dissipative heating from Rayleigh damping	| (pfull, lat, lon)	|
+|damping, hs_forcing |	udt_rdamp |	u wind tendency for Rayleigh damping	| (pfull, lat, lon)	|
+|damping, hs_forcing |	vdt_rdamp |	v wind tendency for Rayleigh damping	| (pfull, lat, lon)	|
+|hs_forcing |   	tdt	| Total heating: newtonian damping + local heating | (pfull,lat,lon) | | deg/sec
+|hs_forcing |   	teq	| Equilibration temperature | (pfull,lat,lon) |
 |vert_turb|	z_pbl	| depth of planetary boundary layer	| (lat, lon)| 	
-|two_stream |	tdt_rad	|Temperature tendency due to radiation	 | (pfull,lat,lon) |
 
 
 The following variables need to be saved to do pressure interpolation: bk, pk and ps. These should be saved for each output frequency (i.e daily and monthly if both are used).
