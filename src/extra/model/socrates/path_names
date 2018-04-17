@@ -351,7 +351,6 @@ atmos_param/socrates/src/trunk/src/scatter/read_scatter_block_90.f90
 atmos_param/socrates/src/trunk/src/scatter/proj_area_particle.f90
 atmos_param/socrates/src/trunk/src/scatter/line_search_cloud_90.f90
 atmos_param/socrates/src/trunk/src/scatter/volume_particle.f90
-atmos_param/socrates/src/trunk/src/scatter/adt_mitchell.f90
 atmos_param/socrates/src/trunk/src/scatter/scatter_average_90.f90
 atmos_param/socrates/src/trunk/src/scatter/distribution_pcf.f90
 atmos_param/socrates/src/trunk/src/scatter/size_integral_90.f90
@@ -426,7 +425,6 @@ atmos_param/socrates/src/trunk/src/correlated_k/hitran_cnst.f90
 atmos_param/socrates/src/trunk/src/correlated_k/ck_fit_pcf.f90
 atmos_param/socrates/src/trunk/src/aux/cdf2samson.f90
 atmos_param/socrates/src/trunk/src/aux/cdf2cdl.f90
-atmos_param/socrates/src/trunk/src/aux/aerosol_model_pcf.f90
 atmos_param/socrates/src/trunk/src/aux/assign_subcols.f90
 atmos_param/socrates/src/trunk/src/aux/qsat_wat.F90
 atmos_param/socrates/src/trunk/src/aux/qsat_gill.F90
@@ -462,7 +460,6 @@ atmos_param/socrates/src/trunk/src/general/make_filter.f90
 atmos_param/socrates/src/trunk/src/general/make_block_0.f90
 atmos_param/socrates/src/trunk/src/general/make_block_10.f90
 atmos_param/socrates/src/trunk/src/general/make_block_14.f90
-atmos_param/socrates/src/trunk/src/general/read_schema_spectrum_90.f90
 atmos_param/socrates/src/trunk/src/general/read_solar_spectrum.f90
 atmos_param/socrates/src/trunk/src/general/remove_negative_cont_90.f90
 atmos_param/socrates/src/trunk/src/general/make_block_3_1.f90
@@ -583,12 +580,10 @@ atmos_param/socrates/src/trunk/src/aux/assign_surface_char_cdf.f
 atmos_param/socrates/src/trunk/src/aux/name_length.f
 atmos_param/socrates/src/trunk/src/aux/merge.f
 atmos_param/socrates/src/trunk/src/aux/samson2cdf.f
-atmos_param/socrates/src/trunk/src/aux/set_sra_profile.f
 atmos_param/socrates/src/trunk/src/aux/sort_raw_profile.f
 atmos_param/socrates/src/trunk/src/aux/read_averaged_scatter.f
 atmos_param/socrates/src/trunk/src/aux/write_cdl_field.f
 atmos_param/socrates/src/trunk/src/aux/planck_ss_source.f
-atmos_param/socrates/src/trunk/src/aux/run_disort.f
 atmos_param/socrates/src/trunk/src/aux/output_photolysis_cdf.f
 atmos_param/socrates/src/trunk/src/aux/gen_horiz_cdl.f
 atmos_param/socrates/src/trunk/src/aux/output_radiance_cdf.f
@@ -614,13 +609,11 @@ atmos_param/socrates/src/trunk/src/aux/set_state.f
 atmos_param/socrates/src/trunk/src/aux/l_find_component.f
 atmos_param/socrates/src/trunk/src/aux/interp_cdf.f
 atmos_param/socrates/src/trunk/src/aux/qsat_gg.f
-atmos_param/socrates/src/trunk/src/aux/disort_interface.f
 atmos_param/socrates/src/trunk/src/aux/read_cdl.f
 atmos_param/socrates/src/trunk/src/aux/wadd.f
 atmos_param/socrates/src/trunk/src/aux/assign_input_vert_cdl.f
 atmos_param/socrates/src/trunk/src/aux/output_photolysis_cdl.f
 atmos_param/socrates/src/trunk/src/general/non_blank.f
-atmos_param/socrates/src/trunk/src/general/remove_weak_cont.f
 atmos_param/socrates/src/trunk/src/general/remove_blank.f
 atmos_param/socrates/src/trunk/src/general/simpsons_rule.f
 atmos_param/socrates/src/trunk/src/general/point_bracket.f
