@@ -644,3 +644,4 @@ atmos_param/socrates/interface/set_bound.F90
 atmos_param/socrates/interface/set_control.F90
 atmos_param/socrates/interface/socrates_calc.F90
 atmos_param/socrates/interface/socrates_interface.F90
+atmos_param/socrates/interface/soc_constants.f90
