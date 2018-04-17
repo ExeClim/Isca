@@ -66,6 +66,7 @@ use rayleigh_bottom_drag_mod, only: rayleigh_bottom_drag_init, compute_rayleigh_
     use rrtm_vars
 #endif
 
+use socrates_interface_mod
 
 implicit none
 private
@@ -104,6 +105,7 @@ logical :: do_ras = .false.
 !s Radiation options
 logical :: two_stream_gray = .true.
 logical :: do_rrtm_radiation = .false.
+logical :: do_socrates_radiation = .false.
 
 !s MiMA uses damping
 logical :: do_damping = .false.
@@ -142,7 +144,8 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roug
                                       land_roughness_prefactor,               &
                                       gp_surface, convection_scheme,          &
                                       bucket, init_bucket_depth, init_bucket_depth_land, & !RG Add bucket 
-                                      max_bucket_depth_land, robert_bucket, raw_bucket
+                                      max_bucket_depth_land, robert_bucket, raw_bucket, &
+                                      do_socrates_radiation
 
 
 integer, parameter :: num_time_levels = 2 !RG Add bucket - number of time levels added to allow timestepping in this module
@@ -694,6 +697,10 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
     endif
 #endif
 
+if (do_socrates_radiation) then
+    call socrates_init(is, ie, js, je, num_levels, axes, Time, lat)
+endif
+
 if(turb) then
    call vert_turb_driver_init (rad_lonb_2d, rad_latb_2d, ie-is+1,je-js+1, &
                  num_levels,get_axis_id(),Time, doing_edt, doing_entrain)
@@ -991,8 +998,44 @@ if(do_rrtm_radiation) then
 endif
 #endif
 
+if (do_socrates_radiation) then
+
+       ! Socrates interface
+
+       !Set tide-locked flux - should be set by namelist!
+       soc_stellar_constant = 3500000.0
+       fms_stellar_flux = soc_stellar_constant*COS(rad_lat(:,:))*COS(rad_lon(:,:))
+       WHERE (fms_stellar_flux < 0.0) fms_stellar_flux = 0.0
 
 
+       ! GCM mode
+       hires_mode = .FALSE.
+
+       ! LW calculation
+       ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
+       soc_mode = .TRUE.
+       CALL socrates_interface(Time, rad_lat(:,:), rad_lon(:,:), soc_mode, hires_mode,    &
+            tg_tmp, t_surf, p_full, p_half, n_profile, n_layer,     &
+            output_heating_rate, output_net_surf_sw_down, output_surf_lw_down,
+fms_stellar_flux )
+
+       tg_tmp = tg_tmp + output_heating_rate*delta_t
+       surf_lw_down(:,:) = output_surf_lw_down(:,:)
+
+
+
+       ! SW calculation
+       ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
+       soc_mode = .FALSE.
+       CALL socrates_interface(Time, rad_lat(:,:), rad_lon(:,:), soc_mode, hires_mode,    &
+            tg_tmp, t_surf, p_full, p_half, n_profile, n_layer,     &
+            output_heating_rate, output_net_surf_sw_down, output_surf_lw_down,
+fms_stellar_flux )
+
+       tg_tmp = tg_tmp + output_heating_rate*delta_t
+       net_surf_sw_down(:,:) = output_net_surf_sw_down(:,:)
+
+endif
 if(gp_surface) then
 
 	call gp_surface_flux (dt_tg(:,:,:), p_half(:,:,:,current), num_levels)
