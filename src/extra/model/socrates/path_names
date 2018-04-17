@@ -633,4 +633,3 @@ atmos_param/socrates/src/trunk/src/general/inner_bracket.f
 atmos_param/socrates/src/trunk/src/general/svd_decompose.f
 atmos_param/socrates/src/trunk/src/general/calc_planck_tbl.f
 atmos_param/socrates/src/trunk/src/general/read_word.f
-atmos_param/socrates/src/trunk/data/aerosol/refract_maker_bond_bbmix.f
