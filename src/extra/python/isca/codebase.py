@@ -266,6 +266,22 @@ class IscaCodeBase(CodeBase):
     name = 'isca'
     executable_name = 'isca.x'
 
+class SocratesCodeBase(CodeBase):
+    """Isca without RRTM but with the Met Office radiation scheme, Socrates.
+    """
+    #path_names_file = P(_module_directory, 'templates', 'moist_path_names')
+    name = 'socrates'
+    executable_name = 'soc_isca.x'
+
+    def disable_rrtm(self):
+        # add no compile flag
+        self.compile_flags.append('-DRRTM_NO_COMPILE')
+        self.log.info('RRTM compilation disabled.')
+
+    def __init__(self, *args, **kwargs):
+        super(SocratesCodeBase, self).__init__(*args, **kwargs)
+        self.disable_rrtm()
+
 class GreyCodeBase(CodeBase):
     """The Frierson model.
     This is the closest to the Frierson model, with moist dynamics and a
