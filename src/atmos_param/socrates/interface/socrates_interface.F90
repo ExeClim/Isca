@@ -215,10 +215,10 @@ CONTAINS
     real(r_def), intent(out) :: fms_net_surf_sw_down(:,:)
     real(r_def), intent(out) :: fms_surf_lw_down(:,:)
     real(r_def), intent(out) :: output_heating_rate(:,:,:)
-    real(r_def) :: output_heating_rate_lw(144,3,40)
-    real(r_def) :: output_heating_rate_sw(144,3,40)
-    real(r_def) :: output_soc_flux_up_lw(144,3,40)
-    real(r_def) :: output_soc_flux_down_sw(144,3,40)
+    real(r_def) :: output_heating_rate_lw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
+    real(r_def) :: output_heating_rate_sw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
+    real(r_def) :: output_soc_flux_up_lw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
+    real(r_def) :: output_soc_flux_down_sw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
     real(r_def), allocatable :: output_soc_spectral_olr(:,:,:)
 
     ! Hi-res output
@@ -264,10 +264,10 @@ CONTAINS
     ! Allocate spectral array sizes
     if (hires_mode == .FALSE.) then
        allocate(soc_spectral_olr(n_soc_bands_lw))
-       allocate(output_soc_spectral_olr(144,3,n_soc_bands_lw))
+       allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_lw))
     else
        allocate(soc_spectral_olr(n_soc_bands_lw_hires))
-       allocate(output_soc_spectral_olr(144,3,n_soc_bands_lw_hires))
+       allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_lw_hires))
     end if
 
     ! Set array sizes
@@ -278,8 +278,8 @@ CONTAINS
 
 
 
-    do lon = 1,144
-       do n = 1, 3
+    do lon = 1,size(fms_temp,1)
+       do n = 1, size(fms_temp,2)
 
           nlat = n
 
@@ -307,14 +307,18 @@ CONTAINS
 
           !--------------
 
+        write(6,*) 'do I make it here?', lon, n, size(fms_temp,1), size(fms_temp,2), size(fms_temp,3)
+
           !Set input t_level by scaling t - NEEDS TO CHANGE!
           DO i = nlat, nlat
              DO k = 0,n_layer
                 input_t_level(k) = 0.5*(input_t(k+1)+input_t(k))
              END DO
-             input_t_level(40) = input_t(40) + input_t(40) - input_t_level(39)
+             input_t_level(n_layer) = input_t(n_layer) + input_t(n_layer) - input_t_level(n_layer-1)
              input_t_level(0) = input_t(1) - (input_t_level(1) - input_t(1))
           END DO
+
+        write(6,*) 'do I make it past here?'
 
 
 
@@ -361,8 +365,11 @@ CONTAINS
 
           ! Do calculation
           control_calc%isolir = 2
+          write(6,*) 'Read control'
+
           CALL read_control(control_calc, spectrum_calc)
 
+          write(6,*) 'Socrates calc step'
           CALL socrates_calc(Time_diag, control_calc, spectrum_calc,                                          &
                n_profile, n_layer, input_n_cloud_layer, input_n_aer_mode,                   &
                input_cld_subcol_gen, input_cld_subcol_req,                                  &
@@ -373,24 +380,33 @@ CONTAINS
                input_layer_heat_capacity,                                                   &
                soc_flux_direct, soc_flux_down_lw, soc_flux_up_lw, soc_heating_rate_lw, soc_spectral_olr)
 
+          write(6,*) 'made it out of soc calc step'
+          write(6,*) 'Output arrays', size(fms_surf_lw_down, 1), size(fms_surf_lw_down, 2)
+          write(6,*) 'Output arrays', size(soc_flux_down_lw)
 
           ! Set output arrays
-          fms_surf_lw_down(lon,nlat) = soc_flux_down_lw(40)
+          fms_surf_lw_down(lon,nlat) = soc_flux_down_lw(n_layer)
+          write(6,*) ' done surf lw down'
           output_heating_rate(lon,nlat,:) = soc_heating_rate_lw(:)
+          write(6,*) ' done heating rate'          
           output_soc_spectral_olr(lon,nlat,:) = soc_spectral_olr(:)
 
 
+          write(6,*) 'fluxes etc', soc_mode
+
 
           if (soc_mode == .TRUE.) then
-             fms_surf_lw_down(lon,nlat) = soc_flux_down_lw(40)
+             fms_surf_lw_down(lon,nlat) = soc_flux_down_lw(n_layer)
              output_soc_flux_up_lw(lon,nlat,:) = soc_flux_up_lw(:)
              output_heating_rate_lw(lon,nlat,:) = soc_heating_rate_lw(:)
           else
-             fms_net_surf_sw_down(lon,nlat) = soc_flux_down_lw(40)
+             fms_net_surf_sw_down(lon,nlat) = soc_flux_down_lw(n_layer)
 
              output_soc_flux_down_sw(lon,nlat,:) = soc_flux_down_lw(:)
              output_heating_rate_sw(lon,nlat,:) = soc_heating_rate_lw(:)
           end if
+
+          write(6,*) 'end inner loop'
 
 
        end do

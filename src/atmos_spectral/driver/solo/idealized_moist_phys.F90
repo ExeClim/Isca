@@ -1004,13 +1004,15 @@ endif
 #endif
 
 if (do_socrates_radiation) then
-
+    write(6,*) 'entering actual running of soc'
        ! Socrates interface
 
        !Set tide-locked flux - should be set by namelist!
        soc_stellar_constant = 3500000.0
        fms_stellar_flux = soc_stellar_constant*COS(rad_lat(:,:))*COS(rad_lon(:,:))
        WHERE (fms_stellar_flux < 0.0) fms_stellar_flux = 0.0
+
+    write(6,*) 'defined stufff'
 
        n_profile = size(rad_lat,1)* size(rad_lat,2)
        n_layer   = size(tg,3)
@@ -1022,15 +1024,19 @@ if (do_socrates_radiation) then
        ! LW calculation
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .TRUE.
+       write(6,*) size(output_surf_lw_down,1), size(output_surf_lw_down,2), 'ste'
+    write(6,*) 'lw run'
        CALL socrates_interface(Time, rad_lat(:,:), rad_lon(:,:), soc_lw_mode, socrates_hires_mode,    &
             tg(:,:,:,previous), t_surf_for_soc, p_full(:,:,:,current), p_half(:,:,:,current), n_profile, n_layer,     &
             output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
+
+    write(6,*) 'lw outs'
 
        tg_tmp_soc = tg(:,:,:,previous) + output_heating_rate*delta_t
        surf_lw_down(:,:) = output_surf_lw_down(:,:)
 
 
-
+    write(6,*) 'sw run'
        ! SW calculation
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .FALSE.
@@ -1038,8 +1044,11 @@ if (do_socrates_radiation) then
             tg_tmp_soc, t_surf_for_soc, p_full(:,:,:,current), p_half(:,:,:,current), n_profile, n_layer,     &
             output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
+    write(6,*) 'sw outs'
        tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t
        net_surf_sw_down(:,:) = output_net_surf_sw_down(:,:)
+
+    write(6,*) 'done 1'
 
 endif
 if(gp_surface) then
