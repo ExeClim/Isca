@@ -276,7 +276,9 @@ CONTAINS
     input_cld_subcol_gen = n_layer
     input_cld_subcol_req = n_layer
 
-
+    write(6,*) 'checking arrays passed in'
+    write(6,*) n_layer
+    write(6,*) n_profile
 
     do lon = 1,size(fms_temp,1)
        do n = 1, size(fms_temp,2)
@@ -369,6 +371,12 @@ CONTAINS
 
           CALL read_control(control_calc, spectrum_calc)
 
+          write(6,*) 'made it out of read_control'
+          write(6,*) 'Output arrays', n_profile, n_layer
+          write(6,*) 'Output arrays', size(output_heating_rate,1)          
+          write(6,*) 'Output arrays', size(fms_surf_lw_down, 1), size(fms_surf_lw_down, 2)
+          write(6,*) 'Output arrays', size(soc_flux_down_lw)
+
           write(6,*) 'Socrates calc step'
           CALL socrates_calc(Time_diag, control_calc, spectrum_calc,                                          &
                n_profile, n_layer, input_n_cloud_layer, input_n_aer_mode,                   &
@@ -381,6 +389,8 @@ CONTAINS
                soc_flux_direct, soc_flux_down_lw, soc_flux_up_lw, soc_heating_rate_lw, soc_spectral_olr)
 
           write(6,*) 'made it out of soc calc step'
+          write(6,*) 'Output arrays', n_profile, n_layer
+          write(6,*) 'Output arrays', size(output_heating_rate,1)          
           write(6,*) 'Output arrays', size(fms_surf_lw_down, 1), size(fms_surf_lw_down, 2)
           write(6,*) 'Output arrays', size(soc_flux_down_lw)
 

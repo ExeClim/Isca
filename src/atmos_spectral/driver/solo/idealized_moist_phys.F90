@@ -734,9 +734,9 @@ real, dimension(:,:,:,:),   intent(inout) :: dt_tracers
 
 real :: delta_t, soc_stellar_constant
 integer(i_def) :: n_profile, n_layer
-real(r_def), dimension(size(ug,1), size(ug,2)) :: t_surf_for_soc
-real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, tg_tmp_soc, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv, output_heating_rate
-real, dimension(size(ug,1), size(ug,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down
+real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv, output_heating_rate
+real(r_def), dimension(size(ug,1), size(ug,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc
+real(r_def), dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp_soc, p_full_soc, p_half_soc
 
 logical :: socrates_hires_mode, soc_lw_mode
 
@@ -1026,13 +1026,20 @@ if (do_socrates_radiation) then
        soc_lw_mode = .TRUE.
        write(6,*) size(output_surf_lw_down,1), size(output_surf_lw_down,2), 'ste'
     write(6,*) 'lw run'
-       CALL socrates_interface(Time, rad_lat(:,:), rad_lon(:,:), soc_lw_mode, socrates_hires_mode,    &
-            tg(:,:,:,previous), t_surf_for_soc, p_full(:,:,:,current), p_half(:,:,:,current), n_profile, n_layer,     &
+    
+       rad_lat_soc = rad_lat
+       rad_lon_soc = rad_lon
+       tg_tmp_soc =  tg(:,:,:,previous)
+       p_full_soc = p_full(:,:,:,current)
+       p_half_soc = p_half(:,:,:,current)
+    
+       CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
+            tg_tmp_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
             output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
     write(6,*) 'lw outs'
 
-       tg_tmp_soc = tg(:,:,:,previous) + output_heating_rate*delta_t
+       tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t
        surf_lw_down(:,:) = output_surf_lw_down(:,:)
 
 
