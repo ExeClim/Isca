@@ -70,7 +70,8 @@ exp.namelist = namelist = Namelist({
         'roughness_mom':3.21e-05,
         'roughness_heat':3.21e-05,
         'roughness_moist':3.21e-05,            
-        'two_stream_gray': True,     #Use the grey radiation scheme
+        'two_stream_gray': False,     #Use the grey radiation scheme
+        'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
     },
 
