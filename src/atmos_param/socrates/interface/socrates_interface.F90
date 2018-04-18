@@ -63,19 +63,19 @@ CONTAINS
     !-------------------------------------------------------------------------------------
 
     ! Socrates spectral files -- should be set by namelist
-    control_lw%spectral_file = '~/Work/spec_file_co_gcm'
-    control_lw_hires%spectral_file = '~/Work/spec_file_co_hires_gcm'
+    control_lw%spectral_file = '/scratch/sit204/Isca/src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7'
+    control_lw_hires%spectral_file = '/scratch/sit204/Isca/src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7'
     !control_lw_hires%spectral_file = '~/Work/spec_file_co2_co'
 
-    control_sw%spectral_file = '~/Work/spec_file_co_gcm'
-    control_sw_hires%spectral_file = '~/Work/spec_file_co_hires_gcm'
+    control_sw%spectral_file = '/scratch/sit204/Isca/src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7'
+    control_sw_hires%spectral_file = '/scratch/sit204/Isca/src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7'
 
     ! Read in spectral files
     CALL read_spectrum(control_lw%spectral_file,spectrum_lw)
     CALL read_spectrum(control_lw_hires%spectral_file,spectrum_lw_hires)
     CALL read_spectrum(control_sw%spectral_file,spectrum_sw)
     CALL read_spectrum(control_sw_hires%spectral_file,spectrum_sw_hires)
-
+    
     ! Set Socrates configuration
     CALL read_control(control_lw,spectrum_lw)
     CALL read_control(control_lw_hires,spectrum_lw_hires)
