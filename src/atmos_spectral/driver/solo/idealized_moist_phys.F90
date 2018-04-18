@@ -734,6 +734,7 @@ real, dimension(:,:,:,:),   intent(inout) :: dt_tracers
 
 real :: delta_t, soc_stellar_constant
 integer(i_def) :: n_profile, n_layer
+real(r_def), dimension(size(ug,1), size(ug,2)) :: t_surf_for_soc
 real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, tg_tmp_soc, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv, output_heating_rate
 real, dimension(size(ug,1), size(ug,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down
 
@@ -1013,6 +1014,7 @@ if (do_socrates_radiation) then
 
        n_profile = size(rad_lat,1)* size(rad_lat,2)
        n_layer   = size(tg,3)
+       t_surf_for_soc = t_surf(:,:)
 
        ! GCM mode
        socrates_hires_mode = .FALSE.
@@ -1021,7 +1023,7 @@ if (do_socrates_radiation) then
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .TRUE.
        CALL socrates_interface(Time, rad_lat(:,:), rad_lon(:,:), soc_lw_mode, socrates_hires_mode,    &
-            tg(:,:,:,previous), t_surf, p_full(:,:,:,current), p_half(:,:,:,current), n_profile, n_layer,     &
+            tg(:,:,:,previous), t_surf_for_soc, p_full(:,:,:,current), p_half(:,:,:,current), n_profile, n_layer,     &
             output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
        tg_tmp_soc = tg(:,:,:,previous) + output_heating_rate*delta_t
@@ -1033,7 +1035,7 @@ if (do_socrates_radiation) then
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .FALSE.
        CALL socrates_interface(Time, rad_lat(:,:), rad_lon(:,:), soc_lw_mode, socrates_hires_mode,    &
-            tg_tmp_soc, t_surf, p_full(:,:,:,current), p_half(:,:,:,current), n_profile, n_layer,     &
+            tg_tmp_soc, t_surf_for_soc, p_full(:,:,:,current), p_half(:,:,:,current), n_profile, n_layer,     &
             output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t

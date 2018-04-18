@@ -23,7 +23,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk1', codebase=cb)
+exp = Experiment('soc_test_mk2', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc')]
 
