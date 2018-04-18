@@ -46,9 +46,9 @@ case(ip_solar)
   control%l_orog           = .FALSE.
   control%l_solvar         = .FALSE.
   control%l_h2o            = .FALSE.
-  control%l_co2            = .True.!.TRUE.
-  control%l_co             = .False.
-  control%l_o3             = .False.!.TRUE.
+  control%l_co2            = .FALSE.!.TRUE.
+  control%l_co             = .FALSE.
+  control%l_o3             = .FALSE.!.TRUE.
   control%l_n2o            = .True.!.TRUE.
   control%l_ch4            = .False.!.TRUE.
   control%l_o2             = .False.!.TRUE.
@@ -60,10 +60,10 @@ case(ip_solar)
 case(ip_infra_red)
   control%i_2stream        = ip_elsasser
   control%i_scatter_method = ip_no_scatter_ext!ip_scatter_hybrid
-  control%l_ir_source_quad = .TRUE.
-  control%l_h2o            = .True.!.TRUE.
-  control%l_co2            = .TRUE.
-  control%l_co             = .False.
+  control%l_ir_source_quad = .True.
+  control%l_h2o            = .FALSE.!.TRUE.
+  control%l_co2            = .FALSE.
+  control%l_co             = .FALSE.
   control%l_o3             = .FALSE.!.TRUE.
   control%l_n2o            = .True.!.TRUE.
   control%l_ch4            = .FALSE.!.TRUE.

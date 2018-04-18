@@ -1024,7 +1024,7 @@ if (do_socrates_radiation) then
        ! LW calculation
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .TRUE.
-       write(6,*) size(output_surf_lw_down,1), size(output_surf_lw_down,2), 'ste'
+       write(6,*) size(output_surf_lw_down,1), size(output_surf_lw_down,2), 'ste', Time, 'ste2'
     write(6,*) 'lw run'
     
        rad_lat_soc = rad_lat
