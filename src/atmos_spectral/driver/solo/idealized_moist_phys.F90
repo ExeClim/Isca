@@ -1008,7 +1008,7 @@ if (do_socrates_radiation) then
        ! Socrates interface
 
        !Set tide-locked flux - should be set by namelist!
-       soc_stellar_constant = 3500000.0
+       soc_stellar_constant = 1370.0
        fms_stellar_flux = soc_stellar_constant*COS(rad_lat(:,:))*COS(rad_lon(:,:))
        WHERE (fms_stellar_flux < 0.0) fms_stellar_flux = 0.0
 
