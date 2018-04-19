@@ -734,9 +734,9 @@ real, dimension(:,:,:,:),   intent(inout) :: dt_tracers
 
 real :: delta_t, soc_stellar_constant
 integer(i_def) :: n_profile, n_layer
-real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv, output_heating_rate
+real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
 real(r_def), dimension(size(ug,1), size(ug,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc
-real(r_def), dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp_soc, p_full_soc
+real(r_def), dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp_soc, p_full_soc, output_heating_rate
 real(r_def), dimension(size(ug,1), size(ug,2), size(ug,3)+1) :: p_half_soc
 
 logical :: socrates_hires_mode, soc_lw_mode
@@ -1005,7 +1005,6 @@ endif
 #endif
 
 if (do_socrates_radiation) then
-    write(6,*) 'entering actual running of soc'
        ! Socrates interface
 
        !Set tide-locked flux - should be set by namelist!
@@ -1037,7 +1036,7 @@ if (do_socrates_radiation) then
        tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t
        surf_lw_down(:,:) = REAL(output_surf_lw_down(:,:))
 
-       dt_tg(:,:,:) = dt_tg(:,:,:) + output_heating_rate*delta_t
+       dt_tg(:,:,:) = dt_tg(:,:,:) + real(output_heating_rate)
        
        ! SW calculation
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
@@ -1049,9 +1048,7 @@ if (do_socrates_radiation) then
        tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t
        net_surf_sw_down(:,:) = REAL(output_net_surf_sw_down(:,:))
 
-       dt_tg(:,:,:) = dt_tg(:,:,:) + output_heating_rate*delta_t
-
-    write(6,*) 'Done actual running of soc'
+       dt_tg(:,:,:) = dt_tg(:,:,:) + real(output_heating_rate)
 
 endif
 
