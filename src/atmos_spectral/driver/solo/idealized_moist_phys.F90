@@ -736,7 +736,8 @@ real :: delta_t, soc_stellar_constant
 integer(i_def) :: n_profile, n_layer
 real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv, output_heating_rate
 real(r_def), dimension(size(ug,1), size(ug,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc
-real(r_def), dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp_soc, p_full_soc, p_half_soc
+real(r_def), dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp_soc, p_full_soc
+real(r_def), dimension(size(ug,1), size(ug,2), size(ug,3)+1) :: p_half_soc
 
 logical :: socrates_hires_mode, soc_lw_mode
 
@@ -1012,8 +1013,6 @@ if (do_socrates_radiation) then
        fms_stellar_flux = soc_stellar_constant*COS(rad_lat(:,:))*COS(rad_lon(:,:))
        WHERE (fms_stellar_flux < 0.0) fms_stellar_flux = 0.0
 
-    write(6,*) 'defined stufff'
-
        n_profile = INT(1, kind(i_def))
        n_layer   = INT(size(tg,3), kind(i_def))
        t_surf_for_soc = REAL(t_surf(:,:), kind(r_def))
@@ -1024,7 +1023,6 @@ if (do_socrates_radiation) then
        ! LW calculation
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .TRUE.
-    write(6,*) 'lw run'
     
        rad_lat_soc = REAL(rad_lat, kind(r_def))
        rad_lon_soc = REAL(rad_lon, kind(r_def))
@@ -1036,13 +1034,11 @@ if (do_socrates_radiation) then
             tg_tmp_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
             output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
-    write(6,*) 'lw outs'
-
        tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t
        surf_lw_down(:,:) = REAL(output_surf_lw_down(:,:))
 
-
-    write(6,*) 'sw run'
+       dt_tg(:,:,:) = dt_tg(:,:,:) + output_heating_rate*delta_t
+       
        ! SW calculation
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .FALSE.
@@ -1050,13 +1046,15 @@ if (do_socrates_radiation) then
             tg_tmp_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
             output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
-    write(6,*) 'sw outs'
        tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t
        net_surf_sw_down(:,:) = REAL(output_net_surf_sw_down(:,:))
 
-    write(6,*) 'done 1'
+       dt_tg(:,:,:) = dt_tg(:,:,:) + output_heating_rate*delta_t
+
+    write(6,*) 'Done actual running of soc'
 
 endif
+
 if(gp_surface) then
 
 	call gp_surface_flux (dt_tg(:,:,:), p_half(:,:,:,current), num_levels)
