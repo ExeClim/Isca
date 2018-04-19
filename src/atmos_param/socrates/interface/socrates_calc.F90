@@ -167,6 +167,8 @@ call set_cld(control, dimen, spectrum, cld, n_profile)
 
 call set_aer(control, dimen, spectrum, aer, n_profile)
 
+write(6,*) 'inside socrates calc ste more'
+write(6,*) n_profile, n_layer
 
 ! DEPENDS ON: radiance_calc
 call radiance_calc(control, dimen, spectrum, atm, cld, aer, bound, radout)

@@ -1014,9 +1014,9 @@ if (do_socrates_radiation) then
 
     write(6,*) 'defined stufff'
 
-       n_profile = size(rad_lat,1)* size(rad_lat,2)
-       n_layer   = size(tg,3)
-       t_surf_for_soc = t_surf(:,:)
+       n_profile = INT(size(rad_lat,1)* size(rad_lat,2), kind(i_def))
+       n_layer   = INT(size(tg,3), kind(i_def))
+       t_surf_for_soc = REAL(t_surf(:,:), kind(r_def))
 
        ! GCM mode
        socrates_hires_mode = .FALSE.
@@ -1027,11 +1027,11 @@ if (do_socrates_radiation) then
        write(6,*) size(output_surf_lw_down,1), size(output_surf_lw_down,2), 'ste', Time, 'ste2'
     write(6,*) 'lw run'
     
-       rad_lat_soc = rad_lat
-       rad_lon_soc = rad_lon
-       tg_tmp_soc =  tg(:,:,:,previous)
-       p_full_soc = p_full(:,:,:,current)
-       p_half_soc = p_half(:,:,:,current)
+       rad_lat_soc = REAL(rad_lat, kind(r_def))
+       rad_lon_soc = REAL(rad_lon, kind(r_def))
+       tg_tmp_soc =  REAL(tg(:,:,:,previous), kind(r_def))
+       p_full_soc = REAL(p_full(:,:,:,current), kind(r_def))
+       p_half_soc = REAL(p_half(:,:,:,current), kind(r_def))
     
        CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
             tg_tmp_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &

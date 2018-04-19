@@ -16,6 +16,7 @@ USE def_spectrum, ONLY: StrSpecData
 USE def_dimen,    ONLY: StrDim
 USE def_control,  ONLY: StrCtrl
 USE def_aer,      ONLY: StrAer, allocate_aer, allocate_aer_prsc
+use soc_constants_mod,   only: i_def, r_def
 
 IMPLICIT NONE
 
@@ -32,7 +33,7 @@ TYPE (StrSpecData), INTENT(IN)  :: spectrum
 ! Aerosol properties:
 TYPE(StrAer),       INTENT(OUT) :: aer
 
-INTEGER, INTENT(IN) :: n_profile
+INTEGER(i_def), INTENT(IN) :: n_profile
 !   Number of atmospheric profiles for radiation calculations
 
 
