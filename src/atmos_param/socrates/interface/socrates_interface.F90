@@ -70,8 +70,6 @@ CONTAINS
     control_sw%spectral_file = '/scratch/sit204/sp_sw_ga7'
     control_sw_hires%spectral_file = '/scratch/sit204/sp_sw_ga7'
 
-    write(6,*) ' About to read in spectral files'
-
     ! Read in spectral files
     CALL read_spectrum(control_lw%spectral_file,spectrum_lw)
     CALL read_spectrum(control_lw_hires%spectral_file,spectrum_lw_hires)
@@ -278,13 +276,9 @@ CONTAINS
     input_cld_subcol_gen = n_layer
     input_cld_subcol_req = n_layer
 
-    write(6,*) 'checking arrays passed in'
-    write(6,*) n_layer
-    write(6,*) n_profile
-
     do lon = 1,size(fms_temp,1)
        do n = 1, size(fms_temp,2)
-
+       
           nlat = n
 
           !Set input T, p, p_level, and mixing ratio profiles
@@ -295,7 +289,6 @@ CONTAINS
           ! TODO: Remove or edit
           input_mixing_ratio = 0.0!
           input_o3_mixing_ratio = 0.0!
-
 
           !-------------
 
@@ -310,9 +303,6 @@ CONTAINS
 
 
           !--------------
-
-        write(6,*) 'do I make it here?', lon, n, size(fms_temp,1), size(fms_temp,2), size(fms_temp,3)
-
           !Set input t_level by scaling t - NEEDS TO CHANGE!
           DO i = nlat, nlat
              DO k = 0,n_layer
@@ -321,10 +311,6 @@ CONTAINS
              input_t_level(n_layer) = input_t(n_layer) + input_t(n_layer) - input_t_level(n_layer-1)
              input_t_level(0) = input_t(1) - (input_t_level(1) - input_t(1))
           END DO
-
-        write(6,*) 'do I make it past here?'
-
-
 
           !Set input dry mass, density, and heat capacity profiles
           DO i=n_layer, 1, -1
@@ -368,15 +354,9 @@ CONTAINS
 
           ! Do calculation
           control_calc%isolir = 2
-          write(6,*) 'Read control'
 
           CALL read_control(control_calc, spectrum_calc)
 
-          write(6,*) 'made it out of read_control'
-
-          write(6,*) control_calc
-
-          write(6,*) 'Socrates calc step'
           CALL socrates_calc(Time_diag, control_calc, spectrum_calc,                                          &
                n_profile, n_layer, input_n_cloud_layer, input_n_aer_mode,                   &
                input_cld_subcol_gen, input_cld_subcol_req,                                  &
@@ -387,22 +367,10 @@ CONTAINS
                input_layer_heat_capacity,                                                   &
                soc_flux_direct, soc_flux_down_lw, soc_flux_up_lw, soc_heating_rate_lw, soc_spectral_olr)
 
-          write(6,*) 'made it out of soc calc step'
-          write(6,*) 'Output arrays', n_profile, n_layer
-          write(6,*) 'Output arrays', size(output_heating_rate,1)          
-          write(6,*) 'Output arrays', size(fms_surf_lw_down, 1), size(fms_surf_lw_down, 2)
-          write(6,*) 'Output arrays', size(soc_flux_down_lw)
-
           ! Set output arrays
           fms_surf_lw_down(lon,nlat) = soc_flux_down_lw(n_layer)
-          write(6,*) ' done surf lw down'
           output_heating_rate(lon,nlat,:) = soc_heating_rate_lw(:)
-          write(6,*) ' done heating rate'          
           output_soc_spectral_olr(lon,nlat,:) = soc_spectral_olr(:)
-
-
-          write(6,*) 'fluxes etc', soc_mode
-
 
           if (soc_mode == .TRUE.) then
              fms_surf_lw_down(lon,nlat) = soc_flux_down_lw(n_layer)
@@ -414,9 +382,6 @@ CONTAINS
              output_soc_flux_down_sw(lon,nlat,:) = soc_flux_down_lw(:)
              output_heating_rate_sw(lon,nlat,:) = soc_heating_rate_lw(:)
           end if
-
-          write(6,*) 'end inner loop'
-
 
        end do
     end do
@@ -433,6 +398,14 @@ CONTAINS
        used = send_data ( id_soc_flux_down_sw, output_soc_flux_down_sw, Time_diag)
     endif
 
+    ! Allocate spectral array sizes
+    if (hires_mode == .FALSE.) then
+       deallocate(soc_spectral_olr)
+       deallocate(output_soc_spectral_olr)
+    else
+       deallocate(soc_spectral_olr)
+       deallocate(output_soc_spectral_olr)
+    end if
 
   end subroutine socrates_interface
 end module socrates_interface_mod

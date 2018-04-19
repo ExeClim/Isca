@@ -19,7 +19,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
-cb.compile(debug=True)  # compile the source code to working directory $GFDL_WORK/codebase
+cb.compile(debug=False)  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
@@ -173,6 +173,6 @@ exp.namelist = namelist = Namelist({
 
 #Lets do a run!
 if __name__=="__main__":
-    exp.run(1, use_restart=False, num_cores=NCORES, run_idb=True)
+    exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
     for i in range(2,121):
         exp.run(i, num_cores=NCORES)
