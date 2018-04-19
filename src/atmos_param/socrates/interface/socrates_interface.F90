@@ -17,7 +17,7 @@ MODULE socrates_interface_mod
   USE read_control_mod
   USE def_control, ONLY: StrCtrl,  allocate_control,   deallocate_control
   USE def_spectrum
-
+  use constants_mod, only: grav, rdgas, rvgas, cp_air
 
   IMPLICIT NONE
 
@@ -326,10 +326,9 @@ CONTAINS
 
           !Set input dry mass, density, and heat capacity profiles
           DO i=n_layer, 1, -1
-             input_d_mass(i) = (input_p_level(i)-input_p_level(i-1))/23.0
-             input_density(i) = input_p(i)/(8.31*input_t(i))!1000.!atm%p(l ,i) / 1000
-             !KLUDGE
-             input_layer_heat_capacity(i) = input_d_mass(i)*1303.1!17.0*1005.0
+             input_d_mass(i) = (input_p_level(i)-input_p_level(i-1))/grav
+             input_density(i) = input_p(i)/(rdgas*input_t(i))
+             input_layer_heat_capacity(i) = input_d_mass(i)*cp_air
           END DO
 
 
