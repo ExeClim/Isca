@@ -353,7 +353,6 @@ CONTAINS
 
 
           ! Do calculation
-          control_calc%isolir = 2
 
           CALL read_control(control_calc, spectrum_calc)
 
@@ -378,7 +377,6 @@ CONTAINS
              output_heating_rate_lw(lon,nlat,:) = soc_heating_rate_lw(:)
           else
              fms_net_surf_sw_down(lon,nlat) = soc_flux_down_lw(n_layer)
-
              output_soc_flux_down_sw(lon,nlat,:) = soc_flux_down_lw(:)
              output_heating_rate_sw(lon,nlat,:) = soc_heating_rate_lw(:)
           end if
