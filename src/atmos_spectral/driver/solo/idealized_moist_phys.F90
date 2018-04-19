@@ -732,14 +732,9 @@ integer,                    intent(in)    :: previous, current
 real, dimension(:,:,:),     intent(inout) :: dt_ug, dt_vg, dt_tg
 real, dimension(:,:,:,:),   intent(inout) :: dt_tracers
 
-real :: delta_t, soc_stellar_constant
-integer(i_def) :: n_profile, n_layer
+real :: delta_t
 real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
-real(r_def), dimension(size(ug,1), size(ug,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc
-real(r_def), dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp_soc, p_full_soc, output_heating_rate
-real(r_def), dimension(size(ug,1), size(ug,2), size(ug,3)+1) :: p_half_soc
 
-logical :: socrates_hires_mode, soc_lw_mode
 
 real, intent(in) , dimension(:,:,:), optional :: mask
 integer, intent(in) , dimension(:,:),   optional :: kbot
@@ -1006,49 +1001,9 @@ endif
 
 if (do_socrates_radiation) then
        ! Socrates interface
-
-       !Set tide-locked flux - should be set by namelist!
-       soc_stellar_constant = 1370.0
-       fms_stellar_flux = soc_stellar_constant*COS(rad_lat(:,:))*COS(rad_lon(:,:))
-       WHERE (fms_stellar_flux < 0.0) fms_stellar_flux = 0.0
-
-       n_profile = INT(1, kind(i_def))
-       n_layer   = INT(size(tg,3), kind(i_def))
-       t_surf_for_soc = REAL(t_surf(:,:), kind(r_def))
-
-       ! GCM mode
-       socrates_hires_mode = .FALSE.
-
-       ! LW calculation
-       ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
-       soc_lw_mode = .TRUE.
-    
-       rad_lat_soc = REAL(rad_lat, kind(r_def))
-       rad_lon_soc = REAL(rad_lon, kind(r_def))
-       tg_tmp_soc =  REAL(tg(:,:,:,previous), kind(r_def))
-       p_full_soc = REAL(p_full(:,:,:,current), kind(r_def))
-       p_half_soc = REAL(p_half(:,:,:,current), kind(r_def))
-    
-       CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
-            tg_tmp_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
-            output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
-
-       tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t
-       surf_lw_down(:,:) = REAL(output_surf_lw_down(:,:))
-
-       dt_tg(:,:,:) = dt_tg(:,:,:) + real(output_heating_rate)
        
-       ! SW calculation
-       ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
-       soc_lw_mode = .FALSE.
-       CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
-            tg_tmp_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
-            output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
-
-       tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t
-       net_surf_sw_down(:,:) = REAL(output_net_surf_sw_down(:,:))
-
-       dt_tg(:,:,:) = dt_tg(:,:,:) + real(output_heating_rate)
+    call run_socrates(Time, rad_lat, rad_lon, tg(:,:,:,previous), t_surf(:,:), p_full(:,:,:,current), &
+                      p_half(:,:,:,current), dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t)
 
 endif
 

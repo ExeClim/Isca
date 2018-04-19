@@ -4,7 +4,7 @@ import numpy as np
 
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 16
+NCORES = 1
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -23,7 +23,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk4_16_cores', codebase=cb)
+exp = Experiment('soc_test_mk5', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc')]
 
