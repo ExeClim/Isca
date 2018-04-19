@@ -4,7 +4,7 @@ import numpy as np
 
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 1
+NCORES = 16
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -23,13 +23,13 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk3', codebase=cb)
+exp = Experiment('soc_test_mk4_16_cores', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
-diag.add_file('atmos_monthly', 30, 'days', time_units='days')
+diag.add_file('atmos_hourly', 1, 'hours', time_units='hours')
 
 #Tell model which diagnostics to write
 diag.add_field('dynamics', 'ps', time_avg=True)
@@ -43,7 +43,17 @@ diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
-diag.add_field('two_stream', 'co2', time_avg=True)
+
+# diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
+diag.add_field('socrates', 'soc_olr', time_avg=True)
+# diag.add_field('socrates', 'soc_olr_spectrum_lw', time_avg=True)
+# diag.add_field('socrates', 'soc_surf_spectrum_sw', time_avg=True)
+diag.add_field('socrates', 'soc_heating_lw', time_avg=True)
+diag.add_field('socrates', 'soc_heating_sw', time_avg=True)
+diag.add_field('socrates', 'soc_heating_rate', time_avg=True)
+diag.add_field('socrates', 'soc_flux_up_lw', time_avg=True)
+diag.add_field('socrates', 'soc_flux_down_sw', time_avg=True)
+
 
 exp.diag_table = diag
 
@@ -53,8 +63,8 @@ exp.clear_rundir()
 #Define values for the 'core' namelist
 exp.namelist = namelist = Namelist({
     'main_nml':{
-     'days'   : 30,
-     'hours'  : 0,
+     'days'   : 0,
+     'hours'  : 1,
      'minutes': 0,
      'seconds': 0,
      'dt_atmos':720,
