@@ -202,5 +202,8 @@ call deallocate_cld(cld)
 call deallocate_bound(bound)
 call deallocate_atm(atm)
 
+write(6,*) 'inside socrates calc ste end'
+write(6,*) n_profile, n_layer
+
 end subroutine socrates_calc
 end module socrates_calc_mod

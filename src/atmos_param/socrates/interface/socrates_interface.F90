@@ -63,12 +63,14 @@ CONTAINS
     !-------------------------------------------------------------------------------------
 
     ! Socrates spectral files -- should be set by namelist
-    control_lw%spectral_file = '/scratch/sit204/Isca/src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7'
-    control_lw_hires%spectral_file = '/scratch/sit204/Isca/src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7'
+    control_lw%spectral_file = '/scratch/sit204/sp_lw_ga7'
+    control_lw_hires%spectral_file = '/scratch/sit204/sp_lw_ga7'
     !control_lw_hires%spectral_file = '~/Work/spec_file_co2_co'
 
-    control_sw%spectral_file = '/scratch/sit204/Isca/src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7'
-    control_sw_hires%spectral_file = '/scratch/sit204/Isca/src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7'
+    control_sw%spectral_file = '/scratch/sit204/sp_sw_ga7'
+    control_sw_hires%spectral_file = '/scratch/sit204/sp_sw_ga7'
+
+    write(6,*) ' About to read in spectral files'
 
     ! Read in spectral files
     CALL read_spectrum(control_lw%spectral_file,spectrum_lw)
@@ -371,21 +373,8 @@ CONTAINS
           CALL read_control(control_calc, spectrum_calc)
 
           write(6,*) 'made it out of read_control'
-        write(6,*) Time_diag, 'Time diag'
-        write(6,*) control_calc, 'control calc'
-        write(6,*) spectrum_calc, 'spectrum calc'
-        write(6,*) ' done 1'
-        write(6,*) n_profile, n_layer, input_n_cloud_layer, input_n_aer_mode, input_cld_subcol_gen, input_cld_subcol_req
-        write(6,*) ' done 2'        
-        write(6,*) size(input_p), size(input_t), size(input_t_level), size(input_d_mass), size(input_density)
-                write(6,*) ' done 3'
-        write(6,*) input_mixing_ratio, input_o3_mixing_ratio
-        write(6,*) ' done 4'        
-        write(6,*) size(input_t_surf), size(input_cos_zenith_angle), size(input_solar_irrad), size(input_orog_corr)
-        write(6,*) ' done 5'        
-        write(6,*) input_l_planet_grey_surface, input_planet_albedo, input_planet_emissivity
-        write(6,*) ' done 6'        
-        write(6,*) input_layer_heat_capacity, soc_flux_direct, soc_flux_down_lw, soc_flux_up_lw, soc_heating_rate_lw, soc_spectral_olr
+
+          write(6,*) control_calc
 
           write(6,*) 'Socrates calc step'
           CALL socrates_calc(Time_diag, control_calc, spectrum_calc,                                          &

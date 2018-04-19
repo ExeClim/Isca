@@ -1024,7 +1024,6 @@ if (do_socrates_radiation) then
        ! LW calculation
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .TRUE.
-       write(6,*) size(output_surf_lw_down,1), size(output_surf_lw_down,2), 'ste', Time, 'ste2'
     write(6,*) 'lw run'
     
        rad_lat_soc = REAL(rad_lat, kind(r_def))
@@ -1040,20 +1039,20 @@ if (do_socrates_radiation) then
     write(6,*) 'lw outs'
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t
-       surf_lw_down(:,:) = output_surf_lw_down(:,:)
+       surf_lw_down(:,:) = REAL(output_surf_lw_down(:,:))
 
 
     write(6,*) 'sw run'
        ! SW calculation
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .FALSE.
-       CALL socrates_interface(Time, rad_lat(:,:), rad_lon(:,:), soc_lw_mode, socrates_hires_mode,    &
-            tg_tmp_soc, t_surf_for_soc, p_full(:,:,:,current), p_half(:,:,:,current), n_profile, n_layer,     &
+       CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
+            tg_tmp_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
             output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
     write(6,*) 'sw outs'
        tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t
-       net_surf_sw_down(:,:) = output_net_surf_sw_down(:,:)
+       net_surf_sw_down(:,:) = REAL(output_net_surf_sw_down(:,:))
 
     write(6,*) 'done 1'
 
