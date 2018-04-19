@@ -7,6 +7,7 @@ Assuming you have managed to run the code with the ```run_idb=True``` flag and t
  ```break filename.F90:line_number```
  3. Then run the code using ```run```
  4. The code will stop when it reached the first breakpoint.
+ 5. To print a variable use ```p var_name``` for a single value or ```p var_name(1,1)``` for the single value of a 2d array. Try not to print too many variables (IDB is smart enought to tell you no when relevant but this can cause you problems). To print a slice of a small-ish 2d array use ```p var_name(1,:)```
  5. Use ```n``` to move to the next line, ```c``` to move to the next breakpoint.
  6. To delete the first breakpoint use ```d 1```
  7. To see where your breakpoints are and how many times you have hit them use: ```info break```
