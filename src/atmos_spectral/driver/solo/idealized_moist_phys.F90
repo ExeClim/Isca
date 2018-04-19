@@ -1014,7 +1014,7 @@ if (do_socrates_radiation) then
 
     write(6,*) 'defined stufff'
 
-       n_profile = INT(size(rad_lat,1)* size(rad_lat,2), kind(i_def))
+       n_profile = INT(1, kind(i_def))
        n_layer   = INT(size(tg,3), kind(i_def))
        t_surf_for_soc = REAL(t_surf(:,:), kind(r_def))
 
