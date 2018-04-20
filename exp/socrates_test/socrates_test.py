@@ -23,9 +23,9 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk11_with_water_no_ozone', codebase=cb)
+exp = Experiment('soc_test_mk11_with_water_with_ozone', codebase=cb)
 
-exp.inputfiles = [os.path.join(base_dir,'input/co2.nc')]
+exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -76,6 +76,9 @@ exp.namelist = namelist = Namelist({
         'lw_spectral_filename':'/scratch/sit204/sp_lw_ga7',
         'sw_spectral_filename':'/scratch/sit204/sp_sw_ga7',   
         'tidally_locked': True,
+        'do_read_ozone': True,
+        'ozone_file_name':'ozone_1990',
+        'ozone_field_name':'ozone_1990'
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,

@@ -347,7 +347,7 @@ write(stdlog_unit, socrates_rad_nml)
           input_p_level = fms_p_half(lon,nlat,:)
           
           if (account_for_effect_of_water == .true.) then
-              input_mixing_ratio = fms_spec_hum(lon,nlat,:) / (1. - fms_spec_hum(lon,nlat,:)) !Mass mixing ratio = q / (1-q)
+              input_mixing_ratio = fms_spec_hum(lon,nlat,:) / (1. - fms_spec_hum(lon,nlat,:)) !Mass mixing ratio = q / (1-q)              
           else
               input_mixing_ratio = 0.0
           endif
