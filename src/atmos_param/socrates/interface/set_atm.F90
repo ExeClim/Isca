@@ -17,7 +17,7 @@ USE def_control,  ONLY: StrCtrl
 USE def_dimen,    ONLY: StrDim
 USE def_spectrum, ONLY: StrSpecData
 USE def_atm,      ONLY: StrAtm, allocate_atm
-USE socrates_config_mod, only: co2_mix_ratio, co_mix_ratio 
+USE socrates_config_mod, only: co2_mix_ratio, co_mix_ratio, n2o_mix_ratio, ch4_mix_ratio, o2_mix_ratio, so2_mix_ratio, cfc11_mix_ratio, cfc12_mix_ratio, cfc113_mix_ratio, hcfc22_mix_ratio, hfc134a_mix_ratio
 USE gas_list_pcf, ONLY: ip_h2o, ip_co2, ip_o3, ip_n2o, ip_ch4, ip_o2, ip_so2,  &
   ip_cfc11, ip_cfc12, ip_cfc113, ip_hcfc22, ip_hfc134a, ip_co
 
@@ -87,18 +87,98 @@ END DO
 ! Set gas mass mixing ratios
 DO i_gas=1, spectrum%gas%n_absorb
   SELECT CASE(spectrum%gas%type_absorb(i_gas))
+
   CASE(ip_co)
     DO i=1, n_layer
       DO l=1, n_profile
         atm%gas_mix_ratio(l, i, i_gas) = co_mix_ratio
       END DO
     END DO
+    
   CASE(ip_co2)
     DO i=1, n_layer
       DO l=1, n_profile
         atm%gas_mix_ratio(l, i, i_gas) = co2_mix_ratio
       END DO
     END DO
+
+  CASE(ip_h2o)
+    DO i=1, n_layer
+      DO l=1, n_profile
+        atm%gas_mix_ratio(l, i, i_gas) = h2o(l,i)
+      END DO
+    END DO
+
+  CASE(ip_o3)
+    DO i=1, n_layer
+      DO l=1, n_profile
+        atm%gas_mix_ratio(l, i, i_gas) = o3(l,i)
+      END DO
+    END DO
+
+  CASE(ip_n2o)
+    DO i=1, n_layer
+      DO l=1, n_profile
+        atm%gas_mix_ratio(l, i, i_gas) = n2o_mix_ratio
+      END DO
+    END DO
+
+  CASE(ip_ch4)
+    DO i=1, n_layer
+      DO l=1, n_profile
+        atm%gas_mix_ratio(l, i, i_gas) = ch4_mix_ratio
+      END DO
+    END DO
+
+  CASE(ip_o2)
+    DO i=1, n_layer
+      DO l=1, n_profile
+        atm%gas_mix_ratio(l, i, i_gas) = o2_mix_ratio
+      END DO
+    END DO
+    
+  CASE(ip_so2)
+    DO i=1, n_layer
+      DO l=1, n_profile
+        atm%gas_mix_ratio(l, i, i_gas) = so2_mix_ratio
+      END DO
+    END DO    
+
+  CASE(ip_cfc11)
+    DO i=1, n_layer
+      DO l=1, n_profile
+        atm%gas_mix_ratio(l, i, i_gas) = cfc11_mix_ratio
+      END DO
+    END DO   
+
+  CASE(ip_cfc12)
+    DO i=1, n_layer
+      DO l=1, n_profile
+        atm%gas_mix_ratio(l, i, i_gas) = cfc12_mix_ratio
+      END DO
+    END DO   
+
+  CASE(ip_cfc113)
+    DO i=1, n_layer
+      DO l=1, n_profile
+        atm%gas_mix_ratio(l, i, i_gas) = cfc113_mix_ratio
+      END DO
+    END DO   
+
+  CASE(ip_hcfc22)
+    DO i=1, n_layer
+      DO l=1, n_profile
+        atm%gas_mix_ratio(l, i, i_gas) = hcfc22_mix_ratio
+      END DO
+    END DO   
+
+  CASE(ip_hfc134a)
+    DO i=1, n_layer
+      DO l=1, n_profile
+        atm%gas_mix_ratio(l, i, i_gas) = hfc134a_mix_ratio
+      END DO
+    END DO 
+      
   CASE DEFAULT
     DO i=1, n_layer
       DO l=1, n_profile

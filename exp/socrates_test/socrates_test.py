@@ -3,6 +3,7 @@ import os
 import numpy as np
 
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
+from isca.util import exp_progress
 
 NCORES = 1
 base_dir = os.path.dirname(os.path.realpath(__file__))
@@ -23,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk11_with_water_with_ozone', codebase=cb)
+exp = Experiment('soc_test_mk13_why_no_water_ozone_differences', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -78,7 +79,8 @@ exp.namelist = namelist = Namelist({
         'tidally_locked': True,
         'do_read_ozone': True,
         'ozone_file_name':'ozone_1990',
-        'ozone_field_name':'ozone_1990'
+        'ozone_field_name':'ozone_1990',
+        'account_for_effect_of_water':True,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -192,6 +194,10 @@ exp.namelist = namelist = Namelist({
 
 #Lets do a run!
 if __name__=="__main__":
-    exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
+
+    s = 1.0
+    with exp_progress(exp, description='o%.0f d{day}' % s) as pbar:
+        exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
     for i in range(2,121):
-        exp.run(i, num_cores=NCORES)
+        with exp_progress(exp, description='o%.0f d{day}' % s) as pbar:    
+            exp.run(i, num_cores=NCORES)
