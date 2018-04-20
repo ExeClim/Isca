@@ -425,11 +425,10 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
     integer(i_def) :: n_profile, n_layer
 
     real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc
-    real(r_def), dimension(size(temp_in,1), size(temp_in), size(temp_in,3)) :: tg_tmp_soc, p_full_soc, output_heating_rate
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, p_full_soc, output_heating_rate
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc
 
     logical :: socrates_hires_mode, soc_lw_mode
-
 
        !Set tide-locked flux - should be set by namelist!
        soc_stellar_constant = 1370.0
@@ -452,7 +451,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
        tg_tmp_soc =  REAL(temp_in, kind(r_def))
        p_full_soc = REAL(p_full_in, kind(r_def))
        p_half_soc = REAL(p_half_in, kind(r_def))
-    
+
        CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
             tg_tmp_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
             output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
