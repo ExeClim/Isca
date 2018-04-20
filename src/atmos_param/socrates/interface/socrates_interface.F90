@@ -425,7 +425,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
     integer(i_def) :: n_profile, n_layer
 
     real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, p_full_soc, output_heating_rate
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc
 
     logical :: socrates_hires_mode, soc_lw_mode
@@ -454,24 +454,26 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
 
        CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
             tg_tmp_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
-            output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
+            output_heating_rate_lw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
-       tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t
+       tg_tmp_soc = tg_tmp_soc + output_heating_rate_lw*delta_t
        surf_lw_down(:,:) = REAL(output_surf_lw_down(:,:))
 
-       temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate)
+       temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_lw)
        
        ! SW calculation
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .FALSE.
        CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
             tg_tmp_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
-            output_heating_rate, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
+            output_heating_rate_sw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
-       tg_tmp_soc = tg_tmp_soc + output_heating_rate*delta_t
+       tg_tmp_soc = tg_tmp_soc + output_heating_rate_sw*delta_t
        net_surf_sw_down(:,:) = REAL(output_net_surf_sw_down(:,:))
 
-       temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate)
+       temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_sw)
+       
+       output_heating_rate_total = output_heating_rate_lw + output_heating_rate_sw
 
 end subroutine run_socrates  
   
