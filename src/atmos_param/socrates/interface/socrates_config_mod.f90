@@ -13,8 +13,6 @@ TYPE (StrSpecData), SAVE :: sw_spectrum, lw_spectrum
 
 ! Set a grey surface albedo
 LOGICAL :: l_planet_grey_surface = .TRUE.
-REAL(r_def) :: planet_albedo = 0.06
-REAL(r_def) :: planet_emissivity = 0.97
 
 ! Well mixed gas concentrations (kg / kg)
 REAL(r_def) :: co2_mix_ratio = 2.E-6!!0.01!1e-2!6.002e-5!4

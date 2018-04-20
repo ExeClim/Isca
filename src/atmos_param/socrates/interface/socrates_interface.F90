@@ -26,6 +26,7 @@ MODULE socrates_interface_mod
   USE constants_mod, only: grav, rdgas, rvgas, cp_air
   USE fms_mod, only: stdlog
   USE interpolator_mod, only: interpolate_type  
+  USE soc_constants_mod  
 
   IMPLICIT NONE
 
@@ -68,6 +69,7 @@ MODULE socrates_interface_mod
   logical :: do_read_ozone = .FALSE. ! read ozone from an external file?
   character(len=256) :: ozone_file_name='ozone' !Name of file containing ozone field - n.b. don't need to include '.nc'
   character(len=256) :: ozone_field_name='ozone' !Name of ozone variable in ozone file
+  real(r_def) :: input_planet_emissivity = 0.5 !Emissivity of surface. Defined as constant all over surface.
 
     
   ! Incoming radiation options for namelist
@@ -78,6 +80,7 @@ MODULE socrates_interface_mod
    
   NAMELIST/socrates_rad_nml/ stellar_constant, tidally_locked, lw_spectral_filename, lw_hires_spectral_filename, &
                              sw_spectral_filename, sw_hires_spectral_filename, socrates_hires_mode, &
+                             input_planet_emissivity, &
                              account_for_effect_of_water, account_for_effect_of_ozone, &
                              do_read_ozone, ozone_file_name, ozone_field_name, &
                              solday, do_rad_time_avg, equinox_day
@@ -237,7 +240,6 @@ write(stdlog_unit, socrates_rad_nml)
        output_heating_rate, fms_net_surf_sw_down, fms_surf_lw_down, fms_stellar_flux )
 
     use realtype_rd
-    use soc_constants_mod
     use read_control_mod
     use socrates_calc_mod
     use compress_spectrum_mod
@@ -252,6 +254,7 @@ write(stdlog_unit, socrates_rad_nml)
          allocate_aer_prsc,  deallocate_aer_prsc
     use def_bound,   only: StrBound, allocate_bound,     deallocate_bound
     use def_out,     only: StrOut,                       deallocate_out
+    use socrates_config_mod, only: l_planet_grey_surface
     !-----------------------------------------------------------------------
     implicit none
 
@@ -299,9 +302,7 @@ write(stdlog_unit, socrates_rad_nml)
 
 
     ! Socrates options
-    logical :: input_l_planet_grey_surface = .true.
     real(r_def) :: input_planet_albedo
-    real(r_def) :: input_planet_emissivity = 0.5
     integer(i_def) :: input_n_cloud_layer
     integer(i_def) :: input_n_aer_mode
     integer(i_def) :: input_cld_subcol_gen
@@ -431,7 +432,7 @@ write(stdlog_unit, socrates_rad_nml)
                input_p, input_t, input_t_level, input_d_mass, input_density,                &
                input_mixing_ratio, input_o3_mixing_ratio,                                      &
                input_t_surf, input_cos_zenith_angle, input_solar_irrad, input_orog_corr,    &
-               input_l_planet_grey_surface, input_planet_albedo, input_planet_emissivity,   &
+               l_planet_grey_surface, input_planet_albedo, input_planet_emissivity,   &
                input_layer_heat_capacity,                                                   &
                soc_flux_direct, soc_flux_down_lw, soc_flux_up_lw, soc_heating_rate_lw, soc_spectral_olr)
 
@@ -479,7 +480,6 @@ write(stdlog_unit, socrates_rad_nml)
 subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p_full_in, p_half_in, albedo_in, &
        temp_tend, net_surf_sw_down, surf_lw_down, delta_t)  
 
-    use soc_constants_mod
     use astronomy_mod, only: diurnal_solar
     use time_manager_mod, only: length_of_day, length_of_year, get_time
     use constants_mod,         only: pi
