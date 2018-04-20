@@ -364,7 +364,6 @@ write(stdlog_unit, socrates_rad_nml)
           !Default parameters
           input_cos_zenith_angle = fms_stellar_flux(lon,nlat)/stellar_constant
           input_orog_corr = 0.0
-          input_layer_heat_capacity = 29.07
 
           !Set tide-locked flux - should be set by namelist eventually!
           input_solar_irrad = fms_stellar_flux(lon,nlat)!RESHAPE(fms_stellar_flux, (/n_profile/))
