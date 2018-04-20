@@ -52,13 +52,14 @@ MODULE socrates_interface_mod
   ! Socrates inputs from namelist
   REAL :: stellar_constant = 1370.0
   LOGICAL :: tidally_locked = .TRUE.
+  LOGICAL :: socrates_hires_mode = .FALSE.  !If false then run in 'GCM mode', if true then uses high-res spectral files
   character(len=256) :: lw_spectral_filename='/scratch/sit204/sp_lw_ga7'
   character(len=256) :: lw_hires_spectral_filename='/scratch/sit204/sp_lw_ga7'
   character(len=256) :: sw_spectral_filename='/scratch/sit204/sp_sw_ga7'
   character(len=256) :: sw_hires_spectral_filename='/scratch/sit204/sp_sw_ga7'
     
   NAMELIST/socrates_rad_nml/ stellar_constant, tidally_locked, lw_spectral_filename, lw_hires_spectral_filename, &
-                             sw_spectral_filename, sw_hires_spectral_filename
+                             sw_spectral_filename, sw_hires_spectral_filename, socrates_hires_mode
 
 
 
@@ -453,7 +454,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc
 
-    logical :: socrates_hires_mode, soc_lw_mode, used
+    logical :: soc_lw_mode, used
 
        !Set tide-locked flux - should be set by namelist!
        fms_stellar_flux = stellar_constant*COS(rad_lat(:,:))*COS(rad_lon(:,:))
@@ -462,10 +463,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
        n_profile = INT(1, kind(i_def))
        n_layer   = INT(size(temp_in,3), kind(i_def))
        t_surf_for_soc = REAL(t_surf_in(:,:), kind(r_def))
-
-       ! GCM mode
-       socrates_hires_mode = .FALSE.
-
+       
        ! LW calculation
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .TRUE.
