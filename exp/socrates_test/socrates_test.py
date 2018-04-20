@@ -24,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk18_co2_without_input_file', codebase=cb)
+exp = Experiment('soc_test_mk18_co2_with_input_file', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -80,7 +80,7 @@ exp.namelist = namelist = Namelist({
         'do_read_ozone': True,
         'ozone_file_name':'ozone_1990',
         'ozone_field_name':'ozone_1990',
-        'account_for_effect_of_water':True,
+        'do_read_co2': True,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,

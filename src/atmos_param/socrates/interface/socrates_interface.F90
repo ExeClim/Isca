@@ -565,6 +565,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
       !get ozone 
        if(do_read_co2)then
          call interpolator( co2_interp, Time_diag, p_half_in, co2_in, trim(co2_field_name))
+         co2_in = co2_in * 1.e-6
        endif
 
 
