@@ -7,6 +7,12 @@ MODULE socrates_interface_mod
 
   !----------
 
+#ifdef INTERNAL_FILE_NML
+  use mpp_mod, only: input_nml_file
+#else
+  use fms_mod, only: open_namelist_file, close_file
+#endif
+
   ! ExoFMS diagnostics
   USE  diag_manager_mod, ONLY: register_diag_field, send_data
 
@@ -18,6 +24,7 @@ MODULE socrates_interface_mod
   USE def_control, ONLY: StrCtrl,  allocate_control,   deallocate_control
   USE def_spectrum
   use constants_mod, only: grav, rdgas, rvgas, cp_air
+  use fms_mod, only: stdlog
 
   IMPLICIT NONE
 
@@ -45,7 +52,7 @@ MODULE socrates_interface_mod
   ! Socrates inputs from namelist
   REAL :: stellar_constant = 1370.0
   LOGICAL :: tidally_locked = .TRUE.
-  NAMELIST/socrates_nml/ stellar_constant, tidally_locked
+  NAMELIST/socrates_rad_nml/ stellar_constant, tidally_locked
 
 
 
@@ -60,7 +67,25 @@ CONTAINS
     TYPE(time_type), INTENT(in)       :: Time
     INTEGER, INTENT(in)               :: is, ie, js, je, num_levels
     REAL, INTENT(in) , DIMENSION(:,:)   :: lat
+    
+    integer :: io, stdlog_unit
     !-------------------------------------------------------------------------------------
+
+#ifdef INTERNAL_FILE_NML
+   read (input_nml_file, nml=socrates_rad_nml, iostat=io)
+#else
+   if ( file_exist('input.nml') ) then
+      nml_unit = open_namelist_file()
+      read (nml_unit, socrates_rad_nml, iostat=io)
+      call close_file(nml_unit)
+   endif
+#endif
+stdlog_unit = stdlog()
+write(stdlog_unit, socrates_rad_nml)
+
+    write(6,*) ' checking namelist', stellar_constant, tidally_locked
+
+
 
     ! Socrates spectral files -- should be set by namelist
     control_lw%spectral_file = '/scratch/sit204/sp_lw_ga7'
@@ -421,7 +446,6 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
     real, intent(out), dimension(:,:)   :: net_surf_sw_down, surf_lw_down
     real, intent(in) :: delta_t
 
-    real :: soc_stellar_constant
     integer(i_def) :: n_profile, n_layer
 
     real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc
@@ -431,8 +455,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
     logical :: socrates_hires_mode, soc_lw_mode, used
 
        !Set tide-locked flux - should be set by namelist!
-       soc_stellar_constant = 1370.0
-       fms_stellar_flux = soc_stellar_constant*COS(rad_lat(:,:))*COS(rad_lon(:,:))
+       fms_stellar_flux = stellar_constant*COS(rad_lat(:,:))*COS(rad_lon(:,:))
        WHERE (fms_stellar_flux < 0.0) fms_stellar_flux = 0.0
 
        n_profile = INT(1, kind(i_def))

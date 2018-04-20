@@ -23,7 +23,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk7', codebase=cb)
+exp = Experiment('soc_test_mk8', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc')]
 
@@ -71,6 +71,9 @@ exp.namelist = namelist = Namelist({
      'current_date' : [1,1,1,0,0,0],
      'calendar' : 'thirty_day'
     },
+    'socrates_rad_nml': {
+        'stellar_constant':1370.,
+    }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
         'turb':True,
