@@ -52,7 +52,13 @@ MODULE socrates_interface_mod
   ! Socrates inputs from namelist
   REAL :: stellar_constant = 1370.0
   LOGICAL :: tidally_locked = .TRUE.
-  NAMELIST/socrates_rad_nml/ stellar_constant, tidally_locked
+  character(len=256) :: lw_spectral_filename='/scratch/sit204/sp_lw_ga7'
+  character(len=256) :: lw_hires_spectral_filename='/scratch/sit204/sp_lw_ga7'
+  character(len=256) :: sw_spectral_filename='/scratch/sit204/sp_sw_ga7'
+  character(len=256) :: sw_hires_spectral_filename='/scratch/sit204/sp_sw_ga7'
+    
+  NAMELIST/socrates_rad_nml/ stellar_constant, tidally_locked, lw_spectral_filename, lw_hires_spectral_filename, &
+                             sw_spectral_filename, sw_hires_spectral_filename
 
 
 
@@ -83,17 +89,12 @@ CONTAINS
 stdlog_unit = stdlog()
 write(stdlog_unit, socrates_rad_nml)
 
-    write(6,*) ' checking namelist', stellar_constant, tidally_locked
-
-
-
     ! Socrates spectral files -- should be set by namelist
-    control_lw%spectral_file = '/scratch/sit204/sp_lw_ga7'
-    control_lw_hires%spectral_file = '/scratch/sit204/sp_lw_ga7'
-    !control_lw_hires%spectral_file = '~/Work/spec_file_co2_co'
+    control_lw%spectral_file = lw_spectral_filename
+    control_lw_hires%spectral_file = lw_hires_spectral_filename
 
-    control_sw%spectral_file = '/scratch/sit204/sp_sw_ga7'
-    control_sw_hires%spectral_file = '/scratch/sit204/sp_sw_ga7'
+    control_sw%spectral_file = sw_spectral_filename
+    control_sw_hires%spectral_file = sw_hires_spectral_filename
 
     ! Read in spectral files
     CALL read_spectrum(control_lw%spectral_file,spectrum_lw)

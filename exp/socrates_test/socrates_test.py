@@ -73,6 +73,8 @@ exp.namelist = namelist = Namelist({
     },
     'socrates_rad_nml': {
         'stellar_constant':1370.,
+        'lw_spectral_filename':'/scratch/sit204/sp_lw_ga7',
+        'sw_spectral_filename':'/scratch/sit204/sp_sw_ga7',        
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
