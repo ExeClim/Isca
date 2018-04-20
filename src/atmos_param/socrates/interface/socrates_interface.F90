@@ -52,7 +52,7 @@ MODULE socrates_interface_mod
   REAL :: missing_value = -999
 
 
-  type(interpolate_type),save                :: o3_interp            ! use external file for ozone
+  type(interpolate_type),save                :: o3_interp, co2_interp            ! use external file for ozone and co2
 
 
   ! Socrates inputs from namelist
@@ -69,8 +69,11 @@ MODULE socrates_interface_mod
   logical :: do_read_ozone = .FALSE. ! read ozone from an external file?
   character(len=256) :: ozone_file_name='ozone' !Name of file containing ozone field - n.b. don't need to include '.nc'
   character(len=256) :: ozone_field_name='ozone' !Name of ozone variable in ozone file
+  logical :: do_read_co2 = .FALSE. ! read ozone from an external file?
+  character(len=256) :: co2_file_name='co2' !Name of file containing co2 field - n.b. don't need to include '.nc'
+  character(len=256) :: co2_field_name='co2' !Name of co2 variable in co2 file  
   real(r_def) :: input_planet_emissivity = 0.5 !Emissivity of surface. Defined as constant all over surface.
-
+  real :: co2_ppmv = 2. !Default CO2 concentration in PPMV
     
   ! Incoming radiation options for namelist
   
@@ -80,9 +83,10 @@ MODULE socrates_interface_mod
    
   NAMELIST/socrates_rad_nml/ stellar_constant, tidally_locked, lw_spectral_filename, lw_hires_spectral_filename, &
                              sw_spectral_filename, sw_hires_spectral_filename, socrates_hires_mode, &
-                             input_planet_emissivity, &
+                             input_planet_emissivity, co2_ppmv, &
                              account_for_effect_of_water, account_for_effect_of_ozone, &
                              do_read_ozone, ozone_file_name, ozone_field_name, &
+                             do_read_co2, co2_file_name, co2_field_name, &                             
                              solday, do_rad_time_avg, equinox_day
 
 
@@ -197,6 +201,10 @@ write(stdlog_unit, socrates_rad_nml)
       if(do_read_ozone)then
          call interpolator_init (o3_interp, trim(ozone_file_name)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
       endif
+      
+      if(do_read_co2)then
+         call interpolator_init (co2_interp, trim(co2_file_name)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+      endif      
 
     ! Number of bands
     n_soc_bands_lw = spectrum_lw%dim%nd_band
@@ -236,7 +244,7 @@ write(stdlog_unit, socrates_rad_nml)
   ! Set up the call to the Socrates radiation scheme
   ! -----------------------------------------------------------------------------
   subroutine socrates_interface(Time_diag, rlat, rlon, soc_mode, hires_mode,      &
-       fms_temp, fms_spec_hum, fms_ozone, fms_t_surf, fms_p_full, fms_p_half, fms_albedo, n_profile, n_layer,        &
+       fms_temp, fms_spec_hum, fms_ozone, fms_co2, fms_t_surf, fms_p_full, fms_p_half, fms_albedo, n_profile, n_layer,        &
        output_heating_rate, fms_net_surf_sw_down, fms_surf_lw_down, fms_stellar_flux )
 
     use realtype_rd
@@ -266,7 +274,7 @@ write(stdlog_unit, socrates_rad_nml)
     INTEGER(i_def) :: nlat
 
     ! Input arrays
-    real(r_def), intent(in) :: fms_temp(:,:,:), fms_spec_hum(:,:,:), fms_ozone(:,:,:)
+    real(r_def), intent(in) :: fms_temp(:,:,:), fms_spec_hum(:,:,:), fms_ozone(:,:,:), fms_co2(:,:,:)
     real(r_def), intent(in) :: fms_p_full(:,:,:)
     real(r_def), intent(in) :: fms_p_half(:,:,:)
     real(r_def), intent(in) :: fms_t_surf(:,:), fms_albedo(:,:)
@@ -293,7 +301,7 @@ write(stdlog_unit, socrates_rad_nml)
     real, dimension(n_layer) :: input_p, input_t, input_mixing_ratio, &
          input_d_mass, input_density, input_layer_heat_capacity, &
          soc_heating_rate, input_o3_mixing_ratio, &
-         soc_heating_rate_lw, soc_heating_rate_sw
+         soc_heating_rate_lw, soc_heating_rate_sw, input_co2_mixing_ratio
     real, dimension(0:n_layer) :: input_p_level, input_t_level, soc_flux_direct, &
          soc_flux_down_sw, soc_flux_up_sw, output_flux_net, &
          soc_flux_down_lw, soc_flux_up_lw
@@ -359,6 +367,7 @@ write(stdlog_unit, socrates_rad_nml)
             input_o3_mixing_ratio = 0.0
           endif
 
+         input_co2_mixing_ratio = fms_co2(lon,nlat,:)
 
           !-------------
 
@@ -430,7 +439,7 @@ write(stdlog_unit, socrates_rad_nml)
                n_profile, n_layer, input_n_cloud_layer, input_n_aer_mode,                   &
                input_cld_subcol_gen, input_cld_subcol_req,                                  &
                input_p, input_t, input_t_level, input_d_mass, input_density,                &
-               input_mixing_ratio, input_o3_mixing_ratio,                                      &
+               input_mixing_ratio, input_o3_mixing_ratio,  input_co2_mixing_ratio,           &
                input_t_surf, input_cos_zenith_angle, input_solar_irrad, input_orog_corr,    &
                l_planet_grey_surface, input_planet_albedo, input_planet_emissivity,   &
                input_layer_heat_capacity,                                                   &
@@ -497,14 +506,14 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
     integer(i_def) :: n_profile, n_layer
 
     real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc, albedo_soc
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, co2_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc
 
     logical :: soc_lw_mode, used
     integer :: seconds, days, year_in_s
     real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
     real, dimension(size(temp_in,1), size(temp_in,2)) :: coszen, fracsun   
-    real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: ozone_in
+    real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: ozone_in, co2_in
 
        !Set tide-locked flux - should be set by namelist!
        if (tidally_locked == .TRUE.) then
@@ -551,6 +560,14 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
          call interpolator( o3_interp, Time_diag, p_half_in, ozone_in, trim(ozone_field_name))
        endif
 
+       co2_in = co2_ppmv * 1.e-6
+
+      !get ozone 
+       if(do_read_co2)then
+         call interpolator( co2_interp, Time_diag, p_half_in, co2_in, trim(co2_field_name))
+       endif
+
+
        n_profile = INT(1, kind(i_def))
        n_layer   = INT(size(temp_in,3), kind(i_def))
        t_surf_for_soc = REAL(t_surf_in(:,:), kind(r_def))
@@ -563,13 +580,14 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
        rad_lon_soc = REAL(rad_lon, kind(r_def))
        tg_tmp_soc =  REAL(temp_in, kind(r_def))
        q_soc      =  REAL(q_in, kind(r_def))
-       ozone_soc  =  REAL(ozone_in, kind(r_def))       
+       ozone_soc  =  REAL(ozone_in, kind(r_def)) 
+       co2_soc    =  REAL(co2_in, kind(r_def))      
        p_full_soc = REAL(p_full_in, kind(r_def))
        p_half_soc = REAL(p_half_in, kind(r_def))
        albedo_soc = REAL(albedo_in, kind(r_def))
 
        CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
-            tg_tmp_soc, q_soc, ozone_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
+            tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
             output_heating_rate_lw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_lw*delta_t
@@ -581,7 +599,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .FALSE.
        CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
-            tg_tmp_soc, q_soc, ozone_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
+            tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
             output_heating_rate_sw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_sw*delta_t
@@ -601,6 +619,8 @@ subroutine run_socrates_end
     use interpolator_mod, only: interpolator_end
 
     if(do_read_ozone) call interpolator_end(o3_interp)
+    if(do_read_co2)   call interpolator_end(co2_interp)
+    
 
 end subroutine run_socrates_end
 

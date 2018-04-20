@@ -15,7 +15,6 @@ TYPE (StrSpecData), SAVE :: sw_spectrum, lw_spectrum
 LOGICAL :: l_planet_grey_surface = .TRUE.
 
 ! Well mixed gas concentrations (kg / kg)
-REAL(r_def) :: co2_mix_ratio = 2.E-6!!0.01!1e-2!6.002e-5!4
 REAL(r_def) :: co_mix_ratio = 0.0!2.E-6!1.0!1.0!1.E-4!0.001!6.002e-2!4
 REAL(r_def) :: n2o_mix_ratio = 4.945e-07
 REAL(r_def) :: ch4_mix_ratio = 1.006e-06

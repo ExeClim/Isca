@@ -10,14 +10,14 @@ CONTAINS
 ! Subroutine to set the input atmospheric profiles for the core radiation code
 !------------------------------------------------------------------------------
 SUBROUTINE set_atm(control, dimen, spectrum, atm, n_profile, n_layer,          &
-  p_layer, t_layer, t_layer_boundaries, d_mass, density, h2o, o3)
+  p_layer, t_layer, t_layer_boundaries, d_mass, density, h2o, o3, co2)
 
 USE rad_pcf
 USE def_control,  ONLY: StrCtrl
 USE def_dimen,    ONLY: StrDim
 USE def_spectrum, ONLY: StrSpecData
 USE def_atm,      ONLY: StrAtm, allocate_atm
-USE socrates_config_mod, only: co2_mix_ratio, co_mix_ratio, n2o_mix_ratio, ch4_mix_ratio, o2_mix_ratio, so2_mix_ratio, cfc11_mix_ratio, cfc12_mix_ratio, cfc113_mix_ratio, hcfc22_mix_ratio, hfc134a_mix_ratio
+USE socrates_config_mod, only: co_mix_ratio, n2o_mix_ratio, ch4_mix_ratio, o2_mix_ratio, so2_mix_ratio, cfc11_mix_ratio, cfc12_mix_ratio, cfc113_mix_ratio, hcfc22_mix_ratio, hfc134a_mix_ratio
 USE gas_list_pcf, ONLY: ip_h2o, ip_co2, ip_o3, ip_n2o, ip_ch4, ip_o2, ip_so2,  &
   ip_cfc11, ip_cfc12, ip_cfc113, ip_hcfc22, ip_hfc134a, ip_co
 
@@ -57,6 +57,8 @@ REAL(r_def), INTENT(IN) :: h2o(n_profile, n_layer)
 !   Mass mixing ratio of water vapour
 REAL(r_def), INTENT(IN) :: o3(n_profile, n_layer)
 !   Mass mixing ratio of ozone
+REAL(r_def), INTENT(IN) :: co2(n_profile, n_layer)
+!   Mass mixing ratio of co2
 
 ! Local variables.
 INTEGER :: i, l, i_gas
@@ -98,7 +100,7 @@ DO i_gas=1, spectrum%gas%n_absorb
   CASE(ip_co2)
     DO i=1, n_layer
       DO l=1, n_profile
-        atm%gas_mix_ratio(l, i, i_gas) = co2_mix_ratio
+        atm%gas_mix_ratio(l, i, i_gas) = co2(l,i)
       END DO
     END DO
 

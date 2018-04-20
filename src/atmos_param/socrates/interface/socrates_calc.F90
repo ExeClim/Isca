@@ -29,7 +29,7 @@ subroutine socrates_calc(Time_diag,control, spectrum,                           
   n_profile, n_layer, n_cloud_layer, n_aer_mode,                               &
   cld_subcol_gen, cld_subcol_req,                                              &
   p_layer, t_layer, t_layer_boundaries, d_mass, density,                       &
-  h2o, o3,                                                                     &
+  h2o, o3, co2,                                                                &
   t_rad_surf, cos_zenith_angle, solar_irrad, orog_corr,                        &
   l_planet_grey_surface, planet_albedo, planet_emissivity,                     &
   layer_heat_capacity,                                                         &
@@ -92,6 +92,8 @@ real(r_def), intent(in) :: h2o(n_profile, n_layer)
 !   Mass mixing ratio of water vapour
 real(r_def), intent(in) :: o3(n_profile, n_layer)
 !   Mass mixing ratio of ozone
+real(r_def), intent(in) :: co2(n_profile, n_layer)
+!   Mass mixing ratio of carbon dioxide
 
 real(r_def), intent(in) :: t_rad_surf(n_profile)
 !   Effective radiative temperature over whole grid-box
@@ -157,7 +159,7 @@ call set_dimen(control, dimen, spectrum, n_profile, n_layer,                   &
   n_cloud_layer, n_aer_mode, cld_subcol_gen, cld_subcol_req)
 
 call set_atm(control, dimen, spectrum, atm, n_profile, n_layer,                &
-  p_layer, t_layer, t_layer_boundaries, d_mass, density, h2o, o3)
+  p_layer, t_layer, t_layer_boundaries, d_mass, density, h2o, o3, co2)
 
 call set_bound(control, dimen, spectrum, bound, n_profile,                     &
   t_rad_surf, cos_zenith_angle, solar_irrad, orog_corr,                        &
