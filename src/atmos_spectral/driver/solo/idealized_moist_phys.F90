@@ -699,7 +699,7 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
 #endif
 
 if (do_socrates_radiation) then
-    call socrates_init(is, ie, js, je, num_levels, axes, Time, rad_lat)
+    call socrates_init(is, ie, js, je, num_levels, axes, Time, rad_lat, rad_lonb_2d, rad_latb_2d)
 endif
 
 if(turb) then
@@ -1220,6 +1220,7 @@ endif
 call lscale_cond_end
 if(mixed_layer_bc)  call mixed_layer_end(t_surf, bucket_depth, bucket)
 if(do_damping) call damping_driver_end
+if(do_socrates_radiation) call run_socrates_end
 
 end subroutine idealized_moist_phys_end
 !=================================================================================================================================

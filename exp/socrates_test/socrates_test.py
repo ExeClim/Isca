@@ -23,7 +23,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk10_with_water', codebase=cb)
+exp = Experiment('soc_test_mk11_with_water_no_ozone', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc')]
 
