@@ -1003,7 +1003,7 @@ if (do_socrates_radiation) then
        ! Socrates interface
        
     call run_socrates(Time, rad_lat, rad_lon, tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum), t_surf(:,:), p_full(:,:,:,current), &
-                      p_half(:,:,:,current), dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t)
+                      p_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t)
 
 endif
 

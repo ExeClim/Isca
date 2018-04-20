@@ -233,7 +233,7 @@ write(stdlog_unit, socrates_rad_nml)
   ! Set up the call to the Socrates radiation scheme
   ! -----------------------------------------------------------------------------
   subroutine socrates_interface(Time_diag, rlat, rlon, soc_mode, hires_mode,      &
-       fms_temp, fms_spec_hum, fms_ozone, fms_t_surf, fms_p_full, fms_p_half, n_profile, n_layer,        &
+       fms_temp, fms_spec_hum, fms_ozone, fms_t_surf, fms_p_full, fms_p_half, fms_albedo, n_profile, n_layer,        &
        output_heating_rate, fms_net_surf_sw_down, fms_surf_lw_down, fms_stellar_flux )
 
     use realtype_rd
@@ -266,7 +266,7 @@ write(stdlog_unit, socrates_rad_nml)
     real(r_def), intent(in) :: fms_temp(:,:,:), fms_spec_hum(:,:,:), fms_ozone(:,:,:)
     real(r_def), intent(in) :: fms_p_full(:,:,:)
     real(r_def), intent(in) :: fms_p_half(:,:,:)
-    real(r_def), intent(in) :: fms_t_surf(:,:)
+    real(r_def), intent(in) :: fms_t_surf(:,:), fms_albedo(:,:)
     real(r_def), intent(in) :: fms_stellar_flux(:,:)
     real(r_def), intent(in) :: rlon(:,:)
     real(r_def), intent(in) :: rlat(:,:)
@@ -300,7 +300,7 @@ write(stdlog_unit, socrates_rad_nml)
 
     ! Socrates options
     logical :: input_l_planet_grey_surface = .true.
-    real(r_def) :: input_planet_albedo = 0.06
+    real(r_def) :: input_planet_albedo
     real(r_def) :: input_planet_emissivity = 0.5
     integer(i_def) :: input_n_cloud_layer
     integer(i_def) :: input_n_aer_mode
@@ -364,6 +364,7 @@ write(stdlog_unit, socrates_rad_nml)
           !Default parameters
           input_cos_zenith_angle = fms_stellar_flux(lon,nlat)/stellar_constant
           input_orog_corr = 0.0
+          input_planet_albedo = fms_albedo(lon,nlat)
 
           !Set tide-locked flux - should be set by namelist eventually!
           input_solar_irrad = fms_stellar_flux(lon,nlat)!RESHAPE(fms_stellar_flux, (/n_profile/))
@@ -475,7 +476,7 @@ write(stdlog_unit, socrates_rad_nml)
 
   end subroutine socrates_interface
 
-subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p_full_in, p_half_in, &
+subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p_full_in, p_half_in, albedo_in, &
        temp_tend, net_surf_sw_down, surf_lw_down, delta_t)  
 
     use soc_constants_mod
@@ -486,7 +487,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
 
     ! Input time
     type(time_type), intent(in)           :: Time_diag
-    real, intent(in), dimension(:,:)      :: rad_lat, rad_lon, t_surf_in
+    real, intent(in), dimension(:,:)      :: rad_lat, rad_lon, t_surf_in, albedo_in
     real, intent(in), dimension(:,:,:)   :: temp_in, p_full_in, q_in
     real, intent(in), dimension(:,:,:)  :: p_half_in
     real, intent(inout), dimension(:,:,:) :: temp_tend
@@ -495,7 +496,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
 
     integer(i_def) :: n_profile, n_layer
 
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc, albedo_soc
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc
 
@@ -565,9 +566,10 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
        ozone_soc  =  REAL(ozone_in, kind(r_def))       
        p_full_soc = REAL(p_full_in, kind(r_def))
        p_half_soc = REAL(p_half_in, kind(r_def))
+       albedo_soc = REAL(albedo_in, kind(r_def))
 
        CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
-            tg_tmp_soc, q_soc, ozone_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
+            tg_tmp_soc, q_soc, ozone_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
             output_heating_rate_lw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_lw*delta_t
@@ -579,7 +581,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .FALSE.
        CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
-            tg_tmp_soc, q_soc, ozone_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
+            tg_tmp_soc, q_soc, ozone_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
             output_heating_rate_sw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_sw*delta_t
