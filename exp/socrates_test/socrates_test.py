@@ -23,7 +23,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk9', codebase=cb)
+exp = Experiment('soc_test_mk10_with_water', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc')]
 
@@ -75,7 +75,7 @@ exp.namelist = namelist = Namelist({
         'stellar_constant':1370.,
         'lw_spectral_filename':'/scratch/sit204/sp_lw_ga7',
         'sw_spectral_filename':'/scratch/sit204/sp_sw_ga7',   
-        'tidally_locked': False,
+        'tidally_locked': True,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,

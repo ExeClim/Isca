@@ -58,7 +58,9 @@ MODULE socrates_interface_mod
   character(len=256) :: lw_hires_spectral_filename='/scratch/sit204/sp_lw_ga7'
   character(len=256) :: sw_spectral_filename='/scratch/sit204/sp_sw_ga7'
   character(len=256) :: sw_hires_spectral_filename='/scratch/sit204/sp_sw_ga7'
-  
+  logical :: account_for_effect_of_water=.TRUE. !if False then radiation is fed water mixing ratios = 0. If true it's fed mixing ratios based on model specific humidity.
+  logical :: account_for_effect_of_ozone=.TRUE. !if False then radiation is fed ozone mixing ratios = 0. If true it's fed mixing ratios based on model ozone field.
+    
   ! Incoming radiation options for namelist
   
   integer   :: solday=0  ! if >0, do perpetual run corresponding to day of the year = solday \in [0,days per year]
@@ -67,6 +69,7 @@ MODULE socrates_interface_mod
    
   NAMELIST/socrates_rad_nml/ stellar_constant, tidally_locked, lw_spectral_filename, lw_hires_spectral_filename, &
                              sw_spectral_filename, sw_hires_spectral_filename, socrates_hires_mode, &
+                             account_for_effect_of_water, account_for_effect_of_ozone, &
                              solday, do_rad_time_avg, equinox_day
 
 
@@ -213,7 +216,7 @@ write(stdlog_unit, socrates_rad_nml)
   ! Set up the call to the Socrates radiation scheme
   ! -----------------------------------------------------------------------------
   subroutine socrates_interface(Time_diag, rlat, rlon, soc_mode, hires_mode,      &
-       fms_temp, fms_t_surf, fms_p_full, fms_p_half, n_profile, n_layer,        &
+       fms_temp, fms_spec_hum, fms_t_surf, fms_p_full, fms_p_half, n_profile, n_layer,        &
        output_heating_rate, fms_net_surf_sw_down, fms_surf_lw_down, fms_stellar_flux )
 
     use realtype_rd
@@ -243,7 +246,7 @@ write(stdlog_unit, socrates_rad_nml)
     INTEGER(i_def) :: nlat
 
     ! Input arrays
-    real(r_def), intent(in) :: fms_temp(:,:,:)
+    real(r_def), intent(in) :: fms_temp(:,:,:), fms_spec_hum(:,:,:)
     real(r_def), intent(in) :: fms_p_full(:,:,:)
     real(r_def), intent(in) :: fms_p_half(:,:,:)
     real(r_def), intent(in) :: fms_t_surf(:,:)
@@ -327,8 +330,19 @@ write(stdlog_unit, socrates_rad_nml)
           input_p_level = fms_p_half(lon,nlat,:)
 
           ! TODO: Remove or edit
-          input_mixing_ratio = 0.0!
-          input_o3_mixing_ratio = 0.0!
+          
+          if (account_for_effect_of_water == .true.) then
+              input_mixing_ratio = fms_spec_hum(lon,nlat,:) / (1. - fms_spec_hum(lon,nlat,:)) !Mass mixing ratio = q / (1-q)
+          else
+              input_mixing_ratio = 0.0
+          endif
+          
+          if (account_for_effect_of_ozone == .true.) then
+            input_o3_mixing_ratio = 0.0
+          else         
+            input_o3_mixing_ratio = 0.0!
+          endif
+
 
           !-------------
 
@@ -447,7 +461,7 @@ write(stdlog_unit, socrates_rad_nml)
 
   end subroutine socrates_interface
 
-subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_in, p_half_in, &
+subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p_full_in, p_half_in, &
        temp_tend, net_surf_sw_down, surf_lw_down, delta_t)  
 
     use soc_constants_mod
@@ -458,7 +472,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
     ! Input time
     type(time_type), intent(in)           :: Time_diag
     real, intent(in), dimension(:,:)      :: rad_lat, rad_lon, t_surf_in
-    real, intent(in), dimension(:,:,:)   :: temp_in, p_full_in
+    real, intent(in), dimension(:,:,:)   :: temp_in, p_full_in, q_in
     real, intent(in), dimension(:,:,:)  :: p_half_in
     real, intent(inout), dimension(:,:,:) :: temp_tend
     real, intent(out), dimension(:,:)   :: net_surf_sw_down, surf_lw_down
@@ -467,7 +481,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
     integer(i_def) :: n_profile, n_layer
 
     real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc
 
     logical :: soc_lw_mode, used
@@ -524,11 +538,12 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
        rad_lat_soc = REAL(rad_lat, kind(r_def))
        rad_lon_soc = REAL(rad_lon, kind(r_def))
        tg_tmp_soc =  REAL(temp_in, kind(r_def))
+       q_soc      =  REAL(q_in, kind(r_def))
        p_full_soc = REAL(p_full_in, kind(r_def))
        p_half_soc = REAL(p_half_in, kind(r_def))
 
        CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
-            tg_tmp_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
+            tg_tmp_soc, q_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
             output_heating_rate_lw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_lw*delta_t
@@ -540,7 +555,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .FALSE.
        CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
-            tg_tmp_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
+            tg_tmp_soc, q_soc, t_surf_for_soc, p_full_soc, p_half_soc, n_profile, n_layer,     &
             output_heating_rate_sw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_sw*delta_t
