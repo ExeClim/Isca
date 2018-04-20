@@ -362,7 +362,7 @@ write(stdlog_unit, socrates_rad_nml)
           !-------------
 
           !Default parameters
-          input_cos_zenith_angle = 0.7
+          input_cos_zenith_angle = fms_stellar_flux(lon,nlat)/stellar_constant
           input_orog_corr = 0.0
           input_layer_heat_capacity = 29.07
 
