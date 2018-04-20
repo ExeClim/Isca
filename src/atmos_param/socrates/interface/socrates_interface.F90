@@ -428,7 +428,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc
 
-    logical :: socrates_hires_mode, soc_lw_mode
+    logical :: socrates_hires_mode, soc_lw_mode, used
 
        !Set tide-locked flux - should be set by namelist!
        soc_stellar_constant = 1370.0
@@ -474,6 +474,9 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
        temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_sw)
        
        output_heating_rate_total = output_heating_rate_lw + output_heating_rate_sw
+
+       !Sending total heating rates
+       used = send_data ( id_soc_heating_rate, output_heating_rate_total, Time_diag)
 
 end subroutine run_socrates  
   
