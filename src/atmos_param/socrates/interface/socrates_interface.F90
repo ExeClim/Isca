@@ -50,6 +50,7 @@ MODULE socrates_interface_mod
   REAL :: missing_value = -999
 
   ! Socrates inputs from namelist
+  
   REAL :: stellar_constant = 1370.0
   LOGICAL :: tidally_locked = .TRUE.
   LOGICAL :: socrates_hires_mode = .FALSE.  !If false then run in 'GCM mode', if true then uses high-res spectral files
@@ -57,9 +58,16 @@ MODULE socrates_interface_mod
   character(len=256) :: lw_hires_spectral_filename='/scratch/sit204/sp_lw_ga7'
   character(len=256) :: sw_spectral_filename='/scratch/sit204/sp_sw_ga7'
   character(len=256) :: sw_hires_spectral_filename='/scratch/sit204/sp_sw_ga7'
-    
+  
+  ! Incoming radiation options for namelist
+  
+  integer   :: solday=0  ! if >0, do perpetual run corresponding to day of the year = solday \in [0,days per year]
+  logical   :: do_rad_time_avg = .true. ! Average coszen for SW radiation over dt_rad?
+  real      :: equinox_day=0.75                ! fraction of the year defining NH autumn equinox \in [0,1]
+   
   NAMELIST/socrates_rad_nml/ stellar_constant, tidally_locked, lw_spectral_filename, lw_hires_spectral_filename, &
-                             sw_spectral_filename, sw_hires_spectral_filename, socrates_hires_mode
+                             sw_spectral_filename, sw_hires_spectral_filename, socrates_hires_mode, &
+                             solday, do_rad_time_avg, equinox_day
 
 
 
@@ -67,6 +75,8 @@ CONTAINS
 
   SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat)
     !! Initialises Socrates spectra, arrays, and constants
+
+    USE astronomy_mod, only: astronomy_init
 
     ! Arguments
     INTEGER, INTENT(in), DIMENSION(4) :: axes
@@ -89,6 +99,9 @@ CONTAINS
 #endif
 stdlog_unit = stdlog()
 write(stdlog_unit, socrates_rad_nml)
+
+    !Initialise astronomy
+    call astronomy_init
 
     ! Socrates spectral files -- should be set by namelist
     control_lw%spectral_file = lw_spectral_filename
@@ -438,6 +451,9 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
        temp_tend, net_surf_sw_down, surf_lw_down, delta_t)  
 
     use soc_constants_mod
+    use astronomy_mod, only: diurnal_solar
+    use time_manager_mod, only: length_of_day, length_of_year, get_time
+    use constants_mod,         only: pi
 
     ! Input time
     type(time_type), intent(in)           :: Time_diag
@@ -455,10 +471,47 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, t_surf_in, p_full_
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc
 
     logical :: soc_lw_mode, used
+    integer :: seconds, days, year_in_s
+    real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
+    real, dimension(size(temp_in,1), size(temp_in,2)) :: coszen, fracsun    
 
        !Set tide-locked flux - should be set by namelist!
-       fms_stellar_flux = stellar_constant*COS(rad_lat(:,:))*COS(rad_lon(:,:))
-       WHERE (fms_stellar_flux < 0.0) fms_stellar_flux = 0.0
+       if (tidally_locked == .TRUE.) then
+           fms_stellar_flux = stellar_constant*COS(rad_lat(:,:))*COS(rad_lon(:,:))
+           WHERE (fms_stellar_flux < 0.0) fms_stellar_flux = 0.0
+       else
+       
+        ! compute zenith angle
+                 call get_time(Time_diag, seconds, days)
+                 call get_time(length_of_year(), year_in_s)
+                 day_in_s = length_of_day()
+         
+                 r_seconds=real(seconds)
+                 r_days=real(days)
+                 r_total_seconds=r_seconds+(r_days*86400.)
+         
+                 frac_of_day = r_total_seconds / day_in_s
+
+                 if(solday > 0) then
+                     r_solday=real(solday)
+                     frac_of_year=(r_solday*day_in_s)/year_in_s
+                 else
+                     frac_of_year = r_total_seconds / year_in_s
+                 endif
+                 gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
+                 time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi   
+       
+           if(do_rad_time_avg) then
+	         r_dt_rad_avg=real(delta_t)
+	         dt_rad_radians = (r_dt_rad_avg/day_in_s)*2.0*pi
+	         call diurnal_solar(rad_lat, rad_lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians)
+           else
+	         ! Seasonal Cycle: Use astronomical parameters to calculate insolation
+	         call diurnal_solar(rad_lat, rad_lon, gmt, time_since_ae, coszen, fracsun, rrsun)
+           end if
+           
+           fms_stellar_flux = stellar_constant * coszen
+       endif
 
        n_profile = INT(1, kind(i_def))
        n_layer   = INT(size(temp_in,3), kind(i_def))
