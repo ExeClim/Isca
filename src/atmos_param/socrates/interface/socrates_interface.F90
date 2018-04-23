@@ -556,7 +556,6 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
                   r_days = real(days)
                   r_seconds = real(seconds)
                   r_total_seconds=r_seconds+(r_days*86400.)
-        write(6,*) 'deciding whether to run', r_total_seconds, dt_last, dt_rad
           if(r_total_seconds - dt_last .ge. dt_rad) then
              dt_last = r_total_seconds
           else
@@ -585,7 +584,6 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
              used = send_data ( id_soc_flux_down_sw, thd_sw_flux_down, Time_diag)
              used = send_data ( id_soc_heating_rate, output_heating_rate_total, Time_diag)
  
-write(6,*) 'applying old tendencies', r_total_seconds, maxval(output_heating_rate_total), minval(output_heating_rate_total)
              return !not time yet
           endif
 
@@ -670,8 +668,6 @@ write(6,*) 'applying old tendencies', r_total_seconds, maxval(output_heating_rat
        p_half_soc = REAL(p_half_in, kind(r_def))
        albedo_soc = REAL(albedo_in, kind(r_def))
 
-       write(6,*) 'calling socrates'
-
        CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
             output_heating_rate_lw, output_soc_flux_down_sw, output_soc_flux_up_lw,  output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
@@ -706,7 +702,6 @@ write(6,*) 'applying old tendencies', r_total_seconds, maxval(output_heating_rat
             net_surf_sw_down_store = real(net_surf_sw_down, kind(r_def))
             surf_lw_down_store = real(surf_lw_down, kind(r_def))
        endif
-             write(6,*) 'applying new tendencies', r_total_seconds, maxval(output_heating_rate_total), minval(output_heating_rate_total)
 
     !Sending total heating rates
     ! Send diagnostics
