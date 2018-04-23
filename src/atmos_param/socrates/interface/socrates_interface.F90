@@ -17,14 +17,14 @@ MODULE socrates_interface_mod
   USE  diag_manager_mod, ONLY: register_diag_field, send_data
 
   ! ExoFMS time
-  USE time_manager_mod, ONLY: time_type, OPERATOR(+), OPERATOR(-), OPERATOR(/=)
+  USE time_manager_mod, ONLY: time_type, OPERATOR(+), OPERATOR(-), OPERATOR(/=), length_of_day, length_of_year, get_time, set_time
 
   ! Socrates modules
   USE read_control_mod
   USE def_control, ONLY: StrCtrl,  allocate_control,   deallocate_control
   USE def_spectrum
   USE constants_mod, only: grav, rdgas, rvgas, cp_air
-  USE fms_mod, only: stdlog
+  USE fms_mod, only: stdlog, FATAL, WARNING, error_mesg
   USE interpolator_mod, only: interpolate_type  
   USE soc_constants_mod  
 
@@ -51,9 +51,11 @@ MODULE socrates_interface_mod
   CHARACTER(len=10), PARAMETER :: soc_mod_name = 'socrates'
   REAL :: missing_value = -999
 
-
   type(interpolate_type),save                :: o3_interp, co2_interp            ! use external file for ozone and co2
 
+  REAL :: dt_last !Time of last radiation calculation - used to tell whether it is time to recompute radiation or not
+  REAL(r_def), allocatable, dimension(:,:,:) :: tdt_soc_total_store
+  REAL(r_def), allocatable, dimension(:,:) :: net_surf_sw_down_store, surf_lw_down_store
 
   ! Socrates inputs from namelist
   
@@ -80,20 +82,26 @@ MODULE socrates_interface_mod
   integer   :: solday=0  ! if >0, do perpetual run corresponding to day of the year = solday \in [0,days per year]
   logical   :: do_rad_time_avg = .true. ! Average coszen for SW radiation over dt_rad?
   real      :: equinox_day=0.75                ! fraction of the year defining NH autumn equinox \in [0,1]
-   
+
+  ! radiation time stepping and spatial sampling
+  integer   :: dt_rad=0                        ! Radiation timestep - every step if dt_rad<dt_atmos
+  logical   :: store_intermediate_rad =.true.  ! Keep rad constant over entire dt_rad?
+  integer   :: dt_rad_avg = -1                 ! If averaging, over what time? dt_rad_avg=dt_rad if dt_rad_avg<=0
+
   NAMELIST/socrates_rad_nml/ stellar_constant, tidally_locked, lw_spectral_filename, lw_hires_spectral_filename, &
                              sw_spectral_filename, sw_hires_spectral_filename, socrates_hires_mode, &
                              input_planet_emissivity, co2_ppmv, &
                              account_for_effect_of_water, account_for_effect_of_ozone, &
                              do_read_ozone, ozone_file_name, ozone_field_name, &
                              do_read_co2, co2_file_name, co2_field_name, &                             
-                             solday, do_rad_time_avg, equinox_day
+                             solday, do_rad_time_avg, equinox_day,  &
+                             store_intermediate_rad, dt_rad_avg, dt_rad
 
 
 
 CONTAINS
 
-  SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb)
+  SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb, delta_t_atmos)
     !! Initialises Socrates spectra, arrays, and constants
 
     USE astronomy_mod, only: astronomy_init
@@ -102,12 +110,15 @@ CONTAINS
     ! Arguments
     INTEGER, INTENT(in), DIMENSION(4) :: axes
     !! NB axes refers to the handles of the axes defined in fv_diagnostics
-    TYPE(time_type), INTENT(in)       :: Time
+    TYPE(time_type), INTENT(in)       :: Time, delta_t_atmos
     INTEGER, INTENT(in)               :: is, ie, js, je, num_levels
     REAL, INTENT(in) , DIMENSION(:,:)   :: lat
     REAL, INTENT(in) , DIMENSION(:,:)   :: lonb, latb
         
     integer :: io, stdlog_unit
+    integer :: res, time_step_seconds
+    real    :: day_in_s_check
+
     !-------------------------------------------------------------------------------------
 
 #ifdef INTERNAL_FILE_NML
@@ -124,6 +135,39 @@ write(stdlog_unit, socrates_rad_nml)
 
     !Initialise astronomy
     call astronomy_init
+
+    !Initialise variables related to radiation timestep
+
+          dt_last = -real(dt_rad) !make sure we are computing radiation at the first time step
+
+          call get_time(delta_t_atmos,time_step_seconds)
+
+            if (dt_rad .gt. time_step_seconds) then
+                res=mod(dt_rad, time_step_seconds)
+
+                if (res.ne.0) then
+                        call error_mesg( 'socrates_init', &
+                         'dt_rad must be an integer multiple of dt_atmos',FATAL)
+                endif
+
+                day_in_s_check=length_of_day()
+                res=mod(int(day_in_s_check), dt_rad)
+
+                if (res.ne.0) then
+                        call error_mesg( 'socrates_init', &
+                         'dt_rad does not fit into one day an integer number of times', WARNING)
+                endif
+
+
+            endif
+
+          if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
+
+    if(store_intermediate_rad) then
+        allocate(tdt_soc_total_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+        allocate(net_surf_sw_down_store(size(lonb,1)-1, size(latb,2)-1))
+        allocate(surf_lw_down_store(size(lonb,1)-1, size(latb,2)-1))
+    endif
 
     ! Socrates spectral files -- should be set by namelist
     control_lw%spectral_file = lw_spectral_filename
@@ -490,7 +534,6 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
        temp_tend, net_surf_sw_down, surf_lw_down, delta_t)  
 
     use astronomy_mod, only: diurnal_solar
-    use time_manager_mod, only: length_of_day, length_of_year, get_time
     use constants_mod,         only: pi
     use interpolator_mod,only: interpolator
 
@@ -514,15 +557,48 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
     real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
     real, dimension(size(temp_in,1), size(temp_in,2)) :: coszen, fracsun   
     real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: ozone_in, co2_in
+    type(time_type) :: Time_loc
 
-       !Set tide-locked flux - should be set by namelist!
+        !check if we really want to recompute radiation
+        ! alarm
+          call get_time(Time_diag,seconds,days)
+                  r_days = real(days)
+                  r_seconds = real(seconds)
+                  r_total_seconds=r_seconds+(r_days*86400.)
+          if(r_total_seconds - dt_last .ge. dt_rad) then
+             dt_last = r_total_seconds
+          else
+             if(store_intermediate_rad)then
+                output_heating_rate_total  = tdt_soc_total_store
+                net_surf_sw_down = real(net_surf_sw_down_store)
+                surf_lw_down = real(surf_lw_down_store)
+             else
+                output_heating_rate_total = 0.
+                net_surf_sw_down  = 0.
+                surf_lw_down  = 0.
+             endif
+             temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_total)
+!             call write_diag_rrtm(Time_diag,is,js)
+             return !not time yet
+          endif
+
+
+       !make sure we run perpetual when solday > 0)
+          if(solday > 0)then
+             Time_loc = set_time(seconds,solday)
+          else
+             Time_loc = Time_diag
+          endif
+
+       !Set tide-locked flux if tidally-locked = .true. Else use diurnal-solar
+       !to calculate insolation from orbit!
        if (tidally_locked == .TRUE.) then
            fms_stellar_flux = stellar_constant*COS(rad_lat(:,:))*COS(rad_lon(:,:))
            WHERE (fms_stellar_flux < 0.0) fms_stellar_flux = 0.0
        else
        
         ! compute zenith angle
-                 call get_time(Time_diag, seconds, days)
+                 call get_time(Time_loc, seconds, days)
                  call get_time(length_of_year(), year_in_s)
                  day_in_s = length_of_day()
          
@@ -609,6 +685,13 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
        temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_sw)
        
        output_heating_rate_total = output_heating_rate_lw + output_heating_rate_sw
+
+       if(store_intermediate_rad)then
+            tdt_soc_total_store = output_heating_rate_total
+            net_surf_sw_down_store = real(net_surf_sw_down, kind(r_def))
+            surf_lw_down_store = real(surf_lw_down, kind(r_def))
+       endif
+
 
        !Sending total heating rates
        used = send_data ( id_soc_heating_rate, output_heating_rate_total, Time_diag)
