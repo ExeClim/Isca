@@ -576,7 +576,15 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
                 surf_lw_down  = 0.
              endif
              temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_sw)+real(output_heating_rate_lw)
-             output_heating_rate_total = output_heating_rate_sw +output_heating_rate_lw             
+             output_heating_rate_total = output_heating_rate_sw +output_heating_rate_lw            
+
+            ! Send diagnostics
+             used = send_data ( id_soc_heating_lw, output_heating_rate_lw, Time_diag)
+             used = send_data ( id_soc_flux_up_lw, thd_lw_flux_up, Time_diag)
+             used = send_data ( id_soc_heating_sw, output_heating_rate_sw, Time_diag)
+             used = send_data ( id_soc_flux_down_sw, thd_sw_flux_down, Time_diag)
+             used = send_data ( id_soc_heating_rate, output_heating_rate_total, Time_diag)
+ 
 write(6,*) 'applying old tendencies', r_total_seconds, maxval(output_heating_rate_total), minval(output_heating_rate_total)
              return !not time yet
           endif
