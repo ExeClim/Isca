@@ -54,7 +54,7 @@ MODULE socrates_interface_mod
   type(interpolate_type),save                :: o3_interp, co2_interp            ! use external file for ozone and co2
 
   REAL :: dt_last !Time of last radiation calculation - used to tell whether it is time to recompute radiation or not
-  REAL(r_def), allocatable, dimension(:,:,:) :: tdt_soc_total_store
+  REAL(r_def), allocatable, dimension(:,:,:) :: tdt_soc_sw_store, tdt_soc_lw_store, thd_sw_flux_down_store, thd_lw_flux_up_store
   REAL(r_def), allocatable, dimension(:,:) :: net_surf_sw_down_store, surf_lw_down_store
 
   ! Socrates inputs from namelist
@@ -164,7 +164,10 @@ write(stdlog_unit, socrates_rad_nml)
           if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
 
     if(store_intermediate_rad) then
-        allocate(tdt_soc_total_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+        allocate(tdt_soc_sw_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+        allocate(tdt_soc_lw_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+        allocate(thd_lw_flux_up_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+        allocate(thd_sw_flux_down_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
         allocate(net_surf_sw_down_store(size(lonb,1)-1, size(latb,2)-1))
         allocate(surf_lw_down_store(size(lonb,1)-1, size(latb,2)-1))
     endif
@@ -558,17 +561,23 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
              dt_last = r_total_seconds
           else
              if(store_intermediate_rad)then
-                output_heating_rate_total  = tdt_soc_total_store
+                output_heating_rate_sw  = tdt_soc_sw_store
+                output_heating_rate_lw  = tdt_soc_lw_store
+                thd_sw_flux_down = thd_sw_flux_down_store
+                thd_lw_flux_up   = thd_lw_flux_up_store
                 net_surf_sw_down = real(net_surf_sw_down_store)
                 surf_lw_down = real(surf_lw_down_store)
              else
-                output_heating_rate_total = 0.
+                output_heating_rate_sw = 0.
+                output_heating_rate_lw = 0.
+                thd_sw_flux_down = 0.
+                thd_lw_flux_up   = 0.
                 net_surf_sw_down  = 0.
                 surf_lw_down  = 0.
              endif
-             temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_total)
-!             call write_diag_rrtm(Time_diag,is,js)
-             write(6,*) 'applying old tendencies', r_total_seconds, maxval(output_heating_rate_total), minval(output_heating_rate_total)
+             temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_sw)+real(output_heating_rate_lw)
+             output_heating_rate_total = output_heating_rate_sw +output_heating_rate_lw             
+write(6,*) 'applying old tendencies', r_total_seconds, maxval(output_heating_rate_total), minval(output_heating_rate_total)
              return !not time yet
           endif
 
@@ -682,7 +691,10 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
        output_heating_rate_total = output_heating_rate_lw + output_heating_rate_sw
 
        if(store_intermediate_rad)then
-            tdt_soc_total_store = output_heating_rate_total
+            tdt_soc_lw_store = output_heating_rate_lw
+            tdt_soc_sw_store = output_heating_rate_sw
+            thd_sw_flux_down_store = thd_sw_flux_down
+            thd_lw_flux_up_store = thd_lw_flux_up
             net_surf_sw_down_store = real(net_surf_sw_down, kind(r_def))
             surf_lw_down_store = real(surf_lw_down, kind(r_def))
        endif
