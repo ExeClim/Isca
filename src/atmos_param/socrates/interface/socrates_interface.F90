@@ -289,7 +289,7 @@ write(stdlog_unit, socrates_rad_nml)
   ! -----------------------------------------------------------------------------
   subroutine socrates_interface(Time_diag, rlat, rlon, soc_mode, hires_mode,      &
        fms_temp, fms_spec_hum, fms_ozone, fms_co2, fms_t_surf, fms_p_full, fms_p_half, fms_albedo, n_profile, n_layer,        &
-       output_heating_rate, fms_net_surf_sw_down, fms_surf_lw_down, fms_stellar_flux )
+       output_heating_rate, output_soc_flux_down_sw, output_soc_flux_up_lw, fms_net_surf_sw_down, fms_surf_lw_down, fms_stellar_flux )
 
     use realtype_rd
     use read_control_mod
@@ -330,10 +330,10 @@ write(stdlog_unit, socrates_rad_nml)
     real(r_def), intent(out) :: fms_net_surf_sw_down(:,:)
     real(r_def), intent(out) :: fms_surf_lw_down(:,:)
     real(r_def), intent(out) :: output_heating_rate(:,:,:)
-    real(r_def) :: output_heating_rate_lw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
-    real(r_def) :: output_heating_rate_sw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
-    real(r_def) :: output_soc_flux_up_lw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
-    real(r_def) :: output_soc_flux_down_sw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
+    real(r_def), intent(out) :: output_soc_flux_up_lw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
+    real(r_def), intent(out) :: output_soc_flux_down_sw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
+    real(r_def)              :: output_heating_rate_lw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
+    real(r_def)              :: output_heating_rate_sw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
     real(r_def), allocatable :: output_soc_spectral_olr(:,:,:)
 
     ! Hi-res output
@@ -507,18 +507,6 @@ write(stdlog_unit, socrates_rad_nml)
        end do
     end do
 
-
-
-
-    ! Send diagnostics
-    if (soc_mode == .TRUE.) then
-       used = send_data ( id_soc_heating_lw, output_heating_rate_lw, Time_diag)
-       used = send_data ( id_soc_flux_up_lw, output_soc_flux_up_lw, Time_diag)
-    else
-       used = send_data ( id_soc_heating_sw, output_heating_rate_sw, Time_diag)
-       used = send_data ( id_soc_flux_down_sw, output_soc_flux_down_sw, Time_diag)
-    endif
-
     ! Allocate spectral array sizes
     if (hires_mode == .FALSE.) then
        deallocate(soc_spectral_olr)
@@ -549,14 +537,14 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
     integer(i_def) :: n_profile, n_layer
 
     real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc, albedo_soc
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, co2_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, co2_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total, output_soc_flux_down_sw, output_soc_flux_up_lw
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc
 
     logical :: soc_lw_mode, used
     integer :: seconds, days, year_in_s
     real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
     real, dimension(size(temp_in,1), size(temp_in,2)) :: coszen, fracsun   
-    real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: ozone_in, co2_in
+    real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: ozone_in, co2_in, thd_sw_flux_down, thd_lw_flux_up
     type(time_type) :: Time_loc
 
         !check if we really want to recompute radiation
@@ -565,6 +553,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
                   r_days = real(days)
                   r_seconds = real(seconds)
                   r_total_seconds=r_seconds+(r_days*86400.)
+        write(6,*) 'deciding whether to run', r_total_seconds, dt_last, dt_rad
           if(r_total_seconds - dt_last .ge. dt_rad) then
              dt_last = r_total_seconds
           else
@@ -579,6 +568,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
              endif
              temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_total)
 !             call write_diag_rrtm(Time_diag,is,js)
+             write(6,*) 'applying old tendencies', r_total_seconds, maxval(output_heating_rate_total), minval(output_heating_rate_total)
              return !not time yet
           endif
 
@@ -663,12 +653,15 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
        p_half_soc = REAL(p_half_in, kind(r_def))
        albedo_soc = REAL(albedo_in, kind(r_def))
 
+       write(6,*) 'calling socrates'
+
        CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
-            output_heating_rate_lw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
+            output_heating_rate_lw, output_soc_flux_down_sw, output_soc_flux_up_lw,  output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_lw*delta_t
        surf_lw_down(:,:) = REAL(output_surf_lw_down(:,:))
+       thd_lw_flux_up = REAL(output_soc_flux_up_lw)
 
        temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_lw)
        
@@ -677,10 +670,12 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
        soc_lw_mode = .FALSE.
        CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
-            output_heating_rate_sw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
+            output_heating_rate_sw, output_soc_flux_down_sw, output_soc_flux_up_lw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_sw*delta_t
        net_surf_sw_down(:,:) = REAL(output_net_surf_sw_down(:,:))
+       thd_sw_flux_down = REAL(output_soc_flux_down_sw)
+
 
        temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_sw)
        
@@ -691,9 +686,14 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
             net_surf_sw_down_store = real(net_surf_sw_down, kind(r_def))
             surf_lw_down_store = real(surf_lw_down, kind(r_def))
        endif
+             write(6,*) 'applying new tendencies', r_total_seconds, maxval(output_heating_rate_total), minval(output_heating_rate_total)
 
-
-       !Sending total heating rates
+    !Sending total heating rates
+    ! Send diagnostics
+       used = send_data ( id_soc_heating_lw, output_heating_rate_lw, Time_diag)
+       used = send_data ( id_soc_flux_up_lw, thd_lw_flux_up, Time_diag)
+       used = send_data ( id_soc_heating_sw, output_heating_rate_sw, Time_diag)
+       used = send_data ( id_soc_flux_down_sw, thd_sw_flux_down, Time_diag)
        used = send_data ( id_soc_heating_rate, output_heating_rate_total, Time_diag)
 
 end subroutine run_socrates  

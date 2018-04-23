@@ -24,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk19_with_first_dt_rad_attempt', codebase=cb)
+exp = Experiment('soc_test_mk20_with_dt_rad_diag', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -81,8 +81,7 @@ exp.namelist = namelist = Namelist({
         'ozone_file_name':'ozone_1990',
         'ozone_field_name':'ozone_1990',
         'do_read_co2': True,
-        'dt_rad':4320.,
-
+        'dt_rad':1440.,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -198,8 +197,6 @@ exp.namelist = namelist = Namelist({
 if __name__=="__main__":
 
     s = 1.0
-    with exp_progress(exp, description='o%.0f d{day}' % s) as pbar:
-        exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
+    exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
     for i in range(2,121):
-        with exp_progress(exp, description='o%.0f d{day}' % s) as pbar:    
-            exp.run(i, num_cores=NCORES)
+        exp.run(i, num_cores=NCORES)
