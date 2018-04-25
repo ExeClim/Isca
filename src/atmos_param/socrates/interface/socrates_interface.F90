@@ -521,7 +521,7 @@ write(stdlog_unit, socrates_rad_nml)
 
   end subroutine socrates_interface
 
-subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p_full_in, p_half_in, albedo_in, &
+subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p_full_in, p_half_in, albedo_in, &
        temp_tend, net_surf_sw_down, surf_lw_down, delta_t)  
 
     use astronomy_mod, only: diurnal_solar
@@ -529,7 +529,7 @@ subroutine run_socrates(Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p
     use interpolator_mod,only: interpolator
 
     ! Input time
-    type(time_type), intent(in)           :: Time_diag
+    type(time_type), intent(in)           :: Time, Time_diag
     real, intent(in), dimension(:,:)      :: rad_lat, rad_lon, t_surf_in, albedo_in
     real, intent(in), dimension(:,:,:)   :: temp_in, p_full_in, q_in
     real, intent(in), dimension(:,:,:)  :: p_half_in

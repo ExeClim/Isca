@@ -24,13 +24,13 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk23_speed_test_slow', codebase=cb)
+exp = Experiment('soc_test_mk25_timestep_output_check_dt_rad_1440_time_next', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
-diag.add_file('atmos_hourly', 1, 'hours', time_units='hours')
+diag.add_file('atmos_timestep', 720, 'seconds', time_units='hours')
 
 #Tell model which diagnostics to write
 diag.add_field('dynamics', 'ps', time_avg=True)
@@ -81,6 +81,7 @@ exp.namelist = namelist = Namelist({
         'ozone_file_name':'ozone_1990',
         'ozone_field_name':'ozone_1990',
         'do_read_co2': True,
+        'dt_rad': 1440.,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -197,5 +198,5 @@ if __name__=="__main__":
 
     s = 1.0
     exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
-    for i in range(2,121):
-        exp.run(i, num_cores=NCORES)
+#    for i in range(2,121):
+#        exp.run(i, num_cores=NCORES)
