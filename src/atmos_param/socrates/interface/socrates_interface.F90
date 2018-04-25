@@ -392,8 +392,9 @@ write(stdlog_unit, socrates_rad_nml)
     input_cld_subcol_gen = n_layer
     input_cld_subcol_req = n_layer
 
-    do lon = 1,size(fms_temp,1)
-       do n = 1, size(fms_temp,2)
+    do n = 1, size(fms_temp,2)
+        do lon = 1,size(fms_temp,1)
+
        
           nlat = n
 
