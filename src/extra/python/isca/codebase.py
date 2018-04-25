@@ -267,6 +267,15 @@ class IscaCodeBase(CodeBase):
     name = 'isca'
     executable_name = 'isca.x'
 
+    def disable_soc(self):
+        # add no compile flag
+        self.compile_flags.append('-DSOC_NO_COMPILE')
+        self.log.info('SOCRATES compilation disabled.')
+
+    def __init__(self, *args, **kwargs):
+        super(IscaCodeBase, self).__init__(*args, **kwargs)
+        self.disable_soc()
+
 class SocratesCodeBase(CodeBase):
     """Isca without RRTM but with the Met Office radiation scheme, Socrates.
     """
@@ -301,10 +310,15 @@ class GreyCodeBase(CodeBase):
         self.compile_flags.append('-DRRTM_NO_COMPILE')
         self.log.info('RRTM compilation disabled.')
 
+    def disable_soc(self):
+        # add no compile flag
+        self.compile_flags.append('-DSOC_NO_COMPILE')
+        self.log.info('SOCRATES compilation disabled.')
+
     def __init__(self, *args, **kwargs):
         super(GreyCodeBase, self).__init__(*args, **kwargs)
         self.disable_rrtm()
-
+        self.disable_soc()
 
 class DryCodeBase(GreyCodeBase):
     """The Held-Suarez model.

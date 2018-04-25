@@ -66,8 +66,12 @@ use rayleigh_bottom_drag_mod, only: rayleigh_bottom_drag_init, compute_rayleigh_
     use rrtm_vars
 #endif
 
+#ifdef SOC_NO_COMPILE
+    ! Socrates not included
+#else
 use socrates_interface_mod
 use soc_constants_mod
+#endif
 
 implicit none
 private
@@ -698,9 +702,15 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
     endif
 #endif
 
+#ifdef SOC_NO_COMPILE
+    if (do_socrates_radiation) then
+        call error_mesg('idealized_moist_phys','do_socrates_radiation is .true. but compiler flag -D SOC_NO_COMPILE used. Stopping.', FATAL)
+    endif
+#else
 if (do_socrates_radiation) then
     call socrates_init(is, ie, js, je, num_levels, axes, Time, rad_lat, rad_lonb_2d, rad_latb_2d, Time_step_in)
 endif
+#endif
 
 if(turb) then
    call vert_turb_driver_init (rad_lonb_2d, rad_latb_2d, ie-is+1,je-js+1, &
@@ -999,6 +1009,11 @@ if(do_rrtm_radiation) then
 endif
 #endif
 
+#ifdef SOC_NO_COMPILE
+    if (do_socrates_radiation) then
+        call error_mesg('idealized_moist_phys','do_socrates_radiation is .true. but compiler flag -D SOC_NO_COMPILE used. Stopping.', FATAL)
+    endif
+#else
 if (do_socrates_radiation) then
        ! Socrates interface
        
@@ -1006,6 +1021,7 @@ if (do_socrates_radiation) then
                       p_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t)
 
 endif
+#endif
 
 if(gp_surface) then
 
@@ -1220,7 +1236,12 @@ endif
 call lscale_cond_end
 if(mixed_layer_bc)  call mixed_layer_end(t_surf, bucket_depth, bucket)
 if(do_damping) call damping_driver_end
+
+#ifdef SOC_NO_COMPILE
+ !No need to end socrates
+#else
 if(do_socrates_radiation) call run_socrates_end
+#endif
 
 end subroutine idealized_moist_phys_end
 !=================================================================================================================================
