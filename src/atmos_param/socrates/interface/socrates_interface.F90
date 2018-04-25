@@ -552,7 +552,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
         !check if we really want to recompute radiation
         ! alarm
-          call get_time(Time_diag,seconds,days)
+          call get_time(Time,seconds,days)
                   r_days = real(days)
                   r_seconds = real(seconds)
                   r_total_seconds=r_seconds+(r_days*86400.)
@@ -592,7 +592,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
           if(solday > 0)then
              Time_loc = set_time(seconds,solday)
           else
-             Time_loc = Time_diag
+             Time_loc = Time
           endif
 
        !Set tide-locked flux if tidally-locked = .true. Else use diurnal-solar
@@ -668,7 +668,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        p_half_soc = REAL(p_half_in, kind(r_def))
        albedo_soc = REAL(albedo_in, kind(r_def))
 
-       CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
+       CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
             output_heating_rate_lw, output_soc_flux_down_sw, output_soc_flux_up_lw,  output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
@@ -681,7 +681,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        ! SW calculation
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .FALSE.
-       CALL socrates_interface(Time_diag, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
+       CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
             output_heating_rate_sw, output_soc_flux_down_sw, output_soc_flux_up_lw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
