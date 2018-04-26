@@ -342,22 +342,21 @@ write(stdlog_unit, socrates_rad_nml)
     ! Hi-res output
     INTEGER, PARAMETER :: out_unit=20
     CHARACTER(len=200) :: file_name
-    REAL, allocatable :: soc_spectral_olr(:)
+    REAL, allocatable :: soc_spectral_olr(:,:)
 
     ! Arrays to send to Socrates
-    real, dimension(n_layer) :: input_p, input_t, input_mixing_ratio, &
+    real, dimension(n_profile, n_layer) :: input_p, input_t, input_mixing_ratio, &
          input_d_mass, input_density, input_layer_heat_capacity, &
          soc_heating_rate, input_o3_mixing_ratio, &
          soc_heating_rate_lw, soc_heating_rate_sw, input_co2_mixing_ratio
-    real, dimension(0:n_layer) :: input_p_level, input_t_level, soc_flux_direct, &
+    real, dimension(n_profile, 0:n_layer) :: input_p_level, input_t_level, soc_flux_direct, &
          soc_flux_down_sw, soc_flux_up_sw, output_flux_net, &
          soc_flux_down_lw, soc_flux_up_lw
     real, dimension(n_profile) :: input_t_surf, input_cos_zenith_angle, input_solar_irrad, &
-         input_orog_corr
+         input_orog_corr, input_planet_albedo
 
 
     ! Socrates options
-    real(r_def) :: input_planet_albedo
     integer(i_def) :: input_n_cloud_layer
     integer(i_def) :: input_n_aer_mode
     integer(i_def) :: input_cld_subcol_gen
@@ -369,7 +368,7 @@ write(stdlog_unit, socrates_rad_nml)
     type(StrAtm) :: atm_input
 
     ! Loop variables
-    integer(i_def) :: i, j, k, l, n, lon
+    integer(i_def) :: i, j, k, l, n, lon, si, sj, sk
 
     !DIAG Diagnostic
     logical :: used
@@ -379,10 +378,10 @@ write(stdlog_unit, socrates_rad_nml)
 
     ! Allocate spectral array sizes
     if (hires_mode == .FALSE.) then
-       allocate(soc_spectral_olr(n_soc_bands_lw))
+       allocate(soc_spectral_olr(n_profile,n_soc_bands_lw))
        allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_lw))
     else
-       allocate(soc_spectral_olr(n_soc_bands_lw_hires))
+       allocate(soc_spectral_olr(n_profile,n_soc_bands_lw_hires))
        allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_lw_hires))
     end if
 
@@ -391,59 +390,56 @@ write(stdlog_unit, socrates_rad_nml)
     input_n_aer_mode = n_layer
     input_cld_subcol_gen = n_layer
     input_cld_subcol_req = n_layer
-
-    do n = 1, size(fms_temp,2)
-        do lon = 1,size(fms_temp,1)
-
-       
-          nlat = n
+    si = size(fms_temp,1)
+    sj = size(fms_temp,2)
+    sk = size(fms_temp,3)
 
           !Set input T, p, p_level, and mixing ratio profiles
-          input_t = fms_temp(lon,nlat,:)
-          input_p = fms_p_full(lon,nlat,:)
-          input_p_level = fms_p_half(lon,nlat,:)
+          input_t = reshape(fms_temp(:,:,:),(/si*sj,sk /))
+          input_p = reshape(fms_p_full(:,:,:),(/si*sj,sk /))
+          input_p_level = reshape(fms_p_half(:,:,:),(/si*sj,sk+1 /))
           
           if (account_for_effect_of_water == .true.) then
-              input_mixing_ratio = fms_spec_hum(lon,nlat,:) / (1. - fms_spec_hum(lon,nlat,:)) !Mass mixing ratio = q / (1-q)                            
+              input_mixing_ratio = reshape(fms_spec_hum(:,:,:) / (1. - fms_spec_hum(:,:,:)),(/si*sj,sk /)) !Mass mixing ratio = q / (1-q)
           else
               input_mixing_ratio = 0.0
           endif
           
           if (account_for_effect_of_ozone == .true.) then
-            input_o3_mixing_ratio = fms_ozone(lon,nlat,:)
+            input_o3_mixing_ratio = reshape(fms_ozone(:,:,:),(/si*sj,sk /))
           else         
             input_o3_mixing_ratio = 0.0
           endif
 
-         input_co2_mixing_ratio = fms_co2(lon,nlat,:)
+         input_co2_mixing_ratio = reshape(fms_co2(:,:,:),(/si*sj,sk /))
 
           !-------------
 
           !Default parameters
-          input_cos_zenith_angle = fms_stellar_flux(lon,nlat)/stellar_constant
+          input_cos_zenith_angle = reshape((fms_stellar_flux(:,:)/stellar_constant),(/si*sj /))
           input_orog_corr = 0.0
-          input_planet_albedo = fms_albedo(lon,nlat)
+          input_planet_albedo = reshape(fms_albedo(:,:),(/n_profile /))
 
           !Set tide-locked flux - should be set by namelist eventually!
-          input_solar_irrad = fms_stellar_flux(lon,nlat)!RESHAPE(fms_stellar_flux, (/n_profile/))
-          input_t_surf = fms_t_surf(lon,nlat)!RESHAPE(fms_t_surf, (/n_profile/))
+          input_solar_irrad = reshape(fms_stellar_flux(:,:),(/si*sj /))
+          input_t_surf = reshape(fms_t_surf(:,:),(/si*sj /))
 
 
           !--------------
           !Set input t_level by scaling t - NEEDS TO CHANGE!
           DO i = nlat, nlat
              DO k = 0,n_layer
-                input_t_level(k) = 0.5*(input_t(k+1)+input_t(k))
+                input_t_level(:,k) = 0.5*(input_t(:,k+1)+input_t(:,k))
              END DO
-             input_t_level(n_layer) = input_t(n_layer) + input_t(n_layer) - input_t_level(n_layer-1)
-             input_t_level(0) = input_t(1) - (input_t_level(1) - input_t(1))
+             input_t_level(:,n_layer) = input_t(:,n_layer) + input_t(:,n_layer) - input_t_level(:,n_layer-1)
+             input_t_level(:,0) = input_t(:,1) - (input_t_level(:,1) - input_t(:,1))
           END DO
 
           !Set input dry mass, density, and heat capacity profiles
           DO i=n_layer, 1, -1
-             input_d_mass(i) = (input_p_level(i)-input_p_level(i-1))/grav
-             input_density(i) = input_p(i)/(rdgas*input_t(i))
-             input_layer_heat_capacity(i) = input_d_mass(i)*cp_air
+             input_d_mass(:,i) = (input_p_level(:,i)-input_p_level(:,i-1))/grav
+             input_density(:,i) = input_p(:,i)/(rdgas*input_t(:,i))
+             input_layer_heat_capacity(:,i) = input_d_mass(:,i)*cp_air
           END DO
 
 
@@ -494,22 +490,19 @@ write(stdlog_unit, socrates_rad_nml)
                soc_flux_direct, soc_flux_down_lw, soc_flux_up_lw, soc_heating_rate_lw, soc_spectral_olr)
 
           ! Set output arrays
-          fms_surf_lw_down(lon,nlat) = soc_flux_down_lw(n_layer)
-          output_heating_rate(lon,nlat,:) = soc_heating_rate_lw(:)
-          output_soc_spectral_olr(lon,nlat,:) = soc_spectral_olr(:)
+          fms_surf_lw_down(:,:) = reshape(soc_flux_down_lw(:,n_layer),(/si,sj/))
+          output_heating_rate(:,:,:) = reshape(soc_heating_rate_lw(:,:),(/si,sj,sk /))
+          output_soc_spectral_olr(:,:,:) = reshape(soc_spectral_olr(:,:),(/si,sj,int(n_soc_bands_lw,i_def) /))
 
           if (soc_mode == .TRUE.) then
-             fms_surf_lw_down(lon,nlat) = soc_flux_down_lw(n_layer)
-             output_soc_flux_up_lw(lon,nlat,:) = soc_flux_up_lw(:)
-             output_heating_rate_lw(lon,nlat,:) = soc_heating_rate_lw(:)
+             fms_surf_lw_down(:,:) = reshape(soc_flux_down_lw(:,n_layer),(/si,sj /))
+             output_soc_flux_up_lw(:,:,:) = reshape(soc_flux_up_lw(:,:),(/si,sj,sk /))
+             output_heating_rate_lw(:,:,:) = reshape(soc_heating_rate_lw(:,:),(/si,sj,sk/))
           else
-             fms_net_surf_sw_down(lon,nlat) = soc_flux_down_lw(n_layer)
-             output_soc_flux_down_sw(lon,nlat,:) = soc_flux_down_lw(:)
-             output_heating_rate_sw(lon,nlat,:) = soc_heating_rate_lw(:)
+             fms_net_surf_sw_down(:,:) = reshape(soc_flux_down_lw(:,n_layer),(/si,sj /))
+             output_soc_flux_down_sw(:,:,:) = reshape(soc_flux_down_lw(:,:),(/si,sj,sk /))
+             output_heating_rate_sw(:,:,:) = reshape(soc_heating_rate_lw(:,:),(/si,sj,sk /))
           end if
-
-       end do
-    end do
 
     ! Allocate spectral array sizes
     if (hires_mode == .FALSE.) then
@@ -651,7 +644,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        endif
 
 
-       n_profile = INT(1, kind(i_def))
+       n_profile = INT(size(temp_in,2)*size(temp_in,1), kind(i_def))
        n_layer   = INT(size(temp_in,3), kind(i_def))
        t_surf_for_soc = REAL(t_surf_in(:,:), kind(r_def))
        

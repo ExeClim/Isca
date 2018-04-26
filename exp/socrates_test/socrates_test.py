@@ -24,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk27_alt_loop_order', codebase=cb)
+exp = Experiment('soc_test_mk29_reshape', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -46,14 +46,14 @@ diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
 
 # diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
-diag.add_field('socrates', 'soc_olr', time_avg=True)
+#diag.add_field('socrates', 'soc_olr', time_avg=True)
 # diag.add_field('socrates', 'soc_olr_spectrum_lw', time_avg=True)
 # diag.add_field('socrates', 'soc_surf_spectrum_sw', time_avg=True)
-diag.add_field('socrates', 'soc_heating_lw', time_avg=True)
-diag.add_field('socrates', 'soc_heating_sw', time_avg=True)
-diag.add_field('socrates', 'soc_heating_rate', time_avg=True)
-diag.add_field('socrates', 'soc_flux_up_lw', time_avg=True)
-diag.add_field('socrates', 'soc_flux_down_sw', time_avg=True)
+#diag.add_field('socrates', 'soc_heating_lw', time_avg=True)
+#diag.add_field('socrates', 'soc_heating_sw', time_avg=True)
+#diag.add_field('socrates', 'soc_heating_rate', time_avg=True)
+#diag.add_field('socrates', 'soc_flux_up_lw', time_avg=True)
+#diag.add_field('socrates', 'soc_flux_down_sw', time_avg=True)
 
 
 exp.diag_table = diag
@@ -81,6 +81,7 @@ exp.namelist = namelist = Namelist({
         'ozone_file_name':'ozone_1990',
         'ozone_field_name':'ozone_1990',
         'do_read_co2': True,
+        'dt_rad':4320,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,

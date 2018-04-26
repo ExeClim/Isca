@@ -106,7 +106,7 @@ real(r_def), intent(in) :: orog_corr(n_profile)
 
 logical, intent(in) :: l_planet_grey_surface
 !   Set a single grey albedo / emissivity for the surface
-real(r_def), intent(in) :: planet_albedo
+real(r_def), intent(in) :: planet_albedo(:)
 !   Surface albedo used for SW calculations
 real(r_def), intent(in) :: planet_emissivity
 !   Surface emissivity used for LW calculations
@@ -123,7 +123,7 @@ real(r_def), intent(out) :: flux_up(n_profile, 0:n_layer)
 real(r_def), intent(out) :: heating_rate(n_profile, n_layer)
 !   Heating rate (Ks-1)
 
-REAL(r_def), INTENT(inout) :: spectral_olr(:)
+REAL(r_def), INTENT(inout) :: spectral_olr(:,:)
 !   Spectral OLR
 
 
@@ -189,7 +189,7 @@ do l=1, n_profile
     flux_down(l, i)   = radout%flux_down(l, i, 1)
     flux_up(l, i)     = radout%flux_up(l, i, 1)
   end do
-  spectral_olr(:) = radout%flux_up_clear_band(l,0,:)
+  spectral_olr(l,:) = radout%flux_up_clear_band(l,0,:)
 end do
 
 

@@ -49,7 +49,7 @@ REAL(r_def), INTENT(IN) :: orog_corr(n_profile)
 
 LOGICAL, INTENT(IN) :: l_planet_grey_surface
 !   Set a single grey albedo / emissivity for the surface
-REAL(r_def), INTENT(IN) :: planet_albedo
+REAL(r_def), INTENT(IN) :: planet_albedo(:)
 !   Surface albedo used for SW calculations
 REAL(r_def), INTENT(IN) :: planet_emissivity
 !   Surface emissivity used for LW calculations
@@ -68,9 +68,9 @@ SELECT CASE (control%isolir)
 CASE (ip_solar)
   IF (l_planet_grey_surface) THEN
     bound%rho_alb(1:n_profile, ip_surf_alb_diff, 1:spectrum%basic%n_band) &
-      = planet_albedo
+      = reshape(planet_albedo(1:n_profile),(/n_profile,int(spectrum%basic%n_band,i_def)/), planet_albedo(1:n_profile))
     bound%rho_alb(1:n_profile, ip_surf_alb_dir,  1:spectrum%basic%n_band) &
-      = planet_albedo
+      = reshape(planet_albedo(1:n_profile),(/n_profile,int(spectrum%basic%n_band,i_def)/), planet_albedo(1:n_profile))
   ELSE
     bound%rho_alb(1:n_profile, ip_surf_alb_diff, 1:spectrum%basic%n_band) = 0.0
     bound%rho_alb(1:n_profile, ip_surf_alb_dir,  1:spectrum%basic%n_band) = 0.0
