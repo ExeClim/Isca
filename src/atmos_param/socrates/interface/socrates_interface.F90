@@ -377,12 +377,23 @@ write(stdlog_unit, socrates_rad_nml)
 
 
     ! Allocate spectral array sizes
-    if (hires_mode == .FALSE.) then
-       allocate(soc_spectral_olr(n_profile,n_soc_bands_lw))
-       allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_lw))
+    if (soc_mode==.TRUE.) then
+
+       if (hires_mode == .FALSE.) then
+          allocate(soc_spectral_olr(n_profile,n_soc_bands_lw))
+          allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_lw))
+       else
+          allocate(soc_spectral_olr(n_profile,n_soc_bands_lw_hires))
+          allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_lw_hires))
+       end if
     else
-       allocate(soc_spectral_olr(n_profile,n_soc_bands_lw_hires))
-       allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_lw_hires))
+       if (hires_mode == .FALSE.) then
+          allocate(soc_spectral_olr(n_profile,n_soc_bands_sw))
+          allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_sw))
+       else
+          allocate(soc_spectral_olr(n_profile,n_soc_bands_sw_hires))
+          allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_sw_hires))
+       end if
     end if
 
     ! Set array sizes
@@ -476,7 +487,6 @@ write(stdlog_unit, socrates_rad_nml)
 
 
           ! Do calculation
-
           CALL read_control(control_calc, spectrum_calc)
 
           CALL socrates_calc(Time_diag, control_calc, spectrum_calc,                                          &
@@ -488,6 +498,7 @@ write(stdlog_unit, socrates_rad_nml)
                l_planet_grey_surface, input_planet_albedo, input_planet_emissivity,   &
                input_layer_heat_capacity,                                                   &
                soc_flux_direct, soc_flux_down_lw, soc_flux_up_lw, soc_heating_rate_lw, soc_spectral_olr)
+
 
           ! Set output arrays
           fms_surf_lw_down(:,:) = reshape(soc_flux_down_lw(:,n_layer),(/si,sj/))

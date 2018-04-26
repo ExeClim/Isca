@@ -55,7 +55,7 @@ REAL(r_def), INTENT(IN) :: planet_emissivity
 !   Surface emissivity used for LW calculations
 
 ! Local variables.
-INTEGER :: l
+INTEGER :: l,j
 !   Loop variables
 
 
@@ -67,10 +67,12 @@ SELECT CASE (control%isolir)
 
 CASE (ip_solar)
   IF (l_planet_grey_surface) THEN
-    bound%rho_alb(1:n_profile, ip_surf_alb_diff, 1:spectrum%basic%n_band) &
-      = reshape(planet_albedo(1:n_profile),(/n_profile,int(spectrum%basic%n_band,i_def)/), planet_albedo(1:n_profile))
-    bound%rho_alb(1:n_profile, ip_surf_alb_dir,  1:spectrum%basic%n_band) &
-      = reshape(planet_albedo(1:n_profile),(/n_profile,int(spectrum%basic%n_band,i_def)/), planet_albedo(1:n_profile))
+    do j=1,spectrum%basic%n_band
+      bound%rho_alb(1:n_profile, ip_surf_alb_diff, j) &
+        = planet_albedo
+      bound%rho_alb(1:n_profile, ip_surf_alb_dir,  j) &
+        = planet_albedo
+    end do
   ELSE
     bound%rho_alb(1:n_profile, ip_surf_alb_diff, 1:spectrum%basic%n_band) = 0.0
     bound%rho_alb(1:n_profile, ip_surf_alb_dir,  1:spectrum%basic%n_band) = 0.0

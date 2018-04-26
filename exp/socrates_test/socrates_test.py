@@ -24,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk29_reshape', codebase=cb)
+exp = Experiment('soc_test_mk30_reshape', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -198,5 +198,5 @@ if __name__=="__main__":
 
     s = 1.0
     exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
-#    for i in range(2,121):
-#        exp.run(i, num_cores=NCORES)
+    for i in range(2,121):
+        exp.run(i, num_cores=NCORES)

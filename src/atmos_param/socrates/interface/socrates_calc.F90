@@ -182,7 +182,6 @@ do l=1, n_profile
   end do
 end do
 
-
 do l=1, n_profile
   do i=0, n_layer
     flux_direct(l, i) = radout%flux_direct(l, i, 1)
@@ -191,7 +190,6 @@ do l=1, n_profile
   end do
   spectral_olr(l,:) = radout%flux_up_clear_band(l,0,:)
 end do
-
 
 call deallocate_out(radout)
 call deallocate_aer_prsc(aer)
