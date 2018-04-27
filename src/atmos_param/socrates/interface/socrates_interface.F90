@@ -166,8 +166,15 @@ write(stdlog_unit, socrates_rad_nml)
     if(store_intermediate_rad) then
         allocate(tdt_soc_sw_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
         allocate(tdt_soc_lw_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
-        allocate(thd_lw_flux_up_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
-        allocate(thd_sw_flux_down_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+
+        if (id_soc_flux_up_lw > 0) then
+            allocate(thd_lw_flux_up_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+        endif
+
+        if (id_soc_flux_down_sw > 0) then
+            allocate(thd_sw_flux_down_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+        endif
+
         allocate(net_surf_sw_down_store(size(lonb,1)-1, size(latb,2)-1))
         allocate(surf_lw_down_store(size(lonb,1)-1, size(latb,2)-1))
     endif
@@ -567,8 +574,15 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
              if(store_intermediate_rad)then
                 output_heating_rate_sw  = tdt_soc_sw_store
                 output_heating_rate_lw  = tdt_soc_lw_store
-                thd_sw_flux_down = thd_sw_flux_down_store
-                thd_lw_flux_up   = thd_lw_flux_up_store
+
+                if (id_soc_flux_down_sw > 0) then
+                    thd_sw_flux_down = thd_sw_flux_down_store
+                endif
+
+                if (id_soc_flux_up_lw > 0) then
+                    thd_lw_flux_up   = thd_lw_flux_up_store
+                endif
+
                 net_surf_sw_down = real(net_surf_sw_down_store)
                 surf_lw_down = real(surf_lw_down_store)
              else
@@ -717,8 +731,15 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        if(store_intermediate_rad)then
             tdt_soc_lw_store = output_heating_rate_lw
             tdt_soc_sw_store = output_heating_rate_sw
-            thd_sw_flux_down_store = thd_sw_flux_down
-            thd_lw_flux_up_store = thd_lw_flux_up
+
+            if (id_soc_flux_down_sw > 0) then
+                thd_sw_flux_down_store = thd_sw_flux_down
+            endif
+
+            if (id_soc_flux_up_lw > 0) then
+                thd_lw_flux_up_store = thd_lw_flux_up
+            endif
+
             net_surf_sw_down_store = real(net_surf_sw_down, kind(r_def))
             surf_lw_down_store = real(surf_lw_down, kind(r_def))
        endif
