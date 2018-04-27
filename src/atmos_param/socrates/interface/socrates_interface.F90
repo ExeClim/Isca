@@ -168,22 +168,6 @@ write(stdlog_unit, socrates_rad_nml)
 
           if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
 
-    if(store_intermediate_rad) then
-        allocate(tdt_soc_sw_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
-        allocate(tdt_soc_lw_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
-
-        if (id_soc_flux_up_lw > 0) then
-            allocate(thd_lw_flux_up_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
-        endif
-
-        if (id_soc_flux_down_sw > 0) then
-            allocate(thd_sw_flux_down_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
-        endif
-
-        allocate(net_surf_sw_down_store(size(lonb,1)-1, size(latb,2)-1))
-        allocate(surf_lw_down_store(size(lonb,1)-1, size(latb,2)-1))
-    endif
-
     ! Socrates spectral files -- should be set by namelist
     control_lw%spectral_file = lw_spectral_filename
     control_lw_hires%spectral_file = lw_hires_spectral_filename
@@ -275,6 +259,23 @@ write(stdlog_unit, socrates_rad_nml)
     else
         allocate(outputted_soc_spectral_olr(size(lonb,1)-1, size(latb,2)-1, n_soc_bands_lw ))
     endif
+
+    if(store_intermediate_rad) then
+        allocate(tdt_soc_sw_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+        allocate(tdt_soc_lw_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+
+        if (id_soc_flux_up_lw > 0) then
+            allocate(thd_lw_flux_up_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+        endif
+
+        if (id_soc_flux_down_sw > 0) then
+            allocate(thd_sw_flux_down_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+        endif
+
+        allocate(net_surf_sw_down_store(size(lonb,1)-1, size(latb,2)-1))
+        allocate(surf_lw_down_store(size(lonb,1)-1, size(latb,2)-1))
+    endif
+
 
     ! Print Socrates init data from one processor
     IF (js == 1) THEN
@@ -486,6 +487,7 @@ write(stdlog_unit, socrates_rad_nml)
           CALL read_control(control_calc, spectrum_calc)
 
           if (soc_mode==.TRUE.) then
+ 
             CALL socrates_calc(Time_diag, control_calc, spectrum_calc,                      &
                n_profile, n_layer, input_n_cloud_layer, input_n_aer_mode,                   &
                input_cld_subcol_gen, input_cld_subcol_req,                                  &
@@ -567,7 +569,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
           if(r_total_seconds - dt_last .ge. dt_rad) then
              dt_last = r_total_seconds
           else
-             if(store_intermediate_rad)then
+             if(store_intermediate_rad) then
                 output_heating_rate_sw  = tdt_soc_sw_store
                 output_heating_rate_lw  = tdt_soc_lw_store
 
@@ -591,7 +593,6 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
              endif
              temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_sw)+real(output_heating_rate_lw)
              output_heating_rate_total = output_heating_rate_sw +output_heating_rate_lw            
-
             ! Send diagnostics
     if(id_soc_heating_lw > 0) then
       used = send_data ( id_soc_heating_lw, output_heating_rate_lw, Time_diag)
@@ -727,7 +728,6 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        if(store_intermediate_rad)then
             tdt_soc_lw_store = output_heating_rate_lw
             tdt_soc_sw_store = output_heating_rate_sw
-
             if (id_soc_flux_down_sw > 0) then
                 thd_sw_flux_down_store = thd_sw_flux_down
             endif

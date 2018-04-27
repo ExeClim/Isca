@@ -5,7 +5,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 16
+NCORES = 1 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -53,7 +53,7 @@ diag.add_field('dynamics', 'div', time_avg=True)
 #diag.add_field('socrates', 'soc_heating_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_heating_rate', time_avg=True)
 #diag.add_field('socrates', 'soc_flux_up_lw', time_avg=True)
-#diag.add_field('socrates', 'soc_flux_down_sw', time_avg=True)
+diag.add_field('socrates', 'soc_flux_down_sw', time_avg=True)
 
 
 exp.diag_table = diag
@@ -64,8 +64,8 @@ exp.clear_rundir()
 #Define values for the 'core' namelist
 exp.namelist = namelist = Namelist({
     'main_nml':{
-     'days'   : 1,
-     'hours'  : 0,
+     'days'   : 0,
+     'hours'  : 1,
      'minutes': 0,
      'seconds': 0,
      'dt_atmos':720,
