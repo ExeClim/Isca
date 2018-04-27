@@ -139,9 +139,13 @@ write(stdlog_unit, socrates_rad_nml)
 
     !Initialise variables related to radiation timestep
 
-          dt_last = -real(dt_rad) !make sure we are computing radiation at the first time step
-
           call get_time(delta_t_atmos,time_step_seconds)
+
+          if (dt_rad .le. 0.) then
+              dt_rad = time_step_seconds !Make sure that dt_rad is set if it is not specified in the namelist
+          endif
+
+          dt_last = -real(dt_rad) !make sure we are computing radiation at the first time step
 
             if (dt_rad .gt. time_step_seconds) then
                 res=mod(dt_rad, time_step_seconds)
