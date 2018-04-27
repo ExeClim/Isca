@@ -5,7 +5,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 1
+NCORES = 16
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -24,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk30_reshape', codebase=cb)
+exp = Experiment('soc_test_mk31_reshape_1_day_16_cores_4320_dt_rad_no_store_intermediate_rad_nec_diag_3', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -64,8 +64,8 @@ exp.clear_rundir()
 #Define values for the 'core' namelist
 exp.namelist = namelist = Namelist({
     'main_nml':{
-     'days'   : 0,
-     'hours'  : 1,
+     'days'   : 1,
+     'hours'  : 0,
      'minutes': 0,
      'seconds': 0,
      'dt_atmos':720,
@@ -82,6 +82,7 @@ exp.namelist = namelist = Namelist({
         'ozone_field_name':'ozone_1990',
         'do_read_co2': True,
         'dt_rad':4320,
+        'store_intermediate_rad':False,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,

@@ -583,12 +583,27 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
              output_heating_rate_total = output_heating_rate_sw +output_heating_rate_lw            
 
             ! Send diagnostics
-             used = send_data ( id_soc_heating_lw, output_heating_rate_lw, Time_diag)
-             used = send_data ( id_soc_flux_up_lw, thd_lw_flux_up, Time_diag)
-             used = send_data ( id_soc_heating_sw, output_heating_rate_sw, Time_diag)
-             used = send_data ( id_soc_flux_down_sw, thd_sw_flux_down, Time_diag)
-             used = send_data ( id_soc_heating_rate, output_heating_rate_total, Time_diag)
- 
+    if(id_soc_heating_lw > 0) then
+      used = send_data ( id_soc_heating_lw, output_heating_rate_lw, Time_diag)
+    endif
+
+    if(id_soc_flux_up_lw > 0) then
+      used = send_data ( id_soc_flux_up_lw, thd_lw_flux_up, Time_diag)
+    endif
+
+    if(id_soc_heating_sw > 0) then
+      used = send_data ( id_soc_heating_sw, output_heating_rate_sw, Time_diag)
+    endif
+
+    if(id_soc_flux_down_sw > 0) then
+      used = send_data ( id_soc_flux_down_sw, thd_sw_flux_down, Time_diag)
+    endif
+
+    if(id_soc_heating_rate > 0) then
+      used = send_data ( id_soc_heating_rate, output_heating_rate_total, Time_diag)
+    endif             
+
+
              return !not time yet
           endif
 
@@ -710,11 +725,26 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
     !Sending total heating rates
     ! Send diagnostics
-       used = send_data ( id_soc_heating_lw, output_heating_rate_lw, Time_diag)
-       used = send_data ( id_soc_flux_up_lw, thd_lw_flux_up, Time_diag)
-       used = send_data ( id_soc_heating_sw, output_heating_rate_sw, Time_diag)
-       used = send_data ( id_soc_flux_down_sw, thd_sw_flux_down, Time_diag)
-       used = send_data ( id_soc_heating_rate, output_heating_rate_total, Time_diag)
+    if(id_soc_heating_lw > 0) then
+      used = send_data ( id_soc_heating_lw, output_heating_rate_lw, Time_diag)
+    endif
+
+    if(id_soc_flux_up_lw > 0) then
+      used = send_data ( id_soc_flux_up_lw, thd_lw_flux_up, Time_diag)
+    endif
+
+    if(id_soc_heating_sw > 0) then
+      used = send_data ( id_soc_heating_sw, output_heating_rate_sw, Time_diag)
+    endif
+
+    if(id_soc_flux_down_sw > 0) then
+      used = send_data ( id_soc_flux_down_sw, thd_sw_flux_down, Time_diag)
+    endif
+
+    if(id_soc_heating_rate > 0) then
+      used = send_data ( id_soc_heating_rate, output_heating_rate_total, Time_diag)
+    endif
+
 
 end subroutine run_socrates  
 
