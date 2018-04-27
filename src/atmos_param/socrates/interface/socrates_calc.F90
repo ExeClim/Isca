@@ -123,7 +123,7 @@ real(r_def), intent(out) :: flux_up(n_profile, 0:n_layer)
 real(r_def), intent(out) :: heating_rate(n_profile, n_layer)
 !   Heating rate (Ks-1)
 
-REAL(r_def), INTENT(inout) :: spectral_olr(:,:)
+REAL(r_def), INTENT(inout), optional :: spectral_olr(:,:)
 !   Spectral OLR
 
 
@@ -188,7 +188,9 @@ do l=1, n_profile
     flux_down(l, i)   = radout%flux_down(l, i, 1)
     flux_up(l, i)     = radout%flux_up(l, i, 1)
   end do
-  spectral_olr(l,:) = radout%flux_up_clear_band(l,0,:)
+  if (present(spectral_olr)) then
+     spectral_olr(l,:) = radout%flux_up_clear_band(l,0,:)
+  endif
 end do
 
 call deallocate_out(radout)

@@ -56,6 +56,7 @@ MODULE socrates_interface_mod
   REAL :: dt_last !Time of last radiation calculation - used to tell whether it is time to recompute radiation or not
   REAL(r_def), allocatable, dimension(:,:,:) :: tdt_soc_sw_store, tdt_soc_lw_store, thd_sw_flux_down_store, thd_lw_flux_up_store
   REAL(r_def), allocatable, dimension(:,:) :: net_surf_sw_down_store, surf_lw_down_store
+  REAL(r_def), allocatable, dimension(:,:,:) :: outputted_soc_spectral_olr
 
   ! Socrates inputs from namelist
   
@@ -251,7 +252,6 @@ write(stdlog_unit, socrates_rad_nml)
          'socrates SW flux down', &
          'watts/m2', missing_value=missing_value               )
 
-
       if(do_read_ozone)then
          call interpolator_init (o3_interp, trim(ozone_file_name)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
       endif
@@ -265,6 +265,12 @@ write(stdlog_unit, socrates_rad_nml)
     n_soc_bands_lw_hires = spectrum_lw_hires%dim%nd_band
     n_soc_bands_sw = spectrum_sw%dim%nd_band
     n_soc_bands_sw_hires = spectrum_sw_hires%dim%nd_band
+
+    if (socrates_hires_mode == .True.) then
+        allocate(outputted_soc_spectral_olr(size(lonb,1)-1, size(latb,2)-1, n_soc_bands_lw_hires))
+    else
+        allocate(outputted_soc_spectral_olr(size(lonb,1)-1, size(latb,2)-1, n_soc_bands_lw ))
+    endif
 
     ! Print Socrates init data from one processor
     IF (js == 1) THEN
@@ -297,9 +303,9 @@ write(stdlog_unit, socrates_rad_nml)
 
   ! Set up the call to the Socrates radiation scheme
   ! -----------------------------------------------------------------------------
-  subroutine socrates_interface(Time_diag, rlat, rlon, soc_mode, hires_mode,      &
+  subroutine socrates_interface(Time_diag, rlat, rlon, soc_mode,  &
        fms_temp, fms_spec_hum, fms_ozone, fms_co2, fms_t_surf, fms_p_full, fms_p_half, fms_albedo, n_profile, n_layer,        &
-       output_heating_rate, output_soc_flux_down_sw, output_soc_flux_up_lw, fms_net_surf_sw_down, fms_surf_lw_down, fms_stellar_flux )
+       output_heating_rate, output_soc_flux_down_sw, output_soc_flux_up_lw, fms_net_surf_sw_down, fms_surf_lw_down, fms_stellar_flux, output_soc_spectral_olr )
 
     use realtype_rd
     use read_control_mod
@@ -324,7 +330,7 @@ write(stdlog_unit, socrates_rad_nml)
     type(time_type), intent(in)         :: Time_diag
 
     INTEGER(i_def), intent(in) :: n_profile, n_layer
-    logical, intent(in) :: soc_mode, hires_mode
+    logical, intent(in) :: soc_mode
     INTEGER(i_def) :: nlat
 
     ! Input arrays
@@ -342,14 +348,14 @@ write(stdlog_unit, socrates_rad_nml)
     real(r_def), intent(out) :: output_heating_rate(:,:,:)
     real(r_def), intent(out) :: output_soc_flux_up_lw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
     real(r_def), intent(out) :: output_soc_flux_down_sw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
+    real(r_def), intent(out), optional :: output_soc_spectral_olr(:,:,:)
     real(r_def)              :: output_heating_rate_lw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
     real(r_def)              :: output_heating_rate_sw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
-    real(r_def), allocatable :: output_soc_spectral_olr(:,:,:)
 
     ! Hi-res output
     INTEGER, PARAMETER :: out_unit=20
     CHARACTER(len=200) :: file_name
-    REAL, allocatable :: soc_spectral_olr(:,:)
+    REAL :: soc_spectral_olr(n_profile, size(outputted_soc_spectral_olr,3))
 
     ! Arrays to send to Socrates
     real, dimension(n_profile, n_layer) :: input_p, input_t, input_mixing_ratio, &
@@ -381,27 +387,6 @@ write(stdlog_unit, socrates_rad_nml)
     logical :: used
 
     !----------------------------i
-
-
-    ! Allocate spectral array sizes
-    if (soc_mode==.TRUE.) then
-
-       if (hires_mode == .FALSE.) then
-          allocate(soc_spectral_olr(n_profile,n_soc_bands_lw))
-          allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_lw))
-       else
-          allocate(soc_spectral_olr(n_profile,n_soc_bands_lw_hires))
-          allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_lw_hires))
-       end if
-    else
-       if (hires_mode == .FALSE.) then
-          allocate(soc_spectral_olr(n_profile,n_soc_bands_sw))
-          allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_sw))
-       else
-          allocate(soc_spectral_olr(n_profile,n_soc_bands_sw_hires))
-          allocate(output_soc_spectral_olr(size(fms_temp,1),size(fms_temp,2),n_soc_bands_sw_hires))
-       end if
-    end if
 
     ! Set array sizes
     input_n_cloud_layer = n_layer
@@ -471,7 +456,7 @@ write(stdlog_unit, socrates_rad_nml)
           if (soc_mode == .TRUE.) then
              control_lw%isolir = 2
              CALL read_control(control_lw, spectrum_lw)
-             if (hires_mode == .FALSE.) then
+             if (socrates_hires_mode == .FALSE.) then
                 control_calc = control_lw
                 spectrum_calc = spectrum_lw
              else
@@ -482,7 +467,7 @@ write(stdlog_unit, socrates_rad_nml)
           else
              control_sw%isolir = 1
              CALL read_control(control_sw, spectrum_sw)
-             if(hires_mode == .FALSE.) then
+             if(socrates_hires_mode == .FALSE.) then
                 control_calc = control_sw
                 spectrum_calc = spectrum_sw
              else
@@ -496,21 +481,36 @@ write(stdlog_unit, socrates_rad_nml)
           ! Do calculation
           CALL read_control(control_calc, spectrum_calc)
 
-          CALL socrates_calc(Time_diag, control_calc, spectrum_calc,                                          &
+          if (soc_mode==.TRUE.) then
+            CALL socrates_calc(Time_diag, control_calc, spectrum_calc,                      &
                n_profile, n_layer, input_n_cloud_layer, input_n_aer_mode,                   &
                input_cld_subcol_gen, input_cld_subcol_req,                                  &
                input_p, input_t, input_t_level, input_d_mass, input_density,                &
-               input_mixing_ratio, input_o3_mixing_ratio,  input_co2_mixing_ratio,           &
+               input_mixing_ratio, input_o3_mixing_ratio,  input_co2_mixing_ratio,          &
                input_t_surf, input_cos_zenith_angle, input_solar_irrad, input_orog_corr,    &
-               l_planet_grey_surface, input_planet_albedo, input_planet_emissivity,   &
+               l_planet_grey_surface, input_planet_albedo, input_planet_emissivity,         &
                input_layer_heat_capacity,                                                   &
                soc_flux_direct, soc_flux_down_lw, soc_flux_up_lw, soc_heating_rate_lw, soc_spectral_olr)
 
+          else
+            CALL socrates_calc(Time_diag, control_calc, spectrum_calc,                      &
+               n_profile, n_layer, input_n_cloud_layer, input_n_aer_mode,                   &
+               input_cld_subcol_gen, input_cld_subcol_req,                                  &
+               input_p, input_t, input_t_level, input_d_mass, input_density,                &
+               input_mixing_ratio, input_o3_mixing_ratio, input_co2_mixing_ratio,           &
+               input_t_surf, input_cos_zenith_angle, input_solar_irrad, input_orog_corr,    &
+               l_planet_grey_surface, input_planet_albedo, input_planet_emissivity,         &
+               input_layer_heat_capacity,                                                   &
+               soc_flux_direct, soc_flux_down_lw, soc_flux_up_lw, soc_heating_rate_lw)
+          endif
 
           ! Set output arrays
           fms_surf_lw_down(:,:) = reshape(soc_flux_down_lw(:,n_layer),(/si,sj/))
           output_heating_rate(:,:,:) = reshape(soc_heating_rate_lw(:,:),(/si,sj,sk /))
-          output_soc_spectral_olr(:,:,:) = reshape(soc_spectral_olr(:,:),(/si,sj,int(n_soc_bands_lw,i_def) /))
+
+          if (soc_mode == .TRUE.) then
+              output_soc_spectral_olr(:,:,:) = reshape(soc_spectral_olr(:,:),(/si,sj,int(n_soc_bands_lw,i_def) /))
+          endif
 
           if (soc_mode == .TRUE.) then
              fms_surf_lw_down(:,:) = reshape(soc_flux_down_lw(:,n_layer),(/si,sj /))
@@ -522,14 +522,6 @@ write(stdlog_unit, socrates_rad_nml)
              output_heating_rate_sw(:,:,:) = reshape(soc_heating_rate_lw(:,:),(/si,sj,sk /))
           end if
 
-    ! Allocate spectral array sizes
-    if (hires_mode == .FALSE.) then
-       deallocate(soc_spectral_olr)
-       deallocate(output_soc_spectral_olr)
-    else
-       deallocate(soc_spectral_olr)
-       deallocate(output_soc_spectral_olr)
-    end if
 
   end subroutine socrates_interface
 
@@ -702,9 +694,9 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        p_half_soc = REAL(p_half_in, kind(r_def))
        albedo_soc = REAL(albedo_in, kind(r_def))
 
-       CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
+       CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,  &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
-            output_heating_rate_lw, output_soc_flux_down_sw, output_soc_flux_up_lw,  output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
+            output_heating_rate_lw, output_soc_flux_down_sw, output_soc_flux_up_lw,  output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux, outputted_soc_spectral_olr)
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_lw*delta_t
        surf_lw_down(:,:) = REAL(output_surf_lw_down(:,:))
@@ -715,7 +707,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        ! SW calculation
        ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
        soc_lw_mode = .FALSE.
-       CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode, socrates_hires_mode,    &
+       CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,  &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
             output_heating_rate_sw, output_soc_flux_down_sw, output_soc_flux_up_lw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
 
