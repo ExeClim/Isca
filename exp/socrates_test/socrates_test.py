@@ -24,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk36_test_new_coszen_dt_atmos', codebase=cb)
+exp = Experiment('soc_test_mk37', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -74,8 +74,8 @@ exp.namelist = namelist = Namelist({
     },
     'socrates_rad_nml': {
         'stellar_constant':1370.,
-        'lw_spectral_filename':'/scratch/sit204/sp_lw_ga7',
-        'sw_spectral_filename':'/scratch/sit204/sp_sw_ga7',   
+        'lw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7'),
+        'sw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7'),
         'tidally_locked': False,
         'do_read_ozone': True,
         'ozone_file_name':'ozone_1990',
@@ -199,5 +199,5 @@ if __name__=="__main__":
 
     s = 1.0
     exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
-#    for i in range(2,121):
-#        exp.run(i, num_cores=NCORES)
+    for i in range(2,121):
+        exp.run(i, num_cores=NCORES)

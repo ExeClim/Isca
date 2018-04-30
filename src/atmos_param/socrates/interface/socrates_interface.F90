@@ -63,10 +63,10 @@ MODULE socrates_interface_mod
   REAL :: stellar_constant = 1370.0
   LOGICAL :: tidally_locked = .TRUE.
   LOGICAL :: socrates_hires_mode = .FALSE.  !If false then run in 'GCM mode', if true then uses high-res spectral files
-  character(len=256) :: lw_spectral_filename='/scratch/sit204/sp_lw_ga7'
-  character(len=256) :: lw_hires_spectral_filename='/scratch/sit204/sp_lw_ga7'
-  character(len=256) :: sw_spectral_filename='/scratch/sit204/sp_sw_ga7'
-  character(len=256) :: sw_hires_spectral_filename='/scratch/sit204/sp_sw_ga7'
+  character(len=256) :: lw_spectral_filename='unset'
+  character(len=256) :: lw_hires_spectral_filename='unset'
+  character(len=256) :: sw_spectral_filename='unset'
+  character(len=256) :: sw_hires_spectral_filename='unset'
   logical :: account_for_effect_of_water=.TRUE. !if False then radiation is fed water mixing ratios = 0. If true it's fed mixing ratios based on model specific humidity.
   logical :: account_for_effect_of_ozone=.TRUE. !if False then radiation is fed ozone mixing ratios = 0. If true it's fed mixing ratios based on model ozone field.
   logical :: do_read_ozone = .FALSE. ! read ozone from an external file?
@@ -167,6 +167,30 @@ write(stdlog_unit, socrates_rad_nml)
             endif
 
           if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
+
+    if (lw_spectral_filename .eq. 'unset') then
+       call error_mesg( 'socrates_init', &
+                       'lw_spectral_filename is unset, and must point to a valid spectral file',FATAL)
+    endif
+
+    if (sw_spectral_filename .eq. 'unset') then
+       call error_mesg( 'socrates_init', &
+                       'sw_spectral_filename is unset, and must point to a valid spectral file',FATAL)
+    endif
+
+    if (lw_hires_spectral_filename .eq. 'unset') then
+       call error_mesg( 'socrates_init', &
+                       'lw_hires_spectral_filename is unset, making equal to lw_spectral_filename',WARNING)
+        lw_hires_spectral_filename = lw_spectral_filename
+    endif
+
+    if (sw_hires_spectral_filename .eq. 'unset') then
+       call error_mesg( 'socrates_init', &
+                       'sw_hires_spectral_filename is unset, making equal to sw_spectral_filename',WARNING)
+        sw_hires_spectral_filename = sw_spectral_filename
+    endif
+
+
 
     ! Socrates spectral files -- should be set by namelist
     control_lw%spectral_file = lw_spectral_filename
@@ -284,7 +308,6 @@ write(stdlog_unit, socrates_rad_nml)
         allocate(net_surf_sw_down_store(size(lonb,1)-1, size(latb,2)-1))
         allocate(surf_lw_down_store(size(lonb,1)-1, size(latb,2)-1))
     endif
-
 
     ! Print Socrates init data from one processor
     IF (js == 1) THEN
