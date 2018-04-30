@@ -24,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk32_get_rid_of_allocate_in_socrates_interface', codebase=cb)
+exp = Experiment('soc_test_mk36_test_new_coszen_dt_atmos', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -54,7 +54,7 @@ diag.add_field('dynamics', 'div', time_avg=True)
 #diag.add_field('socrates', 'soc_heating_rate', time_avg=True)
 #diag.add_field('socrates', 'soc_flux_up_lw', time_avg=True)
 diag.add_field('socrates', 'soc_flux_down_sw', time_avg=True)
-
+diag.add_field('socrates', 'soc_coszen', time_avg=True)
 
 exp.diag_table = diag
 
@@ -65,7 +65,7 @@ exp.clear_rundir()
 exp.namelist = namelist = Namelist({
     'main_nml':{
      'days'   : 0,
-     'hours'  : 1,
+     'hours'  : 2,
      'minutes': 0,
      'seconds': 0,
      'dt_atmos':720,
@@ -76,7 +76,7 @@ exp.namelist = namelist = Namelist({
         'stellar_constant':1370.,
         'lw_spectral_filename':'/scratch/sit204/sp_lw_ga7',
         'sw_spectral_filename':'/scratch/sit204/sp_sw_ga7',   
-        'tidally_locked': True,
+        'tidally_locked': False,
         'do_read_ozone': True,
         'ozone_file_name':'ozone_1990',
         'ozone_field_name':'ozone_1990',
@@ -199,5 +199,5 @@ if __name__=="__main__":
 
     s = 1.0
     exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
-    for i in range(2,121):
-        exp.run(i, num_cores=NCORES)
+#    for i in range(2,121):
+#        exp.run(i, num_cores=NCORES)

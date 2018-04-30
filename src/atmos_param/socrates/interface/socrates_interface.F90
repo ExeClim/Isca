@@ -45,7 +45,7 @@ MODULE socrates_interface_mod
   INTEGER :: id_soc_spectral_olr
   INTEGER :: id_soc_olr, id_soc_olr_spectrum_lw, id_soc_surf_spectrum_sw
   INTEGER :: id_soc_heating_sw, id_soc_heating_lw, id_soc_heating_rate
-  INTEGER :: id_soc_flux_up_lw, id_soc_flux_down_sw
+  INTEGER :: id_soc_flux_up_lw, id_soc_flux_down_sw, id_coszen
   INTEGER :: n_soc_bands_lw, n_soc_bands_sw
   INTEGER :: n_soc_bands_lw_hires, n_soc_bands_sw_hires
   CHARACTER(len=10), PARAMETER :: soc_mod_name = 'socrates'
@@ -55,7 +55,7 @@ MODULE socrates_interface_mod
 
   REAL :: dt_last !Time of last radiation calculation - used to tell whether it is time to recompute radiation or not
   REAL(r_def), allocatable, dimension(:,:,:) :: tdt_soc_sw_store, tdt_soc_lw_store, thd_sw_flux_down_store, thd_lw_flux_up_store
-  REAL(r_def), allocatable, dimension(:,:) :: net_surf_sw_down_store, surf_lw_down_store
+  REAL(r_def), allocatable, dimension(:,:) :: net_surf_sw_down_store, surf_lw_down_store, coszen_store
   REAL(r_def), allocatable, dimension(:,:,:) :: outputted_soc_spectral_olr
 
   ! Socrates inputs from namelist
@@ -240,6 +240,11 @@ write(stdlog_unit, socrates_rad_nml)
          'socrates SW flux down', &
          'watts/m2', missing_value=missing_value               )
 
+    id_coszen = &
+         register_diag_field ( soc_mod_name, 'soc_coszen', axes(1:2), Time, &
+         'Cosine(zenith_angle)', &
+         'none', missing_value=missing_value               )
+
       if(do_read_ozone)then
          call interpolator_init (o3_interp, trim(ozone_file_name)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
       endif
@@ -270,6 +275,10 @@ write(stdlog_unit, socrates_rad_nml)
 
         if (id_soc_flux_down_sw > 0) then
             allocate(thd_sw_flux_down_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+        endif
+
+        if (id_coszen > 0) then
+            allocate(coszen_store(size(lonb,1)-1, size(latb,2)-1))
         endif
 
         allocate(net_surf_sw_down_store(size(lonb,1)-1, size(latb,2)-1))
@@ -310,7 +319,7 @@ write(stdlog_unit, socrates_rad_nml)
   ! -----------------------------------------------------------------------------
   subroutine socrates_interface(Time_diag, rlat, rlon, soc_mode,  &
        fms_temp, fms_spec_hum, fms_ozone, fms_co2, fms_t_surf, fms_p_full, fms_p_half, fms_albedo, n_profile, n_layer,        &
-       output_heating_rate, output_soc_flux_down_sw, output_soc_flux_up_lw, fms_net_surf_sw_down, fms_surf_lw_down, fms_stellar_flux, output_soc_spectral_olr )
+       output_heating_rate, output_soc_flux_down_sw, output_soc_flux_up_lw, fms_net_surf_sw_down, fms_surf_lw_down, fms_coszen, output_soc_spectral_olr )
 
     use realtype_rd
     use read_control_mod
@@ -343,7 +352,7 @@ write(stdlog_unit, socrates_rad_nml)
     real(r_def), intent(in) :: fms_p_full(:,:,:)
     real(r_def), intent(in) :: fms_p_half(:,:,:)
     real(r_def), intent(in) :: fms_t_surf(:,:), fms_albedo(:,:)
-    real(r_def), intent(in) :: fms_stellar_flux(:,:)
+    real(r_def), intent(in) :: fms_coszen(:,:)
     real(r_def), intent(in) :: rlon(:,:)
     real(r_def), intent(in) :: rlat(:,:)
 
@@ -424,12 +433,12 @@ write(stdlog_unit, socrates_rad_nml)
           !-------------
 
           !Default parameters
-          input_cos_zenith_angle = reshape((fms_stellar_flux(:,:)/stellar_constant),(/si*sj /))
+          input_cos_zenith_angle = reshape((fms_coszen(:,:)),(/si*sj /))
           input_orog_corr = 0.0
           input_planet_albedo = reshape(fms_albedo(:,:),(/n_profile /))
 
           !Set tide-locked flux - should be set by namelist eventually!
-          input_solar_irrad = reshape(fms_stellar_flux(:,:),(/si*sj /))
+          input_solar_irrad = stellar_constant
           input_t_surf = reshape(fms_t_surf(:,:),(/si*sj /))
 
 
@@ -549,7 +558,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
     integer(i_def) :: n_profile, n_layer
 
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: fms_stellar_flux, output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc, albedo_soc
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc, albedo_soc
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, co2_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total, output_soc_flux_down_sw, output_soc_flux_up_lw
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc
 
@@ -579,6 +588,10 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
                 if (id_soc_flux_up_lw > 0) then
                     thd_lw_flux_up   = thd_lw_flux_up_store
+                endif
+
+                if (id_coszen > 0) then
+                    coszen   = coszen_store
                 endif
 
                 net_surf_sw_down = real(net_surf_sw_down_store)
@@ -614,6 +627,9 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
       used = send_data ( id_soc_heating_rate, output_heating_rate_total, Time_diag)
     endif             
 
+    if(id_coszen > 0) then
+      used = send_data ( id_coszen, coszen, Time_diag)
+    endif
 
              return !not time yet
           endif
@@ -629,8 +645,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        !Set tide-locked flux if tidally-locked = .true. Else use diurnal-solar
        !to calculate insolation from orbit!
        if (tidally_locked == .TRUE.) then
-           fms_stellar_flux = stellar_constant*COS(rad_lat(:,:))*COS(rad_lon(:,:))
-           WHERE (fms_stellar_flux < 0.0) fms_stellar_flux = 0.0
+           coszen = COS(rad_lat(:,:))*COS(rad_lon(:,:))
+           WHERE (coszen < 0.0) coszen = 0.0
        else
        
         ! compute zenith angle
@@ -654,7 +670,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                  time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi   
        
            if(do_rad_time_avg) then
-	         r_dt_rad_avg=real(delta_t)
+	         r_dt_rad_avg=real(dt_rad_avg)
 	         dt_rad_radians = (r_dt_rad_avg/day_in_s)*2.0*pi
 	         call diurnal_solar(rad_lat, rad_lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians)
            else
@@ -662,7 +678,6 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 	         call diurnal_solar(rad_lat, rad_lon, gmt, time_since_ae, coszen, fracsun, rrsun)
            end if
            
-           fms_stellar_flux = stellar_constant * coszen
        endif
 
        ozone_in = 0.0
@@ -701,7 +716,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
        CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,  &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
-            output_heating_rate_lw, output_soc_flux_down_sw, output_soc_flux_up_lw,  output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux, outputted_soc_spectral_olr)
+            output_heating_rate_lw, output_soc_flux_down_sw, output_soc_flux_up_lw,  output_net_surf_sw_down, output_surf_lw_down, coszen, outputted_soc_spectral_olr)
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_lw*delta_t
        surf_lw_down(:,:) = REAL(output_surf_lw_down(:,:))
@@ -714,7 +729,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        soc_lw_mode = .FALSE.
        CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,  &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
-            output_heating_rate_sw, output_soc_flux_down_sw, output_soc_flux_up_lw, output_net_surf_sw_down, output_surf_lw_down, fms_stellar_flux )
+            output_heating_rate_sw, output_soc_flux_down_sw, output_soc_flux_up_lw, output_net_surf_sw_down, output_surf_lw_down, coszen )
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_sw*delta_t
        net_surf_sw_down(:,:) = REAL(output_net_surf_sw_down(:,:))
@@ -735,6 +750,11 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             if (id_soc_flux_up_lw > 0) then
                 thd_lw_flux_up_store = thd_lw_flux_up
             endif
+
+            if (id_coszen > 0) then
+                coszen_store = coszen
+            endif
+
 
             net_surf_sw_down_store = real(net_surf_sw_down, kind(r_def))
             surf_lw_down_store = real(surf_lw_down, kind(r_def))
@@ -760,6 +780,10 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
     if(id_soc_heating_rate > 0) then
       used = send_data ( id_soc_heating_rate, output_heating_rate_total, Time_diag)
+    endif
+
+    if(id_coszen > 0) then
+      used = send_data ( id_coszen, coszen, Time_diag)
     endif
 
 
