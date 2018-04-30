@@ -168,28 +168,34 @@ write(stdlog_unit, socrates_rad_nml)
 
           if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
 
-    if (lw_spectral_filename .eq. 'unset') then
+    IF (js == 1) THEN
+
+      if (lw_spectral_filename .eq. 'unset') then
        call error_mesg( 'socrates_init', &
                        'lw_spectral_filename is unset, and must point to a valid spectral file',FATAL)
-    endif
+      endif
 
-    if (sw_spectral_filename .eq. 'unset') then
+      if (sw_spectral_filename .eq. 'unset') then
        call error_mesg( 'socrates_init', &
                        'sw_spectral_filename is unset, and must point to a valid spectral file',FATAL)
-    endif
+      endif
+    ENDIF
 
     if (lw_hires_spectral_filename .eq. 'unset') then
-       call error_mesg( 'socrates_init', &
+       IF (js == 1) THEN
+           call error_mesg( 'socrates_init', &
                        'lw_hires_spectral_filename is unset, making equal to lw_spectral_filename',WARNING)
+       endif
         lw_hires_spectral_filename = lw_spectral_filename
     endif
 
     if (sw_hires_spectral_filename .eq. 'unset') then
-       call error_mesg( 'socrates_init', &
+       IF (js == 1) THEN
+           call error_mesg( 'socrates_init', &
                        'sw_hires_spectral_filename is unset, making equal to sw_spectral_filename',WARNING)
+       endif
         sw_hires_spectral_filename = sw_spectral_filename
     endif
-
 
 
     ! Socrates spectral files -- should be set by namelist
