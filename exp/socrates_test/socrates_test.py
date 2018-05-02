@@ -198,6 +198,6 @@ exp.namelist = namelist = Namelist({
 if __name__=="__main__":
 
     s = 1.0
-    exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
-    for i in range(2,121):
-        exp.run(i, num_cores=NCORES)
+#    exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
+#    for i in range(2,121):
+#        exp.run(i, num_cores=NCORES)

@@ -51,7 +51,7 @@ diag.add_field('dynamics', 'div', time_avg=True)
 # diag.add_field('socrates', 'soc_surf_spectrum_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_heating_lw', time_avg=True)
 #diag.add_field('socrates', 'soc_heating_sw', time_avg=True)
-#diag.add_field('socrates', 'soc_heating_rate', time_avg=True)
+diag.add_field('socrates', 'soc_heating_rate', time_avg=True)
 #diag.add_field('socrates', 'soc_flux_up_lw', time_avg=True)
 #diag.add_field('socrates', 'soc_flux_down_sw', time_avg=True)
 
@@ -199,5 +199,5 @@ if __name__=="__main__":
 
     s = 1.0
     exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
-    for i in range(2,121):
+    for i in range(2,241):
         exp.run(i, num_cores=NCORES)
