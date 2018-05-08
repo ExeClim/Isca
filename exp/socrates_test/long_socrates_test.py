@@ -83,6 +83,7 @@ exp.namelist = namelist = Namelist({
         'do_read_co2': True,
         'dt_rad':4320,
         'store_intermediate_rad':True,
+        'chunk_size': 16,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
