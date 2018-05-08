@@ -24,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk37_long_diurnal', codebase=cb)
+exp = Experiment('soc_test_mk42_T42_less_allocate', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -193,6 +193,8 @@ exp.namelist = namelist = Namelist({
         'pk': [0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000],
        }
 })
+
+exp.set_resolution('T42', 25)
 
 #Lets do a run!
 if __name__=="__main__":
