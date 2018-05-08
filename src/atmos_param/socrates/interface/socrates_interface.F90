@@ -89,6 +89,8 @@ MODULE socrates_interface_mod
   logical   :: store_intermediate_rad =.true.  ! Keep rad constant over entire dt_rad?
   integer   :: dt_rad_avg = -1                 ! If averaging, over what time? dt_rad_avg=dt_rad if dt_rad_avg<=0
 
+  integer   :: chunk_size = 16 !number of gridpoints to pass to socrates at a time
+
   NAMELIST/socrates_rad_nml/ stellar_constant, tidally_locked, lw_spectral_filename, lw_hires_spectral_filename, &
                              sw_spectral_filename, sw_hires_spectral_filename, socrates_hires_mode, &
                              input_planet_emissivity, co2_ppmv, &
@@ -96,7 +98,8 @@ MODULE socrates_interface_mod
                              do_read_ozone, ozone_file_name, ozone_field_name, &
                              do_read_co2, co2_file_name, co2_field_name, &                             
                              solday, do_rad_time_avg, equinox_day,  &
-                             store_intermediate_rad, dt_rad_avg, dt_rad
+                             store_intermediate_rad, dt_rad_avg, dt_rad, &
+                             chunk_size
 
 
 
@@ -283,6 +286,13 @@ write(stdlog_unit, socrates_rad_nml)
          call interpolator_init (co2_interp, trim(co2_file_name)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
       endif      
 
+    if (mod((size(lonb,1)-1)*(size(latb,1)-1), chunk_size) .ne. 0) then
+    
+        call error_mesg( 'socrates_init', &
+                     'chunk_size must equally divide number of points per processor, which it currently does not.',FATAL)
+    
+    endif
+
     ! Number of bands
     n_soc_bands_lw = spectrum_lw%dim%nd_band
     n_soc_bands_lw_hires = spectrum_lw_hires%dim%nd_band
@@ -426,6 +436,9 @@ write(stdlog_unit, socrates_rad_nml)
     ! Loop variables
     integer(i_def) :: i, j, k, l, n, lon, si, sj, sk
 
+    ! chunking loop variable
+    integer(i_def) :: n_chunk_loop, idx_chunk_start, idx_chunk_end, i_chunk, n_profile_chunk
+
     !DIAG Diagnostic
     logical :: used
 
@@ -524,29 +537,68 @@ write(stdlog_unit, socrates_rad_nml)
           ! Do calculation
           CALL read_control(control_calc, spectrum_calc)
 
+    n_chunk_loop = (si*sj)/chunk_size
+    n_profile_chunk = n_profile / n_chunk_loop
+
+        DO i_chunk=1,n_chunk_loop
+
+            idx_chunk_start = (i_chunk-1)*chunk_size + 1
+            idx_chunk_end   = (i_chunk)*chunk_size
+
           if (soc_mode==.TRUE.) then
  
             CALL socrates_calc(Time_diag, control_calc, spectrum_calc,                      &
-               n_profile, n_layer, input_n_cloud_layer, input_n_aer_mode,                   &
+               n_profile_chunk, n_layer, input_n_cloud_layer, input_n_aer_mode,             &
                input_cld_subcol_gen, input_cld_subcol_req,                                  &
-               input_p, input_t, input_t_level, input_d_mass, input_density,                &
-               input_mixing_ratio, input_o3_mixing_ratio,  input_co2_mixing_ratio,          &
-               input_t_surf, input_cos_zenith_angle, input_solar_irrad, input_orog_corr,    &
-               l_planet_grey_surface, input_planet_albedo, input_planet_emissivity,         &
-               input_layer_heat_capacity,                                                   &
-               soc_flux_direct, soc_flux_down_lw, soc_flux_up_lw, soc_heating_rate_lw, soc_spectral_olr)
+               input_p(idx_chunk_start:idx_chunk_end,:),                                    & 
+               input_t(idx_chunk_start:idx_chunk_end,:),                                    &
+               input_t_level(idx_chunk_start:idx_chunk_end,:),                              & 
+               input_d_mass(idx_chunk_start:idx_chunk_end,:),                               &
+               input_density(idx_chunk_start:idx_chunk_end,:),                              &
+               input_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                         &
+               input_o3_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                      &
+               input_co2_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                     &
+               input_t_surf(idx_chunk_start:idx_chunk_end),                                 &
+               input_cos_zenith_angle(idx_chunk_start:idx_chunk_end),                       &
+               input_solar_irrad(idx_chunk_start:idx_chunk_end),                            &
+               input_orog_corr(idx_chunk_start:idx_chunk_end),                              &
+               l_planet_grey_surface,                                                       &
+               input_planet_albedo(idx_chunk_start:idx_chunk_end),                          &
+               input_planet_emissivity,                                                     &
+               input_layer_heat_capacity(idx_chunk_start:idx_chunk_end,:),                  &
+               soc_flux_direct(idx_chunk_start:idx_chunk_end,:),                            &
+               soc_flux_down_lw(idx_chunk_start:idx_chunk_end,:),                           &
+               soc_flux_up_lw(idx_chunk_start:idx_chunk_end,:),                             &
+               soc_heating_rate_lw(idx_chunk_start:idx_chunk_end,:),                        &
+               soc_spectral_olr(idx_chunk_start:idx_chunk_end,:))
 
           else
             CALL socrates_calc(Time_diag, control_calc, spectrum_calc,                      &
-               n_profile, n_layer, input_n_cloud_layer, input_n_aer_mode,                   &
+               n_profile_chunk, n_layer, input_n_cloud_layer, input_n_aer_mode,             &
                input_cld_subcol_gen, input_cld_subcol_req,                                  &
-               input_p, input_t, input_t_level, input_d_mass, input_density,                &
-               input_mixing_ratio, input_o3_mixing_ratio, input_co2_mixing_ratio,           &
-               input_t_surf, input_cos_zenith_angle, input_solar_irrad, input_orog_corr,    &
-               l_planet_grey_surface, input_planet_albedo, input_planet_emissivity,         &
-               input_layer_heat_capacity,                                                   &
-               soc_flux_direct, soc_flux_down_lw, soc_flux_up_lw, soc_heating_rate_lw)
+               input_p(idx_chunk_start:idx_chunk_end,:),                                    &
+               input_t(idx_chunk_start:idx_chunk_end,:),                                    &
+               input_t_level(idx_chunk_start:idx_chunk_end,:),                              &
+               input_d_mass(idx_chunk_start:idx_chunk_end,:),                               &
+               input_density(idx_chunk_start:idx_chunk_end,:),                              &
+               input_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                         &
+               input_o3_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                      &
+               input_co2_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                     &
+               input_t_surf(idx_chunk_start:idx_chunk_end),                                 &
+               input_cos_zenith_angle(idx_chunk_start:idx_chunk_end),                       &
+               input_solar_irrad(idx_chunk_start:idx_chunk_end),                            &
+               input_orog_corr(idx_chunk_start:idx_chunk_end),                              &
+               l_planet_grey_surface,                                                       &
+               input_planet_albedo(idx_chunk_start:idx_chunk_end),                          &
+               input_planet_emissivity,                                                     &
+               input_layer_heat_capacity(idx_chunk_start:idx_chunk_end,:),                  &
+               soc_flux_direct(idx_chunk_start:idx_chunk_end,:),                            &
+               soc_flux_down_lw(idx_chunk_start:idx_chunk_end,:),                           &
+               soc_flux_up_lw(idx_chunk_start:idx_chunk_end,:),                             &
+               soc_heating_rate_lw(idx_chunk_start:idx_chunk_end,:))
           endif
+
+        ENDDO
 
           ! Set output arrays
           fms_surf_lw_down(:,:) = reshape(soc_flux_down_lw(:,n_layer),(/si,sj/))
