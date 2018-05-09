@@ -6,7 +6,7 @@ import sys
 from datetime import datetime
 
 
-def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True, file_to_use_for_timing = 'logfile.000000.out'):
+def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True, average_time_parameter_sweep=False, file_to_use_for_timing = 'logfile.000000.out'):
     """A script that takes a list of experiment names as input, and plots the time taken to run each month in that experiment vs the wall time. """
 
     try:
@@ -53,13 +53,21 @@ def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True, file_to_
         print(('removing anomalously long delta_t for months ', [month_num_arr[month] for month in months_idx_to_remove], [delta_t_arr[month] for month in months_idx_to_remove]))
         delta_t_arr[np.where(np.abs(delta_t_arr) > 10.*np.mean(delta_t_arr))] = np.nan
 
-        #Plots results for particular experiment
-        if plot_against_wall_time:
-            plt.plot(end_t_arr,delta_t_arr, label=exp_dir)   
-            plt.xlabel('Wall time (GMT)')                 
+        if average_time_parameter_sweep:
+
+            mean_time = np.mean(delta_t_arr)
+            parameter_value = exp_dir.split('_')[-1]
+
+            plt.plot(parameter_value,mean_time, marker='x', linestyle='none', label=exp_dir)   
+        
         else:
-            plt.plot(month_num_arr[:-1], delta_t_arr, label=exp_dir)                
-            plt.xlabel('Month number')
+            #Plots results for particular experiment
+            if plot_against_wall_time:
+                plt.plot(end_t_arr,delta_t_arr, label=exp_dir)   
+                plt.xlabel('Wall time (GMT)')                 
+            else:
+                plt.plot(month_num_arr[:-1], delta_t_arr, label=exp_dir)                
+                plt.xlabel('Month number')
         
     plt.legend()
     plt.ylabel('Wall time elapsed per month (minutes)')
@@ -68,7 +76,7 @@ if __name__=="__main__":
 
     exp_dir_list = ['socrates_test_mk44_chunk_size_'+str(i) for i in [4,8,16,32,128,512]]
 
-    calculate_month_run_time(exp_dir_list, plot_against_wall_time=False, file_to_use_for_timing='git_hash_used.txt')
+    calculate_month_run_time(exp_dir_list, plot_against_wall_time=False, average_time_parameter_sweep=True, file_to_use_for_timing='git_hash_used.txt')
 
     plt.show()
 
