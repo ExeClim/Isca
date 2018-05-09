@@ -66,7 +66,7 @@ def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True, file_to_
 
 if __name__=="__main__":
 
-    exp_dir_list = ['soc_test_mk41_no_scaling_cpu_with_jm_dims']
+    exp_dir_list = ['socrates_test_mk44_chunk_size_'+str(i) for i in [4,8,16,32,128,512]]
 
     calculate_month_run_time(exp_dir_list, plot_against_wall_time=False, file_to_use_for_timing='git_hash_used.txt')
 
