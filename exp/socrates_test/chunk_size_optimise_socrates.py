@@ -197,10 +197,10 @@ exp.set_resolution('T42', 40)
 #Lets do a run!
 if __name__=="__main__":
 
-    chunk_size_list = [4, 8, 16, 32, 128, 512]
+    chunk_size_list = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
 
     for chunk in chunk_size_list:
-            exp = Experiment('socrates_test_mk44_chunk_size_'+str(chunk), codebase=cb)
+            exp = Experiment('socrates_test_mk44_chunk_size_longer_'+str(chunk), codebase=cb)
             exp.clear_rundir()
 
             exp.diag_table = diag
@@ -211,6 +211,6 @@ if __name__=="__main__":
             notify('socrates with chunk_size = '+str(chunk)+' has started', 'gv3')
 
             exp.run(1, use_restart=False, num_cores=NCORES)
-            for i in range(2, 4):
+            for i in range(2, 25):
                 exp.run(i, num_cores=NCORES)
             notify('socrates with chunk_size = '+str(chunk)+' has completed', 'gv3')
