@@ -58,7 +58,7 @@ def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True, average_
             mean_time = np.mean(delta_t_arr)
             parameter_value = exp_dir.split('_')[-1]
 
-            plt.plot(parameter_value,mean_time, marker='x', linestyle='none', label=exp_dir)   
+            plt.plot(parameter_value,mean_time, marker='x', linestyle='none', markersize=15, markeredgewidth=4, label=exp_dir)   
         
         else:
             #Plots results for particular experiment
