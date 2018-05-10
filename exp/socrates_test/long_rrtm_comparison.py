@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
+from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
 NCORES = 16
@@ -75,7 +75,7 @@ exp.namelist = namelist = Namelist({
     'rrtm_radiation_nml': {
         'solr_cnst':1370.,
         'do_read_ozone': True,
-        'ozone_file_name':'ozone_1990',
+        'ozone_file':'ozone_1990',
         'dt_rad':4320,
     }, 
     'idealized_moist_phys_nml': {
