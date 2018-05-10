@@ -67,22 +67,22 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
 !   control%l_h2o            = .TRUE.
 
   logical   :: inc_co2 = .TRUE.
-!  control%l_co2            = .TRUE.!.TRUE.
+!  control%l_co2            = .TRUE.
   
   logical   :: inc_co  = .FALSE. 
 !   control%l_co             = .FALSE.
 
   logical   :: inc_o3  = .TRUE.
-!  control%l_o3             = .TRUE.!.TRUE.
+!  control%l_o3             = .TRUE.
 
-  logical   :: inc_n2o  = .TRUE.
-!   control%l_n2o            = .TRUE.!.TRUE.
+  logical   :: inc_n2o  = .FALSE.
+!   control%l_n2o            = .TRUE.
 
-  logical   :: inc_ch4  = .TRUE.
-!   control%l_ch4            = .FALSE.!.TRUE.
+  logical   :: inc_ch4  = .FALSE.
+!   control%l_ch4            = .TRUE.
 
-  logical   :: inc_o2   = .TRUE.
-!   control%l_o2             = .TRUE.!.TRUE.
+  logical   :: inc_o2   = .FALSE.
+!   control%l_o2             = .TRUE.
 
   logical   :: inc_so2  = .FALSE.
 !   control%l_so2            = .FALSE.
