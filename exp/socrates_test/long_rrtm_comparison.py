@@ -9,7 +9,7 @@ NCORES = 16
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
-cb = SocratesCodeBase.from_directory(GFDL_BASE)
+cb = IscaCodeBase.from_directory(GFDL_BASE)
 
 # or it can point to a specific git repo and commit id.
 # This method should ensure future, independent, reproducibility of results.
@@ -24,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk47_direct_rrtm_comparison', codebase=cb)
+exp = Experiment('rrtm_test_mk47_direct_rrtm_comparison', codebase=cb)
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -51,7 +51,7 @@ diag.add_field('dynamics', 'div', time_avg=True)
 # diag.add_field('socrates', 'soc_surf_spectrum_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_heating_lw', time_avg=True)
 #diag.add_field('socrates', 'soc_heating_sw', time_avg=True)
-diag.add_field('socrates', 'soc_heating_rate', time_avg=True)
+diag.add_field('rrtm_radiation', 'tdt_rad', time_avg=True)
 #diag.add_field('socrates', 'soc_flux_up_lw', time_avg=True)
 #diag.add_field('socrates', 'soc_flux_down_sw', time_avg=True)
 
@@ -72,17 +72,11 @@ exp.namelist = namelist = Namelist({
      'current_date' : [1,1,1,0,0,0],
      'calendar' : 'thirty_day'
     },
-    'socrates_rad_nml': {
-        'stellar_constant':1370.,
-        'lw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7'),
-        'sw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7'),
-        'tidally_locked': False,
+    'rrtm_radiation_nml': {
+        'solr_cnst':1370.,
         'do_read_ozone': True,
         'ozone_file_name':'ozone_1990',
-        'ozone_field_name':'ozone_1990',
         'dt_rad':4320,
-        'store_intermediate_rad':True,
-        'chunk_size': 16,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -94,7 +88,7 @@ exp.namelist = namelist = Namelist({
         'roughness_heat':3.21e-05,
         'roughness_moist':3.21e-05,            
         'two_stream_gray': False,     #Use the grey radiation scheme
-        'do_socrates_radiation': True,
+        'do_rrtm_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
     },
 
