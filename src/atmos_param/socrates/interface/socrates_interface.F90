@@ -58,51 +58,6 @@ MODULE socrates_interface_mod
   REAL(r_def), allocatable, dimension(:,:) :: net_surf_sw_down_store, surf_lw_down_store, coszen_store
   REAL(r_def), allocatable, dimension(:,:,:) :: outputted_soc_spectral_olr
 
-  ! Socrates inputs from namelist
-  
-  REAL :: stellar_constant = 1370.0
-  LOGICAL :: tidally_locked = .TRUE.
-  LOGICAL :: socrates_hires_mode = .FALSE.  !If false then run in 'GCM mode', if true then uses high-res spectral files
-  character(len=256) :: lw_spectral_filename='unset'
-  character(len=256) :: lw_hires_spectral_filename='unset'
-  character(len=256) :: sw_spectral_filename='unset'
-  character(len=256) :: sw_hires_spectral_filename='unset'
-  logical :: account_for_effect_of_water=.TRUE. !if False then radiation is fed water mixing ratios = 0. If true it's fed mixing ratios based on model specific humidity.
-  logical :: account_for_effect_of_ozone=.TRUE. !if False then radiation is fed ozone mixing ratios = 0. If true it's fed mixing ratios based on model ozone field.
-  logical :: do_read_ozone = .FALSE. ! read ozone from an external file?
-  character(len=256) :: ozone_file_name='ozone' !Name of file containing ozone field - n.b. don't need to include '.nc'
-  character(len=256) :: ozone_field_name='ozone' !Name of ozone variable in ozone file
-  logical :: do_read_co2 = .FALSE. ! read ozone from an external file?
-  character(len=256) :: co2_file_name='co2' !Name of file containing co2 field - n.b. don't need to include '.nc'
-  character(len=256) :: co2_field_name='co2' !Name of co2 variable in co2 file  
-  real(r_def) :: input_planet_emissivity = 0.5 !Emissivity of surface. Defined as constant all over surface.
-  real :: co2_ppmv = 2. !Default CO2 concentration in PPMV
-    
-  ! Incoming radiation options for namelist
-  
-  integer   :: solday=0  ! if >0, do perpetual run corresponding to day of the year = solday \in [0,days per year]
-  logical   :: do_rad_time_avg = .true. ! Average coszen for SW radiation over dt_rad?
-  real      :: equinox_day=0.75                ! fraction of the year defining NH autumn equinox \in [0,1]
-
-  ! radiation time stepping and spatial sampling
-  integer   :: dt_rad=0                        ! Radiation timestep - every step if dt_rad<dt_atmos
-  logical   :: store_intermediate_rad =.true.  ! Keep rad constant over entire dt_rad?
-  integer   :: dt_rad_avg = -1                 ! If averaging, over what time? dt_rad_avg=dt_rad if dt_rad_avg<=0
-
-  integer   :: chunk_size = 16 !number of gridpoints to pass to socrates at a time
-
-  NAMELIST/socrates_rad_nml/ stellar_constant, tidally_locked, lw_spectral_filename, lw_hires_spectral_filename, &
-                             sw_spectral_filename, sw_hires_spectral_filename, socrates_hires_mode, &
-                             input_planet_emissivity, co2_ppmv, &
-                             account_for_effect_of_water, account_for_effect_of_ozone, &
-                             do_read_ozone, ozone_file_name, ozone_field_name, &
-                             do_read_co2, co2_file_name, co2_field_name, &                             
-                             solday, do_rad_time_avg, equinox_day,  &
-                             store_intermediate_rad, dt_rad_avg, dt_rad, &
-                             chunk_size
-
-
-
 CONTAINS
 
   SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb, delta_t_atmos)
@@ -110,6 +65,7 @@ CONTAINS
 
     USE astronomy_mod, only: astronomy_init
     USE interpolator_mod, only: interpolate_type, interpolator_init, ZERO  
+    USE socrates_config_mod
 
     ! Arguments
     INTEGER, INTENT(in), DIMENSION(4) :: axes
@@ -375,7 +331,7 @@ write(stdlog_unit, socrates_rad_nml)
          allocate_aer_prsc,  deallocate_aer_prsc
     use def_bound,   only: StrBound, allocate_bound,     deallocate_bound
     use def_out,     only: StrOut,                       deallocate_out
-    use socrates_config_mod, only: l_planet_grey_surface
+    use socrates_config_mod
     !-----------------------------------------------------------------------
     implicit none
 
@@ -627,6 +583,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     use astronomy_mod, only: diurnal_solar
     use constants_mod,         only: pi
     use interpolator_mod,only: interpolator
+    USE socrates_config_mod    
 
     ! Input time
     type(time_type), intent(in)           :: Time, Time_diag
@@ -873,6 +830,7 @@ end subroutine run_socrates
 subroutine run_socrates_end
 
     use interpolator_mod, only: interpolator_end
+    USE socrates_config_mod    
 
     if(do_read_ozone) call interpolator_end(o3_interp)
     if(do_read_co2)   call interpolator_end(co2_interp)

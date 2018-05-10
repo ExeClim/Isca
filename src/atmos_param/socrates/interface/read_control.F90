@@ -15,7 +15,7 @@ SUBROUTINE read_control(control, spectrum)
 USE rad_pcf
 USE def_control,  ONLY: StrCtrl, allocate_control
 USE def_spectrum, ONLY: StrSpecData
-USE socrates_config_mod, ONLY: l_planet_grey_surface
+USE socrates_config_mod, ONLY: l_planet_grey_surface, inc_h2o, inc_co2, inc_co, inc_o3, inc_n2o, inc_ch4, inc_o2, inc_so2, inc_cfc11, inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a
 
 IMPLICIT NONE
 
@@ -42,17 +42,17 @@ select case(control%isolir)
 case(ip_solar)
   control%i_2stream        = ip_pifm80
   control%i_scatter_method = ip_scatter_full
-  control%l_rayleigh       = .TRUE.!.TRUE.
+  control%l_rayleigh       = .TRUE.
   control%l_orog           = .FALSE.
   control%l_solvar         = .FALSE.
-  control%l_h2o            = .TRUE.
-  control%l_co2            = .TRUE.!.TRUE.
-  control%l_co             = .FALSE.
-  control%l_o3             = .TRUE.!.TRUE.
-  control%l_n2o            = .TRUE.!.TRUE.
-  control%l_ch4            = .FALSE.!.TRUE.
-  control%l_o2             = .TRUE.!.TRUE.
-  control%l_so2            = .FALSE.
+  control%l_h2o            = inc_h2o
+  control%l_co2            = inc_co2
+  control%l_co             = inc_co
+  control%l_o3             = inc_o3
+  control%l_n2o            = inc_n2o
+  control%l_ch4            = inc_ch4
+  control%l_o2             = inc_o2
+  control%l_so2            = inc_so2
   control%i_st_water       = 5
   control%i_cnv_water      = 5
   control%i_st_ice         = 11
@@ -61,18 +61,18 @@ case(ip_infra_red)
   control%i_2stream        = ip_elsasser
   control%i_scatter_method = ip_no_scatter_ext!ip_scatter_hybrid
   control%l_ir_source_quad = .TRUE.
-  control%l_h2o            = .TRUE.!.TRUE.
-  control%l_co2            = .TRUE.
-  control%l_co             = .FALSE.
-  control%l_o3             = .TRUE.!.TRUE.
-  control%l_n2o            = .TRUE.!.TRUE.
-  control%l_ch4            = .FALSE.!.TRUE.
-  control%l_so2            = .FALSE.
-  control%l_cfc11          = .FALSE.
-  control%l_cfc12          = .FALSE.
-  control%l_cfc113         = .FALSE.
-  control%l_hcfc22         = .FALSE.
-  control%l_hfc134a        = .FALSE.
+  control%l_h2o            = inc_h2o
+  control%l_co2            = inc_co2
+  control%l_co             = inc_co
+  control%l_o3             = inc_o3
+  control%l_n2o            = inc_n2o
+  control%l_ch4            = inc_ch4
+  control%l_so2            = inc_so2
+  control%l_cfc11          = inc_cfc11
+  control%l_cfc12          = inc_cfc12
+  control%l_cfc113         = inc_cfc113
+  control%l_hcfc22         = inc_hcfc22
+  control%l_hfc134a        = inc_hfc134a
   control%i_st_water       = 5
   control%i_cnv_water      = 5
   control%i_st_ice         = 11

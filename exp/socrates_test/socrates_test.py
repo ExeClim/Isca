@@ -24,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk37', codebase=cb)
+exp = Experiment('soc_test_mk46_nml_well_mixed_gas_concentrations_switched', codebase=cb)
 
 exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -198,6 +198,6 @@ exp.namelist = namelist = Namelist({
 if __name__=="__main__":
 
     s = 1.0
-#    exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
-#    for i in range(2,121):
-#        exp.run(i, num_cores=NCORES)
+    exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
+    for i in range(2,3):
+        exp.run(i, num_cores=NCORES)
