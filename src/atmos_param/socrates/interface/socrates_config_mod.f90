@@ -31,7 +31,7 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   logical :: do_read_co2 = .FALSE. ! read ozone from an external file?
   character(len=256) :: co2_file_name='co2' !Name of file containing co2 field - n.b. don't need to include '.nc'
   character(len=256) :: co2_field_name='co2' !Name of co2 variable in co2 file  
-  real(r_def) :: input_planet_emissivity = 0.5 !Emissivity of surface. Defined as constant all over surface.
+  real(r_def) :: input_planet_emissivity = 1.0 !Emissivity of surface. Defined as constant all over surface.
   real :: co2_ppmv = 300. !Default CO2 concentration in PPMV
     
   ! Incoming radiation options for namelist
