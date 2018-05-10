@@ -48,7 +48,7 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   integer   :: chunk_size = 16 !number of gridpoints to pass to socrates at a time
 
 
-  ! Well mixed gas concentrations (kg / kg)
+  ! Well mixed gas concentrations (kg / kg) #Don't know the source of these numbers. Need to check them. e.g. co mix ratio.
   REAL(r_def) :: co_mix_ratio = 0.0
   REAL(r_def) :: n2o_mix_ratio = 4.945e-07
   REAL(r_def) :: ch4_mix_ratio = 1.006e-06
@@ -61,7 +61,7 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   REAL(r_def) :: hfc134a_mix_ratio = 2.536e-10
 
 
-  ! Whether to include effects of particular gases
+  ! Whether to include radiative effects of particular gases
   
   logical   :: inc_h2o = .TRUE.
 !   control%l_h2o            = .TRUE.
