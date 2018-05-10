@@ -180,7 +180,6 @@ DO i_gas=1, spectrum%gas%n_absorb
         atm%gas_mix_ratio(l, i, i_gas) = hfc134a_mix_ratio
       END DO
     END DO 
-    write(6,*)  'hfc134a_mix_ratio', hfc134a_mix_ratio
       
   CASE DEFAULT
     DO i=1, n_layer
