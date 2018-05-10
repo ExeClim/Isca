@@ -24,9 +24,9 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk43_T42_chunk_soc_call', codebase=cb)
+exp = Experiment('soc_test_mk47_direct_rrtm_comparison', codebase=cb)
 
-exp.inputfiles = [os.path.join(base_dir,'input/co2.nc'), os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
+exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -148,18 +148,9 @@ exp.namelist = namelist = Namelist({
     
     'damping_driver_nml': {
         'do_rayleigh': True,
-        'trayfric': -0.25,              # neg. value: time in *days*
-        'sponge_pbottom':  5000., #Bottom of the model's sponge down to 50hPa
-        'do_conserve_energy': True,    
-    },
-
-    'two_stream_gray_rad_nml': {
-        'rad_scheme':  'byrne',        #Select radiation scheme to use
-        'atm_abs': 0.2,                      # Add a bit of solar absorption of sw
-        'do_seasonal':  True,          #do_seasonal=false uses the p2 insolation profile from Frierson 2006. do_seasonal=True uses the GFDL astronomy module to calculate seasonally-varying insolation.
-        'equinox_day':  0.75,          #A calendar parameter to get autumn equinox in september, as in the standard earth calendar.
-        'do_read_co2':  True, #Read in CO2 timeseries from input file
-        'co2_file':  'co2', #Tell model name of co2 input file        
+        'trayfric': -0.5,              # neg. value: time in *days*
+        'sponge_pbottom':  150., #Setting the lower pressure boundary for the model sponge layer in Pa.
+        'do_conserve_energy': True,      
     },
 
     # FMS Framework configuration
@@ -180,22 +171,17 @@ exp.namelist = namelist = Namelist({
         'damping_order': 4,             
         'water_correction_limit': 200.e2,
         'reference_sea_level_press':1.0e5,
-        'num_levels':25,      #How many model pressure levels to use
+        'num_levels':40,      #How many model pressure levels to use
         'valid_range_t':[100.,800.],
         'initial_sphum':[2.e-6],
-        'vert_coord_option':'input',#Use the vertical levels from Frierson 2006
-        'surf_res':0.5,
+        'vert_coord_option':'uneven_sigma',
+        'surf_res':0.2, #Parameter that sets the vertical distribution of sigma levels
         'scale_heights' : 11.0,
         'exponent':7.0,
         'robert_coeff':0.03
     },
-    'vert_coordinate_nml': {
-        'bk': [0.000000, 0.0117665, 0.0196679, 0.0315244, 0.0485411, 0.0719344, 0.1027829, 0.1418581, 0.1894648, 0.2453219, 0.3085103, 0.3775033, 0.4502789, 0.5244989, 0.5977253, 0.6676441, 0.7322627, 0.7900587, 0.8400683, 0.8819111, 0.9157609, 0.9422770, 0.9625127, 0.9778177, 0.9897489, 1.0000000],
-        'pk': [0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000],
-       }
-})
 
-exp.set_resolution('T42', 25)
+})
 
 #Lets do a run!
 if __name__=="__main__":
