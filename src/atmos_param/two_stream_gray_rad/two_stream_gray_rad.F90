@@ -444,7 +444,7 @@ if (do_seasonal) then
      call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
   end if
 
-     insolation = solar_constant * coszen
+     insolation = solar_constant * coszen * rrsun
 
 else if (sw_scheme==B_SCHNEIDER_LIU) then
   insolation = (solar_constant/pi)*cos(lat)

@@ -48,12 +48,14 @@ diag.add_field('mixed_layer', 't_surf', time_avg=True, files=['atmos_monthly'])
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True)
 diag.add_field('mixed_layer', 'flux_t', time_avg=True)
 
+# diag.add_field('two_stream', 'coszen', time_avg=True)
+
 
 # define namelist values as python dictionary
 namelist = Namelist({
     'main_nml': {
         'dt_atmos': 150,
-        'days': 30.,
+        'days': 1.,
         'seconds': 0,
         'calendar': 'no_calendar'
     },
@@ -99,7 +101,7 @@ namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':False,   
-        'albedo': 0.25,
+        'albedo_value': 0.25,
     },
 
     'qe_moist_convection_nml': {
@@ -176,7 +178,7 @@ namelist = Namelist({
 #     },
 
     'astronomy_nml': {
-        'ecc':0.0935,
+#         'ecc':0.0935,
         'obliq':25.19,
         'per':336.0,        
     },
@@ -200,7 +202,7 @@ if __name__=="__main__":
 
     for conv in conv_schemes:
         for scale in scales:
-            exp = Experiment('grey_mars_mk1', codebase=cb)
+            exp = Experiment('grey_mars_mk4_without_rrsun_multiplying', codebase=cb)
             exp.clear_rundir()
 
             exp.diag_table = diag
@@ -211,11 +213,9 @@ if __name__=="__main__":
             exp.namelist['spectral_dynamics_nml']['reference_sea_level_press'] = scale * 610.0
             exp.namelist['idealized_moist_phys_nml']['convection_scheme'] = conv
 
-            notify('top down with conv scheme = '+conv+' has started', 'isca')
-
             with exp_progress(exp, description='o%.0f d{day}' % scale):
                 exp.run(1, use_restart=False, num_cores=NCORES)
-            for i in range(2, 241):
-                with exp_progress(exp, description='o%.0f d{day}' % scale):
-                    exp.run(i, num_cores=NCORES)
-            notify('top down with conv scheme = '+conv+' has completed', 'isca')
+#             for i in range(2, 241):
+#                 with exp_progress(exp, description='o%.0f d{day}' % scale):
+#                     exp.run(i, num_cores=NCORES)
+#             notify('top down with conv scheme = '+conv+' has completed', 'isca')

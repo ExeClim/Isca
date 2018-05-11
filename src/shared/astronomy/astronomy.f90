@@ -160,11 +160,12 @@ integer :: second_ae = 0     ! second of specified autumnal equinox
 integer :: num_angles = 3600 ! number of intervals into which the year
                              ! is divided to compute orbital positions
 
+logical :: use_mean_anom_in_rrsun_calc = .TRUE. !It appears the standard astronomy module uses the mean anomaly for calculating the orbital distances on eccentric orbits, rather than the true anomaly. Keeping this behaviour default for legacy, but .FALSE. seems more correct.
 
 namelist /astronomy_nml/ ecc, obliq, per, period, &
                          year_ae, month_ae,  day_ae,         &
                          hour_ae, minute_ae, second_ae, &
-                         num_angles
+                         num_angles, use_mean_anom_in_rrsun_calc
 
 !--------------------------------------------------------------------
 !------   public data ----------
@@ -3229,7 +3230,7 @@ real, intent(in) :: ang
 !---------------------------------------------------------------------
 !  local variables
 
-      real :: r_inv_squared, r, rad_per
+      real :: r_inv_squared, r, rad_per, mean_anomaly, true_anomaly, ecc_anomaly
 
 !---------------------------------------------------------------------
 !  local variables:
@@ -3249,13 +3250,61 @@ real, intent(in) :: ang
 !    its square (r_inv_squared) to the calling routine.
 !--------------------------------------------------------------------
       rad_per       = per*deg_to_rad
-      r             = (1. - ecc**2)/(1. + ecc*cos(ang - rad_per))
-      r_inv_squared = r**(-2)
+      
+      if (ecc.eq.0.) then
+          r = 1.      
+          r_inv_squared = 1.
+      else
+          
+          if (use_mean_anom_in_rrsun_calc) then
+              r             = (1. - ecc**2)/(1. + ecc*cos(ang - rad_per))
+          else
+              mean_anomaly = ang - rad_per
+              call calc_ecc_anomaly(mean_anomaly, ecc, ecc_anomaly)
+              true_anomaly = 2*atan(((1 + ecc)/(1 - ecc))**0.5 * tan(ecc_anomaly/2))          
+              r             = (1. - ecc**2)/(1. + ecc*cos(true_anomaly))          
+          endif
+          
+          r_inv_squared = r**(-2)
+          
+      endif 
+      
 
 
 end function r_inv_squared
 
+!#######################################################################
+!Written by Alex Paterson in hs_forcing.f90 and copied to astronomy by SIT 11th May '18
 
+ subroutine calc_ecc_anomaly( mean_anomaly, ecc, ecc_anomaly)
+
+ real, intent(in) :: mean_anomaly, ecc
+ real, intent(out) :: ecc_anomaly
+ real :: dE, d
+ integer, parameter :: maxiter = 30
+ real, parameter :: tol = 1.d-10
+ integer :: k
+
+ ecc_anomaly = mean_anomaly
+ d = ecc_anomaly - ecc*sin(ecc_anomaly) - mean_anomaly
+ do k=1,maxiter
+        dE = d/(1 - ecc*cos(ecc_anomaly))
+        ecc_anomaly = ecc_anomaly - dE
+        d = ecc_anomaly - ecc*sin(ecc_anomaly) - mean_anomaly
+        if (abs(d) < tol) then
+                exit
+        endif
+ enddo
+
+ if (k > maxiter) then
+        if (abs(d) > tol) then
+                print *, '*** Warning: eccentric anomaly has not converged'
+        endif
+ endif
+
+ end subroutine calc_ecc_anomaly
+
+!###################################################################
 
 
 !####################################################################
