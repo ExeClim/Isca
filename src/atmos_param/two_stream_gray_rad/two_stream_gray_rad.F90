@@ -154,7 +154,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 
 integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
            id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun, &
-           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2
+           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2, id_mars_solar_long, id_rrsun
 
 character(len=10), parameter :: mod_name = 'two_stream'
 
@@ -377,6 +377,12 @@ end select
                register_diag_field ( mod_name, 'lw_dtrans', axes(1:3), Time, &
                  'LW transmission (non window)', &
                  'none', missing_value=missing_value      )
+                 
+    id_mars_solar_long = register_diag_field ( mod_name, 'mars_solar_long', &
+                   Time, 'Martian solar longitude', 'deg')   
+                     
+    id_rrsun = register_diag_field ( mod_name, 'rrsun', &
+                   Time, 'inverse planet sun distance', 'none')                                     
 return
 end subroutine two_stream_gray_rad_init
 
@@ -397,17 +403,13 @@ real, intent(in), dimension(:,:,:)  :: t, q,  p_half
 integer :: i, j, k, n, dyofyr
 
 integer :: seconds, year_in_s, days
-real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday, r_total_seconds, r_days, r_dt_rad_avg, dt_rad_radians
+real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday, r_total_seconds, r_days, r_dt_rad_avg, dt_rad_radians, true_anomaly
 logical :: used
 
 
 real ,dimension(size(q,1),size(q,2),size(q,3)) :: co2f
 
 n = size(t,3)
-
-
-
-! albedo(:,:) = albedo_value !s albedo now set in mixed_layer_init.
 
 ! =================================================================================
 ! SHORTWAVE RADIATION
@@ -445,6 +447,11 @@ if (do_seasonal) then
   end if
 
      insolation = solar_constant * coszen * rrsun
+
+    if (id_mars_solar_long > 0) used = send_data ( id_mars_solar_long, modulo((180./pi)*(true_anomaly-1.905637),360.), Time_diag)
+
+    if (id_rrsun > 0) used = send_data ( id_rrsun, rrsun, Time_diag)
+    
 
 else if (sw_scheme==B_SCHNEIDER_LIU) then
   insolation = (solar_constant/pi)*cos(lat)

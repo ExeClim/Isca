@@ -48,14 +48,16 @@ diag.add_field('mixed_layer', 't_surf', time_avg=True, files=['atmos_monthly'])
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True)
 diag.add_field('mixed_layer', 'flux_t', time_avg=True)
 
-# diag.add_field('two_stream', 'coszen', time_avg=True)
+# diag.add_field('two_stream', 'mars_solar_long', time_avg=True)
+diag.add_field('two_stream', 'coszen', time_avg=True)
+diag.add_field('two_stream', 'rrsun', time_avg=True)
 
 
 # define namelist values as python dictionary
 namelist = Namelist({
     'main_nml': {
         'dt_atmos': 150,
-        'days': 1.,
+        'days': 2.,
         'seconds': 0,
         'calendar': 'no_calendar'
     },
@@ -178,9 +180,11 @@ namelist = Namelist({
 #     },
 
     'astronomy_nml': {
-#         'ecc':0.0935,
+        'ecc':0.0935,
         'obliq':25.19,
-        'per':336.0,        
+        'per':250.815799, #to be equivalent to peri_time = 0. in hs_forcing version of mars
+        'use_mean_anom_in_rrsun_calc':False,
+        'use_old_r_inv_squared':False
     },
 
     'constants_nml': {
@@ -202,7 +206,7 @@ if __name__=="__main__":
 
     for conv in conv_schemes:
         for scale in scales:
-            exp = Experiment('grey_mars_mk4_without_rrsun_multiplying', codebase=cb)
+            exp = Experiment('grey_mars_mk13', codebase=cb)
             exp.clear_rundir()
 
             exp.diag_table = diag
