@@ -3334,6 +3334,7 @@ real, intent(out), optional:: true_anomaly_out
           
           if (use_mean_anom_in_rrsun_calc) then
               r             = (1. - ecc**2)/(1. + ecc*cos(ang - rad_per))
+              true_anomaly = ang-rad_per !This obviously isn't true, but is the approximation made by the old astronomy code.
           else
               mean_anomaly = ang - rad_per
               call calc_ecc_anomaly(mean_anomaly, ecc, ecc_anomaly)

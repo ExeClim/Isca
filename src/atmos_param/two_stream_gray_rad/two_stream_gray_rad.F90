@@ -441,9 +441,9 @@ if (do_seasonal) then
      r_dt_rad_avg=real(dt_rad_avg)
      dt_rad_radians = (r_dt_rad_avg/day_in_s)*2.0*pi
      
-     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians)
+     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians, true_anom=true_anomaly)
   else
-     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
+     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, true_anom=true_anomaly)
   end if
 
      insolation = solar_constant * coszen * rrsun

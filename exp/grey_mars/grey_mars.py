@@ -48,16 +48,17 @@ diag.add_field('mixed_layer', 't_surf', time_avg=True, files=['atmos_monthly'])
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True)
 diag.add_field('mixed_layer', 'flux_t', time_avg=True)
 
-# diag.add_field('two_stream', 'mars_solar_long', time_avg=True)
+diag.add_field('two_stream', 'mars_solar_long', time_avg=True)
 diag.add_field('two_stream', 'coszen', time_avg=True)
 diag.add_field('two_stream', 'rrsun', time_avg=True)
+diag.add_field('two_stream', 'swdn_toa', time_avg=True)
 
 
 # define namelist values as python dictionary
 namelist = Namelist({
     'main_nml': {
         'dt_atmos': 150,
-        'days': 2.,
+        'days': 30.,
         'seconds': 0,
         'calendar': 'no_calendar'
     },
@@ -104,6 +105,7 @@ namelist = Namelist({
         'prescribe_initial_dist':True,
         'evaporation':False,   
         'albedo_value': 0.25,
+        'depth':10.,
     },
 
     'qe_moist_convection_nml': {
@@ -206,7 +208,7 @@ if __name__=="__main__":
 
     for conv in conv_schemes:
         for scale in scales:
-            exp = Experiment('grey_mars_mk13', codebase=cb)
+            exp = Experiment('grey_mars_mk14_first_long_run', codebase=cb)
             exp.clear_rundir()
 
             exp.diag_table = diag
