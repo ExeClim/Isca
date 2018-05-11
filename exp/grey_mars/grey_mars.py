@@ -31,20 +31,16 @@ diag.add_file('atmos_daily', 1, 'days', time_units='days')
 diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk', time_avg=True)
 diag.add_field('dynamics', 'pk', time_avg=True)
-diag.add_field('dynamics', 'vor', time_avg=True, files=['atmos_monthly'])
-diag.add_field('dynamics', 'div', time_avg=True, files=['atmos_monthly'])
 diag.add_field('dynamics', 'ucomp', time_avg=True)
-diag.add_field('dynamics', 'vcomp', time_avg=True, files=['atmos_monthly'])
-diag.add_field('dynamics', 'ucomp_vcomp', time_avg=True, files=['atmos_monthly'])
-diag.add_field('dynamics', 'temp', time_avg=True, files=['atmos_monthly'])
-diag.add_field('dynamics', 'slp', time_avg=True, files=['atmos_monthly'])
-diag.add_field('dynamics', 'omega', time_avg=True, files=['atmos_monthly'])
-diag.add_field('dynamics', 'height', time_avg=True, files=['atmos_monthly'])
-diag.add_field('dynamics', 'sphum', time_avg=True, files=['atmos_monthly'])
-diag.add_field('atmosphere', 'precipitation', time_avg=True, files=['atmos_monthly'])
-diag.add_field('atmosphere', 'rh', time_avg=True, files=['atmos_monthly'])
+diag.add_field('dynamics', 'vcomp', time_avg=True)
+diag.add_field('dynamics', 'temp', time_avg=True)
 
-diag.add_field('mixed_layer', 't_surf', time_avg=True, files=['atmos_monthly'])
+diag.add_field('dynamics', 'omega', time_avg=True)
+diag.add_field('dynamics', 'height', time_avg=True)
+diag.add_field('dynamics', 'sphum', time_avg=True)
+diag.add_field('atmosphere', 'precipitation', time_avg=True)
+
+diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True)
 diag.add_field('mixed_layer', 'flux_t', time_avg=True)
 
@@ -221,7 +217,7 @@ if __name__=="__main__":
 
             with exp_progress(exp, description='o%.0f d{day}' % scale):
                 exp.run(1, use_restart=False, num_cores=NCORES)
-#             for i in range(2, 241):
-#                 with exp_progress(exp, description='o%.0f d{day}' % scale):
-#                     exp.run(i, num_cores=NCORES)
-#             notify('top down with conv scheme = '+conv+' has completed', 'isca')
+            for i in range(2, 241):
+                with exp_progress(exp, description='o%.0f d{day}' % scale):
+                    exp.run(i, num_cores=NCORES)
+            notify('top down with conv scheme = '+conv+' has completed', 'isca')
