@@ -154,7 +154,8 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 
 integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
            id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun, &
-           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2, id_mars_solar_long, id_rrsun
+           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2, id_mars_solar_long, id_rrsun, id_true_anom, &
+           id_time_since_ae
 
 character(len=10), parameter :: mod_name = 'two_stream'
 
@@ -380,9 +381,16 @@ end select
                  
     id_mars_solar_long = register_diag_field ( mod_name, 'mars_solar_long', &
                    Time, 'Martian solar longitude', 'deg')   
+
+    id_true_anom = register_diag_field ( mod_name, 'true_anomaly', &
+                   Time, 'True anomaly', 'deg')   
                      
     id_rrsun = register_diag_field ( mod_name, 'rrsun', &
-                   Time, 'inverse planet sun distance', 'none')                                     
+                   Time, 'inverse planet sun distance', 'none')   
+                   
+    id_time_since_ae = register_diag_field ( mod_name, 'time_since_ae', &
+                   Time, 'time since ae', 'none')   
+
 return
 end subroutine two_stream_gray_rad_init
 
@@ -433,7 +441,7 @@ if (do_seasonal) then
   endif
 
   gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
-
+  
   time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
 
   if(use_time_average_coszen) then
@@ -449,6 +457,12 @@ if (do_seasonal) then
      insolation = solar_constant * coszen * rrsun
 
     if (id_mars_solar_long > 0) used = send_data ( id_mars_solar_long, modulo((180./pi)*(true_anomaly-1.905637),360.), Time_diag)
+
+
+    if (id_time_since_ae > 0) used = send_data ( id_time_since_ae, time_since_ae, Time_diag)
+
+
+    if (id_true_anom > 0) used = send_data ( id_true_anom, true_anomaly, Time_diag)
 
     if (id_rrsun > 0) used = send_data ( id_rrsun, rrsun, Time_diag)
     

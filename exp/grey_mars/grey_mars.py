@@ -48,6 +48,8 @@ diag.add_field('two_stream', 'mars_solar_long', time_avg=True)
 diag.add_field('two_stream', 'coszen', time_avg=True)
 diag.add_field('two_stream', 'rrsun', time_avg=True)
 diag.add_field('two_stream', 'swdn_toa', time_avg=True)
+diag.add_field('two_stream', 'time_since_ae', time_avg=True)
+diag.add_field('two_stream', 'true_anomaly', time_avg=True)
 
 
 # define namelist values as python dictionary
@@ -155,6 +157,7 @@ namelist = Namelist({
         'ir_tau_eq':0.2,        
         'ir_tau_pole':0.2,
         'linear_tau': 1.0,
+        'equinox_day':0.3032894472101727,
     },
 
 
@@ -186,7 +189,7 @@ namelist = Namelist({
     },
 
     'constants_nml': {
-        'orbital_period': 686.980,
+        'orbital_period': 686.980*86400.,
         'solar_const':589.0,
         'radius':3396.0e3,
         'omega':7.088e-5,
@@ -204,7 +207,7 @@ if __name__=="__main__":
 
     for conv in conv_schemes:
         for scale in scales:
-            exp = Experiment('grey_mars_mk14_first_long_run', codebase=cb)
+            exp = Experiment('grey_mars_mk15_fixed_year_length', codebase=cb)
             exp.clear_rundir()
 
             exp.diag_table = diag
