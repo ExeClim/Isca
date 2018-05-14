@@ -569,7 +569,7 @@ write(stdlog_unit, socrates_rad_nml)
              output_soc_flux_up_lw(:,:,:) = reshape(soc_flux_up_lw(:,:),(/si,sj,sk /))
              output_heating_rate_lw(:,:,:) = reshape(soc_heating_rate_lw(:,:),(/si,sj,sk/))
           else
-             fms_net_surf_sw_down(:,:) = reshape(soc_flux_down_lw(:,n_layer),(/si,sj /))
+             fms_net_surf_sw_down(:,:) = reshape(soc_flux_down_lw(:,n_layer)-soc_flux_up_lw(:,n_layer),(/si,sj /))
              output_soc_flux_down_sw(:,:,:) = reshape(soc_flux_down_lw(:,:),(/si,sj,sk /))
              output_heating_rate_sw(:,:,:) = reshape(soc_heating_rate_lw(:,:),(/si,sj,sk /))
           end if

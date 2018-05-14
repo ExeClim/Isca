@@ -24,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('rrtm_test_mk47_direct_rrtm_comparison', codebase=cb)
+exp = Experiment('rrtm_test_mk48_direct_rrtm_comparison_more_outputs', codebase=cb)
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -49,11 +49,11 @@ diag.add_field('dynamics', 'div', time_avg=True)
 #diag.add_field('socrates', 'soc_olr', time_avg=True)
 # diag.add_field('socrates', 'soc_olr_spectrum_lw', time_avg=True)
 # diag.add_field('socrates', 'soc_surf_spectrum_sw', time_avg=True)
-#diag.add_field('socrates', 'soc_heating_lw', time_avg=True)
-#diag.add_field('socrates', 'soc_heating_sw', time_avg=True)
+diag.add_field('rrtm_radiation', 'flux_lw', time_avg=True)
+diag.add_field('rrtm_radiation', 'flux_sw', time_avg=True)
 diag.add_field('rrtm_radiation', 'tdt_rad', time_avg=True)
-#diag.add_field('socrates', 'soc_flux_up_lw', time_avg=True)
-#diag.add_field('socrates', 'soc_flux_down_sw', time_avg=True)
+diag.add_field('rrtm_radiation', 'tdt_lw', time_avg=True)
+diag.add_field('rrtm_radiation', 'tdt_sw', time_avg=True)
 
 
 exp.diag_table = diag
@@ -68,7 +68,7 @@ exp.namelist = namelist = Namelist({
      'hours'  : 0,
      'minutes': 0,
      'seconds': 0,
-     'dt_atmos':720,
+     'dt_atmos':600,
      'current_date' : [1,1,1,0,0,0],
      'calendar' : 'thirty_day'
     },
@@ -76,7 +76,7 @@ exp.namelist = namelist = Namelist({
         'solr_cnst':1370.,
         'do_read_ozone': True,
         'ozone_file':'ozone_1990',
-        'dt_rad':4320,
+        'dt_rad':3600,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
