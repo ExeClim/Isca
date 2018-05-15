@@ -24,7 +24,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create a diagnostics output file for daily snapshots
 diag = DiagTable()
-diag.add_file('atmos_monthly', 30, 'days', time_units='days')
+#diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 diag.add_file('atmos_daily', 1, 'days', time_units='days')
 
 # Define diag table entries
@@ -39,6 +39,8 @@ diag.add_field('dynamics', 'omega', time_avg=True)
 diag.add_field('dynamics', 'height', time_avg=True)
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
+
+diag.add_field('atmosphere', 'dt_tg_convection', time_avg=True)
 
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True)
@@ -102,7 +104,7 @@ namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':False,   
-        'albedo_value': 0.25,
+        'albedo_value': 0.7,
         'depth':10.,
     },
 
@@ -157,7 +159,7 @@ namelist = Namelist({
         'ir_tau_eq':0.2,        
         'ir_tau_pole':0.2,
         'linear_tau': 1.0,
-        'equinox_day':0.3032894472101727,
+        'equinox_day':0.8032894472101727,
     },
 
 
@@ -183,7 +185,7 @@ namelist = Namelist({
     'astronomy_nml': {
         'ecc':0.0935,
         'obliq':25.19,
-        'per':250.815799, #to be equivalent to peri_time = 0. in hs_forcing version of mars
+        'per':109.18420099566217, #to be equivalent to peri_time = 0. in hs_forcing version of mars
         'use_mean_anom_in_rrsun_calc':False,
         'use_old_r_inv_squared':False
     },
@@ -201,13 +203,13 @@ namelist = Namelist({
 
 if __name__=="__main__":
 
-    conv_schemes = ['dry']
+    conv_schemes = ['dry', 'none']
 
     scales = [ 1.]
 
     for conv in conv_schemes:
         for scale in scales:
-            exp = Experiment('grey_mars_mk15_fixed_year_length', codebase=cb)
+            exp = Experiment('grey_mars_mk16_fixed_year_length_shifted_thin_10m_conv_outputs_shiny_'+conv, codebase=cb)
             exp.clear_rundir()
 
             exp.diag_table = diag
@@ -220,7 +222,7 @@ if __name__=="__main__":
 
             with exp_progress(exp, description='o%.0f d{day}' % scale):
                 exp.run(1, use_restart=False, num_cores=NCORES)
-            for i in range(2, 241):
+            for i in range(2, 121):
                 with exp_progress(exp, description='o%.0f d{day}' % scale):
                     exp.run(i, num_cores=NCORES)
             notify('top down with conv scheme = '+conv+' has completed', 'isca')
