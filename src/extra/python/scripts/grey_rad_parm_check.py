@@ -31,10 +31,11 @@ t_surf_arr = calc_t_surf(albedo_arr, tau_s_arr)
 
 cs = plt.contourf(albedo_range, tau_s_range, t_surf_arr)
 cn = plt.contour(albedo_range, tau_s_range, t_surf_arr,levels=[210., 260.], colors=['k'])
-#plt.clabel(cn, inline=1, fontsize=10.)
+plt.clabel(cn, inline=1, fontsize=10.)
 fig = plt.gcf()
 
 cb = fig.colorbar(cs)
 
 t_surf_value = calc_t_surf(0.25, 0.2)
+t_surf_shiny = calc_t_surf(0.7, 0.2)
 

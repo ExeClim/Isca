@@ -25,7 +25,9 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 # create a diagnostics output file for daily snapshots
 diag = DiagTable()
 #diag.add_file('atmos_monthly', 30, 'days', time_units='days')
-diag.add_file('atmos_daily', 1, 'days', time_units='days')
+diag.add_file('atmos_daily',88440 , 'seconds', time_units='days')
+diag.add_file('atmos_e_daily',1 , 'days', time_units='days')
+diag.add_file('atmos_timestep', 240, 'seconds', time_units='days')
 
 # Define diag table entries
 diag.add_field('dynamics', 'ps', time_avg=True)
@@ -57,9 +59,9 @@ diag.add_field('two_stream', 'true_anomaly', time_avg=True)
 # define namelist values as python dictionary
 namelist = Namelist({
     'main_nml': {
-        'dt_atmos': 150,
-        'days': 30.,
-        'seconds': 0,
+        'dt_atmos': 220,
+        'days': 0.,
+        'seconds': 88440.,
         'calendar': 'no_calendar'
     },
 
@@ -104,7 +106,7 @@ namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':False,   
-        'albedo_value': 0.7,
+        'albedo_value': 0.3,
         'depth':10.,
     },
 
@@ -160,6 +162,8 @@ namelist = Namelist({
         'ir_tau_pole':0.2,
         'linear_tau': 1.0,
         'equinox_day':0.8032894472101727,
+        'use_time_average_coszen':True,
+        'solar_constant':589.0,
     },
 
 
@@ -191,25 +195,25 @@ namelist = Namelist({
     },
 
     'constants_nml': {
-        'orbital_period': 686.980*86400.,
+        'orbital_period': 59166360,
         'solar_const':589.0,
         'radius':3396.0e3,
-        'omega':7.088e-5,
         'rdgas':192.0,
         'kappa':0.22727,
+        'rotation_period':88308,
     },
 
 })
 
 if __name__=="__main__":
 
-    conv_schemes = ['dry', 'none']
+    conv_schemes = ['dry']
 
     scales = [ 1.]
 
     for conv in conv_schemes:
         for scale in scales:
-            exp = Experiment('grey_mars_mk16_fixed_year_length_shifted_thin_10m_conv_outputs_shiny_'+conv, codebase=cb)
+            exp = Experiment('grey_mars_mk22_no_solar_abs_alb_0_3_av_test_'+conv, codebase=cb)
             exp.clear_rundir()
 
             exp.diag_table = diag
@@ -220,9 +224,9 @@ if __name__=="__main__":
             exp.namelist['spectral_dynamics_nml']['reference_sea_level_press'] = scale * 610.0
             exp.namelist['idealized_moist_phys_nml']['convection_scheme'] = conv
 
-            with exp_progress(exp, description='o%.0f d{day}' % scale):
-                exp.run(1, use_restart=False, num_cores=NCORES)
-            for i in range(2, 121):
-                with exp_progress(exp, description='o%.0f d{day}' % scale):
-                    exp.run(i, num_cores=NCORES)
+#            with exp_progress(exp, description='o%.0f d{day}' % scale):
+            exp.run(1, use_restart=False, num_cores=NCORES)
+#            for i in range(2, 121):
+#                with exp_progress(exp, description='o%.0f d{day}' % scale):
+#                    exp.run(i, num_cores=NCORES)
             notify('top down with conv scheme = '+conv+' has completed', 'isca')
