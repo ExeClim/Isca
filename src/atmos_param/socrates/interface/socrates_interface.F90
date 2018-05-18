@@ -45,7 +45,7 @@ MODULE socrates_interface_mod
   INTEGER :: id_soc_spectral_olr
   INTEGER :: id_soc_olr, id_soc_olr_spectrum_lw, id_soc_surf_spectrum_sw
   INTEGER :: id_soc_heating_sw, id_soc_heating_lw, id_soc_heating_rate
-  INTEGER :: id_soc_flux_up_lw, id_soc_flux_down_sw, id_coszen
+  INTEGER :: id_soc_flux_up_lw, id_soc_flux_down_sw, id_coszen, id_interp_temp, id_norm_temp
   INTEGER :: n_soc_bands_lw, n_soc_bands_sw
   INTEGER :: n_soc_bands_lw_hires, n_soc_bands_sw_hires
   CHARACTER(len=10), PARAMETER :: soc_mod_name = 'socrates'
@@ -229,6 +229,17 @@ write(stdlog_unit, socrates_rad_nml)
          'socrates SW flux down', &
          'watts/m2', missing_value=missing_value               )
 
+    id_interp_temp = &
+         register_diag_field ( soc_mod_name, 'temp_half', (/axes(1),axes(2),axes(4)/), Time, &
+         'Interpolated half-level temperatures', &
+         'K', missing_value=missing_value               )
+
+    id_norm_temp = &
+         register_diag_field ( soc_mod_name, 'temp_norm', (/axes(1),axes(2),axes(3)/), Time, &
+         'Normal full-level temperatures', &
+         'K', missing_value=missing_value               )
+
+
     id_coszen = &
          register_diag_field ( soc_mod_name, 'soc_coszen', axes(1:2), Time, &
          'Cosine(zenith_angle)', &
@@ -314,7 +325,7 @@ write(stdlog_unit, socrates_rad_nml)
   ! -----------------------------------------------------------------------------
   subroutine socrates_interface(Time_diag, rlat, rlon, soc_mode,  &
        fms_temp, fms_spec_hum, fms_ozone, fms_co2, fms_t_surf, fms_p_full, fms_p_half, fms_albedo, n_profile, n_layer,        &
-       output_heating_rate, output_soc_flux_down_sw, output_soc_flux_up_lw, fms_net_surf_sw_down, fms_surf_lw_down, fms_coszen, output_soc_spectral_olr )
+       output_heating_rate, output_soc_flux_down_sw, output_soc_flux_up_lw, fms_net_surf_sw_down, fms_surf_lw_down, fms_coszen, output_soc_spectral_olr, t_half_level_out )
 
     use realtype_rd
     use read_control_mod
@@ -360,6 +371,7 @@ write(stdlog_unit, socrates_rad_nml)
     real(r_def), intent(out), optional :: output_soc_spectral_olr(:,:,:)
     real(r_def)              :: output_heating_rate_lw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
     real(r_def)              :: output_heating_rate_sw(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3))
+    real(r_def), intent(out), optional :: t_half_level_out(size(fms_temp,1),size(fms_temp,2),size(fms_temp,3)+1)
 
     ! Hi-res output
     INTEGER, PARAMETER :: out_unit=20
@@ -444,11 +456,19 @@ write(stdlog_unit, socrates_rad_nml)
           !Set input t_level by scaling t - NEEDS TO CHANGE!
           DO i = nlat, nlat
              DO k = 0,n_layer
-                input_t_level(:,k) = 0.5*(input_t(:,k+1)+input_t(:,k))
+                input_t_level(:,k) = input_t(:,k) + (input_t(:,k+1)-input_t(:,k)) * ((input_p_level(:,k)-input_p(:,k))/(input_p(:,k+1)-input_p(:,k)))
              END DO
-             input_t_level(:,n_layer) = input_t(:,n_layer) + input_t(:,n_layer) - input_t_level(:,n_layer-1)
-             input_t_level(:,0) = input_t(:,1) - (input_t_level(:,1) - input_t(:,1))
+!              input_t_level(:,n_layer) = input_t(:,n_layer) + input_t(:,n_layer) - input_t_level(:,n_layer-1)
+             input_t_level(:,n_layer) = input_t(:,n_layer) + (input_t(:,n_layer)-input_t(:,n_layer-1)) * ((input_p_level(:,n_layer)-input_p(:,n_layer))/(input_p(:,n_layer)-input_p(:,n_layer-1)))
+             
+!              input_t_level(:,0) = input_t(:,1) - (input_t_level(:,1) - input_t(:,1))
+             input_t_level(:,0) = input_t(:,1) + (input_t(:,2)-input_t(:,1)) * ((input_p_level(:,0)-input_p(:,1))/(input_p(:,2)-input_p(:,1)))
+             
           END DO
+
+         if (present(t_half_level_out)) then
+             t_half_level_out(:,:,:) = reshape(input_t_level,(/si,sj,sk+1 /))
+         endif
 
           !Set input dry mass, density, and heat capacity profiles
           DO i=n_layer, 1, -1
@@ -574,7 +594,6 @@ write(stdlog_unit, socrates_rad_nml)
              output_heating_rate_sw(:,:,:) = reshape(soc_heating_rate_lw(:,:),(/si,sj,sk /))
           end if
 
-
   end subroutine socrates_interface
 
 subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p_full_in, p_half_in, albedo_in, &
@@ -598,7 +617,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
     real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: output_net_surf_sw_down, output_net_surf_lw_down, output_surf_lw_down, t_surf_for_soc, rad_lat_soc, rad_lon_soc, albedo_soc
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, co2_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total, output_soc_flux_down_sw, output_soc_flux_up_lw
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc, t_half_out
 
     logical :: soc_lw_mode, used
     integer :: seconds, days, year_in_s
@@ -754,7 +773,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
        CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,  &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, albedo_soc, n_profile, n_layer,     &
-            output_heating_rate_lw, output_soc_flux_down_sw, output_soc_flux_up_lw,  output_net_surf_sw_down, output_surf_lw_down, coszen, outputted_soc_spectral_olr)
+            output_heating_rate_lw, output_soc_flux_down_sw, output_soc_flux_up_lw,  output_net_surf_sw_down, output_surf_lw_down, coszen, outputted_soc_spectral_olr, t_half_level_out = t_half_out)
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_lw*delta_t
        surf_lw_down(:,:) = REAL(output_surf_lw_down(:,:))
@@ -824,6 +843,13 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
       used = send_data ( id_coszen, coszen, Time_diag)
     endif
 
+    if(id_interp_temp > 0) then
+      used = send_data ( id_interp_temp, t_half_out, Time_diag)
+    endif
+
+    if(id_norm_temp > 0) then
+      used = send_data ( id_norm_temp, temp_in, Time_diag)
+    endif
 
 end subroutine run_socrates  
 
