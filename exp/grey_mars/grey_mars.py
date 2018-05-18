@@ -26,8 +26,8 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 diag = DiagTable()
 #diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 diag.add_file('atmos_daily',88440 , 'seconds', time_units='days')
-diag.add_file('atmos_e_daily',1 , 'days', time_units='days')
-diag.add_file('atmos_timestep', 240, 'seconds', time_units='days')
+#diag.add_file('atmos_e_daily',1 , 'days', time_units='days')
+#diag.add_file('atmos_timestep', 240, 'seconds', time_units='days')
 
 # Define diag table entries
 diag.add_field('dynamics', 'ps', time_avg=True)
@@ -59,9 +59,9 @@ diag.add_field('two_stream', 'true_anomaly', time_avg=True)
 # define namelist values as python dictionary
 namelist = Namelist({
     'main_nml': {
-        'dt_atmos': 220,
+        'dt_atmos': 55,
         'days': 0.,
-        'seconds': 88440.,
+        'seconds': 30.*88440.,
         'calendar': 'no_calendar'
     },
 
@@ -75,6 +75,7 @@ namelist = Namelist({
         'roughness_heat':3.21e-05,
         'roughness_moist':0.,                
         'two_stream_gray': True,     #Use grey radiation
+        'do_lscale_cond': False,
     },
 
     'vert_turb_driver_nml': {
@@ -131,7 +132,9 @@ namelist = Namelist({
     },
     
     'sat_vapor_pres_nml': {
-        'do_simple':True
+        'do_simple':True,
+        'tcmin':  -223, #Make sure low temperature limit of saturation vapour pressure is low enough that it doesn't cause an error (note that this giant planet has no moisture anyway, so doesn't directly affect calculation.        
+        'tcmax': 350.,
     },
     
     'damping_driver_nml': {
@@ -142,15 +145,20 @@ namelist = Namelist({
     },
 
     'spectral_dynamics_nml': {
-        'num_levels': 30,
+        'num_levels': 25,
         'exponent': 2.5,
         'scale_heights': 4,
         'surf_res': 0.1,
         'robert_coeff': 4e-2,
         'do_water_correction': False,
-        'vert_coord_option': 'even_sigma',
+        'vert_coord_option': 'input',
         'initial_sphum': 0.,
         'valid_range_T': [0, 700]
+    },
+
+    'vert_coordinate_nml': {
+        'bk': [  0.00000000e+00,   1.53008955e-04,   4.63790800e-04,   1.10977640e-03,   2.37044150e-03,   4.74479200e-03,         9.12245300e-03,   1.70677050e-02,   3.12516100e-02,         5.59939500e-02,   9.76165000e-02,   1.63754900e-01,         2.60315150e-01,   3.85974250e-01,   5.28084800e-01,         6.65956600e-01,   7.81088000e-01,   8.65400050e-01,         9.21109250e-01,   9.55343500e-01,   9.75416950e-01,         9.86856800e-01,   9.93269300e-01,   9.96830200e-01,         9.98799150e-01,   1.00000000e+00], 
+        'pk': [0.]*26,
     },
 
     'two_stream_gray_rad_nml': {
@@ -207,13 +215,13 @@ namelist = Namelist({
 
 if __name__=="__main__":
 
-    conv_schemes = ['dry']
+    conv_schemes = ['none']
 
     scales = [ 1.]
 
     for conv in conv_schemes:
         for scale in scales:
-            exp = Experiment('grey_mars_mk22_no_solar_abs_alb_0_3_av_test_'+conv, codebase=cb)
+            exp = Experiment('grey_mars_mk24_macda_levels_'+conv, codebase=cb)
             exp.clear_rundir()
 
             exp.diag_table = diag
@@ -226,7 +234,7 @@ if __name__=="__main__":
 
 #            with exp_progress(exp, description='o%.0f d{day}' % scale):
             exp.run(1, use_restart=False, num_cores=NCORES)
-#            for i in range(2, 121):
+            for i in range(2, 121):
 #                with exp_progress(exp, description='o%.0f d{day}' % scale):
-#                    exp.run(i, num_cores=NCORES)
+                exp.run(i, num_cores=NCORES)
             notify('top down with conv scheme = '+conv+' has completed', 'isca')
