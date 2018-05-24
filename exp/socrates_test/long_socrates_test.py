@@ -24,7 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk49_direct_rrtm_comparison_more_outputs_net_surf_sw', codebase=cb)
+exp = Experiment('soc_test_mk57_direct_rrtm_comparison_z_interp', codebase=cb)
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -83,6 +83,7 @@ exp.namelist = namelist = Namelist({
         'dt_rad':3600,
         'store_intermediate_rad':True,
         'chunk_size': 16,
+        'use_pressure_interp_for_half_levels':False,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
