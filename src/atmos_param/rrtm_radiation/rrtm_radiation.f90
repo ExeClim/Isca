@@ -182,7 +182,7 @@
 !
 !-------------------- diagnostics fields -------------------------------
 
-        integer :: id_tdt_rad, id_tdt_sw, id_tdt_lw, id_coszen, id_flux_sw, id_flux_lw, id_olr, id_toa_sw, id_albedo,id_ozone, id_co2, id_fracday
+        integer :: id_tdt_rad, id_tdt_sw, id_tdt_lw, id_coszen, id_flux_sw, id_flux_lw, id_olr, id_toa_sw, id_albedo,id_ozone, id_co2, id_fracday, id_half_level_temp, id_full_level_temp
         character(len=14), parameter :: mod_name_rad = 'rrtm_radiation' !s changed parameter name from mod_name to mod_name_rad as compiler objected, presumably because mod_name also defined in idealized_moist_physics.F90 after use rrtm_vars is included. 
         real :: missing_value = -999.
 
@@ -311,6 +311,14 @@
                register_diag_field ( mod_name_rad, 'fracday', axes(1:2), Time, &
                  'fracday', &
                  'none', missing_value=missing_value               )
+          id_half_level_temp = &
+               register_diag_field ( mod_name_rad, 't_half_rrtm',(/axes(1),axes(2),axes(4)/) , Time, &
+                 'Half level temperatures used by RRTM', &
+                 'K', missing_value=missing_value               )                 
+          id_full_level_temp = &
+               register_diag_field ( mod_name_rad, 't_full_rrtm',axes(1:3) , Time, &
+                 'Full level temperatures used by RRTM', &
+                 'K', missing_value=missing_value               )                     
 ! 
 !------------ make sure namelist choices are consistent -------
 ! this does not work at the moment, as dt_atmos from coupler_mod induces a circular dependency at compilation
@@ -966,23 +974,23 @@
           ! check if we want surface albedo as a function of precipitation
           !  call diagnostics accordingly
           if(do_precip_albedo)then
-             call write_diag_rrtm(Time,is,js,o3f,co2f,fracsun,albedo_loc)
+             call write_diag_rrtm(Time,is,js,o3f,co2f,fracsun,albedo_loc, t_full=t)
           else
-             call write_diag_rrtm(Time,is,js,o3f,co2f,fracsun)
+             call write_diag_rrtm(Time,is,js,o3f,co2f,fracsun, t_full=t)
           endif
         end subroutine run_rrtmg
 
 !*****************************************************************************************
 !*****************************************************************************************
-        subroutine write_diag_rrtm(Time,is,js,ozone,cotwo,fracday,albedo_loc)
+        subroutine write_diag_rrtm(Time,is,js,ozone,cotwo,fracday,albedo_loc, t_full)
 ! 
 ! write out diagnostics fields
 !
 ! Modules
-          use rrtm_vars,only:         sw_flux,lw_flux,zencos,tdt_rad,tdt_sw_rad,tdt_lw_rad,&
+          use rrtm_vars,only:         sw_flux,lw_flux,zencos,tdt_rad,tdt_sw_rad,tdt_lw_rad,t_half,&
                                       &id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,&
                                       &id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_fracday,&
-									  &id_olr,id_toa_sw,olr,toa_sw
+									  &id_olr,id_toa_sw,olr,toa_sw, id_half_level_temp, id_full_level_temp
           use diag_manager_mod, only: register_diag_field, send_data
           use time_manager_mod,only:  time_type
 
@@ -993,6 +1001,7 @@
           real(kind=rb),dimension(:,:,:),intent(in),optional :: ozone
           real(kind=rb),dimension(:,:,:),intent(in),optional :: cotwo
           real(kind=rb),dimension(:,:  ),intent(in),optional :: albedo_loc,fracday
+          real(kind=rb),dimension(:,:,:),intent(in),optional :: t_full          
 ! Local variables
           logical :: used
 
@@ -1052,6 +1061,14 @@
           if ( present(fracday) .and. id_fracday > 0 ) then
              used = send_data ( id_fracday, fracday, Time)
           endif
+!------- Half-level temperatures                   ------------
+          if ( id_half_level_temp > 0 ) then
+             used = send_data ( id_half_level_temp, t_half , Time)
+          endif          
+!------- Full-level temperatures                   ------------
+          if (present(t_full) .and. id_full_level_temp > 0 ) then
+             used = send_data ( id_full_level_temp, t_full , Time)
+          endif          
 
         end subroutine write_diag_rrtm
 !*****************************************************************************************
@@ -1072,3 +1089,4 @@
 
 
         
+
