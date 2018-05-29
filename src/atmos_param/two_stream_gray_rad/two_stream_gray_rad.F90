@@ -155,7 +155,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
            id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun, &
            id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2, id_mars_solar_long, id_rrsun, id_true_anom, &
-           id_time_since_ae
+           id_time_since_ae, id_dec, id_ang
 
 character(len=10), parameter :: mod_name = 'two_stream'
 
@@ -391,6 +391,12 @@ end select
     id_time_since_ae = register_diag_field ( mod_name, 'time_since_ae', &
                    Time, 'time since ae', 'none')   
 
+    id_dec = register_diag_field ( mod_name, 'dec', &
+                   Time, 'dec', 'none')
+
+    id_ang = register_diag_field ( mod_name, 'ang', &
+                   Time, 'ang', 'none')
+
 return
 end subroutine two_stream_gray_rad_init
 
@@ -411,7 +417,7 @@ real, intent(in), dimension(:,:,:)  :: t, q,  p_half
 integer :: i, j, k, n, dyofyr
 
 integer :: seconds, year_in_s, days
-real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday, r_total_seconds, r_days, r_dt_rad_avg, dt_rad_radians, true_anomaly
+real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday, r_total_seconds, r_days, r_dt_rad_avg, dt_rad_radians, true_anomaly, dec, ang_out
 logical :: used
 
 
@@ -449,9 +455,9 @@ if (do_seasonal) then
      r_dt_rad_avg=real(dt_rad_avg)
      dt_rad_radians = (r_dt_rad_avg/day_in_s)*2.0*pi
      
-     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians, true_anom=true_anomaly)
+     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians, true_anom=true_anomaly, dec=dec, ang=ang_out)
   else
-     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, true_anom=true_anomaly)
+     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, true_anom=true_anomaly, dec=dec, ang=ang_out)
   end if
 
      insolation = solar_constant * coszen * rrsun
@@ -460,6 +466,8 @@ if (do_seasonal) then
 
 
     if (id_time_since_ae > 0) used = send_data ( id_time_since_ae, time_since_ae, Time_diag)
+    if (id_dec > 0) used = send_data ( id_dec, dec, Time_diag)
+    if (id_ang > 0) used = send_data ( id_ang, ang_out, Time_diag)
 
 
     if (id_true_anom > 0) used = send_data ( id_true_anom, true_anomaly, Time_diag)

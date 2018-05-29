@@ -54,12 +54,13 @@ diag.add_field('two_stream', 'rrsun', time_avg=True)
 diag.add_field('two_stream', 'swdn_toa', time_avg=True)
 diag.add_field('two_stream', 'time_since_ae', time_avg=True)
 diag.add_field('two_stream', 'true_anomaly', time_avg=True)
-
+diag.add_field('two_stream', 'dec', time_avg=True)
+diag.add_field('two_stream', 'ang', time_avg=True)
 
 # define namelist values as python dictionary
 namelist = Namelist({
     'main_nml': {
-        'dt_atmos': 55,
+        'dt_atmos': 220,
         'days': 0.,
         'seconds': 30.*88440.,
         'calendar': 'no_calendar'
@@ -95,8 +96,7 @@ namelist = Namelist({
         'use_virtual_temp': False,
         'do_simple': True,
         'old_dtaudv': True, 
-        'rh_target': 50.,
-        'delta_t_relax': 7200.,
+        'use_actual_surface_temperatures':False,
     },
 
     'atmosphere_nml': {
@@ -108,7 +108,6 @@ namelist = Namelist({
         'prescribe_initial_dist':True,
         'evaporation':False,   
         'albedo_value': 0.3,
-        'depth':10.,
     },
 
     'qe_moist_convection_nml': {
@@ -169,7 +168,7 @@ namelist = Namelist({
         'ir_tau_eq':0.2,        
         'ir_tau_pole':0.2,
         'linear_tau': 1.0,
-        'equinox_day':0.8032894472101727,
+        'equinox_day':0.0,
         'use_time_average_coszen':True,
         'solar_constant':589.0,
     },
@@ -197,8 +196,7 @@ namelist = Namelist({
     'astronomy_nml': {
         'ecc':0.0935,
         'obliq':25.19,
-        'per':109.18420099566217, #to be equivalent to peri_time = 0. in hs_forcing version of mars
-        'use_mean_anom_in_rrsun_calc':False,
+        'use_mean_anom_in_rrsun_calc':True,
         'use_old_r_inv_squared':False
     },
 
@@ -217,24 +215,31 @@ if __name__=="__main__":
 
     conv_schemes = ['none']
 
-    scales = [ 1.]
+    depths = [10.,2., 0.5, 0.1]
+
+    pers = [70.85]
+
+    scale = 1.
 
     for conv in conv_schemes:
-        for scale in scales:
-            exp = Experiment('grey_mars_mk24_macda_levels_'+conv, codebase=cb)
-            exp.clear_rundir()
+        for depth_val in depths:
+            for per_value in pers:
+                exp = Experiment('grey_mars_mk34_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val), codebase=cb)
+                exp.clear_rundir()
 
-            exp.diag_table = diag
-            exp.namelist = namelist.copy()
-            exp.namelist['constants_nml']['grav']     = scale * 3.71
-            exp.namelist['constants_nml']['pstd']     = scale * 6100.0
-            exp.namelist['constants_nml']['pstd_mks'] = scale * 610.0
-            exp.namelist['spectral_dynamics_nml']['reference_sea_level_press'] = scale * 610.0
-            exp.namelist['idealized_moist_phys_nml']['convection_scheme'] = conv
+                exp.diag_table = diag
+                exp.namelist = namelist.copy()
+                exp.namelist['constants_nml']['grav']     = scale * 3.71
+                exp.namelist['constants_nml']['pstd']     = scale * 6100.0
+                exp.namelist['constants_nml']['pstd_mks'] = scale * 610.0
+                exp.namelist['spectral_dynamics_nml']['reference_sea_level_press'] = scale * 610.0
+                exp.namelist['idealized_moist_phys_nml']['convection_scheme'] = conv
+                exp.namelist['mixed_layer_nml']['depth'] = depth_val
+                exp.namelist['astronomy_nml']['per'] = per_value
 
 #            with exp_progress(exp, description='o%.0f d{day}' % scale):
-            exp.run(1, use_restart=False, num_cores=NCORES)
-            for i in range(2, 121):
+                exp.run(1, use_restart=False, num_cores=NCORES)
+                for i in range(2, 241):
 #                with exp_progress(exp, description='o%.0f d{day}' % scale):
-                exp.run(i, num_cores=NCORES)
-            notify('top down with conv scheme = '+conv+' has completed', 'isca')
+                    exp.run(i, num_cores=NCORES)
+                notify('top down with conv scheme = '+conv+' has completed', 'isca')

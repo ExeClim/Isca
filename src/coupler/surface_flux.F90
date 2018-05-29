@@ -264,6 +264,8 @@ logical :: do_simple             = .false.
 real    :: land_humidity_prefactor  =  1.0    !s Default is that land makes no difference to evaporative fluxes
 real    :: land_evap_prefactor  =  1.0    !s Default is that land makes no difference to evaporative fluxes
 
+logical :: use_actual_surface_temperatures = .true. !Always true, apart from when running a dry model, where you can set this to false so that escomp is called with temperatures of 200k always, preventing bad temperature errors.
+
 real    :: flux_heat_gp  =  5.7    !s Default value for Jupiter of 5.7 Wm^-2
 real    :: diabatic_acce =  1.0    !s Diabatic acceleration??
 
@@ -282,7 +284,7 @@ namelist /surface_flux_nml/ no_neg_q,             &
                             land_humidity_prefactor, & !s Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
                             land_evap_prefactor, & !s Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
                             flux_heat_gp,         &    !s prescribed lower boundary heat flux on a giant planet
-			    diabatic_acce
+			                diabatic_acce, use_actual_surface_temperatures
 
 
 
@@ -386,12 +388,13 @@ subroutine surface_flux_1d (                                           &
 
   integer :: i, nbad
 
-
   if (do_init) call surface_flux_init
 
   !---- use local value of surf temp ----
 
   t_surf0 = 200.   !  avoids out-of-bounds in es lookup
+
+if (use_actual_surface_temperatures) then
   where (avail)
      where (land)
         t_surf0 = t_ca
@@ -399,11 +402,23 @@ subroutine surface_flux_1d (                                           &
         t_surf0 = t_surf
      endwhere
   endwhere
+endif
 
   t_surf1 = t_surf0 + del_temp
 
   call escomp ( t_surf0, e_sat  )  ! saturation vapor pressure
   call escomp ( t_surf1, e_sat1 )  ! perturbed  vapor pressure
+
+if (.not. use_actual_surface_temperatures) then
+  where (avail)
+     where (land)
+        t_surf0 = t_ca
+     elsewhere
+        t_surf0 = t_surf
+     endwhere
+  endwhere
+endif
+
 
   if(use_mixing_ratio) then
     ! surface mixing ratio at saturation
@@ -814,6 +829,7 @@ subroutine surface_flux_init
   ! read namelist
 #ifdef INTERNAL_FILE_NML
       read (input_nml_file, surface_flux_nml, iostat=io)
+     ierr = check_nml_error(io, 'surface_flux_nml')      
 #else
   if ( file_exist('input.nml')) then
      unit = open_namelist_file ()

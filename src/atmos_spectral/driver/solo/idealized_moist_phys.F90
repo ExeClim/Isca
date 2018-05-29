@@ -1016,7 +1016,6 @@ endif
 
 
 
-
 !----------------------------------------------------------------------
 !    Copied from MiMA physics_driver.f90
 !    call damping_driver to calculate the various model dampings that
@@ -1034,9 +1033,6 @@ if(do_damping) then
                              dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:),             &
                              z_pbl) !s have taken the names of arrays etc from vert_turb_driver below. Watch ntp from 2006 call to this routine?
 endif
-
-
-
 
 if(turb) then
 
@@ -1106,6 +1102,7 @@ if(turb) then
 !
 ! update surface temperature
 !
+
    if(mixed_layer_bc) then	
    call mixed_layer(                                                       &
                               Time, Time+Time_step,                        &
