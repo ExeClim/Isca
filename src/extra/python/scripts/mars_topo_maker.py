@@ -18,6 +18,7 @@ lon_array, lat_array = np.meshgrid(longitudes_out, latitudes_out)
 
 output_array = basemap.interp(mola_original.alt.values[::-1,:], mola_original.longitude.values, mola_original.latitude.values[::-1], lon_array, lat_array, order=1)
 
+land_array = np.zeros_like(output_array)
 
 nlat = latitudes_out.shape[0]
 nlon = longitudes_out.shape[0]
@@ -30,8 +31,10 @@ lon = topo_file.createDimension('lon', nlon)
 latitudes = topo_file.createVariable('lat','f4',('lat',))
 longitudes = topo_file.createVariable('lon','f4',('lon',))
 topo_array_netcdf = topo_file.createVariable('zsurf','f4',('lat','lon',))
+land_array_netcdf = topo_file.createVariable('land_mask','f4',('lat','lon',))
 latitudes[:] = latitudes_out
 longitudes[:] = longitudes_out
 topo_array_netcdf[:] = output_array
+land_array_netcdf[:] = land_array
 topo_file.close()
 
