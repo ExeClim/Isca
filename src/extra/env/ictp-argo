@@ -1,0 +1,11 @@
+echo loadmodules for ictp-argo
+
+module purge
+module load netcdf/4.4.1/intel/2017
+module load openmpi/1.10.2/intel/2017
+
+export NC_FORT_INC=`nc-config --fflags`
+export NC_C_INC=`nc-config --cflags`
+
+export F90=mpif90
+export CC=mpicc
