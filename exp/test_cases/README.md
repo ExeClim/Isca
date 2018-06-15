@@ -30,7 +30,7 @@
 # List of Isca features and the location of the appropriate python scripts
 
 Make land-mask:
-`Isca/src/extra/python/gfdl/land_generator_fn.py`
+`Isca/src/extra/python/isca/land_generator_fn.py`
 
 Make SST climatology:
 `Isca/src/extra/python/scripts/create_amip_sst_timeseries.py`
