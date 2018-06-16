@@ -27,18 +27,18 @@ these features are publicly available on a Git-based repository.
 
 # Getting Started
 
-A python module `isca` is provided alongside the Fortran source code that should help to do a lot of the heavy-lifting of compiling, configuring and running the model for you.  Isca can be compiled, run and configured without using python, but using the python wrapper is recommended.
+A python module `isca` (note lowercase) is provided alongside the Fortran source code that should help to do a lot of the heavy-lifting of compiling, configuring and running the model for you.  Isca can be compiled, run and configured without using python, but using the python wrapper is recommended.
 
-## Installing the `isca` module
+## Installing the `isca` python module
 
-To begin you'll need a copy of the source code. Either fork the Isca repository to your own github username, or clone directly from the execlim group.
+To begin you'll need a copy of the source code. Either fork the Isca repository to your own github username, or clone directly from the ExeClim group.
 
 ```{bash}
-$ git clone https://github.com/execlim/isca
-$ cd isca
+$ git clone https://github.com/ExeClim/Isca
+$ cd Isca
 ```
 
-The python module is found in the `src` directory and can be installed using `pip`.  It's recommended (but not essential) that you use some sort of python environment manager to do this, such as using the Anaconda distribution and creating an environment, or `virtualenv`.  This getting started will use Anaconda.
+The python module is found in the `src` directory and can be installed using `pip`.  It's recommended (but not essential) that you use some sort of python environment manager to do this, such as using the Anaconda distribution and creating an environment (in the code below called "`isca_env`"), or using `virtualenv` instead.  This getting started will use Anaconda.
 
 ```{bash}
 $ conda create -n isca_env python ipython
@@ -50,7 +50,7 @@ $ source activate isca_env
 Successfully installed MarkupSafe-1.0 f90nml jinja2-2.9.6 numpy-1.13.3 pandas-0.21.0 python-dateutil-2.6.1 pytz-2017.3 sh-1.12.14 six-1.11.0 xarray-0.9.6
 ```
 
-Now install the `isca` module in "development mode".  This will allow you, if you wish, to edit the `src/extra/python/isca` files and have those changes be used when you next run an Isca script.
+Now install the `isca` python module in "development mode".  This will allow you, if you wish, to edit the `src/extra/python/isca` files and have those changes be used when you next run an Isca script.
 
 ```{bash}
 (isca_env)$ pip install -e .
@@ -75,7 +75,7 @@ For example, on the EMPS workstations at Exeter, I have the following in my `~/.
 
 ```{bash}
 # directory of the Isca source code
-export GFDL_BASE=/scratch/jamesp/isca 
+export GFDL_BASE=/scratch/jamesp/Isca 
 # "environment" configuration for emps-gv4
 export GFDL_ENV=emps-gv
 # temporary working directory used in running the model
@@ -109,7 +109,7 @@ Once you've got an environment file that works for your machine saved in `src/ex
 
 # License
 
-Isca is distributed under a GNU GPLv3 license. See `Isca/LICENSE` file for details. 
+Isca is distributed under a GNU GPLv3 license. See the `LICENSE` file for details. 
 
 RRTM/RRTMG: Copyright © 2002-2010, Atmospheric and Environmental Research, Inc. (AER, Inc.). 
 This software may be used, copied, or redistributed as long as it is not sold and this 

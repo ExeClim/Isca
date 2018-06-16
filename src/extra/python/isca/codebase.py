@@ -114,7 +114,7 @@ class CodeBase(Logger):
 
     @property
     def git_commit(self):
-        return self.git.log('-1', '--format="%H"').stdout
+        return self.git.log('-1', '--format="%H"').stdout.decode('utf8')
 
     # @property
     # def git_diff(self):
@@ -130,8 +130,8 @@ class CodeBase(Logger):
     def write_source_control_status(self, outfile):
         """Write the current state of the source code to a file."""
 
-        gfdl_git = git_run_in_directory(GFDL_BASE, GFDL_BASE)                              
-        
+        gfdl_git = git_run_in_directory(GFDL_BASE, GFDL_BASE)
+
         with open(outfile, 'w') as file:
             # write out the git commit id of the compiled source code
             file.write("*---commit hash used for fortran code in workdir---*:\n")
@@ -139,11 +139,11 @@ class CodeBase(Logger):
 
             # write out the git commit id of GFDL_BASE
             file.write("\n\n*---commit hash used for code in GFDL_BASE, including this python module---*:\n")
-            file.write(gfdl_git.log('-1', '--format="%H"').stdout)
+            file.write(gfdl_git.log('-1', '--format="%H"').stdout.decode('utf8'))
 
             # if there are any uncommited changes in the working directory,
             # add those to the file too
-            source_status = self.git.status("-b", "--porcelain").stdout
+            source_status = self.git.status("-b", "--porcelain").stdout.decode('utf8')
             # filter the source status for changes in specific files
             filetypes = ('.f90', '.inc', '.c')
             source_status = [line for line in source_status.split('\n')
@@ -155,7 +155,7 @@ class CodeBase(Logger):
                 file.write("*---git status output (only f90 and inc files)---*:\n")
                 file.write('\n'.join(source_status))
                 file.write('\n\n*---git diff output---*\n')
-                source_diff = self.git.diff('--no-color').stdout
+                source_diff = self.git.diff('--no-color').stdout.decode('utf8')
                 file.write(source_diff)
 
     def read_path_names(self, path_names_file):
@@ -234,8 +234,9 @@ class CodeBase(Logger):
         compile_flags_str = ' '.join(compile_flags)
 
         # get path_names from the directory
-        path_names = self.read_path_names(P(self.srcdir, 'extra', 'model', self.name, 'path_names'))
-        self.write_path_names(path_names)
+        if not self.path_names:
+            self.path_names = self.read_path_names(P(self.srcdir, 'extra', 'model', self.name, 'path_names'))
+        self.write_path_names(self.path_names)
         path_names_str = P(self.builddir, 'path_names')
 
         vars = {
