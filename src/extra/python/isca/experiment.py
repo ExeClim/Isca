@@ -53,6 +53,7 @@ class Experiment(Logger, EventEmitter):
             'lat_max': 32, 
             'num_fourier': 21, 
             'num_spherical': 22, 
+        },
     }
 
     runfmt = 'run%04d'
