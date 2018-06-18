@@ -1197,7 +1197,7 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !---------------------------------------------------------------------
 !    define local time. force it to be between -pi and pi.
 !--------------------------------------------------------------------
-      t = gmt + lon - PI
+      t = gmt + sign(lon, omega) - PI
       where(t >= PI) t = t - twopi
       where(t < -PI) t = t + twopi
 
