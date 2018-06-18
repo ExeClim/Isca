@@ -7,11 +7,11 @@ import pdb
 import subprocess
 
 start_time=time.time()
-base_dir='/scratch/sit204/Data_2013/'
-exp_name_list = ['no_ice_flux_lhe_exps_q_flux_hadgem_anoms_3']
+base_dir='/scratch/sit204/data_isca/'
+exp_name_list = ['project_3_omega_normal']
 avg_or_daily_list=['monthly']
-start_file=287
-end_file=288
+start_file=13
+end_file=24
 nfiles=(end_file-start_file)+1
 
 do_extra_averaging=False #If true, then 6hourly data is averaged into daily data using cdo
@@ -64,15 +64,8 @@ for exp_name in exp_name_list:
         for avg_or_daily in avg_or_daily_list:
             print(n+start_file)
 
-            number_prefix=''
-
-            if n+start_file < 100:
-                number_prefix='0'
-            if n+start_file < 10:
-                number_prefix='00'
-
-            nc_file_in = base_dir+'/'+exp_name+'/run'+number_prefix+str(n+start_file)+'/atmos_'+avg_or_daily+'.nc'
-            nc_file_out = out_dir+'/'+exp_name+'/run'+number_prefix+str(n+start_file)+'/atmos_'+avg_or_daily+file_suffix+'.nc'
+            nc_file_in = base_dir+'/'+exp_name+'/run%04d'%(n+start_file)+'/atmos_'+avg_or_daily+'.nc'
+            nc_file_out = out_dir+'/'+exp_name+'/run%04d'%(n+start_file)+'/atmos_'+avg_or_daily+file_suffix+'.nc'
 
             if not os.path.isfile(nc_file_out):
                 plevel_call(nc_file_in,nc_file_out, var_names = var_names[avg_or_daily], p_levels = plevs[avg_or_daily], mask_below_surface_option=mask_below_surface_set)
