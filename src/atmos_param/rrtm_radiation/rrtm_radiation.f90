@@ -124,6 +124,7 @@
         logical            :: do_read_ozone=.false.           ! read ozone from an external file?
                                                               !  this is the only way to get ozone into the model
         character(len=256) :: ozone_file='ozone'              !  file name of ozone file to read
+        character(len=256) :: ozone_field_name='unset'              !  field name in ozone file to read        
         logical            :: do_read_h2o=.false.             ! read water vapor from an external file?
         character(len=256) :: h2o_file='h2o'                  !  file name of h2o file to read
         logical            :: do_read_co2=.false.             ! read co2 concentration from an external file?
@@ -189,7 +190,7 @@
 !---------------------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------------------
 
-        namelist/rrtm_radiation_nml/ include_secondary_gases, do_read_ozone, ozone_file, &
+        namelist/rrtm_radiation_nml/ include_secondary_gases, do_read_ozone, ozone_file, ozone_field_name, &
              &do_read_h2o, h2o_file, ch4_val, n2o_val, o2_val, cfc11_val, cfc12_val, cfc22_val, ccl4_val, &
              &do_read_radiation, radiation_file, rad_missing_value, &
              &do_read_sw_flux, sw_flux_file, do_read_lw_flux, lw_flux_file,&
@@ -427,6 +428,11 @@
 
           if(do_read_ozone)then
              call interpolator_init (o3_interp, trim(ozone_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+             
+             if (ozone_field_name.eq.'unset') then
+                 ozone_field_name = ozone_file
+             endif
+             
           endif
 
           if(do_read_h2o)then
@@ -646,6 +652,7 @@
 	         frac_of_year = r_total_seconds / year_in_s
          endif
 	     gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
+	     
 	     time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
 
           if(do_rad_time_avg) then
@@ -692,7 +699,7 @@
 
           !get ozone 
           if(do_read_ozone)then
-             call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_file))
+             call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_field_name))
           endif
 
           !get co2
