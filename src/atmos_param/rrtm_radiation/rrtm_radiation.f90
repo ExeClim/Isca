@@ -659,9 +659,11 @@
 	     r_dt_rad_avg=real(dt_rad_avg)
 	     dt_rad_radians = (r_dt_rad_avg/day_in_s)*2.0*pi
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun,dt_rad_radians)
+             solr_cnst = solr_cnst*rrsun
           else
 	     ! Seasonal Cycle: Use astronomical parameters to calculate insolation
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
+             solr_cnst = solr_cnst*rrsun
           end if
 
 ! input files: only deal with case where we don't need to call radiation at all
