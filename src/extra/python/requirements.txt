@@ -5,3 +5,7 @@ numpy
 pandas
 xarray
 tqdm
+dask
+matplotlib
+netcdf4
+toolz
