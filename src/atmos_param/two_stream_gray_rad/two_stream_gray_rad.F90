@@ -559,7 +559,7 @@ case(B_BYRNE)
   !      J. Climate 26, 4000–4106 (2013).
 
   do k = 1, n
-    lw_del_tau    = (bog_a*bog_mu + 0.17 * log(carbon_conc/360.)  + bog_b*q(:,:,k)) * (( p_half(:,:,k+1)-p_half(:,:,k) ) / pstd_mks_earth)
+    lw_del_tau    = (bog_a*bog_mu + 0.17 * log(carbon_conc/360.)  + bog_b*q(:,:,k)) * (( p_half(:,:,k+1)-p_half(:,:,k) ) / pstd_mks)
     lw_dtrans(:,:,k) = exp( - lw_del_tau )
 
   end do
