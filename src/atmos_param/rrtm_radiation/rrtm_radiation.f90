@@ -1058,12 +1058,14 @@
 !*****************************************************************************************
 
         subroutine rrtm_radiation_end
-          use rrtm_vars, only: do_read_ozone,o3_interp, do_read_co2, co2_interp
+          use rrtm_vars, only: do_read_ozone,o3_interp, do_read_co2, co2_interp, &
+               do_read_h2o, h2o_interp
           use interpolator_mod, only: interpolator_end
           implicit none
 
           if(do_read_ozone)call interpolator_end(o3_interp)
           if(do_read_co2)call interpolator_end(co2_interp)
+          if(do_read_h2o)call interpolator_end(h2o_interp) ! NTL change here, interp_end for h2o
 
         end subroutine rrtm_radiation_end
 
