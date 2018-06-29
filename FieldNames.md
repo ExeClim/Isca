@@ -15,6 +15,7 @@
 |mixed_layer | albedo | surface albedo | (lat, lon) | static |
 |mixed_layer | ml_heat_cap | mixed layer heat capacity | (lat, lon) | 
 |mixed_layer |	flux_lhe	| latent heat flux up at surface	| (lat,lon) |
+|mixed layer |  flux_t  | sensible heat flux up at surface  | (lat, lon) |
 |mixed_layer |	flux_sw	| Net shortwave radiative flux (positive up)	| (phalf,lat,lon) |
 |mixed_layer |	flux_lw	| Net longwave radiative flux (positive up)	 | (phalf,lat,lon) |
 |atmosphere |	rh	  | relative humidity |	(pfull, lat, lon)	|
