@@ -28,7 +28,8 @@ module two_stream_gray_rad_mod
                                     mpp_pe, close_file, error_mesg, &
                                     NOTE, FATAL,  uppercase
 
-   use constants_mod,         only: stefan, cp_air, grav, pstd_mks, pstd_mks_earth, seconds_per_sol, orbital_period
+   use constants_mod,         only: stefan, cp_air, grav, pstd_mks, pstd_mks_earth, seconds_per_sol, orbital_period, &
+                                    rdgas, rvgas
 
    use    diag_manager_mod,   only: register_diag_field, send_data
 
@@ -88,7 +89,7 @@ real    :: dt_rad_avg     = -1
 character(len=32) :: rad_scheme = 'frierson'
 
 integer, parameter :: B_GEEN = 1,      B_FRIERSON = 2, &
-                      B_BYRNE = 3, B_SCHNEIDER_LIU=4
+                      B_BYRNE = 3, B_SCHNEIDER_LIU=4, B_NAKAJIMA=5
 integer, private :: sw_scheme = B_FRIERSON
 integer, private :: lw_scheme = B_FRIERSON
 
@@ -116,6 +117,14 @@ real,save :: gp_albedo, Ga_asym, g_asym
 real :: bog_a = 0.8678
 real :: bog_b = 1997.9
 real :: bog_mu = 1.0
+
+! parameters for Nakajima 1992 radiation scheme
+real :: naka_kv = 0.01    !vapour absorption coefficient 
+real :: naka_kn = 0.0001  !non-condensable absorption coefficient
+
+! constants for Nakajima 1992 radiation scheme
+real :: naka_mv = 18e-3 ! vapour molecular weight
+real :: naka_mn = 18e-3 ! non-condensable molecular weight 
 
 real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 !s albedo now defined in mixed_layer_init
 real, allocatable, dimension(:,:)   :: b_surf, b_surf_gp
@@ -153,7 +162,8 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
            use_time_average_coszen, dt_rad_avg,&
            diabatic_acce, & !Schneider Liu values
-           do_read_h2o, h2o_file
+           do_read_h2o, h2o_file, & ! for reading h2o
+           naka_kn, naka_kv ! nakajima rad absorption coefficients 
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -233,6 +243,12 @@ else if(uppercase(trim(rad_scheme)) == 'BYRNE') then
 else if(uppercase(trim(rad_scheme)) == 'SCHNEIDER') then
   lw_scheme = B_SCHNEIDER_LIU
   call error_mesg('two_stream_gray_rad','Using Schneider & Liu (2009) radiation scheme for GIANT PLANETS.', NOTE)
+<<<<<<< HEAD
+=======
+else if (uppercase(trim(rad_scheme)) == 'NAKAJIMA') then
+  lw_scheme = B_NAKAJIMA
+  call error_mesg('two_stream_gray_rad','Using Nakajima (1992) radiation scheme.', NOTE)
+>>>>>>> Added Nakajima 1992 radiation scheme
 else
   call error_mesg('two_stream_gray_rad','"'//trim(rad_scheme)//'"'//' is not a valid radiation scheme.', FATAL)
 endif
@@ -296,7 +312,7 @@ case(B_GEEN)
   allocate (del_sol_tau      (ie-is+1, je-js+1))
   allocate (sw_tau_k         (ie-is+1, je-js+1))
 
-case(B_BYRNE)
+case(B_BYRNE, B_NAKAJIMA)
   allocate (lw_del_tau       (ie-is+1, je-js+1))
 
 case(B_SCHNEIDER_LIU)
@@ -499,7 +515,7 @@ case(B_GEEN)
      sw_down(:,:,k+1)   = sw_down(:,:,k) * sw_dtrans(:,:,k)
   end do
 
-case(B_FRIERSON, B_BYRNE)
+case(B_FRIERSON, B_BYRNE, B_NAKAJIMA)
   ! Default: Frierson handling of SW radiation
   ! SW optical thickness
   sw_tau_0    = (1.0 - sw_diff*sin(lat)**2)*atm_abs
@@ -592,7 +608,26 @@ case(B_BYRNE)
   do k = 1, n
      lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
   end do
+   
+case(B_NAKAJIMA)
+  ! ref: Nakajima, S., Hayashi, Y.-Y., Abe, Y.
+  !      A Study on the "Runaway Greenhouse Effect" with a One-Dimensional
+  !      Radiative-Convective Equilibrium Model
+  !      J. Atmos. Sci. 49, 2256-2266 (1992).
 
+  do k = 1, n
+    lw_del_tau    = 3.0/2.0 * (naka_kv*q(:,:,k)*naka_mv + naka_kn*(rdgas/rvgas - q(:,:,k))*naka_mn) &
+                    / (q(:,:,k)*naka_mv + (rdgas/rvgas - q(:,:,k))*naka_mn) * (p_half(:,:,k+1)-p_half(:,:,k)) / grav
+    lw_dtrans(:,:,k) = exp( - lw_del_tau )
+
+  end do
+
+  ! compute downward longwave flux by integrating downward
+  lw_down(:,:,1)      = 0.
+  do k = 1, n
+     lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
+  end do
+  
 case(B_FRIERSON)
   ! longwave optical thickness function of latitude and pressure
   lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
@@ -708,7 +743,7 @@ case(B_GEEN)
   end do
   lw_up = lw_up + lw_up_win
 
-case(B_FRIERSON, B_BYRNE)
+case(B_FRIERSON, B_BYRNE, B_NAKAJIMA)
   ! compute upward longwave flux by integrating upward
   lw_up(:,:,n+1)    = b_surf
   do k = n, 1, -1
@@ -814,7 +849,7 @@ endif
 if (sw_scheme.eq.B_GEEN) then
   deallocate (sw_dtrans, sw_wv, del_sol_tau, sw_tau_k)
 endif
-if (lw_scheme.eq.B_BYRNE) then
+if ((lw_scheme.eq.B_BYRNE).or.(lw_scheme.eq.B_NAKAJIMA)) then
   deallocate (lw_del_tau)
 endif
 if(lw_scheme.eq.B_SCHNEIDER_LIU) then
