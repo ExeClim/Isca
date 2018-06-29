@@ -216,7 +216,9 @@ if(do_read_co2)then
 endif
 
 if(do_read_h2o)then
-  call interpolator_init(h2o_interp, trim(h2o_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/)) 
+  call interpolator_init(h2o_interp, trim(h2o_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+endif
+
 
 if(uppercase(trim(rad_scheme)) == 'GEEN') then
   lw_scheme = B_GEEN
