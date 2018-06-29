@@ -119,12 +119,12 @@ real :: bog_b = 1997.9
 real :: bog_mu = 1.0
 
 ! parameters for Nakajima 1992 radiation scheme
-real :: naka_kv = 0.01    !vapour absorption coefficient 
-real :: naka_kn = 0.0001  !non-condensable absorption coefficient
+real :: naka_kv = 0.01    !vapour absorption coefficient, units: m2 kg-1 
+real :: naka_kn = 0.0001  !non-condensable absorption coefficient, units: m2 kg-1
 
 ! constants for Nakajima 1992 radiation scheme
-real :: naka_mv = 18e-3 ! vapour molecular weight
-real :: naka_mn = 18e-3 ! non-condensable molecular weight 
+real :: naka_mv = 18e-3 ! vapour molecular weight, units: kg mol-1
+real :: naka_mn = 18e-3 ! non-condensable molecular weight, units: kg mol-1 
 
 real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 !s albedo now defined in mixed_layer_init
 real, allocatable, dimension(:,:)   :: b_surf, b_surf_gp
