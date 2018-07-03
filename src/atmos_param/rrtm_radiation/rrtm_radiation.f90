@@ -124,6 +124,7 @@
         logical            :: do_read_ozone=.false.           ! read ozone from an external file?
                                                               !  this is the only way to get ozone into the model
         character(len=256) :: ozone_file='ozone'              !  file name of ozone file to read
+        logical            :: input_o3_file_is_mmr=.true.     ! Does the ozone input file contain values as a mass mixing ratio (set to true) or a volume mixing ratio (set to false)?
         logical            :: do_read_h2o=.false.             ! read water vapor from an external file?
         character(len=256) :: h2o_file='h2o'                  !  file name of h2o file to read
         logical            :: do_read_co2=.false.             ! read co2 concentration from an external file?
@@ -189,7 +190,7 @@
 !---------------------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------------------
 
-        namelist/rrtm_radiation_nml/ include_secondary_gases, do_read_ozone, ozone_file, &
+        namelist/rrtm_radiation_nml/ include_secondary_gases, do_read_ozone, ozone_file, input_o3_file_is_mmr, &
              &do_read_h2o, h2o_file, ch4_val, n2o_val, o2_val, cfc11_val, cfc12_val, cfc22_val, ccl4_val, &
              &do_read_radiation, radiation_file, rad_missing_value, &
              &do_read_sw_flux, sw_flux_file, do_read_lw_flux, lw_flux_file,&
@@ -207,7 +208,7 @@
 !*****************************************************************************************
       module rrtm_radiation
         use parkind, only : im => kind_im, rb => kind_rb
-        use constants_mod,         only: pi
+        use constants_mod,         only: pi, wtmair, wtmozone
         implicit none
     
       contains
@@ -701,6 +702,9 @@
           !get ozone 
           if(do_read_ozone)then
              call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_file))
+             if (input_o3_file_is_mmr==.true.) then
+                 o3f = o3f * wtmair / wtmozone !RRTM expects all abundances to be volume mixing ratio. So if input file is mass mixing ratio, it must be converted to volume mixing ratio using the molar masses of dry air and ozone
+             endif 
           endif
 
           !get co2
