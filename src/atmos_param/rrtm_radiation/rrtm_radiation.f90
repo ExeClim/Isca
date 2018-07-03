@@ -208,7 +208,7 @@
 !*****************************************************************************************
       module rrtm_radiation
         use parkind, only : im => kind_im, rb => kind_rb
-        use constants_mod,         only: pi, wtmozone, gas_constant
+        use constants_mod,         only: pi, wtmozone, gas_constant, rdgas
         implicit none
     
       contains
