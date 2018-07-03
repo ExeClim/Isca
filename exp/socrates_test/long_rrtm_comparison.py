@@ -24,9 +24,8 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('rrtm_test_mk48_direct_rrtm_comparison_more_outputs', codebase=cb)
 
-exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
+inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -56,13 +55,9 @@ diag.add_field('rrtm_radiation', 'tdt_lw', time_avg=True)
 diag.add_field('rrtm_radiation', 'tdt_sw', time_avg=True)
 
 
-exp.diag_table = diag
-
-#Empty the run directory ready to run
-exp.clear_rundir()
 
 #Define values for the 'core' namelist
-exp.namelist = namelist = Namelist({
+namelist = Namelist({
     'main_nml':{
      'days'   : 30,
      'hours'  : 0,
@@ -179,7 +174,23 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
 
-    s = 1.0
-    exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
-    for i in range(2,241):
-        exp.run(i, num_cores=NCORES)
+    co2_values_list = [True, False]
+
+    for co2_value in co2_values_list:
+        #Set up the experiment object, with the first argument being the experiment name.
+        #This will be the name of the folder that the data will appear in.
+
+        exp = Experiment('rrtm_long_test_input_o3_is_mmr_'+str(co2_value), codebase=cb)
+        exp.clear_rundir()
+
+        exp.diag_table = diag
+        exp.inputfiles = inputfiles
+
+        exp.namelist = namelist.copy()
+        exp.namelist['rrtm_radiation_nml']['input_o3_file_is_mmr'] = co2_value
+
+        #Step 6. Run the fortran code
+
+        exp.run(1, use_restart=False, num_cores=NCORES)
+        for i in range(2,121):
+            exp.run(i, num_cores=NCORES)
