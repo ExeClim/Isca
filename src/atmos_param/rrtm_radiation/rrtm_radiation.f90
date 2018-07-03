@@ -208,7 +208,7 @@
 !*****************************************************************************************
       module rrtm_radiation
         use parkind, only : im => kind_im, rb => kind_rb
-        use constants_mod,         only: pi, wtmair, wtmozone
+        use constants_mod,         only: pi, wtmozone, gas_constant
         implicit none
     
       contains
@@ -703,7 +703,7 @@
           if(do_read_ozone)then
              call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_file))
              if (input_o3_file_is_mmr==.true.) then
-                 o3f = o3f * wtmair / wtmozone !RRTM expects all abundances to be volume mixing ratio. So if input file is mass mixing ratio, it must be converted to volume mixing ratio using the molar masses of dry air and ozone
+                 o3f = o3f * (1000. * gas_constant / rdgas ) / wtmozone !RRTM expects all abundances to be volume mixing ratio. So if input file is mass mixing ratio, it must be converted to volume mixing ratio using the molar masses of dry air and ozone
              endif 
           endif
 
