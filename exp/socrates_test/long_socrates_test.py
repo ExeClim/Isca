@@ -24,9 +24,7 @@ cb.compile(debug=False)  # compile the source code to working directory $GFDL_WO
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('soc_test_mk57_direct_rrtm_comparison_z_interp', codebase=cb)
-
-exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
+inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -56,13 +54,9 @@ diag.add_field('socrates', 'soc_flux_up_lw', time_avg=True)
 diag.add_field('socrates', 'soc_flux_down_sw', time_avg=True)
 
 
-exp.diag_table = diag
-
-#Empty the run directory ready to run
-exp.clear_rundir()
 
 #Define values for the 'core' namelist
-exp.namelist = namelist = Namelist({
+namelist = Namelist({
     'main_nml':{
      'days'   : 30,
      'hours'  : 0,
@@ -185,8 +179,22 @@ exp.namelist = namelist = Namelist({
 
 #Lets do a run!
 if __name__=="__main__":
+    
+    co2_values_list = [False, True]
 
-    s = 1.0
-    exp.run(1, use_restart=False, num_cores=NCORES, run_idb=False)
-    for i in range(2,241):
-        exp.run(i, num_cores=NCORES)
+    for co2_value in co2_values_list:
+        #Set up the experiment object, with the first argument being the experiment name.
+        #This will be the name of the folder that the data will appear in.
+
+        exp = Experiment('soc_test_co2_mmr_'+str(co2_value), codebase=cb)
+        exp.clear_rundir()
+
+        exp.diag_table = diag
+        exp.inputfiles = inputfiles
+
+        exp.namelist = namelist.copy()
+        exp.namelist['socrates_rad_nml']['input_co2_mmr'] = co2_value
+
+        exp.run(1, use_restart=False, num_cores=NCORES)
+        for i in range(2,121):
+            exp.run(i, num_cores=NCORES)

@@ -609,7 +609,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        temp_tend, net_surf_sw_down, surf_lw_down, delta_t)  
 
     use astronomy_mod, only: diurnal_solar
-    use constants_mod,         only: pi
+    use constants_mod,         only: pi, wtmair, wtmco2
     use interpolator_mod,only: interpolator
     USE socrates_config_mod    
 
@@ -753,12 +753,18 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
          call interpolator( o3_interp, Time_diag, p_half_in, ozone_in, trim(ozone_field_name))
        endif
 
-       co2_in = co2_ppmv * 1.e-6
-
-      !get ozone 
+       if (input_co2_mmr==.false.) then
+           co2_in = co2_ppmv * 1.e-6 * wtmco2 / wtmair !Convert co2_ppmv to a mass mixing ratio, as required by socrates
+       else
+           co2_in = co2_ppmv * 1.e-6 !No need to convert if it is already a mmr
+       endif
+      
+       !get co2 
        if(do_read_co2)then
          call interpolator( co2_interp, Time_diag, p_half_in, co2_in, trim(co2_field_name))
-         co2_in = co2_in * 1.e-6
+         if (input_co2_mmr==.false.) then
+             co2_in = co2_in * 1.e-6 * wtmco2 / wtmair
+         endif
        endif
 
 

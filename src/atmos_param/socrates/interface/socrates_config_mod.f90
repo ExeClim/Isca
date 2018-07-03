@@ -33,6 +33,7 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   character(len=256) :: co2_field_name='co2' !Name of co2 variable in co2 file  
   real(r_def) :: input_planet_emissivity = 1.0 !Emissivity of surface. Defined as constant all over surface.
   real :: co2_ppmv = 300. !Default CO2 concentration in PPMV
+  logical ::  input_co2_mmr=.false. !Socrates wants input concentrations as mmr not vmr, so need to make sure input data supplied is converted if necessary
 
   logical :: use_pressure_interp_for_half_levels = .True.
     
@@ -110,7 +111,7 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
                              input_planet_emissivity, co2_ppmv, &
                              account_for_effect_of_water, account_for_effect_of_ozone, &
                              do_read_ozone, ozone_file_name, ozone_field_name, &
-                             do_read_co2, co2_file_name, co2_field_name, &                             
+                             do_read_co2, co2_file_name, co2_field_name, input_co2_mmr, &                             
                              solday, do_rad_time_avg, equinox_day,  &
                              store_intermediate_rad, dt_rad_avg, dt_rad, &
                              chunk_size, &
