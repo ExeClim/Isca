@@ -1,5 +1,5 @@
 echo loadmodules
-source /glade/u/home/wykang/.bashrc
+source /glade/u/home/${USER}/.bashrc
 module purge
 module load ncarenv/1.2
 module load intel/17.0.1
