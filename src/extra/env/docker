@@ -4,3 +4,4 @@ export GFDL_COMPILER=gfort
 
 export F90=mpifort
 export CC=mpicc
+export NETCDF_LIBS = `nf-config --fflags --flibs`
