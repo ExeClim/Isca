@@ -12,7 +12,8 @@ ENV ["OMPI_MCA_btl", "^openib"]
 ENV  ["OMPI_MCA_btl_vader_single_copy_mechanism", "none"]
 RUN useradd -ms /bin/bash isca
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y \
+RUN DEBIAN_FRONTEND=noninteractive \
+	apt-get install -y \
     git python3 python3-pip \
     libnetcdf-dev libpnetcdf-dev libnetcdff-dev \
     libhdf5-openmpi-dev wget tcl tcl-dev \
@@ -26,9 +27,10 @@ RUN pip3 install -e /isca/src/extra/python
 
 RUN mkdir -p /data && chown -R isca /data
 VOLUME /data
+VOLUME /isca
 
 WORKDIR /isca
 USER isca
 
-RUN python3 -c "import isca; cb = isca.IscaCodeBase.from_directory('/isca'); cb.compile()"
+#RUN python3 -c "import isca; cb = isca.IscaCodeBase.from_directory('/isca'); cb.compile()"
 #CMD python3 /isca/exp/held_suarez.py --compile --up-to -i 3 -n 2
