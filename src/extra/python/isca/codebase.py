@@ -30,7 +30,7 @@ class CodeBase(Logger):
         return cls(repo=repo, commit=commit, **kwargs)
 
     @classmethod
-    def from_directory(cls, directory,**kwargs):
+    def from_directory(cls, directory, **kwargs):
         return cls(directory=directory, **kwargs)
 
     def __init__(self, repo=None, commit=None, directory=None, storedir=P(GFDL_WORK, 'codebase'), safe_mode=False):

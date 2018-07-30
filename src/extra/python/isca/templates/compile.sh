@@ -3,13 +3,14 @@
 
 # 1. Configuration
 hostname=`hostname`
-template={{ template_dir }}/mkmf.cheyenne.intel
+#template={{ template_dir }}/mkmf.cheyenne.intel
+template={{ template_dir }}/mkmf.template.ia64
 mkmf={{ srcdir }}/../bin/mkmf                             # path to executable mkmf
 sourcedir={{ srcdir }}                             # path to directory containing model source code
 pathnames={{ path_names }}                      # path to file containing list of source paths
 ppdir={{ srcdir }}/../postprocessing                      # path to directory containing the tool for combining distributed diagnostic output files
 debug={{ run_idb }}                                     # logical to identify if running in debug mode or not
-template_debug={{ template_dir }}/mkmf.cheyenne.intel.debug
+template_debug={{ template_dir }}/mkmf.template.ia64.debug
 #-----------------------------------------------------------------------------------------------------
 execdir={{ execdir }}        # where code is compiled and executable is created
 executable={{ executable_name }}

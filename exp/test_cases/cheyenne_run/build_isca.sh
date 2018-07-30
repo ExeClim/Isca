@@ -10,17 +10,7 @@
 #PBS -m abe
 #############
 # environment:
-source /glade/u/home/${USER}/.bashrc
-module purge
-module load ncarenv/1.2
-module load intel/17.0.1
-module load ncarcompilers
-module load mpt/2.15f
-module load netcdf/4.4.1.1
-module load git
-source /glade/p/work/${USER}/${USER}_python_package/bin/activate
-export TMPDIR=/glade/scratch/$USER/temp
-mkdir -p $TMPDIR
+source ${GFDL_BASE}/src/extra/env/${GFDL_ENV}
 
 # passing info
 echo Running on host `hostname`
