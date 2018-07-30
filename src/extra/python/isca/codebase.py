@@ -217,9 +217,7 @@ class CodeBase(Logger):
 
     @useworkdir
     @destructive
-    # def compile(self, debug=False, optimisation=None):
-    # wykang: add extra path_names
-    def compile(self, extra_pathnames=[], executable_name=None,debug=False, optimisation=None):
+    def compile(self, debug=False, optimisation=None):
         env = get_env_file()
         mkdir(self.builddir)
 
@@ -238,14 +236,8 @@ class CodeBase(Logger):
         # get path_names from the directory
         if not self.path_names:
             self.path_names = self.read_path_names(P(self.srcdir, 'extra', 'model', self.name, 'path_names'))
-        # wykang: add extra path_names
-        if extra_pathnames:
-            self.path_names = extra_pathnames + self.path_names
         self.write_path_names(self.path_names)
         path_names_str = P(self.builddir, 'path_names')
-	# wykang: use different excutable_name
-        if executable_name:
-            self.executable_name=executable_name
 
         vars = {
             'execdir': self.builddir,

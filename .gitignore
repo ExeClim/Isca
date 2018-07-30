@@ -25,5 +25,3 @@ postprocessing/plevel_interpolation/scripts/archived/*
 src/extra/python/scripts/*.nc
 src/extra/python/scripts/archived/
 mima_pz.txt
-src/extra/python/isca/templates/mkmf.cheyenne.intel
-src/extra/python/isca/templates/mkmf.cheyenne.intel.debug
