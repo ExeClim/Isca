@@ -320,6 +320,13 @@ class Experiment(Logger, EventEmitter):
                 self.log.debug("Restart file %s combined" % restartfile)
 
             self.emit('run:combined', self, i)
+        else:
+            for file in self.diag_table.files:
+                netcdf_file = '%s.nc' % file
+                filebase = P(self.rundir, netcdf_file)
+                sh.cp(filebase, P(outdir, netcdf_file))
+                sh.rm(glob.glob(filebase+'*'))
+                self.log.debug('%s copied to data directory' % netcdf_file)
 
         # make the restart archive and delete the restart files
         self.make_restart_archive(self.get_restart_file(i), resdir)
