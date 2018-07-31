@@ -20,7 +20,6 @@ netcdf_flags=`nc-config --fflags --flibs`
 # 2. Load the necessary tools into the environment
 module purge
 source {{ env_source }}
-source $python_package_lib_path
 module list
 ulimit -s unlimited # Set stack size to unlimited
 export MALLOC_CHECK_=0
