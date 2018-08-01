@@ -5,11 +5,11 @@ ENV GFDL_BASE /isca
 ENV GFDL_DATA /data
 ENV GFDL_ENV docker
 
-# ignore missing hardware needed lfor openMPI speedup
-ENV ["OMPI_MCA_btl", "^openib"]
-# avoid mpi vader error [d3f8787e619d:05992] Read -1, expected 8192, errno = 1
-# https://github.com/open-mpi/ompi/issues/4948
-ENV  ["OMPI_MCA_btl_vader_single_copy_mechanism", "none"]
+# # ignore missing hardware needed lfor openMPI speedup
+# ENV ["OMPI_MCA_btl", "^openib"]
+# # avoid mpi vader error [d3f8787e619d:05992] Read -1, expected 8192, errno = 1
+# # https://github.com/open-mpi/ompi/issues/4948
+# ENV  ["OMPI_MCA_btl_vader_single_copy_mechanism", "none"]
 
 RUN apt-get update && apt-get upgrade -y
 RUN DEBIAN_FRONTEND=noninteractive \

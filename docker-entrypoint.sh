@@ -10,7 +10,7 @@ if [ -n "$LOCAL_USER_ID" ]; then
 
 	echo "Starting with UID : $USER_ID:$GROUP_ID"
 	groupadd -g $GROUP_ID group
-	useradd --shell /bin/bash -u $USER_ID  -G $GROUP_ID -o -c "" -m user
+	useradd --shell /bin/bash -u $USER_ID  -g $GROUP_ID -o -c "" -m user
 	export HOME=/home/user
 
 	exec /usr/local/bin/gosu user "$@"
