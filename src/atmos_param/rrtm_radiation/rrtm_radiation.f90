@@ -703,7 +703,8 @@
           if(do_read_ozone)then
              call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_file))
              if (input_o3_file_is_mmr==.true.) then
-                 o3f = o3f * (1000. * gas_constant / rdgas ) / wtmozone !RRTM expects all abundances to be volume mixing ratio. So if input file is mass mixing ratio, it must be converted to volume mixing ratio using the molar masses of dry air and ozone
+                 o3f = o3f * (1000. * gas_constant / rdgas ) / wtmozone !RRTM expects all abundances to be volume mixing ratio. So if input file is mass mixing ratio, it must be converted to volume mixing ratio using the molar masses of dry air and ozone. 
+                 ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol from kg/mol by multiplying by 1000. This conversion is necessary because wtmozone is in g/mol.
              endif 
           endif
 
@@ -758,6 +759,8 @@
 
           if(convert_sphum_to_vmr) then
               h2o_vmr = (q_tmp/(1.-q_tmp))*(1000. * gas_constant / rdgas)/wtmh2o
+                 ! Convert sphum to vmr using q/1-q to get mmr, then divide by molar mass ratio.
+                 ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol from kg/mol by multiplying by 1000. This conversion is necessary because wtmh2o is in g/mol.              
           else
               h2o_vmr = q_tmp
           endif
