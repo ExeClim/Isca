@@ -47,6 +47,13 @@ class Experiment(Logger, EventEmitter):
             'num_fourier': 42,
             'num_spherical': 43,
         },
+
+        'T21': {
+            'lon_max': 64,
+            'lat_max': 32,
+            'num_fourier': 21,
+            'num_spherical': 22,
+        },
     }
 
     runfmt = 'run%04d'
@@ -307,6 +314,14 @@ class Experiment(Logger, EventEmitter):
                 self.log.debug("Restart file %s combined" % restartfile)
 
             self.emit('run:combined', self)
+        else:
+            for file in self.diag_table.files:
+                netcdf_file = '%s.nc' % file
+                filebase = P(self.rundir, netcdf_file)
+                sh.cp(filebase, P(outdir, netcdf_file))
+                sh.rm(glob.glob(filebase+'*'))
+                self.log.debug('%s copied to data directory' % netcdf_file)
+
 
         # make the restart archive and delete the restart files
         self.make_restart_archive(self.get_restart_file(i), resdir)

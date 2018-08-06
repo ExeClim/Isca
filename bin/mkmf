@@ -59,7 +59,7 @@ my @list;
 #some constants
 my $endline = $/;
 my @src_suffixes = ( q/\.F/, q/\.F90/, q/\.c/, q/\.f/, q/\.f90/ );
-my @inc_suffixes = ( q/\.H/, q/\.fh/, q/\.h/, q/\.inc/, q/\.h90/ );
+my @inc_suffixes = ( q/\.H/, q/\.fh/, q/\.h/, q/\.inc/, q/\.h90/, q/\.finc/ );
 # push @inc_suffixes, @src_suffixes; # sourcefiles can be includefiles too: DISALLOW, 6 May 2004
 # suffixes for the target (mkmf -p): if isn't on the list below it's a program
 my @tgt_suffixes = ( q/\.a/ );

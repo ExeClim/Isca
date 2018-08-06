@@ -248,6 +248,7 @@ class CodeBase(Logger):
             'env_source': env,
             'path_names': path_names_str,
             'executable_name': self.executable_name,
+            'run_idb': debug,
         }
 
         self.templates.get_template('compile.sh').stream(**vars).dump(P(self.builddir, 'compile.sh'))
@@ -265,6 +266,31 @@ class IscaCodeBase(CodeBase):
     """
     name = 'isca'
     executable_name = 'isca.x'
+
+    def disable_soc(self):
+        # add no compile flag
+        self.compile_flags.append('-DSOC_NO_COMPILE')
+        self.log.info('SOCRATES compilation disabled.')
+
+    def __init__(self, *args, **kwargs):
+        super(IscaCodeBase, self).__init__(*args, **kwargs)
+        self.disable_soc()
+
+class SocratesCodeBase(CodeBase):
+    """Isca without RRTM but with the Met Office radiation scheme, Socrates.
+    """
+    #path_names_file = P(_module_directory, 'templates', 'moist_path_names')
+    name = 'socrates'
+    executable_name = 'soc_isca.x'
+
+    def disable_rrtm(self):
+        # add no compile flag
+        self.compile_flags.append('-DRRTM_NO_COMPILE')
+        self.log.info('RRTM compilation disabled.')
+
+    def __init__(self, *args, **kwargs):
+        super(SocratesCodeBase, self).__init__(*args, **kwargs)
+        self.disable_rrtm()
 
 class GreyCodeBase(CodeBase):
     """The Frierson model.
@@ -284,10 +310,15 @@ class GreyCodeBase(CodeBase):
         self.compile_flags.append('-DRRTM_NO_COMPILE')
         self.log.info('RRTM compilation disabled.')
 
+    def disable_soc(self):
+        # add no compile flag
+        self.compile_flags.append('-DSOC_NO_COMPILE')
+        self.log.info('SOCRATES compilation disabled.')
+
     def __init__(self, *args, **kwargs):
         super(GreyCodeBase, self).__init__(*args, **kwargs)
         self.disable_rrtm()
-
+        self.disable_soc()
 
 class DryCodeBase(GreyCodeBase):
     """The Held-Suarez model.
