@@ -17,7 +17,7 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   ! Socrates inputs from namelist
   
   REAL :: stellar_constant = 1370.0
-  LOGICAL :: tidally_locked = .TRUE.
+  LOGICAL :: tidally_locked = .FALSE.
   LOGICAL :: socrates_hires_mode = .FALSE.  !If false then run in 'GCM mode', if true then uses high-res spectral files
   character(len=256) :: lw_spectral_filename='unset'
   character(len=256) :: lw_hires_spectral_filename='unset'
@@ -36,8 +36,8 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   real :: co2_ppmv = 300. !Default CO2 concentration in PPMV
   logical ::  input_co2_mmr=.false. !Socrates wants input concentrations as mmr not vmr, so need to make sure input data supplied is converted if necessary
 
-  logical :: use_pressure_interp_for_half_levels = .True.
-    
+  logical :: use_pressure_interp_for_half_levels = .False. !By default (.False.) does linear interpolation in height for half-level temperatures. True does linear interp using pressure. 
+      
   ! Incoming radiation options for namelist
   
   integer   :: solday=0  ! if >0, do perpetual run corresponding to day of the year = solday \in [0,days per year]
