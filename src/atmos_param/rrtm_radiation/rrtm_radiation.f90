@@ -133,9 +133,9 @@
 
 ! secondary gases (CH4,N2O,O2,CFC11,CFC12,CFC22,CCL4)
         logical            :: include_secondary_gases=.false. ! non-zero values for above listed secondary gases?
-        real(kind=rb)      :: ch4_val  = 0.                   !  if .true., value for CH4
-        real(kind=rb)      :: n2o_val  = 0.                   !                       N2O
-        real(kind=rb)      :: o2_val   = 0.                   !                       O2
+        real(kind=rb)      :: ch4_val  = 0.                   !  if .true., value for CH4 vmr
+        real(kind=rb)      :: n2o_val  = 0.                   !                       N2O vmr
+        real(kind=rb)      :: o2_val   = 0.                   !                       O2 vmr
         real(kind=rb)      :: cfc11_val= 0.                   !                       CFC11
         real(kind=rb)      :: cfc12_val= 0.                   !                       CFC12
         real(kind=rb)      :: cfc22_val= 0.                   !                       CFC22
