@@ -5,8 +5,8 @@ import mpl_toolkits.basemap as basemap
 import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 
-num_lat_out = 64
-num_lon_out = 128
+num_lat_out = 128
+num_lon_out = 256
 
 
 mola_original = xar.open_dataset('/scratch/sit204/planet_topo_files/mars/mola32.nc')
@@ -24,7 +24,7 @@ nlat = latitudes_out.shape[0]
 nlon = longitudes_out.shape[0]
 
 #Write land and topography arrays to file
-topo_filename = './t42_mola_mars.nc'
+topo_filename = './t85_mola_mars.nc'
 topo_file = Dataset(topo_filename, 'w', format='NETCDF3_CLASSIC')
 lat = topo_file.createDimension('lat', nlat)
 lon = topo_file.createDimension('lon', nlon)

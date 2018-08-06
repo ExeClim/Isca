@@ -60,7 +60,7 @@ diag.add_field('two_stream', 'ang', time_avg=True)
 # define namelist values as python dictionary
 namelist = Namelist({
     'main_nml': {
-        'dt_atmos': 220,
+        'dt_atmos': 110,
         'days': 0.,
         'seconds': 30.*88440.,
         'calendar': 'no_calendar'
@@ -138,7 +138,7 @@ namelist = Namelist({
     
     'damping_driver_nml': {
         'do_rayleigh': True,
-        'trayfric': -0.25,              # neg. value: time in *days*
+        'trayfric': -0.125,              # neg. value: time in *days*
         'sponge_pbottom':  0.5,           #Bottom of the model's sponge down to 50hPa (units are Pa)
         'do_conserve_energy': True,             
     },
@@ -215,7 +215,7 @@ if __name__=="__main__":
 
     conv_schemes = ['none']
 
-    depths = [10.,2., 0.5, 0.1]
+    depths = [2.]
 
     pers = [70.85]
 
@@ -224,7 +224,7 @@ if __name__=="__main__":
     for conv in conv_schemes:
         for depth_val in depths:
             for per_value in pers:
-                exp = Experiment('grey_mars_mk34_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val), codebase=cb)
+                exp = Experiment('grey_mars_mk36_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val), codebase=cb)
                 exp.clear_rundir()
 
                 exp.diag_table = diag
