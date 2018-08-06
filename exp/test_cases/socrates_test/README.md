@@ -61,7 +61,7 @@ npd_phase_term = 1
 
 The final one of these is the most important, as a large value for this term significantly increases Socrates' memory usage, and will make Isca much slower. 
 
-###4. Run the Socrates test case.
+### 4. Run the Socrates test case.
 
 Navigate to 
 
@@ -70,7 +70,7 @@ Navigate to
 and run the test-case `socrates_aquaplanet.py`. This will compile and run Isca with a default Earth-like aquaplanet.
 
 
-###5. If Socrates seems slow, here are some hints
+### 5. If Socrates seems slow, here are some hints
 
 * Isca is set up to pass socrates a certain number of vertical profiles for each time the Socrates is called. This number is set as `chunk_size` in the `socrates_rad_nml`. A value of 16 was found to be optimal on large linux-server-type machines in Exeter, but it is worth playing with this number to find the optimal number on your machine.
 
