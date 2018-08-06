@@ -16,7 +16,7 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
 
   ! Socrates inputs from namelist
   
-  REAL :: stellar_constant = 1370.0
+  REAL :: stellar_constant = 1368.22 !Consistent with RRTM default
   LOGICAL :: tidally_locked = .FALSE.
   LOGICAL :: socrates_hires_mode = .FALSE.  !If false then run in 'GCM mode', if true then uses high-res spectral files
   character(len=256) :: lw_spectral_filename='unset'
