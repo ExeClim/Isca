@@ -1,4 +1,4 @@
-#Using Isca with the Socrates radiation scheme
+# Using Isca with the Socrates radiation scheme
 
 The Socrates radiation scheme is a highly-flexible scheme written and maintained by the UK Met Office. It has many significant advantages over RRTM, notably the ease with the properties of the radiation scheme can be changed using input-files, e.g. different numbers of spectral bands, different atmospheric compositions, etc. 
 
@@ -6,9 +6,9 @@ To read more about Socrates itself, see here:
 [Socrates project](https://code.metoffice.gov.uk/trac/socrates)
 
 
-##Getting started
+## Getting started
 
-###1. Download Socrates source code
+### 1. Download Socrates source code
 
 All the code needed to interface Isca and the Socrates radiation scheme is provided in the folder 
 
@@ -28,7 +28,7 @@ To download a packaged release of Socrates, click on the `tar.xz` file of the la
 
 Once you have unzipped the file, the resulting folder should contain folders like `data`, `docs` and `src`. 
 
-###2. Move the Socrates source code to the correct folder within the Isca directory
+### 2. Move the Socrates source code to the correct folder within the Isca directory
 
 Navigate to the following Isca directory:
 
@@ -40,7 +40,7 @@ You should then have the following directory structure:
 
 `$GFDL_BASE/src/atmos_param/socrates/src/trunk/src/radiance_core/`
 
-###3. Edit the number of angles in the phase function
+### 3. Edit the number of angles in the phase function
 
 From this point, the Isca test case for Socrates should run without issue. However, it is strongly advised to first make the following changes to the Socrates source code.
 
