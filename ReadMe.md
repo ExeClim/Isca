@@ -116,6 +116,19 @@ This software may be used, copied, or redistributed as long as it is not sold an
 copyright notice is reproduced on each copy made. This model is provided as is without 
 any express or implied warranties.
 
+Some of the code provided in the `src/atmos_params/socrates/interface` folder were provided by the UK Met Office,
+and are therefore covered by British Crown Copyright. The copyright statement at the top of the 
+relevant code is provided below. For the `copyright.txt.` refered to in this statement, please see the
+Socrates source code itself, which is downloadable from the Met Office, and is not packaged with Isca.
+
+```
+! *****************************COPYRIGHT*******************************
+! (C) Crown copyright Met Office. All rights reserved.
+! For further details please refer to the file COPYRIGHT.txt
+! which you should have received as part of this distribution.
+! *****************************COPYRIGHT*******************************
+```
+
 The `check_disk_space.py` script, which is used as part of the email-alerts functionality
 of the `gfdl` module, was written by Giampaolo Rodola and is released under the MIT license.
 
