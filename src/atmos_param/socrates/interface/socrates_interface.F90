@@ -5,6 +5,15 @@ MODULE socrates_interface_mod
   ! Outputs FMS heating rate, and downwards surface LW and SW
   ! MDH 30/01/18
 
+  ! Socrates interface significantly updated in order to allow for
+  ! seasonally-varying insolation, time-varying CO2, setting of radiation
+  ! parameters using namelists, specified Ozone, radiation timestep!=dt_atmos,
+  ! and correcting errors. Some of the additional code was adapted from Isca's
+  ! RRTM_RADIATION, which was originally written by Martin Jucker and adapted by
+  ! the Isca development team.
+  ! SIT 06/08/18
+
+
   !----------
 
 #ifdef INTERNAL_FILE_NML
@@ -206,18 +215,18 @@ write(stdlog_unit, socrates_rad_nml)
 
     id_soc_heating_lw = &
          register_diag_field ( soc_mod_name, 'soc_heating_lw', axes(1:3), Time, &
-         'socrates LW heating rate', &
-         'J/s', missing_value=missing_value               )
+         'socrates LW temperature change with time', &
+         'K/s', missing_value=missing_value               )
 
     id_soc_heating_sw = &
          register_diag_field ( soc_mod_name, 'soc_heating_sw', axes(1:3), Time, &
-         'socrates SW heating rate', &
-         'J/s', missing_value=missing_value               )
+         'socrates SW temperature change with time', &
+         'K/s', missing_value=missing_value               )
 
     id_soc_heating_rate = &
          register_diag_field ( soc_mod_name, 'soc_heating_rate', axes(1:3), Time, &
-         'socrates total heating rate', &
-         'J/s', missing_value=missing_value               )
+         'socrates total temperature change with time', &
+         'K/s', missing_value=missing_value               )
 
     id_soc_flux_up_lw = &
          register_diag_field ( soc_mod_name, 'soc_flux_up_lw', axes(1:3), Time, &
@@ -791,7 +800,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, z_full_soc, z_half_soc, albedo_soc, coszen, rrsun, n_profile, n_layer,     &
             output_heating_rate_lw, output_soc_flux_lw_down, output_soc_flux_lw_up, output_soc_spectral_olr = outputted_soc_spectral_olr, t_half_level_out = t_half_out)
 
-       tg_tmp_soc = tg_tmp_soc + output_heating_rate_lw*delta_t
+       tg_tmp_soc = tg_tmp_soc + output_heating_rate_lw*delta_t !Output heating rate in K/s, so is a temperature tendency
        surf_lw_down(:,:) = REAL(output_soc_flux_lw_down(:,:, n_layer))
        thd_lw_flux_up = REAL(output_soc_flux_lw_up)
 
@@ -804,7 +813,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, z_full_soc, z_half_soc, albedo_soc, coszen, rrsun, n_profile, n_layer,     &
             output_heating_rate_sw, output_soc_flux_sw_down, output_soc_flux_sw_up)
 
-       tg_tmp_soc = tg_tmp_soc + output_heating_rate_sw*delta_t
+       tg_tmp_soc = tg_tmp_soc + output_heating_rate_sw*delta_t !Output heating rate in K/s, so is a temperature tendency
        net_surf_sw_down(:,:) = REAL(output_soc_flux_sw_down(:,:, n_layer)-output_soc_flux_sw_up(:,:,n_layer) )
        thd_sw_flux_down = REAL(output_soc_flux_sw_down)
 
