@@ -496,6 +496,15 @@ do k = 2, nlev
     k_m(:,:,k) = k_m_ref*factor
     k_t(:,:,k) = k_t_ref*factor
   end where
+
+! POG change: avoid possibility of k_m and k_t set to non-zero values above PBL
+! due to use of maxval(h_inner) above 
+  where(zm(:,:,k) >= h) 
+    k_m(:,:,k) = 0
+    k_t(:,:,k) = 0
+  end where
+! end POG change
+
 end do
 
 return
