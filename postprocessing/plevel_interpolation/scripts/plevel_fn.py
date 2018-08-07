@@ -5,8 +5,10 @@ import subprocess
 import sys
 import os
 import sh
+import xarray as xar
+import pdb
 
-def plevel_call(nc_file_in,nc_file_out, var_names = '-a', p_levels='default', mask_below_surface_option=' '):
+def plevel_call(nc_file_in,nc_file_out, var_names = '-a', p_levels='default', mask_below_surface_option=' ', add_back_scalar_axis_vars=False):
 
     check_gfdl_directories_set()
 
@@ -23,6 +25,37 @@ def plevel_call(nc_file_in,nc_file_out, var_names = '-a', p_levels='default', ma
         command = interper + nc_file + out_file + plev +' '+mask_below_surface_option+ var_names
     print(command)
     subprocess.call([command], shell=True)
+    
+    if add_back_scalar_axis_vars:
+        add_back_scalar_axis_vars_fn(nc_file_in, nc_file_out)
+
+def add_back_scalar_axis_vars_fn(file_in, file_out):
+    ''' For some reason the plevel interpolator will not put variables 
+    with `scalar_axis` as a dimension in the interpolated output file. 
+    This piece of python adds them back after the interpolation. Particularly
+    important for Mars work.
+        '''
+
+    ds_in = xar.open_dataset(file_in, decode_times=False)
+    ds_out = xar.open_dataset(file_out, decode_times=False)    
+    
+    try:
+        ds_in.dims['scalar_axis']
+    except KeyError:
+        return  
+
+    list_of_vars_to_copy=[]
+
+    for name in ds_in.var().keys():
+        if 'scalar_axis' in ds_in[name].dims and name not in ds_out.var().keys():
+            list_of_vars_to_copy.append(name)
+    
+    ds_out.coords['scalar_axis'] = ('scalar_axis', ds_in['scalar_axis'].values)
+    
+    for out_name in list_of_vars_to_copy:
+        ds_out[out_name] = (ds_in[out_name].dims, ds_in[out_name].values)
+    
+    ds_out.to_netcdf(path=file_out)    
 
 def daily_average(nc_file_in, nc_file_out):
     subprocess.call('cdo daymean '+nc_file_in+' '+nc_file_out, shell=True)
