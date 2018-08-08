@@ -145,12 +145,14 @@ real    :: ampns_max           = 1.0E20  ! limit to reduction factor
 logical :: do_entrain          =.true.
 logical :: do_simple           =.false.
 
+logical :: use_pog_bug_fix     =.true.
+
 namelist /diffusivity_nml/ fixed_depth, depth_0, frac_inner,&
                            rich_crit_pbl, entr_ratio, parcel_buoy,&
                            znom, free_atm_diff, free_atm_skyhi_diff,&
                            pbl_mcm, rich_crit_diff, mix_len, rich_prandtl,&
                            background_m, background_t, ampns, ampns_max, &
-                           do_entrain, do_simple
+                           do_entrain, do_simple, use_pog_bug_fix
 
 !=======================================================================
 
@@ -497,13 +499,16 @@ do k = 2, nlev
     k_t(:,:,k) = k_t_ref*factor
   end where
 
-! POG change: avoid possibility of k_m and k_t set to non-zero values above PBL
-! due to use of maxval(h_inner) above 
-  where(zm(:,:,k) >= h) 
-    k_m(:,:,k) = 0
-    k_t(:,:,k) = 0
-  end where
-! end POG change
+
+  if(use_pog_bug_fix) then
+   ! POG change: avoid possibility of k_m and k_t set to non-zero values above PBL
+   ! due to use of maxval(h_inner) above 
+     where(zm(:,:,k) >= h) 
+       k_m(:,:,k) = 0
+       k_t(:,:,k) = 0
+     end where
+   ! end POG change
+  endif
 
 end do
 
