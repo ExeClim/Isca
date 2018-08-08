@@ -145,7 +145,7 @@ real    :: ampns_max           = 1.0E20  ! limit to reduction factor
 logical :: do_entrain          =.true.
 logical :: do_simple           =.false.
 
-logical :: use_pog_bug_fix     =.false.
+logical :: use_pog_bug_fix     =.true.
 
 namelist /diffusivity_nml/ fixed_depth, depth_0, frac_inner,&
                            rich_crit_pbl, entr_ratio, parcel_buoy,&
