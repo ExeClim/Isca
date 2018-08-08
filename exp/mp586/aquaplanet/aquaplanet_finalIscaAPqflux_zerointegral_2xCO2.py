@@ -4,7 +4,7 @@ import numpy as np
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE, GFDL_DATA
 
-NCORES = 8
+NCORES = 16
 base_dir = os.getcwd()
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -35,7 +35,7 @@ exp.inputfiles = [os.path.join(GFDL_BASE,'input/aquaplanet/land.nc'),os.path.joi
 #Tell model how to write diagnostics
 diag = DiagTable()
 diag.add_file('atmos_monthly', 30, 'days', time_units='days') # to output data in two different time resolutions
-diag.add_file('atmos_6_hourly', 6, 'hours', time_units='hours') 
+# diag.add_file('atmos_6_hourly', 6, 'hours', time_units='hours') 
 
 #Tell model which diagnostics to write
 diag.add_field('dynamics', 'ps', time_avg=True) # don't specify files, then it writes to both
@@ -217,7 +217,7 @@ exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')
 #Tell model how to write diagnostics
 diag = DiagTable()
 diag.add_file('atmos_monthly', 30, 'days', time_units='days')
-diag.add_file('atmos_6_hourly', 6, 'hours', time_units='hours') 
+# diag.add_file('atmos_6_hourly', 6, 'hours', time_units='hours') 
 
 #Tell model which diagnostics to write
 diag.add_field('dynamics', 'ps', time_avg=True)
