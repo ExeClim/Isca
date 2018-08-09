@@ -23,7 +23,7 @@ MODULE socrates_interface_mod
 #endif
 
   ! ExoFMS diagnostics
-  USE  diag_manager_mod, ONLY: register_diag_field, send_data
+  USE  diag_manager_mod, ONLY: register_diag_field, send_data, diag_axis_init
 
   ! ExoFMS time
   USE time_manager_mod, ONLY: time_type, OPERATOR(+), OPERATOR(-), OPERATOR(/=), length_of_day, length_of_year, get_time, set_time
@@ -51,8 +51,8 @@ MODULE socrates_interface_mod
   TYPE(StrCtrl) :: control_lw, control_lw_hires
 
   ! Diagnostic IDs, name, and missing value
-  !INTEGER :: id_soc_spectral_olr ! spectral output currently not available as required axis not present in diag file 
-  !INTEGER :: id_soc_olr_spectrum_lw, id_soc_surf_spectrum_sw
+  INTEGER :: id_soc_spectral_olr 
+!   INTEGER :: id_soc_surf_spectrum_sw !not implemented yet
   INTEGER :: id_soc_tdt_sw, id_soc_tdt_lw, id_soc_tdt_rad
   INTEGER :: id_soc_surf_flux_lw, id_soc_surf_flux_sw 
   INTEGER :: id_soc_flux_lw, id_soc_flux_sw
@@ -60,6 +60,7 @@ MODULE socrates_interface_mod
   INTEGER :: id_soc_ozone, id_soc_co2, id_soc_coszen
   INTEGER :: n_soc_bands_lw, n_soc_bands_sw
   INTEGER :: n_soc_bands_lw_hires, n_soc_bands_sw_hires
+  INTEGER :: id_soc_bins_lw, id_soc_bins_sw
   CHARACTER(len=10), PARAMETER :: soc_mod_name = 'socrates'
   REAL :: missing_value = -999
 
@@ -71,8 +72,8 @@ MODULE socrates_interface_mod
   REAL(r_def), allocatable, dimension(:,:,:) :: thd_co2_store, thd_ozone_store 
   REAL(r_def), allocatable, dimension(:,:)   :: net_surf_sw_down_store, surf_lw_down_store, surf_lw_net_store, &
                                                 toa_sw_store, olr_store, coszen_store
-  REAL(r_def), allocatable, dimension(:,:,:) :: outputted_soc_spectral_olr
-
+  REAL(r_def), allocatable, dimension(:,:,:) :: outputted_soc_spectral_olr, spectral_olr_store
+  REAL(r_def), allocatable, dimension(:)     :: soc_bins_lw, soc_bins_sw
 
 CONTAINS
 
@@ -97,6 +98,7 @@ CONTAINS
 
     !-------------------------------------------------------------------------------------
 
+!Reads socrates option from `socrates_rad_nml`, which is defined in `socrates_config_mod`
 #ifdef INTERNAL_FILE_NML
    read (input_nml_file, nml=socrates_rad_nml, iostat=io)
 #else
@@ -198,23 +200,35 @@ write(stdlog_unit, socrates_rad_nml)
     control_lw%isolir=2
     control_lw_hires%isolir=2
 
+    if(socrates_hires_mode) then
+        allocate(soc_bins_lw(spectrum_lw_hires%dim%nd_band))
+        allocate(soc_bins_sw(spectrum_sw_hires%dim%nd_band))    
+        soc_bins_lw = spectrum_lw_hires%Basic%wavelength_long            
+        soc_bins_sw = spectrum_sw_hires%Basic%wavelength_short       
+    else
+        allocate(soc_bins_lw(spectrum_lw%dim%nd_band))
+        allocate(soc_bins_sw(spectrum_sw%dim%nd_band))    
+        soc_bins_lw = spectrum_lw%Basic%wavelength_long            
+        soc_bins_sw = spectrum_sw%Basic%wavelength_short              
+    endif    
+    
+    !Need to actually give bins arrays values    
+    
+    id_soc_bins_lw = diag_axis_init('soc_bins_lw', soc_bins_lw, 'cm^-1', 'n', 'socrates lw spectral bin centers', set_name='socrates_lw_bins')
+
+    id_soc_bins_sw = diag_axis_init('soc_bins_sw', soc_bins_sw, 'cm^-1', 'n', 'socrates sw spectral bin centers', set_name='socrates_sw_bins')
 
     ! Register diagostic fields
-    ! spectral output currently not available as required axis not present in diag file 
-    !id_soc_spectral_olr = &
-    !     register_diag_field ( soc_mod_name, 'soc_spectral_olr',(/ axes(1:2), axes(5)/) , Time, &
-    !     'socrates substellar LW OLR spectrum', &
-    !     'watts/m2', missing_value=missing_value          )
+    id_soc_spectral_olr = &
+        register_diag_field ( soc_mod_name, 'soc_spectral_olr',(/ axes(1:2), id_soc_bins_lw/) , Time, &
+        'socrates substellar LW OLR spectrum', &
+        'watts/m2', missing_value=missing_value          )
 
-    !id_soc_olr_spectrum_lw = &
-    !     register_diag_field ( soc_mod_name, 'soc_olr_spectrum_lw',(/ axes(1:2), axes(5)/) , Time, &
-    !     'socrates substellar LW OLR spectrum', &
-    !     'watts/m2', missing_value=missing_value               )
-
-    !id_soc_surf_spectrum_sw = &
-    !     register_diag_field ( soc_mod_name, 'soc_surf_spectrum_sw',(/ axes(1:2), axes(5)/) , Time, &
-    !     'socrates substellar SW surface spectrum', &
-    !     'watts/m2', missing_value=missing_value               )
+    !Not implemented yet
+!     id_soc_surf_spectrum_sw = &
+!         register_diag_field ( soc_mod_name, 'soc_surf_spectrum_sw',(/ axes(1:2), id_soc_bins_sw/) , Time, &
+!         'socrates substellar SW surface spectrum', &
+!         'watts/m2', missing_value=missing_value               )
 
     id_soc_tdt_lw = &
          register_diag_field ( soc_mod_name, 'soc_tdt_lw', axes(1:3), Time, &
@@ -346,9 +360,13 @@ write(stdlog_unit, socrates_rad_nml)
         endif
 
         ! spectral output currently not available as required axis not present in diag file 
-        !if (id_soc_spectral_olr > 0) then 
-        !    allocate(SOMETHING)
-        !endif 
+        if (id_soc_spectral_olr > 0) then 
+            if (socrates_hires_mode == .True.) then
+                allocate(spectral_olr_store(size(lonb,1)-1, size(latb,2)-1, n_soc_bands_lw_hires))
+            else
+                allocate(spectral_olr_store(size(lonb,1)-1, size(latb,2)-1, n_soc_bands_lw ))
+            endif
+        endif 
 
     endif
 
@@ -735,6 +753,10 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                 if (id_soc_co2 > 0) then 
                     co2_in = thd_co2_store
                 endif 
+                
+                if (id_soc_spectral_olr > 0) then
+                    outputted_soc_spectral_olr = spectral_olr_store
+                endif
              else
                 output_heating_rate_sw = 0.
                 output_heating_rate_lw = 0.
@@ -748,6 +770,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                 coszen = 0.
                 ozone_in = 0.
                 co2_in = 0.
+                outputted_soc_spectral_olr = 0.
              endif
 
              temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_sw)+real(output_heating_rate_lw)
@@ -789,7 +812,10 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             endif 
             if(id_soc_ozone > 0) then 
                 used = send_data ( id_soc_ozone, ozone_in, Time_diag)
-            endif 
+            endif
+            if(id_soc_spectral_olr > 0) then 
+                used = send_data ( id_soc_spectral_olr, outputted_soc_spectral_olr, Time_diag)
+            endif             
             ! Diagnostics sent 
 
             return !not time yet
@@ -961,7 +987,11 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             if (id_soc_co2 > 0) then 
                 thd_co2_store = co2_in
             endif
-       
+            
+            if (id_soc_spectral_olr > 0) then
+                spectral_olr_store = outputted_soc_spectral_olr
+            endif       
+            
        endif
 
         ! Send diagnostics
@@ -1001,6 +1031,9 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
         if(id_soc_ozone > 0) then 
             used = send_data ( id_soc_ozone, ozone_in, Time_diag)
         endif 
+        if(id_soc_spectral_olr > 0) then 
+            used = send_data ( id_soc_spectral_olr, outputted_soc_spectral_olr, Time_diag)
+        endif         
         ! Diagnostics sent 
 
 end subroutine run_socrates  
