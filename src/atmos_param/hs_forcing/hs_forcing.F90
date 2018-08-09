@@ -58,7 +58,7 @@ private
 !-----------------------------------------------------------------------
 !---------- interfaces ------------
 
-   public :: hs_forcing, hs_forcing_init, hs_forcing_end
+   public :: hs_forcing, hs_forcing_init, hs_forcing_end, local_heating
 
    type(interpolate_type),save         ::  heating_source_interp
    type(interpolate_type),save         ::  u_interp
@@ -229,8 +229,6 @@ contains
       if(trim(local_heating_option) /= '') then
         call local_heating ( Time, is, js, lon, lat, ps, p_full, p_half, ttnd )
         tdt = tdt + ttnd
-!        if (id_local_heating > 0) used = send_data ( id_local_heating, ttnd, Time, is, js)
-        if (id_local_heating > 0) used = send_data ( id_local_heating, ttnd, Time)
       endif
 
 !      if (id_tdt > 0) used = send_data ( id_tdt, tdt, Time, is, js)
@@ -735,6 +733,8 @@ real :: lon_temp, x_temp, p_factor
 real, dimension(size(lon,1),size(lon,2)) :: lon_factor
 real, dimension(size(lat,1),size(lat,2)) :: lat_factor
 real, dimension(size(p_half,1),size(p_half,2),size(p_half,3)) :: p_half2
+logical :: used
+
 do i=1,size(p_half,3)
   p_half2(:,:,i)=p_half(:,:,size(p_half,3)-i+1)
 enddo
@@ -761,6 +761,8 @@ else if(trim(local_heating_option) == 'Isidoro') then
 else
   call error_mesg ('hs_forcing_nml','"'//trim(local_heating_option)//'"  is not a valid value for local_heating_option',FATAL)
 endif
+
+if (id_local_heating > 0) used = send_data ( id_local_heating, tdt, Time)
 
 end subroutine local_heating
 
