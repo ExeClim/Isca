@@ -54,7 +54,7 @@ diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_co2', time_avg=True)
 #diag.add_field('socrates', 'soc_ozone', time_avg=True) 
 #diag.add_field('socrates', 'soc_coszen', time_avg=True) 
-
+#diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
 
 #Define values for the 'core' namelist
