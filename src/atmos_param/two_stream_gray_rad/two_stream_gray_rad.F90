@@ -80,8 +80,8 @@ real    :: linear_tau      = 0.1
 real    :: wv_exponent     = 4.0
 real    :: solar_exponent  = 4.0
 logical :: do_seasonal     = .false.
-integer :: solday          = -10 !s Day of year to run perpetually if do_seasonal=True and solday>0
-real    :: equinox_day     = 0.0 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months).
+integer :: solday          = -10  !s Day of year to run perpetually if do_seasonal=True and solday>0
+real    :: equinox_day     = 0.75 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months).
 logical :: use_time_average_coszen = .false. !s if .true., then time-averaging is done on coszen so that insolation doesn't depend on timestep
 real    :: dt_rad_avg     = -1
 
