@@ -80,8 +80,8 @@ real    :: linear_tau      = 0.1
 real    :: wv_exponent     = 4.0
 real    :: solar_exponent  = 4.0
 logical :: do_seasonal     = .false.
-integer :: solday          = -10 !s Day of year to run perpetually if do_seasonal=True and solday>0
-real    :: equinox_day     = 0.0 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months).
+integer :: solday          = -10  !s Day of year to run perpetually if do_seasonal=True and solday>0
+real    :: equinox_day     = 0.75 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months).
 logical :: use_time_average_coszen = .false. !s if .true., then time-averaging is done on coszen so that insolation doesn't depend on timestep
 real    :: dt_rad_avg     = -1
 
@@ -107,7 +107,7 @@ real    :: single_albedo      = 0.8
 real    :: back_scatter       = 0.398
 real    :: lw_tau_0_gp        = 80.0
 real    :: sw_tau_0_gp        = 3.0
-real    :: lw_tau_exponent_gp = 2.0 
+real    :: lw_tau_exponent_gp = 2.0
 real    :: sw_tau_exponent_gp = 1.0
 real    :: diabatic_acce = 1.0
 real,save :: gp_albedo, Ga_asym, g_asym
@@ -145,9 +145,9 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
            ir_tau_co2, ir_tau_wv1, ir_tau_wv2, &
 		   window, carbon_conc, rad_scheme, &
-           do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &           
+           do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
            use_time_average_coszen, dt_rad_avg,&
-           diabatic_acce !Schneider Liu values           
+           diabatic_acce !Schneider Liu values
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -222,7 +222,7 @@ else if(uppercase(trim(rad_scheme)) == 'BYRNE') then
   call error_mesg('two_stream_gray_rad','Using Byrne & OGorman (2013) radiation scheme.', NOTE)
 else if(uppercase(trim(rad_scheme)) == 'SCHNEIDER') then
   lw_scheme = B_SCHNEIDER_LIU
-  call error_mesg('two_stream_gray_rad','Using Schneider & Liu (2009) radiation scheme for GIANT PLANETS.', NOTE)  
+  call error_mesg('two_stream_gray_rad','Using Schneider & Liu (2009) radiation scheme for GIANT PLANETS.', NOTE)
 else
   call error_mesg('two_stream_gray_rad','"'//trim(rad_scheme)//'"'//' is not a valid radiation scheme.', FATAL)
 endif
@@ -237,7 +237,7 @@ if(lw_scheme == B_SCHNEIDER_LIU) then
 endif
 
 if ((lw_scheme == B_BYRNE).or.(lw_scheme == B_GEEN)) then
-    if (pstd_mks/=pstd_mks_earth) call error_mesg('two_stream_gray_rad','Pstd_mks and pstd_mks_earth are not the same in the this run, but lw scheme will use pstd_mks_earth because abs coeffs in Byrne and Geen schemes are non-dimensionalized by Earth surface pressure.', NOTE)  
+    if (pstd_mks/=pstd_mks_earth) call error_mesg('two_stream_gray_rad','Pstd_mks and pstd_mks_earth are not the same in the this run, but lw scheme will use pstd_mks_earth because abs coeffs in Byrne and Geen schemes are non-dimensionalized by Earth surface pressure.', NOTE)
 endif
 
 
@@ -288,7 +288,7 @@ case(B_GEEN)
 
 case(B_BYRNE)
   allocate (lw_del_tau       (ie-is+1, je-js+1))
-  
+
 case(B_SCHNEIDER_LIU)
 	allocate (b_surf_gp      (ie-is+1, je-js+1))
 end select
@@ -420,7 +420,7 @@ if (do_seasonal) then
   r_seconds = real(seconds)
   day_in_s = length_of_day()
   frac_of_day = r_seconds / day_in_s
-  
+
   if(solday .ge. 0) then
       r_solday=real(solday)
       frac_of_year = (r_solday*day_in_s) / year_in_s
@@ -435,10 +435,10 @@ if (do_seasonal) then
   time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
 
   if(use_time_average_coszen) then
-     
+
      r_dt_rad_avg=real(dt_rad_avg)
      dt_rad_radians = (r_dt_rad_avg/day_in_s)*2.0*pi
-     
+
      call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians)
   else
      call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
@@ -493,7 +493,7 @@ case(B_FRIERSON, B_BYRNE)
 case(B_SCHNEIDER_LIU)
   ! Schneider & Liu 2009 Giant planet scheme
   ! SW optical thickness
-  
+
   ! compute optical depths for each model level
   do k = 1, n+1
     sw_tau(:,:,k) = sw_tau_0_gp * (p_half(:,:,k)/pstd_mks)**sw_tau_exponent_gp
@@ -514,7 +514,6 @@ end select
 
 ! longwave source function
 b = stefan*t**4
-lw_dtrans_win = 1.
 
 if(do_read_co2)then
   call interpolator( co2_interp, Time_diag, p_half, co2f, trim(co2_variable_name))
@@ -526,6 +525,7 @@ select case(lw_scheme)
 case(B_GEEN)
   ! split LW in 2 bands: water-vapour window and remaining = non-window
   ! ref: Ruth Geen etal, GRL 2016 (supp. information).
+  lw_dtrans_win = 1.
   do k = 1, n
     lw_del_tau    = ( ir_tau_co2 + 0.2023 * log(carbon_conc/360.)                  &
                     + ir_tau_wv1*log(ir_tau_wv2*q(:,:,k) + 1) )                    &
