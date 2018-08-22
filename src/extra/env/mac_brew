@@ -1,0 +1,7 @@
+echo loadmodules for Isca on mac using homebrew
+
+export GFDL_COMPILER=gfort
+export F90=mpifort
+export CC=gcc-8
+export CDEFS=" -DMACOS "
+export NETCDF_LIBS=" -I/usr/local/include "

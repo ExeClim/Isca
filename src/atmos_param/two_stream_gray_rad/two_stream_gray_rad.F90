@@ -514,7 +514,6 @@ end select
 
 ! longwave source function
 b = stefan*t**4
-lw_dtrans_win = 1.
 
 if(do_read_co2)then
   call interpolator( co2_interp, Time_diag, p_half, co2f, trim(co2_variable_name))
@@ -526,6 +525,7 @@ select case(lw_scheme)
 case(B_GEEN)
   ! split LW in 2 bands: water-vapour window and remaining = non-window
   ! ref: Ruth Geen etal, GRL 2016 (supp. information).
+  lw_dtrans_win = 1.
   do k = 1, n
     lw_del_tau    = ( ir_tau_co2 + 0.2023 * log(carbon_conc/360.)                  &
                     + ir_tau_wv1*log(ir_tau_wv2*q(:,:,k) + 1) )                    &
