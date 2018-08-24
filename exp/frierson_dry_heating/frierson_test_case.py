@@ -23,7 +23,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('frierson_test_experiment_dry_heating_mk7', codebase=cb)
+exp = Experiment('frierson_test_experiment_dry_heating_mk8', codebase=cb)
 
 exp.inputfiles = [ os.path.join(base_dir,'input/heating_rate.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 

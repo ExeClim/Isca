@@ -10,16 +10,20 @@ from finite_difference import diffz
 grav = 9.81
 c_p = 287.04 / (2./7.)
 
+#Read in radiation-scheme output file(s) Will need to use open_mfdataset if more than one.
 resolution_file = xar.open_dataset('~/Desktop/full_continents_global_monthly_control_test.nc', decode_times=False)
 
 lons = resolution_file['lon']
 lats = resolution_file['lat']
 
+#Decide whether heating rates are included in output file
 try:
     resolution_file['htr_lw']
     heating_rates_present=True
 except KeyError:
     heating_rates_present=False
+
+#If heating rates are not present then calculate heating rates from differentiating vertical fluxes
 
 if not heating_rates_present:
     total_flux = resolution_file['lw_recalculated']+resolution_file['sw_recalculated']
@@ -28,7 +32,7 @@ if not heating_rates_present:
 else:
     heating_rate = resolution_file['htr_lw']+resolution_file['htr_sw']
 
-# ozone_in = resolution_file.variables['O3'][:]
+#Set up output file variables. 
 
 latb_temp=np.zeros(lats.shape[0]+1)
 
@@ -62,13 +66,17 @@ p_half = resolution_file['phalf'][::-1]
 time_arr = resolution_file['time'].values
 
 heating_rate_new = np.zeros((12, heating_rate.shape[1], nlat, nlon))
+
+#Arrange 12 months to be 30 days apart
 time_arr_new = np.arange(0,12,1)*30.
 time_arr = time_arr_new
 
+
+#Repeat 1 month 12 times just because I only have 1 input file. This would need replacing with different values each month.
 for t in range(len(time_arr)):
     heating_rate_new[t,...] = heating_rate
 
-heating_rate = heating_rate_new[:,1::,...]
+heating_rate = heating_rate_new[:,:,...]
 
 date_arr=np.mod((time_arr-time_arr[0]),12)
 date_arr_new=np.zeros(12)
@@ -93,7 +101,8 @@ number_dict['npfull']=npfull
 number_dict['nphalf']=nphalf
 number_dict['ntime']=ntime
 
+#Line that would need changing depending on year-on-year repeating heating or timeseries heating. 
 time_units='days since 0000-01-01 00:00:00.0'
 
-cts.output_to_file(heating_rate[:,::-1,...],lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,variable_name,number_dict)
+cts.output_to_file(heating_rate[:,::-1,...],lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,variable_name,number_dict, dims=total_flux.dims)
 
