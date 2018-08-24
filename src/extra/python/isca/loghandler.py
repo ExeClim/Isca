@@ -2,10 +2,11 @@ import logging
 
 log = logging.getLogger('isca')
 log.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-log.addHandler(ch)
+stdout = logging.StreamHandler()
+stdout.setLevel(logging.DEBUG)
+stdout.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+log.addHandler(stdout)
+
 
 def clean_log_info(s):
     if s.strip():
@@ -49,3 +50,28 @@ class Logger(object):
             else:
                 self.log.warn(line)
 
+
+
+class SuppressNext(logging.Filter):
+    def __init__(self):
+        self._suppress_next = False
+        self._suppressed = False
+
+    def suppress_next(self):
+        self._suppress_next = True
+
+    def suppress(self):
+        self._suppressed = True
+
+    def unsuppress(self):
+        self._suppressed = False
+
+    def filter(self, record):
+        if self._suppress_next or self._suppressed:
+            self._suppress_next = False
+            return False
+        return True
+
+
+suppress_stdout = SuppressNext()
+stdout.addFilter(suppress_stdout)

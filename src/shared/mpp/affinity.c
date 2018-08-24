@@ -21,6 +21,16 @@
 
 #define _GNU_SOURCE
 
+#ifdef MACOS
+// Mac OS doesn't permit thread pinning.  So we just ignore it...
+// https://developer.apple.com/library/archive/releasenotes/Performance/RN-AffinityAPI/index.html
+// see also Neil's question on Stack Overflow
+// https://stackoverflow.com/questions/45227009/alternative-to-shed-getaffinity-cpu-set-t-etc
+int get_cpu_affinity(void) { return -1; };
+void set_cpu_affinity( int cpu ) {};
+
+#else
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -64,7 +74,6 @@ int get_cpu_affinity(void)
   return (last_cpu == -1) ? first_cpu : -1;
 }
 
-int get_cpu_affinity_(void) { return get_cpu_affinity(); }	/* Fortran interface */
 
 
 /*
@@ -81,4 +90,7 @@ void set_cpu_affinity( int cpu )
   }
 }
 
+#endif
+
+int get_cpu_affinity_(void) { return get_cpu_affinity(); }  /* Fortran interface */
 void set_cpu_affinity_(int *cpu) { set_cpu_affinity(*cpu); }	/* Fortran interface */
