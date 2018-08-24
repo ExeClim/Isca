@@ -46,7 +46,7 @@ use  field_manager_mod, only: MODEL_ATMOS, parse
 use tracer_manager_mod, only: query_method, get_number_tracers
 use   interpolator_mod, only: interpolate_type, interpolator_init, &
                               interpolator, interpolator_end, &
-                              CONSTANT, INTERP_WEIGHTED_P
+                              CONSTANT, INTERP_WEIGHTED_P, ZERO
 
 use      astronomy_mod, only: diurnal_exoplanet, astronomy_init, obliq, ecc
 use     transforms_mod, only: grid_domain, get_grid_domain
@@ -279,7 +279,7 @@ contains
            integer, intent(in) :: axes(4)
    type(time_type), intent(in) :: Time
    real, intent(in), dimension(:,:) :: lat
-   real, intent(in), optional, dimension(:,:) :: lonb, latb
+   real, intent(in), dimension(:,:) :: lonb, latb
 
 
 !-----------------------------------------------------------------------
@@ -447,7 +447,7 @@ contains
       endif
 
      if(trim(local_heating_option) == 'from_file') then
-       call interpolator_init(heating_source_interp, trim(local_heating_file)//'.nc', lonb, latb, data_out_of_bounds=(/CONSTANT/))
+       call interpolator_init(heating_source_interp, trim(local_heating_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
      endif
      if(trim(equilibrium_t_option) == 'from_file') then
        call interpolator_init (temp_interp, trim(equilibrium_t_file)//'.nc', lonb, latb, data_out_of_bounds=(/CONSTANT/))
@@ -742,7 +742,7 @@ enddo
 tdt(:,:,:)=0.
 
 if(trim(local_heating_option) == 'from_file') then
-   call interpolator( heating_source_interp, p_half, tdt, trim(local_heating_file))
+   call interpolator( heating_source_interp, Time, p_half, tdt, trim(local_heating_file))
 else if(trim(local_heating_option) == 'Isidoro') then
    do j=1,size(lon,2)
    do i=1,size(lon,1)
