@@ -107,7 +107,7 @@ def create_time_arr(num_years,is_climatology,time_spacing):
     return time_arr,day_number,ntime,time_units,time_bounds
 
 
-def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,variable_name,number_dict, time_bounds=None):
+def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,variable_name,number_dict, time_bounds=None, dims=None):
 
     output_file = Dataset(file_name, 'w', format='NETCDF3_CLASSIC')
 
@@ -116,6 +116,10 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
     else:
         is_thd=True
 
+    if dims is not None and is_thd:
+        p_half_variable = 'phalf' in dims or 'p_half' in dims
+    else:
+        p_half_variable=False
 
     lat = output_file.createDimension('lat', number_dict['nlat'])
     lon = output_file.createDimension('lon', number_dict['nlon'])
@@ -200,7 +204,10 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
 
 
     if is_thd:
-        output_array_netcdf = output_file.createVariable(variable_name,'f4',('time','pfull', 'lat','lon',))
+        if p_half_variable:
+            output_array_netcdf = output_file.createVariable(variable_name,'f4',('time','phalf', 'lat','lon',))
+        else:
+            output_array_netcdf = output_file.createVariable(variable_name,'f4',('time','pfull', 'lat','lon',))            
     else:
         output_array_netcdf = output_file.createVariable(variable_name,'f4',('time','lat','lon',))
 

@@ -54,7 +54,7 @@ use  field_manager_mod, only: MODEL_ATMOS
 
 use rayleigh_bottom_drag_mod, only: rayleigh_bottom_drag_init, compute_rayleigh_bottom_drag
 
-use hs_forcing_mod, only: hs_forcing_init, local_heating
+use hs_forcing_mod, only: hs_forcing_init, local_heating, hs_forcing_end
 
 #ifdef RRTM_NO_COMPILE
     ! RRTM_NO_COMPILE not included
@@ -1225,6 +1225,8 @@ endif
 call lscale_cond_end
 if(mixed_layer_bc)  call mixed_layer_end(t_surf, bucket_depth, bucket)
 if(do_damping) call damping_driver_end
+
+if(do_local_heating) call hs_forcing_end
 
 end subroutine idealized_moist_phys_end
 !=================================================================================================================================
