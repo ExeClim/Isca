@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Compiles the MiMa GFDL Moist Model (tested on emps-gv2.ex.ac.uk)
 
-
 # 1. Configuration
 hostname=`hostname`
 template={{ template_dir }}/mkmf.template.ia64

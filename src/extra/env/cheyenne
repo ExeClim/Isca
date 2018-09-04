@@ -1,0 +1,11 @@
+echo loadmodules
+source /glade/u/home/${USER}/.bashrc
+module purge
+module load ncarenv/1.2
+module load intel/17.0.1
+module load ncarcompilers
+module load mpt/2.15f
+module load netcdf/4.4.1.1
+module load git
+source ${python_package_lib_path}
+
