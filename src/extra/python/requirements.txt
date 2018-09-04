@@ -4,3 +4,4 @@ git+git://github.com/marshallward/f90nml.git#egg=f90nml
 numpy
 pandas
 xarray
+tqdm
