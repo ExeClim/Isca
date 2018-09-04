@@ -1,4 +1,4 @@
-from netcdftime import utime
+from cftime import utime
 from datetime import  datetime
 from cmip_time import FakeDT
 import numpy as np
