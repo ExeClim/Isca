@@ -4,7 +4,6 @@
 # 0. Source the environment file to load appropriate variables
 source {{ env_source }}
 
-
 # 1. Configuration
 hostname=`hostname`
 compiler=${GFDL_MKMF_TEMPLATE:-ia64}
