@@ -91,6 +91,17 @@ namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
+        'do_cloud_simple': True,
+    },
+
+    'cloud_simple_nml': {
+        'simple_cca':0.0,
+        'rhcsfc': 0.95,
+        'rhc700': 0.7,
+        'rhc200': 0.3,
+        'rhmsfc': 0.95,
+        'rhm700': 0.7,
+        'rhm200': 0.3,
     },
 
     'vert_turb_driver_nml': {
@@ -193,5 +204,5 @@ if __name__=="__main__":
         exp.namelist = namelist.copy()
 
         exp.run(1, use_restart=False, num_cores=NCORES)
-        for i in range(2,121):
-            exp.run(i, num_cores=NCORES)
+#        for i in range(2,121):
+#            exp.run(i, num_cores=NCORES)
