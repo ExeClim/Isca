@@ -347,6 +347,10 @@ write(stdlog_unit, idealized_moist_phys_nml)
 d622 = rdgas/rvgas
 d378 = 1.-d622
 
+if(do_cloud_simple) then
+  call cloud_simple_init()
+end if
+
 !s need to make sure that gray radiation and rrtm radiation are not both called.
 if(two_stream_gray .and. do_rrtm_radiation) &
    call error_mesg('physics_driver_init','do_grey_radiation and do_rrtm_radiation cannot both be .true.',FATAL)
@@ -965,6 +969,7 @@ endif
 ! Using start of time step variables
 ! using soecific humidity NOT mixing ratios
 if(do_cloud_simple) then
+
     call cloud_simple(p_half(:,:,:,current), p_full(:,:,:,current),  &
                       Time,                                &
                       tg(:,:,:,previous),                  &

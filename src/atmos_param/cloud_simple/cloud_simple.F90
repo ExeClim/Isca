@@ -6,8 +6,9 @@ module cloud_simple_mod
     use fms_mod, only: open_namelist_file, close_file
 #endif
 
-  use           fms_mod, only: stdlog, FATAL, WARNING, error_mesg
-  use  time_manager_mod, only: time_type
+  use            fms_mod, only: stdlog, FATAL, WARNING, error_mesg
+  use   time_manager_mod, only: time_type
+  use sat_vapor_pres_mod, only:  compute_qs
 
   implicit none
 
@@ -68,14 +69,14 @@ module cloud_simple_mod
 
     integer :: i, j, k, k_surf
 
-    logical :: es_over_liq_and_ice=.true.
+    logical :: es_over_liq_and_ice
 
     !check initiation has been done - ie read in parameters
     if (do_init) call error_mesg ('cloud_simple',  &
          'cloud_simple_init has not been called.', FATAL)
     
     ! Get the saturated specific humidity TOTAL (ie ice and vap) ***double check maths!
-    call compute_qs(temp, p_full, qs, es_over_liq_and_ice) !qs=qsat in um
+    call compute_qs(temp, p_full, qs, es_over_liq_and_ice=.true.) !qs=qsat in um
 
     k_surf = size(temp, 3)
 
