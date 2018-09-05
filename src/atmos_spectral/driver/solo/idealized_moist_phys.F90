@@ -349,7 +349,6 @@ d378 = 1.-d622
 
 if(do_cloud_simple) then
   call cloud_simple_init(get_axis_id(), Time)
-end if
 
 !s need to make sure that gray radiation and rrtm radiation are not both called.
 if(two_stream_gray .and. do_rrtm_radiation) &
@@ -801,7 +800,7 @@ real :: delta_t
 real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
 
 ! Simple cloud scheme variabilies to pass to radiation
-real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cf_rad, reff_rad, qcl_rad, cca_rad  
+real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cfa_rad, reff_rad, qcl_rad, cca_rad  
 
 real, intent(in) , dimension(:,:,:), optional :: mask
 integer, intent(in) , dimension(:,:),   optional :: kbot
