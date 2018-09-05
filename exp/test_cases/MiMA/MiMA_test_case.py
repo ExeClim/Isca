@@ -4,7 +4,7 @@ import numpy as np
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 4
+NCORES = 16
 
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -131,7 +131,8 @@ exp.namelist = namelist = Namelist({
     },
     
     'sat_vapor_pres_nml': {
-        'do_simple':True
+        'do_simple':True,
+        'construct_table_wrt_liq_and_ice':True
     },
     
     'damping_driver_nml': {
@@ -185,5 +186,5 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
     exp.run(1, use_restart=False, num_cores=NCORES)
-    for i in range(2,121):
+    for i in range(2,25):
         exp.run(i, num_cores=NCORES)
