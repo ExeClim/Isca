@@ -985,7 +985,7 @@ if(do_cloud_simple) then
                       cf_rad(:,:,:), cca_rad(:,:,:),       &
                       reff_rad(:,:,:), qcl_rad(:,:,:)      & 
                       )
- 
+
 endif
 
 ! Begin the radiation calculation by computing downward fluxes.
@@ -1113,7 +1113,7 @@ if(do_rrtm_radiation) then
    call interp_temp(z_full(:,:,:,current),z_half(:,:,:,current),tg_interp, Time)
    call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),  &
                   albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),     &
-                  coszen,net_surf_sw_down(:,:),surf_lw_down(:,:), cf_rad(:,:,:), reff_rad(:,:,:),   &     
+                  coszen,net_surf_sw_down(:,:),surf_lw_down(:,:), cfa_rad(:,:,:), reff_rad(:,:,:),   &     
                   do_cloud_simple )
 endif
 #endif
