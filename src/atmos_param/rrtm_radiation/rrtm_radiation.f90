@@ -531,7 +531,10 @@
         end subroutine interp_temp
 !*****************************************************************************************
 !*****************************************************************************************
-        subroutine run_rrtmg(is,js,Time,lat,lon,p_full,p_half,albedo,q,t,t_surf_rad,tdt,coszen,flux_sw,flux_lw)
+        subroutine run_rrtmg(is,js,Time,lat,lon,p_full,p_half,        &
+                             albedo,q,t,t_surf_rad,tdt,               &
+                             coszen,flux_sw,flux_lw,cfa_rad,reff_rad, &
+                             do_cloud_simple)
 !
 ! Driver for RRTMG radiation scheme.
 ! Prepares all inputs, calls SW and LW radiation schemes, 
@@ -577,6 +580,11 @@
           real(kind=rb),dimension(:,:),intent(out),optional :: flux_sw,flux_lw ! surface fluxes [W/m2]
                                                                                ! dimension (lat x lon)
                                                                                ! need to have both or none!
+          real(kind=rb), dimension(:,:,:), intent(in)       :: cfa_rad,reff_rad !cloud properties
+
+          logical, intent(in)                               :: do_cloud_simple
+
+
 !---------------------------------------------------------------------------------------------------------------
 ! Local variables
           integer k,j,i,ij,j1,i1,ij1,kend,dyofyr,seconds,days
@@ -584,7 +592,7 @@
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: o3f
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: co2f,co2f_temp
           real(kind=rb),dimension(ncols_rrt,nlay_rrt) :: pfull,tfull,fracday&
-               , hr,hrc, swhr, swhrc
+               , hr,hrc, swhr, swhrc, cldfr, reliq, reice
           real(kind=rb),dimension(size(tdt,1),size(tdt,2),size(tdt,3)) :: tdt_rrtm
           real(kind=rb),dimension(ncols_rrt,nlay_rrt+1) :: uflx, dflx, uflxc, dflxc&
                ,swuflx, swdflx, swuflxc, swdflxc
@@ -599,9 +607,8 @@
           real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
           real(kind=rb),dimension(size(q,1),size(q,2)) :: p2 !mp586 addition for annual mean insolation
 
-	  integer :: year_in_s
+	      integer :: year_in_s
           real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
-
 
 
 ! debug
@@ -828,6 +835,20 @@
           ! anything lower than 0.01 (about 15min) is set to zero
 !          where(cosz_rr < 1.e-2)cosz_rr=0.
           
+          if (do_cloud_simple) then
+            inflglw  = 2 !RRTM responsible for calculating optical properties of clouds
+            liqflglw = 1 !Sets liquid water radii to be used rather than being inactive (zero is inactive)
+            cldfr = reshape( cfa_rad  (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
+            reliq = reshape(reff_rad  (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
+            reice = zeros !Ice particle radii not used as iceflglw=0 meaning it is inactive. Setting to fill value of zeros
+          else
+            cldfr = zeros
+            reliq = 10*ones
+            reice = 10*ones
+          endif
+
+
+
           if(include_secondary_gases)then
              call rrtmg_sw &
                   (ncols_rrt, nlay_rrt , icld     , iaer         , &
@@ -835,13 +856,14 @@
                   h2o       , o3       , co2      , ch4_val*ones , n2o_val*ones , o2_val*ones , &
                   albedo_rr , albedo_rr, albedo_rr, albedo_rr, &
                   cosz_rr   , solrad   , dyofyr   , solr_cnst, &
-                  inflglw   , iceflglw , liqflglw , &
+                  inflglw   , iceflglw , liqflglw ,            &
                   ! cloud parameters
-                  zeros     , taucld   , sw_zro   , sw_zro   , sw_zro , &
-                  zeros     , zeros    , 10*ones  , 10*ones  , &
-                  tauaer    , zro_sw   , zro_sw   , zro_sw    , &
+                  cldfr,     &
+                  taucld    , sw_zro   , sw_zro   , sw_zro  , &
+                  zeros     , zeros    , reice    , reliq   , & 
+                  tauaer    , zro_sw   , zro_sw   , zro_sw  , &
                   ! output
-                  swuflx    , swdflx   , swhr     , swuflxc  , swdflxc, swhrc)
+                  swuflx    , swdflx   , swhr     , swuflxc , swdflxc, swhrc)
           else
              call rrtmg_sw &
                   (ncols_rrt, nlay_rrt , icld     , iaer     , &
@@ -849,10 +871,11 @@
                   h2o       , o3       , co2      , zeros    , zeros, zeros, &
                   albedo_rr , albedo_rr, albedo_rr, albedo_rr, &
                   cosz_rr   , solrad   , dyofyr   , solr_cnst, &
-                  inflglw   , iceflglw , liqflglw , &
+                  inflglw   , iceflglw , liqflglw ,            &
                   ! cloud parameters
-                  zeros     , taucld   , sw_zro   , sw_zro   , sw_zro , &
-                  zeros     , zeros    , 10*ones  , 10*ones  , &
+                  cldfr,     &
+                  taucld   , sw_zro   , sw_zro   , sw_zro ,    &
+                  zeros     , zeros    , reice   , reliq  ,    &
                   tauaer    , zro_sw   , zro_sw   , zro_sw   , &
                   ! output
                   swuflx    , swdflx   , swhr     , swuflxc  , swdflxc, swhrc)
@@ -884,7 +907,7 @@
                   ! emissivity and cloud composition
                   emis           , inflglw        , iceflglw       , liqflglw      ,  &
                   ! cloud parameters
-                  zeros          , taucld         , zeros          , zeros         , 10*ones, 10*ones, &
+                  cldfr          , taucld         , zeros          , zeros         , reice, reliq, &
                   tauaer         , &
                   ! output
                   uflx           , dflx           , hr             , uflxc         , dflxc  , hrc)
@@ -897,7 +920,7 @@
                   ! emissivity and cloud composition
                   emis      , inflglw , iceflglw, liqflglw, &
                   ! cloud parameters
-                  zeros     , taucld  , zeros   , zeros, 10*ones, 10*ones, &
+                  cldfr     , taucld  , zeros   , zeros, reice, reliq, &
                   tauaer    , &
                   ! output
                   uflx      , dflx    , hr      , uflxc, dflxc  , hrc)

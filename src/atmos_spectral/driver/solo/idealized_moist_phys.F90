@@ -18,6 +18,8 @@ use           vert_diff_mod, only: vert_diff_init, gcm_vert_diff_down, gcm_vert_
 
 use two_stream_gray_rad_mod, only: two_stream_gray_rad_init, two_stream_gray_rad_down, two_stream_gray_rad_up, two_stream_gray_rad_end
 
+use        cloud_simple_mod, only: cloud_simple_init, cloud_simple_end, cloud_simple
+
 use         mixed_layer_mod, only: mixed_layer_init, mixed_layer, mixed_layer_end, albedo_calc
 
 use         lscale_cond_mod, only: lscale_cond_init, lscale_cond, lscale_cond_end
@@ -107,6 +109,9 @@ logical :: lwet_convection = .false.
 logical :: do_bm = .false.
 logical :: do_ras = .false.
 
+! Cloud options
+logical :: do_cloud_simple = .false.
+
 !s Radiation options
 logical :: two_stream_gray = .true.
 logical :: do_rrtm_radiation = .false.
@@ -142,6 +147,7 @@ real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
 ! end RG Add bucket
 
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
+                                      do_cloud_simple,                                       &
                                       two_stream_gray, do_rrtm_radiation, do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
@@ -790,6 +796,9 @@ real, dimension(:,:,:,:),   intent(inout) :: dt_tracers
 real :: delta_t
 real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
 
+! Simple cloud scheme variabilies to pass to radiation
+real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cfa_rad, reff_rad
+
 real, intent(in) , dimension(:,:,:), optional :: mask
 integer, intent(in) , dimension(:,:),   optional :: kbot
 
@@ -952,6 +961,20 @@ if (r_conv_scheme .ne. DRY_CONV) then
 
 endif
 
+! Call the simple cloud scheme in line with SPOOKIE-2 requirements
+! Using start of time step variables
+! using soecific humidity NOT mixing ratios
+if(do_cloud_simple) then
+    call cloud_simple(p_half(:,:,:,current), p_full(:,:,:,current),  &
+                      Time,                                &
+                      tg(:,:,:,previous),                  &
+                      grid_tracers(:,:,:,previous,nsphum), &
+                      ! outs - 
+                      cfa_rad(:,:,:), reff_rad(:,:,:)      & 
+                      )
+
+endif
+
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
@@ -1076,7 +1099,10 @@ if(do_rrtm_radiation) then
    !need t at half grid
 	tg_interp=tg(:,:,:,previous)
    call interp_temp(z_full(:,:,:,current),z_half(:,:,:,current),tg_interp, Time)
-   call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),coszen,net_surf_sw_down(:,:),surf_lw_down(:,:))
+   call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),  &
+                  albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),     &
+                  coszen,net_surf_sw_down(:,:),surf_lw_down(:,:), cfa_rad(:,:,:), reff_rad(:,:,:),   &     
+                  do_cloud_simple )
 endif
 #endif
 
