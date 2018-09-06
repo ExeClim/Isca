@@ -348,7 +348,7 @@ d622 = rdgas/rvgas
 d378 = 1.-d622
 
 if(do_cloud_simple) then
-  call cloud_simple_init()
+  call cloud_simple_init(get_axis_id(), Time)
 end if
 
 !s need to make sure that gray radiation and rrtm radiation are not both called.
@@ -801,13 +801,15 @@ real :: delta_t
 real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
 
 ! Simple cloud scheme variabilies to pass to radiation
-real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cfa_rad, reff_rad
+real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cf_rad, reff_rad, qcl_rad  
 
 real, intent(in) , dimension(:,:,:), optional :: mask
 integer, intent(in) , dimension(:,:),   optional :: kbot
 
 real, dimension(1,1,1):: tracer, tracertnd
 integer :: nql, nqi, nqa   ! tracer indices for stratiform clouds
+
+real :: tmp1, tmp2 !remove tmp1 and tmp2 after debugging
 
 if(current == previous) then
    delta_t = dt_real
@@ -975,11 +977,14 @@ if(do_cloud_simple) then
                       tg(:,:,:,previous),                  &
                       grid_tracers(:,:,:,previous,nsphum), &
                       ! outs - 
-                      cfa_rad(:,:,:), reff_rad(:,:,:)      & 
+                      cf_rad(:,:,:), reff_rad(:,:,:),      &
+                      qcl_rad(:,:,:)                       & 
                       )
-
+ 
 endif
 
+tmp1 = maxval(reff_rad)
+tmp2 = maxval(cf_rad)
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
@@ -1106,7 +1111,7 @@ if(do_rrtm_radiation) then
    call interp_temp(z_full(:,:,:,current),z_half(:,:,:,current),tg_interp, Time)
    call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),  &
                   albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),     &
-                  coszen,net_surf_sw_down(:,:),surf_lw_down(:,:), cfa_rad(:,:,:), reff_rad(:,:,:),   &     
+                  coszen,net_surf_sw_down(:,:),surf_lw_down(:,:), cf_rad(:,:,:), reff_rad(:,:,:),   &     
                   do_cloud_simple )
 endif
 #endif

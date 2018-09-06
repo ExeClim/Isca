@@ -533,7 +533,7 @@
 !*****************************************************************************************
         subroutine run_rrtmg(is,js,Time,lat,lon,p_full,p_half,        &
                              albedo,q,t,t_surf_rad,tdt,               &
-                             coszen,flux_sw,flux_lw,cfa_rad,reff_rad, &
+                             coszen,flux_sw,flux_lw,cf_rad,reff_rad,  &
                              do_cloud_simple)
 !
 ! Driver for RRTMG radiation scheme.
@@ -580,7 +580,7 @@
           real(kind=rb),dimension(:,:),intent(out),optional :: flux_sw,flux_lw ! surface fluxes [W/m2]
                                                                                ! dimension (lat x lon)
                                                                                ! need to have both or none!
-          real(kind=rb), dimension(:,:,:), intent(in)       :: cfa_rad,reff_rad !cloud properties
+          real(kind=rb), dimension(:,:,:), intent(in)       :: cf_rad,reff_rad !cloud properties
 
           logical, intent(in)                               :: do_cloud_simple
 
@@ -612,6 +612,8 @@
 
 
 ! debug
+          real :: tmp1, tmp2 !remove tmp1 and tmp2 after debugging
+
           integer :: indx2(2),indx(3),ii,ji,ki
           logical :: used
 !---------------------------------------------------------------------------------------------------------------
@@ -838,16 +840,16 @@
           if (do_cloud_simple) then
             inflglw  = 2 !RRTM responsible for calculating optical properties of clouds
             liqflglw = 1 !Sets liquid water radii to be used rather than being inactive (zero is inactive)
-            cldfr = reshape( cfa_rad  (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
-            reliq = reshape(reff_rad  (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
-            reice = zeros !Ice particle radii not used as iceflglw=0 meaning it is inactive. Setting to fill value of zeros
+            cldfr = reshape( cf_rad  (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
+            reliq = reshape(reff_rad  (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /)) !already in microns
+            reice = 10*ones !Ice particle radii not used as iceflglw=0 meaning it is inactive. Setting to fill value of zeros
           else
             cldfr = zeros
-            reliq = 10*ones
-            reice = 10*ones
+            reliq = 10*ones  ! not requires to be 10 microns but assumed a valid number
+            reice = 10*ones  ! needs to be 10 microns
           endif
-
-
+          tmp1 = maxval(reff_rad)
+          tmp2 = maxval(cf_rad)
 
           if(include_secondary_gases)then
              call rrtmg_sw &

@@ -10,9 +10,11 @@ module cloud_simple_mod
   use   time_manager_mod, only: time_type
   use sat_vapor_pres_mod, only:  compute_qs
 
+  use diag_manager_mod, only: register_diag_field, send_data
+
   implicit none
 
-  logical ::   do_init = .true.  ! Do I still need to do init?
+  logical ::   do_init = .true.  ! Check if init needs to be run
 
   real    ::   simple_cca =  0.0
   real    ::   rhcsfc     = 0.95
@@ -26,15 +28,21 @@ module cloud_simple_mod
                                            rhmsfc, rhm700, rhm200
   real :: zerodegc = 273.15
 
+  integer :: id_cf_rad, id_reff_rad, id_frac_liq, id_qcl_rad 
+  character(len=14), parameter ::   mod_name_cld = "cloud_simple"
 
   contains
 
   !-----------------------------------------------
 
 
-  subroutine cloud_simple_init ()
+  subroutine cloud_simple_init (axes, Time)
+
+    type(time_type), intent(in)       :: Time
+    integer, intent(in), dimension(4) :: axes
 
     integer :: io ,stdlog_unit
+
 
 #ifdef INTERNAL_FILE_NML
        read (input_nml_file, nml=cloud_simple_nml, iostat=io)
@@ -48,6 +56,26 @@ module cloud_simple_mod
     stdlog_unit = stdlog()
     write(stdlog_unit, cloud_simple_nml)
 
+    !register diagnostics
+    id_cf_rad = &
+      register_diag_field ( mod_name_cld, 'cf_rad', axes(1:3), Time, &
+      'Cloud fraction for the simple cloud scheme', 'unitless: values 0-1')
+
+   id_frac_liq = &
+      register_diag_field ( mod_name_cld, 'frac_liq', axes(1:3), Time, &
+      'Liquid cloud fraction (liquid, mixed-ice phase, ice)', &
+      'unitless: values 0-1')
+
+   id_reff_rad = &
+      register_diag_field ( mod_name_cld, 'reff_rad', axes(1:3), Time, &
+      'Effective cloud particle radius', &
+      'microns')
+ 
+   id_qcl_rad = &
+      register_diag_field ( mod_name_cld, 'qcl_rad', axes(1:3), Time, &
+      'Specific humidity of cloud liquid', &
+      'kg/kg')
+
     do_init = .false.  !initialisation completed
     
   end subroutine cloud_simple_init
@@ -57,19 +85,21 @@ module cloud_simple_mod
   subroutine cloud_simple (p_half, p_full, Time,   &
                       temp, q_hum,                 &
                       ! outs 
-                      cfa_rad, reff_rad ) 
+                      cf_rad, reff_rad, qcl_rad ) 
 
     real       , intent(in), dimension(:,:,:)  :: temp, q_hum, p_full, p_half
     type(time_type) , intent(in)               :: Time
 
-    real       , intent(out), dimension(:,:,:) :: cfa_rad, reff_rad
+    real       , intent(out), dimension(:,:,:) :: cf_rad, reff_rad, qcl_rad
 
-    real, dimension(size(temp,1), size(temp, 2), size(temp, 3))    :: qs, qcl_rad
-    real  :: frac_liq, cf_rad, simple_rhcrit
+    real, dimension(size(temp,1), size(temp, 2), size(temp, 3))    :: qs, frac_liq
+    real  ::  simple_rhcrit
 
     integer :: i, j, k, k_surf
 
     logical :: es_over_liq_and_ice
+
+          real :: tmp1, tmp2 !remove tmp1 and tmp2 after debugging
 
     !check initiation has been done - ie read in parameters
     if (do_init) call error_mesg ('cloud_simple',  &
@@ -85,17 +115,22 @@ module cloud_simple_mod
         do k=1, size(temp, 3)
 
           !caluclate the frac_liq 
-          call calc_liq_frac(temp(i,j,k), frac_liq)
-          call calc_reff(frac_liq, reff_rad(i,j,k))
+          call calc_liq_frac(temp(i,j,k), frac_liq(i,j,k))
+          call calc_reff(frac_liq(i,j,k), reff_rad(i,j,k))
           call calc_rhcrit(p_full(i,j,k), p_full(i,j,k_surf), simple_rhcrit)
-          call calc_cf_rad(q_hum(i,j,k), qs(i,j,k), simple_rhcrit, cf_rad)
-          call calc_qcl_rad(p_full(i,j,k), cf_rad, qcl_rad(i,j,k) )
+          call calc_cf_rad(q_hum(i,j,k), qs(i,j,k), simple_rhcrit, cf_rad(i,j,k))
+          call calc_qcl_rad(p_full(i,j,k), cf_rad(i,j,k), qcl_rad(i,j,k) )
         end do
       end do
     end do
 
-  !WHAT ARE THE UNITS
-  !add diagnostics
+  !save some diagnotics
+  call output_cloud_diags(cf_rad, reff_rad, frac_liq, qcl_rad, Time )  
+
+tmp2 = maxval(cf_rad)
+tmp1 = maxval(reff_rad)
+tmp2 = maxval(cf_rad)
+
 
   end subroutine cloud_simple
 
@@ -123,7 +158,7 @@ module cloud_simple_mod
     real, intent(in) :: frac_liq
     real, intent(out) :: reff_rad
 
-    reff_rad = 1.0e-6 * ( 10.0 * frac_liq + 20.0 * (1.0 - frac_liq) )
+    reff_rad =  10.0 * frac_liq + 20.0 * (1.0 - frac_liq)  !units in microns
 
   end subroutine calc_reff
 
@@ -170,6 +205,8 @@ module cloud_simple_mod
       cf_rad = MAX( simple_cca, cf_rad )
     end if
 
+    
+
   end subroutine calc_cf_rad
 
   subroutine calc_qcl_rad(p_full, cf_rad, qcl_rad)
@@ -189,6 +226,34 @@ module cloud_simple_mod
 
   end subroutine calc_qcl_rad
 
+
+
+  subroutine output_cloud_diags(cf_rad, reff_rad, frac_liq, qcl_rad, Time)
+
+    real, intent(in), dimension(:,:,:) :: cf_rad, reff_rad, frac_liq, qcl_rad
+
+    type(time_type) , intent(in)       :: Time
+
+    real :: used
+
+    if ( id_cf_rad > 0 ) then
+      used = send_data ( id_cf_rad, cf_rad, Time)
+    endif
+
+    if ( id_reff_rad > 0 ) then
+      used = send_data ( id_reff_rad, reff_rad, Time)
+    endif
+
+    if ( id_frac_liq > 0 ) then
+      used = send_data ( id_frac_liq, frac_liq, Time)
+    endif
+
+    if ( id_qcl_rad > 0 ) then
+      used = send_data ( id_qcl_rad, qcl_rad, Time)
+    endif
+
+
+  end subroutine output_cloud_diags
 
   !-----------------------------------------------
 
