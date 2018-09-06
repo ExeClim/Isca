@@ -4,7 +4,7 @@ import numpy as np
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 1
+NCORES = 16
 
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
