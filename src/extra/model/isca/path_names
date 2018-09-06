@@ -83,7 +83,7 @@ atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/rrsw_vsn.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/rrsw_wvn.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/src/mcica_random_numbers.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/src/mcica_subcol_gen_sw.f90
-atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/src/rrtmg_sw_rad.nomcica.f90
+atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/src/rrtmg_sw_rad.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/src/rrtmg_sw_cldprop.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/src/rrtmg_sw_cldprmc.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/src/rrtmg_sw_init.f90

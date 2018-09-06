@@ -4,7 +4,7 @@ import numpy as np
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 1
+NCORES = 16
 
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -19,7 +19,7 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
-cb.compile(debug=True)  # compile the source code to working directory $GFDL_WORK/codebase
+cb.compile()#debug=True)  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
@@ -155,7 +155,8 @@ exp.namelist = namelist = Namelist({
         'solr_cnst': 1360,  #s set solar constant to 1360, rather than default of 1368.22
         'dt_rad': 7200, #Use long RRTM timestep
         'do_read_ozone':True,
-        'ozone_file':'ozone_1990'
+        'ozone_file':'ozone_1990',
+        'icld': 1 #cloud overlap method
     },
 
     # FMS Framework configuration
@@ -190,6 +191,6 @@ exp.namelist = namelist = Namelist({
 })
 #Lets do a run!
 if __name__=="__main__":
-    exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True, run_idb=True)
+    exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
    # for i in range(2,25):
    #     exp.run(i, num_cores=NCORES, overwrite_data=True)
