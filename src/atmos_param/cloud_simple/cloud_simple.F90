@@ -98,7 +98,6 @@ module cloud_simple_mod
       'Specific humidity of cloud liquid', &
       'kg/kg')
 
-
    id_rh_in_cf = &
       register_diag_field ( mod_name_cld, 'rh_in_cf', axes(1:3), Time, &
       'RH as a percent', &
@@ -133,10 +132,11 @@ module cloud_simple_mod
 
     real, dimension(size(temp,1), size(temp, 2), size(temp, 3)) :: qs, frac_liq, rh_in_cf, simple_rhcrit, rh_min, rh_max
 
-
     integer :: i, j, k, k_surf
 
     logical :: es_over_liq_and_ice
+
+          real :: tmp1, tmp2 !remove tmp1 and tmp2 after debugging
 
     !check initiation has been done - ie read in parameters
     if (do_init) call error_mesg ('cloud_simple',  &

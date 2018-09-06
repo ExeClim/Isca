@@ -349,6 +349,7 @@ d378 = 1.-d622
 
 if(do_cloud_simple) then
   call cloud_simple_init(get_axis_id(), Time)
+end if
 
 !s need to make sure that gray radiation and rrtm radiation are not both called.
 if(two_stream_gray .and. do_rrtm_radiation) &
@@ -807,7 +808,6 @@ integer, intent(in) , dimension(:,:),   optional :: kbot
 
 real, dimension(1,1,1):: tracer, tracertnd
 integer :: nql, nqi, nqa   ! tracer indices for stratiform clouds
-
 
 if(current == previous) then
    delta_t = dt_real
