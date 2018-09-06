@@ -30,7 +30,7 @@ cb.compile(debug=True)  # compile the source code to working directory $GFDL_WOR
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('frierson_test_experiment', codebase=cb)
+exp = Experiment('frierson_debug_test_experiment', codebase=cb)
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -182,4 +182,4 @@ exp.namelist = namelist = Namelist({
 if __name__=="__main__":
     exp.run(1, use_restart=False, num_cores=NCORES, run_idb=True)
     for i in range(2,121):
-        exp.run(i, num_cores=NCORES)
+        exp.run(i, num_cores=NCORES, run_idb=True)
