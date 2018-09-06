@@ -23,7 +23,7 @@ cb.compile()#debug=True)  # compile the source code to working directory $GFDL_W
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('mima_test_experiment', codebase=cb)
+exp = Experiment('mima_test_experiment_with_mcica', codebase=cb)
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -192,5 +192,5 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
     exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
-   # for i in range(2,25):
-   #     exp.run(i, num_cores=NCORES, overwrite_data=True)
+    for i in range(2,25):
+        exp.run(i, num_cores=NCORES, overwrite_data=True)

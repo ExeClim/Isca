@@ -78,7 +78,7 @@
                                                                            ! =1 for black body
         ! clouds stuff
         !  cloud & aerosol optical depths, cloud and aerosol specific parameters. Set to zero
-        real(kind=rb),allocatable,dimension(:,:,:) :: taucld,tauaer, sw_zro, zro_sw
+        real(kind=rb),allocatable,dimension(:,:,:) :: taucld_lw, taucld_sw, tauaer_lw, tauaer_sw, sw_zro, zro_sw
         ! heating rates and fluxes, zenith angle when in-between radiation time steps
         real(kind=rb),allocatable,dimension(:,:)   :: sw_flux,lw_flux,zencos, olr, toa_sw! surface and TOA fluxes, cos(zenith angle) 
                                                                             ! dimension (lon x lat)
@@ -222,7 +222,7 @@
       module rrtm_radiation
           use parkind, only : im => kind_im, rb => kind_rb
           use constants_mod,         only: pi, wtmozone, wtmh2o, gas_constant, rdgas
-          use parrrtm, only:          nbndlw
+          use parrrtm, only:          nbndlw, ngptlw
           use parrrsw, only:          nbndsw, ngptsw
 
         implicit none
@@ -413,8 +413,10 @@
              allocate(ones(ngptsw,ncols_rrt,nlay_rrt), &
                   zeros(ngptsw,ncols_rrt,nlay_rrt))
              allocate(emis(ncols_rrt,nbndlw))
-             allocate(taucld(nbndlw,ncols_rrt,nlay_rrt), &
-                  tauaer(ncols_rrt,nlay_rrt,nbndlw))
+             allocate(taucld_lw(nbndlw,ncols_rrt,nlay_rrt), &
+                  tauaer_lw(ncols_rrt,nlay_rrt,nbndlw))
+             allocate(taucld_sw(nbndsw,ncols_rrt,nlay_rrt), &
+                  tauaer_sw(ncols_rrt,nlay_rrt,nbndsw))
              allocate(sw_zro(nbndsw,ncols_rrt,nlay_rrt), &
                   zro_sw(ncols_rrt,nlay_rrt,nbndsw))
              if(id_coszen > 0)allocate(zencos (size(lonb,1)-1,size(latb,2)-1))
@@ -429,8 +431,10 @@
              emis  = 1. !black body: 1.0
              
              ! absorption
-             taucld = 0.
-             tauaer = 0.
+             taucld_sw = 0.
+             tauaer_sw = 0.
+             taucld_lw = 0.
+             tauaer_lw = 0.
              ! clouds
              sw_zro = 0.
              zro_sw = 0.
@@ -548,7 +552,7 @@
 ! Modules
           use fms_mod, only:         error_mesg, FATAL
           use mpp_mod, only:         mpp_pe,mpp_root_pe
-          use rrtmg_lw_rad, only:    rrtmg_lw
+          use rrtmg_lw_rad, only:    rrtmg_lw, mcica_subcol_lw
           use rrtmg_sw_rad, only:    rrtmg_sw, mcica_subcol_sw
           use astronomy_mod,         only: diurnal_solar
           use rrtm_vars
@@ -601,7 +605,8 @@
                , hr,hrc, swhr, swhrc, cldfr, reliq, reice
 
 
-          real(kind=rb),dimension(ngptsw,ncols_rrt,nlay_rrt) :: cldfr_pass
+          real(kind=rb),dimension(ngptsw,ncols_rrt,nlay_rrt) :: cldfr_pass_sw
+          real(kind=rb),dimension(ngptlw,ncols_rrt,nlay_rrt) :: cldfr_pass_lw
 
           real(kind=rb),dimension(size(tdt,1),size(tdt,2),size(tdt,3)) :: tdt_rrtm
           real(kind=rb),dimension(ncols_rrt,nlay_rrt+1) :: uflx, dflx, uflxc, dflxc&
@@ -624,7 +629,9 @@
 	      integer ::  permuteseed, irng
           real(kind=rb),dimension(ncols_rrt,nlay_rrt) :: reicmcl, relqmcl
 
-          real(kind=rb),dimension(ngptsw, ncols_rrt,nlay_rrt) :: cldfmcl, ciwpmcl, clwpmcl, taucmcl, ssacmcl, asmcmcl, fsfcmcl
+          real(kind=rb),dimension(ngptsw, ncols_rrt,nlay_rrt) :: cldfmcl_sw, ciwpmcl_sw, clwpmcl_sw, taucmcl_sw, ssacmcl, asmcmcl, fsfcmcl
+
+          real(kind=rb),dimension(ngptlw, ncols_rrt,nlay_rrt) :: cldfmcl_lw, ciwpmcl_lw, clwpmcl_lw, taucmcl_lw
 
 ! debug
           real :: tmp1, tmp2 !remove tmp1 and tmp2 after debugging
@@ -866,7 +873,7 @@
             cldfr = zeros(pt1,:,:)
             reliq = 10*ones(pt1,:,:)  ! not requires to be 10 microns but assumed a valid number
             reice = 10*ones(pt1,:,:)  ! needs to be 10 microns
-            cldfr_pass(pt1,:,:) = cldfr
+            cldfr_pass_sw(pt1,:,:) = cldfr
           endif
 
 
@@ -876,15 +883,14 @@
               irng = 1 !use a random number gerator either 0 (Kissvec) or 1(Mersenne Twister)
 
               call mcica_subcol_sw(0, ncols_rrt, nlay_rrt, icld, permuteseed, irng, pfull, &
-                       cldfr, zeros(pt1,:,:), zeros(pt1,:,:), reice, reliq, tauaer, zro_sw, zro_sw, zro_sw , &
+                       cldfr, zeros(pt1,:,:), zeros(pt1,:,:), reice, reliq, tauaer_sw, zro_sw, zro_sw, zro_sw , &
                        !outs
-                       cldfmcl, ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl, ssacmcl, asmcmcl, fsfcmcl)
+                       cldfmcl_sw, ciwpmcl_sw, clwpmcl_sw, reicmcl, relqmcl, taucmcl_sw, ssacmcl, asmcmcl, fsfcmcl)
 
-              permuteseed  = 2
-              cldfr_pass = cldfmcl
+              cldfr_pass_sw = cldfmcl_sw
               reice = reicmcl
               reliq = relqmcl
-              taucld = taucmcl
+              taucld_sw = taucmcl_sw
               !other vars not needed
            endif
 
@@ -898,10 +904,10 @@
                   cosz_rr   , solrad   , dyofyr   , solr_cnst, &
                   inflglw   , iceflglw , liqflglw ,            &
                   ! cloud parameters
-                  cldfr_pass(pt1:pt2,:,:),     &
-                  taucld    , sw_zro   , sw_zro   , sw_zro  , &
+                  cldfr_pass_sw(pt1:pt2,:,:),     &
+                  taucld_sw    , sw_zro   , sw_zro   , sw_zro  , &
                   zeros(pt1:pt2,:,:) , zeros(pt1:pt2,:,:)  , reice    , reliq   , & 
-                  tauaer    , zro_sw   , zro_sw   , zro_sw  , &
+                  tauaer_sw    , zro_sw   , zro_sw   , zro_sw  , &
                   ! output
                   swuflx    , swdflx   , swhr     , swuflxc , swdflxc, swhrc)
           else
@@ -913,10 +919,10 @@
                   cosz_rr   , solrad   , dyofyr   , solr_cnst, &
                   inflglw   , iceflglw , liqflglw ,            &
                   ! cloud parameters
-                  cldfr_pass(pt1:pt2,:,:),     &
-                  taucld   , sw_zro   , sw_zro   , sw_zro ,    &
+                  cldfr_pass_sw(pt1:pt2,:,:),     &
+                  taucld_sw   , sw_zro   , sw_zro   , sw_zro ,    &
                   zeros(pt1:pt2,:,:)     , zeros(pt1:pt2,:,:)    , reice   , reliq  ,    &
-                  tauaer    , zro_sw   , zro_sw   , zro_sw   , &
+                  tauaer_sw    , zro_sw   , zro_sw   , zro_sw   , &
                   ! output
                   swuflx    , swdflx   , swhr     , swuflxc  , swdflxc, swhrc)
           endif
@@ -930,6 +936,20 @@
 !                swhr  (:,i) = 0.
 !             endwhere
 !          enddo
+
+          if(do_cloud_simple) then
+
+              permuteseed  = 2
+
+              call mcica_subcol_lw(0, ncols_rrt, nlay_rrt, icld, permuteseed, irng, pfull, &
+                                   cldfr, zeros(pt1,:,:), zeros(pt1,:,:), reice, reliq, tauaer_lw,   &
+                                   cldfmcl_lw, ciwpmcl_lw, clwpmcl_lw, reicmcl, relqmcl, taucmcl_lw)
+              cldfr_pass_lw = cldfmcl_lw
+              reice = reicmcl
+              reliq = relqmcl
+              taucld_lw = taucmcl_lw
+          endif
+
              
           swijk   = reshape(swhr(:,sk:1:-1),(/ si/lonstep,sj,sk /))*daypersec
 
@@ -947,8 +967,8 @@
                   ! emissivity and cloud composition
                   emis           , inflglw        , iceflglw       , liqflglw      ,  &
                   ! cloud parameters
-                  cldfr_pass(pt1,:,:)          , taucld         , zeros(pt1,:,:)          , zeros(pt1,:,:)         , reice, reliq, &
-                  tauaer         , &
+                  cldfr_pass_lw(pt1:pt2,:,:)          , taucld_lw         , zeros(pt1:pt2,:,:)          , zeros(pt1:pt2,:,:)         , reice, reliq, &
+                  tauaer_lw         , &
                   ! output
                   uflx           , dflx           , hr             , uflxc         , dflxc  , hrc)
           else
@@ -960,8 +980,8 @@
                   ! emissivity and cloud composition
                   emis      , inflglw , iceflglw, liqflglw, &
                   ! cloud parameters
-                  cldfr_pass(pt1,:,:)     , taucld  , zeros(pt1,:,:)   , zeros(pt1,:,:), reice, reliq, &
-                  tauaer    , &
+                  cldfr_pass_lw(pt1:pt2,:,:)     , taucld_lw  , zeros(pt1:pt2,:,:)   , zeros(pt1:pt2,:,:), reice, reliq, &
+                  tauaer_lw    , &
                   ! output
                   uflx      , dflx    , hr      , uflxc, dflxc  , hrc)
           endif
