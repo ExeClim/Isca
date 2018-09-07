@@ -1125,7 +1125,11 @@ endif
 #else
 if (do_socrates_radiation) then
        ! Socrates interface
-       
+  
+    if(do_cloud_simple) then
+       reff_rad = 1.e-6 * reff_rad ! Simple cloud scheme outputs radii in microns. Socrates expects it in metres.
+    endif
+  
     call run_socrates(Time, Time+Time_step, rad_lat, rad_lon, tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum), t_surf(:,:), p_full(:,:,:,current), &
                       p_half(:,:,:,current),z_full(:,:,:,current),z_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t, do_cloud_simple, cf_rad(:,:,:), reff_rad(:,:,:),      &
                       qcl_rad(:,:,:)   )
