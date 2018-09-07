@@ -985,7 +985,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             reff_rad_soc = REAL(reff_rad, kind(r_def))
 
             qcl_rad_soc  = REAL(qcl_rad, kind(r_def))
-            mmr_cl_rad_soc = qcl_rad_soc / (1.0 - qcl_rad_soc)
+            mmr_cl_rad_soc = qcl_rad_soc / (1.0 - qcl_rad_soc) !check if qcl is indeed specific humidity and not mmr
         
         elseif(do_cloud_simple.and..not.account_for_clouds_in_socrates) then
 

@@ -482,6 +482,7 @@ do k = dimen%id_cloud_top, n_layer
     if (cld%w_cloud(l, k) > min_cloud_fraction) then
       do j=1, cld%n_cloud_type
         cld%frac_cloud(l, k, j) = cld%frac_cloud(l, k, j) / cld%w_cloud(l, k)
+        ! write(6,*) cld%frac_cloud(l, k, j) / cld%w_cloud(l, k), cld%frac_cloud(l, k, j) ,  cld%w_cloud(l, k), 'div?', cld%n_cloud_type
       end do
     else
       cld%w_cloud(l, k) = 0.0_r_def

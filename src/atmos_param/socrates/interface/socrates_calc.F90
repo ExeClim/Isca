@@ -161,7 +161,7 @@ integer(i_def) :: l, i
 !DIAG Diagnostic
 logical :: used
 
-real(r_def) :: zeros_cld(n_profile, n_layer)
+real(r_def) :: zeros_cld(n_profile, n_layer), ten_microns_cld(n_profile, n_layer)
 
 
 call set_control(control)
@@ -178,9 +178,11 @@ call set_bound(control, dimen, spectrum, bound, n_profile,                     &
 
 ! call set_cld(control, dimen, spectrum, cld, n_profile)
 
+  zeros_cld = 0.
+  ten_microns_cld = 1.
 call set_cld(cld, control, dimen, spectrum, n_profile, n_layer, &
             liq_frac      = cld_frac,     &
-            ice_frac      = zeros_cld,     &
+            ice_frac      = ten_microns_cld,     &
             liq_mmr       = mmr_cl_rad,      &
             ice_mmr       = zeros_cld,      &
             liq_dim       = reff_rad,      &
