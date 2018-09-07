@@ -80,7 +80,7 @@ MODULE socrates_interface_mod
 
 CONTAINS
 
-  SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb, delta_t_atmos)
+  SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb, delta_t_atmos, do_cloud_simple)
     !! Initialises Socrates spectra, arrays, and constants
 
     USE astronomy_mod, only: astronomy_init
@@ -94,6 +94,7 @@ CONTAINS
     INTEGER, INTENT(in)               :: is, ie, js, je, num_levels
     REAL, INTENT(in) , DIMENSION(:,:)   :: lat
     REAL, INTENT(in) , DIMENSION(:,:)   :: lonb, latb
+    LOGICAL, INTENT(IN)               :: do_cloud_simple
         
     integer :: io, stdlog_unit
     integer :: res, time_step_seconds
@@ -116,6 +117,18 @@ write(stdlog_unit, socrates_rad_nml)
 
     !Initialise astronomy
     call astronomy_init
+
+    if(do_cloud_simple.and..not.account_for_clouds_in_socrates) then
+
+        call error_mesg( 'run_socrates', &
+        'do_cloud_simple is True but account_for_clouds_in_socrates is False. Radiative effects of clouds NOT accounted for', WARNING)
+
+    elseif(.not.do_cloud_simple.and.account_for_clouds_in_socrates) then
+
+        call error_mesg( 'run_socrates', &
+        'do_cloud_simple is False but account_for_clouds_in_socrates is True. Radiative effects of clouds NOT accounted for', WARNING)
+
+    endif
 
     !Initialise variables related to radiation timestep
 
@@ -976,17 +989,11 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
         
         elseif(do_cloud_simple.and..not.account_for_clouds_in_socrates) then
 
-            call error_mesg( 'run_socrates', &
-            'do_cloud_simple is True but account_for_clouds_in_socrates is False. Radiative effects of clouds NOT accounted for', WARNING)
-
             cld_frac_soc = 0.
             reff_rad_soc = 0.            
             mmr_cl_rad_soc = 0.
 
         elseif(.not.do_cloud_simple.and.account_for_clouds_in_socrates) then
-
-            call error_mesg( 'run_socrates', &
-            'do_cloud_simple is False but account_for_clouds_in_socrates is True. Radiative effects of clouds NOT accounted for', WARNING)
 
             cld_frac_soc = 0.
             reff_rad_soc = 0.            
@@ -1016,7 +1023,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
        CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,  &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, z_full_soc, z_half_soc, albedo_soc, coszen, rrsun, n_profile, n_layer,     &
-            output_heating_rate_lw, output_soc_flux_lw_down, output_soc_flux_lw_up, cld_frac_soc, reff_rad_soc, mmr_cl_rad_soc, output_soc_spectral_olr = outputted_soc_spectral_olr, t_half_level_out = t_half_out)
+            cld_frac_soc, reff_rad_soc, mmr_cl_rad_soc, &            
+            output_heating_rate_lw, output_soc_flux_lw_down, output_soc_flux_lw_up, output_soc_spectral_olr = outputted_soc_spectral_olr, t_half_level_out = t_half_out)
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_lw*delta_t !Output heating rate in K/s, so is a temperature tendency
        surf_lw_down(:,:) = REAL(output_soc_flux_lw_down(:,:, n_layer+1))
@@ -1031,7 +1039,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        soc_lw_mode = .FALSE.
        CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,  &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, p_half_soc, z_full_soc, z_half_soc, albedo_soc, coszen, rrsun, n_profile, n_layer,     &
-            output_heating_rate_sw, output_soc_flux_sw_down, output_soc_flux_sw_up, cld_frac_soc, reff_rad_soc, mmr_cl_rad_soc)
+            cld_frac_soc, reff_rad_soc, mmr_cl_rad_soc, &                        
+            output_heating_rate_sw, output_soc_flux_sw_down, output_soc_flux_sw_up)
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_sw*delta_t !Output heating rate in K/s, so is a temperature tendency
        net_surf_sw_down(:,:) = REAL(output_soc_flux_sw_down(:,:, n_layer+1)-output_soc_flux_sw_up(:,:,n_layer+1) )
