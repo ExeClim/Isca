@@ -15,7 +15,7 @@ SUBROUTINE read_control(control, spectrum)
 USE rad_pcf
 USE def_control,  ONLY: StrCtrl, allocate_control
 USE def_spectrum, ONLY: StrSpecData
-USE socrates_config_mod, ONLY: l_planet_grey_surface, inc_h2o, inc_co2, inc_co, inc_o3, inc_n2o, inc_ch4, inc_o2, inc_so2, inc_cfc11, inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a
+USE socrates_config_mod, ONLY: l_planet_grey_surface, inc_h2o, inc_co2, inc_co, inc_o3, inc_n2o, inc_ch4, inc_o2, inc_so2, inc_cfc11, inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a, account_for_clouds_in_socrates
 
 IMPLICIT NONE
 
@@ -93,7 +93,11 @@ control%l_continuum    = .TRUE.
 control%i_gas_overlap  = ip_overlap_k_eqv_scl
 
 ! Properties of clouds
-control%i_cloud_representation = ip_cloud_off
+if (account_for_clouds_in_socrates) then
+  control%i_cloud_representation = ip_cloud_ice_water
+else
+  control%i_cloud_representation = ip_cloud_off  
+end if
 control%i_overlap              = ip_max_rand
 control%i_inhom                = ip_homogeneous
 
