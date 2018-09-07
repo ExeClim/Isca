@@ -106,7 +106,7 @@ character(len=128), parameter :: tagname = '$Name: siena_201211 $'
 ! variables needed for diagnostics
 integer :: id_ps, id_u, id_v, id_t, id_vor, id_div, id_omega, id_wspd, id_slp
 integer :: id_pres_full, id_pres_half, id_zfull, id_zhalf, id_vort_norm, id_EKE
-integer :: id_uu, id_vv, id_tt, id_omega_omega, id_uv, id_omega_t, id_vw, id_uw, id_ut, id_vt, id_v_vor
+integer :: id_uu, id_vv, id_tt, id_omega_omega, id_uv, id_omega_t, id_vw, id_uw, id_ut, id_vt, id_v_vor, id_uz, id_vz, id_omega_z
 integer, allocatable, dimension(:) :: id_tr, id_utr, id_vtr, id_wtr !extra advection diags added by RG
 real :: gamma, expf, expf_inverse
 character(len=8) :: mod_name = 'dynamics'
@@ -1667,6 +1667,15 @@ id_pres_half = register_diag_field(mod_name, &
 id_zfull   = register_diag_field(mod_name, &
       'height',  axes_3d_full,       Time, 'geopotential height at full model levels','m')
 
+id_uz = register_diag_field(mod_name, &
+	  'ucomp_height',axes_3d_full,     Time, 'zonal wind * geopotential height at full model levels', 'm**2sec')
+
+id_vz = register_diag_field(mod_name, &
+      'vcomp_height',axes_3d_full,     Time, 'meridional wind * geopotential height at full model levels', 'm**2/sec')
+
+id_omega_z = register_diag_field(mod_name, &
+       'omega_height',axes_3d_full,     Time, 'dp/dt * geopotential height at full model levels', 'm*Pa/sec')
+			
 id_zhalf   = register_diag_field(mod_name, &
       'height_half',  axes_3d_half,  Time, 'geopotential height at half model levels','m')
 
@@ -1782,6 +1791,18 @@ endif
 if(id_vt > 0) then
   worka3d = t_grid*v_grid
   used = send_data(id_vt, worka3d, Time)
+endif
+if(id_uz > 0) then
+  worka3d = u_grid*z_full
+  used = send_data(id_uz, worka3d, Time)
+endif
+if(id_vz > 0) then
+  worka3d = v_grid*z_full
+  used = send_data(id_vz, worka3d, Time)
+endif
+if(id_omega_z > 0) then
+  worka3d = wg_full*z_full
+  used = send_data(id_omega_z, worka3d, Time)
 endif
 
 if(size(tr_grid,5) /= num_tracers) then
