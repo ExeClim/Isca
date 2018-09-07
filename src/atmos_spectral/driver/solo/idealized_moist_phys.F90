@@ -718,7 +718,7 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
     endif
 #else
 if (do_socrates_radiation) then
-    call socrates_init(is, ie, js, je, num_levels, axes, Time, rad_lat, rad_lonb_2d, rad_latb_2d, Time_step_in)
+    call socrates_init(is, ie, js, je, num_levels, axes, Time, rad_lat, rad_lonb_2d, rad_latb_2d, Time_step_in, do_cloud_simple)
 endif
 #endif
 
@@ -938,6 +938,8 @@ if(do_cloud_simple) then
  
 endif
 
+! write(6,*) minval(cf_rad), maxval(cf_rad), minval(reff_rad), maxval(reff_rad), minval(qcl_rad), maxval(qcl_rad)
+
 tmp1 = maxval(reff_rad)
 tmp2 = maxval(cf_rad)
 
@@ -1051,9 +1053,14 @@ endif
 #else
 if (do_socrates_radiation) then
        ! Socrates interface
-       
+  
+    if(do_cloud_simple) then
+       reff_rad = 1.e-6 * reff_rad ! Simple cloud scheme outputs radii in microns. Socrates expects it in metres.
+    endif
+  
     call run_socrates(Time, Time+Time_step, rad_lat, rad_lon, tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum), t_surf(:,:), p_full(:,:,:,current), &
-                      p_half(:,:,:,current),z_full(:,:,:,current),z_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t)
+                      p_half(:,:,:,current),z_full(:,:,:,current),z_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t, do_cloud_simple, cf_rad(:,:,:), reff_rad(:,:,:),      &
+                      qcl_rad(:,:,:)   )
 
 endif
 #endif
