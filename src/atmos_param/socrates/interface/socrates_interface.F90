@@ -128,6 +128,18 @@ write(stdlog_unit, socrates_rad_nml)
     !Initialise astronomy
     call astronomy_init
 
+    if(do_cloud_simple.and..not.account_for_clouds_in_socrates) then
+
+        call error_mesg( 'run_socrates', &
+        'do_cloud_simple is True but account_for_clouds_in_socrates is False. Radiative effects of clouds NOT accounted for', WARNING)
+
+    elseif(.not.do_cloud_simple.and.account_for_clouds_in_socrates) then
+
+        call error_mesg( 'run_socrates', &
+        'do_cloud_simple is False but account_for_clouds_in_socrates is True. Radiative effects of clouds NOT accounted for', WARNING)
+
+    endif
+
     !Initialise variables related to radiation timestep
 
           call get_time(delta_t_atmos,time_step_seconds)
@@ -1154,7 +1166,6 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
         else
             cld_frac_soc = 0.
             cld_conv_frac_soc = 0.
-
             reff_rad_soc = 0.            
             mmr_cl_rad_soc = 0.
 
@@ -1178,7 +1189,6 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        albedo_soc = REAL(albedo_in, kind(r_def))
        z_full_soc = REAL(z_full_in, kind(r_def))
        z_half_soc = REAL(z_half_in, kind(r_def))
-
 
        CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,    &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, &
