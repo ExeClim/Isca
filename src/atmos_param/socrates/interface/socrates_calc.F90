@@ -33,6 +33,7 @@ subroutine socrates_calc(Time_diag,control, spectrum,                           
   t_rad_surf, cos_zenith_angle, solar_irrad, orog_corr,                        &
   l_planet_grey_surface, planet_albedo, planet_emissivity,                     &
   layer_heat_capacity,                                                         &
+  cld_frac, reff_rad, mmr_cl_rad,                                              &
   flux_direct, flux_down, flux_up, heating_rate, spectral_olr)
 
 use rad_pcf
@@ -45,12 +46,12 @@ use def_cld,      only: StrCld,   deallocate_cld, deallocate_cld_prsc
 use def_aer,      only: StrAer,   deallocate_aer, deallocate_aer_prsc
 use def_out,      only: StrOut,   deallocate_out
 
-use set_control_mod, only: set_control
-use set_dimen_mod,   only: set_dimen
-use set_atm_mod,     only: set_atm
-use set_bound_mod,   only: set_bound
-use set_cld_mod,     only: set_cld
-use set_aer_mod,     only: set_aer
+use set_control_mod,   only: set_control
+use set_dimen_mod,     only: set_dimen
+use set_atm_mod,       only: set_atm
+use set_bound_mod,     only: set_bound
+use socrates_set_cld,  only: set_cld
+use set_aer_mod,       only: set_aer
 
 use soc_constants_mod,   only: i_def, r_def
 
@@ -114,6 +115,15 @@ real(r_def), intent(in) :: planet_emissivity
 real(r_def), intent(in) :: layer_heat_capacity(n_profile, n_layer)
 !   Heat capacity of layer
 
+real(r_def), intent(in) :: cld_frac(n_profile, n_layer)
+!   Cloud fraction at layer centres
+
+real(r_def), intent(in) :: reff_rad(n_profile, n_layer)
+!   Cloud liquid particle radius from simple cloud scheme
+
+real(r_def), intent(in) :: mmr_cl_rad(n_profile, n_layer)
+!   Cloud liquid mmr at layer centres
+
 real(r_def), intent(out) :: flux_direct(n_profile, 0:n_layer)
 !   Direct (unscattered) downwards flux (Wm-2)
 real(r_def), intent(out) :: flux_down(n_profile, 0:n_layer)
@@ -151,6 +161,7 @@ integer(i_def) :: l, i
 !DIAG Diagnostic
 logical :: used
 
+real(r_def) :: zeros_cld(n_profile, n_layer)
 
 
 call set_control(control)
@@ -165,7 +176,15 @@ call set_bound(control, dimen, spectrum, bound, n_profile,                     &
   t_rad_surf, cos_zenith_angle, solar_irrad, orog_corr,                        &
   l_planet_grey_surface, planet_albedo, planet_emissivity)
 
-call set_cld(control, dimen, spectrum, cld, n_profile)
+! call set_cld(control, dimen, spectrum, cld, n_profile)
+
+call set_cld(cld, control, dimen, spectrum, n_profile, n_layer, &
+            liq_frac      = cld_frac,     &
+            ice_frac      = zeros_cld,     &
+            liq_mmr       = mmr_cl_rad,      &
+            ice_mmr       = zeros_cld,      &
+            liq_dim       = reff_rad,      &
+            ice_dim       = zeros_cld )
 
 call set_aer(control, dimen, spectrum, aer, n_profile)
 
