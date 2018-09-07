@@ -983,6 +983,8 @@ if(do_cloud_simple) then
  
 endif
 
+! write(6,*) minval(cf_rad), maxval(cf_rad), minval(reff_rad), maxval(reff_rad), minval(qcl_rad), maxval(qcl_rad)
+
 tmp1 = maxval(reff_rad)
 tmp2 = maxval(cf_rad)
 
@@ -1125,7 +1127,8 @@ if (do_socrates_radiation) then
        ! Socrates interface
        
     call run_socrates(Time, Time+Time_step, rad_lat, rad_lon, tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum), t_surf(:,:), p_full(:,:,:,current), &
-                      p_half(:,:,:,current),z_full(:,:,:,current),z_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t)
+                      p_half(:,:,:,current),z_full(:,:,:,current),z_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t, do_cloud_simple, cf_rad(:,:,:), reff_rad(:,:,:),      &
+                      qcl_rad(:,:,:)   )
 
 endif
 #endif

@@ -23,7 +23,7 @@ use def_cld,      only: StrCld, allocate_cld, allocate_cld_prsc
 use def_control,  only: StrCtrl
 use def_dimen,    only: StrDim
 use def_spectrum, only: StrSpecData
-use realtype_rd,  only: RealK
+use soc_constants_mod,   only: i_def, r_def
 use rad_pcf,      only: &
   ip_cloud_homogen, ip_cloud_ice_water, ip_cloud_conv_strat, ip_cloud_csiw, &
   ip_clcmp_st_water, ip_clcmp_st_ice, ip_clcmp_cnv_water, ip_clcmp_cnv_ice, &
@@ -32,8 +32,8 @@ use rad_pcf,      only: &
   ip_cloud_type_strat, ip_cloud_type_conv, &
   ip_cloud_type_sw, ip_cloud_type_si, ip_cloud_type_cw, ip_cloud_type_ci, &
   ip_drop_unparametrized, ip_ice_unparametrized, i_normal, i_err_fatal
-use ereport_mod,  only: ereport
-use errormessagelength_mod, only: errormessagelength
+
+use fms_mod, only: error_mesg, FATAL
 
 implicit none
 
@@ -50,10 +50,10 @@ type(StrDim),      intent(in)  :: dimen
 ! Spectral data:
 type(StrSpecData), intent(in)  :: spectrum
 
-integer, intent(in) :: n_profile
-integer, intent(in) :: n_layer
+integer(i_def), intent(in) :: n_profile
+integer(i_def), intent(in) :: n_layer
 
-real(RealK), intent(in), optional :: &
+real(r_def), intent(in), optional :: &
   cloud_frac(:,:), conv_frac(:,:), &
   liq_frac(:,:), ice_frac(:,:), liq_conv_frac(:,:), ice_conv_frac(:,:), &
   liq_mmr(:,:), ice_mmr(:,:), liq_conv_mmr(:,:), ice_conv_mmr(:,:), &
@@ -61,7 +61,7 @@ real(RealK), intent(in), optional :: &
 !   Liquid and ice cloud fractions, gridbox mean mixing ratios, and
 !   effective dimensions
 
-real(RealK), intent(in), optional :: dp_corr_strat, dp_corr_conv
+real(r_def), intent(in), optional :: dp_corr_strat, dp_corr_conv
 !   Decorrelation pressure scales for cloud vertical overlap
 
 
@@ -73,16 +73,16 @@ integer :: i_phase, i_param_type, n_cloud_parameter
 integer :: i_cloud_type(dimen%nd_cloud_component)
 !   Types of cloud to which each component contributes
 
-real(RealK) :: condensed_min_dim
-real(RealK) :: condensed_max_dim
+real(r_def) :: condensed_min_dim
+real(r_def) :: condensed_max_dim
 !   Minimum and maximum dimensions of each condensed component
 
-real(RealK) :: eps = EPSILON(1.0)
-real(RealK) :: min_cloud_fraction = 0.0001
+real(r_def) :: eps = EPSILON(1.0)
+real(r_def) :: min_cloud_fraction = 0.0001
 
 integer                      :: ierr = i_normal
 character (len=*), parameter :: RoutineName = 'SET_CLD'
-character (len=errormessagelength) :: cmessage
+character (len=128) :: cmessage
 
 ! Functions called
 integer, external :: set_n_cloud_parameter
@@ -136,7 +136,8 @@ else if (.not.control%l_ice .and. control%l_drop) then
 else
   cmessage = 'Cloud on, but no condensed components included.'
   ierr=i_err_fatal
-  CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+!   CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+  call error_mesg(ModuleName,cmessage, FATAL)
 end if
 
 do i=1, cld%n_condensed
@@ -161,11 +162,13 @@ do i=1, cld%n_condensed
       cld%i_condensed_param(i) = ip_drop_unparametrized
       cmessage = 'Prescribed liquid cloud not yet implemented.'
       ierr=i_err_fatal
-      CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    !   CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+      call error_mesg(ModuleName,cmessage, FATAL)      
     else if (i_param_type > spectrum%dim%nd_drop_type) then
       cmessage = 'Liquid cloud type outside allowed range.'
       ierr=i_err_fatal
-      CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    !   CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+      call error_mesg(ModuleName,cmessage, FATAL)      
     else if (spectrum%drop%l_drop_type(i_param_type)) then
       ! Take parametrisation from spectral file
       cld%i_condensed_param(i) = spectrum%drop%i_drop_parm(i_param_type)
@@ -195,7 +198,8 @@ do i=1, cld%n_condensed
         else
           cmessage = 'Liquid MMR and effective radius not provided.'
           ierr=i_err_fatal
-          CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+        !   CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+          call error_mesg(ModuleName,cmessage, FATAL)
         end if
       case (ip_clcmp_cnv_water)
         if (present(liq_conv_mmr).and.present(liq_conv_dim)) then
@@ -209,24 +213,28 @@ do i=1, cld%n_condensed
         else
           cmessage = 'Convective liquid MMR and effective radius not provided.'
           ierr=i_err_fatal
-          CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+        !   CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+          call error_mesg(ModuleName,cmessage, FATAL)          
         end if        
       end select
     else
       cmessage = 'Liquid cloud type not in spectral file.'
       ierr=i_err_fatal
-      CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    !   CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+      call error_mesg(ModuleName,cmessage, FATAL)      
     end if
   case (ip_phase_ice)
     if (i_param_type <= 0) then
       cld%i_condensed_param(i) = ip_ice_unparametrized
       cmessage = 'Prescribed ice cloud not yet implemented.'
       ierr=i_err_fatal
-      CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    !   CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+      call error_mesg(ModuleName,cmessage, FATAL)      
     else if (i_param_type > spectrum%dim%nd_ice_type) then
       cmessage = 'Ice cloud type outside allowed range.'
       ierr=i_err_fatal
-      CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    !   CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+      call error_mesg(ModuleName,cmessage, FATAL)      
     else if (spectrum%ice%l_ice_type(i_param_type)) then
       ! Take parametrisation from spectral file
       cld%i_condensed_param(i) = spectrum%ice%i_ice_parm(i_param_type)
@@ -255,7 +263,8 @@ do i=1, cld%n_condensed
         else
           cmessage = 'Ice MMR and effective radius not provided.'
           ierr=i_err_fatal
-          CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+        !   CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+          call error_mesg(ModuleName,cmessage, FATAL)          
         end if        
       case (ip_clcmp_cnv_ice)
         if (present(ice_conv_mmr).and.present(ice_conv_dim)) then
@@ -269,13 +278,15 @@ do i=1, cld%n_condensed
         else
           cmessage = 'Convective ice MMR and effective radius not provided.'
           ierr=i_err_fatal
-          CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+        !   CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+          call error_mesg(ModuleName,cmessage, FATAL)          
         end if        
       end select
     else
       cmessage = 'Ice cloud type not in spectral file.'
       ierr=i_err_fatal
-      CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    !   CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+      call error_mesg(ModuleName,cmessage, FATAL)      
     end if
   end select
 end do
@@ -284,12 +295,12 @@ end do
 if (present(dp_corr_strat)) then
   cld%dp_corr_strat = dp_corr_strat
 else
-  cld%dp_corr_strat = 0.0_RealK
+  cld%dp_corr_strat = 0.0_r_def
 end if
 if (present(dp_corr_conv)) then
   cld%dp_corr_conv  = dp_corr_conv
 else
-  cld%dp_corr_conv = 0.0_RealK
+  cld%dp_corr_conv = 0.0_r_def
 end if
 
 
@@ -313,7 +324,8 @@ case (ip_cloud_homogen)
   else
     cmessage = 'Cloud fraction not provided.'
     ierr=i_err_fatal
-    CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    ! CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    call error_mesg(ModuleName,cmessage, FATAL)    
   end if
 case (ip_cloud_ice_water)
   cld%n_cloud_type = 2
@@ -335,8 +347,8 @@ case (ip_cloud_ice_water)
           cld%frac_cloud(l, k, ip_cloud_type_ice) = &
             cloud_frac(l, k)*ice_frac(l, k) / (liq_frac(l, k)+ice_frac(l, k))
         else
-          cld%frac_cloud(l, k, ip_cloud_type_water) = 0.0_RealK
-          cld%frac_cloud(l, k, ip_cloud_type_ice) = 0.0_RealK
+          cld%frac_cloud(l, k, ip_cloud_type_water) = 0.0_r_def
+          cld%frac_cloud(l, k, ip_cloud_type_ice) = 0.0_r_def
         end if
       end do
     end do
@@ -350,7 +362,8 @@ case (ip_cloud_ice_water)
   else
     cmessage = 'Liquid and ice cloud fractions not provided.'
     ierr=i_err_fatal
-    CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    ! CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    call error_mesg(ModuleName,cmessage, FATAL)    
   end if
 case (ip_cloud_conv_strat)
   cld%n_cloud_type = 2
@@ -376,7 +389,8 @@ case (ip_cloud_conv_strat)
   else
     cmessage = 'Cloud fraction and convective cloud fraction not provided.'
     ierr=i_err_fatal
-    CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    ! CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    call error_mesg(ModuleName,cmessage, FATAL)
   end if
 case (ip_cloud_csiw)
   cld%n_cloud_type = 4
@@ -402,8 +416,8 @@ case (ip_cloud_csiw)
           cld%frac_cloud(l, k, ip_cloud_type_si) = &
             cloud_frac(l, k)*ice_frac(l, k) / (liq_frac(l, k)+ice_frac(l, k))
         else
-          cld%frac_cloud(l, k, ip_cloud_type_sw) = 0.0_RealK
-          cld%frac_cloud(l, k, ip_cloud_type_si) = 0.0_RealK
+          cld%frac_cloud(l, k, ip_cloud_type_sw) = 0.0_r_def
+          cld%frac_cloud(l, k, ip_cloud_type_si) = 0.0_r_def
         end if
       end do
     end do
@@ -417,7 +431,8 @@ case (ip_cloud_csiw)
   else
     cmessage = 'Liquid and ice cloud fractions not provided.'
     ierr=i_err_fatal
-    CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    ! CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    call error_mesg(ModuleName,cmessage, FATAL)
   end if
   if (present(liq_conv_frac).and.present(ice_conv_frac).and. &
       present(conv_frac)) then
@@ -430,8 +445,8 @@ case (ip_cloud_csiw)
           cld%frac_cloud(l, k, ip_cloud_type_ci) = conv_frac(l, k) &
             *ice_conv_frac(l, k) / (liq_conv_frac(l, k)+ice_conv_frac(l, k))
         else
-          cld%frac_cloud(l, k, ip_cloud_type_cw) = 0.0_RealK
-          cld%frac_cloud(l, k, ip_cloud_type_ci) = 0.0_RealK
+          cld%frac_cloud(l, k, ip_cloud_type_cw) = 0.0_r_def
+          cld%frac_cloud(l, k, ip_cloud_type_ci) = 0.0_r_def
         end if
       end do
     end do
@@ -445,7 +460,8 @@ case (ip_cloud_csiw)
   else
     cmessage = 'Liquid and ice convective cloud fractions not provided.'
     ierr=i_err_fatal
-    CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    ! CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+    call error_mesg(ModuleName,cmessage, FATAL)
   end if
 end select
 
@@ -468,15 +484,16 @@ do k = dimen%id_cloud_top, n_layer
         cld%frac_cloud(l, k, j) = cld%frac_cloud(l, k, j) / cld%w_cloud(l, k)
       end do
     else
-      cld%w_cloud(l, k) = 0.0_RealK
-      cld%frac_cloud(l, k, 1:cld%n_cloud_type) = 0.0_RealK
+      cld%w_cloud(l, k) = 0.0_r_def
+      cld%frac_cloud(l, k, 1:cld%n_cloud_type) = 0.0_r_def
     end if
-    if (cld%w_cloud(l, k) > 1.0_RealK + min_cloud_fraction) then
+    if (cld%w_cloud(l, k) > 1.0_r_def + min_cloud_fraction) then
       cmessage = 'Cloud fraction greater than 1.'
       ierr=i_err_fatal
-      CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
-    else if (cld%w_cloud(l, k) > 1.0_RealK) then
-      cld%w_cloud(l, k) = 1.0_RealK
+    !   CALL ereport(ModuleName//':'//RoutineName, ierr, cmessage)
+      call error_mesg(ModuleName,cmessage, FATAL)
+    else if (cld%w_cloud(l, k) > 1.0_r_def) then
+      cld%w_cloud(l, k) = 1.0_r_def
     end if
   end do
 end do

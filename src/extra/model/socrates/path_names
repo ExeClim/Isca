@@ -583,7 +583,7 @@ atmos_param/socrates/src/trunk/src/general/calc_planck_tbl.f
 atmos_param/socrates/src/trunk/src/general/read_word.f
 atmos_param/socrates/interface/read_control.F90
 atmos_param/socrates/interface/set_atm.F90
-atmos_param/socrates/interface/set_cld.F90
+atmos_param/socrates/interface/socrates_set_cld.F90
 atmos_param/socrates/interface/set_dimen.F90
 atmos_param/socrates/interface/socrates_config_mod.f90
 atmos_param/socrates/interface/compress_spectrum.F90
