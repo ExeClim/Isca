@@ -84,6 +84,8 @@ exp.namelist = namelist = Namelist({
         'dt_rad':3600,
         'store_intermediate_rad':True,
         'chunk_size': 16,
+        'use_pressure_interp_for_half_levels':False,
+        'tidally_locked':False
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
