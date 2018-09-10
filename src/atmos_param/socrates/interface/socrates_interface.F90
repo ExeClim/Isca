@@ -266,12 +266,12 @@ write(stdlog_unit, socrates_rad_nml)
          'watts/m2', missing_value=missing_value               )
 
     id_soc_flux_lw = &
-         register_diag_field ( soc_mod_name, 'soc_flux_lw', axes(1:3), Time, &
+         register_diag_field ( soc_mod_name, 'soc_flux_lw', (/axes(1),axes(2),axes(4)/), Time, &
          'socrates Net LW flux (up)', &
          'watts/m2', missing_value=missing_value               )
 
     id_soc_flux_sw = &
-         register_diag_field ( soc_mod_name, 'soc_flux_sw', axes(1:3), Time, &
+         register_diag_field ( soc_mod_name, 'soc_flux_sw', (/axes(1),axes(2),axes(4)/), Time, &
          'socrates Net SW flux (up)', & 
          'watts/m2', missing_value=missing_value               )
 
@@ -332,11 +332,11 @@ write(stdlog_unit, socrates_rad_nml)
         endif
 
         if (id_soc_flux_lw > 0) then 
-            allocate(thd_lw_flux_net_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+            allocate(thd_lw_flux_net_store(size(lonb,1)-1, size(latb,2)-1, num_levels+1))
         endif 
 
         if (id_soc_flux_sw > 0) then 
-            allocate(thd_sw_flux_net_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+            allocate(thd_sw_flux_net_store(size(lonb,1)-1, size(latb,2)-1, num_levels+1))
         endif 
 
         if (id_soc_olr > 0) then 
@@ -658,11 +658,11 @@ write(stdlog_unit, socrates_rad_nml)
         ENDDO
 
           ! Set output arrays
-          output_flux_up(:,:,:) = reshape(soc_flux_up(:,:),(/si,sj,sk /))
-          output_flux_down(:,:,:) = reshape(soc_flux_down(:,:),(/si,sj,sk /))          
+          output_flux_up(:,:,:) = reshape(soc_flux_up(:,:),(/si,sj,sk+1 /))
+          output_flux_down(:,:,:) = reshape(soc_flux_down(:,:),(/si,sj,sk+1 /))          
 
           if(present(output_flux_direct)) then
-              output_flux_direct(:,:,:) = reshape(soc_flux_direct(:,:),(/si,sj,sk /))          
+              output_flux_direct(:,:,:) = reshape(soc_flux_direct(:,:),(/si,sj,sk+1 /))          
           endif
           
           output_heating_rate(:,:,:) = reshape(soc_heating_rate(:,:),(/si,sj,sk /))
@@ -693,14 +693,15 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     integer(i_def) :: n_profile, n_layer
 
     real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: t_surf_for_soc, rad_lat_soc, rad_lon_soc, albedo_soc
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, co2_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total, output_soc_flux_sw_down, output_soc_flux_sw_up, output_soc_flux_lw_down, output_soc_flux_lw_up, z_full_soc
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc, t_half_out, z_half_soc
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, co2_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total, z_full_soc
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc, t_half_out, z_half_soc,output_soc_flux_sw_down, output_soc_flux_sw_up, output_soc_flux_lw_down, output_soc_flux_lw_up
 
     logical :: soc_lw_mode, used
     integer :: seconds, days, year_in_s
     real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
     real, dimension(size(temp_in,1), size(temp_in,2)) :: coszen, fracsun, surf_lw_net, olr, toa_sw
-    real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: ozone_in, co2_in, thd_sw_flux_net, thd_lw_flux_net
+    real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: ozone_in, co2_in
+    real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: thd_sw_flux_net, thd_lw_flux_net
     type(time_type) :: Time_loc
 
     
