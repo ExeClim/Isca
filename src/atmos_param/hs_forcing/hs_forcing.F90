@@ -332,6 +332,7 @@ contains
    ! ---- spin-up simple heat capacity used in top-down code ----
 
   if (trim(equilibrium_t_option) == 'top_down') then
+  print *, 'lapse rate in K/km for top_down:', lapse
   if(file_exist(trim('INPUT/hs_forcing.res.nc'))) then
      !call nullify_domain()
      call read_data(trim('INPUT/hs_forcing.res.nc'), 'tg_prev', tg_prev, grid_domain)
