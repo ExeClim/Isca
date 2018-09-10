@@ -202,9 +202,9 @@ def deep_ocean_heat_content(dataset, model_params, dayofyear_or_months='months')
 
     print('doing deep ocean heat content')
     aav.area_average(dataset, 'd_weighted_sst_data_dt', model_params, land_ocean_all='ocean_non_ice', axis_in=dayofyear_or_months+'_ax')
-    d_deep_ocean_dt=(dataset['net_surf_energy_fl_area_av_ocean_non_ice']-dataset['d_weighted_sst_data_dt_area_av_ocean_non_ice']).mean()
+    d_deep_ocean_dt=(dataset['net_surf_energy_fl_area_av_ocean_non_ice']-dataset['d_weighted_sst_data_dt_area_av_ocean_non_ice'])
 
-    dataset['d_deep_ocean_dt']=(d_deep_ocean_dt)    
+    dataset['d_deep_ocean_dt']=(dataset['net_surf_energy_fl_area_av_ocean_non_ice'].dims, d_deep_ocean_dt)    
 
 def ocean_transport(dataset, model_params, dayofyear_or_months='months'):
 
@@ -282,12 +282,12 @@ if __name__ == "__main__":
 
     input_dir=GFDL_BASE
     base_dir=GFDL_DATA
-    land_file='input/era_land_t42.nc'
-    base_exp_name='laura_no_ice_fixed_sst_perp_djf/' #Folder containing the python script and input files that ran the experiment
-    exp_name='no_ice_precip_targets_exps_t42_finished' #Folder within the data directory where the files can be found
-    #ice_file_name=base_dir+'annual_mean_ice_albedo_change_test_mk2_4320_dt_rad_4/'+'run360/'+'atmos_monthly.nc'
-    ice_file_name=None
-    output_file_name='qflux_laura_hadg' #Proposed name of your output qflux file. Will also be qflux field name in q-flux netcdf file as the fortran assumes file-name = field name. No need to add '.nc' or any file paths in this variable as otherwise they will end up in the field name too. Output file will be stored in the same directory as this script.
+    land_file='input/land.nc'
+    base_exp_name='annual_mean_ice_post_princeton_fixed_sst/' #Folder containing the python script and input files that ran the experiment
+    exp_name='annual_mean_ice_post_princeton_fixed_sst_1' #Folder within the data directory where the files can be found
+#    ice_file_name=base_dir+'annual_mean_ice_albedo_change_test_mk2_4320_dt_rad_4/'+'run360/'+'atmos_monthly.nc'
+    ice_file_name = '/scratch/sit204/data_isca/realistic_continents_fixed_sst_test_experiment_albedo/run0001/atmos_daily.nc'
+    output_file_name='ami_test_interp' #Proposed name of your output qflux file. Will also be qflux field name in q-flux netcdf file as the fortran assumes file-name = field name. No need to add '.nc' or any file paths in this variable as otherwise they will end up in the field name too. Output file will be stored in the same directory as this script.
 
     start_file=240
     end_file=360
@@ -298,7 +298,7 @@ if __name__ == "__main__":
     avg_or_daily='monthly'
 
     #Set the time frequency of output data. Valid options are 'months', 'all_time' or 'dayofyear'.
-    time_divisions_of_qflux_to_be_calculated='all_time'
+    time_divisions_of_qflux_to_be_calculated='months'
 
     model_params = sagp.model_params_set(input_dir, delta_t=720., ml_depth=20., res=42)
 

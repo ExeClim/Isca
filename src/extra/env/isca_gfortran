@@ -1,0 +1,8 @@
+echo loadmodules for Isca
+
+export F90=mpif90
+export CC=mpicc
+export GFDL_MKMF_TEMPLATE=gfort
+
+module purge
+module load netCDF-Fortran/4.4.3-foss-2016a

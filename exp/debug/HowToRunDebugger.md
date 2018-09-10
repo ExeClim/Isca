@@ -1,3 +1,13 @@
+#How to setup Isca to run with IDB
+
+To run Isca with the Intel debugger, three changes should be made:
+
+  1. Set NCORES=1
+  2. set the 'debug=True' argument in the 'cb.compile'
+  3. Add the 'run_idb=True' option to the first instance of exp.run
+
+These changes have been made in the `frierson_debug.py` example in this folder.
+
 # How to use IDB
 
 Assuming you have managed to run the code with the ```run_idb=True``` flag and that your running in **serial** and not parallel (ie one core) . Here are some of the key commands you need to run idb.
