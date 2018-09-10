@@ -297,7 +297,6 @@ class SocratesCodeBase(CodeBase):
             link_correct = os.path.exists(socrates_desired_location+'/src/')
             if link_correct:
                 socrates_code_in_desired_location=True
-                self.log.info('Socrates source code already in correct place. Continuing.')                
             else:
                 socrates_code_in_desired_location=False                
                 if os.path.islink(socrates_desired_location):
@@ -310,14 +309,15 @@ class SocratesCodeBase(CodeBase):
             self.log.info('Socrates source code symlink does not exist. Creating.')
 
         # If socrates is not in the right place already, then attempt to make symlink to location of code provided by GFDL_SOC
-        if GFDL_SOC is not None and not socrates_code_in_desired_location:
-            sh.ln('-s', GFDL_SOC, socrates_desired_location)
-        elif GFDL_SOC is None and not socrates_code_in_desired_location:
-            error_mesg = 'Socrates code is required for SocratesCodebase, but source code is not provided in location GFDL_SOC='+ str(GFDL_SOC)
-            self.log.error(error_mesg)
-            raise OSError(error_mesg)
-        elif socrates_code_in_desired_location:
+        if socrates_code_in_desired_location:
             self.log.info('Socrates source code already in correct place. Continuing.')
+        else:
+            if GFDL_SOC is not None:
+                sh.ln('-s', GFDL_SOC, socrates_desired_location)
+            elif GFDL_SOC is None:
+                error_mesg = 'Socrates code is required for SocratesCodebase, but source code is not provided in location GFDL_SOC='+ str(GFDL_SOC)
+                self.log.error(error_mesg)
+                raise OSError(error_mesg)
 
     def __init__(self, *args, **kwargs):
         super(SocratesCodeBase, self).__init__(*args, **kwargs)
