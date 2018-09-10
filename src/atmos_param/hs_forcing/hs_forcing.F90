@@ -179,13 +179,13 @@ contains
 
      if (present(kbot)) then
          do j=1,size(p_half,2)
-         do i=1,size(p_half,1)
-            kb = kbot(i,j)
-            ps(i,j) = p_half(i,j,kb+1)
-         enddo
+             do i=1,size(p_half,1)
+                 kb = kbot(i,j)
+                 ps(i,j) = p_half(i,j,kb+1)
+             enddo
          enddo
      else
-            ps(:,:) = p_half(:,:,size(p_half,3))
+         ps(:,:) = p_half(:,:,size(p_half,3))
      endif
 
 !-----------------------------------------------------------------------
@@ -332,41 +332,41 @@ contains
    ! ---- spin-up simple heat capacity used in top-down code ----
 
   if (trim(equilibrium_t_option) == 'top_down') then
-  print *, 'lapse rate in K/km for top_down:', lapse
-  if(file_exist(trim('INPUT/hs_forcing.res.nc'))) then
-     !call nullify_domain()
-     call read_data(trim('INPUT/hs_forcing.res.nc'), 'tg_prev', tg_prev, grid_domain)
-	 print *, 'READING PREVIOUS HEAT CAPACITY DATA'
-  else
-	print *, 'SPINNING UP HEAT CAPACITY'
-	! spin up the surface temps with heat capacity
-	print *, 'Depth:', ml_depth
-  	tg = 250        ! starting temperature for surface
-	spin_count = 0
-	step_days = 1
-	do
-		tg_prev = tg
-		dt_integer = dt_integer + 86400*step_days		! step by a day at a time
-		spin_count = spin_count + 1
-		call update_orbit(dt_integer, dec, orb_dist)
-		call calc_hour_angle(lat, dec, hour_angle)
-		s(:,:) = solar_const/pi*(hour_angle*sin(lat)*sin(dec) + cos(lat)*cos(dec)*sin(hour_angle))
-		t_radbal = ((1-albedo)*s(:,:)/stefan)**0.25
-		t_trop(:,:) = t_radbal(:,:)/(2**0.25)
-
-		h_trop = 1.0/(16*lapse)*(1.3863*t_trop + sqrt((1.3863*t_trop)**2 + 32*lapse*tau_s*h_a*t_trop))
-		t_surf = t_trop + h_trop*lapse
-
-		tg(:,:) =  stefan*86400*step_days/(ml_depth*heat_capacity)*(t_surf**4 - tg_prev**4) + tg_prev
-
-		if (spin_count >= spinup_time) then
-			print *, 'SPINUP COMPLETE AFTER ', spin_count, 'ITERATIONS'
-			exit
-		endif
-
-	 enddo
-
-  endif
+      print *, 'lapse rate in K/km for top_down:', lapse
+      if(file_exist(trim('INPUT/hs_forcing.res.nc'))) then
+         !call nullify_domain()
+         call read_data(trim('INPUT/hs_forcing.res.nc'), 'tg_prev', tg_prev, grid_domain)
+         print *, 'READING PREVIOUS HEAT CAPACITY DATA'
+      else
+        print *, 'SPINNING UP HEAT CAPACITY'
+        ! spin up the surface temps with heat capacity
+        print *, 'Depth:', ml_depth
+        tg = 250        ! starting temperature for surface
+        spin_count = 0
+        step_days = 1
+        do
+            tg_prev = tg
+            dt_integer = dt_integer + 86400*step_days       ! step by a day at a time
+            spin_count = spin_count + 1
+            call update_orbit(dt_integer, dec, orb_dist)
+            call calc_hour_angle(lat, dec, hour_angle)
+            s(:,:) = solar_const/pi*(hour_angle*sin(lat)*sin(dec) + cos(lat)*cos(dec)*sin(hour_angle))
+            t_radbal = ((1-albedo)*s(:,:)/stefan)**0.25
+            t_trop(:,:) = t_radbal(:,:)/(2**0.25)
+    
+            h_trop = 1.0/(16*lapse)*(1.3863*t_trop + sqrt((1.3863*t_trop)**2 + 32*lapse*tau_s*h_a*t_trop))
+            t_surf = t_trop + h_trop*lapse
+    
+            tg(:,:) =  stefan*86400*step_days/(ml_depth*heat_capacity)*(t_surf**4 - tg_prev**4) + tg_prev
+    
+            if (spin_count >= spinup_time) then
+                print *, 'SPINUP COMPLETE AFTER ', spin_count, 'ITERATIONS'
+                exit
+            endif
+    
+         enddo
+    
+      endif
   endif
 
 !     ----- convert local heating variables from degrees to radians -----
@@ -558,37 +558,37 @@ real, intent(in),  dimension(:,:,:), optional :: mask
 
 !  ----- compute equilibrium temperature (teq) -----
 
-      if(equilibrium_t_option == 'from_file') then
-         do i=1, size(t,1)
-         do j=1, size(t,2)
-           teq(i,j,k)=tz(j,k)
-         enddo
-         enddo
-      else if(trim(equilibrium_t_option) == 'Held_Suarez') then
-         p_norm(:,:) = p_full(:,:,k)/pref
-         the   (:,:) = t_star(:,:) - delv*cos_lat_2(:,:)*log(p_norm(:,:))
-         teq(:,:,k) = the(:,:)*(p_norm(:,:))**(KAPPA*lapse_rate)
-         teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
-      else if(uppercase(trim(equilibrium_t_option)) == 'EXOPLANET') then
-         call diurnal_exoplanet(lat, lon, Time, coszen, fracday, rrsun)
-         t_star(:,:) = t_zero - delh*(1 - coszen(:,:)) - eps*sin_lat(:,:)
-         p_norm(:,:) = p_full(:,:,k)/pref
-         the   (:,:) = t_star(:,:) - delv*coszen(:,:)*log(p_norm(:,:))
-         teq(:,:,k) = the(:,:)*(p_norm(:,:))**(KAPPA*lapse_rate)
-         teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
-      else
-         call error_mesg ('hs_forcing_nml', &
-         '"'//trim(equilibrium_t_option)//'"  is not a valid value for equilibrium_t_option',FATAL)
-      endif
-
-!  ----- compute damping -----
-      sigma(:,:) = p_full(:,:,k)*rps(:,:)
-      where (sigma(:,:) <= 1.0 .and. sigma(:,:) > sigma_b)
-        tfactr(:,:) = tcoeff*(sigma(:,:)-sigma_b)
-        tdamp(:,:,k) = tka + cos_lat_4(:,:)*tfactr(:,:)
-      elsewhere
-        tdamp(:,:,k) = tka
-      endwhere
+          if(equilibrium_t_option == 'from_file') then
+             do i=1, size(t,1)
+                 do j=1, size(t,2)
+                   teq(i,j,k)=tz(j,k)
+                 enddo
+             enddo
+          else if(trim(equilibrium_t_option) == 'Held_Suarez') then
+             p_norm(:,:) = p_full(:,:,k)/pref
+             the   (:,:) = t_star(:,:) - delv*cos_lat_2(:,:)*log(p_norm(:,:))
+             teq(:,:,k) = the(:,:)*(p_norm(:,:))**(KAPPA*lapse_rate)
+             teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
+          else if(uppercase(trim(equilibrium_t_option)) == 'EXOPLANET') then
+             call diurnal_exoplanet(lat, lon, Time, coszen, fracday, rrsun)
+             t_star(:,:) = t_zero - delh*(1 - coszen(:,:)) - eps*sin_lat(:,:)
+             p_norm(:,:) = p_full(:,:,k)/pref
+             the   (:,:) = t_star(:,:) - delv*coszen(:,:)*log(p_norm(:,:))
+             teq(:,:,k) = the(:,:)*(p_norm(:,:))**(KAPPA*lapse_rate)
+             teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
+          else
+             call error_mesg ('hs_forcing_nml', &
+             '"'//trim(equilibrium_t_option)//'"  is not a valid value for equilibrium_t_option',FATAL)
+          endif
+    
+    !  ----- compute damping -----
+          sigma(:,:) = p_full(:,:,k)*rps(:,:)
+          where (sigma(:,:) <= 1.0 .and. sigma(:,:) > sigma_b)
+            tfactr(:,:) = tcoeff*(sigma(:,:)-sigma_b)
+            tdamp(:,:,k) = tka + cos_lat_4(:,:)*tfactr(:,:)
+          elsewhere
+            tdamp(:,:,k) = tka
+          endwhere
 
       enddo
 
@@ -641,27 +641,27 @@ real :: umean, vmean
       rps = 1./ps
 
       do k = 1, size(u,3)
-      if (relax_to_specified_wind) then
-         do j=1, size(u,2)
-            umean=sum(u(:,j,k))/size(u,1)
-            vmean=sum(v(:,j,k))/size(v,1)
-            udt(:,j,k) = (uz(j,k)-umean)*vkf
-            vdt(:,j,k) = (vz(j,k)-vmean)*vkf
-         enddo
-      else
-
-         sigma(:,:) = p_full(:,:,k)*rps(:,:)
-
-         where (sigma(:,:) <= 1.0 .and. sigma(:,:) > sigma_b)
-            vfactr(:,:) = vcoeff*(sigma(:,:)-sigma_b)
-            udt(:,:,k)  = vfactr(:,:)*u(:,:,k)
-            vdt(:,:,k)  = vfactr(:,:)*v(:,:,k)
-         elsewhere
-            udt(:,:,k) = 0.0
-            vdt(:,:,k) = 0.0
-         endwhere
-
-      endif
+          if (relax_to_specified_wind) then
+             do j=1, size(u,2)
+                umean=sum(u(:,j,k))/size(u,1)
+                vmean=sum(v(:,j,k))/size(v,1)
+                udt(:,j,k) = (uz(j,k)-umean)*vkf
+                vdt(:,j,k) = (vz(j,k)-vmean)*vkf
+             enddo
+          else
+    
+             sigma(:,:) = p_full(:,:,k)*rps(:,:)
+    
+             where (sigma(:,:) <= 1.0 .and. sigma(:,:) > sigma_b)
+                vfactr(:,:) = vcoeff*(sigma(:,:)-sigma_b)
+                udt(:,:,k)  = vfactr(:,:)*u(:,:,k)
+                vdt(:,:,k)  = vfactr(:,:)*v(:,:,k)
+             elsewhere
+                udt(:,:,k) = 0.0
+                vdt(:,:,k) = 0.0
+             endwhere
+    
+          endif
       enddo
 
       if (present(mask)) then
@@ -699,11 +699,11 @@ real :: umean, vmean
 
    if (present(kbot)) then
       do j=1,size(r,2)
-      do i=1,size(r,1)
-         kb = kbot(i,j)
-         pmass (i,j)    = p_half(i,j,kb+1) - p_half(i,j,kb)
-         source(i,j,kb) = flux/pmass(i,j)
-      enddo
+          do i=1,size(r,1)
+             kb = kbot(i,j)
+             pmass (i,j)    = p_half(i,j,kb+1) - p_half(i,j,kb)
+             source(i,j,kb) = flux/pmass(i,j)
+          enddo
       enddo
    else
          kb = size(r,3)
@@ -744,18 +744,18 @@ if(trim(local_heating_option) == 'from_file') then
    call interpolator( heating_source_interp, p_half, tdt, trim(local_heating_file))
 else if(trim(local_heating_option) == 'Isidoro') then
    do j=1,size(lon,2)
-   do i=1,size(lon,1)
-     lon_temp = lon(i,j)
-     ! Make sure lon_temp falls in the range zero to 2*PI
-     x_temp = floor(lon_temp/twopi)
-     lon_temp = lon_temp - twopi*x_temp
-     lon_factor(i,j) = exp(-.5*((lon_temp-xcenter)/xwidth)**2)
-     lat_factor(i,j) = exp(-.5*((lat(i,j)-ycenter)/ywidth)**2)
-     do k=1,size(p_full,3)
-       p_factor = exp((p_full(i,j,k)-ps(i,j))/local_heating_vert_decay)
-       tdt(i,j,k) = srfamp*lon_factor(i,j)*lat_factor(i,j)*p_factor
-     enddo
-   enddo
+       do i=1,size(lon,1)
+         lon_temp = lon(i,j)
+         ! Make sure lon_temp falls in the range zero to 2*PI
+         x_temp = floor(lon_temp/twopi)
+         lon_temp = lon_temp - twopi*x_temp
+         lon_factor(i,j) = exp(-.5*((lon_temp-xcenter)/xwidth)**2)
+         lat_factor(i,j) = exp(-.5*((lat(i,j)-ycenter)/ywidth)**2)
+         do k=1,size(p_full,3)
+           p_factor = exp((p_full(i,j,k)-ps(i,j))/local_heating_vert_decay)
+           tdt(i,j,k) = srfamp*lon_factor(i,j)*lat_factor(i,j)*p_factor
+         enddo
+       enddo
    enddo
 else
   call error_mesg ('hs_forcing_nml','"'//trim(local_heating_option)//'"  is not a valid value for local_heating_option',FATAL)
@@ -780,10 +780,10 @@ call interpolator( u_interp, p_half, uf, trim(u_wind_file))
 call interpolator( v_interp, p_half, vf, trim(v_wind_file))
 
 do j=1,size(p_half,2)
-do k=1,size(p_half,3)-1
-  uz(j,k)=sum(uf(:,j,k))/size(uf,1)
-  vz(j,k)=sum(vf(:,j,k))/size(vf,1)
-enddo
+    do k=1,size(p_half,3)-1
+      uz(j,k)=sum(uf(:,j,k))/size(uf,1)
+      vz(j,k)=sum(vf(:,j,k))/size(vf,1)
+    enddo
 enddo
 end subroutine get_zonal_mean_flow
 !#######################################################################
@@ -799,9 +799,9 @@ real, dimension(size(p_half,1),size(p_half,2),size(p_half,3)-1) :: tf
 call interpolator( temp_interp, p_half, tf, trim(equilibrium_t_file))
 
 do j=1,size(p_half,2)
-do k=1,size(p_half,3)-1
-  tm(j,k)=sum(tf(:,j,k))/size(tf,1)
-enddo
+    do k=1,size(p_half,3)-1
+      tm(j,k)=sum(tf(:,j,k))/size(tf,1)
+    enddo
 enddo
 end subroutine get_zonal_mean_temp
 
@@ -817,13 +817,13 @@ end subroutine get_zonal_mean_temp
 
 subroutine update_orbit(current_time, dec, orb_dist)
 
-integer, intent(in)					:: current_time
-real, intent(out)					:: dec, orb_dist
+integer, intent(in)                 :: current_time
+real, intent(out)                   :: dec, orb_dist
 
 real :: theta, mean_anomaly, ecc_anomaly, true_anomaly
 
 
-	mean_anomaly = 2*pi/(orbital_period*86400)*(current_time-peri_time*orbital_period*86400)
+    mean_anomaly = 2*pi/(orbital_period*86400)*(current_time-peri_time*orbital_period*86400)
     call calc_ecc_anomaly(mean_anomaly, ecc, ecc_anomaly)
     true_anomaly = 2*atan(((1 + ecc)/(1 - ecc))**0.5 * tan(ecc_anomaly/2))
     orb_dist = smaxis * (1 - ecc**2)/(1 + ecc*cos(true_anomaly))
@@ -836,15 +836,15 @@ end subroutine update_orbit
 
 subroutine calc_hour_angle(lat, dec, hour_angle)
 
-real, intent(in) 					:: dec
-real, intent(in), dimension(:,:) 	:: lat
-real, intent(out), dimension(:,:)	:: hour_angle
+real, intent(in)                    :: dec
+real, intent(in), dimension(:,:)    :: lat
+real, intent(out), dimension(:,:)   :: hour_angle
 
 real, dimension(size(lat,1), size(lat,2)) :: inv_hour_angle
 
 inv_hour_angle = -tan(lat(:,:))*tan(dec)
 where (inv_hour_angle > 1)
-	inv_hour_angle = 1
+    inv_hour_angle = 1
 endwhere
 where (inv_hour_angle < -1)
     inv_hour_angle = -1
@@ -950,13 +950,13 @@ real, intent(in),  dimension(:,:,:), optional :: mask
     t_trop(:,:) = t_radbal(:,:)/(2**0.25)
     h_trop = 1.0/(16*lapse)*(1.3863*t_trop + sqrt((1.3863*t_trop)**2 + 32*lapse*tau_s*h_a*t_trop))
 
-	t_surf = t_trop(:,:) + h_trop*lapse
-	tg(:,:) = stefan*dt/(ml_depth*heat_capacity)*(t_surf**4 - tg_prev**4) + tg_prev
-	tg_prev = tg
-	t_trop(:,:) = tg(:,:) - h_trop*lapse
+    t_surf = t_trop(:,:) + h_trop*lapse
+    tg(:,:) = stefan*dt/(ml_depth*heat_capacity)*(t_surf**4 - tg_prev**4) + tg_prev
+    tg_prev = tg
+    t_trop(:,:) = tg(:,:) - h_trop*lapse
 
 
-	!----- stratosphere temperature ------------
+    !----- stratosphere temperature ------------
       tstr  (:,:) = t_strat - eps*sin_lat(:,:)
 
 
@@ -974,24 +974,24 @@ real, intent(in),  dimension(:,:,:), optional :: mask
         teq(:,:,k) = t_trop + lapse*(h_trop-zfull(:,:,k)/1000)
         if (stratosphere_t_option == 'c_above_tp') then
             do i=1, size(t,1)
-            do j=1, size(t,2)
-                if(zfull(i,j,k)/1000 >= h_trop(i,j)) then
-                 	teq(i,j,k) = tstr(i,j)
-                endif
-            enddo
+                do j=1, size(t,2)
+                    if(zfull(i,j,k)/1000 >= h_trop(i,j)) then
+                        teq(i,j,k) = tstr(i,j)
+                    endif
+                enddo
             enddo
         elseif (stratosphere_t_option == 'hs_like') then
-                teq(:,:,k) = max(teq(:,:,k), tstr(:,:))
-		elseif (stratosphere_t_option == 'extend_tp') then
-			do i=1,size(t,1)
-			do j=1,size(t,1)
-                if (zfull(i,j,k)/1000 >= h_trop(i,j)) then
-                    teq(i,j,k) = t_trop(i,j)
-                endif
-			enddo
-			enddo
-		else
-			teq(:,:,k) = max(teq(:,:,k), 0.)
+            teq(:,:,k) = max(teq(:,:,k), tstr(:,:))
+        elseif (stratosphere_t_option == 'extend_tp') then
+            do i=1,size(t,1)
+                do j=1,size(t,1)
+                    if (zfull(i,j,k)/1000 >= h_trop(i,j)) then
+                        teq(i,j,k) = t_trop(i,j)
+                    endif
+                enddo
+            enddo
+        else
+            teq(:,:,k) = max(teq(:,:,k), 0.)
         endif
 !  ----- compute damping -----
 ! ------ is symmetric about the equator, change this?? -----
