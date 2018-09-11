@@ -925,8 +925,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             output_heating_rate_lw, output_soc_flux_lw_down, output_soc_flux_lw_up, output_soc_spectral_olr = outputted_soc_spectral_olr, t_half_level_out = t_half_out)
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_lw*delta_t !Output heating rate in K/s, so is a temperature tendency
-       surf_lw_down(:,:) = REAL(output_soc_flux_lw_down(:,:, n_layer))
-       surf_lw_net(:,:) = REAL(output_soc_flux_lw_up(:,:,n_layer) - output_soc_flux_lw_down(:,:, n_layer))
+       surf_lw_down(:,:) = REAL(output_soc_flux_lw_down(:,:, n_layer+1))
+       surf_lw_net(:,:) = REAL(output_soc_flux_lw_up(:,:,n_layer+1) - output_soc_flux_lw_down(:,:, n_layer+1))
        olr(:,:) = REAL(output_soc_flux_lw_up(:,:,1))
        thd_lw_flux_net = REAL(output_soc_flux_lw_up - output_soc_flux_lw_down)
 
@@ -940,7 +940,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             output_heating_rate_sw, output_soc_flux_sw_down, output_soc_flux_sw_up)
 
        tg_tmp_soc = tg_tmp_soc + output_heating_rate_sw*delta_t !Output heating rate in K/s, so is a temperature tendency
-       net_surf_sw_down(:,:) = REAL(output_soc_flux_sw_down(:,:, n_layer)-output_soc_flux_sw_up(:,:,n_layer) )
+       net_surf_sw_down(:,:) = REAL(output_soc_flux_sw_down(:,:, n_layer+1)-output_soc_flux_sw_up(:,:,n_layer+1) )
        toa_sw(:,:) = REAL(output_soc_flux_sw_down(:,:,1)-output_soc_flux_sw_up(:,:,1))
        thd_sw_flux_net = REAL(output_soc_flux_sw_up - output_soc_flux_sw_down)
 
