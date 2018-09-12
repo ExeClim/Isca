@@ -182,7 +182,7 @@ call set_bound(control, dimen, spectrum, bound, n_profile,                     &
   ten_microns_cld = 1.
 call set_cld(cld, control, dimen, spectrum, n_profile, n_layer, &
             liq_frac      = cld_frac,     &
-            ice_frac      = ten_microns_cld,     &
+            ice_frac      = zeros_cld,     &
             liq_mmr       = mmr_cl_rad,      &
             ice_mmr       = zeros_cld,      &
             liq_dim       = reff_rad,      &
