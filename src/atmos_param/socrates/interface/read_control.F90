@@ -9,13 +9,15 @@ CONTAINS
 
 ! Subroutine to set input algorithmic options for the core radiation code
 !------------------------------------------------------------------------------
-SUBROUTINE read_control(control, spectrum)
+SUBROUTINE read_control(control, spectrum, do_cloud_simple)
 
 
 USE rad_pcf
 USE def_control,  ONLY: StrCtrl, allocate_control
 USE def_spectrum, ONLY: StrSpecData
-USE socrates_config_mod, ONLY: l_planet_grey_surface, inc_h2o, inc_co2, inc_co, inc_o3, inc_n2o, inc_ch4, inc_o2, inc_so2, inc_cfc11, inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a, account_for_clouds_in_socrates
+USE socrates_config_mod, ONLY: l_planet_grey_surface, inc_h2o, inc_co2, inc_co,      & 
+                               inc_o3, inc_n2o, inc_ch4, inc_o2, inc_so2, inc_cfc11, &
+                               inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a
 
 IMPLICIT NONE
 
@@ -25,6 +27,10 @@ TYPE(StrCtrl),      INTENT(INOUT) :: control
 
 ! Spectral data:
 TYPE (StrSpecData), INTENT(IN)    :: spectrum
+
+LOGICAL, INTENT(IN), OPTIONAL     :: do_cloud_simple
+
+
 
 ! Local variables.
 INTEGER :: i
@@ -93,7 +99,7 @@ control%l_continuum    = .TRUE.
 control%i_gas_overlap  = ip_overlap_k_eqv_scl
 
 ! Properties of clouds
-if (account_for_clouds_in_socrates) then
+if (do_cloud_simple) then
   control%i_cloud_representation = ip_cloud_ice_water
 else
   control%i_cloud_representation = ip_cloud_off  
