@@ -809,7 +809,6 @@ integer, intent(in) , dimension(:,:),   optional :: kbot
 real, dimension(1,1,1):: tracer, tracertnd
 integer :: nql, nqi, nqa   ! tracer indices for stratiform clouds
 
-real :: tmp1, tmp2 !remove tmp1 and tmp2 after debugging
 
 if(current == previous) then
    delta_t = dt_real
@@ -970,6 +969,12 @@ endif
 ! Call the simple cloud scheme in line with SPOOKIE-2 requirements
 ! Using start of time step variables
 ! using soecific humidity NOT mixing ratios
+
+ !Set to zero regarles of if clouds are used in radiation code
+ cf_rad   = 0.
+ reff_rad = 0.
+ qcl_rad  = 0.
+
 if(do_cloud_simple) then
 
     call cloud_simple(p_half(:,:,:,current), p_full(:,:,:,current),  &
@@ -982,11 +987,6 @@ if(do_cloud_simple) then
                       )
  
 endif
-
-! write(6,*) minval(cf_rad), maxval(cf_rad), minval(reff_rad), maxval(reff_rad), minval(qcl_rad), maxval(qcl_rad)
-
-tmp1 = maxval(reff_rad)
-tmp2 = maxval(cf_rad)
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
