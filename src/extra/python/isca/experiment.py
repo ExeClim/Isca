@@ -4,7 +4,7 @@ import re
 from f90nml import Namelist
 from jinja2 import Environment, FileSystemLoader
 import glob
-import sh
+import sh   
 import pdb
 import tarfile
 
@@ -185,10 +185,14 @@ class Experiment(Logger, EventEmitter):
         else:
             return None
 
+    def check_for_existing_output(self, i):
+        outdir = P(self.datadir, self.runfmt % i)
+        return os.path.isdir(outdir)
+
     @destructive
     @useworkdir
-    def run(self, i, restart_file=None, use_restart=True, multi_node=False, num_cores=8, overwrite_data=False, save_run=False, run_idb=False, nice_score=0):
-        """Run the model.
+    def run(self, i, restart_file=None, use_restart=True, multi_node=False, num_cores=8, overwrite_data=False, save_run=False, run_idb=False, nice_score=0, mpirun_opts=''):
+        """Run the model.0
             `num_cores`: Number of mpi cores to distribute over.
             `restart_file` (optional): A path to a valid restart archive.  If None and `use_restart=True`,
                                        restart file (i-1) will be used.
@@ -204,7 +208,7 @@ class Experiment(Logger, EventEmitter):
         outdir = P(self.datadir, self.runfmt % i)
         resdir = P(self.rundir, 'RESTART')
 
-        if os.path.isdir(outdir):
+        if self.check_for_existing_output(i):
             if overwrite_data:
                 self.log.warning('Data for run %d already exists and overwrite_data is True. Overwriting.' % i)
                 sh.rm('-r', outdir)
@@ -223,10 +227,13 @@ class Experiment(Logger, EventEmitter):
         for filename in self.inputfiles:
             sh.cp([filename, P(indir, os.path.split(filename)[1])])
 
-        mpirun_opts= ''
-
         if multi_node:
             mpirun_opts += ' -bootstrap pbsdsh -f $PBS_NODEFILE'
+
+        if use_restart and not restart_file and i == 1:
+            # no restart file specified, but we are at first run number
+            self.log.warn('use_restart=True, but restart_file not specified.  As this is run 1, assuming spin-up from namelist stated initial conditions so continuing.')
+            use_restart = False
 
         if use_restart:
             if not restart_file:
@@ -286,7 +293,7 @@ class Experiment(Logger, EventEmitter):
             self.emit('run:failed', self)
             raise FailedRunError()
 
-        self.emit('run:completed', self, i)
+        self.emit('run:complete', self, i)
         self.log.info('Run %d complete' % i)
         mkdir(outdir)
 
@@ -313,7 +320,7 @@ class Experiment(Logger, EventEmitter):
                 sh.rm(glob.glob(restartfile+'.????'))
                 self.log.debug("Restart file %s combined" % restartfile)
 
-            self.emit('run:combined', self)
+            self.emit('run:combined', self, i)
         else:
             for file in self.diag_table.files:
                 netcdf_file = '%s.nc' % file
@@ -321,7 +328,6 @@ class Experiment(Logger, EventEmitter):
                 sh.cp(filebase, P(outdir, netcdf_file))
                 sh.rm(glob.glob(filebase+'*'))
                 self.log.debug('%s copied to data directory' % netcdf_file)
-
 
         # make the restart archive and delete the restart files
         self.make_restart_archive(self.get_restart_file(i), resdir)
@@ -340,7 +346,7 @@ class Experiment(Logger, EventEmitter):
             self.codebase.write_source_control_status(P(outdir, 'git_hash_used.txt'))
 
         self.clear_rundir()
-
+        self.emit('run:finished', self, i)
         return True
 
     def make_restart_archive(self, archive_file, restart_directory):
