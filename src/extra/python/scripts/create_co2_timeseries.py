@@ -3,7 +3,7 @@ import numpy as np
 import create_timeseries as cts
 
 #create grid
-manual_grid_option=True
+manual_grid_option=False
 
 lons,lats,lonbs,latbs,nlon,nlat,nlonb,nlatb=cts.create_grid(manual_grid_option)
 

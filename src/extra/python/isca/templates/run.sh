@@ -3,9 +3,7 @@
 
 rundir={{ rundir }}  # change this if you're rerunning from the output directory
 
-module purge
 source {{ env_source }}
-module list
 
 ulimit -s unlimited
 
