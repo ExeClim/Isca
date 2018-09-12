@@ -23,7 +23,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_test_aquaplanet_without_clouds', codebase=cb)
+exp = Experiment('soc_test_aquaplanet_with_clouds', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -45,20 +45,13 @@ diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
 
-#radiative tendencies
 diag.add_field('socrates', 'soc_tdt_lw', time_avg=True)
 diag.add_field('socrates', 'soc_tdt_sw', time_avg=True)
 diag.add_field('socrates', 'soc_tdt_rad', time_avg=True)
-
-#net (up) and down surface fluxes
 diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_sw', time_avg=True)
-diag.add_field('socrates', 'soc_surf_flux_lw_down', time_avg=True)
-diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
-#net (up) TOA and downard fluxes
 diag.add_field('socrates', 'soc_olr', time_avg=True)
-diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
-diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
+diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
 diag.add_field('cloud_simple', 'cf_rad', time_avg=True)
 diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
 diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
@@ -97,9 +90,7 @@ exp.namelist = namelist = Namelist({
         'store_intermediate_rad':True,
         'chunk_size': 16,
         'use_pressure_interp_for_half_levels':False,
-        'tidally_locked':False,
-        #'solday': 90
-        'account_for_clouds_in_socrates': False,
+        'tidally_locked':False
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -113,9 +104,15 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
-        'do_cloud_simple': False
+        'do_cloud_simple': True
     },
 
+    'cloud_simple_nml': {
+        'simple_cca':0.0,
+        'rhcsfc': 0.95,
+        'rhc700': 0.7,
+        'rhc200': 0.3
+    },
 
     'vert_turb_driver_nml': {
         'do_mellor_yamada': False,     # default: True
@@ -205,9 +202,8 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
 
-        cb.compile()
-        #Set up the experiment object, with the first argument being the experiment name.
-        #This will be the name of the folder that the data will appear in.
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
+        cb.compile(debug=False)
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
+
         for i in range(2,121):
             exp.run(i, num_cores=NCORES)
