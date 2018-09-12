@@ -23,7 +23,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_test_aquaplanet_without_clouds', codebase=cb)
+exp = Experiment('soc_test_aquaplanet_with_clouds', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -104,9 +104,15 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
-        'do_cloud_simple': False
+        'do_cloud_simple': True
     },
 
+    'cloud_simple_nml': {
+        'simple_cca':0.0,
+        'rhcsfc': 0.95,
+        'rhc700': 0.7,
+        'rhc200': 0.3
+    },
 
     'vert_turb_driver_nml': {
         'do_mellor_yamada': False,     # default: True
