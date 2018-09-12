@@ -5,7 +5,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 16
+NCORES = 1
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -78,6 +78,7 @@ namelist = Namelist({
         'dt_rad':3600,
         'store_intermediate_rad':True,
         'chunk_size': 16,
+        'account_for_clouds_in_socrates': True,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -98,10 +99,7 @@ namelist = Namelist({
         'simple_cca':0.0,
         'rhcsfc': 0.95,
         'rhc700': 0.7,
-        'rhc200': 0.3,
-        'rhmsfc': 0.95,
-        'rhm700': 0.7,
-        'rhm200': 0.3,
+        'rhc200': 0.3
     },
 
     'vert_turb_driver_nml': {
@@ -148,8 +146,9 @@ namelist = Namelist({
     },
     
     'sat_vapor_pres_nml': {
-        'do_simple':True
-    },
+           'do_simple':True,
+           'construct_table_wrt_liq_and_ice':True
+       },
     
     'damping_driver_nml': {
         'do_rayleigh': True,
@@ -191,7 +190,7 @@ namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
 
-        cb.compile()
+        cb.compile(debug=True)
         #Set up the experiment object, with the first argument being the experiment name.
         #This will be the name of the folder that the data will appear in.
 
@@ -203,6 +202,6 @@ if __name__=="__main__":
 
         exp.namelist = namelist.copy()
 
-        exp.run(1, use_restart=False, num_cores=NCORES)
+        exp.run(1, use_restart=False, num_cores=NCORES, run_idb=True, overwrite_data=True)
 #        for i in range(2,121):
 #            exp.run(i, num_cores=NCORES)
