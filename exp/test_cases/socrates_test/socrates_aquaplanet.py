@@ -114,6 +114,7 @@ exp.namelist = namelist = Namelist({
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
         'do_cloud_simple': False
+    },
 
     'vert_turb_driver_nml': {
         'do_mellor_yamada': False,     # default: True

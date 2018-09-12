@@ -131,12 +131,19 @@ exp.namelist = namelist = Namelist({
         'do_cloud_simple': True
     },
 
+    'cloud_simple_nml': {
+        'simple_cca':0.0,
+        'rhcsfc': 0.95,
+        'rhc700': 0.7,
+        'rhc200': 0.3
+    },
+
     'vert_turb_driver_nml': {
         'do_mellor_yamada': False,     # default: True
         'do_diffusivity': True,        # default: False
         'do_simple': True,             # default: False
         'constant_gust': 0.0,          # default: 1.0
-        'use_tau': False, 
+        'use_tau': False 
     },
 
     'diffusivity_nml': {
