@@ -5,7 +5,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 1
+NCORES = 16
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -84,7 +84,6 @@ exp.namelist = namelist = Namelist({
         'dt_rad':3600,
         'store_intermediate_rad':True,
         'chunk_size': 16,
-        'account_for_clouds_in_socrates': True,
         'use_pressure_interp_for_half_levels':False,
         'tidally_locked':False
     }, 
@@ -100,7 +99,7 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
-        'do_cloud_simple': True,
+        'do_cloud_simple': True
     },
 
     'cloud_simple_nml': {
@@ -198,8 +197,8 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
 
-        cb.compile(debug=True)
-        exp.run(1, use_restart=False, num_cores=NCORES)#, run_idb=True, overwrite_data=True)
+        cb.compile(debug=False)
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
 
 #        for i in range(2,121):
 #            exp.run(i, num_cores=NCORES)
