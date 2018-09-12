@@ -95,6 +95,7 @@ exp.namelist = namelist = Namelist({
         'use_pressure_interp_for_half_levels':False,
         'tidally_locked':False,
         #'solday': 90
+        'account_for_clouds_in_socrates': True,
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -165,8 +166,9 @@ exp.namelist = namelist = Namelist({
     },
     
     'sat_vapor_pres_nml': {
-        'do_simple':True
-    },
+           'do_simple':True,
+           'construct_table_wrt_liq_and_ice':True
+       },
     
     'damping_driver_nml': {
         'do_rayleigh': True,
