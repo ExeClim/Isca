@@ -6,7 +6,7 @@ or only change the test cases it expects to (e.g. a bug fix will change the resu
 When you submit a new pull request, please run this test and report the results in the pull request.
 """
 import numpy as np
-from isca import Experiment, IscaCodeBase, FailedRunError, GFDL_BASE, DiagTable
+from isca import Experiment, IscaCodeBase, SocratesCodeBase, FailedRunError, GFDL_BASE, DiagTable
 from isca.util import exp_progress
 import xarray as xar
 import pdb
@@ -73,6 +73,12 @@ def get_nml_diag(test_case_name):
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist        
 
+    if 'socrates_aquaplanet' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_test/'))
+        from socrates_aquaplanet import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist       
+
     if 'top_down_test' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/top_down_test/'))
         from top_down_test import namelist as nml_out
@@ -95,7 +101,7 @@ def get_nml_diag(test_case_name):
 def list_all_test_cases_implemented_in_trip_test():
 
     #List of test cases to check
-    exps_implemented = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
+    exps_implemented = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'socrates_aquaplanet', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
 
     return exps_implemented
 
@@ -148,7 +154,10 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
     #Do the run for each of the commits in turn
     for s in [base_commit, later_commit]:
         exp_name = test_case_name+'_trip_test_21_'+s
-        cb = IscaCodeBase(repo=repo_to_use, commit=s)
+        if 'socrates' in test_case_name:
+            cb = SocratesCodeBase(repo=repo_to_use, commit=s)
+        else:
+            cb = IscaCodeBase(repo=repo_to_use, commit=s)
         cb.compile()
         exp = Experiment(exp_name, codebase=cb)
         exp.namelist = nml_use.copy()
