@@ -145,6 +145,11 @@ write(stdlog_unit, socrates_rad_nml)
 
           if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
 
+        if ((tidally_locked.eq..true.) .and. (frierson_solar_rad .eq. .true.)) then
+            call error_mesg( 'socrates_init', &
+            'tidally_locked and frierson_solar_rad cannot both be true',FATAL)
+        endif
+
     IF (js == 1) THEN
 
       if (lw_spectral_filename .eq. 'unset') then
@@ -699,7 +704,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     logical :: soc_lw_mode, used
     integer :: seconds, days, year_in_s
     real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
-    real, dimension(size(temp_in,1), size(temp_in,2)) :: coszen, fracsun, surf_lw_net, olr, toa_sw
+    real, dimension(size(temp_in,1), size(temp_in,2)) :: coszen, fracsun, surf_lw_net, olr, toa_sw, p2
     real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: ozone_in, co2_in
     real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: thd_sw_flux_net, thd_lw_flux_net
     type(time_type) :: Time_loc
@@ -833,10 +838,16 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
        !Set tide-locked flux if tidally-locked = .true. Else use diurnal-solar
        !to calculate insolation from orbit!
-       if (tidally_locked == .TRUE.) then
-           coszen = COS(rad_lat(:,:))*COS(rad_lon(:,:))
-           WHERE (coszen < 0.0) coszen = 0.0
-           rrsun = 1 ! needs to be set, set to 1 so that stellar_radiation is unchanged in socrates_interface
+       if (tidally_locked.eq..true.) then
+            coszen = COS(rad_lat(:,:))*COS(rad_lon(:,:))
+            WHERE (coszen < 0.0) coszen = 0.0
+            rrsun = 1 ! needs to be set, set to 1 so that stellar_radiation is unchanged in socrates_interface
+
+       elseif (frierson_solar_rad .eq. .true.) then
+            p2     = (1. - 3.*sin(rad_lat(:,:))**2)/4.
+            coszen = 0.25 * (1.0 + del_sol * p2 + del_sw * sin(rad_lat(:,:)))
+            rrsun  = 1 ! needs to be set, set to 1 so that stellar_radiation is unchanged in socrates_interface
+
        else
        
         ! compute zenith angle
