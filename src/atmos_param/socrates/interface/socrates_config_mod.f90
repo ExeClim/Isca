@@ -18,6 +18,10 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   
   REAL :: stellar_constant = 1368.22 !Consistent with RRTM default
   LOGICAL :: tidally_locked = .FALSE.
+  !Options for annual-mean incoming solar, as prescribed in Frierson's grey scheme.
+  LOGICAL :: frierson_solar_rad = .FALSE.
+  REAL    :: del_sol         = 1.4
+  REAL    :: del_sw          = 0.0
   LOGICAL :: socrates_hires_mode = .FALSE.  !If false then run in 'GCM mode', if true then uses high-res spectral files
   character(len=256) :: lw_spectral_filename='unset'
   character(len=256) :: lw_hires_spectral_filename='unset'
@@ -122,6 +126,7 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
                              hfc134a_mix_ratio, &
                              inc_h2o, inc_co2, inc_co, inc_o3, inc_n2o, inc_ch4, inc_o2, &
                              inc_so2, inc_cfc11, inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a, &
-                             use_pressure_interp_for_half_levels
+                             use_pressure_interp_for_half_levels,  &
+                             frierson_solar_rad, del_sol, del_sw
 
 end module socrates_config_mod

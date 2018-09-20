@@ -22,6 +22,10 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
+
+exp = Experiment('soc_test_aquaplanet', codebase=cb)
+exp.clear_rundir()
+
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
 #Tell model how to write diagnostics
@@ -56,9 +60,11 @@ diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_coszen', time_avg=True) 
 #diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
+exp.diag_table = diag
+exp.inputfiles = inputfiles
 
 #Define values for the 'core' namelist
-namelist = Namelist({
+exp.namelist = namelist = Namelist({
     'main_nml':{
      'days'   : 30,
      'hours'  : 0,
@@ -78,6 +84,8 @@ namelist = Namelist({
         'dt_rad':3600,
         'store_intermediate_rad':True,
         'chunk_size': 16,
+        'use_pressure_interp_for_half_levels':False,
+        'tidally_locked':False
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -183,15 +191,6 @@ if __name__=="__main__":
         cb.compile()
         #Set up the experiment object, with the first argument being the experiment name.
         #This will be the name of the folder that the data will appear in.
-
-        exp = Experiment('soc_test_aquaplanet', codebase=cb)
-        exp.clear_rundir()
-
-        exp.diag_table = diag
-        exp.inputfiles = inputfiles
-
-        exp.namelist = namelist.copy()
-
         exp.run(1, use_restart=False, num_cores=NCORES)
         for i in range(2,121):
             exp.run(i, num_cores=NCORES)
