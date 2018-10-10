@@ -16,7 +16,7 @@ import glob
 import argparse
 
 from isca import Experiment, IscaCodeBase, log, GFDL_BASE
-from isca.diagtable import DiagTableFile
+from isca.diagtable import DiagTable
 import f90nml
 
 parser = argparse.ArgumentParser(description='Run an Isca experiment')
@@ -32,7 +32,7 @@ args = parser.parse_args()
 wdir = sys.path[0]  # get the directory of the script as per https://docs.python.org/3/library/sys.html#sys.path
 
 namelist = f90nml.read(args.namelist)
-diag_table = DiagTableFile(args.diag)
+diag_table = DiagTable.from_file(args.diag)
 
 cb = IscaCodeBase.from_directory(GFDL_BASE)
 if args.compile:
