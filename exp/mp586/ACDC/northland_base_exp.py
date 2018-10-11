@@ -8,10 +8,11 @@ NCORES = 16
 base_dir = os.getcwd()
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
-cb = IscaCodeBase.from_directory(GFDL_BASE)
+# cb = IscaCodeBase.from_directory(GFDL_BASE)
 # or it can point to a specific git repo and commit id.
 # This method should ensure future, independent, reproducibility of results.
-# cb = DryCodeBase.from_repo(repo='https://github.com/isca/isca', commit='isca1.1')
+
+cb = IscaCodeBase.from_repo(repo='https://github.com/mp586/Isca.git', commit='f1bb5c4') #looked up commit which was used for original 2xCO2 experiment
 
 # compilation depends on computer specific settings.  The $GFDL_ENV
 # environment variable is used to determine which `$GFDL_BASE/src/extra/env` file
@@ -24,12 +25,13 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 # and output diagnostics
 
 
-
-exp = Experiment('all_ocean_control', codebase=cb)
+#### NORTHLAND : change name of experiment when you're running a different set-up e.g. northland_different_albedo #####
+exp = Experiment('all_ocean_control', codebase=cb) 
 
 
 
 #Add any input files that are necessary for a particular experiment.
+##### NORTHLAND: I've uploaded the half_ocean landmask file (land.nc) to input/half_ocean/, make sure to copy it into your Isca/input folder)
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/half_ocean/land.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 #Tell model how to write diagnostics
 diag = DiagTable()
