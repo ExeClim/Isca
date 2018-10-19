@@ -26,7 +26,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 
 #### NORTHLAND : change name of experiment when you're running a different set-up e.g. northland_different_albedo #####
-exp = Experiment('all_ocean_control', codebase=cb) 
+exp = Experiment('northland_same_albedo_different_roughness', codebase=cb) 
 
 
 
@@ -83,7 +83,7 @@ exp.namelist = namelist = Namelist({
         'minutes': 0,
         'seconds': 0,
         'dt_atmos':720,
-        'current_date' : [0001,1,1,0,0,0],
+        'current_date' : [1,1,1,0,0,0],
         'calendar' : 'thirty_day'
     },
 
@@ -99,21 +99,21 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray':False, #Don't use grey radiation
         'do_rrtm_radiation':True, #Do use RRTM radiation
         'convection_scheme':'SIMPLE_BETTS_MILLER', #Use the simple betts-miller convection scheme
-###### NORTHLAND ########################################
-###### uncomment the following for runs with land  ######
-        # 'land_option':'input', #Use land mask from input file
-        # 'land_file_name': 'INPUT/land.nc', #Tell model where to find input file
-        # 'bucket':True, #Run with the bucket model
-        # 'init_bucket_depth_land':0.15, #Set initial bucket depth over land. Default = 20
-        # 'max_bucket_depth_land':0.15, #Set max bucket depth over land, default = 0.15. See Isca/src/atmos_spectral/driver/solo/idealized_moist_phys.F90
+#NORTHLAND ########################################
+#uncomment the following for runs with land  ######
+        'land_option':'input', #Use land mask from input file
+        'land_file_name': 'INPUT/land.nc', #Tell model where to find input file
+        'bucket':True, #Run with the bucket model
+        'init_bucket_depth_land':0.15, #Set initial bucket depth over land. Default = 20
+        'max_bucket_depth_land':0.15, #Set max bucket depth over land, default = 0.15. See Isca/src/atmos_spectral/driver/solo/idealized_moist_phys.F90
 
-####### if we additionally want the land roughness, then 
-####### uncomment 
-        # 'land_roughness_prefactor': 100.0, # default is 1.0
+#if we additionally want the land roughness, then 
+#uncomment 
+        'land_roughness_prefactor': 100.0, # default is 1.0
 
 
 
-########################################################
+
     },
 
     'vert_turb_driver_nml': {
@@ -148,9 +148,9 @@ exp.namelist = namelist = Namelist({
         'albedo_value': 0.25, #Ocean albedo value
 ### NORTHLAND #################################
 ### uncomment if not running an aquaplanet ####
-        # 'land_option':'input',    # Tell mixed layer to get land mask from input file
-        # 'land_h_capacity_prefactor': 0.1, # heat capacity of land is 1/10.th that of the ocean, in our case 2m
-        # 'land_albedo_prefactor' : 1.0, # What factor to multiply ocean albedo by over land <- set to 1.3 for light land dark ocean
+        'land_option':'input',    # Tell mixed layer to get land mask from input file
+        'land_h_capacity_prefactor': 0.1, # heat capacity of land is 1/10.th that of the ocean, in our case 2m
+        'land_albedo_prefactor' : 1.0, # What factor to multiply ocean albedo by over land <- set to 1.3 for light land dark ocean
 ###############################################
         'do_qflux' : False, #Do not use prescribed qflux formula
         'qflux_amp' : 0.
@@ -217,5 +217,5 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 #in this case for 20 years (=240 months)
 exp.run(1, use_restart=False, num_cores=NCORES)
-for i in range(2,241):
+for i in range(2,361):
     exp.run(i, num_cores=NCORES)
