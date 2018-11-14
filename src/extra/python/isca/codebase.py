@@ -282,6 +282,7 @@ class GreyCodeBase(CodeBase):
     def disable_rrtm(self):
         # add no compile flag
         self.compile_flags.append('-DRRTM_NO_COMPILE')
+        self.compile_flags.append('-DCOLUMN_MODEL')
         self.log.info('RRTM compilation disabled.')
 
     def __init__(self, *args, **kwargs):
