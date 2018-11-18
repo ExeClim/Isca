@@ -9,6 +9,7 @@ use fms_mod, only: open_namelist_file
 
 use          constants_mod, only: pi
 use   column_init_cond_mod, only: column_init_cond
+use        column_grid_mod, only: column_grid_init 
 use      field_manager_mod, only: MODEL_ATMOS
 use                fms_mod, only: mpp_pe, mpp_root_pe, error_mesg, NOTE, FATAL, write_version_number, stdlog, &
                                   close_file, open_restart_file, file_exist, set_domain,                      &
@@ -28,12 +29,13 @@ use        tracer_type_mod, only: tracer_type, tracer_type_version, tracer_type_
 implicit none
 private
 
-public :: column_init, get_num_levels, get_surf_geopotential
+public :: column_init, get_num_levels, get_surf_geopotential, get_initial_fields, get_axis_id
 
 character(len=128), parameter :: version = '$Id: column.F90,v 0.1 2018/14/11 HH:MM:SS isca Exp $'
 character(len=128), parameter :: tagname = '$Name: isca_201811 $'
 
 character(len=8) :: mod_name = 'column'
+integer, dimension(4) :: axis_id
 
 integer, parameter :: num_time_levels = 2
 logical :: module_is_initialized = .false.
@@ -76,23 +78,21 @@ real              :: scale_heights             =  4., &
                      p_press                   = .1,  &
                      p_sigma                   = .3,  &
                      exponent                  = 2.5, &
-                     ocean_topog_smoothing     = .93, &
                      initial_sphum              = 0.0
 
 namelist /column_nml/ lon_max, lat_max, num_levels, num_fourier, print_interval, vert_coord_option, vert_difference_option, &
                       use_virtual_temperature, reference_sea_level_press, scale_heights, surf_res, p_press, p_sigma, exponent, &
-                      ocean_topog_smoothing, initial_state_option, initial_sphum
+                      initial_state_option, initial_sphum
 
 
 contains 
 
-subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhum_out, ocean_mask)
+subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhum_out)
 
     type(time_type), intent(in) :: Time, Time_step_in
     type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
     logical, intent(out) :: dry_model_out
     integer, intent(out) :: nhum_out
-    logical, optional, intent(in), dimension(:,:) :: ocean_mask
 
     integer :: unit, ierr, io, ntr, nsphum, nmix_rat
     !real :: del_lon, del_lat !!! NTL START HERE
@@ -131,24 +131,7 @@ subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhu
     
     !!! MAYBE PUT ALL OF THIS IN A FILE LIKE:
     call column_grid_init(lon_max, lat_max) ! and then get to it with other functions 
-    ! this is done in transforms mod when spectral_dynamics is used 
-    ! allocate( lon_boundaries_global(lon_max+1) )   ! NTL START HERE 
-    ! allocate( lat_boundaries_global(lat_max+1) )
-    ! lat_boundaries_global(1) = -.5 * pi 
-    ! if(lat_max == 1)then 
-    !   lat_boundaries_global(2) = .5 * pi
-    ! else 
-    !   del_lat = pi / lat_max 
-    !   do j = 1,lat_max - 1
-    !     lat_boundaries_global(j+1) = lat_boundaries_global(j) + del_lat
-    !   enddo
-    !   lat_boundaries_global(lat_max+1) = .5*pi
-    ! endif 
-    ! del_lon = 2*pi / lon_max
-    ! do i=1,lon_max+1
-    !   lon_boundaries_global(i) = longitude_origin_local + (i - 1.5)*del_lon
-    ! enddo 
-
+    write(*,*) ' ~!!!!!! I AM HERE !!!!!!'
     call get_grid_domain(is, ie, js, je)
     call get_number_tracers(MODEL_ATMOS, num_prog=num_tracers)
     call allocate_fields
@@ -181,17 +164,25 @@ subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhu
     dry_model_out = dry_model
     nhum_out = nhum
 
-    call read_restart_or_do_coldstart(tracer_attributes, ocean_mask)
-
+    WRITE(*,*) ' how about here? '
+    call read_restart_or_do_coldstart(tracer_attributes)
+    write(*,*) 'but then I fail here?'
+    call column_diagnostics_init(Time)
     module_is_initialized = .true.
+    ! NTL: CHECK AGAINST spectral_dynamics_init TO SEE WHAT ELSE NEEDS TO BE INITIALISED 
     return
 end subroutine column_init
 
 
 
 
+subroutine column_diagnostics_init(Time)
 
-
+  ! NTL: NEED TO DO THIS 
+  
+  
+  return
+end subroutine column_diagnostics_init
 
 
 
@@ -256,13 +247,12 @@ end subroutine get_surf_geopotential
 
 
 
-subroutine read_restart_or_do_coldstart(tracer_attributes, ocean_mask)
+subroutine read_restart_or_do_coldstart(tracer_attributes)
 
     ! For backward compatibility, this routine has the capability
     ! to read native data restart files written by inchon code.
     
     type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
-    logical, optional, intent(in), dimension(:,:) :: ocean_mask
     
     integer :: m, n, k, nt, ntr
     integer, dimension(4) :: siz
@@ -310,8 +300,8 @@ subroutine read_restart_or_do_coldstart(tracer_attributes, ocean_mask)
       current  = 1
       call column_init_cond(initial_state_option, tracer_attributes, reference_sea_level_press, use_virtual_temperature,&
                             vert_coord_option, vert_difference_option, scale_heights, surf_res, p_press, p_sigma,  &
-                            exponent, ocean_topog_smoothing, pk, bk, ug(:,:,:,1), vg(:,:,:,1), tg(:,:,:,1), psg(:,:,1), &
-                            grid_tracers(:,:,:,1,:), surf_geopotential, ocean_mask) ! NTL REMOVED LAT AND LON BOUNDARIES 
+                            exponent, pk, bk, ug(:,:,:,1), vg(:,:,:,1), tg(:,:,:,1), psg(:,:,1), &
+                            grid_tracers(:,:,:,1,:), surf_geopotential) ! NTL REMOVED LAT AND LON BOUNDARIES 
   
       ug   (:,:,:,2) = ug   (:,:,:,1)
       vg   (:,:,:,2) = vg   (:,:,:,1)
@@ -325,7 +315,38 @@ subroutine read_restart_or_do_coldstart(tracer_attributes, ocean_mask)
     return
 end subroutine read_restart_or_do_coldstart
 
+subroutine get_initial_fields(ug_out, vg_out, tg_out, psg_out, grid_tracers_out)
+  real, intent(out), dimension(:,:,:)   :: ug_out, vg_out, tg_out
+  real, intent(out), dimension(:,:)     :: psg_out
+  real, intent(out), dimension(:,:,:,:) :: grid_tracers_out
+  
+  if(.not.module_is_initialized) then
+    call error_mesg('get_initial_fields','column has not been initialized',FATAL)
+  endif
+  
+  if(previous /= 1 .or. current /= 1) then
+    call error_mesg('get_initial_fields','This routine may be called only to get the&
+                    & initial values after a cold_start',FATAL)
+  endif
+  
+  ug_out  =  ug(:,:,:,1)
+  vg_out  =  vg(:,:,:,1)
+  tg_out  =  tg(:,:,:,1)
+  psg_out = psg(:,:,  1)
+  grid_tracers_out = grid_tracers(:,:,:,1,:)
+  
+  end subroutine get_initial_fields
 
+  function get_axis_id()
+    integer, dimension(4) :: get_axis_id
+    
+    if(.not.module_is_initialized) then
+      call error_mesg('get_axis_id','column_diagnostics_init has not been called.', FATAL)
+    endif
+    get_axis_id = axis_id
+    return
+  end function get_axis_id
+  
 
 
 

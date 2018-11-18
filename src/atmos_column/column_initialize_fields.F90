@@ -25,7 +25,7 @@ use              fms_mod, only: mpp_pe, mpp_root_pe, write_version_number
 
 use        constants_mod, only: rdgas
 
-use       transforms_mod, only: get_grid_domain, area_weighted_global_mean
+use       transforms_mod, only: get_grid_domain
 
 implicit none
 private
@@ -75,10 +75,10 @@ psg    = exp(ln_psg)
 
 
 !  compute and print mean surface pressure
-global_mean_psg = area_weighted_global_mean(psg)
-if(mpp_pe() == mpp_root_pe()) then
-  print '("mean surface pressure=",f9.4," mb")',.01*global_mean_psg
-endif
+!global_mean_psg = area_weighted_global_mean(psg)
+!if(mpp_pe() == mpp_root_pe()) then
+!  print '("mean surface pressure=",f9.4," mb")',.01*global_mean_psg
+!endif
 
 return
 end subroutine column_initialize_fields

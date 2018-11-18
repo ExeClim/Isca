@@ -32,22 +32,25 @@ use                  fms_mod, only: set_domain, write_version_number, field_size
 
 use            constants_mod, only: grav, pi
 
-use           transforms_mod, only: trans_grid_to_spherical, trans_spherical_to_grid, &
-                                    get_deg_lon, get_deg_lat, get_grid_boundaries, grid_domain,    &
-                                    spectral_domain, get_grid_domain, get_lon_max, get_lat_max, atmosphere_domain
-
 use         time_manager_mod, only: time_type, get_time, operator( + )
 
 use     press_and_geopot_mod, only: compute_pressures_and_heights
 
 #ifdef COLUMN_MODEL
   use    spectral_dynamics_mod, only: spectral_dynamics_init, spectral_dynamics, spectral_dynamics_end, &
-                                      get_axis_id, spectral_diagnostics, complete_robert_filter, get_initial_fields
-  use               column_mod, only: column_init, get_num_levels, get_surf_geopotential
+                                      get_axis_id, spectral_diagnostics, complete_robert_filter
+  use           transforms_mod, only: trans_grid_to_spherical, trans_spherical_to_grid, &
+                                      grid_domain,    &
+                                      spectral_domain, get_grid_domain, get_lon_max, get_lat_max, atmosphere_domain
+  use               column_mod, only: column_init, get_num_levels, get_surf_geopotential, get_initial_fields
+  use          column_grid_mod, only: get_deg_lon, get_deg_lat, get_grid_boundaries 
 #else
   use    spectral_dynamics_mod, only: spectral_dynamics_init, spectral_dynamics, spectral_dynamics_end, &
                                       get_num_levels, get_axis_id, spectral_diagnostics, get_initial_fields, &
                                       complete_robert_filter, get_surf_geopotential
+  use           transforms_mod, only: trans_grid_to_spherical, trans_spherical_to_grid, &
+                                      get_deg_lon, get_deg_lat, get_grid_boundaries, grid_domain,    &
+                                      spectral_domain, get_grid_domain, get_lon_max, get_lat_max, atmosphere_domain
 #endif
 
 use          tracer_type_mod, only: tracer_type
@@ -149,6 +152,7 @@ dt_real      = float(dt_integer)
 call get_number_tracers(MODEL_ATMOS, num_prog=num_tracers)
 allocate (tracer_attributes(num_tracers))
 #ifdef COLUMN_MODEL
+  WRITE(*,*) '!!!!! I AM HERE !!!!!'
   call column_init(Time, Time_step, tracer_attributes, dry_model, nhum)
   column_model = .true.
   write(*,*) '!!!!!!!!!!'
