@@ -33,8 +33,11 @@ use      dry_convection_mod, only: dry_convection_init, dry_convection
 use        diag_manager_mod, only: register_diag_field, send_data
 
 use          transforms_mod, only: get_grid_domain
-
+#ifdef COLUMN_MODEL 
+use              column_mod, only: get_num_levels, get_surf_geopotential, get_axis_id
+#else
 use   spectral_dynamics_mod, only: get_axis_id, get_num_levels, get_surf_geopotential
+#endif 
 
 use        surface_flux_mod, only: surface_flux, gp_surface_flux
 
