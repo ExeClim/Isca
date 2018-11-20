@@ -364,7 +364,9 @@ subroutine surface_flux_1d (                                           &
        dhdt_surf, dedt_surf,  dedq_surf, drdt_surf,          &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
-       cd_m,      cd_t,       cd_q
+       cd_m,      cd_t,       cd_q	 		     & !mp586 for 10m winds and 2m temp
+       ex_del_m, ex_del_h, ex_del_q			     !mp586 for 10m winds and 2m temp
+     
   real, intent(inout), dimension(:) :: q_surf
   real, intent(inout), dimension(:) :: bucket_depth                              !RG Add bucket
   real, intent(inout), dimension(:) :: depth_change_lh_1d                        !RG Add bucket
@@ -375,6 +377,8 @@ subroutine surface_flux_1d (                                           &
   ! ---- local constants -----------------------------------------------------
   ! temperature increment and its reciprocal value for comp. of derivatives
   real, parameter:: del_temp=0.1, del_temp_inv=1.0/del_temp
+  real:: zrefm, zrefh						!mp586 for 10m winds and 2m temp
+
 
   ! ---- local vars ----------------------------------------------------------
   real, dimension(size(t_atm(:))) ::                          &
@@ -493,6 +497,33 @@ subroutine surface_flux_1d (                                           &
   call mo_drag (thv_atm, thv_surf, z_atm,                  &
        rough_mom, rough_heat, rough_moist, w_atm,          &
        cd_m, cd_t, cd_q, u_star, b_star, avail             )
+
+ !!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
+  zrefm = 10. 
+  zrefh = 2. 
+
+  ! Is the following true? 
+  ! ex_z_atm = z_atm
+  ! ex_rough_mom = rough_mom
+  ! ex_rough_heat = rough_heat 
+  ! ex_rough_moist = rough_moist
+  ! ex_u_star = u_star
+  ! ex_b_star = b_star
+  ! ex_q_star = q_star
+  ! ex_avail = avail
+
+  ! Then mo_profile ( zrefm, zrefh, ex_z_atm,   ex_rough_mom, &
+  !        ex_rough_heat, ex_rough_moist,          &
+  !        ex_u_star, ex_b_star, ex_q_star,        &
+  !        ex_del_m, ex_del_h, ex_del_q, ex_avail  )
+  ! can be written as:.. see below ...: without defining new variables in the in/out section above 
+
+  call mo_profile( zrefm, zrefh, z_atm,   rough_mom, &
+       rough_heat, rough_moist,          &
+       u_star, b_star, q_star,        &
+       ex_del_m, ex_del_h, ex_del_q, avail  )
+
+!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!
 
   ! override with ocean fluxes from NCAR calculation
   if (ncar_ocean_flux .or. ncar_ocean_flux_orig) then
