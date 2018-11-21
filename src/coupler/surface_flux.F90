@@ -364,8 +364,8 @@ subroutine surface_flux_1d (                                           &
        dhdt_surf, dedt_surf,  dedq_surf, drdt_surf,          &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
-       cd_m,      cd_t,       cd_q	 		     & !mp586 for 10m winds and 2m temp
-       ex_del_m, ex_del_h, ex_del_q			     !mp586 for 10m winds and 2m temp
+       cd_m,      cd_t,       cd_q                           & !mp586 for 10m winds and 2m temp
+       ex_del_m, ex_del_h, ex_del_q                            !mp586 for 10m winds and 2m temp
      
   real, intent(inout), dimension(:) :: q_surf
   real, intent(inout), dimension(:) :: bucket_depth                              !RG Add bucket
@@ -377,7 +377,7 @@ subroutine surface_flux_1d (                                           &
   ! ---- local constants -----------------------------------------------------
   ! temperature increment and its reciprocal value for comp. of derivatives
   real, parameter:: del_temp=0.1, del_temp_inv=1.0/del_temp
-  real:: zrefm, zrefh						!mp586 for 10m winds and 2m temp
+  real:: zrefm, zrefh                                          !mp586 for 10m winds and 2m temp
 
 
   ! ---- local vars ----------------------------------------------------------
