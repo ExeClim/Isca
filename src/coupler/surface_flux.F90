@@ -365,9 +365,11 @@ subroutine surface_flux_1d (                                           &
        dhdt_surf, dedt_surf,  dedq_surf, drdt_surf,          &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
-       cd_m,      cd_t,       cd_q                           & 
-       ex_del_m, ex_del_h, ex_del_q                            !mp586 for 10m winds and 2m temp
-     
+       cd_m,      cd_t,       cd_q,                          & 
+       ex_del_m, ex_del_h, ex_del_q,                          & !mp586 for 10m winds and 2m temp
+       temp_2m, u_10n, v_10m !mp586 for 10m winds and 2m temp
+
+
   real, intent(inout), dimension(:) :: q_surf
   real, intent(inout), dimension(:) :: bucket_depth                              !RG Add bucket
   real, intent(inout), dimension(:) :: depth_change_lh_1d                        !RG Add bucket
@@ -499,9 +501,12 @@ subroutine surface_flux_1d (                                           &
        rough_mom, rough_heat, rough_moist, w_atm,          &
        cd_m, cd_t, cd_q, u_star, b_star, avail             )
 
- !!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
-  zrefm = 10. 
-  zrefh = 2. 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
+
+
+  zrefm = 10. !want winds at 10m
+  zrefh = 2.  !want temp at 2m
 
   ! Is the following true? 
   ! ex_z_atm = z_atm
@@ -524,7 +529,24 @@ subroutine surface_flux_1d (                                           &
        u_star, b_star, q_star,        &
        ex_del_m, ex_del_h, ex_del_q, avail  )
 
+
+! copied from https://github.com/mom-ocean/MOM5/blob/99168b44ab45f4f5b4fa2544a0c3f644f0afb666/src/coupler/surface_flux.F90, L 1984 ff 
+
+
+     !    ------- reference temp -----------
+        where (avail) &
+           temp_2m = t_surf + (t_atm - t_surf) * ex_del_h !t_ca = canopy temperature, assuming that there is no canopy (no difference between land and ocean), t_ca = t_surf
+
+     !    ------- reference u comp -----------
+        where (avail) &
+           u_10m = u_atm * ex_del_m ! setting u at surface to 0.
+
+     !    ------- reference v comp -----------
+       where (avail) &
+           v_10m = v_atm * ex_del_m ! setting v at surface to 0.
+
 !!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   ! override with ocean fluxes from NCAR calculation
   if (ncar_ocean_flux .or. ncar_ocean_flux_orig) then
@@ -792,6 +814,7 @@ subroutine surface_flux_2d (                                           &
      dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &
      dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &
      ex_del_m, ex_del_h, ex_del_q,                                     & !mp586 for 10m winds and 2m temp
+     temp_2m, u_10n, v_10m, 					       & !mp586 for 10m winds and 2m temp
      dt,        land,       seawater,  avail  )
 
   ! ---- arguments -----------------------------------------------------------
@@ -807,7 +830,8 @@ subroutine surface_flux_2d (                                           &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
        cd_m,      cd_t,       cd_q,                          &
-       ex_del_m, ex_del_h, ex_del_q                          !mp586 for 10m winds and 2m temp
+       ex_del_m, ex_del_h, ex_del_q,                         & !mp586 for 10m winds and 2m temp
+       temp_2m, u_10n, v_10m 				     !mp586 for 10m winds and 2m temp 
 
   real, intent(inout), dimension(:,:) :: q_surf
   logical, intent(in) :: bucket !RG Add bucket
