@@ -348,6 +348,7 @@ subroutine surface_flux_1d (                                           &
      dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &
      dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &
      ex_del_m, ex_del_h, ex_del_q,                                     & !mp586 for 10m winds and 2m temp
+     temp_2m, u_10m, v_10m, 				      	       & !mp586 for 10m winds and 2m temp
      dt,        land,      seawater,     avail  )
 !</PUBLICROUTINE>
 !  slm Mar 28 2002 -- remove agument drag_q since it is just cd_q*wind
@@ -366,8 +367,8 @@ subroutine surface_flux_1d (                                           &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
        cd_m,      cd_t,       cd_q,                          & 
-       ex_del_m, ex_del_h, ex_del_q,                          & !mp586 for 10m winds and 2m temp
-       temp_2m, u_10n, v_10m !mp586 for 10m winds and 2m temp
+       ex_del_m, ex_del_h, ex_del_q,                         & !mp586 for 10m winds and 2m temp
+       temp_2m, u_10m, v_10m 				      !mp586 for 10m winds and 2m temp
 
 
   real, intent(inout), dimension(:) :: q_surf
@@ -501,28 +502,12 @@ subroutine surface_flux_1d (                                           &
        rough_mom, rough_heat, rough_moist, w_atm,          &
        cd_m, cd_t, cd_q, u_star, b_star, avail             )
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
 
 
   zrefm = 10. !want winds at 10m
   zrefh = 2.  !want temp at 2m
-
-  ! Is the following true? 
-  ! ex_z_atm = z_atm
-  ! ex_rough_mom = rough_mom
-  ! ex_rough_heat = rough_heat 
-  ! ex_rough_moist = rough_moist
-  ! ex_u_star = u_star
-  ! ex_b_star = b_star
-  ! ex_q_star = q_star
-  ! ex_avail = avail
-
-  ! Then mo_profile ( zrefm, zrefh, ex_z_atm,   ex_rough_mom, &
-  !        ex_rough_heat, ex_rough_moist,          &
-  !        ex_u_star, ex_b_star, ex_q_star,        &
-  !        ex_del_m, ex_del_h, ex_del_q, ex_avail  )
-  ! can be written as:.. see below ...: without defining new variables in the in/out section above 
 
   call mo_profile( zrefm, zrefh, z_atm,   rough_mom, &
        rough_heat, rough_moist,          &
@@ -530,7 +515,7 @@ subroutine surface_flux_1d (                                           &
        ex_del_m, ex_del_h, ex_del_q, avail  )
 
 
-! copied from https://github.com/mom-ocean/MOM5/blob/99168b44ab45f4f5b4fa2544a0c3f644f0afb666/src/coupler/surface_flux.F90, L 1984 ff 
+! adapted from https://github.com/mom-ocean/MOM5/blob/99168b44ab45f4f5b4fa2544a0c3f644f0afb666/src/coupler/surface_flux.F90, L 1984 ff 
 
 
      !    ------- reference temp -----------
@@ -814,7 +799,7 @@ subroutine surface_flux_2d (                                           &
      dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &
      dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &
      ex_del_m, ex_del_h, ex_del_q,                                     & !mp586 for 10m winds and 2m temp
-     temp_2m, u_10n, v_10m, 					       & !mp586 for 10m winds and 2m temp
+     temp_2m, u_10m, v_10m, 					       & !mp586 for 10m winds and 2m temp
      dt,        land,       seawater,  avail  )
 
   ! ---- arguments -----------------------------------------------------------
@@ -831,7 +816,7 @@ subroutine surface_flux_2d (                                           &
        w_atm,     u_star,     b_star,    q_star,             &
        cd_m,      cd_t,       cd_q,                          &
        ex_del_m, ex_del_h, ex_del_q,                         & !mp586 for 10m winds and 2m temp
-       temp_2m, u_10n, v_10m 				     !mp586 for 10m winds and 2m temp 
+       temp_2m, u_10m, v_10m 				     !mp586 for 10m winds and 2m temp 
 
   real, intent(inout), dimension(:,:) :: q_surf
   logical, intent(in) :: bucket !RG Add bucket
@@ -858,6 +843,7 @@ subroutine surface_flux_2d (                                           &
           dhdt_surf(:,j), dedt_surf(:,j),  dedq_surf(:,j),  drdt_surf(:,j),                               &
           dhdt_atm(:,j),  dedq_atm(:,j),   dtaudu_atm(:,j), dtaudv_atm(:,j),                              &
      	  ex_del_m(:,j), ex_del_h(:,j), ex_del_q(:,j),                                                    & !mp586 for 10m winds and 2m temp
+	  temp_2m(:,j), u_10m(:,j), v_10m(:,j),								  & !mp586 for 10m winds and 2m temp
           dt,             land(:,j),       seawater(:,j),  avail(:,j)  )
   end do
 end subroutine surface_flux_2d
