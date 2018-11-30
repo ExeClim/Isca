@@ -187,7 +187,10 @@ real, allocatable, dimension(:,:)   ::                                        &
      rough,                &   ! roughness for vert_turb_driver
      albedo,               &   !s albedo now defined in mixed_layer_init
      coszen,               &   !s make sure this is ready for assignment in run_rrtmg
-     pbltop                    !s Used as an input to damping_driver, outputted from vert_turb_driver
+     pbltop                &   !s Used as an input to damping_driver, outputted from vert_turb_driver
+     temp_2m,		   &   !mp586 for 10m winds and 2m temp
+     u_10m,		   &   !mp586 for 10m winds and 2m temp
+     v_10m		       !mp586 for 10m winds and 2m temp
 
 real, allocatable, dimension(:,:,:) ::                                        &
      diff_m,               &   ! momentum diffusion coeff.
@@ -916,6 +919,19 @@ if(.not.mixed_layer_bc) then
 !!$  t_surf = surface_temperature(tg(:,:,:,previous), p_full(:,:,:,current), p_half(:,:,:,current))
 end if
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
+
+id_temp_2m = register_diag_field(mod_name, 'temp_2m',            &         ! mp586 add 2m temp
+     axes(1:2), Time, 'Air temperature 2m above surface', 'K')
+id_u_10m = register_diag_field(mod_name, 'u_10m',		 &	   ! mp586 add 10m wind (u)
+     axes(1:2), Time, 'Zonal wind 10m above surface', 'm/s')
+id_v_10m = register_diag_field(mod_name, 'v_10m',  	   	 &         ! mp586 add 10m wind (v)
+     axes(1:2), Time, 'Meridional wind 10m above surface', 'm/s')
+
+!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 if(.not.gp_surface) then 
 call surface_flux(                                                          &
                   tg(:,:,num_levels,previous),                              &
@@ -961,11 +977,29 @@ call surface_flux(                                                          &
                                 dedq_atm(:,:),                              & ! is intent(out)
                               dtaudu_atm(:,:),                              & ! is intent(out)
                               dtaudv_atm(:,:),                              & ! is intent(out)
+			        ex_del_m(:,:),				    & ! mp586 for 10m winds and 2m temp
+			        ex_del_h(:,:),				    & ! mp586 for 10m winds and 2m temp
+			        ex_del_q(:,:),				    & ! mp586 for 10m winds and 2m temp
+			         temp_2m(:,:),				    & ! mp586 for 10m winds and 2m temp
+			           u_10m(:,:),				    & ! mp586 for 10m winds and 2m temp
+			           v_10m(:,:),				    & ! mp586 for 10m winds and 2m temp
                                       delta_t,                              &
                                     land(:,:),                              &
                                .not.land(:,:),                              &
                                    avail(:,:)  )
 endif
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
+
+if(id_temp_2m > 0) used = send_data(id_temp_2m, temp_2m(:,:), Time)	! mp586 add 2m temp
+if(id_u_10m > 0) used = send_data(id_u_10m, u_10m(:,:), Time) 		! mp586 add 10m wind (u)
+if(id_v_10m > 0) used = send_data(id_v_10m, v_10m(:,:), Time)		! mp586 add 10m wind (v)
+
+
+!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! Now complete the radiation calculation by computing the upward and net fluxes.
 

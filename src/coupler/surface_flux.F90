@@ -368,7 +368,7 @@ subroutine surface_flux_1d (                                           &
        w_atm,     u_star,     b_star,    q_star,             &
        cd_m,      cd_t,       cd_q,                          & 
        ex_del_m, ex_del_h, ex_del_q,                         & !mp586 for 10m winds and 2m temp
-       temp_2m, u_10m, v_10m 				      !mp586 for 10m winds and 2m temp
+       temp_2m, u_10m, v_10m 				       !mp586 for 10m winds and 2m temp
 
 
   real, intent(inout), dimension(:) :: q_surf
@@ -530,7 +530,7 @@ subroutine surface_flux_1d (                                           &
        where (avail) &
            v_10m = v_atm * ex_del_m ! setting v at surface to 0.
 
-!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!
+!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   ! override with ocean fluxes from NCAR calculation
