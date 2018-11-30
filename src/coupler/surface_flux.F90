@@ -687,8 +687,8 @@ subroutine surface_flux_0d (                                                 &
      w_atm_0,     u_star_0,     b_star_0,     q_star_0,                      &
      dhdt_surf_0, dedt_surf_0,  dedq_surf_0,  drdt_surf_0,                   &
      dhdt_atm_0,  dedq_atm_0,   dtaudu_atm_0, dtaudv_atm_0,                  &
-     ex_del_m, ex_del_h, ex_del_q,                                     	     & !mp586 for 10m winds and 2m temp
-     temp_2m, u_10m, v_10m, 				      	      	     & !mp586 for 10m winds and 2m temp
+     ex_del_m_0, ex_del_h_0, ex_del_q_0,                                     & !mp586 for 10m winds and 2m temp
+     temp_2m_0, u_10m_0, v_10m_0, 				      	     & !mp586 for 10m winds and 2m temp
      dt,          land_0,       seawater_0,  avail_0  )
 
   ! ---- arguments -----------------------------------------------------------
@@ -704,8 +704,8 @@ subroutine surface_flux_0d (                                                 &
        dhdt_atm_0,  dedq_atm_0,   dtaudu_atm_0,dtaudv_atm_0,           &
        w_atm_0,     u_star_0,     b_star_0,    q_star_0,               &
        cd_m_0,      cd_t_0,       cd_q_0,      			       &
-       ex_del_m, ex_del_h, ex_del_q,                        	       & !mp586 for 10m winds and 2m temp
-       temp_2m, u_10m, v_10m 				       	       	 !mp586 for 10m winds and 2m temp
+       ex_del_m_0, ex_del_h_0, ex_del_q_0,                        	       & !mp586 for 10m winds and 2m temp
+       temp_2m_0, u_10m_0, v_10m_0 				       	       	 !mp586 for 10m winds and 2m temp
   real, intent(inout) :: q_surf_0
   real, intent(in)    :: dt
 
@@ -722,7 +722,10 @@ subroutine surface_flux_0d (                                                 &
        dhdt_surf, dedt_surf,  dedq_surf, drdt_surf,          &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
-       cd_m,      cd_t,       cd_q
+       cd_m,      cd_t,       cd_q,	 		     & 
+       ex_del_m, ex_del_h, ex_del_q,                         & !mp586 for 10m winds and 2m temp
+       temp_2m, u_10m, v_10m 				       !mp586 for 10m winds and 2m temp   
+  
   real, dimension(1) :: q_surf
   real, dimension(1) :: bucket_depth                                 !RG Add bucket 
   real, dimension(1) :: depth_change_lh_1d                           !RG Add bucket

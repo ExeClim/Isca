@@ -187,7 +187,10 @@ real, allocatable, dimension(:,:)   ::                                        &
      rough,                &   ! roughness for vert_turb_driver
      albedo,               &   !s albedo now defined in mixed_layer_init
      coszen,               &   !s make sure this is ready for assignment in run_rrtmg
-     pbltop                &   !s Used as an input to damping_driver, outputted from vert_turb_driver
+     pbltop,               &   !s Used as an input to damping_driver, outputted from vert_turb_driver
+     ex_del_m, 		   &   !mp586 for 10m winds and 2m temp
+     ex_del_h,		   &   !mp586 for 10m winds and 2m temp
+     ex_del_q,		   &   !mp586 for 10m winds and 2m temp
      temp_2m,		   &   !mp586 for 10m winds and 2m temp
      u_10m,		   &   !mp586 for 10m winds and 2m temp
      v_10m		       !mp586 for 10m winds and 2m temp
@@ -255,7 +258,10 @@ integer ::           &
      id_diss_heat_ray,&  ! Heat dissipated by rayleigh bottom drag if gp_surface=.True.
      id_z_tg,        &   ! Relative humidity
      id_cape,        &
-     id_cin
+     id_cin, 	     &
+     id_temp_2m,     & !mp586 for 10m winds and 2m temp
+     id_u_10m, 	     & !mp586 for 10m winds and 2m temp
+     id_v_10m	       !mp586 for 10m winds and 2m temp
 
 integer, allocatable, dimension(:,:) :: convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
@@ -981,9 +987,9 @@ call surface_flux(                                                          &
 			        ex_del_h(:,:),				    & ! mp586 for 10m winds and 2m temp
 			        ex_del_q(:,:),				    & ! mp586 for 10m winds and 2m temp
 			         temp_2m(:,:),				    & ! mp586 for 10m winds and 2m temp
-			           u_10m(:,:),				    & ! mp586 for 10m winds and 2m temp
+			           u_10m(:,:),				    & ! mp586 for 10m winds and 2m temp	
 			           v_10m(:,:),				    & ! mp586 for 10m winds and 2m temp
-                                      delta_t,                              &
+                 	              delta_t,                              &
                                     land(:,:),                              &
                                .not.land(:,:),                              &
                                    avail(:,:)  )
