@@ -999,9 +999,9 @@ endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
 
-if(id_temp_2m > 0) used = send_data(id_temp_2m, temp_2m(:,:), Time)	! mp586 add 2m temp
-if(id_u_10m > 0) used = send_data(id_u_10m, u_10m(:,:), Time) 		! mp586 add 10m wind (u)
-if(id_v_10m > 0) used = send_data(id_v_10m, v_10m(:,:), Time)		! mp586 add 10m wind (v)
+if(id_temp_2m > 0) used = send_data(id_temp_2m, temp_2m, Time)	! mp586 add 2m temp
+if(id_u_10m > 0) used = send_data(id_u_10m, u_10m, Time) 		! mp586 add 10m wind (u)
+if(id_v_10m > 0) used = send_data(id_v_10m, v_10m, Time)		! mp586 add 10m wind (v)
 
 
 !!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!

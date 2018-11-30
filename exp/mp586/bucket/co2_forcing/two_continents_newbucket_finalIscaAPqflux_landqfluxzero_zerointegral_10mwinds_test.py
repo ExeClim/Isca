@@ -2,14 +2,16 @@ import os
 
 import numpy as np
 
-from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
+from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE, GFDL_DATA
 
 NCORES = 16
 base_dir = os.getcwd()
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
 cb = IscaCodeBase.from_directory(GFDL_BASE)
-# cb = IscaCodeBase.from_repo(repo='https://github.com/mp586/Isca.git', commit='7625516')
+
+
+# cb = IscaCodeBase.from_repo(repo='https://github.com/mp586/Isca.git', commit='7625516') #looked up commit which was used for original 2xCO2 experiment
 
 # or it can point to a specific git repo and commit id.
 # This method should ensure future, independent, reproducibility of results.
@@ -24,22 +26,26 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('aquaplanet_fixedSSTs_10mwinds_test', codebase=cb)
+exp = Experiment('two_continents_newbucket_finalIscaAPqflux_landqfluxzero_10mwinds_test', codebase=cb)
 
 
 
 #Add any input files that are necessary for a particular experiment.
-exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),os.path.join(GFDL_BASE,'input/sst_clim_amip_final.nc')]
-#os.path.join(GFDL_BASE,'input/aquaplanet/land.nc')
+exp.inputfiles = [os.path.join(GFDL_BASE,'input/two_continents/land.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),os.path.join(GFDL_BASE,'input/two_continents/isca_qflux/zero_integral/ocean_qflux.nc')]
 #Tell model how to write diagnostics
 diag = DiagTable()
-diag.add_file('atmos_monthly', 30, 'days', time_units='days')
+diag.add_file('atmos_monthly', 30, 'days', time_units='days') # to output data in two different time resolutions
+diag.add_file('atmos_6_hourly', 6, 'hours', time_units='hours') 
 
 #Tell model which diagnostics to write
-diag.add_field('dynamics', 'ps', time_avg=True)
+diag.add_field('dynamics', 'ps', time_avg=True) # don't specify files, then it writes to both
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
-diag.add_field('atmosphere', 'precipitation', time_avg=True)
+diag.add_field('atmosphere', 'precipitation', time_avg=True) 
+diag.add_field('atmosphere', 'bucket_depth', time_avg=True)
+diag.add_field('atmosphere', 'bucket_depth_cond', time_avg=True)
+diag.add_field('atmosphere', 'bucket_depth_conv', time_avg=True)
+diag.add_field('atmosphere', 'bucket_depth_lh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
@@ -53,14 +59,16 @@ diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('dynamics', 'slp', time_avg=True) # sea level pressure
 diag.add_field('dynamics', 'zsurf', time_avg=True) # geopotential height at surface
 diag.add_field('rrtm_radiation', 'toa_sw',time_avg=True)
+
 diag.add_field('rrtm_radiation', 'flux_sw', time_avg=True) # net SW surface flux
 diag.add_field('rrtm_radiation', 'flux_lw', time_avg=True) # net LW surface flux
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) # latent heat flux (up) at surface
 diag.add_field('mixed_layer', 'flux_t', time_avg=True) # sensible heat flux (up) at surface
+diag.add_field('mixed_layer', 'flux_oceanq', time_avg=True)
+
 diag.add_field('atmosphere', 'temp_2m', time_avg=True) # add 2m temperature
 diag.add_field('atmosphere', 'u_10m', time_avg=True) # add 10m zonal winds
 diag.add_field('atmosphere', 'v_10m', time_avg=True) # add 10m meridional winds 
-
 
 #MP added on 11 october 2017
 exp.diag_table = diag
@@ -93,8 +101,12 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray':False, #Don't use grey radiation
         'do_rrtm_radiation':True, #Do use RRTM radiation
         'convection_scheme':'SIMPLE_BETTS_MILLER', #Use the simple betts-miller convection scheme
-        # 'land_option':'input', #Use land mask from input file
-        # 'land_file_name': 'INPUT/land.nc', #Tell model where to find input file
+        'land_option':'input', #Use land mask from input file
+        'land_file_name': 'INPUT/land.nc', #Tell model where to find input file
+        'bucket':True, #Run with the bucket model
+        'init_bucket_depth_land':0.15, #Set initial bucket depth over land, default = 20, bucket is initially full 
+#        'max_bucket_depth_land':0.5, #Set max bucket depth over land default = 0.15 
+        # src/atmos_spectral/driver/solo/idealized_moist_phys.F90
     },
 
     'vert_turb_driver_nml': {
@@ -126,14 +138,15 @@ exp.namelist = namelist = Namelist({
         'prescribe_initial_dist':True,
         'evaporation':True,    
         'depth':20., #Mixed layer depth
-        # 'land_option':'input',    #Tell mixed layer to get land mask from input file
-        # 'land_h_capacity_prefactor': 0.1, #What factor to multiply mixed-layer depth by over land. 
+        'land_option':'input',    #Tell mixed layer to get land mask from input file
+        'land_h_capacity_prefactor': 0.1, #What factor to multiply mixed-layer depth by over land. 
         'albedo_value': 0.25, #Ocean albedo value
-        # 'land_albedo_prefactor' : 1.3, #What factor to multiply ocean albedo by over land
-        'do_qflux' : False, #Don't use the prescribed analytical formula for q-fluxes
-        'do_read_sst' : True, #Read in sst values from input file
-        'do_sc_sst' : True, #Do specified ssts (need both to be true)
-        'sst_file' : 'sst_clim_amip_final', #Set name of sst input file
+        'land_albedo_prefactor' : 1.3, #What factor to multiply ocean albedo by over land
+        'do_qflux' : False, #Do not use prescribed qflux formula
+        'load_qflux': True,
+        'qflux_file_name':'ocean_qflux',
+        'time_varying_qflux': True # shouldn't this be false? what is 
+        # a non time varying qflux?
     },
 
     'qe_moist_convection_nml': {
@@ -196,5 +209,8 @@ exp.namelist = namelist = Namelist({
 
 #Lets do a run!
 exp.run(1, use_restart=False, num_cores=NCORES)
-for i in range(2,121):
+for i in range(2,13):
     exp.run(i, num_cores=NCORES)
+
+
+
