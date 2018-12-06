@@ -116,14 +116,12 @@ module cloud_simple_mod
 
     logical :: es_over_liq_and_ice
 
-    real :: tmp1, tmp2 !remove tmp1 and tmp2 after debugging
-
     !check initiation has been done - ie read in parameters
     if (do_init) call error_mesg ('cloud_simple',  &
          'cloud_simple_init has not been called.', FATAL)
     
     ! Get the saturated specific humidity TOTAL (ie ice and vap) ***double check maths!
-    call compute_qs(temp, p_full, qs) !qs=qsat in um
+    call compute_qs(temp, p_full, qs) 
 
     k_surf = size(temp, 3)
 
@@ -131,7 +129,9 @@ module cloud_simple_mod
       do j=1, size(temp, 2)
         do k=1, size(temp, 3)
 
-          !caluclate the frac_liq 
+          ! caluclate the liquid fraction, effective radius, critical RH for
+          ! the simple cloud scheme and cloud fraction.
+          ! rh_in_cf is an output diagnostic only for debugging  
           call calc_liq_frac(temp(i,j,k), frac_liq(i,j,k))
           call calc_reff(frac_liq(i,j,k), reff_rad(i,j,k))
           call calc_rhcrit(p_full(i,j,k), p_full(i,j,k_surf), simple_rhcrit(i,j,k))
@@ -166,6 +166,7 @@ module cloud_simple_mod
   end subroutine calc_liq_frac
 
   subroutine calc_reff(frac_liq, reff_rad)
+    ! the effective cloud radius is bounded between 10 and 20 microns
 
     real, intent(in) :: frac_liq
     real, intent(out) :: reff_rad
@@ -175,7 +176,7 @@ module cloud_simple_mod
   end subroutine calc_reff
 
   subroutine calc_rhcrit(p_full, p_surf, simple_rhcrit)   !need to check p_full - > p_layer_centres
-
+    !get the RH needed as a threshold for the cloud fraction calc.
     real, intent(in)  :: p_full, p_surf
     real, intent(out) :: simple_rhcrit
 
@@ -209,10 +210,9 @@ module cloud_simple_mod
     cf = MAX( 0.0, MIN( 1.0, ( rh - simple_rhcrit ) / ( 1.0 - simple_rhcrit ) ))
 
 
-    ! include simple convective cloud fraction where present
-
+    ! include simple convective cloud fraction where present (not currenly used)
     cca = 0.0 ! no convective cloud fraction is calculated
-              ! left in for fture use
+              ! left in for future use
 
     if (cca > 0.0) then
       cf = MAX( simple_cca, cf )
@@ -222,7 +222,7 @@ module cloud_simple_mod
   end subroutine calc_cf
 
   subroutine calc_qcl_rad(p_full, cf, qcl_rad)
-    ! calculate water content
+    ! calculate cloud water content
 
     real , intent(in)   :: p_full, cf
     real , intent(out)   :: qcl_rad
@@ -237,8 +237,6 @@ module cloud_simple_mod
     qcl_rad = cf * in_cloud_qcl
 
   end subroutine calc_qcl_rad
-
-
 
   subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, Time)
 
@@ -272,16 +270,11 @@ module cloud_simple_mod
       used = send_data ( id_simple_rhcrit, simple_rhcrit*100.0, Time)
     endif
 
-
-
   end subroutine output_cloud_diags
-
-  !-----------------------------------------------
-
 
   subroutine cloud_simple_end ()
 
-  ! do we deallocate anything?
+  ! If alloocated are added in init then deallocate them here.
 
   end subroutine cloud_simple_end
 
