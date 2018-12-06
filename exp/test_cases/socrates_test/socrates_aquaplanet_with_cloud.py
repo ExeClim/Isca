@@ -37,6 +37,7 @@ diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
+diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
@@ -94,7 +95,7 @@ exp.namelist = namelist = Namelist({
         'chunk_size': 16,
         'use_pressure_interp_for_half_levels':False,
         'tidally_locked':False,
-        'sol_day':90
+        'solday':90
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -207,7 +208,7 @@ exp.namelist = namelist = Namelist({
 if __name__=="__main__":
 
         cb.compile(debug=False)
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
 
-        for i in range(2,121):
+        for i in range(2,125):
             exp.run(i, num_cores=NCORES)
