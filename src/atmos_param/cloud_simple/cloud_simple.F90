@@ -123,7 +123,7 @@ module cloud_simple_mod
          'cloud_simple_init has not been called.', FATAL)
     
     ! Get the saturated specific humidity TOTAL (ie ice and vap) ***double check maths!
-    call compute_qs(temp, p_full, qs, es_over_liq_and_ice=.true.) !qs=qsat in um
+    call compute_qs(temp, p_full, qs) !qs=qsat in um
 
     k_surf = size(temp, 3)
 
