@@ -504,7 +504,7 @@ write(stdlog_unit, socrates_rad_nml)
     !----------------------------i
 
     ! Set array sizes
-    input_n_cloud_layer = 1
+    input_n_cloud_layer = n_layer
     input_n_aer_mode = n_layer
     input_cld_subcol_gen = n_layer
     input_cld_subcol_req = n_layer
