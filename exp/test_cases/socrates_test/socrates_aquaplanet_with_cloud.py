@@ -56,6 +56,9 @@ diag.add_field('cloud_simple', 'cf_rad', time_avg=True)
 diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
 diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
 diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
+diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
+diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
+
 
 # additional output options commented out 
 #diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
@@ -90,7 +93,8 @@ exp.namelist = namelist = Namelist({
         'store_intermediate_rad':True,
         'chunk_size': 16,
         'use_pressure_interp_for_half_levels':False,
-        'tidally_locked':False
+        'tidally_locked':False,
+        'sol_day':90
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
