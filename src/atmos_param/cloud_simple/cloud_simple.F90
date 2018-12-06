@@ -28,7 +28,9 @@ module cloud_simple_mod
                                            rhmsfc, rhm700, rhm200
   real :: zerodegc = 273.15
 
-  integer :: id_cf_rad, id_reff_rad, id_frac_liq, id_qcl_rad 
+  integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf, id_simple_rhcrit
+
+ 
   character(len=14), parameter ::   mod_name_cld = "cloud_simple"
 
   contains
@@ -57,8 +59,8 @@ module cloud_simple_mod
     write(stdlog_unit, cloud_simple_nml)
 
     !register diagnostics
-    id_cf_rad = &
-      register_diag_field ( mod_name_cld, 'cf_rad', axes(1:3), Time, &
+    id_cf = &
+      register_diag_field ( mod_name_cld, 'cf', axes(1:3), Time, &
       'Cloud fraction for the simple cloud scheme', 'unitless: values 0-1')
 
    id_frac_liq = &
@@ -76,30 +78,45 @@ module cloud_simple_mod
       'Specific humidity of cloud liquid', &
       'kg/kg')
 
+
+   id_rh_in_cf = &
+      register_diag_field ( mod_name_cld, 'rh_in_cf', axes(1:3), Time, &
+      'RH as a percent', &
+      '%')
+
+   id_simple_rhcrit = &
+      register_diag_field ( mod_name_cld, 'simple_rhcrit', axes(1:3), Time, &
+      'RH as a percent', &
+      '%')
+
+
+
+
+
     do_init = .false.  !initialisation completed
     
   end subroutine cloud_simple_init
 
   !-----------------------------------------------
 
-  subroutine cloud_simple (p_half, p_full, Time,   &
-                      temp, q_hum,                 &
+  subroutine cloud_simple(p_half, p_full, Time,   &
+                      temp, q_hum,                &
                       ! outs 
-                      cf_rad, reff_rad, qcl_rad ) 
+                      cf, reff_rad, qcl_rad ) 
 
     real       , intent(in), dimension(:,:,:)  :: temp, q_hum, p_full, p_half
     type(time_type) , intent(in)               :: Time
 
-    real       , intent(out), dimension(:,:,:) :: cf_rad, reff_rad, qcl_rad
+    real       , intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
 
-    real, dimension(size(temp,1), size(temp, 2), size(temp, 3))    :: qs, frac_liq
-    real  ::  simple_rhcrit
+    real, dimension(size(temp,1), size(temp, 2), size(temp, 3)) :: qs, frac_liq, rh_in_cf, simple_rhcrit
+
 
     integer :: i, j, k, k_surf
 
     logical :: es_over_liq_and_ice
 
-          real :: tmp1, tmp2 !remove tmp1 and tmp2 after debugging
+    real :: tmp1, tmp2 !remove tmp1 and tmp2 after debugging
 
     !check initiation has been done - ie read in parameters
     if (do_init) call error_mesg ('cloud_simple',  &
@@ -117,20 +134,15 @@ module cloud_simple_mod
           !caluclate the frac_liq 
           call calc_liq_frac(temp(i,j,k), frac_liq(i,j,k))
           call calc_reff(frac_liq(i,j,k), reff_rad(i,j,k))
-          call calc_rhcrit(p_full(i,j,k), p_full(i,j,k_surf), simple_rhcrit)
-          call calc_cf_rad(q_hum(i,j,k), qs(i,j,k), simple_rhcrit, cf_rad(i,j,k))
-          call calc_qcl_rad(p_full(i,j,k), cf_rad(i,j,k), qcl_rad(i,j,k) )
+          call calc_rhcrit(p_full(i,j,k), p_full(i,j,k_surf), simple_rhcrit(i,j,k))
+          call calc_cf(q_hum(i,j,k), qs(i,j,k), simple_rhcrit(i,j,k), cf(i,j,k),rh_in_cf(i,j,k))
+          call calc_qcl_rad(p_full(i,j,k), cf(i,j,k), qcl_rad(i,j,k) )
         end do
       end do
     end do
 
   !save some diagnotics
-  call output_cloud_diags(cf_rad, reff_rad, frac_liq, qcl_rad, Time )  
-
-tmp2 = maxval(cf_rad)
-tmp1 = maxval(reff_rad)
-tmp2 = maxval(cf_rad)
-
+  call output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, Time )  
 
   end subroutine cloud_simple
 
@@ -184,17 +196,18 @@ tmp2 = maxval(cf_rad)
 
   end subroutine calc_rhcrit
 
-  subroutine calc_cf_rad (q_hum, qsat, simple_rhcrit, cf_rad)
+  subroutine calc_cf (q_hum, qsat, simple_rhcrit, cf, rh)
     ! Calculate LS (stratiform) cloud fraction 
     ! as a simple linear function of RH
 
     real, intent(in)  :: q_hum, qsat, simple_rhcrit
-    real, intent(out) :: cf_rad
+    real, intent(out) :: cf, rh
  
-    real :: rh, cca
+    real :: cca
 
     rh = q_hum/qsat
-    cf_rad = MAX( 0.0, MIN( 1.0, ( rh - simple_rhcrit ) / ( 1.0 - simple_rhcrit ) ))
+    cf = MAX( 0.0, MIN( 1.0, ( rh - simple_rhcrit ) / ( 1.0 - simple_rhcrit ) ))
+
 
     ! include simple convective cloud fraction where present
 
@@ -202,17 +215,16 @@ tmp2 = maxval(cf_rad)
               ! left in for fture use
 
     if (cca > 0.0) then
-      cf_rad = MAX( simple_cca, cf_rad )
+      cf = MAX( simple_cca, cf )
     end if
+   
 
-    
+  end subroutine calc_cf
 
-  end subroutine calc_cf_rad
+  subroutine calc_qcl_rad(p_full, cf, qcl_rad)
+    ! calculate water content
 
-  subroutine calc_qcl_rad(p_full, cf_rad, qcl_rad)
-    ! calculate simple water content
-
-    real , intent(in)   :: p_full, cf_rad
+    real , intent(in)   :: p_full, cf
     real , intent(out)   :: qcl_rad
 
     real :: in_cloud_qcl 
@@ -222,22 +234,22 @@ tmp2 = maxval(cf_rad)
 
     in_cloud_qcl = MAX ( 0.0, in_cloud_qcl/1000.0 ) ! convert to kg/kg
 
-    qcl_rad = cf_rad * in_cloud_qcl
+    qcl_rad = cf * in_cloud_qcl
 
   end subroutine calc_qcl_rad
 
 
 
-  subroutine output_cloud_diags(cf_rad, reff_rad, frac_liq, qcl_rad, Time)
+  subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, Time)
 
-    real, intent(in), dimension(:,:,:) :: cf_rad, reff_rad, frac_liq, qcl_rad
+    real, intent(in), dimension(:,:,:) :: cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit
 
     type(time_type) , intent(in)       :: Time
 
     real :: used
 
-    if ( id_cf_rad > 0 ) then
-      used = send_data ( id_cf_rad, cf_rad, Time)
+    if ( id_cf > 0 ) then
+      used = send_data ( id_cf, cf, Time)
     endif
 
     if ( id_reff_rad > 0 ) then
@@ -251,6 +263,15 @@ tmp2 = maxval(cf_rad)
     if ( id_qcl_rad > 0 ) then
       used = send_data ( id_qcl_rad, qcl_rad, Time)
     endif
+
+    if ( id_rh_in_cf > 0 ) then
+      used = send_data ( id_rh_in_cf, rh_in_cf*100., Time)
+    endif
+
+    if ( id_simple_rhcrit > 0 ) then
+      used = send_data ( id_simple_rhcrit, simple_rhcrit*100.0, Time)
+    endif
+
 
 
   end subroutine output_cloud_diags
