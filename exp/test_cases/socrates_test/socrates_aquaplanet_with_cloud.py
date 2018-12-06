@@ -62,8 +62,8 @@ diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
 
 
 # additional output options commented out 
-#diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
-#diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
+diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
+diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_co2', time_avg=True)
 #diag.add_field('socrates', 'soc_ozone', time_avg=True) 
 #diag.add_field('socrates', 'soc_coszen', time_avg=True) 
@@ -148,7 +148,7 @@ exp.namelist = namelist = Namelist({
         'prescribe_initial_dist':True,
         'evaporation':True,  
         'depth': 2.5,                          #Depth of mixed layer used
-        'albedo_value': 0.38,                  #Albedo value used      
+        'albedo_value': 0.2,                  #Albedo value used      
     },
 
     'qe_moist_convection_nml': {
@@ -210,5 +210,5 @@ if __name__=="__main__":
         cb.compile(debug=False)
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
 
-        for i in range(2,125):
+        for i in range(2,171):
             exp.run(i, num_cores=NCORES)
