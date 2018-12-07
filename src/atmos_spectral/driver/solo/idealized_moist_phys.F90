@@ -258,8 +258,8 @@ integer ::           &
      id_diss_heat_ray,&  ! Heat dissipated by rayleigh bottom drag if gp_surface=.True.
      id_z_tg,        &   ! Relative humidity
      id_cape,        &
-     id_cin, 	     &
-     id_temp_2m,     & !mp586 for 10m winds and 2m temp
+     id_cin,	     & 	     
+     id_temp_2m,      & !mp586 for 10m winds and 2m temp
      id_u_10m, 	     & !mp586 for 10m winds and 2m temp
      id_v_10m	       !mp586 for 10m winds and 2m temp
 
@@ -1040,7 +1040,7 @@ if(gp_surface) then
     call compute_rayleigh_bottom_drag( 1,                     ie-is+1, &
                                        1,                     je-js+1, &
                                      Time,                    delta_t, &
-                   rad_lat(:,:),         dt_ug(:,:,:      ), &
+                   		     rad_lat(:,:),         dt_ug(:,:,:      ), &
                         dt_vg(:,:,:     ),                             &
                        ug(:,:,:,previous),         vg(:,:,:,previous), &
                      p_half(:,:,:,previous),     p_full(:,:,:,previous), &
