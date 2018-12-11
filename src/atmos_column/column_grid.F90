@@ -9,7 +9,7 @@ module column_grid_mod
 
 use         fms_mod, only: mpp_pe, mpp_root_pe, error_mesg, FATAL, write_version_number, check_nml_error, stdlog
 use         mpp_mod, only: mpp_error
-use mpp_domains_mod, only: domain1D, mpp_get_compute_domains, mpp_get_domain_components, mpp_get_layout
+use mpp_domains_mod, only: domain1D, mpp_get_compute_domains, mpp_get_domain_components, mpp_get_layout, mpp_global_field
 use   constants_mod, only: pi
 use    spec_mpp_mod, only: get_grid_domain, grid_domain, get_spec_domain
 
@@ -20,9 +20,9 @@ character(len=128), parameter :: version = '$Id: column_grid.F90,v 0.1 2018/16/1
 character(len=128), parameter :: tagname = '$Name: isca_201811 $'
 
 public :: column_grid_init 
-!public :: get_sin_lat, got_cos_lat, getcosm_lat, get_cosm2_lat
+public :: get_sin_lat, area_weighted_global_mean !, got_cos_lat, getcosm_lat, get_cosm2_lat
 public :: get_deg_lat, get_deg_lon, get_grid_boundaries 
-!public :: get_lon_max, get_longitude_origin
+public :: get_lon_max, get_lat_max!, get_longitude_origin
 
 integer :: num_lon, num_lat, lat_max 
 real    :: longitude_origin_local
@@ -38,6 +38,7 @@ real, allocatable, dimension(:) :: sin_hem
 real, allocatable, dimension(:) :: wts_hem
 real, allocatable, dimension(:) :: lon_boundaries_global
 real, allocatable, dimension(:) :: lat_boundaries_global
+real :: global_sum_of_wts
 real :: sum_wts 
 
 logical :: south_to_north_local
@@ -193,6 +194,8 @@ subroutine column_grid_init(num_lon_in, num_lat_in, longitude_origin, south_to_n
         lon_boundaries_global(i) = longitude_origin_local + (i-1.5)*del_lon
       end do
     endif 
+
+    global_sum_of_wts = sum(wts_lat)
 
     module_is_initialized = .true.
 
@@ -369,5 +372,88 @@ subroutine get_grid_boundaries(lon_boundaries, lat_boundaries,global)
     return
   end subroutine get_grid_boundaries
 
+  subroutine get_sin_lat(sin_lat_out)
+    !-----------------------------------------------------------------------
+    
+    real, intent (out), dimension(:) :: sin_lat_out
+    
+    if(.not. module_is_initialized) then
+      call error_mesg('get_sin_lat','failed to define package', FATAL)
+    end if
+    
+    if(size(sin_lat_out,1).eq.lat_max) then
+        sin_lat_out = sin_lat
+    else                            !assume grid compute domain
+        sin_lat_out = sin_lat(js:je)
+    end if
+    
+    return
+  end subroutine get_sin_lat
+
+  subroutine get_wts_lat(wts_lat_out)
+    !-----------------------------------------------------------------------
+    
+    real, intent (out), dimension(:) :: wts_lat_out
+    
+    if(.not. module_is_initialized) then
+      call error_mesg('get_wts_lat','failed to define package', FATAL)
+    end if
+      
+    if(size(wts_lat_out,1).eq.lat_max) then
+        wts_lat_out = wts_lat
+    else                            !assume grid compute domain
+        wts_lat_out = wts_lat(js:je)
+    end if
+    
+    return
+    end subroutine get_wts_lat
+
+  function area_weighted_global_mean(field)
+    !-------------------------------------------------------------------------
+    real :: area_weighted_global_mean
+    real, intent(in), dimension(:,:) :: field
+    real, dimension(size(field,2))   :: wts_lat
+    real, dimension(size(field,1), size(field,2)) :: weighted_field_local
+    real, dimension(num_lon, lat_max) :: weighted_field_global
+    integer :: j
+    
+    call get_wts_lat(wts_lat)
+    do j=1,size(field,2)
+      weighted_field_local(:,j) = wts_lat(j)*field(:,j)
+    enddo
+    
+    call mpp_global_field(grid_domain, weighted_field_local, weighted_field_global)
+    area_weighted_global_mean = sum(weighted_field_global)/(global_sum_of_wts*num_lon)
+    
+    return
+    end function area_weighted_global_mean
+
+
+  subroutine get_lon_max(lon_max_out)
+
+    integer, intent (out) :: lon_max_out
+      
+    if(.not.module_is_initialized) then
+      call error_mesg('get_lon_max','module grid_fourier not initialized', FATAL)
+    end if
+      
+    lon_max_out = num_lon
+      
+    return
+  end subroutine get_lon_max
+
+  subroutine get_lat_max(lat_max_out)
+    !-------------------------------------------------------------------------
+        
+    integer, intent(out) :: lat_max_out
+        
+    if(.not.module_is_initialized) then
+      call error_mesg('get_lat_max','transforms module is not initialized', FATAL)
+    end if
+        
+    lat_max_out = lat_max
+        
+    return
+  end subroutine get_lat_max
 
 end module column_grid_mod
