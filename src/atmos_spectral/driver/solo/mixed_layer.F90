@@ -43,7 +43,12 @@ use   diag_manager_mod, only: register_diag_field, register_static_field, send_d
 
 use   time_manager_mod, only: time_type
 
+#ifdef COLUMN_MODEL
+use    column_grid_mod, only: get_deg_lon, get_deg_lat
+use     transforms_mod, only: grid_domain
+#else          
 use     transforms_mod, only: get_deg_lat, get_deg_lon, grid_domain
+#endif
 
 use      vert_diff_mod, only: surf_diff_type
 
