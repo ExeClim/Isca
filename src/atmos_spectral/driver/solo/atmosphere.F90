@@ -155,13 +155,8 @@ dt_real      = float(dt_integer)
 call get_number_tracers(MODEL_ATMOS, num_prog=num_tracers)
 allocate (tracer_attributes(num_tracers))
 #ifdef COLUMN_MODEL
-  WRITE(*,*) '!!!!! I AM HERE !!!!!'
   call column_init(Time, Time_step, tracer_attributes, dry_model, nhum)
   column_model = .true.
-  write(*,*) '!!!!!!!!!!'
-  write(*,*) dry_model 
-  write(*,*) nhum
-  write(*,*) '!!!!!!!!!!'
 #else
   call spectral_dynamics_init(Time, Time_step, tracer_attributes, dry_model, nhum)
   column_model = .false.
