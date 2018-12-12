@@ -114,7 +114,7 @@ subroutine column_grid_init(num_lon_in, num_lat_in, longitude_origin, south_to_n
         deg_lon(i) = deg_lon(i) + total_degrees
       endif
     end do
-
+    
     allocate(deg_lat(num_lat))
     allocate (sin_lat(lat_max))
     allocate (cos_lat(lat_max))
@@ -137,6 +137,7 @@ subroutine column_grid_init(num_lon_in, num_lat_in, longitude_origin, south_to_n
         wts_lat = 1
       else
         allocate (sin_hem(lat_max/2))
+        allocate (wts_hem(lat_max/2))
         ! del_lat = 90. / (num_lat)
 
         ! deg_lat(1) = -90 + del_lat
@@ -262,13 +263,13 @@ subroutine compute_gaussian(sin_hem_lcl, wts_hem_lcl, n_hem_lcl)
        z  = z1 - p1/pp
        if(ABS(z - z1) .LT. converg) go to 10
     end do
-    call error_mesg('compute_gaussian','abscissas failed to converge in itermax iterations', FATAL)
+    call error_mesg('column_grid, compute_gaussian','abscissas failed to converge in itermax iterations', FATAL)
   
     10  continue
-  
+
     sin_hem_lcl (i)     = z
     wts_hem_lcl (i)     = 2.0/((1.0 - z*z)*pp*pp)
-  
+
   end do
 
 end subroutine compute_gaussian
@@ -378,7 +379,7 @@ subroutine get_grid_boundaries(lon_boundaries, lat_boundaries,global)
     real, intent (out), dimension(:) :: sin_lat_out
     
     if(.not. module_is_initialized) then
-      call error_mesg('get_sin_lat','failed to define package', FATAL)
+      call error_mesg('get_sin_lat','column_grid is not initialized', FATAL)
     end if
     
     if(size(sin_lat_out,1).eq.lat_max) then
@@ -396,7 +397,7 @@ subroutine get_grid_boundaries(lon_boundaries, lat_boundaries,global)
     real, intent (out), dimension(:) :: wts_lat_out
     
     if(.not. module_is_initialized) then
-      call error_mesg('get_wts_lat','failed to define package', FATAL)
+      call error_mesg('get_wts_lat','column_grid is not initialized', FATAL)
     end if
       
     if(size(wts_lat_out,1).eq.lat_max) then
@@ -434,7 +435,7 @@ subroutine get_grid_boundaries(lon_boundaries, lat_boundaries,global)
     integer, intent (out) :: lon_max_out
       
     if(.not.module_is_initialized) then
-      call error_mesg('get_lon_max','module grid_fourier not initialized', FATAL)
+      call error_mesg('get_lon_max','module column_grid not initialized', FATAL)
     end if
       
     lon_max_out = num_lon
@@ -448,7 +449,7 @@ subroutine get_grid_boundaries(lon_boundaries, lat_boundaries,global)
     integer, intent(out) :: lat_max_out
         
     if(.not.module_is_initialized) then
-      call error_mesg('get_lat_max','transforms module is not initialized', FATAL)
+      call error_mesg('get_lat_max','column_grid module is not initialized', FATAL)
     end if
         
     lat_max_out = lat_max

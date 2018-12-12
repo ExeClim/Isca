@@ -23,6 +23,8 @@ module column_initialize_fields_mod
 
 use              fms_mod, only: mpp_pe, mpp_root_pe, write_version_number
 
+use      column_grid_mod, only: area_weighted_global_mean
+
 use        constants_mod, only: rdgas
 
 use       transforms_mod, only: get_grid_domain
@@ -38,11 +40,12 @@ character(len=128), parameter :: tagname = '$Name: isca_201811 $'
 contains
 
 !-------------------------------------------------------------------------------------------------
-subroutine column_initialize_fields(reference_sea_level_press, initial_temperature, &
-                        surf_geopotential, psg, ug, vg, tg)
+subroutine column_initialize_fields(reference_sea_level_press, initial_temperature, surface_wind, &
+                                    surf_geopotential, psg, ug, vg, tg)
 
 real,    intent(in) :: reference_sea_level_press
 real,    intent(in) :: initial_temperature
+real,    intent(in) :: surface_wind
 
 real,    intent(in),  dimension(:,:    ) :: surf_geopotential
 real,    intent(out), dimension(:,:    ) :: psg
@@ -63,11 +66,13 @@ allocate(ln_psg(is:ie, js:je))
 
 initial_sea_level_press = reference_sea_level_press  
 
-ug      = 5.
-vg      = 5.
+ug      = 0.
+vg      = 0.
 tg      = 0.
 psg     = 0.
 
+ug(:,:,num_levels) = surface_wind / sqrt(2.)
+vg(:,:,num_levels) = surface_wind / sqrt(2.) 
 
 tg     = initial_temperature
 ln_psg = log(initial_sea_level_press) - surf_geopotential/(rdgas*initial_temperature)
@@ -75,10 +80,10 @@ psg    = exp(ln_psg)
 
 
 !  compute and print mean surface pressure
-!global_mean_psg = area_weighted_global_mean(psg)
-!if(mpp_pe() == mpp_root_pe()) then
-!  print '("mean surface pressure=",f9.4," mb")',.01*global_mean_psg
-!endif
+global_mean_psg = area_weighted_global_mean(psg)
+if(mpp_pe() == mpp_root_pe()) then
+  print '("mean surface pressure=",f9.4," mb")',.01*global_mean_psg
+endif
 
 return
 end subroutine column_initialize_fields

@@ -29,15 +29,17 @@ character(len=128), parameter :: version = '$Id: column_init_cond.F90,v 0.1 2018
 character(len=128), parameter :: tagname = '$Name: isca_201811 $'
 
 real :: initial_temperature = 264.
+real :: surf_geopotential = 0.0
+real :: surface_wind = 5. 
 
-namelist / column_init_cond_nml / initial_temperature
+namelist / column_init_cond_nml / initial_temperature, surf_geopotential, surface_wind
 
 contains
 
 subroutine column_init_cond(initial_state_option, tracer_attributes, reference_sea_level_press, use_virtual_temperature, &
     vert_coord_option, vert_difference_option, scale_heights, surf_res,    &
     p_press, p_sigma, exponent, pk, bk, ug, vg, tg, psg, &
-    grid_tracers, surf_geopotential)! NTL START HERE, lon_boundaries, lat_boundaries)
+    grid_tracers, surf_geopotential_out)! NTL START HERE, lon_boundaries, lat_boundaries)
 
 character(len=*), intent(in) :: initial_state_option
 type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
@@ -50,7 +52,7 @@ real,    intent(out), dimension(:)       :: pk, bk
 real,    intent(out), dimension(:,:,:)   :: ug, vg, tg
 real,    intent(out), dimension(:,:  )   :: psg
 real,    intent(out), dimension(:,:,:,:) :: grid_tracers
-real,    intent(out), dimension(:,:  )   :: surf_geopotential
+real,    intent(out), dimension(:,:  )   :: surf_geopotential_out
 
 integer :: unit, ierr, io
 
@@ -71,17 +73,15 @@ integer :: unit, ierr, io
 call write_version_number(version, tagname)
 if(mpp_pe() == mpp_root_pe()) write (stdlog(), nml=column_init_cond_nml)
 
-write(*,*) 'am I in here?'
 
 
 call compute_vert_coord(vert_coord_option, scale_heights, surf_res, exponent, p_press, p_sigma, reference_sea_level_press, pk,bk)
-surf_geopotential = 0.0 ! no option for topography in column model at the moment 
+surf_geopotential_out = surf_geopotential ! only option to set topography to uniform surface geopotential 
 call press_and_geopot_init(pk, bk, use_virtual_temperature, vert_difference_option)
 
 if(initial_state_option == 'default') then
-  write(*,*) 'going into initialize_fields?'
-  call column_initialize_fields(reference_sea_level_press, initial_temperature, &
-  surf_geopotential,  psg, ug, vg, tg)
+  call column_initialize_fields(reference_sea_level_press, initial_temperature, surface_wind, &
+  surf_geopotential_out,  psg, ug, vg, tg)
 else 
 !!!!!!!! NTL: intial condition from file not yet configured !!!!!!!!!!
 !else if(initial_state_option == 'input') then 
@@ -107,7 +107,7 @@ subroutine check_vert_coord(num_levels, psg)
     do j=1,size(p_full,2)
       do i=1,size(p_full,1)
         if(p_half(i,j,k+1) < p_half(i,j,k)) then
-          call error_mesg('check_vert_coord','Pressure levels intersect.',FATAL)
+          call error_mesg('column_init_cond: check_vert_coord','Pressure levels intersect.',FATAL)
         endif
       enddo
     enddo

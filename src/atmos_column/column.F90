@@ -64,10 +64,7 @@ integer :: previous, current, future
 
 !! NAMELIST VARIABLES 
 
-logical :: do_mass_correction     = .true. , &
-           do_water_correction    = .true. , &
-           do_energy_correction   = .true. , &
-           use_virtual_temperature= .false., &
+logical :: use_virtual_temperature= .false., &
            graceful_shutdown      = .false.
 
 integer :: lon_max             = 1,  & ! Column 
@@ -99,10 +96,9 @@ logical :: json_logging = .false.
 
 real, dimension(2) :: valid_range_t = (/100.,500./)
 
-namelist /column_nml/ use_virtual_temperature, do_water_correction, &
-                      do_mass_correction, do_energy_correction, &
+namelist /column_nml/ use_virtual_temperature, &
                       lon_max, lat_max, num_levels, &
-                      num_fourier, print_interval, vert_coord_option, &
+                      print_interval, vert_coord_option, &
                       vert_difference_option, use_virtual_temperature, &
                       reference_sea_level_press, scale_heights, surf_res, &
                       p_press, p_sigma, exponent, &
@@ -127,6 +123,7 @@ subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhu
 
     character(len=32) :: params
     character(len=128) :: tname, longname, units
+    character(len=8) :: err_msg_1
 
     if(module_is_initialized) return
 
@@ -143,6 +140,13 @@ subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhu
     20  call close_file (unit)
 #endif
 
+    pe   = mpp_pe()
+    npes = mpp_npes()
+    if (npes .gt. 1) then 
+      write(err_msg_1,'(i8)') npes
+      call error_mesg('column_init','Can only run column model on one processor but npes = '//err_msg_1, FATAL)
+    endif 
+
     call write_version_number(version, tagname)
     if(mpp_pe() == mpp_root_pe()) write (stdlog(), nml=column_nml)
     call write_version_number(tracer_type_version, tracer_type_tagname)
@@ -156,7 +160,6 @@ subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhu
     
     !!! MAYBE PUT ALL OF THIS IN A FILE LIKE:
     call column_grid_init(lon_max, lat_max) ! and then get to it with other functions 
-    write(*,*) ' ~!!!!!! I AM HERE !!!!!!'
     call get_grid_domain(is, ie, js, je)
     call get_number_tracers(MODEL_ATMOS, num_prog=num_tracers)
     call allocate_fields
@@ -189,22 +192,11 @@ subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhu
     dry_model_out = dry_model
     nhum_out = nhum
 
-    WRITE(*,*) ' how about here? '
+
     call read_restart_or_do_coldstart(tracer_attributes)
-    write(*,*) 'but then I fail here?'
+
     call press_and_geopot_init(pk, bk, use_virtual_temperature, vert_difference_option)
     call column_diagnostics_init(Time)
-
-    if(do_water_correction .and. .not.do_mass_correction) then
-      call error_mesg('spectral_dynamics_init', 'water_correction requires mass_correction', FATAL)
-    endif
-    
-    if(do_energy_correction .and. .not.do_mass_correction) then
-      call error_mesg('spectral_dynamics_init', 'energy_correction requires mass_correction', FATAL)
-    endif
-
-    pe   = mpp_pe()
-    npes = mpp_npes()
 
     if(use_virtual_temperature) then
       virtual_factor = (rvgas/rdgas) - 1.0
@@ -256,7 +248,7 @@ logical :: r_pe_is_valid = .true.
 ! DO something simple like next = current + dt_var * timestep 
 
 if(.not.module_is_initialized) then
-  call error_mesg('spectral_dynamics','dynamics has not been initialized ', FATAL)
+  call error_mesg('column','column has not been initialized ', FATAL)
 endif
 
 dt_tracers_tmp = dt_tracers
@@ -271,7 +263,7 @@ endif
 if(num_time_levels == 2) then
   future = 3 - current
 else
-  call error_mesg('spectral_dynamics','Do not know how to set time pointers when num_time_levels does not equal 2',FATAL)
+  call error_mesg('column','Do not know how to set time pointers when num_time_levels does not equal 2',FATAL)
 endif
 
 
@@ -310,7 +302,7 @@ if(minval(tg(:,:,:,future)) < valid_range_t(1) .or. maxval(tg(:,:,:,future)) > v
         &,ug(ii,jj,kk,future)
 !jm
   if (.not.graceful_shutdown) then
-    call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
+    call error_mesg('column','temperatures out of valid range', FATAL)
   endif
 endif
 
@@ -343,7 +335,7 @@ if (graceful_shutdown) then
     ! and then raise a fatal error after all have hit the sync point.
     call diag_manager_end(Time)
     call mpp_sync()
-    call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
+    call error_mesg('column','temperatures out of valid range', FATAL)
   endif
 endif
 
@@ -492,7 +484,7 @@ subroutine column_diagnostics(Time, p_surf, u_grid, v_grid, t_grid, wg_full, tr_
   if(size(tr_grid,5) /= num_tracers) then
     write(err_msg_1,'(i8)') size(tr_grid,5)
     write(err_msg_2,'(i8)') num_tracers
-    call error_mesg('spectral_diagnostics','size(tracers)='//err_msg_1//' Should be='//err_msg_2, FATAL)
+    call error_mesg('column_diagnostics','size(tracers)='//err_msg_1//' Should be='//err_msg_2, FATAL)
   endif
   do ntr=1,num_tracers
     if(id_tr(ntr) > 0) used = send_data(id_tr(ntr), tr_grid(:,:,:,time_level,ntr), Time)
@@ -694,7 +686,7 @@ subroutine read_restart_or_do_coldstart(tracer_attributes)
         enddo ! loop over tracers
       enddo ! loop over time levels
       call read_data(trim(file), 'surf_geopotential', surf_geopotential, grid_domain)
-      write(*,*) 'I AM HERE AND HERE I AM INNIT BLUD'
+
     else
       do ntr = 1,num_tracers
         if(trim(tracer_attributes(ntr)%name) == 'sphum') then
@@ -731,11 +723,11 @@ subroutine get_initial_fields(ug_out, vg_out, tg_out, psg_out, grid_tracers_out)
   real, intent(out), dimension(:,:,:,:) :: grid_tracers_out
   
   if(.not.module_is_initialized) then
-    call error_mesg('get_initial_fields','column has not been initialized',FATAL)
+    call error_mesg('column, get_initial_fields','column has not been initialized',FATAL)
   endif
   
   if(previous /= 1 .or. current /= 1) then
-    call error_mesg('get_initial_fields','This routine may be called only to get the&
+    call error_mesg('column, get_initial_fields','This routine may be called only to get the&
                     & initial values after a cold_start',FATAL)
   endif
   
