@@ -10,6 +10,12 @@ sensible surface heat fluxes). Currently the user can set a namelist variable 's
 that sets u_surf and v_surf = surface_wind / sqrt(2), so that wind_surf = sqrt(u_surf**2 + 
 v_surf**2) = surface_wind. u and v at all other altitudes are set to zero (hardcoded). 
 
+At the moment the model needs to use the vertical turbulent diffusion parameterization in order 
+for the mixed layer code to work. This is not very consistent as the u and v wind are prescribed 
+and so the u,v tendenency from the diffusion is thrown away. Hence an implicit assumption when 
+using the column model is that 'the dynamics' would restore the surface winds to their prescribed 
+speed, so that du/dt total is zero. 
+
 The column model is currently initiated as a bit of a hack. The line 
 
 'from isca import ColumnCodeBase'
@@ -67,7 +73,8 @@ diag.add_field('column', 'ucomp', time_avg=True)
 diag.add_field('column', 'vcomp', time_avg=True)
 diag.add_field('column', 'temp', time_avg=True)
 diag.add_field('two_stream', 'swdn_toa', time_avg=True)
-
+diag.add_field('atmosphere', 'dt_ug_diffusion', time_avg=True)
+diag.add_field('atmosphere', 'dt_vg_diffusion', time_avg=True)
 exp.diag_table = diag
 
 #Empty the run directory ready to run
@@ -111,7 +118,7 @@ exp.namelist = namelist = Namelist({
 
     'idealized_moist_phys_nml': {
         'do_damping': False, # no damping in column model, surface wind prescribed 
-        'turb':True,        # no turbulent diffusion, surface wind prescibed 
+        'turb':True,        # DONT WANT TO USE THIS, BUT NOT DOING SO IS STOPPING MIXED LAYER FROM WORKING
         'mixed_layer_bc':True, # need surface, how is this trying to modify the wind field? ****
         'do_simple': True, # simple RH calculation 
         'roughness_mom': 3.21e-05, # DONT WANT TO USE THIS, BUT NOT DOING SO IS STOPPING MIXED LAYER FROM WORKING
