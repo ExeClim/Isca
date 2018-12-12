@@ -61,10 +61,12 @@ diag.add_field('column', 'bk')
 diag.add_field('column', 'pk')
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
+diag.add_field('mixed_layer', 'flux_lhe', time_avg=True)
 diag.add_field('column', 'sphum', time_avg=True)
 diag.add_field('column', 'ucomp', time_avg=True)
 diag.add_field('column', 'vcomp', time_avg=True)
 diag.add_field('column', 'temp', time_avg=True)
+diag.add_field('two_stream', 'swdn_toa', time_avg=True)
 
 exp.diag_table = diag
 
@@ -92,15 +94,12 @@ exp.namelist = namelist = Namelist({
         'lat_max': 1, # number of columns in latitude, precise 
                       # latitude can be set in column_grid_nml if only 1 lat used. 
         'num_levels': 31,  # number of levels 
+        'initial_sphum': 1e-6, 
     },
 
     'column_grid_nml': { 
-        #'lat_value': 45.0 # set latitude to 45 degrees
-        'global_average': True # sets latitude to 180*acos(1./4.)/pi, so 
-                               # that cos(lat)=1/4, i.e. fraction needed for
-                               # insolation at this latitude to be equal to that of
-                               # the global average (S/4). Use this only with no 
-                               # seasonal or diurnal cycles. 
+        'lat_value': np.rad2deg(np.arcsin(1/np.sqrt(3))) # set latitude to that which causes insolation in frierson p2 radiation to be insolation / 4. 
+        #'global_average': True # don't use this option at the moment
     },
 
     # set initial condition, NOTE: currently there is not an option to read in initial condition from a file. 
@@ -112,12 +111,12 @@ exp.namelist = namelist = Namelist({
 
     'idealized_moist_phys_nml': {
         'do_damping': False, # no damping in column model, surface wind prescribed 
-        'turb':False,        # no turbulent diffusion, surface wind prescibed 
+        'turb':True,        # no turbulent diffusion, surface wind prescibed 
         'mixed_layer_bc':True, # need surface, how is this trying to modify the wind field? ****
         'do_simple': True, # simple RH calculation 
-        'roughness_mom': 0.0, # no surface roughness in column 
-        'roughness_heat': 0.0,
-        'roughness_moist': 0.0,                
+        'roughness_mom': 3.21e-05, # DONT WANT TO USE THIS, BUT NOT DOING SO IS STOPPING MIXED LAYER FROM WORKING
+        'roughness_heat':3.21e-05,
+        'roughness_moist':3.21e-05,                
         'two_stream_gray': True,     #Use grey radiation
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use the simple Betts Miller convection scheme 
     },
@@ -145,6 +144,14 @@ exp.namelist = namelist = Namelist({
         'old_dtaudv': True    
     },
 
+    'vert_turb_driver_nml': { # DONT WANT TO USE THIS, BUT NOT DOING SO IS STOPPING MIXED LAYER FROM WORKING
+        'do_mellor_yamada': False,     # default: True
+        'do_diffusivity': True,        # default: False
+        'do_simple': True,             # default: False
+        'constant_gust': 0.0,          # default: 1.0
+        'use_tau': False
+    },
+
     #Use a large mixed-layer depth, and the Albedo of the CTRL case in Jucker & Gerber, 2017
     'mixed_layer_nml': {
         'tconst' : 285.,
@@ -155,7 +162,7 @@ exp.namelist = namelist = Namelist({
     },
     
     'sat_vapor_pres_nml': {
-        'do_simple':True
+        'do_simple':True, 
     },
 
     # define pressure coordinate 
@@ -180,5 +187,5 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
     exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)
-    for i in range(2,13):
+    for i in range(2,4):
         exp.run(i, num_cores=NCORES, overwrite_data=True)
