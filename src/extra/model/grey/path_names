@@ -1,7 +1,3 @@
-atmos_column/column.F90
-atmos_column/column_init_cond.F90
-atmos_column/column_initialize_fields.F90
-atmos_column/column_grid.F90
 atmos_param/diffusivity/diffusivity.F90
 atmos_param/edt/edt.F90
 atmos_param/entrain/entrain.F90
