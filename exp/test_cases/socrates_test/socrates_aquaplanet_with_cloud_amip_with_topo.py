@@ -23,10 +23,11 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_test_aquaplanet_with_clouds_post_jm_suggestions', codebase=cb)
+exp = Experiment('soc_test_aquaplanet_with_clouds_post_jm_suggestions_amip_ssts_land_low_albedo_with_land', codebase=cb)
 exp.clear_rundir()
 
-inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
+inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
+                      os.path.join(base_dir,'input/sst_clim_amip.nc'), os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -36,6 +37,7 @@ diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
+diag.add_field('dynamics', 'zsurf', time_avg=True)
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
@@ -59,6 +61,7 @@ diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
 diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
 diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
 diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
+diag.add_field('mixed_layer', 'albedo', time_avg=True)
 
 
 # additional output options commented out 
@@ -95,7 +98,6 @@ exp.namelist = namelist = Namelist({
         'chunk_size': 16,
         'use_pressure_interp_for_half_levels':False,
         'tidally_locked':False,
-        'solday':90
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -109,7 +111,10 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
-        'do_cloud_simple': True
+        'do_cloud_simple': True, 
+        'land_option' : 'input',
+        'land_file_name' : 'INPUT/era_land_t42.nc',
+        'land_roughness_prefactor' :10.0, 
     },
 
     'cloud_simple_nml': {
@@ -147,8 +152,17 @@ exp.namelist = namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':True,  
-        'depth': 2.5,                          #Depth of mixed layer used
+        'depth': 20.0,                          #Depth of mixed layer used
         'albedo_value': 0.2,                  #Albedo value used      
+        'land_option': 'input',              #Tell mixed layer to get land mask from input file
+        'land_h_capacity_prefactor': 0.1,    #What factor to multiply mixed-layer depth by over land. 
+        'albedo_value': 0.1,                #Ocean albedo value
+        'land_albedo_prefactor': 1.3,        #What factor to multiply ocean albedo by over land     
+        'do_qflux' : False, #Don't use the prescribed analytical formula for q-fluxes
+        'do_read_sst' : True, #Read in sst values from input file
+        'do_sc_sst' : True, #Do specified ssts (need both to be true)
+        'sst_file' : 'sst_clim_amip', #Set name of sst input file
+        'specify_sst_over_ocean_only' : True, #Make sure sst only specified in regions of ocean.              
     },
 
     'qe_moist_convection_nml': {
@@ -199,7 +213,13 @@ exp.namelist = namelist = Namelist({
         'surf_res':0.2, #Parameter that sets the vertical distribution of sigma levels
         'scale_heights' : 11.0,
         'exponent':7.0,
-        'robert_coeff':0.03
+        'robert_coeff':0.03,
+        'ocean_topog_smoothing': 0.8
+    },
+
+    'spectral_init_cond_nml':{
+        'topog_file_name': 'era_land_t42.nc',
+        'topography_option': 'input'
     },
 
 })
@@ -210,5 +230,5 @@ if __name__=="__main__":
         cb.compile(debug=False)
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
 
-        for i in range(2,171):
+        for i in range(2,241):
             exp.run(i, num_cores=NCORES)
