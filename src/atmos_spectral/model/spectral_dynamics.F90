@@ -197,6 +197,7 @@ real    :: damping_coeff       = 1.15740741e-4, & ! (one tenth day)**-1
          ocean_topog_smoothing = .93, &
            initial_sphum       = 0.0, &
      reference_sea_level_press =  101325.,&
+     reference_temp =  300.,&
         water_correction_limit = 0.0, & !mj
            raw_filter_coeff    = 1.0     !st Default value of 1.0 turns the RAW part of the filtering off. 0.5 is the desired value, but this appears unstable. Requires further testing.
 
@@ -212,6 +213,7 @@ namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option, cutoff
                                  vert_advect_t, use_implicit, longitude_origin, robert_coeff,        &
                                  alpha_implicit, vert_difference_option,                             &
                                  reference_sea_level_press, lon_max, lat_max, num_levels,            &
+                                 reference_temp,                                                     &
                                  num_fourier, num_spherical, fourier_inc, triang_trunc,              &
                                  vert_coord_option, scale_heights, surf_res,                         &
                                  p_press, p_sigma, exponent, ocean_topog_smoothing, initial_sphum,   &
@@ -470,7 +472,7 @@ if(use_implicit) then
   allocate(wavenumber(0:num_fourier,0:num_spherical))
   allocate(     eigen(0:num_fourier,0:num_spherical))
   allocate (ref_temperature_implicit(num_levels))
-  ref_temperature_implicit(:) = 300.
+  ref_temperature_implicit(:) = reference_temp
   ref_surf_p_implicit = reference_sea_level_press
 
   call get_spherical_wave(wavenumber)
