@@ -1,0 +1,13 @@
+echo loadmodules for Bristol Bluecrystal 4
+
+module purge
+
+module load libs/netcdf/4.4.1.1.MPI
+module load build/gcc-7.2.0
+module load tools/git/2.18.0
+
+export CPATH=$CPATH:/mnt/storage/software/libraries/intel/netcdf-4.4.1.1-mpi/include
+
+export F90=mpiifort
+export CC=mpiicc
+
