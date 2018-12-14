@@ -7,11 +7,11 @@ import pdb
 import subprocess
 
 start_time=time.time()
-base_dir='/scratch/sit204/Data_2013/'
-exp_name_list = ['no_ice_flux_lhe_exps_q_flux_hadgem_anoms_3']
+base_dir='/scratch/sit204/data_isca/'
+exp_name_list = ['soc_test_aquaplanet_with_clouds_post_jm_suggestions_amip_ssts_land_low_albedo']
 avg_or_daily_list=['monthly']
-start_file=287
-end_file=288
+start_file=96
+end_file=120
 nfiles=(end_file-start_file)+1
 
 do_extra_averaging=False #If true, then 6hourly data is averaged into daily data using cdo
@@ -66,10 +66,12 @@ for exp_name in exp_name_list:
 
             number_prefix=''
 
-            if n+start_file < 100:
+            if n+start_file < 1000:
                 number_prefix='0'
-            if n+start_file < 10:
+            if n+start_file < 100:
                 number_prefix='00'
+            if n+start_file < 10:
+                number_prefix='000'
 
             nc_file_in = base_dir+'/'+exp_name+'/run'+number_prefix+str(n+start_file)+'/atmos_'+avg_or_daily+'.nc'
             nc_file_out = out_dir+'/'+exp_name+'/run'+number_prefix+str(n+start_file)+'/atmos_'+avg_or_daily+file_suffix+'.nc'
