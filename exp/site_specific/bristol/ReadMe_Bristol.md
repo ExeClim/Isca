@@ -9,12 +9,11 @@ First, to enable `git`, run:
 $ module load git
 ```
 
-Now you can clone Will Seviour's fork of Isca, and switch to the UoB branch:
+Now you can clone the Isca repository:
 
 ```{bash}
-$ git clone git@github.com:wseviour/Isca.git
+$ git clone git@github.com:ExeClim/Isca.git
 $ cd Isca
-$ git checkout remotes/origin/uob_master
 ```
 
 Before you can run Isca, you'll need to load the Anaconda python distribution:
