@@ -107,6 +107,10 @@ Once the code has sucessfully compiled, the script will continue on to run the m
 
 Once you've got an environment file that works for your machine saved in `src/extra/env`, all of the test cases should now compile and run - you're now ready to start running your own experiments!
 
+## Site-specific help
+
+There are some site-specific guides to running Isca on your local system located in the directory [exp/site_specific/](https://github.com/ExeClim/Isca/tree/master/exp/site_specific).
+
 # License
 
 Isca is distributed under a GNU GPLv3 license. See the `LICENSE` file for details. 
