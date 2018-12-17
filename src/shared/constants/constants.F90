@@ -163,8 +163,8 @@ real, public, parameter :: TFREEZE = 273.16
 !  mean sea level pressure
 ! </DATA>
 
-real, public, parameter :: WTMAIR = 2.896440E+01
-real, public, parameter :: WTMH2O = WTMAIR*(EARTH_RDGAS/RVGAS) !pjp OK to change value because not used yet.
+real, public, parameter :: WTMAIR_EARTH = 2.896440E+01
+real, public, parameter :: WTMH2O = WTMAIR_EARTH*(EARTH_RDGAS/RVGAS) !pjp OK to change value because not used yet.
 !real, public, parameter :: WTMO3  = 47.99820E+01
 real, public, parameter :: WTMOZONE =  47.99820
 real, public, parameter :: WTMC     =  12.00000
@@ -203,6 +203,9 @@ real, public, parameter :: RHOAIR      = 1.292269
 real, public, parameter :: ALOGMIN     = -50.0
 
 !------------ miscellaneous constants ---------------
+! <DATA NAME="GAS_CONSTANT" UNITS="kg m^2 / s^2 / K / mol" TYPE="real" DEFAULT="8.3144598">
+!   Gas constant = N_A * k_B, where N_A is avagadro's number, and k_b is the boltzmann constant
+! </DATA>
 ! <DATA NAME="STEFAN" UNITS="W/m^2/deg^4" TYPE="real" DEFAULT="5.6734e-8">
 !   Stefan-Boltzmann constant
 ! </DATA>
@@ -231,6 +234,7 @@ real, public, parameter :: ALOGMIN     = -50.0
 !   a small number to prevent divide by zero exceptions
 ! </DATA>
 
+real, public, parameter :: GAS_CONSTANT = 8.314 !(Consistent with correct value of 8.3144598 and value gotten by doing earth_rdgas * wtmair / 1000 = 8.313941376)
 real, public, parameter :: STEFAN  = 5.6734e-8
 real, public, parameter :: VONKARM = 0.40
 real, public, parameter :: PI      = 3.14159265358979323846
@@ -260,9 +264,11 @@ real, public :: PSTD_MKS    = PSTD_MKS_EARTH
 real, public :: RDGAS  = EARTH_RDGAS
 real, public :: KAPPA = EARTH_KAPPA
 real, public :: CP_AIR = EARTH_CP_AIR
+real, public :: WTMAIR = WTMAIR_EARTH
 logical :: earthday_multiple = .false.
 
-namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa, solar_const, earthday_multiple
+namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa, solar_const, earthday_multiple, & 
+wtmair
 
 !-----------------------------------------------------------------------
 ! version and tagname published
