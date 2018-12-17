@@ -57,9 +57,9 @@ diag.add_field('rrtm_radiation', 'flux_sw', time_avg=True) # net SW surface flux
 diag.add_field('rrtm_radiation', 'flux_lw', time_avg=True) # net LW surface flux
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) # latent heat flux (up) at surface
 diag.add_field('mixed_layer', 'flux_t', time_avg=True) # sensible heat flux (up) at surface
-#diag.add_field('atmosphere', 'temp_2m', time_avg=True) # add 2m temperature
-#diag.add_field('atmosphere', 'u_10m', time_avg=True) # add 10m zonal winds
-#diag.add_field('atmosphere', 'v_10m', time_avg=True) # add 10m meridional winds 
+diag.add_field('atmosphere', 'temp_2m', time_avg=True) # add 2m temperature
+diag.add_field('atmosphere', 'u_10m', time_avg=True) # add 10m zonal winds
+diag.add_field('atmosphere', 'v_10m', time_avg=True) # add 10m meridional winds 
 
 
 #MP added on 11 october 2017

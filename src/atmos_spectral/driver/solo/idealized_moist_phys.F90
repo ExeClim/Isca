@@ -443,6 +443,12 @@ allocate(dhdt_atm    (is:ie, js:je))
 allocate(dedq_atm    (is:ie, js:je))
 allocate(dtaudv_atm  (is:ie, js:je))
 allocate(dtaudu_atm  (is:ie, js:je))
+allocate(ex_del_m (is:ie, js:je))	!mp586 added for 10m wind and 2m temp
+allocate(ex_del_h (is:ie, js:je))	!mp586 added for 10m wind and 2m temp
+allocate(ex_del_q (is:ie, js:je))	!mp586 added for 10m wind and 2m temp
+allocate(temp_2m (is:ie, js:je))	!mp586 added for 10m wind and 2m temp
+allocate(u_10m (is:ie, js:je))		!mp586 added for 10m wind and 2m temp
+allocate(v_10m (is:ie, js:je))		!mp586 added for 10m wind and 2m temp
 allocate(land        (is:ie, js:je)); land = .false.
 allocate(land_ones   (is:ie, js:je)); land_ones = 0.0
 allocate(avail       (is:ie, js:je)); avail = .true.
@@ -618,6 +624,19 @@ if(bucket) then
   id_bucket_depth_lh = register_diag_field(mod_name, 'bucket_depth_lh',      &         ! RG Add bucket
        axes(1:2), Time, 'Tendency of bucket depth induced by LH', 'm/s')
 endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
+
+id_temp_2m = register_diag_field(mod_name, 'temp_2m',            &         !mp586 add 2m temp
+     axes(1:2), Time, 'Air temperature 2m above surface', 'K')
+id_u_10m = register_diag_field(mod_name, 'u_10m',                &         !mp586 add 10m wind (u)
+     axes(1:2), Time, 'Zonal wind 10m above surface', 'm/s')
+id_v_10m = register_diag_field(mod_name, 'v_10m',                &         !mp586 add 10m wind (v)
+     axes(1:2), Time, 'Meridional wind 10m above surface', 'm/s')
+
+!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 select case(r_conv_scheme)
 
@@ -925,15 +944,15 @@ if(.not.mixed_layer_bc) then
 !!$  t_surf = surface_temperature(tg(:,:,:,previous), p_full(:,:,:,current), p_half(:,:,:,current))
 end if
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
 
-id_temp_2m = register_diag_field(mod_name, 'temp_2m',            &         ! mp586 add 2m temp
-     axes(1:2), Time, 'Air temperature 2m above surface', 'K')
-id_u_10m = register_diag_field(mod_name, 'u_10m',		 &	   ! mp586 add 10m wind (u)
-     axes(1:2), Time, 'Zonal wind 10m above surface', 'm/s')
-id_v_10m = register_diag_field(mod_name, 'v_10m',  	   	 &         ! mp586 add 10m wind (v)
-     axes(1:2), Time, 'Meridional wind 10m above surface', 'm/s')
+!id_temp_2m = register_diag_field(mod_name, 'temp_2m',            &         ! mp586 add 2m temp
+!     axes(1:2), Time, 'Air temperature 2m above surface', 'K')
+!id_u_10m = register_diag_field(mod_name, 'u_10m',		 &	   ! mp586 add 10m wind (u)
+!     axes(1:2), Time, 'Zonal wind 10m above surface', 'm/s')
+!id_v_10m = register_diag_field(mod_name, 'v_10m',  	   	 &         ! mp586 add 10m wind (v)
+!     axes(1:2), Time, 'Meridional wind 10m above surface', 'm/s')
 
 !!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
