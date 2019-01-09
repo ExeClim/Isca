@@ -597,7 +597,6 @@ end if
 
 call lscale_cond_init()
 
-axes = get_axis_id()
 
 id_cond_dt_qg = register_diag_field(mod_name, 'dt_qg_condensation',        &
      axes(1:3), Time, 'Moisture tendency from condensation','kg/kg/s')
