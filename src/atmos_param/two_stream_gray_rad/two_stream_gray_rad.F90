@@ -112,6 +112,8 @@ real    :: sw_tau_exponent_gp = 1.0
 real    :: diabatic_acce = 1.0
 real,save :: gp_albedo, Ga_asym, g_asym
 
+logical :: do_normal_integration_method=.true.
+
 ! parameters for Byrne and OGorman radiation scheme
 real :: bog_a = 0.8678
 real :: bog_b = 1997.9
@@ -147,7 +149,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 		   window, carbon_conc, rad_scheme, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
            use_time_average_coszen, dt_rad_avg,&
-           diabatic_acce !Schneider Liu values
+           diabatic_acce, do_normal_integration_method !Schneider Liu values
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -557,18 +559,32 @@ case(B_BYRNE)
   !      Land–ocean warming contrast over a wide range of climates:
   !      Convective quasi-equilibrium theory and idealized simulations.
   !      J. Climate 26, 4000–4106 (2013).
-
+  if (.not.do_normal_integration_method) then 
+    lw_tau(:,:,1) = 0.0 
+  endif
   do k = 1, n
-    lw_del_tau    = (bog_a*bog_mu + 0.17 * log(carbon_conc/360.)  + bog_b*q(:,:,k)) * (( p_half(:,:,k+1)-p_half(:,:,k) ) / pstd_mks_earth)
-    lw_dtrans(:,:,k) = exp( - lw_del_tau )
+    lw_del_tau    = (bog_a*bog_mu + 0.17 * log(carbon_conc/360.)  + bog_b*q(:,:,k)) * (( p_half(:,:,k+1)-p_half(:,:,k) ) / pstd_mks)!HACKHERE_earth)
+    if (do_normal_integration_method) then 
+      lw_dtrans(:,:,k) = exp( - lw_del_tau )
+    else
+      lw_tau(:,:,k+1) = lw_tau(:,:,k) + lw_del_tau
+    endif
 
   end do
 
   ! compute downward longwave flux by integrating downward
   lw_down(:,:,1)      = 0.
-  do k = 1, n
-     lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
-  end do
+  if (do_normal_integration_method) then 
+    do k = 1, n
+      lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
+    end do
+  else 
+    do k = 1, n
+      lw_down(:,:,k+1) = 2.*b(:,:,k) * (lw_tau(:,:,k+1) - lw_tau(:,:,k))/(2.+ (lw_tau(:,:,k+1) - lw_tau(:,:,k))) + &
+        lw_down(:,:,k) * (2.- (lw_tau(:,:,k+1) - lw_tau(:,:,k)))/(2.+ (lw_tau(:,:,k+1) - lw_tau(:,:,k)))
+    enddo
+  endif 
+
 
 case(B_FRIERSON)
   ! longwave optical thickness function of latitude and pressure
@@ -688,9 +704,16 @@ case(B_GEEN)
 case(B_FRIERSON, B_BYRNE)
   ! compute upward longwave flux by integrating upward
   lw_up(:,:,n+1)    = b_surf
-  do k = n, 1, -1
-     lw_up(:,:,k)   = lw_up(:,:,k+1)*lw_dtrans(:,:,k) + b(:,:,k)*(1.0 - lw_dtrans(:,:,k))
-  end do
+  if (do_normal_integration_method) then 
+    do k = n, 1, -1
+       lw_up(:,:,k)   = lw_up(:,:,k+1)*lw_dtrans(:,:,k) + b(:,:,k)*(1.0 - lw_dtrans(:,:,k))
+    end do
+  else 
+    do k = n, 1, -1
+      lw_up(:,:,k) = 2.*b(:,:,k) * -1.*(lw_tau(:,:,k) - lw_tau(:,:,k+1))/ (2.- (lw_tau(:,:,k) - lw_tau(:,:,k+1))) &
+                      + lw_up(:,:,k+1)* (2. + (lw_tau(:,:,k) - lw_tau(:,:,k+1)))/(2. - (lw_tau(:,:,k) - lw_tau(:,:,k+1)))      
+    end do 
+  endif 
 
 case(B_SCHNEIDER_LIU)
   ! compute upward longwave flux by integrating upward
