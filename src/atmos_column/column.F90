@@ -96,7 +96,7 @@ logical :: json_logging = .false.
 
 real, dimension(2) :: valid_range_t = (/100.,500./)
 
-namelist /column_nml/ use_virtual_temperature, &
+namelist /column_nml/ use_virtual_temperature, valid_range_t, &
                       lon_max, lat_max, num_levels, &
                       print_interval, vert_coord_option, &
                       vert_difference_option, use_virtual_temperature, &
