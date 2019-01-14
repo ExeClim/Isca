@@ -125,16 +125,16 @@ subroutine column_grid_init(num_lon_in, num_lat_in, longitude_origin, south_to_n
       if ((num_lat .ne. 1) .or.(num_lon .ne. 1)) then 
         call error_mesg('column_grid_init', 'cannot set global_average = True with num_lat or num_lon .ne. 1', FATAL)
       endif 
-      deg_lat(num_lat) = 180*acos(1./4.)/pi ! value that yields cos(lat) = 1/4, i.e. the fraction needed for insolation at this latitude to be equal to that of the global average (S/4)
+      deg_lat(num_lat) = 180*acos(pi / 4)/pi ! value that yields the fraction needed for insolation at this latitude to be equal to that of the global average (S/4)
       sin_lat = sin(pi / 180 * deg_lat )
       cos_lat = cos(pi / 180 * deg_lat )
-      wts_lat = 1
+      wts_lat = 1. ! need to set wts lat such that it tricks interpolator_mod into doing the right thing.... 
     else
       if(num_lat .eq. 1) then 
         deg_lat(num_lat) = lat_value
         sin_lat = sin(pi / 180 * deg_lat )
         cos_lat = cos(pi / 180 * deg_lat )
-        wts_lat = 1
+        wts_lat = 1. 
       else
         allocate (sin_hem(lat_max/2))
         allocate (wts_hem(lat_max/2))
@@ -177,7 +177,7 @@ subroutine column_grid_init(num_lon_in, num_lat_in, longitude_origin, south_to_n
     ! this is done in transforms mod when spectral_dynamics is used 
     allocate( lon_boundaries_global(num_lon+1) )
     allocate( lat_boundaries_global(lat_max+1) )
-    lat_boundaries_global(1) = -.5*pi
+    lat_boundaries_global(1) = 0.0
     if (num_lat .eq. 1) then
       lat_boundaries_global(2) = .5*pi 
     else  
