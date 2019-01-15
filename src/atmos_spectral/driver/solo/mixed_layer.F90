@@ -45,17 +45,19 @@ use   time_manager_mod, only: time_type
 
 #ifdef COLUMN_MODEL
 use    column_grid_mod, only: get_deg_lon, get_deg_lat
-use     transforms_mod, only: grid_domain
+use         column_mod, only: get_surf_geopotential
+use       spec_mpp_mod, only: grid_domain
 #else          
 use     transforms_mod, only: get_deg_lat, get_deg_lon, grid_domain
+! mj know about surface topography
+use spectral_dynamics_mod,only: get_surf_geopotential
 #endif
 
 use      vert_diff_mod, only: surf_diff_type
 
 use         mpp_domains_mod, only: mpp_get_global_domain !s added to enable qflux reading
 
-! mj know about surface topography
-use spectral_dynamics_mod,only: get_surf_geopotential
+
 ! mj read SSTs
 use interpolator_mod, only: interpolate_type,interpolator_init&
      &,CONSTANT,interpolator

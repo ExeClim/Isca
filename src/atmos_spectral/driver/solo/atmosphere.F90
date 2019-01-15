@@ -37,7 +37,7 @@ use         time_manager_mod, only: time_type, get_time, operator( + )
 use     press_and_geopot_mod, only: compute_pressures_and_heights
 
 #ifdef COLUMN_MODEL
-  use             spec_mpp_mod, only: grid_domain, get_grid_domain, atmosphere_domain 
+  use             spec_mpp_mod, only: grid_domain, get_grid_domain, atmosphere_domain
   use               column_mod, only: column_init, column, column_end, &
                                       get_axis_id, column_diagnostics, get_num_levels, &
                                       get_surf_geopotential, get_initial_fields
