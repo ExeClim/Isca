@@ -570,7 +570,6 @@ case(B_BYRNE)
      lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
   end do
 
-
 case(B_FRIERSON)
   ! longwave optical thickness function of latitude and pressure
   lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
