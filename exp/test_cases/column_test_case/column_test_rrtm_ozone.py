@@ -214,6 +214,6 @@ if __name__=="__main__":
     exp.namelist['rrtm_radiation_nml']['do_scm_ozone'] = True 
     exp.namelist['rrtm_radiation_nml']['scm_ozone'] = np.squeeze(ds.ozone_1990_interp_area_av.mean('time').values).tolist()
    
-    exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)
+    exp.run(1, use_restart=False, num_cores=NCORES)
     for i in range(2,11):
-        exp.run(i, num_cores=NCORES, overwrite_data=True)
+        exp.run(i, num_cores=NCORES)
