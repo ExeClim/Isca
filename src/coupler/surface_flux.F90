@@ -46,7 +46,7 @@ implicit none
 private
 
 ! ==== public interface ======================================================
-public  surface_flux, gp_surface_flux, calc_simple_surface 
+public  surface_flux, gp_surface_flux
 ! ==== end of public interface ===============================================
 
 ! <INTERFACE NAME="surface_flux">
@@ -995,30 +995,6 @@ dt_tg(:,:,num_levels) = dt_tg(:,:,num_levels)                          &
 
 end subroutine gp_surface_flux
 
-subroutine calc_simple_surface(t_surf, surf_lw_down, net_surf_sw_down, delta_t)
-
-  real, dimension(:,:), intent(in)    :: surf_lw_down, net_surf_sw_down
-  real, intent(in) :: delta_t
-
-  real, dimension(:,:), intent(inout) :: t_surf 
-  
-  real, dimension(size(t_surf,1), size(t_surf,2)) :: deltaT
-  real :: C 
-  real :: sigma 
-  C = 1e7
-  sigma = 5.67e-8
-
-  ! Do:
-  !
-  ! CdT/dt = Fdown - sigmaT4
-  !
-  ! i.e. deltaT = (Fdown - sigmaT4)/C * deltat 
-  
-  deltaT = ((surf_lw_down + net_surf_sw_down) - sigma * t_surf ** 4.) / C * delta_t
-
-  t_surf = t_surf + deltaT  
-
-end subroutine calc_simple_surface  
 
 
 end module surface_flux_mod
