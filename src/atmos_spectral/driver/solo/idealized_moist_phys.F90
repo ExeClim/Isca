@@ -111,6 +111,7 @@ logical :: do_rrtm_radiation = .false.
 !s MiMA uses damping
 logical :: do_damping = .false.
 
+
 logical :: mixed_layer_bc = .false.
 logical :: gp_surface = .false. !s Use Schneider & Liu 2009's prescription of lower-boundary heat flux
 
@@ -254,7 +255,7 @@ integer ::           &
      id_diss_heat_ray,&  ! Heat dissipated by rayleigh bottom drag if gp_surface=.True.
      id_z_tg,        &   ! Relative humidity
      id_cape,        &
-     id_cin, 
+     id_cin 
 
 integer, allocatable, dimension(:,:) :: convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
@@ -560,8 +561,6 @@ endif
 
       endif
 
-axes = get_axis_id()
-
 if(mixed_layer_bc) then
   ! need an initial condition for the mixed layer temperature
   ! may be overwritten by restart file
@@ -577,8 +576,6 @@ elseif(gp_surface) then
 
   call error_mesg('idealized_moist_phys','Note that if grey radiation scheme != Schneider is used, model will seg-fault b/c gp_surface does not define a t_surf, which is required by most grey schemes.', NOTE)
 
-
-
 endif
 
 if(turb) then
@@ -590,6 +587,7 @@ end if
 
 call lscale_cond_init()
 
+axes = get_axis_id()
 
 id_cond_dt_qg = register_diag_field(mod_name, 'dt_qg_condensation',        &
      axes(1:3), Time, 'Moisture tendency from condensation','kg/kg/s')
@@ -740,9 +738,6 @@ real, dimension(1,1,1):: tracer, tracertnd
 integer :: nql, nqi, nqa   ! tracer indices for stratiform clouds
 
 
-integer :: k
-real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: dt_tg_old
-dt_tg_old = dt_tg
 
 if(current == previous) then
    delta_t = dt_real
@@ -874,7 +869,7 @@ dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
 
 
 ! Perform large scale convection
-if ((r_conv_scheme .ne. DRY_CONV).and.(r_conv_scheme .ne. NO_CONV)) then
+if (r_conv_scheme .ne. DRY_CONV) then
   ! Large scale convection is a function of humidity only.  This is
   ! inconsistent with the dry convection scheme, don't run it!
   rain = 0.0; snow = 0.0
@@ -979,7 +974,6 @@ call surface_flux(                                                          &
 endif
 
 ! Now complete the radiation calculation by computing the upward and net fluxes.
-
 
 if(two_stream_gray) then
    call two_stream_gray_rad_up(is, js, Time, &
