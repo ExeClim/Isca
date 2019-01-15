@@ -130,6 +130,9 @@
         character(len=256) :: co2_file='co2'                  !  file name of co2 file to read
         character(len=256) :: co2_variable_name='co2'         !  field name of co2 file to read
 
+        logical            :: do_scm_ozone=.false.            ! read single column ozone from namelist? note: ONLY when using SCM. 
+        real(kind=rb), dimension(100) :: scm_ozone = -1       ! input array for single column ozone. max number of levels = 100
+
 ! secondary gases (CH4,N2O,O2,CFC11,CFC12,CFC22,CCL4)
         logical            :: include_secondary_gases=.false. ! non-zero values for above listed secondary gases?
         real(kind=rb)      :: ch4_val  = 0.                   !  if .true., value for CH4
@@ -200,7 +203,7 @@
              &lonstep, do_zm_tracers, do_zm_rad, &
              &do_precip_albedo, precip_albedo_mode, precip_albedo, precip_lat,&
              &do_read_co2, co2_file, co2_variable_name, use_dyofyr, solrad, &
-             &solday, equinox_day,solr_cnst
+             &solday, equinox_day,solr_cnst, do_scm_ozone, scm_ozone
 
       end module rrtm_vars
 !*****************************************************************************************
@@ -427,7 +430,7 @@
 
           if(do_read_ozone)then
              call interpolator_init (o3_interp, trim(ozone_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
-          endif
+          endif 
 
           if(do_read_h2o)then
              call interpolator_init (h2o_interp, trim(h2o_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
@@ -435,6 +438,12 @@
 
           if(do_read_co2)then
              call interpolator_init (co2_interp, trim(co2_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+          endif
+
+          if(do_scm_ozone)then 
+             call error_mesg('run_rrtm', 
+             'Input o3 will be read in exactly as specified in input (i.e. no plevel interpolation will be performed). Ensure it is specified correctly in namelist.', 
+             WARNING)
           endif
 
           if(store_intermediate_rad .or. id_flux_sw > 0) &
@@ -693,7 +702,24 @@
           !get ozone 
           if(do_read_ozone)then
              call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_file))
-          endif
+          endif 
+          if(do_scm_ozone)then ! Allows for option to specify ozone vertical profile in namelist for SCM. 
+             if(do_read_ozone)then 
+                call error_mesg('run_rrtm', 'Cannot set do_scm_ozone and do_read_ozone = .true.', FATAL)
+             endif 
+             if((size(q,1)>1).or.(size(q,2)>1))then 
+                call error_mesg('run_rrtm', 'Cannot set do_scm_ozone if simulating more than one column, use do_read_ozone instead', FATAL)
+             endif 
+             if(scm_ozone(size(q,3)).eq.-1)then 
+                call error_mesg('run_rrtm', 'Input o3 must be specified on model pressure levels but not enough levels specified', FATAL)
+             endif 
+             if(scm_ozone(size(q,3)+1).ne.-1)then 
+                call error_mesg('run_rrtm', 'Input o3 must be specified on model pressure levels but too many levels specified', FATAL)
+             endif 
+             o3f(1,1,:) = scm_ozone(1:size(q,3))
+             !PUT THIS WARNING SOMEWHERE ELSE 
+          endif 
+
 
           !get co2
           if(do_read_co2)then
@@ -754,7 +780,7 @@
           tfull = reshape(t     (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
           thalf = reshape(t_half(1:si:lonstep,:,sk+1:1:-1),(/ si*sj/lonstep,sk+1 /))
           h2o   = reshape(q_tmp (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
-          if(do_read_ozone)o3 = reshape(o3f(1:si:lonstep,:,sk :1:-1),(/ si*sj/lonstep,sk  /))
+          if((do_read_ozone).or.(do_scm_ozone))o3 = reshape(o3f(1:si:lonstep,:,sk :1:-1),(/ si*sj/lonstep,sk  /))
           if(do_read_co2)co2 = reshape(co2f(1:si:lonstep,:,sk :1:-1),(/ si*sj/lonstep,sk  /))
 
          
