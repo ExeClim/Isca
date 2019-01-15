@@ -37,13 +37,9 @@ use         time_manager_mod, only: time_type, get_time, operator( + )
 use     press_and_geopot_mod, only: compute_pressures_and_heights
 
 #ifdef COLUMN_MODEL
-  use    spectral_dynamics_mod, only: spectral_dynamics_init, spectral_dynamics, spectral_dynamics_end, &
-                                      get_axis_id, spectral_diagnostics, complete_robert_filter
-  use           transforms_mod, only: trans_grid_to_spherical, trans_spherical_to_grid, &
-                                      grid_domain,    &
-                                      spectral_domain, get_grid_domain,  atmosphere_domain
+  use             spec_mpp_mod, only: grid_domain, get_grid_domain, atmosphere_domain 
   use               column_mod, only: column_init, column, column_end, &
-                                      column_diagnostics, get_num_levels, &
+                                      get_axis_id, column_diagnostics, get_num_levels, &
                                       get_surf_geopotential, get_initial_fields
   use          column_grid_mod, only: get_deg_lon, get_deg_lat, get_grid_boundaries, &
                                       get_lon_max, get_lat_max  
