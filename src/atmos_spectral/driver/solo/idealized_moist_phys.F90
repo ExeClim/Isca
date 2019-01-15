@@ -39,7 +39,7 @@ use              column_mod, only: get_num_levels, get_surf_geopotential, get_ax
 use   spectral_dynamics_mod, only: get_axis_id, get_num_levels, get_surf_geopotential
 #endif 
 
-use        surface_flux_mod, only: surface_flux, gp_surface_flux, calc_simple_surface
+use        surface_flux_mod, only: surface_flux, gp_surface_flux
 
 use      sat_vapor_pres_mod, only: lookup_es !s Have added this to allow relative humdity to be calculated in a consistent way.
 
@@ -111,7 +111,6 @@ logical :: do_rrtm_radiation = .false.
 !s MiMA uses damping
 logical :: do_damping = .false.
 
-logical :: simple_surface = .false.
 logical :: mixed_layer_bc = .false.
 logical :: gp_surface = .false. !s Use Schneider & Liu 2009's prescription of lower-boundary heat flux
 
@@ -145,7 +144,7 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roug
                                       land_roughness_prefactor,               &
                                       gp_surface, convection_scheme,          &
                                       bucket, init_bucket_depth, init_bucket_depth_land, & !RG Add bucket 
-                                      max_bucket_depth_land, robert_bucket, raw_bucket, simple_surface
+                                      max_bucket_depth_land, robert_bucket, raw_bucket
 
 
 integer, parameter :: num_time_levels = 2 !RG Add bucket - number of time levels added to allow timestepping in this module
@@ -255,8 +254,7 @@ integer ::           &
      id_diss_heat_ray,&  ! Heat dissipated by rayleigh bottom drag if gp_surface=.True.
      id_z_tg,        &   ! Relative humidity
      id_cape,        &
-     id_cin, &
-     id_t_surf ! surface temperature from simple_surface 
+     id_cin, 
 
 integer, allocatable, dimension(:,:) :: convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
@@ -580,12 +578,7 @@ elseif(gp_surface) then
   call error_mesg('idealized_moist_phys','Note that if grey radiation scheme != Schneider is used, model will seg-fault b/c gp_surface does not define a t_surf, which is required by most grey schemes.', NOTE)
 
 
-  
-elseif(simple_surface) then
-  albedo = 0.0
-  t_surf = t_surf_init + 1.0
-  id_t_surf = register_diag_field(mod_name, 't_surf', &
-                   axes(1:2), Time, 'Surface temperature', 'K')
+
 endif
 
 if(turb) then
@@ -934,7 +927,7 @@ if(.not.mixed_layer_bc) then
 !!$  t_surf = surface_temperature(tg(:,:,:,previous), p_full(:,:,:,current), p_half(:,:,:,current))
 end if
 
-if((.not.gp_surface).and.(.not.simple_surface)) then 
+if(.not.gp_surface) then 
 call surface_flux(                                                          &
                   tg(:,:,num_levels,previous),                              &
  grid_tracers(:,:,num_levels,previous,nsphum),                              &
@@ -987,11 +980,6 @@ endif
 
 ! Now complete the radiation calculation by computing the upward and net fluxes.
 
-
-if(simple_surface) then
-  call calc_simple_surface(t_surf, surf_lw_down, net_surf_sw_down, delta_t)
-  if (id_t_surf > 0) used = send_data(id_t_surf, t_surf, Time)
-endif
 
 if(two_stream_gray) then
    call two_stream_gray_rad_up(is, js, Time, &
