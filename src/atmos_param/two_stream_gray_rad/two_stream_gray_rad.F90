@@ -557,9 +557,8 @@ case(B_BYRNE)
   !      Land–ocean warming contrast over a wide range of climates:
   !      Convective quasi-equilibrium theory and idealized simulations.
   !      J. Climate 26, 4000–4106 (2013).
-  
-  do k = 1, n
 
+  do k = 1, n
     lw_del_tau    = (bog_a*bog_mu + 0.17 * log(carbon_conc/360.)  + bog_b*q(:,:,k)) * (( p_half(:,:,k+1)-p_half(:,:,k) ) / pstd_mks_earth)
     lw_dtrans(:,:,k) = exp( - lw_del_tau )
 
@@ -568,7 +567,7 @@ case(B_BYRNE)
   ! compute downward longwave flux by integrating downward
   lw_down(:,:,1)      = 0.
   do k = 1, n
-      lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
+     lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
   end do
 
 
