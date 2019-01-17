@@ -27,7 +27,7 @@ use      column_grid_mod, only: area_weighted_global_mean
 
 use        constants_mod, only: rdgas
 
-use       transforms_mod, only: get_grid_domain
+use         spec_mpp_mod, only: get_grid_domain
 
 implicit none
 private
