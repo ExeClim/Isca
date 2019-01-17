@@ -32,10 +32,11 @@ use      dry_convection_mod, only: dry_convection_init, dry_convection
 
 use        diag_manager_mod, only: register_diag_field, send_data
 
-use          transforms_mod, only: get_grid_domain
 #ifdef COLUMN_MODEL 
 use              column_mod, only: get_num_levels, get_surf_geopotential, get_axis_id
+use            spec_mpp_mod, only: get_grid_domain, grid_domain 
 #else
+use          transforms_mod, only: get_grid_domain, grid_domain
 use   spectral_dynamics_mod, only: get_axis_id, get_num_levels, get_surf_geopotential
 #endif 
 
@@ -48,8 +49,6 @@ use      damping_driver_mod, only: damping_driver, damping_driver_init, damping_
 use    press_and_geopot_mod, only: pressure_variables
 
 use         mpp_domains_mod, only: mpp_get_global_domain !s added to enable land reading
-
-use          transforms_mod, only: grid_domain
 
 use tracer_manager_mod, only: get_number_tracers, query_method
 

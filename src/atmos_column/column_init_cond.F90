@@ -16,8 +16,6 @@ use              mpp_domains_mod, only: mpp_get_global_domain
 use                 spec_mpp_mod, only: grid_domain, get_grid_domain
 use          vert_coordinate_mod, only: compute_vert_coord
 use         press_and_geopot_mod, only: press_and_geopot_init, pressure_variables
-use     topog_regularization_mod, only: compute_lambda, regularize
-use               topography_mod, only: gaussian_topog_init, get_topog_mean, get_ocean_mask
 use              tracer_type_mod, only: tracer_type
 
 implicit none

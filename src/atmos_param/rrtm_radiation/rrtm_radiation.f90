@@ -233,7 +233,11 @@
                                       &write_version_number, stdlog, &
                                       &error_mesg, NOTE, WARNING, FATAL
           use time_manager_mod, only: time_type, length_of_day, get_time
-	  use transforms_mod,   only: get_grid_domain
+#ifdef COLUMN_MODEL
+          use spec_mpp_mod,     only: get_grid_domain 
+#else
+          use transforms_mod,   only: get_grid_domain 
+#endif
 ! Local variables
           implicit none
           
@@ -540,7 +544,11 @@
 
           use diag_manager_mod, only: register_diag_field, send_data
           use time_manager_mod,only:  time_type
+#ifdef COLUMN_MODEL
+          use  column_grid_mod, only: area_weighted_global_mean 
+#else
           use transforms_mod,only:    area_weighted_global_mean
+#endif
 !---------------------------------------------------------------------------------------------------------------
 ! In/Out variables
           implicit none
