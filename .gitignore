@@ -27,3 +27,6 @@ src/extra/python/scripts/archived/
 mima_pz.txt
 test/.cache
 test/results.xml
+src/atmos_param/socrates/src/trunk*
+tmp_*
+tmp.*
