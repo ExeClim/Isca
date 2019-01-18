@@ -187,6 +187,7 @@ subroutine column_grid_init(num_lon_in, num_lat_in, longitude_origin, south_to_n
         lat_boundaries_global(j+1) = asin(sum_wts-1.)
       end do
       lat_boundaries_global(lat_max+1) = .5*pi
+      lat_boundaries_global(1) = -0.5*pi
       if (.not. south_to_north_local) then
         lat_boundaries_global(:) = -lat_boundaries_global(:)
       end if
