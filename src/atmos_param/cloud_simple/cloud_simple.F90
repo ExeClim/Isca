@@ -26,7 +26,7 @@ module cloud_simple_mod
   logical :: do_simple_rhcrit = .true.
   logical :: do_read_scm_rhcrit = .false.
   logical :: do_linear_diag = .false.
-  real :: FILL_VALUE = -999 ! Fill value for arrays
+  real, parameter :: FILL_VALUE = -999 ! Fill value for arrays
   real, dimension(100) :: scm_rhcrit = FILL_VALUE   ! Input array for single column critical RH. Max number of levels = 100
   real, dimension(100,2) :: scm_linear_coeffs = FILL_VALUE
 
