@@ -3,7 +3,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 8
+NCORES = 16
 NUM_LEVELS = 25
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
@@ -50,9 +50,9 @@ diag.add_field('socrates', 'soc_ozone', time_avg=True)
 #diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
 
-cf_diag_formula_names = ['sundqvist', 'sundqvist', 'smith']
-rhc_profile_method_names = ['Inversed Sundqvist RHc', 'Fitted Sundqvist RHc', 'Fitted Smith RHc']
-rhc_profile_files = ['RHc_profile_daily_mean.npy', 'rhc_sundqvist.npy', 'rhc_smith.npy']
+cf_diag_formula_names = ['sundqvist', 'sundqvist', 'smith', 'spookie']
+rhc_profile_method_names = ['Inversed Sundqvist RHc', 'Fitted Sundqvist RHc', 'Fitted Smith RHc', 'Spookie RHc']
+rhc_profile_files = ['RHc_profile_daily_mean.npy', 'rhc_sundqvist.npy', 'rhc_smith.npy', 'rhc_spookie.npy']
 rhc_f_path = '/home/links/ql260/Documents/Exps_Analysis/clouds/data/'
 
 for cf_diag_formula_name, rhc_nm, rhc_fn in zip(cf_diag_formula_names,
@@ -203,5 +203,5 @@ for cf_diag_formula_name, rhc_nm, rhc_fn in zip(cf_diag_formula_names,
             cb.compile(debug=False)
             exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False) #, run_idb=True)
 
-            for i in range(2, 24):
+            for i in range(2, 25):
                 exp.run(i, num_cores=NCORES)
