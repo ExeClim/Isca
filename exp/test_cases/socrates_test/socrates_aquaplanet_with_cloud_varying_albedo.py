@@ -49,7 +49,7 @@ diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_coszen', time_avg=True) 
 #diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
-for ALBEDO in [0.6, 0.5, 0.4]:
+for ALBEDO in [0.6, 0.3, 0.5, 0.4]:
     exp = Experiment('soc_test_aquaplanet_with_clouds_albedo_'+str(ALBEDO), codebase=cb)
     exp.clear_rundir()
     exp.diag_table = diag
@@ -192,6 +192,6 @@ for ALBEDO in [0.6, 0.5, 0.4]:
             cb.compile(debug=False)
             exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
 
-            for i in range(2,121):
+            for i in range(2,25):
                 exp.run(i, num_cores=NCORES)
 
