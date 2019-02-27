@@ -244,11 +244,17 @@ else if(uppercase(trim(rad_scheme)) == 'SCHNEIDER') then
   lw_scheme = B_SCHNEIDER_LIU
   call error_mesg('two_stream_gray_rad','Using Schneider & Liu (2009) radiation scheme for GIANT PLANETS.', NOTE)
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 else if (uppercase(trim(rad_scheme)) == 'NAKAJIMA') then
   lw_scheme = B_NAKAJIMA
   call error_mesg('two_stream_gray_rad','Using Nakajima (1992) radiation scheme.', NOTE)
 >>>>>>> Added Nakajima 1992 radiation scheme
+=======
+else if (uppercase(trim(rad_scheme)) == 'NAKAJIMA') then
+  lw_scheme = B_NAKAJIMA
+  call error_mesg('two_stream_gray_rad','Using Nakajima (1992) radiation scheme.', NOTE)
+>>>>>>> c520a8b7c09a7b787ac49e7c252d23f99efed4ba
 else
   call error_mesg('two_stream_gray_rad','"'//trim(rad_scheme)//'"'//' is not a valid radiation scheme.', FATAL)
 endif
