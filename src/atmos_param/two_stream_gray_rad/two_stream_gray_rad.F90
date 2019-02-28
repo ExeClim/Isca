@@ -28,7 +28,8 @@ module two_stream_gray_rad_mod
                                     mpp_pe, close_file, error_mesg, &
                                     NOTE, FATAL,  uppercase
 
-   use constants_mod,         only: stefan, cp_air, grav, pstd_mks, pstd_mks_earth, seconds_per_sol, orbital_period
+   use constants_mod,         only: stefan, cp_air, grav, pstd_mks, pstd_mks_earth, seconds_per_sol, orbital_period, &
+                                    rdgas, rvgas
 
    use    diag_manager_mod,   only: register_diag_field, send_data
 
@@ -88,7 +89,7 @@ real    :: dt_rad_avg     = -1
 character(len=32) :: rad_scheme = 'frierson'
 
 integer, parameter :: B_GEEN = 1,      B_FRIERSON = 2, &
-                      B_BYRNE = 3, B_SCHNEIDER_LIU=4
+                      B_BYRNE = 3, B_SCHNEIDER_LIU=4, B_NAKAJIMA=5
 integer, private :: sw_scheme = B_FRIERSON
 integer, private :: lw_scheme = B_FRIERSON
 
@@ -117,6 +118,14 @@ real :: bog_a = 0.8678
 real :: bog_b = 1997.9
 real :: bog_mu = 1.0
 
+! parameters for Nakajima 1992 radiation scheme
+real :: naka_kv = 0.01    !vapour absorption coefficient, units: m2 kg-1 
+real :: naka_kn = 0.0001  !non-condensable absorption coefficient, units: m2 kg-1
+
+! constants for Nakajima 1992 radiation scheme
+real :: naka_mv = 18e-3 ! vapour molecular weight, units: kg mol-1
+real :: naka_mn = 18e-3 ! non-condensable molecular weight, units: kg mol-1 
+
 real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 !s albedo now defined in mixed_layer_init
 real, allocatable, dimension(:,:)   :: b_surf, b_surf_gp
 real, allocatable, dimension(:,:,:) :: b, tdt_rad, tdt_solar
@@ -136,6 +145,11 @@ logical                             :: do_read_co2=.false.
 type(interpolate_type),save         :: co2_interp           ! use external file for co2
 character(len=256)                  :: co2_file='co2'       !  file name of co2 file to read
 character(len=256)                  :: co2_variable_name='co2'       !  file name of co2 file to read
+!extras for reading in h2o concentration
+logical                             :: do_read_h2o=.false.
+type(interpolate_type),save         :: h2o_interp ! same as for co2
+character(len=256)                  :: h2o_file='h2o'
+
 
 
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
@@ -147,7 +161,9 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 		   window, carbon_conc, rad_scheme, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
            use_time_average_coszen, dt_rad_avg,&
-           diabatic_acce !Schneider Liu values
+           diabatic_acce, & !Schneider Liu values
+           do_read_h2o, h2o_file, & ! for reading h2o
+           naka_kn, naka_kv ! nakajima rad absorption coefficients 
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -209,6 +225,10 @@ if(do_read_co2)then
    call interpolator_init (co2_interp, trim(co2_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
 endif
 
+if(do_read_h2o)then
+  call interpolator_init(h2o_interp, trim(h2o_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+endif
+
 
 if(uppercase(trim(rad_scheme)) == 'GEEN') then
   lw_scheme = B_GEEN
@@ -223,6 +243,9 @@ else if(uppercase(trim(rad_scheme)) == 'BYRNE') then
 else if(uppercase(trim(rad_scheme)) == 'SCHNEIDER') then
   lw_scheme = B_SCHNEIDER_LIU
   call error_mesg('two_stream_gray_rad','Using Schneider & Liu (2009) radiation scheme for GIANT PLANETS.', NOTE)
+else if (uppercase(trim(rad_scheme)) == 'NAKAJIMA') then
+  lw_scheme = B_NAKAJIMA
+  call error_mesg('two_stream_gray_rad','Using Nakajima (1992) radiation scheme.', NOTE)
 else
   call error_mesg('two_stream_gray_rad','"'//trim(rad_scheme)//'"'//' is not a valid radiation scheme.', FATAL)
 endif
@@ -286,7 +309,7 @@ case(B_GEEN)
   allocate (del_sol_tau      (ie-is+1, je-js+1))
   allocate (sw_tau_k         (ie-is+1, je-js+1))
 
-case(B_BYRNE)
+case(B_BYRNE, B_NAKAJIMA)
   allocate (lw_del_tau       (ie-is+1, je-js+1))
 
 case(B_SCHNEIDER_LIU)
@@ -383,7 +406,7 @@ end subroutine two_stream_gray_rad_init
 ! ==================================================================================
 
 subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, lon, p_half, t,         &
-                           net_surf_sw_down, surf_lw_down, albedo, q)
+                           net_surf_sw_down, surf_lw_down, albedo, q_in)
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
@@ -393,7 +416,7 @@ type(time_type), intent(in)         :: Time_diag
 real, intent(in), dimension(:,:)    :: lat, lon, albedo
 real, intent(out), dimension(:,:)   :: net_surf_sw_down
 real, intent(out), dimension(:,:)   :: surf_lw_down
-real, intent(in), dimension(:,:,:)  :: t, q,  p_half
+real, intent(in), dimension(:,:,:)  :: t, q_in,  p_half
 integer :: i, j, k, n, dyofyr
 
 integer :: seconds, year_in_s, days
@@ -401,13 +424,27 @@ real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_
 logical :: used
 
 
-real ,dimension(size(q,1),size(q,2),size(q,3)) :: co2f
+real ,dimension(size(q_in,1),size(q_in,2),size(q_in,3)) :: co2f, q ! q to be passed to radiation 
 
 n = size(t,3)
 
 
 
 ! albedo(:,:) = albedo_value !s albedo now set in mixed_layer_init.
+
+
+! If prescribing specific humidity from input file, read in here
+if(do_read_h2o)then
+  call interpolator( h2o_interp, Time_diag, p_half, q, trim(h2o_file))
+else
+  q = q_in ! otherwise set to input model specific humidity 
+endif
+
+! If prescribing co2 from input file, read in here 
+if(do_read_co2)then
+  call interpolator( co2_interp, Time_diag, p_half, co2f, trim(co2_variable_name))
+  carbon_conc = maxval(co2f) !Needs maxval just because co2f is a 3d array of a constant, so maxval is just a way to pick out one number
+endif
 
 ! =================================================================================
 ! SHORTWAVE RADIATION
@@ -444,7 +481,7 @@ if (do_seasonal) then
      call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
   end if
 
-     insolation = solar_constant * coszen
+     insolation = solar_constant * coszen * rrsun
 
 else if (sw_scheme==B_SCHNEIDER_LIU) then
   insolation = (solar_constant/pi)*cos(lat)
@@ -475,7 +512,7 @@ case(B_GEEN)
      sw_down(:,:,k+1)   = sw_down(:,:,k) * sw_dtrans(:,:,k)
   end do
 
-case(B_FRIERSON, B_BYRNE)
+case(B_FRIERSON, B_BYRNE, B_NAKAJIMA)
   ! Default: Frierson handling of SW radiation
   ! SW optical thickness
   sw_tau_0    = (1.0 - sw_diff*sin(lat)**2)*atm_abs
@@ -515,10 +552,9 @@ end select
 ! longwave source function
 b = stefan*t**4
 
-if(do_read_co2)then
-  call interpolator( co2_interp, Time_diag, p_half, co2f, trim(co2_variable_name))
-  carbon_conc = maxval(co2f) !Needs maxval just because co2f is a 3d array of a constant, so maxval is just a way to pick out one number
-endif
+
+
+
 
 
 select case(lw_scheme)
@@ -569,7 +605,26 @@ case(B_BYRNE)
   do k = 1, n
      lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
   end do
+   
+case(B_NAKAJIMA)
+  ! ref: Nakajima, S., Hayashi, Y.-Y., Abe, Y.
+  !      A Study on the "Runaway Greenhouse Effect" with a One-Dimensional
+  !      Radiative-Convective Equilibrium Model
+  !      J. Atmos. Sci. 49, 2256-2266 (1992).
 
+  do k = 1, n
+    lw_del_tau    = 3.0/2.0 * (naka_kv*q(:,:,k)*naka_mv + naka_kn*(rdgas/rvgas - q(:,:,k))*naka_mn) &
+                    / (q(:,:,k)*naka_mv + (rdgas/rvgas - q(:,:,k))*naka_mn) * (p_half(:,:,k+1)-p_half(:,:,k)) / grav
+    lw_dtrans(:,:,k) = exp( - lw_del_tau )
+
+  end do
+
+  ! compute downward longwave flux by integrating downward
+  lw_down(:,:,1)      = 0.
+  do k = 1, n
+     lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
+  end do
+  
 case(B_FRIERSON)
   ! longwave optical thickness function of latitude and pressure
   lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
@@ -685,7 +740,7 @@ case(B_GEEN)
   end do
   lw_up = lw_up + lw_up_win
 
-case(B_FRIERSON, B_BYRNE)
+case(B_FRIERSON, B_BYRNE, B_NAKAJIMA)
   ! compute upward longwave flux by integrating upward
   lw_up(:,:,n+1)    = b_surf
   do k = n, 1, -1
@@ -791,7 +846,7 @@ endif
 if (sw_scheme.eq.B_GEEN) then
   deallocate (sw_dtrans, sw_wv, del_sol_tau, sw_tau_k)
 endif
-if (lw_scheme.eq.B_BYRNE) then
+if ((lw_scheme.eq.B_BYRNE).or.(lw_scheme.eq.B_NAKAJIMA)) then
   deallocate (lw_del_tau)
 endif
 if(lw_scheme.eq.B_SCHNEIDER_LIU) then
@@ -799,6 +854,7 @@ if(lw_scheme.eq.B_SCHNEIDER_LIU) then
 endif
 
 if(do_read_co2)call interpolator_end(co2_interp)
+if(do_read_h2o)call interpolator_end(h2o_interp)
 
 end subroutine two_stream_gray_rad_end
 

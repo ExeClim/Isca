@@ -581,7 +581,7 @@
           real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
 
 	  integer :: year_in_s
-          real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
+          real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg, insolation
 
 
 
@@ -656,6 +656,7 @@
 	     ! Seasonal Cycle: Use astronomical parameters to calculate insolation
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
           end if
+          insolation = solr_cnst * rrsun
 
 ! input files: only deal with case where we don't need to call radiation at all
           if(do_read_radiation .and. do_read_sw_flux .and. do_read_lw_flux) then
@@ -787,7 +788,7 @@
                   pfull     , phalf    , tfull    , thalf        , tsrf         , &
                   h2o       , o3       , co2      , ch4_val*ones , n2o_val*ones , o2_val*ones , &
                   albedo_rr , albedo_rr, albedo_rr, albedo_rr, &
-                  cosz_rr   , solrad   , dyofyr   , solr_cnst, &
+                  cosz_rr   , solrad   , dyofyr   , insolation, &
                   inflglw   , iceflglw , liqflglw , &
                   ! cloud parameters
                   zeros     , taucld   , sw_zro   , sw_zro   , sw_zro , &
@@ -801,7 +802,7 @@
                   pfull     , phalf    , tfull    , thalf    , tsrf , &
                   h2o       , o3       , co2      , zeros    , zeros, zeros, &
                   albedo_rr , albedo_rr, albedo_rr, albedo_rr, &
-                  cosz_rr   , solrad   , dyofyr   , solr_cnst, &
+                  cosz_rr   , solrad   , dyofyr   , insolation, &
                   inflglw   , iceflglw , liqflglw , &
                   ! cloud parameters
                   zeros     , taucld   , sw_zro   , sw_zro   , sw_zro , &
@@ -1057,12 +1058,14 @@
 !*****************************************************************************************
 
         subroutine rrtm_radiation_end
-          use rrtm_vars, only: do_read_ozone,o3_interp, do_read_co2, co2_interp
+          use rrtm_vars, only: do_read_ozone,o3_interp, do_read_co2, co2_interp, &
+               do_read_h2o, h2o_interp
           use interpolator_mod, only: interpolator_end
           implicit none
 
           if(do_read_ozone)call interpolator_end(o3_interp)
           if(do_read_co2)call interpolator_end(co2_interp)
+          if(do_read_h2o)call interpolator_end(h2o_interp) ! NTL change here, interp_end for h2o
 
         end subroutine rrtm_radiation_end
 
