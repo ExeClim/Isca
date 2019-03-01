@@ -18,6 +18,8 @@ use           vert_diff_mod, only: vert_diff_init, gcm_vert_diff_down, gcm_vert_
 
 use two_stream_gray_rad_mod, only: two_stream_gray_rad_init, two_stream_gray_rad_down, two_stream_gray_rad_up, two_stream_gray_rad_end
 
+use two_stream_scatter_rad_mod, only: two_stream_scatter_rad_init, two_stream_scatter_rad, two_stream_scatter_rad_end
+
 use         mixed_layer_mod, only: mixed_layer_init, mixed_layer, mixed_layer_end, albedo_calc
 
 use         lscale_cond_mod, only: lscale_cond_init, lscale_cond, lscale_cond_end
@@ -103,6 +105,7 @@ logical :: do_ras = .false.
 
 !s Radiation options
 logical :: two_stream_gray = .true.
+logical :: two_stream_scatter = .false. 
 logical :: do_rrtm_radiation = .false.
 
 !s MiMA uses damping
@@ -135,7 +138,8 @@ real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
 ! end RG Add bucket
 
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
-                                      two_stream_gray, do_rrtm_radiation, do_damping,&
+                                      two_stream_gray, two_stream_scatter, &
+                                      do_rrtm_radiation, do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
                                       land_option, land_file_name, land_field_name,   & !s options for idealised land
@@ -321,6 +325,10 @@ d378 = 1.-d622
 !s need to make sure that gray radiation and rrtm radiation are not both called.
 if(two_stream_gray .and. do_rrtm_radiation) &
    call error_mesg('physics_driver_init','do_grey_radiation and do_rrtm_radiation cannot both be .true.',FATAL)
+if(two_stream_gray .and. two_stream_scatter) &
+   call error_mesg('physics_driver_init','do_grey_radiation and two_stream_scatter cannot both be .true.',FATAL)
+if(two_stream_scatter .and. do_rrtm_radiation) &
+   call error_mesg('physics_driver_init','two_stream_scatter and do_rrtm_radiation cannot both be .true.',FATAL)
 
 if(uppercase(trim(convection_scheme)) == 'NONE') then
   r_conv_scheme = NO_CONV
@@ -677,6 +685,8 @@ end select
 
 if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, dt_real)
 
+if(two_stream_scatter) call two_stream_scatter_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, dt_real)
+
 #ifdef RRTM_NO_COMPILE
     if (do_rrtm_radiation) then
         call error_mesg('idealized_moist_phys','do_rrtm_radiation is .true. but compiler flag -D RRTM_NO_COMPILE used. Stopping.', FATAL)
@@ -978,6 +988,20 @@ if(two_stream_gray) then
                      dt_tg(:,:,:), albedo)
 end if
 
+if(two_stream_scatter) then
+  call two_stream_scatter_rad(is, js, ie, je, Time, &
+                    rad_lat(:,:),           &
+                    rad_lon(:,:),           & 
+                    p_half(:,:,:,current),  &
+                    p_full(:,:,:,current),  &
+                    t_surf(:,:),            &
+                    tg(:,:,:,previous),     &
+                    dt_tg(:,:,:),     &
+                    net_surf_sw_down(:,:),  &
+                    surf_lw_down(:,:), albedo, &
+                    grid_tracers(:,:,:,previous,nsphum))
+end if
+
 #ifdef RRTM_NO_COMPILE
     if (do_rrtm_radiation) then
         call error_mesg('idealized_moist_phys','do_rrtm_radiation is .true. but compiler flag -D RRTM_NO_COMPILE used. Stopping.', FATAL)
@@ -1196,6 +1220,7 @@ subroutine idealized_moist_phys_end
 
 deallocate (dt_bucket, filt)
 if(two_stream_gray)      call two_stream_gray_rad_end
+if(two_stream_scatter)   call two_stream_scatter_rad_end
 if(lwet_convection)      call qe_moist_convection_end
 if(do_ras)               call ras_end
 
