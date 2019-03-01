@@ -66,34 +66,33 @@ logical :: use_time_average_coszen = .false. !s if .true., then time-averaging i
 real    :: dt_rad_avg     = -1
 real :: diabatic_acce = 1.0 ! artefact from gp scheme in two_stream_grey_rad 
 
+! co2 
+real :: carbon_conc = 360.0 ! ppmv
+
 character(len=32) :: sw_optical_depth = 'generic'
 integer :: sw_flag 
 integer, parameter :: sw_TRANSPARENT = 1
-integer, parameter :: sw_DECAY = 2
-integer, parameter :: sw_GENERIC = 3
+integer, parameter :: sw_GENERIC = 2
 
-! parameters for optical depths etc (all defaults for Venus)
-real :: lw_chi_sca = 0.0 ! lw scattering crosssection for cloud 
-real :: sw_chi_sca = 0.6e-11 ! sw scattering crosssection for cloud 
-real :: lw_kappa0 = 9.0e-4 !lw absorption coefficient 
-real :: sw_kappa0 = 12.48  ! sw absorption coefficient (quite different to lw
-                              !coefficient as normalised differently )
-real :: lw_p_abs_ref = 9.2e6 ! reference pressure for lw abs coeff normalization
-real :: sw_p_abs_ref = 9.2e6 ! reference pressure for lw abs coeff normalization 
-real :: pcloud = 1.e5 ! pressure centre for cloud 
-real :: dpcloud = .4e5 ! geometric thickness of cloud 
-real :: qmax = 5.0e-6 ! mmr for cloud droplets 
+! parameters for lw optical depths etc (defaults to BOG... i.e. no scattering)
+real :: lw_sca_a = 0.0
+real :: lw_sca_b = 0.0
+real :: lw_sca_c = 0.0 
+real :: lw_abs_a = 0.1627 / (grav * pstd_mks_earth)
+real :: lw_abs_b = 1997.9 / (grav * pstd_mks_earth)
+real :: lw_abs_c = 0.17 / (grav * pstd_mks_earth)
+
+! parameters for sw optical depths (defaults to BOG... i.e. no scattering or absorption)
+real :: sw_sca_a = 0.0
+real :: sw_sca_b = 0.0
+real :: sw_sca_c = 0.0
+real :: sw_abs_a = 0.0
+real :: sw_abs_b = 0.0 
 
 real :: gamma = 1.0 ! associated with closure for integrating over all angles 
-real :: gammaprime = 1.0 ! " " " 
+real :: gammaprime = 1.0 ! " " " (see discussion in Pierrehumbert, 2010, Chapter 5)
 real :: g_asym = 0.0 ! assymetry parameter 
 
-! parameters for shortwave radiation when not calculated by scattering code 
-real    :: del_sol         = 1.4
-real    :: del_sw          = 0.0
-real    :: atm_abs         = 0.0
-real    :: sw_diff         = 0.0
-real    :: solar_exponent  = 4.0
 
 real, allocatable, dimension(:,:)   :: insolation, p2,  sw_tau_0 !s albedo now defined in mixed_layer_init
 real, allocatable, dimension(:,:)   :: pi_B_surf
@@ -106,7 +105,6 @@ real, allocatable, dimension(:,:,:) :: lw_tau, sw_tau, lw_del_tau, sw_del_tau!, 
 real, allocatable, dimension(:,:,:) :: lw_ss_albedo, sw_ss_albedo
 real, allocatable, dimension(:,:,:) :: lw_abs_coeff, lw_scatter_coeff, &
                                        sw_abs_coeff, sw_scatter_coeff
-real, allocatable, dimension(:,:,:) :: q_cloud
 real, allocatable, dimension(:,:,:) :: sw_gammab, sw_gammaone, sw_gammatwo, &
                                        sw_gammaminus, sw_gammaplus 
 real, allocatable, dimension(:,:,:) :: lw_gammab, lw_gammaone, lw_gammatwo, &
@@ -117,22 +115,23 @@ real, allocatable, dimension(:,:)   :: olr, net_lw_surf, toa_sw_in, &
 
 real, save :: pi, deg_to_rad , rad_to_deg
 
-! !extras for reading in co2 concentration
-! logical                             :: do_read_co2=.false.
-! type(interpolate_type),save         :: co2_interp           ! use external file for co2
-! character(len=256)                  :: co2_file='co2'       !  file name of co2 file to read
-! character(len=256)                  :: co2_variable_name='co2'       !  file name of co2 file to read
+!extras for reading in co2 concentration
+logical                             :: do_read_co2=.false.
+type(interpolate_type),save         :: co2_interp           ! use external file for co2
+character(len=256)                  :: co2_file='co2'       !  file name of co2 file to read
+character(len=256)                  :: co2_variable_name='co2'       !  file name of co2 file to read
 
 
-namelist/two_stream_scatter_rad_nml/ solar_constant, del_sol, &
-           atm_abs, sw_diff, del_sw, solar_exponent, do_seasonal, &
-           sw_optical_depth, solday, equinox_day,  &
+namelist/two_stream_scatter_rad_nml/ solar_constant, &
+           do_seasonal, solday, equinox_day,  &
            use_time_average_coszen, dt_rad_avg,&
            diabatic_acce,& !Schneider Liu values 
-           lw_chi_sca, sw_chi_sca, lw_kappa0, &
-           sw_kappa0, lw_p_abs_ref, sw_p_abs_ref, &
-           pcloud, dpcloud, qmax, gamma, gammaprime, g_asym 
-           !do_read_co2, co2_file, co2_variable_name,
+           lw_abs_a, lw_abs_b, lw_abs_c, &
+           lw_sca_a, lw_sca_b, lw_sca_c, &
+           sw_abs_a, sw_abs_b, &
+           sw_sca_a, sw_sca_b, sw_sca_c, &
+           gamma, gammaprime, g_asym, &
+           do_read_co2, co2_file, co2_variable_name, carbon_conc
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -142,7 +141,7 @@ integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_swup_toa, &
            id_lwup_sfc, id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, &
            id_flux_sw, id_coszen, id_fracsun, &
            id_flux_lw_up, id_flux_lw_down, id_flux_sw_up, id_flux_sw_down, &
-           id_flux_sw_down_direct!, id_co2
+           id_flux_sw_down_direct, id_co2
 
 character(len=18), parameter :: mod_name = 'two_stream_scatter'
 
@@ -193,14 +192,12 @@ call astronomy_init
 
 if(dt_rad_avg .le. 0) dt_rad_avg = dt_real !s if dt_rad_avg is set to a value in nml then it will be used instead of dt_real
 
-! if(do_read_co2)then
-!    call interpolator_init (co2_interp, trim(co2_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
-! endif
+if(do_read_co2)then
+   call interpolator_init (co2_interp, trim(co2_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+endif
 
 if (uppercase(trim(sw_optical_depth)) == 'TRANSPARENT') then 
   sw_flag = sw_TRANSPARENT
-elseif (uppercase(trim(sw_optical_depth)) == 'DECAY') then
-  sw_flag = sw_DECAY
 elseif (uppercase(trim(sw_optical_depth)) == 'GENERIC') then
   sw_flag = sw_GENERIC
 else
@@ -352,10 +349,10 @@ allocate (fracsun          (ie-is+1, je-js+1)) !jp from astronomy.f90 : fraction
                  'daylight fraction of time interval', &
                  'none', missing_value=missing_value      )
 
-    ! id_co2  = &
-    !            register_diag_field ( mod_name, 'co2', Time, &
-    !              'co2 concentration', &
-    !              'ppmv', missing_value=missing_value      )
+    id_co2  = &
+               register_diag_field ( mod_name, 'co2', Time, &
+                 'co2 concentration', &
+                 'ppmv', missing_value=missing_value      )
 
 return
 end subroutine two_stream_scatter_rad_init
@@ -382,9 +379,14 @@ real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_
 logical :: used
 
 
-!real ,dimension(size(q,1),size(q,2),size(q,3)) :: co2f
+real ,dimension(size(q,1),size(q,2),size(q,3)) :: co2f
 
 n = size(t,3)
+
+if(do_read_co2)then
+  call interpolator( co2_interp, Time_diag, p_half, co2f, trim(co2_variable_name))
+  carbon_conc = maxval(co2f) !Needs maxval just because co2f is a 3d array of a constant, so maxval is just a way to pick out one number
+endif
 
 ! =================================================================================
 ! COMPUTE INSOLATION 
@@ -453,35 +455,6 @@ case(sw_TRANSPARENT)
     sw_up(:,:,k) = albedo(:,:) * sw_down_direct(:,:,n+1)
   enddo 
 
-case(sw_DECAY)
-  ! exponential decay applied to downward direct beam. Relfected into 
-  ! upward diffuse beam at surface. Upward diffuse beam is then left 
-  ! unchanged from surface to TOA. 
-  !
-  ! Optical depth definition as in Frierson (2006)
-  ! Fluxes computed following Pierrehumbert (2010)
-
-  ! compute optical depth
-  sw_tau_0    = (1.0 - sw_diff*sin(lat)**2)*atm_abs
-
-  ! compute optical depths for each model level
-  do k = 1, n+1
-    sw_tau(:,:,k) = sw_tau_0 * (p_half(:,:,k)/pstd_mks)**solar_exponent
-  end do
-  sw_del_tau = sw_tau(:,:,2:n+1) - sw_tau(:,:,1:n)
-
-
-  sw_down_direct(:,:,1) = insolation(:,:)
-  do k = 1, n ! NOTE: Might not want coszen here, ask Ray. 
-    sw_down_direct(:,:,k+1) = sw_down_direct(:,:,k) * &
-                             (2*coszen(:,:) - sw_del_tau(:,:,k)) / & 
-                             (2*coszen(:,:) + sw_del_tau(:,:,k))
-  enddo 
-  do k = 1, n+1 
-    sw_up(:,:,k) = albedo(:,:) * sw_down_direct(:,:,n+1)
-  enddo 
-
-
 case(sw_GENERIC)
   ! Absorption and scattering in shortwave applied to both the upward and 
   ! downward beams. Total SW flux is made up of three components: a downward 
@@ -499,61 +472,30 @@ case(sw_GENERIC)
   !
   ! Method follows Pierrehumbert (2010): Princples of Planetary Climate. Chapter 
   ! 5, Page 353. 
-  !
-  ! Currently, optical depths are set up as follows. An absorption coefficient
-  ! is defined so that optical depth increases linearly with pressure through the
-  ! entire depth of the atmosphere. Additionally, a 'cloud' is defined centred on a 
-  ! pressure p_cloud, with a geometric thickness dp_cloud. The cloud has a maximum 
-  ! cloud particle mass mixing ratio qmax. This cloud is treated as a conservative, 
-  ! symmetric scatterer (the symmetric bit is currently hard coded). 
-  !
-  ! (Default parameters set for Venus) pCloud = 1.e5, dpCloud = .4e5 
-  ! qmax = 5.0e-6 
 
   
   ! Compute optical properties of atmosphere 
-  ! Define cloud layer 
-  q_cloud = qmax * exp( - (p_full - pcloud)**2. / (dpcloud**2))
-  ! Compute scattering coefficient 
-  sw_scatter_coeff  = sw_chi_sca * (q_cloud + 0.1)
+  ! Compute scattering coefficient (currently no contribution from carbon_conc, easily added though...)
+  sw_scatter_coeff  = sw_sca_a + sw_sca_b * q 
   ! Compute absorption coefficient 
-  sw_abs_coeff = sw_kappa0 / sw_p_abs_ref 
+  sw_abs_coeff = sw_abs_a + sw_abs_b*q 
   ! Compute single scattering albedo 
   where((sw_abs_coeff + sw_scatter_coeff).ne.0.0) 
     sw_ss_albedo = sw_scatter_coeff / (sw_abs_coeff + sw_scatter_coeff)
   endwhere 
   ! Compute SW del_tau 
-  !sw_del_tau =  1 / grav * (sw_abs_coeff + sw_scatter_coeff) * & 
-  !              (p_half(:,:,1:n) - p_half(:,:,2:n+1) )
-  sw_del_tau = (sw_abs_coeff + sw_scatter_coeff) * &
-               (p_half(:,:,1:n) - p_half(:,:,2:n+1) ) / pstd_mks 
+  sw_del_tau =  1 / grav * (sw_abs_coeff + sw_scatter_coeff) * & 
+               (p_half(:,:,1:n) - p_half(:,:,2:n+1) )
 
-  ! do k = 1, n 
-  !   write(*,*) k, 'scatter coeff', sw_scatter_coeff(:, :, k)
-  ! enddo   
-  ! do k = 1, n 
-  !   write(*,*) k, 'abs coeff', sw_abs_coeff(:, :, k)
-  ! enddo 
-
-  ! do k = 1, n 
-  !   write(*,*) k, 'ss albedo', sw_ss_albedo(:, :, k)
-  ! enddo 
 
   ! Compute SW optical depth 
+  ! define optical depth to be zero at surface, following Pierrehumbert(2010)
   sw_tau(:,:,n+1) = 0.0 
   do k = 1, n
     sw_tau(:,:,n+1-k) = sw_tau(:,:,n+2-k) - sw_del_tau(:,:,n+1-k)
-    !write(*,*) k, n, n+1-k, n+2-k
   enddo 
-  ! redefine optical depth to be zero at surface, following Pierrehumbert (2010)
-  !sw_tau_dummy = sw_tau 
-  !sw_tau = sw_tau_dummy(:,:,n+1) - sw_tau 
-  !sw_del_tau = -1 * sw_del_tau 
-  ! do k = 1, n 
-  ! write(*,*) 'tau', sw_tau(:,:,k), 'del_tau', sw_del_tau(:,:,k)
-  ! enddo
 
-  !! gammas   
+  !! gammas (as in Pierrehumbert, 2010)  
   sw_gammaone = gamma *(1.0 - 3./2.*g_asym*sw_ss_albedo) + gammaprime*(1-sw_ss_albedo)
   sw_gammatwo = gamma*(1.0 - 3./2.*g_asym*sw_ss_albedo) - gammaprime*(1-sw_ss_albedo)
   sw_gammab = sw_gammaone - sw_gammatwo 
@@ -564,19 +506,15 @@ case(sw_GENERIC)
 
   ! Compute direct downward radiation 
   sw_down_direct(:,:,1) = insolation(:,:)
-  !write(*,*) frac_of_day, coszen, lat*180/pi
   do k = 1, n 
-    
+    where ((coszen).ne.0.0) 
     sw_down_direct(:,:,k+1) =  sw_down_direct(:,:,k) * &
                              (2*coszen(:,:) + sw_del_tau(:,:,k)) / & 
-                             (2*coszen(:,:) - sw_del_tau(:,:,k))
+                             (2*coszen(:,:) - sw_del_tau(:,:,k)) ! << Will this always be non-zero? 
+    endwhere 
   enddo 
-  ! do k = 1, n
-  !   write(*,*) 'direct down', sw_down_direct(:,:,k), coszen, \
-  !   (2*coszen(:,:) - sw_del_tau(:,:,k))/(2*coszen(:,:) + sw_del_tau(:,:,k))
-  ! enddo 
   
-  ! Zero blackbody radiation for shortwave 
+  !!!! Zero blackbody radiation for shortwave !!!!
   pi_B_surf = 0.0
   pi_B = 0.0
 
@@ -587,27 +525,24 @@ case(sw_GENERIC)
         sw_up(i,j,:) = 0.0
         sw_down(i,j,:) = 0.0
       else 
-      call two_stream_solver(n, albedo(i,j), coszen(i,j), 0.0, &
-                           pi_B(i,j,:)*0.0, sw_down_direct(i,j,:), &
+      call two_stream_solver(n, albedo(i,j), coszen(i,j), pi_B_surf, &
+                           pi_B(i,j,:), sw_down_direct(i,j,:), &
                            sw_del_tau(i,j,:)/2, sw_gammaone(i,j,:), &
                            sw_gammatwo(i,j,:), sw_gammab(i,j,:), &
                            sw_gammaplus(i,j,:), sw_gammaminus(i,j,:), &
-                           sw_up(i,j,:), sw_down(i,j,:))
+                           sw_up(i,j,:), sw_down(i,j,:)) ! zero contribution from in-atmosphere emission (see above)
+                           ! factor 1/2 in optical depth comes from closure after integrating over all angles (only relevant for diffuse beam)
       endif 
-    ! zero contribution from in-atmosphere emission 
+    
     enddo
   enddo 
-  ! do k = 1, n
-  !   write(*,*) 'up', sw_up(:,:,k), 'down', sw_down(:,:,k)
-  ! enddo 
-  ! write(*,*) 'SW HERE SW HERE'
 
 end select 
 
 
 ! =================================================================================
 ! LONGWAVE RADIATION
-! Supports absorption and scattering in the longwave. Currently 
+! Supports absorption and scattering in the longwave. 
 ! 
 ! First order differencing is applied to derivatives w.r.t tau. 
 !
@@ -619,18 +554,6 @@ end select
 !
 ! Method follows Pierrehumbert (2010): Princples of Planetary Climate. Chapter 
 ! 5, Page 353. 
-!
-! Currently, optical depths are set up as follows. An absorption coefficient
-! is defined so that optical depth increases quadratically with pressure through the
-! entire depth of the atmosphere (representing collision induced broadening)
-! Additionally, a 'cloud' is defined centred on a pressure p_cloud, with a 
-! geometric thickness dp_cloud. The cloud has a maximum cloud particle mass 
-! mixing ratio qmax. This cloud absorbs / emits in the longwave but does not 
-! scatter. It is 1* more effective at absorbing/emitting than the background 
-! atmosphere (per unit mass). 
-!
-! (Default parameters set for Venus) pCloud = 1.e5, dpCloud = .4e5 
-! qmax = 5.0e-6 
 
 ! zero fluxes before starting 
 lw_up            = 0.0
@@ -640,37 +563,27 @@ lw_abs_coeff     = 0.0
 lw_ss_albedo     = 0.0
 
 ! Compute optical properties of atmosphere 
-! Compute scattering coefficient 
-lw_scatter_coeff  = lw_chi_sca * q_cloud
+! Compute scattering coefficient (currently no contribution from carbon_conc, easily added though...)
+lw_scatter_coeff  = lw_sca_a + lw_sca_b * q 
 ! Compute absorption coefficient 
-lw_abs_coeff = lw_kappa0 !* (p_full + 0.1 * pcloud) / lw_p_abs_ref ! * p_full for quadratic optical depth in pressure , 
+lw_abs_coeff = lw_abs_a + lw_abs_b * q + lw_abs_c * log(carbon_conc / 360.)
 ! Compute single scattering albedo 
 where ((lw_abs_coeff + lw_scatter_coeff).ne.0.0) 
   lw_ss_albedo = lw_scatter_coeff / (lw_abs_coeff + lw_scatter_coeff)
 endwhere 
 
 ! Compute lw del_tau 
-!lw_del_tau = 1 / grav * (lw_abs_coeff + lw_scatter_coeff) * & 
-!             (p_half(:,:,1:n) - p_half(:,:,2:n+1))
-lw_del_tau = (lw_abs_coeff + lw_scatter_coeff) * &
-               (p_half(:,:,1:n) - p_half(:,:,2:n+1) ) / pstd_mks 
+lw_del_tau = 1 / grav * (lw_abs_coeff + lw_scatter_coeff) * & 
+             (p_half(:,:,1:n) - p_half(:,:,2:n+1))
 
 ! Compute lw optical depth 
+!define optical depth to be zero at surface, following Pierrehumbert (2010)
 lw_tau(:,:,n+1) = 0.0 
 do k = 1, n
   lw_tau(:,:,n+1-k) = lw_tau(:,:,n+2-k) - lw_del_tau(:,:,n+1-k)
 enddo 
-!write(*,*) 'taus:', lw_tau, 'endtaus', lw_del_tau(:, :, n), lw_abs_coeff(:,:,n),(p_half(:,:,n) - p_half(:,:,n+1)),pstd_mks
-! ! redefine optical depth to be zero at surface, following Pierrehumbert (2010)
-! lw_tau_dummy = lw_tau 
-! lw_tau = lw_tau_dummy(:,:,n+1) - lw_tau 
-! lw_del_tau = -1 * lw_del_tau 
 
-! do k = 1, n 
-!   write(*,*) 'lw_tau', lw_tau(:,:,k), 'lw_del_tau', lw_del_tau(:,:,k)
-! enddo
-
-!! gammas   
+!! gammas, as defined in Pierrehumbert (2010)
 lw_gammaone = gamma *(1.0 - 3./2.*g_asym*lw_ss_albedo) + gammaprime*(1-lw_ss_albedo)
 lw_gammatwo = gamma*(1.0 - 3./2.*g_asym*lw_ss_albedo) - gammaprime*(1-lw_ss_albedo)
 lw_gammab = lw_gammaone - lw_gammatwo 
@@ -679,14 +592,9 @@ do k = 1, n
   lw_gammaminus(:,:,k) = 0.5*lw_ss_albedo(:,:,k) + gamma*lw_ss_albedo(:,:,k)*3./2.*g_asym*coszen(:,:) 
 enddo 
 
-
-
 ! Compute black body radiation for longwave 
 pi_B_surf = stefan * t_surf * t_surf * t_surf * t_surf
 pi_B = stefan * t * t * t * t
-
-!write(*,*) pi_B_surf, pi_B, lw_ss_albedo, lw_gammaone, lw_gammatwo, lw_gammab, lw_gammaplus, lw_gammaminus  
-
 
 do i = 1, (ie-is+1)
   do j = 1, (je-js+1)
@@ -697,14 +605,9 @@ do i = 1, (ie-is+1)
                          lw_gammaplus(i,j,:), lw_gammaminus(i,j,:), &
                          lw_up(i,j,:), lw_down(i,j,:))
   ! zero contribution from direct solar beam 
+  ! factor 1/2 comes from integrating over all angles
   enddo
 enddo 
-! do k = 1, n
-!   write(*,*) 'up', lw_up(:,:,k), 'down', lw_down(:,:,k)
-! enddo 
-! write(*,*) 'LW HERE LW HERE'
-
-
 
 
 ! =================================================================================
@@ -756,10 +659,10 @@ if ( id_coszen > 0 ) then
   used = send_data ( id_coszen, coszen, Time_diag)
 endif
 
-!------- carbon dioxide concentration ------------
-! if ( id_co2 > 0 ) then
-!   used = send_data ( id_co2, carbon_conc, Time_diag)
-! endif
+------- carbon dioxide concentration ------------
+if ( id_co2 > 0 ) then
+  used = send_data ( id_co2, carbon_conc, Time_diag)
+endif
 
 !------- outgoing lw flux toa (olr) -------
 if ( id_olr > 0 ) then
@@ -871,7 +774,7 @@ subroutine two_stream_scatter_rad_end
 
 
 
-!if(do_read_co2)call interpolator_end(co2_interp)
+if(do_read_co2)call interpolator_end(co2_interp)
 
 end subroutine two_stream_scatter_rad_end
 
@@ -903,7 +806,7 @@ N = 2*(nlevels + 1)
 I_direct_full = (I_direct(1:nlevels) + I_direct(2:nlevels+1)) / 2 ! move I_direct to full model levels, i.e. I_1 = (I_1/2 + I_3/2) / 2 (approximate, not sure how accurate)
 
 
-! MAKE MATRIX OF ABSORPTION / SCATTERING COEFFICIENTS 
+! MAKE MATRIX OF ABSORPTION / SCATTERING COEFFICIENTS - band diagonal matrix 
 A = 0.0
 ! fill main diagonal 
 lcounter1 = 1
@@ -984,10 +887,8 @@ enddo
 enddo 
 
 ! Make source term 
-
 source_term = 0.0
 source_term(1) = del_tau(1) * (gammab(1) * pi_B(1) + gammaplus(1) * I_direct_full(1) / coszen)
-!write(*,*) 'IDF:', I_direct_full(1), 'COSZ:', coszen, I_direct_full(1) / coszen
 lcounter1 = 2
 lcounter2 = 1
 do i = 3, N-2
@@ -1007,14 +908,11 @@ source_term(N) = del_tau(nlevels) * (-1*gammab(nlevels) * pi_B(nlevels) - gammam
 
 ! call LU factorization  
 CALL NSBFAC(B,N,N,ML,MU,IPVT,IND)
-! solve AX = B for X ]
+! solve AX = B for X 
 if (IND .ne. 0) then 
 write(*,*) 'MATRIX IS ILL-CONDITIONED'
 endif 
-! write(*,*) 'ST!!'
-! write(*,*) source_term 
 CALL NSBSLV(B,N,N,ML,MU,IPVT,source_term,I_comb)
-! write(*,*) 'END OF ST!!'
 
 lcounter1 = 1
 lcounter2 = 1
