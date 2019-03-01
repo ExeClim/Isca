@@ -59,6 +59,8 @@ logical :: initialized     = .false.
 
 ! astronomical parameters
 real    :: solar_constant  = 1360.0
+real    :: del_sol         = 1.4
+real    :: del_sw          = 0.0
 logical :: do_seasonal     = .false.
 integer :: solday          = -10  !s Day of year to run perpetually if do_seasonal=True and solday>0
 real    :: equinox_day     = 0.75 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months).
@@ -78,9 +80,9 @@ integer, parameter :: sw_GENERIC = 2
 real :: lw_sca_a = 0.0
 real :: lw_sca_b = 0.0
 real :: lw_sca_c = 0.0 
-real :: lw_abs_a = 0.1627 / (grav * pstd_mks_earth)
-real :: lw_abs_b = 1997.9 / (grav * pstd_mks_earth)
-real :: lw_abs_c = 0.17 / (grav * pstd_mks_earth)
+real :: lw_abs_a = 0.1627 * 9.80 / 101325.0 ! dtau = a * dsigma   --->   dtau = 1/g * c * dp   where c = ga/p_s 
+real :: lw_abs_b = 1997.9 * 9.80 / 101325.0 
+real :: lw_abs_c = 0.17   * 9.80 / 101325.0
 
 ! parameters for sw optical depths (defaults to BOG... i.e. no scattering or absorption)
 real :: sw_sca_a = 0.0
@@ -122,7 +124,7 @@ character(len=256)                  :: co2_file='co2'       !  file name of co2 
 character(len=256)                  :: co2_variable_name='co2'       !  file name of co2 file to read
 
 
-namelist/two_stream_scatter_rad_nml/ solar_constant, &
+namelist/two_stream_scatter_rad_nml/ solar_constant, del_sol, del_sw, &
            do_seasonal, solday, equinox_day,  &
            use_time_average_coszen, dt_rad_avg,&
            diabatic_acce,& !Schneider Liu values 
@@ -131,7 +133,8 @@ namelist/two_stream_scatter_rad_nml/ solar_constant, &
            sw_abs_a, sw_abs_b, &
            sw_sca_a, sw_sca_b, sw_sca_c, &
            gamma, gammaprime, g_asym, &
-           do_read_co2, co2_file, co2_variable_name, carbon_conc
+           do_read_co2, co2_file, co2_variable_name, carbon_conc, &
+           sw_optical_depth
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -237,8 +240,6 @@ allocate (lw_abs_coeff     (ie-is+1, je-js+1, num_levels))
 allocate (sw_abs_coeff     (ie-is+1, je-js+1, num_levels))
 allocate (lw_scatter_coeff (ie-is+1, je-js+1, num_levels))
 allocate (sw_scatter_coeff (ie-is+1, je-js+1, num_levels))
-
-allocate (q_cloud          (ie-is+1, je-js+1, num_levels))
 
 allocate (sw_gammab        (ie-is+1, je-js+1, num_levels))
 allocate (sw_gammaminus    (ie-is+1, je-js+1, num_levels))
@@ -525,7 +526,7 @@ case(sw_GENERIC)
         sw_up(i,j,:) = 0.0
         sw_down(i,j,:) = 0.0
       else 
-      call two_stream_solver(n, albedo(i,j), coszen(i,j), pi_B_surf, &
+      call two_stream_solver(n, albedo(i,j), coszen(i,j), pi_B_surf(i,j), &
                            pi_B(i,j,:), sw_down_direct(i,j,:), &
                            sw_del_tau(i,j,:)/2, sw_gammaone(i,j,:), &
                            sw_gammatwo(i,j,:), sw_gammab(i,j,:), &
@@ -659,7 +660,7 @@ if ( id_coszen > 0 ) then
   used = send_data ( id_coszen, coszen, Time_diag)
 endif
 
-------- carbon dioxide concentration ------------
+!------- carbon dioxide concentration ------------
 if ( id_co2 > 0 ) then
   used = send_data ( id_co2, carbon_conc, Time_diag)
 endif
