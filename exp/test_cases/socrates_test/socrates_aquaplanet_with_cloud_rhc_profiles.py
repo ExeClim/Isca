@@ -34,6 +34,14 @@ diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_sw', time_avg=True)
 diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
+diag.add_field('socrates', 'soc_toa_swup', time_avg=True)
+
+diag.add_field('socrates', 'soc_olr_clr', time_avg=True)
+diag.add_field('socrates', 'soc_toa_sw_clr', time_avg=True)
+diag.add_field('socrates', 'soc_toa_swup_clr', time_avg=True)
+diag.add_field('socrates', 'soc_flux_lw_clr', time_avg=True)
+diag.add_field('socrates', 'soc_flux_sw_clr', time_avg=True)
+
 diag.add_field('cloud_simple', 'cf', time_avg=True)
 diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
 diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
@@ -45,7 +53,7 @@ diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
 diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_co2', time_avg=True)
-diag.add_field('socrates', 'soc_ozone', time_avg=True)
+#diag.add_field('socrates', 'soc_ozone', time_avg=True)
 #diag.add_field('socrates', 'soc_coszen', time_avg=True)
 #diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
@@ -58,7 +66,7 @@ rhc_f_path = '/home/links/ql260/Documents/Exps_Analysis/clouds/data/'
 for cf_diag_formula_name, rhc_nm, rhc_fn in zip(cf_diag_formula_names,
                                                 rhc_profile_method_names,
                                                  rhc_profile_files):
-    exp = Experiment('soc_test_aquaplanet_with_clouds_'+'_'.join(rhc_nm.lower().split()), codebase=cb)
+    exp = Experiment('soc_test_aquaplanet_with_clouds_'+'_'.join(rhc_nm.lower().split())+'_clr', codebase=cb)
     exp.clear_rundir()
     rhc_arr = list(np.load(os.path.join(rhc_f_path, rhc_fn)))
 
@@ -101,7 +109,8 @@ for cf_diag_formula_name, rhc_nm, rhc_fn in zip(cf_diag_formula_names,
             'two_stream_gray': False,     #Use the grey radiation scheme
             'do_socrates_radiation': True,
             'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection
-            'do_cloud_simple': True
+            'do_cloud_simple': True,
+            'do_clear_sky_pass': True,
         },
 
         'cloud_simple_nml': {

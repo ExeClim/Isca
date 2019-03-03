@@ -34,6 +34,14 @@ diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_sw', time_avg=True)
 diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
+diag.add_field('socrates', 'soc_toa_swup', time_avg=True)
+
+diag.add_field('socrates', 'soc_olr_clr', time_avg=True)
+diag.add_field('socrates', 'soc_toa_sw_clr', time_avg=True)
+diag.add_field('socrates', 'soc_toa_swup_clr', time_avg=True)
+diag.add_field('socrates', 'soc_flux_lw_clr', time_avg=True)
+diag.add_field('socrates', 'soc_flux_sw_clr', time_avg=True)
+
 diag.add_field('cloud_simple', 'cf', time_avg=True)
 diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
 diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
@@ -41,16 +49,16 @@ diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
 diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
 diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
 
-# additional output options commented out 
+# additional output options commented out
 diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_co2', time_avg=True)
-#diag.add_field('socrates', 'soc_ozone', time_avg=True) 
-#diag.add_field('socrates', 'soc_coszen', time_avg=True) 
+#diag.add_field('socrates', 'soc_ozone', time_avg=True)
+#diag.add_field('socrates', 'soc_coszen', time_avg=True)
 #diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
 for ALBEDO in [0.6, 0.3, 0.5, 0.4]:
-    exp = Experiment('soc_test_aquaplanet_with_clouds_albedo_'+str(ALBEDO), codebase=cb)
+    exp = Experiment('soc_test_aquaplanet_with_clouds_albedo_'+str(ALBEDO)+'_clr', codebase=cb)
     exp.clear_rundir()
     exp.diag_table = diag
     exp.inputfiles = inputfiles
@@ -92,7 +100,8 @@ for ALBEDO in [0.6, 0.3, 0.5, 0.4]:
             'two_stream_gray': False,     #Use the grey radiation scheme
             'do_socrates_radiation': True,
             'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
-            'do_cloud_simple': True
+            'do_cloud_simple': True,
+            'do_clear_sky_pass': True,
         },
 
         'cloud_simple_nml': {
