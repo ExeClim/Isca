@@ -56,6 +56,7 @@ MODULE socrates_interface_mod
   INTEGER :: id_soc_tdt_sw, id_soc_tdt_lw, id_soc_tdt_rad
   INTEGER :: id_soc_surf_flux_lw, id_soc_surf_flux_sw 
   INTEGER :: id_soc_flux_lw, id_soc_flux_sw
+  INTEGER :: id_soc_flux_lw_clr, id_soc_flux_sw_clr
   INTEGER :: id_soc_olr, id_soc_toa_sw, id_soc_toa_swup
   INTEGER :: id_soc_olr_clr, id_soc_toa_sw_clr, id_soc_toa_swup_clr ! clear-sky case
   INTEGER :: id_soc_ozone, id_soc_co2, id_soc_coszen
@@ -69,7 +70,8 @@ MODULE socrates_interface_mod
 
   REAL :: dt_last !Time of last radiation calculation - used to tell whether it is time to recompute radiation or not
   REAL(r_def), allocatable, dimension(:,:,:) :: tdt_soc_sw_store, tdt_soc_lw_store
-  REAL(r_def), allocatable, dimension(:,:,:) :: thd_sw_flux_net_store, thd_lw_flux_net_store
+  REAL(r_def), allocatable, dimension(:,:,:) :: thd_sw_flux_net_store, thd_lw_flux_net_store, &
+                                                thd_sw_flux_clr_net_store, thd_lw_flux_clr_net_store
   REAL(r_def), allocatable, dimension(:,:,:) :: thd_co2_store, thd_ozone_store 
   REAL(r_def), allocatable, dimension(:,:)   :: net_surf_sw_down_store, surf_lw_down_store, surf_lw_net_store, &
                                                 toa_sw_store, olr_store, coszen_store, &
@@ -285,7 +287,17 @@ write(stdlog_unit, socrates_rad_nml)
 
         id_soc_toa_swup_clr = &
             register_diag_field ( soc_mod_name, 'soc_toa_swup_clr', axes(1:2), Time, &
-            'socrates upward TOA SW flux', &
+            'clear-sky socrates upward TOA SW flux', &
+            'watts/m2', missing_value=missing_value               )
+
+        id_soc_flux_lw_clr = &
+            register_diag_field ( soc_mod_name, 'soc_flux_lw_clr', (/axes(1),axes(2),axes(4)/), Time, &
+            'clear-sky socrates Net LW flux (up)', &
+            'watts/m2', missing_value=missing_value               )
+
+        id_soc_flux_sw_clr = &
+            register_diag_field ( soc_mod_name, 'soc_flux_sw_clr', (/axes(1),axes(2),axes(4)/), Time, &
+            'clear-sky socrates Net SW flux (up)', &
             'watts/m2', missing_value=missing_value               )
     end if
 
@@ -378,6 +390,14 @@ write(stdlog_unit, socrates_rad_nml)
 
         ! QL, clear-sky diagnostics
         if (do_clear_sky_pass) then
+            if (id_soc_flux_lw_clr > 0) then
+                allocate(thd_lw_flux_clr_net_store(size(lonb,1)-1, size(latb,2)-1, num_levels+1))
+            endif
+
+            if (id_soc_flux_sw_clr > 0) then
+                allocate(thd_sw_flux_clr_net_store(size(lonb,1)-1, size(latb,2)-1, num_levels+1))
+            endif
+
             if (id_soc_olr_clr > 0) then
                 allocate(olr_clr_store(size(lonb,1)-1, size(latb,2)-1))
             endif
@@ -778,7 +798,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     real, dimension(size(temp_in,1), size(temp_in,2)) :: coszen, fracsun, surf_lw_net, olr, toa_sw, &
                                                          olr_clr, toa_sw_clr, toa_swup, toa_swup_clr ! QL, add clear-sky variables
     real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: ozone_in, co2_in
-    real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: thd_sw_flux_net, thd_lw_flux_net
+    real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: thd_sw_flux_net, thd_lw_flux_net, thd_sw_flux_clr_net, thd_lw_flux_clr_net
+
     type(time_type) :: Time_loc
 
     logical :: not_do_clear_sky_pass = .false.
@@ -825,6 +846,14 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
                 ! QL, clear-sky diagnostics
                 if (do_clear_sky_pass) then
+                    if (id_soc_flux_lw_clr > 0) then
+                        thd_lw_flux_clr_net = thd_lw_flux_clr_net_store
+                    endif
+
+                    if (id_soc_flux_sw_clr > 0) then
+                        thd_sw_flux_clr_net = thd_sw_flux_clr_net_store
+                    endif
+
                     if (id_soc_olr_clr > 0) then
                         olr_clr = olr_clr_store
                     endif
@@ -868,6 +897,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                     olr_clr = 0.
                     toa_sw_clr = 0.
                     toa_swup_clr = 0.
+                    thd_sw_flux_clr_net = 0.
+                    thd_lw_flux_clr_net = 0.
                 end if
                 coszen = 0.
                 ozone_in = 0.
@@ -912,6 +943,12 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                 endif
                 if(id_soc_toa_swup_clr > 0) then
                     used = send_data ( id_soc_toa_swup_clr, toa_swup_clr, Time_diag)
+                endif
+                if(id_soc_flux_lw_clr > 0) then
+                    used = send_data ( id_soc_flux_lw_clr, thd_lw_flux_clr_net, Time_diag)
+                endif
+                if(id_soc_flux_sw_clr > 0) then
+                    used = send_data ( id_soc_flux_sw_clr, thd_sw_flux_clr_net, Time_diag)
                 endif
             end if
             if(id_soc_flux_lw > 0) then
@@ -1083,6 +1120,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                 t_half_level_out = t_half_out_clr)
 
            olr_clr(:,:) = REAL(output_soc_flux_lw_up_clr(:,:,1))
+           thd_lw_flux_clr_net = REAL(output_soc_flux_lw_up_clr - output_soc_flux_lw_down_clr)
        end if
        
 
@@ -1113,6 +1151,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                 do_cloud_simple, do_clear_sky_pass)
 
            toa_sw_clr(:,:) = REAL(output_soc_flux_sw_down_clr(:,:,1)-output_soc_flux_sw_up_clr(:,:,1))
+           thd_sw_flux_clr_net = REAL(output_soc_flux_sw_up_clr - output_soc_flux_sw_down_clr)
            toa_swup_clr(:,:) = output_soc_flux_sw_up_clr(:,:,1)
        end if
 
@@ -1154,6 +1193,14 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
             ! QL, clear-sky diagnostics
             if (do_clear_sky_pass) then
+                if (id_soc_flux_lw_clr > 0) then
+                    thd_lw_flux_clr_net_store = thd_lw_flux_clr_net
+                endif
+
+                if (id_soc_flux_sw_clr > 0) then
+                    thd_sw_flux_clr_net_store = thd_sw_flux_clr_net
+                endif
+
                 if (id_soc_olr_clr > 0) then
                     olr_clr_store = olr_clr
                 endif
@@ -1219,6 +1266,12 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             endif
             if(id_soc_toa_swup_clr > 0) then
                 used = send_data ( id_soc_toa_swup_clr, toa_swup_clr, Time_diag)
+            endif
+            if(id_soc_flux_lw_clr > 0) then
+                used = send_data ( id_soc_flux_lw_clr, thd_lw_flux_clr_net, Time_diag)
+            endif
+            if(id_soc_flux_sw_clr > 0) then
+                used = send_data ( id_soc_flux_sw_clr, thd_sw_flux_clr_net, Time_diag)
             endif
         end if
         if(id_soc_flux_lw > 0) then
