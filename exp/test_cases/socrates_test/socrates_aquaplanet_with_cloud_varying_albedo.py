@@ -5,21 +5,7 @@ from isca.util import exp_progress
 
 NCORES = 16
 base_dir = os.path.dirname(os.path.realpath(__file__))
-# a CodeBase can be a directory on the computer,
-# useful for iterative development
 cb = SocratesCodeBase.from_directory(GFDL_BASE)
-
-# or it can point to a specific git repo and commit id.
-# This method should ensure future, independent, reproducibility of results.
-# cb = DryCodeBase.from_repo(repo='https://github.com/isca/isca', commit='isca1.1')
-
-# compilation depends on computer specific settings.  The $GFDL_ENV
-# environment variable is used to determine which `$GFDL_BASE/src/extra/env` file
-# is used to load the correct compilers.  The env file is always loaded from
-# $GFDL_BASE and not the checked out git repo.
-
-# create an Experiment object to handle the configuration of model parameters
-# and output diagnostics
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -32,6 +18,7 @@ diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
+diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
@@ -47,23 +34,24 @@ diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_sw', time_avg=True)
 diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
-diag.add_field('cloud_simple', 'cf_rad', time_avg=True)
+diag.add_field('cloud_simple', 'cf', time_avg=True)
 diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
 diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
 diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
+diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
+diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
 
-# additional output options commented out
-#diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
-#diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
+# additional output options commented out 
+diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
+diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_co2', time_avg=True)
-#diag.add_field('socrates', 'soc_ozone', time_avg=True)
-#diag.add_field('socrates', 'soc_coszen', time_avg=True)
+#diag.add_field('socrates', 'soc_ozone', time_avg=True) 
+#diag.add_field('socrates', 'soc_coszen', time_avg=True) 
 #diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
-for ALBEDO in [0.6, 0.3, 0.2, 0.5, 0.4]:
-    exp = Experiment('soc_test_aquaplanet_without_clouds_albedo_'+str(ALBEDO), codebase=cb)
+for ALBEDO in [0.6, 0.3, 0.5, 0.4]:
+    exp = Experiment('soc_test_aquaplanet_with_clouds_albedo_'+str(ALBEDO), codebase=cb)
     exp.clear_rundir()
-
     exp.diag_table = diag
     exp.inputfiles = inputfiles
 
@@ -89,8 +77,9 @@ for ALBEDO in [0.6, 0.3, 0.2, 0.5, 0.4]:
             'store_intermediate_rad':True,
             'chunk_size': 16,
             'use_pressure_interp_for_half_levels':False,
-            'tidally_locked':False
-        },
+            'tidally_locked':False,
+            'solday':90
+        }, 
         'idealized_moist_phys_nml': {
             'do_damping': True,
             'turb':True,
@@ -99,13 +88,19 @@ for ALBEDO in [0.6, 0.3, 0.2, 0.5, 0.4]:
             'do_simple': True,
             'roughness_mom':3.21e-05,
             'roughness_heat':3.21e-05,
-            'roughness_moist':3.21e-05,
+            'roughness_moist':3.21e-05,            
             'two_stream_gray': False,     #Use the grey radiation scheme
             'do_socrates_radiation': True,
-            'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection
-            'do_cloud_simple': False
+            'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
+            'do_cloud_simple': True
         },
 
+        'cloud_simple_nml': {
+            'simple_cca':0.0,
+            'rhcsfc': 0.95,
+            'rhc700': 0.7,
+            'rhc200': 0.3
+        },
 
         'vert_turb_driver_nml': {
             'do_mellor_yamada': False,     # default: True
@@ -114,7 +109,7 @@ for ALBEDO in [0.6, 0.3, 0.2, 0.5, 0.4]:
             'constant_gust': 0.0,          # default: 1.0
             'use_tau': False
         },
-
+        
         'diffusivity_nml': {
             'do_entrain':False,
             'do_simple': True,
@@ -123,7 +118,7 @@ for ALBEDO in [0.6, 0.3, 0.2, 0.5, 0.4]:
         'surface_flux_nml': {
             'use_virtual_temp': False,
             'do_simple': True,
-            'old_dtaudv': True
+            'old_dtaudv': True    
         },
 
         'atmosphere_nml': {
@@ -134,32 +129,32 @@ for ALBEDO in [0.6, 0.3, 0.2, 0.5, 0.4]:
         'mixed_layer_nml': {
             'tconst' : 285.,
             'prescribe_initial_dist':True,
-            'evaporation':True,
+            'evaporation':True,  
             'depth': 2.5,                          #Depth of mixed layer used
-            'albedo_value': ALBEDO,                  #Albedo value used
+            'albedo_value': ALBEDO,                  #Albedo value used      
         },
 
         'qe_moist_convection_nml': {
             'rhbm':0.7,
             'Tmin':160.,
-            'Tmax':350.
+            'Tmax':350.   
         },
-
+        
         'lscale_cond_nml': {
             'do_simple':True,
             'do_evap':True
         },
-
+        
         'sat_vapor_pres_nml': {
                'do_simple':True,
                'construct_table_wrt_liq_and_ice':True
            },
-
+        
         'damping_driver_nml': {
             'do_rayleigh': True,
             'trayfric': -0.5,              # neg. value: time in *days*
             'sponge_pbottom':  150., #Setting the lower pressure boundary for the model sponge layer in Pa.
-            'do_conserve_energy': True,
+            'do_conserve_energy': True,      
         },
 
         # FMS Framework configuration
@@ -177,7 +172,7 @@ for ALBEDO in [0.6, 0.3, 0.2, 0.5, 0.4]:
         },
 
         'spectral_dynamics_nml': {
-            'damping_order': 4,
+            'damping_order': 4,             
             'water_correction_limit': 200.e2,
             'reference_sea_level_press':1.0e5,
             'num_levels':40,      #How many model pressure levels to use
@@ -194,9 +189,9 @@ for ALBEDO in [0.6, 0.3, 0.2, 0.5, 0.4]:
 
     #Lets do a run!
     if __name__=="__main__":
-        cb.compile(debug=False)
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
+            cb.compile(debug=False)
+            exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
 
-        for i in range(2,25):
-            exp.run(i, num_cores=NCORES)
+            for i in range(2,25):
+                exp.run(i, num_cores=NCORES)
 
