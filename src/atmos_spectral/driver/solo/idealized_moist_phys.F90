@@ -111,6 +111,7 @@ logical :: do_ras = .false.
 
 ! Cloud options
 logical :: do_cloud_simple = .false.
+logical :: do_clear_sky_pass = .false. ! QL, Are the clear-sky radiation diagnostics to be calculated?
 
 !s Radiation options
 logical :: two_stream_gray = .true.
@@ -147,7 +148,7 @@ real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
 ! end RG Add bucket
 
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
-                                      do_cloud_simple,                                       &
+                                      do_cloud_simple, do_clear_sky_pass,            &
                                       two_stream_gray, do_rrtm_radiation, do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
@@ -692,6 +693,11 @@ end select
         axes(1:2), Time, 'Rain from convection','kg/m/m/s')
 !endif
 
+if (.not. do_cloud_simple .and. do_clear_sky_pass) then
+  call error_mesg( 'idealized_moist_phys_init', &
+  'do_clear_sky_pass MUST be false when do_cloud_simple is false.', WARNING)
+  do_clear_sky_pass = .false.
+end if
 
 if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, dt_real)
 
@@ -718,7 +724,7 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
     endif
 #else
 if (do_socrates_radiation) then
-    call socrates_init(is, ie, js, je, num_levels, axes, Time, rad_lat, rad_lonb_2d, rad_latb_2d, Time_step_in, do_cloud_simple)
+    call socrates_init(is, ie, js, je, num_levels, axes, Time, rad_lat, rad_lonb_2d, rad_latb_2d, Time_step_in, do_cloud_simple, do_clear_sky_pass)
 endif
 #endif
 
@@ -1057,11 +1063,9 @@ if (do_socrates_radiation) then
     if(do_cloud_simple) then
        reff_rad = 1.e-6 * reff_rad ! Simple cloud scheme outputs radii in microns. Socrates expects it in metres.
     endif
-  
     call run_socrates(Time, Time+Time_step, rad_lat, rad_lon, tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum), t_surf(:,:), p_full(:,:,:,current), &
-                      p_half(:,:,:,current),z_full(:,:,:,current),z_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t, do_cloud_simple, cf_rad(:,:,:), reff_rad(:,:,:),      &
-                      qcl_rad(:,:,:)   )
-
+                      p_half(:,:,:,current),z_full(:,:,:,current),z_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t, &
+                      do_cloud_simple, do_clear_sky_pass, cf_rad(:,:,:), reff_rad(:,:,:), qcl_rad(:,:,:) )
 endif
 #endif
 
