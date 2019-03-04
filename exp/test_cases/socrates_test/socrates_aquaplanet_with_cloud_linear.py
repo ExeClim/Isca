@@ -11,7 +11,7 @@ NUM_LEVELS = 25
 base_dir = os.path.dirname(os.path.realpath(__file__))
 cb = SocratesCodeBase.from_directory(GFDL_BASE)
 
-exp = Experiment('soc_test_aquaplanet_with_clouds_linear', codebase=cb)
+exp = Experiment('soc_test_aquaplanet_with_clouds_linear_clr', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -39,6 +39,14 @@ diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_sw', time_avg=True)
 diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
+diag.add_field('socrates', 'soc_toa_swup', time_avg=True)
+
+diag.add_field('socrates', 'soc_olr_clr', time_avg=True)
+diag.add_field('socrates', 'soc_toa_sw_clr', time_avg=True)
+diag.add_field('socrates', 'soc_toa_swup_clr', time_avg=True)
+diag.add_field('socrates', 'soc_flux_lw_clr', time_avg=True)
+diag.add_field('socrates', 'soc_flux_sw_clr', time_avg=True)
+
 diag.add_field('cloud_simple', 'cf', time_avg=True)
 diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
 diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
@@ -51,7 +59,7 @@ diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
 diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_co2', time_avg=True)
-diag.add_field('socrates', 'soc_ozone', time_avg=True) 
+#diag.add_field('socrates', 'soc_ozone', time_avg=True)
 #diag.add_field('socrates', 'soc_coszen', time_avg=True) 
 #diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
@@ -101,7 +109,8 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
-        'do_cloud_simple': True
+        'do_cloud_simple': True,
+        'do_clear_sky_pass': True,
     },
 
     'cloud_simple_nml': {
@@ -205,5 +214,5 @@ if __name__=="__main__":
         cb.compile(debug=False)
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
 
-        for i in range(2, 121):
+        for i in range(2, 25):
             exp.run(i, num_cores=NCORES)
