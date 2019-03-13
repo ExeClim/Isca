@@ -5,6 +5,7 @@ from isca.util import exp_progress
 
 NCORES = 16
 NUM_LEVELS = 25
+ALBEDO = 0.1
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 cb = SocratesCodeBase.from_directory(GFDL_BASE)
@@ -66,7 +67,7 @@ rhc_f_path = '/home/links/ql260/Documents/Exps_Analysis/clouds/data/'
 for cf_diag_formula_name, rhc_nm, rhc_fn in zip(cf_diag_formula_names,
                                                 rhc_profile_method_names,
                                                  rhc_profile_files):
-    exp = Experiment('soc_test_aquaplanet_with_clouds_'+'_'.join(rhc_nm.lower().split())+'_clr', codebase=cb)
+    exp = Experiment('soc_test_aquaplanet_with_clouds_'+'_'.join(rhc_nm.lower().split())+'_clr_albedo_'+str(ALBEDO), codebase=cb)
     exp.clear_rundir()
     rhc_arr = list(np.load(os.path.join(rhc_f_path, rhc_fn)))
 
@@ -153,7 +154,7 @@ for cf_diag_formula_name, rhc_nm, rhc_fn in zip(cf_diag_formula_names,
             'prescribe_initial_dist':True,
             'evaporation':True,
             'depth': 2.5,
-            'albedo_value': 0.2,
+            'albedo_value': ALBEDO,
         },
 
         'qe_moist_convection_nml': {

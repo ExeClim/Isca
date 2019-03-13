@@ -10,8 +10,8 @@ NUM_LEVELS = 25
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 cb = SocratesCodeBase.from_directory(GFDL_BASE)
-
-exp = Experiment('soc_test_aquaplanet_with_clouds_linear_clr', codebase=cb)
+ALBEDO = 0.1
+exp = Experiment('soc_test_aquaplanet_with_clouds_linear_clr_albedo_'+str(ALBEDO), codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -153,7 +153,7 @@ exp.namelist = namelist = Namelist({
         'prescribe_initial_dist':True,
         'evaporation':True,  
         'depth': 2.5,
-        'albedo_value': 0.2,
+        'albedo_value': ALBEDO,
     },
 
     'qe_moist_convection_nml': {

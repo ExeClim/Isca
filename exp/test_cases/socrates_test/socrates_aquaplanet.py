@@ -3,7 +3,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 16
+NCORES = 32
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -60,7 +60,7 @@ diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
 #diag.add_field('socrates', 'soc_coszen', time_avg=True)
 #diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
-for ALBEDO in [0.6, 0.3, 0.2, 0.5, 0.4]:
+for ALBEDO in [0.1]:#[0.6, 0.3, 0.2, 0.5, 0.4]:
     exp = Experiment('soc_test_aquaplanet_without_clouds_albedo_'+str(ALBEDO), codebase=cb)
     exp.clear_rundir()
 

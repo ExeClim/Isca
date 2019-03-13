@@ -6,6 +6,8 @@ from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
 NCORES = 16
+ALBEDO = 0.1
+
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -23,7 +25,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_test_aquaplanet_with_clouds_default_spookie_clr', codebase=cb)
+exp = Experiment('soc_test_aquaplanet_with_clouds_default_spookie_clr_albedo_'+str(ALBEDO), codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -157,7 +159,7 @@ exp.namelist = namelist = Namelist({
         'prescribe_initial_dist':True,
         'evaporation':True,
         'depth': 2.5,                          #Depth of mixed layer used
-        'albedo_value': 0.2,                  #Albedo value used
+        'albedo_value': ALBEDO,                #Albedo value used
     },
 
     'qe_moist_convection_nml': {
