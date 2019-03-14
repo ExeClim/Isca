@@ -26,6 +26,7 @@ module cloud_simple_mod
   logical :: do_simple_rhcrit = .true.
   logical :: do_read_scm_rhcrit = .false.
   logical :: do_linear_diag = .false.
+  logical :: do_new_qcl = .true.
   real, parameter :: FILL_VALUE = -999 ! Fill value for arrays
   real, dimension(100) :: scm_rhcrit = FILL_VALUE   ! Input array for single column critical RH. Max number of levels = 100
   real, dimension(100,2) :: scm_linear_coeffs = FILL_VALUE
@@ -34,14 +35,12 @@ module cloud_simple_mod
   real    ::   rhcsfc     = 0.95
   real    ::   rhc700     = 0.7
   real    ::   rhc200     = 0.3
-  real    ::   rhmsfc     = 0.95
-  real    ::   rhm700     = 0.7
-  real    ::   rhm200     = 0.3
 
   namelist /cloud_simple_nml/ simple_cca, rhcsfc, rhc700, rhc200, &
-                              rhmsfc, rhm700, rhm200, cf_diag_formula_name, &
-                              do_simple_rhcrit, do_linear_diag, scm_linear_coeffs, &
-                              do_read_scm_rhcrit, scm_rhcrit
+                              cf_diag_formula_name, do_simple_rhcrit, &
+                              do_linear_diag, scm_linear_coeffs, &
+                              do_read_scm_rhcrit, scm_rhcrit, &
+                              do_new_qcl
 
   contains
 
@@ -192,7 +191,11 @@ module cloud_simple_mod
             call calc_cf_linear(q_hum(i,j,k), qs(i,j,k), cf(i,j,k), rh_in_cf(i,j,k), scm_linear_coeffs(k,:))
           end if
 
-          call calc_qcl_rad(p_full(i,j,k), cf(i,j,k), qcl_rad(i,j,k) )
+          if(do_new_qcl) then
+            call calc_qcl_rad_new(p_full(i,j,k), temp(i,j,k), qcl_rad(i,j,k))
+          else
+            call calc_qcl_rad(p_full(i,j,k), cf(i,j,k), qcl_rad(i,j,k))
+          end if
         end do
       end do
     end do
@@ -300,6 +303,16 @@ module cloud_simple_mod
     qcl_rad = cf * in_cloud_qcl
   end subroutine calc_qcl_rad
 
+  subroutine calc_qcl_rad_new(p_full, temp, qcl_rad)
+    ! calculate cloud water content
+    real , intent(in)   :: p_full, temp
+    real , intent(out)  :: qcl_rad
+    real :: in_cloud_qcl
+
+    in_cloud_qcl = 0.2 * (temp-220.0) / (280.0-220.0)
+    in_cloud_qcl = max(3.0e-4, min(0.2, in_cloud_qcl)) / 1.0e3 ! convert to kg/kg
+    qcl_rad = in_cloud_qcl
+  end subroutine calc_qcl_rad_new
 
   subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, Time)
     real, intent(in), dimension(:,:,:) :: cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit
