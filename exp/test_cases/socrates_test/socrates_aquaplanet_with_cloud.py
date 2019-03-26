@@ -25,7 +25,8 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_test_aquaplanet_with_clouds_default_spookie_clr_albedo_'+str(ALBEDO), codebase=cb)
+#exp = Experiment('soc_test_aquaplanet_with_clouds_default_spookie_clr_albedo_'+str(ALBEDO)+'_qcl_with_temp', codebase=cb)
+exp = Experiment('soc_test_aquaplanet_with_clouds_default_spookie_clr_albedo_'+str(ALBEDO)+'_qcl_two_paras', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -119,7 +120,7 @@ exp.namelist = namelist = Namelist({
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection
         'do_cloud_simple': True,
-         'do_clear_sky_pass': True,
+        'do_clear_sky_pass': True,
     },
 
     'cloud_simple_nml': {
@@ -203,7 +204,7 @@ exp.namelist = namelist = Namelist({
         'damping_order': 4,
         'water_correction_limit': 200.e2,
         'reference_sea_level_press':1.0e5,
-        'num_levels':40,      #How many model pressure levels to use
+        'num_levels':25,      #How many model pressure levels to use
         'valid_range_t':[100.,800.],
         'initial_sphum':[2.e-6],
         'vert_coord_option':'uneven_sigma',

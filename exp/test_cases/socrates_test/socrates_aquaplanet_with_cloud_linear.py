@@ -11,7 +11,8 @@ NUM_LEVELS = 25
 base_dir = os.path.dirname(os.path.realpath(__file__))
 cb = SocratesCodeBase.from_directory(GFDL_BASE)
 ALBEDO = 0.1
-exp = Experiment('soc_test_aquaplanet_with_clouds_linear_clr_albedo_'+str(ALBEDO), codebase=cb)
+#exp = Experiment('soc_test_aquaplanet_with_clouds_linear_clr_albedo_'+str(ALBEDO)+'_qcl_with_temp', codebase=cb)
+exp = Experiment('soc_test_aquaplanet_with_clouds_linear_clr_albedo_'+str(ALBEDO)+'_qcl_two_paras', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]

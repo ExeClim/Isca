@@ -1,33 +1,17 @@
 import os
-
 import numpy as np
-
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
 NCORES = 16
 base_dir = os.path.dirname(os.path.realpath(__file__))
-# a CodeBase can be a directory on the computer,
-# useful for iterative development
 cb = SocratesCodeBase.from_directory(GFDL_BASE)
-
-# or it can point to a specific git repo and commit id.
-# This method should ensure future, independent, reproducibility of results.
-# cb = DryCodeBase.from_repo(repo='https://github.com/isca/isca', commit='isca1.1')
-
-# compilation depends on computer specific settings.  The $GFDL_ENV
-# environment variable is used to determine which `$GFDL_BASE/src/extra/env` file
-# is used to load the correct compilers.  The env file is always loaded from
-# $GFDL_BASE and not the checked out git repo.
-
-# create an Experiment object to handle the configuration of model parameters
-# and output diagnostics
 
 exp = Experiment('soc_test_with_clouds_post_jm_suggestions_amip_ssts_land_mid_albedo_flat', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
-                      os.path.join(base_dir,'input/sst_clim_amip.nc'), os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')]
+              os.path.join(base_dir,'input/sst_clim_amip.nc'), os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
