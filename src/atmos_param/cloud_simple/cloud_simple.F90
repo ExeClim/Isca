@@ -26,7 +26,8 @@ module cloud_simple_mod
   logical :: do_simple_rhcrit = .true.
   logical :: do_read_scm_rhcrit = .false.
   logical :: do_linear_diag = .false.
-  logical :: do_new_qcl = .true.
+  logical :: do_new_qcl = .false.
+  logical :: do_qcl_two_paras = .false.
   real, parameter :: FILL_VALUE = -999 ! Fill value for arrays
   real, dimension(100) :: scm_rhcrit = FILL_VALUE   ! Input array for single column critical RH. Max number of levels = 100
   real, dimension(100,2) :: scm_linear_coeffs = FILL_VALUE
@@ -40,7 +41,7 @@ module cloud_simple_mod
                               cf_diag_formula_name, do_simple_rhcrit, &
                               do_linear_diag, scm_linear_coeffs, &
                               do_read_scm_rhcrit, scm_rhcrit, &
-                              do_new_qcl
+                              do_new_qcl, do_qcl_two_paras
 
   contains
 
@@ -192,7 +193,9 @@ module cloud_simple_mod
           end if
 
           if(do_new_qcl) then
-            call calc_qcl_rad_new(p_full(i,j,k), temp(i,j,k), qcl_rad(i,j,k))
+            call calc_qcl_rad_new(p_full(i,j,k), temp(i,j,k), cf(i,j,k), qcl_rad(i,j,k))
+          else if (do_qcl_two_paras) then
+            call calc_qcl_rad_two_paras(p_full(i,j,k), cf(i,j,k), qcl_rad(i,j,k))
           else
             call calc_qcl_rad(p_full(i,j,k), cf(i,j,k), qcl_rad(i,j,k))
           end if
@@ -303,16 +306,39 @@ module cloud_simple_mod
     qcl_rad = cf * in_cloud_qcl
   end subroutine calc_qcl_rad
 
-  subroutine calc_qcl_rad_new(p_full, temp, qcl_rad)
+  subroutine calc_qcl_rad_new(p_full, temp, cf, qcl_rad)
     ! calculate cloud water content
-    real , intent(in)   :: p_full, temp
+    real , intent(in)   :: p_full, temp, cf
     real , intent(out)  :: qcl_rad
     real :: in_cloud_qcl
 
     in_cloud_qcl = 0.2 * (temp-220.0) / (280.0-220.0)
     in_cloud_qcl = max(3.0e-4, min(0.2, in_cloud_qcl)) / 1.0e3 ! convert to kg/kg
-    qcl_rad = in_cloud_qcl
+    qcl_rad = cf * in_cloud_qcl
   end subroutine calc_qcl_rad_new
+
+  subroutine calc_qcl_rad_two_paras(p_full, cf, qcl_rad)
+    ! calculate cloud water content
+    real , intent(in)   :: p_full, cf
+    real , intent(out)  :: qcl_rad
+    real :: in_cloud_qcl, qcl_1000, qcl_800, qcl_100
+
+    qcl_1000 = 0.05
+    qcl_800 = 0.175
+    qcl_100 = 3.0e-4
+
+    if ( p_full >= 8.0e4 ) then
+      in_cloud_qcl = qcl_1000 + (qcl_800-qcl_1000) * (1.0e5-p_full) / 2.0e4
+    else if ( p_full >= 1.0e4 ) then
+      in_cloud_qcl = qcl_100 + (qcl_800-qcl_100) * (p_full-1.0e4) / 7.0e4
+    else
+      in_cloud_qcl = qcl_100
+    end if
+
+    in_cloud_qcl = in_cloud_qcl / 1.0e3 ! convert to kg/kg
+    qcl_rad = cf * in_cloud_qcl
+  end subroutine calc_qcl_rad_two_paras
+
 
   subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, Time)
     real, intent(in), dimension(:,:,:) :: cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit
