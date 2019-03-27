@@ -3,11 +3,13 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 8 
+NCORES = 16
+NUM_LEVELS = 25
+
 base_dir = os.path.dirname(os.path.realpath(__file__))
 cb = SocratesCodeBase.from_directory(GFDL_BASE)
 
-exp = Experiment('soc_test_with_clouds_amip_land_default_qcl_with_temp', codebase=cb)
+exp = Experiment('soc_test_with_clouds_amip_land_linear_qcl_with_temp', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
@@ -66,6 +68,13 @@ diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 exp.diag_table = diag
 exp.inputfiles = inputfiles
 
+coeff_fn = '/home/links/ql260/Documents/Exps_Analysis/clouds/data/paras_a_b.npy'
+arr = np.load(coeff_fn)
+arr_tmp = np.ones((100,2), dtype='double')*-999
+arr_tmp[0:len(arr),:] = arr
+coeff_arr = list(np.reshape(arr_tmp, np.size(arr_tmp), order='F')) # Fortran order
+
+
 #Define values for the 'core' namelist
 exp.namelist = namelist = Namelist({
     'main_nml':{
@@ -115,7 +124,10 @@ exp.namelist = namelist = Namelist({
         'rhcsfc': 0.95,
         'rhc700': 0.7,
         'rhc200': 0.3,
-        'do_simple_rhcrit': True,
+        'do_simple_rhcrit': False,
+        'do_read_scm_rhcrit': False,
+        'do_linear_diag': True,
+        'scm_linear_coeffs': coeff_arr, 
         'do_qcl_with_temp': True,
     },
 
@@ -200,7 +212,7 @@ exp.namelist = namelist = Namelist({
         'damping_order': 4,
         'water_correction_limit': 200.e2,
         'reference_sea_level_press': 1.0e5,
-        'num_levels': 25,      #How many model pressure levels to use
+        'num_levels': NUM_LEVELS,      #How many model pressure levels to use
         'valid_range_t': [100.,800.],
         'initial_sphum': [2.e-6],
         'vert_coord_option': 'uneven_sigma',
@@ -208,12 +220,12 @@ exp.namelist = namelist = Namelist({
         'scale_heights': 11.0,
         'exponent': 7.0,
         'robert_coeff': 0.03,
-        'ocean_topog_smoothing': 0.8
+        'ocean_topog_smoothing': 0.8,
     },
 
     'spectral_init_cond_nml':{
         'topog_file_name': 'era_land_t42.nc',
-        'topography_option': 'input'
+        'topography_option': 'input',
     },
 })
 
