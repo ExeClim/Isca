@@ -26,7 +26,7 @@ module cloud_simple_mod
   logical :: do_simple_rhcrit = .true.
   logical :: do_read_scm_rhcrit = .false.
   logical :: do_linear_diag = .false.
-  logical :: do_new_qcl = .false.
+  logical :: do_qcl_with_temp = .false.
   logical :: do_qcl_two_paras = .false.
   real, parameter :: FILL_VALUE = -999 ! Fill value for arrays
   real, dimension(100) :: scm_rhcrit = FILL_VALUE   ! Input array for single column critical RH. Max number of levels = 100
@@ -41,7 +41,7 @@ module cloud_simple_mod
                               cf_diag_formula_name, do_simple_rhcrit, &
                               do_linear_diag, scm_linear_coeffs, &
                               do_read_scm_rhcrit, scm_rhcrit, &
-                              do_new_qcl, do_qcl_two_paras
+                              do_qcl_with_temp, do_qcl_two_paras
 
   contains
 
@@ -192,8 +192,8 @@ module cloud_simple_mod
             call calc_cf_linear(q_hum(i,j,k), qs(i,j,k), cf(i,j,k), rh_in_cf(i,j,k), scm_linear_coeffs(k,:))
           end if
 
-          if(do_new_qcl) then
-            call calc_qcl_rad_new(p_full(i,j,k), temp(i,j,k), cf(i,j,k), qcl_rad(i,j,k))
+          if(do_qcl_with_temp) then
+            call calc_qcl_rad_with_temp(p_full(i,j,k), temp(i,j,k), cf(i,j,k), qcl_rad(i,j,k))
           else if (do_qcl_two_paras) then
             call calc_qcl_rad_two_paras(p_full(i,j,k), cf(i,j,k), qcl_rad(i,j,k))
           else
@@ -306,7 +306,7 @@ module cloud_simple_mod
     qcl_rad = cf * in_cloud_qcl
   end subroutine calc_qcl_rad
 
-  subroutine calc_qcl_rad_new(p_full, temp, cf, qcl_rad)
+  subroutine calc_qcl_rad_with_temp(p_full, temp, cf, qcl_rad)
     ! calculate cloud water content
     real , intent(in)   :: p_full, temp, cf
     real , intent(out)  :: qcl_rad
@@ -315,7 +315,7 @@ module cloud_simple_mod
     in_cloud_qcl = 0.2 * (temp-220.0) / (280.0-220.0)
     in_cloud_qcl = max(3.0e-4, min(0.2, in_cloud_qcl)) / 1.0e3 ! convert to kg/kg
     qcl_rad = cf * in_cloud_qcl
-  end subroutine calc_qcl_rad_new
+  end subroutine calc_qcl_rad_with_temp
 
   subroutine calc_qcl_rad_two_paras(p_full, cf, qcl_rad)
     ! calculate cloud water content
