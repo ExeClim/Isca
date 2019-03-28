@@ -17,7 +17,7 @@ implicit none
 
 contains
 
-! ==================================================================================
+! ==============================================================================
 
 
 
@@ -25,7 +25,7 @@ contains
 ! Set up the call to the Socrates radiation scheme
 ! -----------------------------------------------------------------------------
 !DIAG Added Time
-subroutine socrates_calc(Time_diag,control, spectrum,                                    &
+subroutine socrates_calc(Time_diag,control, spectrum,                          &
   n_profile, n_layer, n_cloud_layer, n_aer_mode,                               &
   cld_subcol_gen, cld_subcol_req,                                              &
   p_layer, t_layer, t_layer_boundaries, d_mass, density,                       &
@@ -34,7 +34,9 @@ subroutine socrates_calc(Time_diag,control, spectrum,                           
   l_planet_grey_surface, planet_albedo, planet_emissivity,                     &
   layer_heat_capacity,                                                         &
   cld_frac, reff_rad, mmr_cl_rad,                                              &
-  flux_direct, flux_down, flux_up, heating_rate, spectral_olr)
+  flux_direct, flux_down, flux_up,                                             &
+  flux_down_clear, flux_up_clear,                                              &
+  heating_rate, spectral_olr)
 
 use rad_pcf
 use def_control,  only: StrCtrl
@@ -126,9 +128,11 @@ real(r_def), intent(in) :: mmr_cl_rad(n_profile, n_layer)
 
 real(r_def), intent(out) :: flux_direct(n_profile, 0:n_layer)
 !   Direct (unscattered) downwards flux (Wm-2)
-real(r_def), intent(out) :: flux_down(n_profile, 0:n_layer)
+real(r_def), intent(out) :: flux_down(n_profile, 0:n_layer),   &
+                            flux_down_clear(n_profile, 0:n_layer)
 !   Downwards flux (Wm-2)
-real(r_def), intent(out) :: flux_up(n_profile, 0:n_layer)
+real(r_def), intent(out) :: flux_up(n_profile, 0:n_layer),     &
+                            flux_up_clear(n_profile, 0:n_layer) 
 !   Upwards flux (Wm-2)
 real(r_def), intent(out) :: heating_rate(n_profile, n_layer)
 !   Heating rate (Ks-1)
@@ -205,9 +209,11 @@ end do
 
 do l=1, n_profile
   do i=0, n_layer
-    flux_direct(l, i) = radout%flux_direct(l, i, 1)
-    flux_down(l, i)   = radout%flux_down(l, i, 1)
-    flux_up(l, i)     = radout%flux_up(l, i, 1)
+    flux_direct(l, i)       = radout%flux_direct(l, i, 1)
+    flux_down(l, i)         = radout%flux_down(l, i, 1)
+    flux_down_clear(l, i)   = radout%flux_down_clear(l, i, 1)
+    flux_up(l, i)           = radout%flux_up(l, i, 1)
+    flux_up_clear(l, i)     = radout%flux_up_clear(l, i, 1)
   end do
   if (present(spectral_olr)) then
      spectral_olr(l,:) = radout%flux_up_clear_band(l,0,:)

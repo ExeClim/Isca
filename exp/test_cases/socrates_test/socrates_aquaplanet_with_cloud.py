@@ -5,7 +5,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 16
+NCORES = 8
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -46,13 +46,30 @@ diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
 
-diag.add_field('socrates', 'soc_tdt_lw', time_avg=True)
+#temperature tendency - units are K/s
+diag.add_field('socrates', 'soc_tdt_lw', time_avg=True) # net flux lw 3d (up - down)
 diag.add_field('socrates', 'soc_tdt_sw', time_avg=True)
-diag.add_field('socrates', 'soc_tdt_rad', time_avg=True)
+diag.add_field('socrates', 'soc_tdt_rad', time_avg=True) #sum of the sw and lw heating rates
+
+#net (up) and down surface fluxes
 diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_sw', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_lw_down', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
+#net (up) TOA and downard fluxes
 diag.add_field('socrates', 'soc_olr', time_avg=True)
-diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
+diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
+diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True) 
+
+#clear sky fluxes
+diag.add_field('socrates', 'soc_surf_flux_lw_clear', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_sw_clear', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_lw_down_clear', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_sw_down_clear', time_avg=True)
+diag.add_field('socrates', 'soc_olr_clear', time_avg=True)
+diag.add_field('socrates', 'soc_toa_sw_clear', time_avg=True) 
+diag.add_field('socrates', 'soc_toa_sw_down_clear', time_avg=True) 
+
 diag.add_field('cloud_simple', 'cf', time_avg=True)
 diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
 diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
@@ -208,7 +225,7 @@ exp.namelist = namelist = Namelist({
 if __name__=="__main__":
 
         cb.compile(debug=False)
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
 
-        for i in range(2,171):
-            exp.run(i, num_cores=NCORES)
+#        for i in range(2,171):
+#            exp.run(i, num_cores=NCORES)
