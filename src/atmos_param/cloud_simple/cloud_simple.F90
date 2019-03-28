@@ -17,19 +17,39 @@ module cloud_simple_mod
   logical ::   do_init = .true.  ! Check if init needs to be run
 
   real    ::   simple_cca =  0.0
-  real    ::   rhcsfc     = 0.95
-  real    ::   rhc700     = 0.7
-  real    ::   rhc200     = 0.3
+
+  ! Critical RH (fraction) values - spookie protocol 1 only
+  real    ::   rhc_sfc     = 0.95
+  real    ::   rhc_base    = 0.7
+  real    ::   rhc_top     = 0.3
+  ! 
   real    ::   rhmsfc     = 0.95
   real    ::   rhm700     = 0.7
   real    ::   rhm200     = 0.3
 
-  namelist /cloud_simple_nml/  simple_cca, rhcsfc, rhc700, rhc200, &
-                                           rhmsfc, rhm700, rhm200
+  ! Critical RH (fraction) values - spookie protocol 2 only
+  real    ::   rh_min_top  = 0.9
+  real    ::   rh_min_sfc  = 1.0
+  real    ::   rh_min_base = 0.8
+  real    ::   rh_max_top  = 1.0
+  real    ::   rh_max_sfc  = 1.0
+  real    ::   rh_max_base = 1.0
+
+  ! Pressure (Pa.) at cloud bottom and top (very approx)
+  real    ::   p_base     = 70000.
+  real    ::   p_top      = 20000.
+
+  integer ::  spookie_protocol = 2
+
+  namelist /cloud_simple_nml/  simple_cca, rhc_sfc, rhc_base, rhc_top, &
+                               rhmsfc, rhm700, rhm200,                 &
+                               rh_min_top, rh_min_sfc, rh_min_base,    &
+                               rh_max_top, rh_max_sfc, rh_max_base
+      
   real :: zerodegc = 273.15
 
-  integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf, id_simple_rhcrit
-
+  integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf, &
+             id_simple_rhcrit, id_rh_min
  
   character(len=14), parameter ::   mod_name_cld = "cloud_simple"
 
@@ -86,11 +106,13 @@ module cloud_simple_mod
 
    id_simple_rhcrit = &
       register_diag_field ( mod_name_cld, 'simple_rhcrit', axes(1:3), Time, &
-      'RH as a percent', &
+      'RH as a percent for spookie protocol 1', &
       '%')
 
-
-
+   id_rh_min = &
+      register_diag_field ( mod_name_cld, 'rh_min', axes(1:3), Time, &
+      'RH as a percent for spookie protocol 2', &
+      '%')
 
 
     do_init = .false.  !initialisation completed
@@ -102,14 +124,14 @@ module cloud_simple_mod
   subroutine cloud_simple(p_half, p_full, Time,   &
                       temp, q_hum,                &
                       ! outs 
-                      cf, reff_rad, qcl_rad ) 
+                      cf, cca, reff_rad, qcl_rad) 
 
     real       , intent(in), dimension(:,:,:)  :: temp, q_hum, p_full, p_half
     type(time_type) , intent(in)               :: Time
 
-    real       , intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
+    real       , intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad, cca
 
-    real, dimension(size(temp,1), size(temp, 2), size(temp, 3)) :: qs, frac_liq, rh_in_cf, simple_rhcrit
+    real, dimension(size(temp,1), size(temp, 2), size(temp, 3)) :: qs, frac_liq, rh_in_cf, simple_rhcrit, rh_min, rh_max
 
 
     integer :: i, j, k, k_surf
@@ -133,16 +155,26 @@ module cloud_simple_mod
           ! the simple cloud scheme and cloud fraction.
           ! rh_in_cf is an output diagnostic only for debugging  
           call calc_liq_frac(temp(i,j,k), frac_liq(i,j,k))
+
           call calc_reff(frac_liq(i,j,k), reff_rad(i,j,k))
-          call calc_rhcrit(p_full(i,j,k), p_full(i,j,k_surf), simple_rhcrit(i,j,k))
-          call calc_cf(q_hum(i,j,k), qs(i,j,k), simple_rhcrit(i,j,k), cf(i,j,k),rh_in_cf(i,j,k))
-          call calc_qcl_rad(p_full(i,j,k), cf(i,j,k), qcl_rad(i,j,k) )
+
+          if (spookie_protocol .eq. 1) then
+              call calc_rhcrit(p_full(i,j,k), p_full(i,j,k_surf), simple_rhcrit(i,j,k))
+          else
+              call calc_rh_min_max(p_full(i,j,k), p_full(i,j,k_surf),rh_min(i,j,k), rh_max(i,j,k))
+          endif
+
+          call calc_cf(q_hum(i,j,k), qs(i,j,k), cf(i,j,k), cca(i,j,k), rh_in_cf(i,j,k), &
+                       simple_rhcrit = simple_rhcrit(i,j,k),                &
+                       rh_min = rh_min(i,j,k), rh_max = rh_max(i,j,k) )
+
+          call calc_qcl_rad(p_full(i,j,k), cf(i,j,k), temp(i,j,k), qcl_rad(i,j,k) )
         end do
       end do
     end do
 
   !save some diagnotics
-  call output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, Time )  
+  call output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, rh_min, Time )  
 
   end subroutine cloud_simple
 
@@ -176,71 +208,111 @@ module cloud_simple_mod
   end subroutine calc_reff
 
   subroutine calc_rhcrit(p_full, p_surf, simple_rhcrit)   !need to check p_full - > p_layer_centres
-    !get the RH needed as a threshold for the cloud fraction calc.
+    !  get the RH needed as a threshold for the cloud fraction calc.
+    ! This is only requires for spookie_protocol=1
     real, intent(in)  :: p_full, p_surf
     real, intent(out) :: simple_rhcrit
 
     ! Calculate RHcrit as function of pressure
-    if (p_full > 70000.0  ) then
+    if (p_full > p_base  ) then
 
-      simple_rhcrit = rhcsfc - ( rhcsfc - rhc700 ) *           &
-                     ( p_surf - p_full  ) / ( p_surf - 70000.0 )
+      simple_rhcrit = rhc_sfc - ( rhc_sfc - rhc_base ) *           &
+                     ( p_surf - p_full  ) / ( p_surf - p_base )
 
-    else if ( p_full > 20000.0 ) then 
+    else if ( p_full > p_top ) then 
 
-      simple_rhcrit = rhc700 - ( rhc700 - rhc200 ) *        &
-                      ( 70000.0 - p_full) / 50000.0
+      simple_rhcrit = rhc_base - ( rhc_base - rhc_top ) *        &
+                      (p_base - p_full) / (p_base - p_top)
           
     else
-      simple_rhcrit = rhc200
+      simple_rhcrit = rhc_top
     endif
 
   end subroutine calc_rhcrit
 
-  subroutine calc_cf (q_hum, qsat, simple_rhcrit, cf, rh)
+  subroutine calc_rh_min_max(p_full, p_surf, rh_min, rh_max)
+
+    real, intent(in)  :: p_full, p_surf
+    real, intent(out) :: rh_min, rh_max
+
+
+    if (p_full > p_base  ) then !surface up to base
+
+      rh_min = rh_min_sfc - ( rh_min_sfc - rh_min_base ) * ( p_surf - p_full  ) / ( p_surf - p_base )
+      rh_max = rh_max_sfc - ( rh_max_sfc - rh_max_base ) * ( p_surf - p_full  ) / ( p_surf - p_base )
+
+    else if ( p_full > p_top ) then  ! base up to top
+
+      rh_min = rh_min_base - ( rh_min_base - rh_min_top ) * (p_base - p_full) / (p_base - p_top)
+      rh_max = rh_max_base - ( rh_max_base - rh_max_top ) * (p_base - p_full) / (p_base - p_top)
+          
+    else ! above top
+
+      rh_min = rh_min_top
+      rh_max = rh_max_top
+
+    endif
+
+
+  end subroutine calc_rh_min_max
+
+  subroutine calc_cf(q_hum, qsat, cf, cca, rh, simple_rhcrit, rh_min, rh_max)
     ! Calculate LS (stratiform) cloud fraction 
     ! as a simple linear function of RH
 
-    real, intent(in)  :: q_hum, qsat, simple_rhcrit
-    real, intent(out) :: cf, rh
- 
-    real :: cca
+    real, intent(in)            :: q_hum, qsat
+    real, intent(in), optional  :: simple_rhcrit, rh_min, rh_max
+
+    real, intent(out) :: cf, rh, cca
 
     rh = q_hum/qsat
-    cf = MAX( 0.0, MIN( 1.0, ( rh - simple_rhcrit ) / ( 1.0 - simple_rhcrit ) ))
 
+    if (spookie_protocol .eq. 1) then
+        cf = (rh - simple_rhcrit ) / ( 1.0 - simple_rhcrit ) 
+        cf = MAX( 0.0, MIN( 1.0, cf))
+
+    else
+        cf = (rh - rh_min ) / ( rh_max - rh_min ) 
+        cf = MAX( 0.0, MIN( 1.0, cf))
+    end if 
 
     ! include simple convective cloud fraction where present (not currenly used)
     cca = 0.0 ! no convective cloud fraction is calculated
-              ! left in for future use
+             ! left in for future use
 
     if (cca > 0.0) then
-      cf = MAX( simple_cca, cf )
+       cf = MAX( simple_cca, cf )
     end if
-   
+
 
   end subroutine calc_cf
 
-  subroutine calc_qcl_rad(p_full, cf, qcl_rad)
+  subroutine calc_qcl_rad(p_full, cf, temp, qcl_rad)
     ! calculate cloud water content
 
-    real , intent(in)   :: p_full, cf
-    real , intent(out)   :: qcl_rad
+    real , intent(in)   :: p_full, cf, temp
+    real , intent(out)  :: qcl_rad
 
     real :: in_cloud_qcl 
-
-    in_cloud_qcl = 3.0e-4 +                                        &
-           (1.0-3.0e-4)*(p_full-20000.0)/80000.0
-
-    in_cloud_qcl = MAX ( 0.0, in_cloud_qcl/1000.0 ) ! convert to kg/kg
-
-    qcl_rad = cf * in_cloud_qcl
+ 
+    IF (spookie_protocol .eq. 1) THEN
+        ! pressure dependent in_cloud_qcl
+        in_cloud_qcl = 3.0e-4 + (1.0-3.0e-4)*(p_full-p_top)/80000.0
+        in_cloud_qcl = MAX ( 0.0, in_cloud_qcl/1000.0 ) ! convert to kg/kg
+        qcl_rad = cf * in_cloud_qcl
+    ELSE
+        ! temperatue dependent in_cloud_qcl
+        in_cloud_qcl = MIN(0.2, 0.2 * ( temp - 220. ) / ( 280. -220. ))
+        in_cloud_qcl = MAX (3.0e-4, in_cloud_qcl/1000.0 ) ! convert to kg/kg
+        qcl_rad = cf * in_cloud_qcl
+    ENDIF
 
   end subroutine calc_qcl_rad
 
-  subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, Time)
+  subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, rh_min, Time)
 
-    real, intent(in), dimension(:,:,:) :: cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit
+    real, intent(in), dimension(:,:,:) :: cf, reff_rad, frac_liq, qcl_rad, rh_in_cf
+    real, intent(in), dimension(:,:,:), optional :: simple_rhcrit, rh_min
 
     type(time_type) , intent(in)       :: Time
 
@@ -268,6 +340,10 @@ module cloud_simple_mod
 
     if ( id_simple_rhcrit > 0 ) then
       used = send_data ( id_simple_rhcrit, simple_rhcrit*100.0, Time)
+    endif
+
+    if ( id_rh_min > 0 ) then
+      used = send_data ( id_rh_min, rh_min*100.0, Time)
     endif
 
   end subroutine output_cloud_diags

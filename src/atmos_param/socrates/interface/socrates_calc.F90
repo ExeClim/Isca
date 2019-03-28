@@ -33,7 +33,7 @@ subroutine socrates_calc(Time_diag,control, spectrum,                          &
   t_rad_surf, cos_zenith_angle, solar_irrad, orog_corr,                        &
   l_planet_grey_surface, planet_albedo, planet_emissivity,                     &
   layer_heat_capacity,                                                         &
-  cld_frac, reff_rad, mmr_cl_rad,                                              &
+  cld_frac, cld_conv_frac, reff_rad, mmr_cl_rad,                               &
   flux_direct, flux_down, flux_up,                                             &
   flux_down_clear, flux_up_clear,                                              &
   heating_rate, spectral_olr)
@@ -118,7 +118,10 @@ real(r_def), intent(in) :: layer_heat_capacity(n_profile, n_layer)
 !   Heat capacity of layer
 
 real(r_def), intent(in) :: cld_frac(n_profile, n_layer)
-!   Cloud fraction at layer centres
+!   Cloud fraction at layer centres for stratocumulus cloud
+
+real(r_def), intent(in) :: cld_conv_frac(n_profile, n_layer)
+!   Cloud fraction at layer centres for convective cloud
 
 real(r_def), intent(in) :: reff_rad(n_profile, n_layer)
 !   Cloud liquid particle radius from simple cloud scheme
@@ -185,11 +188,12 @@ call set_bound(control, dimen, spectrum, bound, n_profile,                     &
   zeros_cld = 0.
   ten_microns_cld = 1.
 call set_cld(cld, control, dimen, spectrum, n_profile, n_layer, &
+            conv_frac     = cld_conv_frac,&
             liq_frac      = cld_frac,     &
-            ice_frac      = zeros_cld,     &
-            liq_mmr       = mmr_cl_rad,      &
-            ice_mmr       = zeros_cld,      &
-            liq_dim       = reff_rad,      &
+            ice_frac      = zeros_cld,    &
+            liq_mmr       = mmr_cl_rad,   &
+            ice_mmr       = zeros_cld,    &
+            liq_dim       = reff_rad,     &
             ice_dim       = zeros_cld )
 
 call set_aer(control, dimen, spectrum, aer, n_profile)
