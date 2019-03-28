@@ -56,8 +56,15 @@ MODULE socrates_interface_mod
   INTEGER :: id_soc_tdt_sw, id_soc_tdt_lw, id_soc_tdt_rad
   INTEGER :: id_soc_surf_flux_lw, id_soc_surf_flux_sw 
   INTEGER :: id_soc_surf_flux_lw_down, id_soc_surf_flux_sw_down 
+
+  INTEGER :: id_soc_surf_flux_lw_clear, id_soc_surf_flux_sw_clear 
+  INTEGER :: id_soc_surf_flux_lw_down_clear, id_soc_surf_flux_sw_down_clear 
+
   INTEGER :: id_soc_flux_lw, id_soc_flux_sw
+
   INTEGER :: id_soc_olr, id_soc_toa_sw
+  INTEGER :: id_soc_olr_clear, id_soc_toa_sw_clear
+
   INTEGER :: id_soc_toa_sw_down
   INTEGER :: id_soc_surf_flux_lw_clear, id_soc_surf_flux_sw_clear 
   INTEGER :: id_soc_surf_flux_lw_down, id_soc_surf_flux_sw_down 
@@ -79,9 +86,9 @@ MODULE socrates_interface_mod
   REAL(r_def), allocatable, dimension(:,:,:) :: tdt_soc_sw_store, tdt_soc_lw_store
   REAL(r_def), allocatable, dimension(:,:,:) :: thd_sw_flux_net_store, thd_lw_flux_net_store
   REAL(r_def), allocatable, dimension(:,:,:) :: thd_co2_store, thd_ozone_store 
-  REAL(r_def), allocatable, dimension(:,:)   :: net_surf_sw_down_store, surf_sw_down_store, surf_lw_down_store, surf_lw_net_store, &
-                                                toa_sw_store, olr_store, coszen_store, &
-                                                toa_sw_down_store
+  REAL(r_def), allocatable, dimension(:,:)   :: net_surf_sw_down_store, surf_lw_down_store, surf_lw_net_store, surf_lw_net_store, &
+                                                surf_sw_down_store, toa_sw_down_store, &
+                                                toa_sw_store, olr_store, coszen_store
   REAL(r_def), allocatable, dimension(:,:)   :: net_surf_sw_down_clear_store, surf_sw_down_clear_store, &
                                                 surf_lw_down_clear_store, surf_lw_net_clear_store, &
                                                 toa_sw_clear_store, olr_clear_store, toa_sw_down_clear_store
