@@ -756,7 +756,7 @@ real :: delta_t
 real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
 
 ! Simple cloud scheme variabilies to pass to radiation
-real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cf_rad, reff_rad, qcl_rad  
+real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cf_rad, reff_rad, qcl_rad, cca_rad  
 
 real, intent(in) , dimension(:,:,:), optional :: mask
 integer, intent(in) , dimension(:,:),   optional :: kbot
@@ -937,8 +937,8 @@ if(do_cloud_simple) then
                       tg(:,:,:,previous),                  &
                       grid_tracers(:,:,:,previous,nsphum), &
                       ! outs - 
-                      cf_rad(:,:,:), reff_rad(:,:,:),      &
-                      qcl_rad(:,:,:)                       & 
+                      cf_rad(:,:,:), cca_rad(:,:,:),       &
+                      reff_rad(:,:,:), qcl_rad(:,:,:)      & 
                       )
  
 endif
@@ -1059,7 +1059,7 @@ if (do_socrates_radiation) then
     endif
   
     call run_socrates(Time, Time+Time_step, rad_lat, rad_lon, tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum), t_surf(:,:), p_full(:,:,:,current), &
-                      p_half(:,:,:,current),z_full(:,:,:,current),z_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t, do_cloud_simple, cf_rad(:,:,:), reff_rad(:,:,:),      &
+                      p_half(:,:,:,current),z_full(:,:,:,current),z_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t, do_cloud_simple, cf_rad(:,:,:), cca_rad(:,:,:), reff_rad(:,:,:),      &
                       qcl_rad(:,:,:)   )
 
 endif
