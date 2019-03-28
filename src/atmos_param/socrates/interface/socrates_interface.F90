@@ -868,7 +868,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                 endif 
 
                 if (id_soc_surf_flux_lw > 0) then 
-                    surf_lw_net = real(surf_lw_net_store) 
+                    surf_lw_net = surf_lw_net_store
                 endif 
 
                 if (id_soc_surf_flux_lw_clear > 0) then 
@@ -1239,7 +1239,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             endif 
 
             if (id_soc_surf_flux_lw > 0) then 
-                surf_lw_net_store = real(surf_lw_net, kind(r_def)) 
+                surf_lw_net_store = surf_lw_net
             endif 
 
             if (id_soc_surf_flux_sw_down > 0) then 

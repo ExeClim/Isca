@@ -129,21 +129,14 @@ exp.namelist = namelist = Namelist({
         'do_cloud_simple': True
     },
 
-    'cloud_simple_nml': {
-        'simple_cca':0.0,
-        'rhcsfc': 0.95,
-        'rhc700': 0.7,
-        'rhc200': 0.3
-    },
-
     'vert_turb_driver_nml': {
         'do_mellor_yamada': False,     # default: True
         'do_diffusivity': True,        # default: False
         'do_simple': True,             # default: False
         'constant_gust': 0.0,          # default: 1.0
-        'use_tau': False
+        'use_tau': False, 
     },
-    
+
     'diffusivity_nml': {
         'do_entrain':False,
         'do_simple': True,
@@ -227,5 +220,5 @@ if __name__=="__main__":
         cb.compile(debug=False)
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
 
-#        for i in range(2,171):
-#            exp.run(i, num_cores=NCORES)
+        for i in range(2,121):
+            exp.run(i, num_cores=NCORES)

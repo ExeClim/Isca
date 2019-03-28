@@ -280,6 +280,9 @@ module cloud_simple_mod
     cca = 0.0 ! no convective cloud fraction is calculated
              ! left in for future use
 
+    !cca can not be used in simple clouds as in read_control  
+    ! control%i_cloud_representation = ip_cloud_ice_water
+
     if (cca > 0.0) then
        cf = MAX( simple_cca, cf )
     end if
