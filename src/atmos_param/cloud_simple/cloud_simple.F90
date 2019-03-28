@@ -136,7 +136,6 @@ module cloud_simple_mod
 
     logical :: es_over_liq_and_ice
 
-    real :: tmp1, tmp2 !remove tmp1 and tmp2 after debugging
 
     !check initiation has been done - ie read in parameters
     if (do_init) call error_mesg ('cloud_simple',  &
@@ -267,6 +266,14 @@ module cloud_simple_mod
 
     rh = q_hum/qsat
 
+    if (spookie_protocol .eq. 1) then
+        cf = (rh - simple_rhcrit ) / ( 1.0 - simple_rhcrit ) 
+        cf = MAX( 0.0, MIN( 1.0, cf))
+
+    else
+        cf = (rh - rh_min ) / ( rh_max - rh_min ) 
+        cf = MAX( 0.0, MIN( 1.0, cf))
+    end if 
 
     if (spookie_protocol .eq. 1) then
         cf = (rh - simple_rhcrit ) / ( 1.0 - simple_rhcrit ) 
@@ -287,7 +294,7 @@ module cloud_simple_mod
     if (cca > 0.0) then
        cf = MAX( simple_cca, cf )
     end if
-   
+
 
   end subroutine calc_cf
 

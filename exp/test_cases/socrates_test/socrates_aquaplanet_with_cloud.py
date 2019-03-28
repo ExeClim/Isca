@@ -5,7 +5,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 8
+NCORES = 16
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -81,8 +81,8 @@ diag.add_field('cloud_simple', 'rh_min', time_avg=True)
 diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
 
 # additional output options commented out 
-diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
-diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
+#diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
+#diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_co2', time_avg=True)
 #diag.add_field('socrates', 'soc_ozone', time_avg=True) 
 #diag.add_field('socrates', 'soc_coszen', time_avg=True) 
