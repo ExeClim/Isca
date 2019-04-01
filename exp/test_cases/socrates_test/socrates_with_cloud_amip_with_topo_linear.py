@@ -9,7 +9,8 @@ NUM_LEVELS = 25
 base_dir = os.path.dirname(os.path.realpath(__file__))
 cb = SocratesCodeBase.from_directory(GFDL_BASE)
 
-exp = Experiment('soc_test_with_clouds_amip_land_linear_qcl_with_temp', codebase=cb)
+#exp = Experiment('soc_test_with_clouds_amip_land_linear_qcl_with_temp', codebase=cb)
+exp = Experiment('soc_test_with_clouds_amip_land_linear_qcl_two_paras', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
@@ -128,7 +129,7 @@ exp.namelist = namelist = Namelist({
         'do_read_scm_rhcrit': False,
         'do_linear_diag': True,
         'scm_linear_coeffs': coeff_arr, 
-        'do_qcl_with_temp': True,
+        'do_qcl_two_paras': True,
     },
 
     'vert_turb_driver_nml': {

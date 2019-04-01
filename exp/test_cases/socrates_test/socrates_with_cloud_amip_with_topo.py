@@ -3,11 +3,12 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 8 
+NCORES = 16
 base_dir = os.path.dirname(os.path.realpath(__file__))
 cb = SocratesCodeBase.from_directory(GFDL_BASE)
 
-exp = Experiment('soc_test_with_clouds_amip_land_default_qcl_with_temp', codebase=cb)
+#exp = Experiment('soc_test_with_clouds_amip_land_default_qcl_with_temp', codebase=cb)
+exp = Experiment('soc_test_with_clouds_amip_land_default_qcl_two_paras', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
@@ -116,7 +117,7 @@ exp.namelist = namelist = Namelist({
         'rhc700': 0.7,
         'rhc200': 0.3,
         'do_simple_rhcrit': True,
-        'do_qcl_with_temp': True,
+        'do_qcl_two_paras': True,
     },
 
     'vert_turb_driver_nml': {
