@@ -16,7 +16,8 @@ module cloud_simple_mod
   logical ::   do_init = .true.  ! Check if init needs to be run
 
   real :: zerodegc = 273.15
-  integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf, id_simple_rhcrit
+  integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf, id_simple_rhcrit, &
+             id_tot_cld_amt, id_high_cld_amt, id_mid_cld_amt, id_low_cld_amt
   character(len=14), parameter ::   mod_name_cld = "cloud_simple"
 
   integer, parameter :: B_SPOOKIE = 1, B_SUNDQVIST = 2, B_SMITH = 3
@@ -28,6 +29,8 @@ module cloud_simple_mod
   logical :: do_linear_diag = .false.
   logical :: do_qcl_with_temp = .false.
   logical :: do_qcl_two_paras = .false.
+  logical :: do_cloud_amount_diags = .true.
+  logical :: adjust_top = .true.
   real, parameter :: FILL_VALUE = -999 ! Fill value for arrays
   real, dimension(100) :: scm_rhcrit = FILL_VALUE   ! Input array for single column critical RH. Max number of levels = 100
   real, dimension(100,2) :: scm_linear_coeffs = FILL_VALUE
@@ -36,12 +39,14 @@ module cloud_simple_mod
   real    ::   rhcsfc     = 0.95
   real    ::   rhc700     = 0.7
   real    ::   rhc200     = 0.3
+  real    ::   cf_min     = 1e-10
 
   namelist /cloud_simple_nml/ simple_cca, rhcsfc, rhc700, rhc200, &
                               cf_diag_formula_name, do_simple_rhcrit, &
                               do_linear_diag, scm_linear_coeffs, &
                               do_read_scm_rhcrit, scm_rhcrit, &
-                              do_qcl_with_temp, do_qcl_two_paras
+                              do_qcl_with_temp, do_qcl_two_paras, &
+                              do_cloud_amount_diags, adjust_top
 
   contains
 
@@ -100,6 +105,24 @@ module cloud_simple_mod
       register_diag_field ( mod_name_cld, 'cf', axes(1:3), Time, &
       'Cloud fraction for the simple cloud scheme', 'unitless: values 0-1')
 
+    if (do_cloud_amount_diags) then
+      id_tot_cld_amt = &
+        register_diag_field ( mod_name_cld, 'tot_cld_amt', axes(1:2), Time, &
+                            'total cloud amount', 'percent' )
+
+      id_high_cld_amt = &
+        register_diag_field ( mod_name_cld, 'high_cld_amt', axes(1:2), Time, &
+                            'high cloud amount', 'percent' )
+
+      id_mid_cld_amt = &
+        register_diag_field ( mod_name_cld, 'mid_cld_amt', axes(1:2), Time, &
+                            'mid cloud amount', 'percent' )
+
+      id_low_cld_amt = &
+        register_diag_field ( mod_name_cld, 'low_cld_amt', axes(1:2), Time, &
+                            'low cloud amount', 'percent' )
+    end if
+
     id_frac_liq = &
       register_diag_field ( mod_name_cld, 'frac_liq', axes(1:3), Time, &
       'Liquid cloud fraction (liquid, mixed-ice phase, ice)', &
@@ -139,6 +162,7 @@ module cloud_simple_mod
     type(time_type) , intent(in)               :: Time
     real       , intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: qs, frac_liq, rh_in_cf, simple_rhcrit
+    real, dimension(size(temp,1), size(temp,2)) :: tca, high_ca, mid_ca, low_ca
     integer :: i, j, k, k_surf
     logical :: es_over_liq_and_ice
 
@@ -203,8 +227,13 @@ module cloud_simple_mod
       end do
     end do
 
+    if (do_cloud_amount_diags) then
+      call diag_cloud_amount(cf, p_full, p_half, tca, high_ca, mid_ca, low_ca)
+    end if
+
     !save some diagnotics
-    call output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, Time)
+    call output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, &
+                            tca, high_ca, mid_ca, low_ca, Time)
   end subroutine cloud_simple
 
 
@@ -282,7 +311,6 @@ module cloud_simple_mod
     end if
   end subroutine calc_cf
 
-
   subroutine calc_cf_linear(q_hum, qsat, cf, rh, linear_coeffs)
     ! Calculate LS (stratiform) cloud fraction as a linear function of RH
     real, intent(in)  :: q_hum, qsat
@@ -294,6 +322,18 @@ module cloud_simple_mod
     cf = MAX(0.0, MIN(1.0, cf))
   end subroutine calc_cf_linear
 
+  subroutine diag_cloud_amount(cf, p_full, p_half, tca, high_ca, mid_ca, low_ca)
+    real, intent(in),  dimension(:,:,:) :: cf, p_full, p_half
+    real, intent(out), dimension(:,:)   :: tca, high_ca, mid_ca, low_ca
+    integer, dimension(size(cf,1),size(cf,2),size(cf,3)) :: ktop, kbot
+    real,    dimension(size(cf,1),size(cf,2),size(cf,3)) :: cldamt, cloud
+    integer, dimension(size(cf,1),size(cf,2)) :: nclds
+
+    call max_rnd_overlap(cf, p_full, p_half, nclds, ktop, kbot, cldamt)
+    call compute_tca_random(nclds, cldamt, tca)
+    call expand_cloud(nclds, ktop, kbot, cldamt, cloud)
+    call compute_isccp_clds(p_full, cloud, high_ca, mid_ca, low_ca)
+  end subroutine diag_cloud_amount
 
   subroutine calc_qcl_rad(p_full, cf, qcl_rad)
     ! calculate cloud water content
@@ -339,15 +379,299 @@ module cloud_simple_mod
     qcl_rad = cf * in_cloud_qcl
   end subroutine calc_qcl_rad_two_paras
 
+  subroutine compute_tca_random(nclds, cldamt, tca)
+    ! This subroutine was adapted from AM4 src/atmos_param/clouds/clouds.F90
+    integer, intent(in)  :: nclds (:,:)
+    real,    intent(in)  :: cldamt(:,:,:)
+    real,    intent(out) :: tca   (:,:)
+    integer :: i, j, k
 
-  subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, Time)
+    !---- compute total cloud amount assuming that -----
+    !       independent clouds overlap randomly
+    tca = 1.0
+    do i=1,size(cldamt,1)
+      do j=1,size(cldamt,2)
+        do k = 1,nclds(i,j)
+          tca(i,j) = tca(i,j) * (1.0 - cldamt(i,j,k))
+        enddo
+      enddo
+    enddo
+    tca = (1.0 - tca) * 1.0e2 ! unit percent
+  end subroutine compute_tca_random
+
+  subroutine expand_cloud(nclds, ktop, kbtm, cloud_in, cloud_out)
+    integer, intent(in)  :: nclds(:,:), ktop(:,:,:), kbtm(:,:,:)
+    real,    intent(in)  :: cloud_in (:,:,:)
+    real,    intent(out) :: cloud_out(:,:,:)
+    integer :: i, j, n
+
+    cloud_out = 0.0
+    do j=1,size(nclds,2)
+      do i=1,size(nclds,1)
+         do n=1,nclds(i,j)
+           cloud_out(i,j,ktop(i,j,n):kbtm(i,j,n)) = cloud_in(i,j,n)
+         enddo
+      enddo
+    enddo
+  end subroutine expand_cloud
+
+  subroutine compute_isccp_clds(pfull, cloud, high_ca, mid_ca, low_ca)
+    !   define arrays giving the fractional cloudiness for clouds with
+    !   tops within the ISCCP definitions of high (10-440 hPa), middle
+    !   (440-680 hPa) and low (680-1000 hPa).
+    real,  dimension(:,:,:),   intent(in)  :: pfull, cloud
+    real,  dimension(:,:),     intent(out) :: high_ca, mid_ca, low_ca
+    real,  parameter :: mid_btm = 6.8e4, high_btm = 4.4e4
+    ! local array
+    integer :: i, j, k
+
+    !---- compute high, middle and low cloud amounts assuming that -----
+    !       independent clouds overlap randomly
+    high_ca = 1.0
+    mid_ca = 1.0
+    low_ca = 1.0
+
+    do j=1, size(cloud,2)
+      do i=1, size(cloud,1)
+        do k = 1, size(cloud,3)
+          !if (i==1 .and. j==1) then
+          !  write(*,*) 'pfull(1,1), k:', k, pfull(i,j,k)
+          !endif
+          if (pfull(i,j,k)  <=  high_btm) then
+            high_ca(i,j) = high_ca(i,j) * (1. - cloud(i,j,k))
+          else if ((pfull(i,j,k) > high_btm) .and. (pfull(i,j,k) <= mid_btm)) then
+            mid_ca(i,j) = mid_ca(i,j) * (1. - cloud(i,j,k))
+          else if (pfull(i,j,k) > mid_btm ) then
+            low_ca(i,j) = low_ca(i,j) * (1. - cloud(i,j,k))
+         endif
+        enddo
+      enddo
+    enddo
+
+    high_ca = (1.0 - high_ca) * 1.0e2
+    mid_ca = (1.0 - mid_ca) * 1.0e2
+    low_ca = (1.0 - low_ca) * 1.0e2
+  end subroutine compute_isccp_clds
+
+  subroutine max_rnd_overlap(cf, pfull, phalf, nclds, ktop, kbot, cldamt)
+    !max_rnd_overlap returns various cloud specification properties
+    !    obtained with the maximum-random overlap assumption.
+
+    ! intent(out) variables:
+    !   nclds        Number of (random overlapping) clouds in column
+    !   ktop         Level of the top of the cloud
+    !   kbot         Level of the bottom of the cloud
+    !   cldamt       Cloud amount of condensed cloud [ dimensionless ]
+    real,    dimension(:,:,:), intent(in)             :: cf, pfull, phalf
+    integer, dimension(:,:),   intent(out)            :: nclds
+    integer, dimension(:,:,:), intent(out)            :: ktop, kbot
+    real,    dimension(:,:,:), intent(out)            :: cldamt
+
+    ! local variables:
+    real, dimension (size(cf,1), size(cf,2), size(cf,3))  :: cldamt_cs
+    integer    :: kdim
+    integer    :: top_t, bot_t
+    integer    :: tmp_top, tmp_bot, nlev
+    logical    :: already_in_cloud, cloud_bottom_reached
+    real       :: maxcldfrac
+    real       :: totcld_bot, max_bot
+    real       :: totcld_top, max_top, tmp_val
+    integer    :: i, j, k, kc, t
+    !--------------------------------------------------------------------
+    !   local variables:
+    !       kdim              number of model layers
+    !       top_t             used temporarily as tag for cloud top index
+    !       bot_t             used temporarily as tag for cloud bottom index
+    !       tmp_top           used temporarily as tag for cloud top index
+    !       tmp_bot           used temporarily as tag for cloud bottom index
+    !       nlev              number of levels in the cloud
+    !       already_in_cloud  if true, previous layer contained cloud
+    !       cloud_bottom_reached
+    !                         if true, the cloud-free layer beneath a cloud
+    !                         has been reached
+    !       maxcldfrac        maximum cloud fraction in any layer of cloud
+    !                         [ fraction ]
+    !       totcld_bot        total cloud fraction from bottom view
+    !       max_bot           largest cloud fraction face from bottom view
+    !       totcld_top        total cloud fraction from top view
+    !       max_top           largest cloud fraction face from top view
+    !       tmp_val           temporary number used in the assigning of top
+    !                         [ (kg condensate / m**2) * microns ]
+    !       i,j,k,kc,t        do-loop indices
+    !----------------------------------------------------------------------
+
+    !---------------------------------------------------------------------
+    !    define the number of vertical layers in the model. initialize the
+    !    output fields to correspond to the absence of clouds.
+    !---------------------------------------------------------------------
+    kdim     = size(cf,3)
+    nclds    = 0
+    ktop     = 1
+    kbot     = 1
+    cldamt   = 0.0
+    !--------------------------------------------------------------------
+    !    find the levels with cloud in each column. determine the vertical
+    !    extent of each individual cloud, treating cloud in adjacent layers
+    !    as components of a multi-layer cloud, and then calculate appropr-
+    !    iate values of water paths and effective particle size.
+    !--------------------------------------------------------------------
+    do j=1,size(cf,2)
+      do i=1,size(cf,1)
+        ! set a flag indicating that we are searching for the next cloud top.
+        already_in_cloud  = .false.
+        cloud_bottom_reached = .false.
+        ! march down the column.
+        do k=1,kdim
+          ! find a layer containing cloud in the column.
+          if (cf(i,j,k) .gt. cf_min) then
+            !--------------------------------------------------------------------
+            !    if the previous layer was not cloudy, then a new cloud has been
+            !    found. increment the cloud counter, set the flag to indicate the
+            !    layer is in a cloud, save its cloud top level, initialize the
+            !    values of its ice and liquid contents and fractional area and
+            !    effective crystal and drop sizes.
+            !--------------------------------------------------------------------
+            if (.not. already_in_cloud)  then
+              nclds(i,j) = nclds(i,j) + 1
+              already_in_cloud = .true.
+              cloud_bottom_reached = .false.
+              ktop(i,j,nclds(i,j)) = k
+              !if (nclds(i,j)>2) then
+              !  write(*,*) 'QL, nclds=', nclds(i,j), 'ktop=', ktop(i,j,:)
+              !end if
+              maxcldfrac = 0.0
+            endif
+            !---------------------------------------------------------------------
+            !    add this layer's contributions to the current cloud. total liquid
+            !    content, ice content, largest cloud fraction and condensate-
+            !    weighted effective droplet and crystal radii are accumulated over
+            !    the cloud.
+            !---------------------------------------------------------------------
+            maxcldfrac = MAX(maxcldfrac, cf(i,j,k))
+          endif
+          !--------------------------------------------------------------------
+          !    when the cloud-free layer below a cloud is reached, or if the
+          !    bottom model level is reached, define the cloud bottom level and
+          !    set a flag indicating that mean values for the cloud may now be
+          !    calculated.
+          !--------------------------------------------------------------------
+          if (cf(i,j,k) <= cf_min .and. already_in_cloud) then
+            cloud_bottom_reached = .true.
+            kbot(i,j,nclds(i,j)) = k - 1
+          else if (already_in_cloud .and. k == kdim) then
+            cloud_bottom_reached = .true.
+            kbot(i,j,nclds(i,j)) = kdim
+          endif
+          !--------------------------------------------------------------------
+          ! define the cloud fraction as the largest value of any layer in the cloud.
+          !--------------------------------------------------------------------
+          if (cloud_bottom_reached) then
+            cldamt_cs(i,j,nclds(i,j)) = maxcldfrac
+            !----------------------------------------------------------------------
+            !    if adjust_top is true, the top and bottom indices of multi-layer
+            !    clouds are adjusted to be those that are the most exposed to top
+            !    and bottom view.
+            !----------------------------------------------------------------------
+            if (adjust_top) then
+              ! define the cloud thickness.
+              nlev = kbot(i,j,nclds(i,j)) - ktop(i,j,nclds(i,j)) + 1
+              if (nlev > 1) then
+                ! use the current top and bottom as the first guess for the new values.
+                tmp_top = ktop(i,j,nclds(i,j))
+                tmp_bot = kbot(i,j,nclds(i,j))
+                ! initialize local search variables.
+                totcld_bot = 0.
+                totcld_top = 0.
+                max_bot    = 0.
+                max_top    = 0.
+                !--------------------------------------------------------------------
+                !    to find the adjusted cloud top, begin at current top and work
+                !    downward. find the layer which is most exposed when viewed from
+                !    the top; i.e., the cloud fraction increase is largest for that
+                !    layer. the adjusted cloud base is found equivalently, starting
+                !    from the actual cloud base and working upwards.
+                !--------------------------------------------------------------------
+                do t=1,nlev
+                  ! find adjusted cloud top.
+                  top_t   = ktop(i,j,nclds(i,j)) + t - 1
+                  tmp_val = MAX(0., cf(i,j,top_t) - totcld_top)
+                  if (tmp_val > max_top) then
+                    max_top = tmp_val
+                    tmp_top = top_t
+                  end if
+                  totcld_top = totcld_top + tmp_val
+                  ! find adjusted cloud base.
+                  bot_t   = kbot(i,j,nclds(i,j)) - t + 1
+                  tmp_val = MAX(0., cf(i,j,bot_t) - totcld_bot)
+                  if (tmp_val > max_bot) then
+                    max_bot = tmp_val
+                    tmp_bot = bot_t
+                  end if
+                  totcld_bot = totcld_bot + tmp_val
+                end do
+                ! assign tmp_top and tmp_bot as the new ktop and kbot.
+                ktop(i,j,nclds(i,j)) = tmp_top
+                kbot(i,j,nclds(i,j)) = tmp_bot
+              endif  !(nlev > 1)
+            endif ! (adjust_top)
+            !---------------------------------------------------------------------
+            !    reset already_in_cloud and cloud_bottom_reached to indicate that
+            !    the current cloud has been exited.
+            !---------------------------------------------------------------------
+            already_in_cloud     = .false.
+            cloud_bottom_reached = .false.
+            !if (nclds(i,j)>2) then
+            !  write(*,*) 'QL, kbot=', kbot(i,j,:)
+            !  write(*,*) 'cldamt_cs', cldamt_cs(i,j,1:nclds(i,j))
+            !endif
+          endif   ! (cloud_bottom_reached)
+        end do
+      end do
+    end do
+    !---------------------------------------------------------------------
+    !    place cloud properties into physical-space arrays for return to
+    !    calling routine. NOTE THAT ALL LEVELS IN A GIVEN CLOUD ARE
+    !    ASSIGNED THE SAME PROPERTIES.
+    !---------------------------------------------------------------------
+    do j=1,size(cf,2)
+      do i=1,size(cf,1)
+        do kc=1, nclds(i,j)
+          !cldamt(i,j,ktop(i,j,kc):kbot(i,j,kc)) = cldamt_cs(i,j,kc)
+          cldamt(i,j,kc) = cldamt_cs(i,j,kc)
+        end do
+      end do
+    end do
+  end subroutine max_rnd_overlap
+
+
+  subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, &
+                                tca, high_ca, mid_ca, low_ca, Time)
     real, intent(in), dimension(:,:,:) :: cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit
+    real, intent(in), dimension(:,:)   :: tca, high_ca, mid_ca, low_ca
     type(time_type) , intent(in)       :: Time
     real :: used
 
     if ( id_cf > 0 ) then
       used = send_data ( id_cf, cf, Time)
     endif
+
+    if (do_cloud_amount_diags) then
+      if ( id_tot_cld_amt > 0 ) then
+        used = send_data ( id_tot_cld_amt, tca, Time)
+      endif
+
+      if ( id_high_cld_amt > 0 ) then
+        used = send_data ( id_high_cld_amt, high_ca, Time)
+      endif
+
+      if ( id_mid_cld_amt > 0 ) then
+        used = send_data ( id_mid_cld_amt, mid_ca, Time)
+      endif
+
+      if ( id_low_cld_amt > 0 ) then
+        used = send_data ( id_low_cld_amt, low_ca, Time)
+      endif
+    end if
 
     if ( id_reff_rad > 0 ) then
       used = send_data ( id_reff_rad, reff_rad, Time)
