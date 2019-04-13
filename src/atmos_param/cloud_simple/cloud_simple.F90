@@ -31,6 +31,7 @@ module cloud_simple_mod
   logical :: do_qcl_two_paras = .false.
   logical :: do_cloud_amount_diags = .true.
   logical :: adjust_top = .true.
+  logical :: do_add_stratocumulus = .false.
   real, parameter :: FILL_VALUE = -999 ! Fill value for arrays
   real, dimension(100) :: scm_rhcrit = FILL_VALUE   ! Input array for single column critical RH. Max number of levels = 100
   real, dimension(100,2) :: scm_linear_coeffs = FILL_VALUE
@@ -46,7 +47,8 @@ module cloud_simple_mod
                               do_linear_diag, scm_linear_coeffs, &
                               do_read_scm_rhcrit, scm_rhcrit, &
                               do_qcl_with_temp, do_qcl_two_paras, &
-                              do_cloud_amount_diags, adjust_top
+                              do_cloud_amount_diags, adjust_top, &
+                              do_add_stratocumulus
 
   contains
 
@@ -161,10 +163,12 @@ module cloud_simple_mod
     real       , intent(in), dimension(:,:,:)  :: temp, q_hum, p_full, p_half
     type(time_type) , intent(in)               :: Time
     real       , intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
-    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: qs, frac_liq, rh_in_cf, simple_rhcrit
+    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: qs, frac_liq, rh_in_cf, simple_rhcrit, theta
     real, dimension(size(temp,1), size(temp,2)) :: tca, high_ca, mid_ca, low_ca
-    integer :: i, j, k, k_surf
+    integer, dimension(size(temp,1), size(temp,2)) :: kdthdp
+    integer :: i, j, k, k_surf, k700
     logical :: es_over_liq_and_ice
+    real :: strat
 
     !check initiation has been done - ie read in parameters
     if (do_init) call error_mesg ('cloud_simple',  &
@@ -189,7 +193,11 @@ module cloud_simple_mod
     end if
 
     ! Get the saturated specific humidity TOTAL (ie ice and vap) ***double check maths!
-    call compute_qs(temp, p_full, qs) 
+    call compute_qs(temp, p_full, qs)
+
+    if(do_add_stratocumulus) then
+      call calc_theta_dthdp(temp, p_full, p_half, theta, kdthdp, k700)
+    end if
 
     k_surf = size(temp, 3)
 
@@ -216,6 +224,13 @@ module cloud_simple_mod
             call calc_cf_linear(q_hum(i,j,k), qs(i,j,k), cf(i,j,k), rh_in_cf(i,j,k), scm_linear_coeffs(k,:))
           end if
 
+          if(do_add_stratocumulus) then
+            if(k .eq. kdthdp(i,j)) then
+              strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
+              cf(i,j,k) = max(strat, cf(i,j,k))
+            end if
+          end if
+
           if(do_qcl_with_temp) then
             call calc_qcl_rad_with_temp(p_full(i,j,k), temp(i,j,k), cf(i,j,k), qcl_rad(i,j,k))
           else if (do_qcl_two_paras) then
@@ -236,6 +251,42 @@ module cloud_simple_mod
                             tca, high_ca, mid_ca, low_ca, Time)
   end subroutine cloud_simple
 
+  subroutine calc_theta_dthdp(temp, pfull, phalf, theta, kdthdp, k700)
+    real,    intent(in),  dimension(:,:,:)  :: temp, pfull, phalf
+    real,    intent(out), dimension(:,:,:)  :: theta
+    integer, intent(out), dimension(:,:)    :: kdthdp
+    integer, intent(out) :: k700
+    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: p0, dthdp
+    real, dimension(size(temp,1), size(temp,2)) :: dthdpmn
+    real :: cp, gas_const, premib
+    integer :: i, j, k !, kp1, ks
+
+    cp = 1005.0
+    gas_const = 287.1
+    p0 = 1.0e5
+    dthdpmn = 0.0 !-0.125
+    kdthdp = 0
+    premib = 7.0e4
+    dthdp = 0.0
+
+    theta = temp * (p0 / pfull)**(gas_const / cp)
+
+    do k=2, size(temp,3)
+      do i=1, size(temp,1)
+        do j=1, size(temp,2)
+            if (phalf(i,j,k) >= premib) then
+              dthdp(i,j,k) = (theta(i,j,k) - theta(i,j,k-1)) / (phalf(i,j,k) - phalf(i,j,k-1)) * 1.0e2
+              if (dthdp(i,j,k) < dthdpmn(i,j)) then
+                dthdpmn(i,j) = dthdp(i,j,k)
+                kdthdp(i,j) = k     ! index of interface of max inversion
+              end if
+            end if
+        end do
+      end do
+    end do
+    k700 = minloc(abs(pfull(0,0,:) - 7.0e4), 1)
+    ! write(*,*) 'Model level nearest 700mb is', k700, 'which is', pfull(0,0,k700), 'pascals.'
+  end subroutine calc_theta_dthdp
 
   subroutine calc_liq_frac(temp, frac_liq)
     ! All liquid if above zero and all ice below -40C
@@ -434,9 +485,6 @@ module cloud_simple_mod
     do j=1, size(cloud,2)
       do i=1, size(cloud,1)
         do k = 1, size(cloud,3)
-          !if (i==1 .and. j==1) then
-          !  write(*,*) 'pfull(1,1), k:', k, pfull(i,j,k)
-          !endif
           if (pfull(i,j,k)  <=  high_btm) then
             high_ca(i,j) = high_ca(i,j) * (1. - cloud(i,j,k))
           else if ((pfull(i,j,k) > high_btm) .and. (pfull(i,j,k) <= mid_btm)) then
@@ -536,9 +584,6 @@ module cloud_simple_mod
               already_in_cloud = .true.
               cloud_bottom_reached = .false.
               ktop(i,j,nclds(i,j)) = k
-              !if (nclds(i,j)>2) then
-              !  write(*,*) 'QL, nclds=', nclds(i,j), 'ktop=', ktop(i,j,:)
-              !end if
               maxcldfrac = 0.0
             endif
             !---------------------------------------------------------------------
@@ -620,10 +665,6 @@ module cloud_simple_mod
             !---------------------------------------------------------------------
             already_in_cloud     = .false.
             cloud_bottom_reached = .false.
-            !if (nclds(i,j)>2) then
-            !  write(*,*) 'QL, kbot=', kbot(i,j,:)
-            !  write(*,*) 'cldamt_cs', cldamt_cs(i,j,1:nclds(i,j))
-            !endif
           endif   ! (cloud_bottom_reached)
         end do
       end do
