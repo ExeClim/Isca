@@ -6,10 +6,13 @@ module cloud_simple_mod
   use fms_mod, only: open_namelist_file, close_file
 #endif
 
-  use            fms_mod, only: stdlog, FATAL, WARNING, NOTE, error_mesg, uppercase
-  use   time_manager_mod, only: time_type
-  use sat_vapor_pres_mod, only:  compute_qs
-  use diag_manager_mod, only: register_diag_field, send_data
+  use             fms_mod, only: stdlog, FATAL, WARNING, NOTE, error_mesg, uppercase
+  use    time_manager_mod, only: time_type
+  use  sat_vapor_pres_mod, only: compute_qs, lookup_es
+  use    diag_manager_mod, only: register_diag_field, send_data
+  use       constants_mod, only: CP_AIR, GRAV, RDGAS, RVGAS, HLV, KAPPA, ES0, KELVIN
+  !use moist_processes_mod, only: lcltabl
+  use    betts_miller_mod, only: lcltabl
 
   implicit none
 
@@ -17,12 +20,14 @@ module cloud_simple_mod
 
   real :: zerodegc = 273.15
   integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf, id_simple_rhcrit, &
-             id_tot_cld_amt, id_high_cld_amt, id_mid_cld_amt, id_low_cld_amt
+             id_tot_cld_amt, id_high_cld_amt, id_mid_cld_amt, id_low_cld_amt, &
+             id_eis
   character(len=14), parameter ::   mod_name_cld = "cloud_simple"
 
   integer, parameter :: B_SPOOKIE = 1, B_SUNDQVIST = 2, B_SMITH = 3
   integer, private :: cf_diag_formula = B_SPOOKIE
   character(len=32) :: cf_diag_formula_name = 'spookie'
+  character(len=32) :: sc_diag_method = 'cam' ! 'gordon'
   ! character(len=32) :: diag_cf_method = 'simple_rhcrit' ! 'read_rhcrit', 'linear', 'quadratic'
   logical :: do_simple_rhcrit = .true.
   logical :: do_read_scm_rhcrit = .false.
@@ -32,7 +37,7 @@ module cloud_simple_mod
   logical :: do_cloud_amount_diags = .true.
   logical :: adjust_top = .true.
   logical :: do_add_stratocumulus = .false.
-  real, parameter :: FILL_VALUE = -999 ! Fill value for arrays
+  real, parameter :: FILL_VALUE = -999.0 ! Fill value for arrays
   real, dimension(100) :: scm_rhcrit = FILL_VALUE   ! Input array for single column critical RH. Max number of levels = 100
   real, dimension(100,2) :: scm_linear_coeffs = FILL_VALUE
 
@@ -48,7 +53,7 @@ module cloud_simple_mod
                               do_read_scm_rhcrit, scm_rhcrit, &
                               do_qcl_with_temp, do_qcl_two_paras, &
                               do_cloud_amount_diags, adjust_top, &
-                              do_add_stratocumulus
+                              do_add_stratocumulus, sc_diag_method
 
   contains
 
@@ -58,6 +63,7 @@ module cloud_simple_mod
     type(time_type), intent(in)       :: Time
     integer, intent(in), dimension(4) :: axes
     integer :: io ,stdlog_unit
+    character(len=32) :: tmp_str = ''
 
 #ifdef INTERNAL_FILE_NML
     read (input_nml_file, nml=cloud_simple_nml, iostat=io)
@@ -125,6 +131,15 @@ module cloud_simple_mod
                             'low cloud amount', 'percent' )
     end if
 
+    if(do_add_stratocumulus) then
+      tmp_str = uppercase(trim(sc_diag_method))
+      if (tmp_str(1:3)=='EIS') then
+        id_eis =  &
+          register_diag_field ( mod_name_cld, 'eis', axes(1:2), Time, &
+                              'estimated inversion strength', 'K' )
+      end if
+    end if
+
     id_frac_liq = &
       register_diag_field ( mod_name_cld, 'frac_liq', axes(1:3), Time, &
       'Liquid cloud fraction (liquid, mixed-ice phase, ice)', &
@@ -157,18 +172,19 @@ module cloud_simple_mod
 
 
   subroutine cloud_simple(p_half, p_full, Time,   &
-                      temp, q_hum,                &
+                      temp, q_hum, z_full,        &
                       ! outs
                       cf, reff_rad, qcl_rad)
-    real       , intent(in), dimension(:,:,:)  :: temp, q_hum, p_full, p_half
+    real       , intent(in), dimension(:,:,:)  :: temp, q_hum, p_full, p_half, z_full
     type(time_type) , intent(in)               :: Time
     real       , intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
-    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: qs, frac_liq, rh_in_cf, simple_rhcrit, theta
-    real, dimension(size(temp,1), size(temp,2)) :: tca, high_ca, mid_ca, low_ca
+    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: qs, frac_liq, rh_in_cf, simple_rhcrit, theta, dthdp
+    real, dimension(size(temp,1), size(temp,2)) :: tca, high_ca, mid_ca, low_ca, eis
+    real, dimension(size(temp,3)) :: rin
     integer, dimension(size(temp,1), size(temp,2)) :: kdthdp
-    integer :: i, j, k, k_surf, k700
+    integer :: i, j, k, k_surf, k700, kb
     logical :: es_over_liq_and_ice
-    real :: strat
+    real :: strat, rhb_frac
 
     !check initiation has been done - ie read in parameters
     if (do_init) call error_mesg ('cloud_simple',  &
@@ -196,13 +212,15 @@ module cloud_simple_mod
     call compute_qs(temp, p_full, qs)
 
     if(do_add_stratocumulus) then
-      call calc_theta_dthdp(temp, p_full, p_half, theta, kdthdp, k700)
+      call calc_theta_dthdp(temp, p_full, p_half, theta, dthdp, kdthdp, k700)
     end if
 
     k_surf = size(temp, 3)
 
     do i=1, size(temp, 1)
       do j=1, size(temp, 2)
+        rin = q_hum(i,j,:) / (1.0 - q_hum(i,j,:))
+        call calc_eis(k700, p_full(i,j,:), z_full(i,j,:), temp(i,j,:), rin, eis(i,j))
         do k=1, size(temp, 3)
           ! caluclate the liquid fraction, effective radius, critical RH for
           ! the simple cloud scheme and cloud fraction.
@@ -226,8 +244,46 @@ module cloud_simple_mod
 
           if(do_add_stratocumulus) then
             if(k .eq. kdthdp(i,j)) then
-              strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
-              cf(i,j,k) = max(strat, cf(i,j,k))
+              if (k<k_surf) then
+                kb = k+1
+              else
+                kb = k
+              end if
+              if(uppercase(trim(sc_diag_method)) == 'CAM') then
+                strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
+                cf(i,j,k) = max(strat, cf(i,j,k))
+              end if
+              if(uppercase(trim(sc_diag_method)) == 'SLINGO') then
+                strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
+                rhb_frac = min(1.0, max(0.0, (rh_in_cf(i,j,kb) - 0.6) / 0.2))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+              end if
+              if(uppercase(trim(sc_diag_method)) == 'SLINGO_NO_RH') then
+                strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+              end if
+              if(uppercase(trim(sc_diag_method)) == 'DTHDP') then
+                strat = min(1.0, max(0.0, -3.1196*dthdp(i,j,k) - 0.1246))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+              end if
+              if(uppercase(trim(sc_diag_method)) == 'EIS_WOOD') then
+                !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
+                strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+              end if
+              if(uppercase(trim(sc_diag_method)) == 'EIS_WOOD_RH') then
+                strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
+                rhb_frac = min(1.0, max(0.0, (rh_in_cf(i,j,kb) - 0.6) / 0.2))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+              end if
+              if(uppercase(trim(sc_diag_method)) == 'EIS_RH') then
+                !if (eis(i,j)>0.0) then
+                strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh_in_cf(i,j,k)-6.45e-19)))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+                !else
+                !  cf(i,j,k) = cf(i,j,k)
+                !end if
+              end if
             end if
           end if
 
@@ -241,6 +297,7 @@ module cloud_simple_mod
         end do
       end do
     end do
+    write(*,*) 'QL test, min, max, mean eis=', minval(eis), maxval(eis), sum(eis)/size(eis)
 
     if (do_cloud_amount_diags) then
       call diag_cloud_amount(cf, p_full, p_half, tca, high_ca, mid_ca, low_ca)
@@ -248,20 +305,20 @@ module cloud_simple_mod
 
     !save some diagnotics
     call output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, &
-                            tca, high_ca, mid_ca, low_ca, Time)
+                            tca, high_ca, mid_ca, low_ca, eis, Time)
   end subroutine cloud_simple
 
-  subroutine calc_theta_dthdp(temp, pfull, phalf, theta, kdthdp, k700)
+  subroutine calc_theta_dthdp(temp, pfull, phalf, theta, dthdp, kdthdp, k700)
     real,    intent(in),  dimension(:,:,:)  :: temp, pfull, phalf
-    real,    intent(out), dimension(:,:,:)  :: theta
+    real,    intent(out), dimension(:,:,:)  :: theta, dthdp
     integer, intent(out), dimension(:,:)    :: kdthdp
     integer, intent(out) :: k700
-    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: p0, dthdp
+    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: p0
     real, dimension(size(temp,1), size(temp,2)) :: dthdpmn
-    real :: cp, gas_const, premib
+    real :: CP_AIR, gas_const, premib
     integer :: i, j, k !, kp1, ks
 
-    cp = 1005.0
+    CP_AIR = 1005.0
     gas_const = 287.1
     p0 = 1.0e5
     dthdpmn = 0.0 !-0.125
@@ -269,7 +326,7 @@ module cloud_simple_mod
     premib = 7.0e4
     dthdp = 0.0
 
-    theta = temp * (p0 / pfull)**(gas_const / cp)
+    theta = temp * (p0 / pfull)**(gas_const / CP_AIR)
 
     do k=2, size(temp,3)
       do i=1, size(temp,1)
@@ -685,10 +742,86 @@ module cloud_simple_mod
   end subroutine max_rnd_overlap
 
 
+  subroutine calc_eis(k700, pfull, zfull, tin, rin, eis)
+    ! Estimated inversion stability
+    implicit none
+    real, intent(in), dimension(:)  :: pfull, zfull, tin, rin
+    integer, intent(in)             :: k700
+    real, intent(out)               :: eis
+    real    :: pstar, zlcl, LTS, ts, tk, T850, es, qs, Gamma, z700
+    integer :: ks
+
+    pstar = 1.e5 ! Pa
+    ks = size(tin, 1)
+
+    ts = tin(ks)
+    tk = tin(k700)
+    LTS = tk*((pstar/7.e4)**(RDGAS/CP_AIR)) - ts*(pstar/pfull(ks))**(RDGAS/CP_AIR)
+    T850 = (tk + ts) / 2.0
+    !es = 610.78 * exp(17.27*(T850-KELVIN)/(T850-KELVIN+237.3))
+    call lookup_es(T850, es)
+    qs = 0.622 * es / (850.0e4 - es)
+    Gamma = (GRAV/CP_AIR) * (1.0 - (1.0 + HLV*qs/RDGAS/T850) / (1.0 + HLV**2 * qs/CP_AIR/RVGAS/T850**2))
+    call calc_zlcl(ks, pfull, tin, rin, zlcl)
+    z700 = zfull(k700) / GRAV
+    eis = LTS - Gamma * (z700 - zlcl)
+  end subroutine calc_eis
+
+  subroutine calc_zlcl(kx, p, tin, rin, zlcl)
+    implicit none
+    integer, intent(in)                    :: kx
+    real, intent(in), dimension(:)         :: p, tin, rin
+    real, intent(out)                      :: zlcl
+    integer   :: ks
+    real      :: t0, r0, es, rs, theta0, pstar, value, tlcl, plcl
+
+    pstar = 1.e5
+    plcl = 0.
+    tlcl = 0.
+
+    ks = size(tin, 1)
+
+    ! start with surface parcel
+    t0 = tin(kx)
+    r0 = rin(kx)
+    ! calculate the lifting condensation level by the following:
+    ! are you saturated to begin with?
+    call lookup_es(t0, es)
+    rs = RDGAS / RVGAS * es / p(kx)
+    if (r0.ge.rs) then
+      ! if you're already saturated, set lcl to be the surface value.
+      plcl = p(kx)
+    else
+      ! if not saturated to begin with, use the analytic expression to calculate the
+      ! exact pressure and temperature where you?re saturated.
+      theta0 = tin(kx) * (pstar/p(kx))**KAPPA
+      ! the expression that we utilize is
+      ! log(r/theta**(1/KAPPA)*pstar*RVGAS/RDGAS/es00) = log(es/T**(1/KAPPA))
+      ! The right hand side of this is only a function of temperature, therefore
+      ! this is put into a lookup table to solve for temperature.
+      if (r0.gt.0.) then
+        value = log(theta0**(-1.0/KAPPA)*r0*pstar*RVGAS/RDGAS/es0)
+        call lcltabl(value, tlcl)
+        plcl = pstar * (tlcl/theta0)**(1.0/KAPPA)
+        ! just in case plcl is very high up
+        if (plcl.lt.p(1)) then
+           plcl = p(1)
+           tlcl = theta0 * (plcl/pstar)**KAPPA
+           write (*,*) 'hi lcl'
+        end if
+      else
+        ! if the parcel sp hum is zero or negative, set lcl to 2nd to top level
+        plcl = p(2)
+        tlcl = theta0 * (plcl/pstar)**KAPPA
+      end if
+      zlcl = RDGAS * tin(ks) * log(pstar/plcl) / GRAV
+    end if
+  end subroutine calc_zlcl
+
   subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, &
-                                tca, high_ca, mid_ca, low_ca, Time)
+                                tca, high_ca, mid_ca, low_ca, eis, Time)
     real, intent(in), dimension(:,:,:) :: cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit
-    real, intent(in), dimension(:,:)   :: tca, high_ca, mid_ca, low_ca
+    real, intent(in), dimension(:,:)   :: tca, high_ca, mid_ca, low_ca, eis
     type(time_type) , intent(in)       :: Time
     real :: used
 
@@ -713,6 +846,10 @@ module cloud_simple_mod
         used = send_data ( id_low_cld_amt, low_ca, Time)
       endif
     end if
+
+    if ( id_eis > 0 ) then
+      used = send_data ( id_eis, eis, Time)
+    endif
 
     if ( id_reff_rad > 0 ) then
       used = send_data ( id_reff_rad, reff_rad, Time)

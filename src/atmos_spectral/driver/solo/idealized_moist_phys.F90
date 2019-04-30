@@ -942,6 +942,7 @@ if(do_cloud_simple) then
                       Time,                                &
                       tg(:,:,:,previous),                  &
                       grid_tracers(:,:,:,previous,nsphum), &
+                      z_full(:,:,:,current),               &
                       ! outs - 
                       cf_rad(:,:,:), reff_rad(:,:,:),      &
                       qcl_rad(:,:,:)                       & 

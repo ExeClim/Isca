@@ -19,7 +19,7 @@ private
 !---------------------------------------------------------------------
 !  ---- public interfaces ----
 
-   public  betts_miller, betts_miller_init
+   public  betts_miller, betts_miller_init, lcltabl
 
 !-----------------------------------------------------------------------
 !   ---- version number ----
