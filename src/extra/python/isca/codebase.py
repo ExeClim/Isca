@@ -303,8 +303,8 @@ class DryCodeBase(GreyCodeBase):
 
 
 
-# class ShallowCodeBase(CodeBase):
-#     """The Shallow Water Equations.
-#     """
-#     name = 'shallow'
-#     executable_name = 'shallow.x'
+class ShallowCodeBase(CodeBase):
+    """The Shallow Water Equations.
+    """
+    name = 'shallow'
+    executable_name = 'shallow.x'
