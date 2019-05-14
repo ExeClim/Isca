@@ -1,0 +1,152 @@
+<HTML>
+<TITLE>module barotropic_diagnostics_mod</TITLE>
+<BODY BGCOLOR="#AABBCC" TEXT="#332211" >
+
+<DIV ALIGN="CENTER"> <FONT SIZE=1>
+<A HREF="#INTERFACE">PUBLIC INTERFACE</A> / 
+<A HREF="#DATA_TYPES">DATA</A> / 
+<A HREF="#ROUTINES">ROUTINES</A> / 
+<A HREF="#NAMELIST">NAMELIST</A> / 
+<A HREF="#ERRORS">ERRORS</A>
+</FONT>
+<BR><BR></DIV><HR>
+
+
+<H2>module barotropic_diagnostics_mod</H2>
+<A NAME="HEADER">
+<!-- BEGIN HEADER -->
+<PRE>
+     <B>Contact:</B> Isaac Held
+     <B>Reviewers:</B> Peter Phillipps
+
+</PRE>
+<!-- END HEADER --></A>
+<!--------------------------------------------------------------------->
+<A NAME="OVERVIEW">
+<HR>
+<H4>OVERVIEW</H4>
+<!-- BEGIN OVERVIEW -->
+<PRE>
+
+   The diagnostics module for the model that solves the barotropic vorticity
+   equation on the sphere  
+   
+</PRE>
+<!-- END OVERVIEW --></A>
+<!--------------------------------------------------------------------->
+<A NAME="DESCRIPTION">
+<HR>
+<H4>DESCRIPTION</H4>
+<!-- BEGIN DESCRIPTION -->
+<PRE>
+
+   Using the diagnostics manager, creates output files for the barotropic model.
+   Variables currently available for output are
+       zonal wind 
+       meridional wind 
+       relative vorticity
+       absolute vorticity
+       streamfunction
+       spectral tracer in grid domain
+       grid tracer
+       
+   Whether or not these fields are actually output, the location of the 
+   output, the frequency of output, whether or not the output is averaged
+   in time or an instantaneous snapshot, is controlled by a 
+   diag_table file utilized by the diagnostics manager module
+       
+   One can add other diagnostics by following the (somewhat convoluted)
+       pattern within the program
+
+
+</PRE>
+<!-- END DESCRIPTION --></A>
+<!--------------------------------------------------------------------->
+<A NAME="MODULES_USED">
+<HR>
+<H4>OTHER MODULES USED</H4>
+<!-- BEGIN MODULES_USED -->
+<PRE>
+
+     diag_manaager_mod
+     transforms_mod
+     time_manager_mod
+     barotropic_dynamics_mod
+     barotropic_physics_mod
+
+</PRE>
+<!-- END MODULES_USED --></A>
+<!--------------------------------------------------------------------->
+<A NAME="INTERFACE">
+<HR>
+<H4>PUBLIC INTERFACE</H4>
+<!-- BEGIN INTERFACE -->
+<PRE>
+
+  use barotropic_diagnostics_mod [,only: barotropic_diagnostics_init,       
+                                         barotropic_diagnostics]
+                                
+</PRE>
+<!-- END INTERFACE --></A>
+<!--------------------------------------------------------------------->
+
+<A NAME="ROUTINES">
+<HR>
+<H4>PUBLIC ROUTINES</H4>
+<!-- BEGIN ROUTINES -->
+<PRE>
+
+<A HREF="#barotropic_diagnostics_init">subroutine  barotropic_diagnostics_init</A>
+<A HREF="#barotropic_diagnostics">subroutine  barotropic_diagnostics</A>
+
+<A NAME="barotropic_diagnostics_init">
+<PRE>
+
+ subroutine barotropic_diagnostics_init(Time, num_lon, num_lat)
+ 
+   type(time_type)    , intent(in)     :: Time
+         current time 
+   integer, intent(in) :: num_lon, num_lat
+      num_lon = number of longitudes in global domain
+      num_lat = number of latitudes in global domain
+         
+
+   Initializes module
+
+<!-- END barotropic_diagnostics_init --></A>
+
+<HR>
+
+<A NAME="barotropic_diagnostics">
+
+  subroutine barotropic_diagnostics (Time, Grid, Phys, time_index)
+  
+    type(time_type), intent(in) :: Time
+    type(phys_type), intent(in) :: Phys
+    type(grid_type), intent(in) :: Grid
+    integer,         intent(in) :: time_index
+    
+    phys_type is defined in barotropic_physics_mod; 
+       Phys is currently empty as there is no information generated in 
+       barotropic_physics_mod to be output;
+       
+    grid_type is defined in barotropic_dynamics_mod: 
+      Grid contains all of the fields to be output
+      
+    many of the grid fields in grid_type are dimensioned (lon, lat, time_index)
+     where time_index = 1 or 2 -- the two time levels needed to update the
+     state of the model using a leapfrog step are toggled between (:,:,1)
+     and (:,:,2).  The input time_index (which must equal either 1 or 2) 
+     determines which of these two fields is output)
+     
+     (this is confusing -- the calling program needs to know what has
+      been placed in which slot -- it would be better to store this 
+      information within the data type)
+ 
+
+<!-- END barotropic_diagnostics --></A>
+
+<HR>
+
+</BODY>
+</HTML>
