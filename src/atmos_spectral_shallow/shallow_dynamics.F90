@@ -112,7 +112,8 @@ integer :: num_lon            = 256
 integer :: num_lat            = 128
 integer :: num_fourier        = 85
 integer :: num_spherical      = 86
-integer :: fourier_inc         = 1
+integer :: fourier_inc        = 1
+integer :: cutoff_wn          = 30
 ! (these define a standard T85 model)
 
 logical :: check_fourier_imag = .false.
@@ -122,6 +123,7 @@ logical :: triang_trunc   = .true.
 real    :: robert_coeff        = 0.04
 real    :: robert_coeff_tracer = 0.04
 real    :: longitude_origin    = 0.0
+real    :: raw_filter_coeff    = 1.0
 
 character(len=64) :: damping_option = 'resolution_dependent'
 integer :: damping_order       = 4
@@ -141,7 +143,8 @@ namelist /shallow_dynamics_nml/ check_fourier_imag,          &
                           damping_order,     damping_coeff,  &
                           robert_coeff, robert_coeff_tracer, &
                           h_0, spec_tracer, grid_tracer,     &
-                          valid_range_v
+                          valid_range_v, cutoff_wn,          &
+                          raw_filter_coeff
 
 contains
 
@@ -209,7 +212,7 @@ call get_grid_boundaries (glon_bnd, glat_bnd, global=.true.)
 
 coriolis = 2*omega*sin_lat
 
-call spectral_damping_init(damping_coeff, damping_order, damping_option, num_fourier, num_spherical, 1, 0., 0., 0.)
+call spectral_damping_init(damping_coeff, damping_order, damping_option, cutoff_wn, num_fourier, num_spherical, 1, 0., 0., 0.)
 
 allocate(eigen(ms:me,ns:ne))
 call get_eigen_laplacian(eigen)
@@ -333,9 +336,9 @@ call compute_spectral_damping(Dyn%Spec%vor(:,:,previous), dt_vors, delta_t)
 call compute_spectral_damping(Dyn%Spec%div(:,:,previous), dt_divs, delta_t)
 call compute_spectral_damping(Dyn%Spec%h  (:,:,previous), dt_hs  , delta_t)
 
-call leapfrog(Dyn%Spec%vor , dt_vors  , previous, current, future, delta_t, robert_coeff)
-call leapfrog(Dyn%Spec%div , dt_divs  , previous, current, future, delta_t, robert_coeff)
-call leapfrog(Dyn%Spec%h   , dt_hs    , previous, current, future, delta_t, robert_coeff)
+call leapfrog(Dyn%Spec%vor , dt_vors  , previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
+call leapfrog(Dyn%Spec%div , dt_divs  , previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
+call leapfrog(Dyn%Spec%h   , dt_hs    , previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
 
 call trans_spherical_to_grid(Dyn%Spec%vor(:,:,future), Dyn%Grid%vor(:,:,future))
 call trans_spherical_to_grid(Dyn%Spec%div(:,:,future), Dyn%Grid%div(:,:,future))
@@ -408,7 +411,7 @@ complex, dimension(ms:me, ns:ne) :: dt_trs
 call horizontal_advection     (tr_spec(:,:,current), ug(:,:,current), vg(:,:,current), dt_tr)
 call trans_grid_to_spherical  (dt_tr, dt_trs)
 call compute_spectral_damping (tr_spec(:,:,previous), dt_trs, delta_t)
-call leapfrog                 (tr_spec, dt_trs, previous, current, future, delta_t, robert_coeff)
+call leapfrog                 (tr_spec, dt_trs, previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
 call trans_spherical_to_grid  (tr_spec(:,:,future), tr_grid(:,:,future))
 
 return

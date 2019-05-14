@@ -54,6 +54,7 @@ exp.namelist = namelist = Namelist({
      'minutes': 0,
      'seconds': 0,
      'dt_atmos': 1200,
+     'calendar': 'no_calendar',
     },
 
  'atmosphere_nml':{
@@ -65,7 +66,7 @@ exp.namelist = namelist = Namelist({
    'fileset_write': 'single'
     },
 
- 'fms_nml'
+ 'fms_nml':{
    'print_memory_usage':True,
    'domains_stack_size': 200000,
     },
@@ -80,9 +81,9 @@ exp.namelist = namelist = Namelist({
    'damping_order'       : 4,
    'damping_coeff'       : 1.e-04,
    'h_0'                 : 3.e04,
-   'grid_tracer'         : .true.,
-   'spec_tracer'         : .true.,
-   'robert_coeff'        : 0.04
+   'grid_tracer'         : True,
+   'spec_tracer'         : True,
+   'robert_coeff'        : 0.04,
    'robert_coeff_tracer' : 0.04,
     },
 
