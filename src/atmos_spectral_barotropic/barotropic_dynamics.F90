@@ -122,6 +122,7 @@ logical :: triang_trunc       = .true.
 
 real    :: robert_coeff       = 0.04
 real    :: longitude_origin   = 0.0
+real    :: raw_filter_coeff   = 1.0
 
 character(len=64) :: damping_option = 'resolution_dependent'
 integer :: damping_order      = 4
@@ -141,6 +142,7 @@ integer :: num_lon            = 256
 integer :: num_fourier        = 85
 integer :: num_spherical      = 86
 integer :: fourier_inc        = 1
+integer :: cutoff_wn          = 30
 
 real, dimension(2) :: valid_range_v = (/-1.e3,1.e3/)
 character(len=64) :: initial_zonal_wind = 'two_jets'
@@ -154,7 +156,8 @@ namelist /barotropic_dynamics_nml/ check_fourier_imag, south_to_north, &
                                  damping_coeff_r,   robert_coeff,      &
                                  spec_tracer, grid_tracer,             &
                                  eddy_lat, eddy_width, zeta_0, m_0,    &
-                                 valid_range_v, initial_zonal_wind
+                                 valid_range_v, initial_zonal_wind,    &
+                                 cutoff_wn
 
 contains
 
@@ -231,7 +234,7 @@ coriolis = 2*omega*sin_lat
 rad_lat = deg_lat*atan(1.0)/45.0
 rad_lon = deg_lon*atan(1.0)/45.0
 
-call spectral_damping_init(damping_coeff, damping_order, damping_option, num_fourier, num_spherical, 1, 0., 0., 0., &
+call spectral_damping_init(damping_coeff, damping_order, damping_option, cutoff_wn, num_fourier, num_spherical, 1, 0., 0., 0., &
                            damping_coeff_r=damping_coeff_r)
 call stirring_init(dt_real, Time, id_lon, id_lat, id_lonb, id_latb)
 
@@ -363,7 +366,7 @@ call compute_spectral_damping(Dyn%Spec%vor(:,:,previous), dt_vors, delta_t)
 
 call stirring(Time, dt_vors)
 
-call leapfrog(Dyn%Spec%vor , dt_vors  , previous, current, future, delta_t, robert_coeff)
+call leapfrog(Dyn%Spec%vor , dt_vors  , previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
 
 call trans_spherical_to_grid(Dyn%Spec%vor(:,:,future), Dyn%Grid%vor(:,:,future))
   
@@ -404,7 +407,7 @@ complex, dimension(ms:me, ns:ne) :: dt_trs
 call horizontal_advection     (tr_spec(:,:,current), ug(:,:,current), vg(:,:,current), dt_tr)
 call trans_grid_to_spherical  (dt_tr, dt_trs)
 call compute_spectral_damping (tr_spec(:,:,previous), dt_trs, delta_t)
-call leapfrog                 (tr_spec, dt_trs, previous, current, future, delta_t, robert_coeff)
+call leapfrog                 (tr_spec, dt_trs, previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
 call trans_spherical_to_grid  (tr_spec(:,:,future), tr_grid(:,:,future))
 
 return
