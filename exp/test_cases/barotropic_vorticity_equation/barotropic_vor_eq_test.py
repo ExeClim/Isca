@@ -2,13 +2,13 @@ import os
 
 import numpy as np
 
-from isca import BarotropicCodebase, DiagTable, Experiment, Namelist, GFDL_BASE
+from isca import BarotropicCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
 NCORES = 8
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
-cb = BarotropicCodebase.from_directory(GFDL_BASE)
+cb = BarotropicCodeBase.from_directory(GFDL_BASE)
 
 # or it can point to a specific git repo and commit id.
 # This method should ensure future, independent, reproducibility of results.

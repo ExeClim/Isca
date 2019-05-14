@@ -309,7 +309,7 @@ class ShallowCodeBase(CodeBase):
     name = 'shallow'
     executable_name = 'shallow.x'
 
-class BarotropicCodebase(CodeBase):
+class BarotropicCodeBase(CodeBase):
     """The Barotropic vorticity equations.
     """
     name = 'barotropic'
