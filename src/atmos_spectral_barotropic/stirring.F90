@@ -53,8 +53,6 @@ real,    allocatable, dimension(:,:) :: g_stir_sqr  ! time mean of g_stir**2 ove
 integer, allocatable, dimension(:)   :: seed        ! random number seed
 real ::  astir, bstir
 integer :: num_steps, num_fourier, num_spherical, nseed
-character(len=8)  :: axiset   = 'barotropic'
-character(len=84) :: mod_name = 'barotropic_diagnostics'
 
 logical :: module_is_initialized = .false.
 
