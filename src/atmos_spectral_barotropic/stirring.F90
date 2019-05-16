@@ -210,7 +210,7 @@ call trans_grid_to_spherical(g_stir,new_stirring)
 if(ms == 0 .and. ns == 0) then
   new_stirring(0,0)=cmplx(0.0,0.0) ! A non-zero global mean is introduced by the grid space computation, but we don't want it.
 endif
-s_stir = bstir*s_stir + new_stirring
+s_stir = bstir*s_stir + new_stirring !This is equation A.6 in Vallis et al 2004 - DOI:10.1175/1520-0469(2004)061<0264:AMASDM>2.0.CO;2
 
 dt_vors = dt_vors + s_stir
 call trans_spherical_to_grid(s_stir,g_stir)
