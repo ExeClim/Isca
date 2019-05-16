@@ -62,12 +62,16 @@ character(len=128) :: tagname = '$Name: siena_201207 $'
 public :: stirring_init, stirring, stirring_end
 
 real :: decay_time=2*86400, amplitude=0.0, lat0=45., widthy=12.
+logical :: do_localize=.true.!Default true to allow forcing to be localized in physical space. Set to false to have forcing everywhere.
 
 ! Set B to a non-zero value for stirring that has zonal structure.
 ! The strength of the stirring at latitude=lat0 is: amplitude*(1.0 + B*exp(-.5*((lon-lon0)/widthx)**2))
-real :: lon0=180., B=0.0, widthx=45. ! widthx
+real :: lon0=180., B=0.0, widthx=45., C=1.0 ! widthx
+integer :: n_total_forcing_max = 15 !total wavenumbers LESS THAN this number will be forced
+integer :: n_total_forcing_min = 9 !total wavenumbers GREATER THAN this number will be forced
+integer :: zonal_forcing_min = 3 !Zonal wavenumbers GREATER THAN this number will be forced, subject to total wavenumber constraints
 
-namelist / stirring_nml / decay_time, amplitude, lat0, lon0, widthy, widthx, B
+namelist / stirring_nml / decay_time, amplitude, lat0, lon0, widthy, widthx, B, do_localize, n_total_forcing_max, n_total_forcing_min, zonal_forcing_min
 
 contains
 
@@ -123,9 +127,9 @@ allocate(localize(is:ie,js:je)); localize = 0.0
 allocate(g_stir_sqr(is:ie,js:je)); g_stir_sqr = 0.0
 
 ! wave_mask is .true. when  (m+n > 9) .and. (m+n < 15) .and. (m > 3)
-do m=4,14
+do m=(zonal_forcing_min+1),(n_total_forcing_max-1)
   if(m >= ms .and. m <= me) then
-    do n=10-m,14-m
+    do n=(n_total_forcing_min+1)-m,(n_total_forcing_max-1)-m
       if(n >= ns .and. n <= ne) then
         wave_mask(m,n) = .true.
       endif
@@ -146,11 +150,16 @@ enddo
 do j=js,je
   ampy(j) = exp(-.5*((lat(j)-lat0)/widthy)**2)
 enddo
-do j=js,je
-do i=is,ie
-  localize(i,j) = ampx(i)*ampy(j)
-enddo
-enddo
+if (do_localize) then
+    do j=js,je
+        do i=is,ie
+            localize(i,j) = ampx(i)*ampy(j)
+        enddo
+    enddo
+else
+    localize = 1.0
+endif
+
 deallocate(ampx, ampy)
 
 num_steps = 0
