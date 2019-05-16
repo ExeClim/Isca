@@ -62,10 +62,11 @@ integer :: is, ie, js, je
 contains
 
 !-----------------------------------------------------------------------------------------------------------------
-subroutine shallow_diagnostics_init(Time, lon_max, lat_max)
+subroutine shallow_diagnostics_init(Time, lon_max, lat_max, id_lon, id_lat, id_lonb, id_latb)
 
 type(time_type), intent(in) :: Time
 integer, intent(in) :: lon_max, lat_max
+integer, intent(out):: id_lon, id_lat, id_lonb, id_latb
 
 real, dimension(lon_max  ) :: lon
 real, dimension(lon_max+1) :: lonb
@@ -74,7 +75,7 @@ real, dimension(lat_max+1) :: latb
 
 integer, dimension(2) :: axis_2d
 
-integer :: log_unit, id_lonb, id_lon, id_latb, id_lat
+integer :: log_unit
 integer :: namelist_unit, ierr, io
 real    :: rad_to_deg
 logical :: used

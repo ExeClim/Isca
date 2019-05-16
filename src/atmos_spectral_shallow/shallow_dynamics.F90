@@ -57,6 +57,8 @@ use           leapfrog_mod, only: leapfrog
 
 use       fv_advection_mod, only : fv_advection_init, a_grid_horiz_advection
 
+use           stirring_mod, only : stirring, stirring_end
+
 !======================================================================================
 implicit none
 private
@@ -150,17 +152,18 @@ contains
 
 !=======================================================================================
 
-subroutine shallow_dynamics_init (Dyn,  Time, Time_init)
+subroutine shallow_dynamics_init (Dyn,  Time, Time_init, dt_real)
 
 type(dynamics_type), intent(inout)  :: Dyn
 type(time_type)    , intent(in)     :: Time, Time_init
+real               , intent(in)     :: dt_real
 
 integer :: i, j
 
 real,    allocatable, dimension(:)   :: glon_bnd, glat_bnd
 real :: xx, yy, dd
 
-integer  :: ierr, io, unit
+integer  :: ierr, io, unit, id_lon, id_lat, id_lonb, id_latb
 logical  :: root
 
 ! < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > < > 
@@ -335,6 +338,8 @@ call implicit_correction (dt_divs, dt_hs, Dyn%Spec%div, Dyn%Spec%h, &
 call compute_spectral_damping(Dyn%Spec%vor(:,:,previous), dt_vors, delta_t)
 call compute_spectral_damping(Dyn%Spec%div(:,:,previous), dt_divs, delta_t)
 call compute_spectral_damping(Dyn%Spec%h  (:,:,previous), dt_hs  , delta_t)
+
+call stirring(Time, dt_vors)
 
 call leapfrog(Dyn%Spec%vor , dt_vors  , previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
 call leapfrog(Dyn%Spec%div , dt_divs  , previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
@@ -600,6 +605,7 @@ endif
 call write_restart (Dyn, previous, current)
 
 call transforms_end
+call stirring_end
 
 module_is_initialized = .false.
 

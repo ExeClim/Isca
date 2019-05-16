@@ -67,6 +67,7 @@ use shallow_physics_mod, only : shallow_physics_init, &
 use shallow_diagnostics_mod,  only : shallow_diagnostics_init,   &
                                      shallow_diagnostics
 
+use                stirring_mod, only: stirring_init
 
 !========================================================================
 implicit none
@@ -124,7 +125,7 @@ subroutine atmosphere_init(Time_init_in, Time, Time_step_in)
 
 type (time_type), intent(in) :: Time_init_in, Time, Time_step_in
 
-integer :: i, j, n, nn, ierr, io, unit
+integer :: i, j, n, nn, ierr, io, unit, id_lon, id_lat, id_lonb, id_latb
 integer :: nlon, nlat
 
 pe   = mpp_pe()
@@ -151,7 +152,7 @@ endif
 call write_version_number(version, tagname)
 if (root) write (stdlog(), nml=atmosphere_nml)
 
-call shallow_dynamics_init (Dyn, Time, Time_init)    
+call shallow_dynamics_init (Dyn, Time, Time_init, dt_real)    
 
 call get_grid_domain(is,ie,js,je)
 call get_spec_domain(ms,me,ns,ne)
@@ -163,7 +164,8 @@ nlon = ie+1-is  ! size of grid on each processor
 nlat = je+1-js
 
 call shallow_physics_init(Phys)
-call shallow_diagnostics_init(Time, num_lon, num_lat)
+call shallow_diagnostics_init(Time, num_lon, num_lat, id_lon, id_lat, id_lonb, id_latb)
+call stirring_init(dt_real, Time, id_lon, id_lat, id_lonb, id_latb)
 
 if(Time == Time_init) then
   previous = 1
