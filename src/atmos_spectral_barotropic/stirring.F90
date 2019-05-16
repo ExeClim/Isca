@@ -77,7 +77,7 @@ contains
 subroutine stirring_init(dt, Time, id_lon, id_lat, id_lonb, id_latb)
 real, intent(in) :: dt
 type(time_type), intent(in) :: Time
-integer, intent(out) :: id_lon, id_lat, id_lonb, id_latb
+integer, intent(in) :: id_lon, id_lat, id_lonb, id_latb
 real :: xx, kk, rad_to_deg
 integer :: i,j,m,n,ierr,io,unit,lon_max,lat_max
 real, allocatable, dimension(:) :: ampx, ampy, lon, lat, lonb, latb
@@ -108,13 +108,6 @@ allocate(latb(lat_max+1)) ; latb = 0.0
 
 call get_deg_lon(lon)          
 call get_deg_lat(lat)
-call get_grid_boundaries(lonb,latb,global=.true.)
-
-rad_to_deg = 180./pi
-id_lonb=diag_axis_init('lonb', rad_to_deg*lonb, 'degrees_E', 'x', 'longitude edges', set_name='barotropic', Domain2=grid_domain)
-id_latb=diag_axis_init('latb', rad_to_deg*latb, 'degrees_N', 'y', 'latitude edges',  set_name='barotropic', Domain2=grid_domain)
-id_lon =diag_axis_init('lon', lon, 'degrees_E', 'x', 'longitude', set_name='barotropic', Domain2=grid_domain, edges=id_lonb)
-id_lat =diag_axis_init('lat', lat, 'degrees_N', 'y', 'latitude',  set_name='barotropic', Domain2=grid_domain, edges=id_latb)
 
 module_is_initialized = .true.
 if(amplitude == 0.0) return ! stirring does nothing more unless amplitude is non-zero

@@ -28,11 +28,15 @@ use              fms_mod, only: write_version_number, &
 use       transforms_mod, only: get_grid_domain,     &
                                 get_spec_domain,     & 
                                 grid_domain,         &
-                                trans_spherical_to_grid
+                                trans_spherical_to_grid, &
+                                get_deg_lon,         & 
+                                get_deg_lat,         &
+                                get_grid_boundaries
 
 use     diag_manager_mod, only: register_diag_field, &
                                 register_static_field, &
-                                send_data
+                                send_data,             &
+                                diag_axis_init
 
 use     time_manager_mod, only: time_type, &
                                 get_time
@@ -63,9 +67,17 @@ contains
 subroutine barotropic_diagnostics_init(Time, lon_max, lat_max, id_lon, id_lat, id_lonb, id_latb)
 
 type(time_type), intent(in) :: Time
-integer, intent(in) :: lon_max, lat_max, id_lon, id_lat, id_lonb, id_latb
+integer, intent(in) :: lon_max, lat_max
+integer, intent(out):: id_lon, id_lat, id_lonb, id_latb
+
+real, dimension(lon_max  ) :: lon
+real, dimension(lon_max+1) :: lonb
+real, dimension(lat_max  ) :: lat
+real, dimension(lat_max+1) :: latb
 
 integer, dimension(2) :: axis_2d
+
+real :: rad_to_deg
 
 integer :: log_unit
 integer :: namelist_unit, ierr, io
@@ -75,6 +87,16 @@ call write_version_number(version, tagname)
 
 call get_grid_domain(is, ie, js, je)
 call get_spec_domain(ms, me, ns, ne)
+
+call get_deg_lon(lon)          
+call get_deg_lat(lat)
+call get_grid_boundaries(lonb,latb,global=.true.)
+
+rad_to_deg = 45./atan(1.)
+id_lonb=diag_axis_init('lonb', rad_to_deg*lonb, 'degrees_E', 'x', 'longitude edges', set_name=axiset, Domain2=grid_domain)
+id_latb=diag_axis_init('latb', rad_to_deg*latb, 'degrees_N', 'y', 'latitude edges',  set_name=axiset, Domain2=grid_domain)
+id_lon =diag_axis_init('lon', lon, 'degrees_E', 'x', 'longitude', set_name=axiset, Domain2=grid_domain, edges=id_lonb)
+id_lat =diag_axis_init('lat', lat, 'degrees_N', 'y', 'latitude',  set_name=axiset, Domain2=grid_domain, edges=id_latb)
 
 axis_2d(1) = id_lon
 axis_2d(2) = id_lat 

@@ -63,6 +63,9 @@ use            diag_manager_mod, only: diag_manager_init, &
 use  barotropic_diagnostics_mod, only: barotropic_diagnostics_init,   &
                                        barotropic_diagnostics
 
+use                stirring_mod, only: stirring_init
+
+
 !========================================================================
 implicit none
 private
@@ -142,7 +145,7 @@ endif
 call write_version_number(version, tagname)
 if (root) write (stdlog(), nml=atmosphere_nml)
 
-call barotropic_dynamics_init (Dyn, Time, Time_init, dt_real, id_lon, id_lat, id_lonb, id_latb)
+call barotropic_dynamics_init (Dyn, Time, Time_init, dt_real)
 
 call get_grid_domain(is,ie,js,je)
 call get_spec_domain(ms,me,ns,ne)
@@ -155,6 +158,7 @@ nlat = je+1-js
 
 call barotropic_physics_init(Phys)
 call barotropic_diagnostics_init(Time, num_lon, num_lat, id_lon, id_lat, id_lonb, id_latb)
+call stirring_init(dt_real, Time, id_lon, id_lat, id_lonb, id_latb)
 
 if(Time == Time_init) then
   previous = 1

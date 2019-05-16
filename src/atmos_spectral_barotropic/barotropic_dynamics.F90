@@ -61,7 +61,7 @@ use           leapfrog_mod, only: leapfrog
 use       fv_advection_mod, only: fv_advection_init, &
                                   a_grid_horiz_advection
 
-use           stirring_mod, only: stirring_init, stirring, stirring_end
+use           stirring_mod, only: stirring, stirring_end
 
 !===============================================================================================
 implicit none
@@ -163,12 +163,11 @@ contains
 
 !===============================================================================================
 
-subroutine barotropic_dynamics_init (Dyn, Time, Time_init, dt_real, id_lon, id_lat, id_lonb, id_latb)
+subroutine barotropic_dynamics_init (Dyn, Time, Time_init, dt_real)
 
 type(dynamics_type), intent(inout)  :: Dyn
 type(time_type)    , intent(in)     :: Time, Time_init
 real, intent(in) :: dt_real
-integer, intent(out) :: id_lon, id_lat, id_lonb, id_latb
 
 integer :: i, j
 
@@ -236,7 +235,6 @@ rad_lon = deg_lon*atan(1.0)/45.0
 
 call spectral_damping_init(damping_coeff, damping_order, damping_option, cutoff_wn, num_fourier, num_spherical, 1, 0., 0., 0., &
                            damping_coeff_r=damping_coeff_r)
-call stirring_init(dt_real, Time, id_lon, id_lat, id_lonb, id_latb)
 
 allocate (Dyn%spec%vor (ms:me, ns:ne, num_time_levels))
 allocate (Dyn%grid%u   (is:ie, js:je, num_time_levels))
