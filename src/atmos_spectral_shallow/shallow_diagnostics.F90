@@ -55,7 +55,7 @@ character(len=84) :: mod_name = 'shallow_diagnostics'
 
 logical :: module_is_initialized = .false.
 
-integer :: id_vor, id_stream, id_pv, id_u, id_v, id_div, id_h, id_trs, id_tr
+integer :: id_vor, id_stream, id_pv, id_u, id_v, id_div, id_h, id_trs, id_tr, id_d_geopot
 
 integer :: is, ie, js, je
 
@@ -106,6 +106,7 @@ id_pv     = register_diag_field(mod_name, 'pv'    , axis_2d, Time, 'potential vo
 id_stream = register_diag_field(mod_name, 'stream', axis_2d, Time, 'streamfunction'      , 'm^2/s'    )
 id_trs    = register_diag_field(mod_name, 'trs'   , axis_2d, Time, 'spectral tracer'     , 'none'     )
 id_tr     = register_diag_field(mod_name, 'tr'    , axis_2d, Time, 'grid tracer'         , 'none'     )
+id_d_geopot = register_diag_field(mod_name, 'deep_geopot', axis_2d, Time, 'deep_geopot'  , 'm2/s2')
 
 module_is_initialized = .true.
 
@@ -132,6 +133,7 @@ if(id_pv      > 0) used = send_data(id_pv     , Grid%pv      (:,:)              
 if(id_stream  > 0) used = send_data(id_stream , Grid%stream  (:,:)                 , time)
 if(id_tr      > 0) used = send_data(id_tr     , Grid%tr      (:,:, time_index)     , time)
 if(id_trs     > 0) used = send_data(id_trs    , Grid%trs     (:,:, time_index)     , time)
+if(id_d_geopot > 0) used = send_data(id_d_geopot, Grid%deep_geopot (:,:)             , time)
 
 return
 end subroutine shallow_diagnostics

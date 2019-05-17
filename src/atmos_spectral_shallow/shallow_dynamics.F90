@@ -39,7 +39,7 @@ use    time_manager_mod,  only : time_type,      &
                                  operator(==),   &
                                  operator(-)
 
-use       constants_mod,  only : radius, omega
+use       constants_mod,  only : radius, omega, DEG_TO_RAD
 
 use         transforms_mod, only: transforms_init,         transforms_end,          &
                                   get_grid_boundaries,     horizontal_advection,    &
@@ -76,7 +76,7 @@ character(len=128) :: tagname = '$Name: siena_201207 $'
 
 type grid_type
    real, pointer, dimension(:,:,:) :: u=>NULL(), v=>NULL(), vor=>NULL(), div=>NULL(), h=>NULL(), trs=>NULL(), tr=>NULL()
-   real, pointer, dimension(:,:)   :: stream=>NULL(), pv=>NULL()
+   real, pointer, dimension(:,:)   :: stream=>NULL(), pv=>NULL(), deep_geopot=>NULL()
 end type
 type spectral_type
    complex, pointer, dimension(:,:,:) :: vor=>NULL(), div=>NULL(), h=>NULL(), trs=>NULL()
@@ -132,6 +132,9 @@ integer :: damping_order       = 4
 real    :: damping_coeff       = 1.e-04
 real    :: h_0                 = 3.e04
 
+real    :: u_deep_mag          = 0.
+real    :: n_merid_deep_flow   = 3.
+
 logical :: spec_tracer      = .true.
 logical :: grid_tracer      = .true.
 
@@ -146,7 +149,8 @@ namelist /shallow_dynamics_nml/ check_fourier_imag,          &
                           robert_coeff, robert_coeff_tracer, &
                           h_0, spec_tracer, grid_tracer,     &
                           valid_range_v, cutoff_wn,          &
-                          raw_filter_coeff
+                          raw_filter_coeff,                  &
+                          u_deep_mag, n_merid_deep_flow
 
 contains
 
@@ -235,6 +239,8 @@ allocate (Dyn%tend%v        (is:ie, js:je))
 allocate (Dyn%tend%h        (is:ie, js:je))
 allocate (Dyn%grid%stream   (is:ie, js:je))
 allocate (Dyn%grid%pv       (is:ie, js:je))
+allocate (Dyn%grid%deep_geopot(is:ie, js:je))
+
 
 call fv_advection_init(num_lon, num_lat, glat_bnd, 360./float(fourier_inc))
 if(Dyn%grid_tracer) then
@@ -247,6 +253,10 @@ if(Dyn%spec_tracer) then
   allocate(Dyn%Tend%trs (is:ie, js:je))
   allocate(Dyn%Spec%trs (ms:me, ns:ne, num_time_levels))
 endif
+
+do i = is, ie 
+    Dyn%grid%deep_geopot(i, js:je) = -2.*omega * u_deep_mag * radius * (1./(1.-n_merid_deep_flow**2.))*(-cos(n_merid_deep_flow*DEG_TO_RAD*deg_lat(js:je))*cos(DEG_TO_RAD*deg_lat(js:je)) - n_merid_deep_flow * (sin(n_merid_deep_flow*DEG_TO_RAD*deg_lat(js:je))*sin(DEG_TO_RAD*deg_lat(js:je))-sin(n_merid_deep_flow*(2.*atan(1.)))))
+enddo
 
 if(Time == Time_init) then
 
@@ -326,7 +336,7 @@ Dyn%Tend%h = Dyn%Tend%h - Dyn%Grid%h(:,:,current)*Dyn%Grid%div(:,:,current)
 
 call trans_grid_to_spherical (Dyn%Tend%h, dt_hs)
 
-bg = (Dyn%Grid%h(:,:,current) + &
+bg = (Dyn%Grid%h(:,:,current) + Dyn%grid%deep_geopot(:,:) + &
    0.5*(Dyn%Grid%u(:,:,current)**2 + Dyn%Grid%v(:,:,current)**2))
 
 call trans_grid_to_spherical(bg, bs)
@@ -370,7 +380,7 @@ if(Dyn%grid_tracer) call update_grid_tracer(Dyn%Grid%tr, Dyn%Tend%tr, &
 stream = compute_laplacian(Dyn%Spec%vor(:,:,current), -1) ! for diagnostic purposes
 call trans_spherical_to_grid(stream, Dyn%grid%stream)
 
-Dyn%Grid%pv = vorg/Dyn%Grid%h(:,:,current)
+Dyn%Grid%pv = vorg/(Dyn%Grid%h(:,:,current)+Dyn%grid%deep_geopot(:,:))
 
 return
 end subroutine shallow_dynamics
