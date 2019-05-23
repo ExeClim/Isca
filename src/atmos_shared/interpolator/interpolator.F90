@@ -3002,9 +3002,9 @@ if (associated (clim_type%pmon_pyear)) then
 endif
 
 !! RSH mod   
-if(  .not. (clim_type%TIME_FLAG .eq. LINEAR  .and.    &
+if(  .not. ((clim_type%TIME_FLAG .eq. LINEAR  .and.    &
 !     read_all_on_init)) .or. clim_type%TIME_FLAG .eq. BILINEAR  ) then
-      read_all_on_init)  ) then
+      read_all_on_init).or. ( clim_type%TIME_FLAG .eq. NOTIME ))  ) then
  call mpp_close(clim_type%unit)
 endif
 

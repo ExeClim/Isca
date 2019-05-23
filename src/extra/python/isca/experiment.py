@@ -318,7 +318,6 @@ class Experiment(Logger, EventEmitter):
                 combinetool(self.codebase.builddir, restartfile)
                 sh.rm(glob.glob(restartfile+'.????'))
                 self.log.debug("Restart file %s combined" % restartfile)
-
             self.emit('run:combined', self, i)
         else:
             for file in self.diag_table.files:

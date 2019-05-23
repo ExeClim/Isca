@@ -1,6 +1,4 @@
 echo loadmodules
 
-module purge
-module load hdf5/1.8.11  
-module load netcdf-4.3.3.1-openmpi-intel
-module load git/2.1.2
+source ${GFDL_BASE}/src/extra/env/${GFDL_ENV}
+
