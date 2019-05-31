@@ -29,7 +29,9 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 #Tell model how to write diagnostics
 diag = DiagTable()
 diag.add_file('atmos_monthly', 30, 'days', time_units='days')
-diag.add_file('atmos_daily', 1, 'days', time_units='days')
+# diag.add_file('atmos_daily', 1, 'days', time_units='days')
+# diag.add_file('atmos_timestep', 1200, 'seconds', time_units='days')
+
 
 #Tell model which diagnostics to write
 diag.add_field('shallow_diagnostics', 'ucomp', time_avg=True)
@@ -39,11 +41,14 @@ diag.add_field('shallow_diagnostics', 'div', time_avg=True)
 diag.add_field('shallow_diagnostics', 'h', time_avg=True)
 diag.add_field('shallow_diagnostics', 'pv', time_avg=True)
 diag.add_field('shallow_diagnostics', 'stream', time_avg=True)
+diag.add_field('shallow_diagnostics', 'deep_geopot', time_avg=True)
 # diag.add_field('shallow_diagnostics', 'trs', time_avg=True)
 # diag.add_field('shallow_diagnostics', 'tr', time_avg=True)
 diag.add_field('stirring_mod', 'stirring', time_avg=True)
 # diag.add_field('stirring_mod', 'stirring_amp', time_avg=True)
 diag.add_field('stirring_mod', 'stirring_sqr', time_avg=True)
+diag.add_field('shallow_diagnostics', 'e_kin', time_avg=True)
+
 
 
 #Empty the run directory ready to run
@@ -106,46 +111,60 @@ namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
 
-    for number_ld_in_radius_units in [0.1]:
+    for ld_value in [0.1, 10.0]:
+        # for u_deep_mag_val in [50., 0., 25.]:
+        for u_deep_mag_val in [50., 0.]:
 
-        exp = Experiment('giant_shallow_stirring_test_experiment_uniform_smaller_120_scale_stirring_mk3_longer_damping_ld_'+str(number_ld_in_radius_units), codebase=cb)
+            # if u_deep_mag_val!=0.:
+            #     u_deep_merid_arr = [3, 11, 19, 26]
+            # else:
+            #     u_deep_merid_arr = [3]
 
-        exp.diag_table = diag 
-        exp.namelist = namelist 
-        exp.clear_rundir()
+            u_deep_merid_arr = [3]
 
-        rotation_period = ((9.*3600.)+55.*60 + 30.)
-        omega = 2.*np.pi/ rotation_period
-        radius = 69911e3
-        grav = 24.79
+            for u_deep_merid in u_deep_merid_arr:
 
-        # Model uses geopotential as its height co-ordinate. So depth is h_0/grav.
+                exp = Experiment('giant_planet_shallow_water_deep_velocity_test_mk8_no_forcing_no_damping_ld_'+str(ld_value)+'_udeep_mag_'+str(u_deep_mag_val)+'_u_deep_merid_'+str(int(u_deep_merid)), codebase=cb)
 
-        equilibrium_geopotential = (2.*number_ld_in_radius_units*omega*radius)**2.
-        equilibrium_depth = equilibrium_geopotential/grav
+                exp.diag_table = diag 
+                exp.namelist = namelist 
+                exp.clear_rundir()
 
-        exp.update_namelist({
-            'shallow_dynamics_nml':{
-                'h_0': equilibrium_geopotential
-            },
-            'shallow_physics_nml': {
-                'h_0': equilibrium_geopotential, 
-                'therm_damp_time' : rotation_period * 10000., #Thermal damping time in Scott and Polvani is 1 rotation period (v_l = 1)
-            },
-            'constants_nml': {
-                'omega': omega,
-                'radius': radius,
-            },
-            'stirring_nml': {
-                'decay_time':10.*rotation_period, #Scott and Polvani use decorrelation time of 10 planetary rotations - i.e. a long time for Jupiter. 
-                'amplitude':3.e-13,
-                'n_total_forcing_max': 125,
-                'n_total_forcing_min': 119,
+                rotation_period = ((9.*3600.)+55.*60 + 30.)
+                omega = 2.*np.pi/ rotation_period
+                radius = 69911e3
+                grav = 24.79
+                number_ld_in_radius_units = ld_value
 
-            },
+                # Model uses geopotential as its height co-ordinate. So depth is h_0/grav.
 
-        })
+                equilibrium_geopotential = (2.*number_ld_in_radius_units*omega*radius)**2.
+                equilibrium_depth = equilibrium_geopotential/grav
 
-        exp.run(1, use_restart=False, num_cores=NCORES)
-        for i in range(2,121):
-            exp.run(i, num_cores=NCORES)
+                exp.update_namelist({
+                    'shallow_dynamics_nml':{
+                        'h_0': equilibrium_geopotential,
+                        'u_deep_mag'   : u_deep_mag_val,
+                        'n_merid_deep_flow': u_deep_merid,                    
+                    },
+                    'shallow_physics_nml': {
+                        'h_0': equilibrium_geopotential, 
+                        'therm_damp_time' : 0.
+                    },
+                    'constants_nml': {
+                        'omega': omega,
+                        'radius': radius,
+                    },
+                    'stirring_nml': {
+                        'decay_time':10.*rotation_period, #Scott and Polvani use decorrelation time of 10 planetary rotations - i.e. a long time for Jupiter. 
+                        'amplitude':0.,
+                        'n_total_forcing_max': 85,
+                        'n_total_forcing_min': 79,
+
+                    },
+
+                })
+
+                exp.run(1, use_restart=False, num_cores=NCORES)
+                for i in range(2,121):
+                    exp.run(i, num_cores=NCORES)
