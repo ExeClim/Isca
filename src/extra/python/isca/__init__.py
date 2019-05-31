@@ -32,6 +32,12 @@ except:
     GFDL_ENV = socket.getfqdn()
     log.warning('Environment variable GFDL_ENV not set, using "%s".' % GFDL_ENV)
 
+try:
+    GFDL_SOC = os.environ['GFDL_SOC']
+except:
+    # if the user doesn't have the SOC variable set, then use None
+    GFDL_SOC = None
+    log.warning('Environment variable GFDL_SOC not set, but this is only required if using SocratesCodebase. Setting to '+str(GFDL_SOC))
 
 def get_env_file(env=GFDL_ENV):
     filepath = os.path.join(GFDL_BASE, 'src', 'extra', 'env', env)
@@ -77,4 +83,4 @@ class EventEmitter(object):
 
 
 from isca.experiment import Experiment, DiagTable, Namelist, FailedRunError
-from isca.codebase import IscaCodeBase, DryCodeBase, GreyCodeBase #, ShallowCodeBase
+from isca.codebase import IscaCodeBase, SocratesCodeBase, DryCodeBase, GreyCodeBase #, ShallowCodeBase
