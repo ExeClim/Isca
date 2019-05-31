@@ -49,7 +49,8 @@ use         transforms_mod, only: transforms_init,         transforms_end,      
                                   get_deg_lon,             get_deg_lat,             &
                                   get_grid_domain,         get_spec_domain,         &
                                   spectral_domain,         grid_domain,             &
-                                  vor_div_from_uv_grid,    uv_grid_from_vor_div
+                                  vor_div_from_uv_grid,    uv_grid_from_vor_div,    &
+                                  area_weighted_global_mean
 
 use   spectral_damping_mod, only: spectral_damping_init,   compute_spectral_damping
 
@@ -165,7 +166,7 @@ real               , intent(in)     :: dt_real
 integer :: i, j
 
 real,    allocatable, dimension(:)   :: glon_bnd, glat_bnd
-real :: xx, yy, dd
+real :: xx, yy, dd, deep_geopot_global_mean
 
 integer  :: ierr, io, unit, id_lon, id_lat, id_lonb, id_latb
 logical  :: root
@@ -258,11 +259,14 @@ do i = is, ie
     Dyn%grid%deep_geopot(i, js:je) = -2.*omega * u_deep_mag * radius * (1./(1.-n_merid_deep_flow**2.))*(-cos(n_merid_deep_flow*DEG_TO_RAD*deg_lat(js:je))*cos(DEG_TO_RAD*deg_lat(js:je)) - n_merid_deep_flow * (sin(n_merid_deep_flow*DEG_TO_RAD*deg_lat(js:je))*sin(DEG_TO_RAD*deg_lat(js:je))-sin(n_merid_deep_flow*(2.*atan(1.)))))
 enddo
 
+deep_geopot_global_mean = area_weighted_global_mean(Dyn%grid%deep_geopot(:,:))
+Dyn%grid%deep_geopot(:,:) = Dyn%grid%deep_geopot(:,:)-deep_geopot_global_mean
+
 if(Time == Time_init) then
 
   Dyn%Grid%vor(:,:,1) = 0.0
   Dyn%Grid%div(:,:,1) = 0.0
-  Dyn%Grid%h  (:,:,1) = h_0
+  Dyn%Grid%h  (:,:,1) = h_0 - Dyn%grid%deep_geopot(:,:)
     
   call trans_grid_to_spherical(Dyn%Grid%vor(:,:,1), Dyn%Spec%vor(:,:,1))
   call trans_grid_to_spherical(Dyn%Grid%div(:,:,1), Dyn%Spec%div(:,:,1))
@@ -380,7 +384,7 @@ if(Dyn%grid_tracer) call update_grid_tracer(Dyn%Grid%tr, Dyn%Tend%tr, &
 stream = compute_laplacian(Dyn%Spec%vor(:,:,current), -1) ! for diagnostic purposes
 call trans_spherical_to_grid(stream, Dyn%grid%stream)
 
-Dyn%Grid%pv = vorg/(Dyn%Grid%h(:,:,current)+Dyn%grid%deep_geopot(:,:))
+Dyn%Grid%pv = vorg/(Dyn%Grid%h(:,:,current))
 
 return
 end subroutine shallow_dynamics

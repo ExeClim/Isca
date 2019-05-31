@@ -27,7 +27,8 @@ use       transforms_mod, only: get_grid_boundaries, &
                                 get_deg_lat,         &
                                 get_grid_domain,     &
                                 get_spec_domain,     & 
-                                grid_domain
+                                grid_domain,         &
+                                area_weighted_global_mean
 
 use     diag_manager_mod, only: diag_axis_init, &
                                 register_diag_field, &
@@ -55,7 +56,7 @@ character(len=84) :: mod_name = 'shallow_diagnostics'
 
 logical :: module_is_initialized = .false.
 
-integer :: id_vor, id_stream, id_pv, id_u, id_v, id_div, id_h, id_trs, id_tr, id_d_geopot
+integer :: id_vor, id_stream, id_pv, id_u, id_v, id_div, id_h, id_trs, id_tr, id_d_geopot, id_u_sqd, id_v_sqd, id_h_sqd, id_u_sqd_mean, id_v_sqd_mean, id_h_sqd_mean, id_ekin
 
 integer :: is, ie, js, je
 
@@ -102,11 +103,21 @@ id_v      = register_diag_field(mod_name, 'vcomp' , axis_2d, Time, 'v_wind'     
 id_vor    = register_diag_field(mod_name, 'vor'   , axis_2d, Time, 'relative vorticity'  , '1/s'      )
 id_div    = register_diag_field(mod_name, 'div'   , axis_2d, Time, 'divergence'          , '1/s'      )
 id_h      = register_diag_field(mod_name, 'h'     , axis_2d, Time, 'geopotential'        , 'm2/s2'    )
-id_pv     = register_diag_field(mod_name, 'pv'    , axis_2d, Time, 'potential vorticity' , 's/m2'     )
+id_pv     = register_diag_field(mod_name, 'pv_corrected'    , axis_2d, Time, 'potential vorticity' , 's/m2'     )
 id_stream = register_diag_field(mod_name, 'stream', axis_2d, Time, 'streamfunction'      , 'm^2/s'    )
 id_trs    = register_diag_field(mod_name, 'trs'   , axis_2d, Time, 'spectral tracer'     , 'none'     )
 id_tr     = register_diag_field(mod_name, 'tr'    , axis_2d, Time, 'grid tracer'         , 'none'     )
 id_d_geopot = register_diag_field(mod_name, 'deep_geopot', axis_2d, Time, 'deep_geopot'  , 'm2/s2')
+
+id_u_sqd      = register_diag_field(mod_name, 'ucomp_sqd' , axis_2d, Time, 'u_wind_sqd'              , 'm^2/s^2'      ) 
+id_v_sqd      = register_diag_field(mod_name, 'vcomp_sqd' , axis_2d, Time, 'v_wind_sqd'              , 'm^2/s^2'      ) 
+id_h_sqd      = register_diag_field(mod_name, 'h_sqd'     , axis_2d, Time, 'geopotential_sqd'        , 'm4/s4'    )
+
+id_u_sqd_mean      = register_diag_field(mod_name, 'ucomp_sqd_mean' , Time, 'u_wind_sqd_mean'              , 'm^2/s^2'      ) 
+id_v_sqd_mean      = register_diag_field(mod_name, 'vcomp_sqd_mean' , Time, 'v_wind_sqd_mean'              , 'm^2/s^2'      ) 
+id_h_sqd_mean      = register_diag_field(mod_name, 'h_sqd_mean'     , Time, 'geopotential_sqd_mean'        , 'm4/s4'    )
+
+id_ekin      = register_diag_field(mod_name, 'e_kin' , Time, 'kinetic_energy'              , 'm^2/s^2'      ) 
 
 module_is_initialized = .true.
 
@@ -134,6 +145,34 @@ if(id_stream  > 0) used = send_data(id_stream , Grid%stream  (:,:)              
 if(id_tr      > 0) used = send_data(id_tr     , Grid%tr      (:,:, time_index)     , time)
 if(id_trs     > 0) used = send_data(id_trs    , Grid%trs     (:,:, time_index)     , time)
 if(id_d_geopot > 0) used = send_data(id_d_geopot, Grid%deep_geopot (:,:)             , time)
+
+if (id_u_sqd > 0) then
+    used = send_data(id_u_sqd      , Grid%u       (:,:, time_index)**2     , time)
+endif
+
+if (id_v_sqd > 0) then
+    used = send_data(id_v_sqd      , Grid%v       (:,:, time_index)**2     , time)
+endif
+
+if (id_h_sqd > 0) then
+    used = send_data(id_h_sqd      , Grid%h       (:,:, time_index)**2     , time)
+endif
+
+if (id_u_sqd_mean > 0) then
+    used = send_data(id_u_sqd_mean      , area_weighted_global_mean(Grid%u       (:,:, time_index)**2)     , time)
+endif
+
+if (id_v_sqd_mean > 0) then
+    used = send_data(id_v_sqd_mean      , area_weighted_global_mean(Grid%v       (:,:, time_index)**2)     , time)
+endif
+
+if (id_h_sqd_mean > 0) then
+    used = send_data(id_h_sqd_mean      , area_weighted_global_mean(Grid%h       (:,:, time_index)**2)     , time)
+endif
+
+if (id_ekin > 0) then
+    used = send_data(id_ekin      , 0.5*(area_weighted_global_mean(Grid%u       (:,:, time_index)**2) + area_weighted_global_mean(Grid%v       (:,:, time_index)**2))     , time)
+endif
 
 return
 end subroutine shallow_diagnostics
