@@ -107,6 +107,10 @@ Once the code has sucessfully compiled, the script will continue on to run the m
 
 Once you've got an environment file that works for your machine saved in `src/extra/env`, all of the test cases should now compile and run - you're now ready to start running your own experiments!
 
+## Site-specific help
+
+There are some site-specific guides to running Isca on your local system located in the directory [exp/site_specific/](https://github.com/ExeClim/Isca/tree/master/exp/site_specific).
+
 # License
 
 Isca is distributed under a GNU GPLv3 license. See the `LICENSE` file for details. 
@@ -115,6 +119,19 @@ RRTM/RRTMG: Copyright © 2002-2010, Atmospheric and Environmental Research, Inc.
 This software may be used, copied, or redistributed as long as it is not sold and this 
 copyright notice is reproduced on each copy made. This model is provided as is without 
 any express or implied warranties.
+
+Some of the code provided in the `src/atmos_params/socrates/interface` folder were provided by the UK Met Office,
+and are therefore covered by British Crown Copyright. The copyright statement at the top of the 
+relevant code is provided below. For the `copyright.txt.` refered to in this statement, please see the
+Socrates source code itself, which is downloadable from the Met Office, and is not packaged with Isca.
+
+```
+! *****************************COPYRIGHT*******************************
+! (C) Crown copyright Met Office. All rights reserved.
+! For further details please refer to the file COPYRIGHT.txt
+! which you should have received as part of this distribution.
+! *****************************COPYRIGHT*******************************
+```
 
 The `check_disk_space.py` script, which is used as part of the email-alerts functionality
 of the `gfdl` module, was written by Giampaolo Rodola and is released under the MIT license.

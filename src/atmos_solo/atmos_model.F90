@@ -381,6 +381,7 @@ contains
          date(1:2) = 0
          call get_time ( Time, date(6), date(3) )
          date(4) = date(6)/int(SECONDS_PER_HOUR); date(6) = date(6) - date(4)*int(SECONDS_PER_HOUR)
+         date(5) = date(6)/int(SECONDS_PER_MINUTE); date(6) = date(6) - date(5)*int(SECONDS_PER_MINUTE)
      endif
 #ifdef MARS_GCM
       date(5) = 0                              ; date(6) = date(6) - date(5)*int(SECONDS_PER_MINUTE)

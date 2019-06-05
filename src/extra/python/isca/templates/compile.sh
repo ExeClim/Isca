@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# Compiles the MiMa GFDL Moist Model (tested on emps-gv2.ex.ac.uk)
+# Compiles the Isca Model
 
+# 0. Source the environment file to load appropriate variables
+source {{ env_source }}
 
 # 1. Configuration
 hostname=`hostname`
-template={{ template_dir }}/mkmf.template.ia64
+compiler=${GFDL_MKMF_TEMPLATE:-ia64}
+template={{ template_dir }}/mkmf.template.${compiler}
 mkmf={{ srcdir }}/../bin/mkmf                             # path to executable mkmf
 sourcedir={{ srcdir }}                             # path to directory containing model source code
 pathnames={{ path_names }}                      # path to file containing list of source paths
@@ -15,12 +18,8 @@ template_debug={{ template_dir }}/mkmf.template.debug
 execdir={{ execdir }}        # where code is compiled and executable is created
 executable={{ executable_name }}
 
-netcdf_flags=`nc-config --fflags --flibs`
+netcdf_flags=`nf-config --fflags --flibs`
 
-# 2. Load the necessary tools into the environment
-module purge
-source {{ env_source }}
-module list
 ulimit -s unlimited # Set stack size to unlimited
 export MALLOC_CHECK_=0
 
@@ -48,9 +47,22 @@ cd $execdir
 
 echo $pathnames
 
+
+if [ $debug == True ]; then
+
+ echo "Compiling in debug mode"
+
+# execute mkmf to create makefile
+cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 {{compile_flags}}"
+$mkmf  -a $sourcedir -t $template_debug -p $executable -c "$cppDefs" $pathnames $sourcedir/shared/include $sourcedir/shared/mpp/include
+
+else
+
 # execute mkmf to create makefile
 cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 {{compile_flags}}"
 $mkmf  -a $sourcedir -t $template -p $executable -c "$cppDefs" $pathnames $sourcedir/shared/include $sourcedir/shared/mpp/include
+
+fi
 
 make
 

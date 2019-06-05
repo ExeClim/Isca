@@ -1,6 +1,11 @@
+import argparse
 from contextlib import contextmanager
 import json
+import logging
+import os
 from os.path import join as P
+import tarfile
+import sys
 
 import numpy as np
 from tqdm import tqdm
@@ -9,6 +14,12 @@ import sh
 
 from isca import GFDL_BASE
 from isca.create_alert import disk_space_alert
+from isca.loghandler import suppress_stdout
+
+@contextmanager
+def no_context(*args, **kwargs):
+    yield None
+
 
 @contextmanager
 def exp_progress(exp, description='DAY {n}'):
@@ -162,3 +173,92 @@ def interpolate_output(infile, outfile, all_fields=True, var_names=[], p_levs = 
     var_names = ' '.join(var_names)
 
     interpolator('-i', infile, '-o', outfile, '-p', plev, var_names)
+
+
+@contextmanager
+def edit_restart_archive(restart_archive, outfile='./res_edit.tar.gz', tmp_dir='./restart_edit'):
+    with tarfile.open(restart_archive, 'r:gz') as tar:
+        tar.extractall(path=tmp_dir)
+        restart_files = [os.path.join(tmp_dir, x.split('/')[-1]) for x in  tar.getnames() if x != '.']
+    try:
+        yield {os.path.basename(f): f for f in restart_files}
+        if outfile is not None:
+            with tarfile.open(outfile, 'w:gz') as out:
+                for f in restart_files:
+                    out.add(f, arcname=os.path.basename(f))
+    finally:
+        for f in restart_files:
+            os.remove(f)
+        os.removedirs(tmp_dir)
+
+
+@contextmanager
+def edit_restart_file(filename):
+    ds = xr.open_dataset(filename, decode_cf=False)
+    try:
+        yield ds
+    finally:
+        # we can't write to the open file, so make a temporary one and
+        # swap them once written
+        ds.to_netcdf(filename+'.swp')
+        ds.close()
+        os.rename(filename+'.swp', filename)
+
+
+def save_log(exp, filename, log_level=logging.DEBUG):
+    fh = logging.FileHandler(filename)
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    exp.log.addHandler(fh)
+    return fh
+
+
+def read_command_line_options(fail_if_underconditioned=True):
+    """Read command line arguments and return a dict of configuration."""
+    parser = argparse.ArgumentParser(description="Run an Isca experiment.")
+    parser.add_argument('-c', '--compile', action='store_true', default=False, help='Compile the experiment codebase.')
+    parser.add_argument('-i', '--run',  type=int, default=None, help='Run (up to) iteration i.')
+    parser.add_argument('--up-to', action='store_true', default=False, help='Don\'t just run iteration i, run all preceeding as well.')
+    parser.add_argument('-n', '--num-cores',  type=int, default=8, help='Run on a given number of cores.')
+    parser.add_argument('-r', '--restart-file', type=str, help='Use a given restart file.  If not given, default is to use the end state from iteration (i-1).')
+    parser.add_argument('-f', '--force', action='store_true', default=False, help='Force the run, overwriting existing data.')
+    parser.add_argument('--nice-score', type=int, default=0, help='Control execution priority by setting a nice score for the mpirun')
+    parser.add_argument('--mpirun-opts', type=str, default='', help='(Advanced) Pass additional options to the mpi_run command.')
+    parser.add_argument('--no-restart', action='store_true', default=False, help='Start the run without a restart file.')
+    parser.add_argument('--progress-bar', action='store_true', default=False, help='Show a progress bar instead of daily output')
+    parser.add_argument('-l', '--log-file', type=str, default=None, help='Save the output log to a file.')
+    args = parser.parse_args()
+    run_config = {}
+    config = {'run_config': run_config}
+    if not args.compile and not args.run and fail_if_underconditioned:
+        print("Error: You must choose to do at least one of --compile or --run")
+        parser.print_help()
+        sys.exit(1)
+    if args.no_restart and args.restart_file is not None:
+        print('Error: --no-restart flag set and also a restart file specified.  Not sure what to do.')
+        sys.exit(1)
+    run_config['use_restart'] = not args.no_restart
+    run_config['overwrite_data'] = args.force
+    for f in ('mpirun_opts', 'nice_score', 'restart_file', 'num_cores'):
+        run_config[f] = vars(args)[f]
+    for f in ('progress_bar', 'up_to', 'run', 'compile', 'log_file'):
+        config[f] = vars(args)[f]
+    return config
+
+
+def run_cli(exp, fail_if_underconditioned=True):
+    """Provide a basic command line interface to run the experiment."""
+    config = read_command_line_options(fail_if_underconditioned)
+    if config['log_file']:
+        save_log(exp, config['log_file'])
+    if config['compile']:
+        exp.codebase.compile()
+    if config['run']:
+        context = exp_progress if config.get('progress_bar') else no_context
+        if config['up_to']:
+            runs = range(1, config['run']+1)
+        else:
+            runs = [config['run']]
+        for i in runs:
+            with context(exp):
+                exp.run(i,**config['run_config'])
