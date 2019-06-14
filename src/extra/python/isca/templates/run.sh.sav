@@ -16,8 +16,8 @@ export MALLOC_CHECK_=0
 cp {{ execdir }}/{{ executable }} {{ executable }}
 
 if [ $debug == True ]; then
-   echo "Opening gdb for debugging"
-   exec gdb  {{ executable}}
+   echo "Opening idb for debugging"
+   exec idb -gdb  {{ executable}}
 else
   exec nice -{{nice_score}} mpirun {{mpirun_opts}} -np {{ num_cores }} {{ execdir }}/{{ executable }}
 fi

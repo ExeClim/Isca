@@ -1058,6 +1058,7 @@ contains
     real, intent(out)                 :: Tlcl
     
     real                              :: iv_floor, w_floor, w_ceil
+    integer                           :: iv_floor_int
     
     if (value .lt. val_min) then
        write(*,*) 'qe_moist_convection: Value passed to get_lcl_temp: ',value
@@ -1071,11 +1072,12 @@ contains
         
     ! Find index of nearest lookup table value below
     iv_floor = floor( (value-val_min)/val_inc ) + 1
+    iv_floor_int = INT(iv_floor) ! integer version to prevent issues
     
     ! Linearly interpolate to get the temperature of LCL
     w_floor  = (val_min + (iv_floor-1)*val_inc)
     w_ceil   = (value -w_floor) / val_inc
-    Tlcl     = lcl_temp_table(iv_floor+1)*w_ceil - lcl_temp_table(iv_floor)*(w_ceil-1)
+    Tlcl     = lcl_temp_table(iv_floor_int+1)*w_ceil - lcl_temp_table(iv_floor_int)*(w_ceil-1)
       
   end subroutine get_lcl_temp
 

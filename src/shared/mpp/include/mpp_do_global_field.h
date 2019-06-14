@@ -120,7 +120,7 @@
          if(PRESENT(default_data)) then
             global = default_data
          else
-            global = 0
+!            global = 0 !perhaps write a function to check the type of global? 
          endif
 
          do k = 1, ke
