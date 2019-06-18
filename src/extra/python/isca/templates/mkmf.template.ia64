@@ -24,5 +24,5 @@ FC = $(F90)
 LD = $(F90) $(NETCDF_LIBS)
 #CC = mpicc
 
-LDFLAGS = -lnetcdff -lnetcdf -shared-intel
+LDFLAGS = -lnetcdff -lnetcdf -shared-intel -G0
 CFLAGS = -D__IFC

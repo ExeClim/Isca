@@ -120,7 +120,8 @@
          if(PRESENT(default_data)) then
             global = default_data
          else
-!            global = 0 !perhaps write a function to check the type of global? 
+!            print*, "add breakpoint here"
+!            global = 0!func(global) !perhaps write a function to check the type of global? 
          endif
 
          do k = 1, ke

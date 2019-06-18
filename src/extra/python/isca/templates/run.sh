@@ -19,7 +19,7 @@ if [ $debug == True ]; then
    echo "Opening gdb for debugging"
    exec gdb  {{ executable}}
 else
-  exec nice -{{nice_score}} mpirun {{mpirun_opts}} -np {{ num_cores }} {{ execdir }}/{{ executable }}
+  exec nice -{{nice_score}} aprun {{mpirun_opts}} -n {{ num_cores }} {{ execdir }}/{{ executable }}
 fi
 
 err_code=$?

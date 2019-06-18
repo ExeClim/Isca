@@ -1,8 +1,8 @@
-import numpy as np
+import numpy as npA
 
 from isca import DryCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 1
+NCORES = 32
 RESOLUTION = 'T42', 25  # T42 horizontal resolution, 25 levels in pressure
 
 # a CodeBase can be a directory on the computer,
@@ -18,7 +18,7 @@ cb = DryCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
-cb.compile(debug=True)  # compile the source code to working directory $GFDL_WORK/codebase
+cb.compile(debug=False)  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
@@ -85,9 +85,9 @@ namelist = Namelist({
         'do_conserve_energy':   True,  # convert dissipated momentum into heat (default True)
     },
 
-    'diag_manager_nml': {
-        'mix_snapshot_average_fields': False
-    },
+#    'diag_manager_nml': {
+#        'mix_snapshot_average_fields': False
+#    },
 
     'fms_nml': {
         'domains_stack_size': 600000                        # default: 0
@@ -104,6 +104,6 @@ exp.set_resolution(*RESOLUTION)
 
 #Lets do a run!
 if __name__ == '__main__':
-    exp.run(1, num_cores=NCORES, use_restart=False, run_idb=True)
+    exp.run(1, num_cores=NCORES, use_restart=False, run_idb=False)
     for i in range(2, 13):
-        exp.run(i, num_cores=NCORES,run_idb=True)  # use the restart i-1 by default
+        exp.run(i, num_cores=NCORES,run_idb=False)  # use the restart i-1 by default

@@ -4,7 +4,7 @@ from isca import IscaCodeBase, GreyCodeBase, DiagTable, Experiment, Namelist, GF
 from isca.util import exp_progress
 #from ntfy import notify
 
-NCORES = 16
+NCORES = 32
 
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
