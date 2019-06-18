@@ -135,6 +135,7 @@ real    :: h_0                 = 3.e04
 
 real    :: u_deep_mag          = 0.
 real    :: n_merid_deep_flow   = 3.
+real    :: u_upper_mag_init    = 0.
 
 logical :: spec_tracer      = .true.
 logical :: grid_tracer      = .true.
@@ -151,7 +152,8 @@ namelist /shallow_dynamics_nml/ check_fourier_imag,          &
                           h_0, spec_tracer, grid_tracer,     &
                           valid_range_v, cutoff_wn,          &
                           raw_filter_coeff,                  &
-                          u_deep_mag, n_merid_deep_flow
+                          u_deep_mag, n_merid_deep_flow,     &
+                          u_upper_mag_init
 
 contains
 
@@ -264,7 +266,10 @@ Dyn%grid%deep_geopot(:,:) = Dyn%grid%deep_geopot(:,:)-deep_geopot_global_mean
 
 if(Time == Time_init) then
 
-  Dyn%Grid%vor(:,:,1) = 0.0
+  do i = is, ie   
+    Dyn%Grid%vor(i,js:je,1) = -((u_upper_mag_init * n_merid_deep_flow)/radius) * sin(DEG_to_RAD * deg_lat(js:je))
+  enddo
+
   Dyn%Grid%div(:,:,1) = 0.0
   Dyn%Grid%h  (:,:,1) = h_0 - Dyn%grid%deep_geopot(:,:)
     

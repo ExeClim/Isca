@@ -49,6 +49,14 @@ diag.add_field('stirring_mod', 'stirring_sqr', time_avg=True)
 diag.add_field('shallow_diagnostics', 'e_kin', time_avg=True)
 diag.add_field('shallow_diagnostics', 'h_sqd_mean', time_avg=True)
 
+diag.add_field('shallow_diagnostics', 'e_kin_density', time_avg=True)
+diag.add_field('shallow_diagnostics', 'eq_geopot', time_avg=True)
+diag.add_field('shallow_diagnostics', 'e_kin_real_units', time_avg=True)
+diag.add_field('shallow_diagnostics', 'e_pot_real_units', time_avg=True)
+diag.add_field('shallow_diagnostics', 'e_tot_real_units', time_avg=True)
+diag.add_field('shallow_diagnostics', 'u_rms', time_avg=True)
+
+
 #Empty the run directory ready to run
 
 #Define values for the 'core' namelist
@@ -109,18 +117,22 @@ namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
 
-    for ld_value in [10.0, 0.1, 0.05, 0.01]:
+    # for ld_value in [10.0, 0.1, 0.05, 0.01]:
+    for ld_value in [0.05,]:
 
-        for u_deep_mag_val in [50., 0.]:
+
+        for u_deep_mag_val in [50.]:
 
             if u_deep_mag_val!=0.:
-                u_deep_merid_arr = [3, 11, 19, 26]
+                u_deep_merid_arr = [27]
+                # u_deep_merid_arr = [5,7,9]
+
             else:
                 u_deep_merid_arr = [3]
 
             for u_deep_merid in u_deep_merid_arr:
 
-                exp = Experiment('giant_planet_fixed_deep_ics_forced_no_rad_damping_ld_'+str(ld_value)+'_udeep_mag_'+str(u_deep_mag_val)+'_u_deep_merid_'+str(int(u_deep_merid)), codebase=cb)
+                exp = Experiment('giant_planet_fixed_deep_ics_forced_no_rad_damping_ld_'+str(ld_value)+'_udeep_mag_'+str(u_deep_mag_val)+'_u_deep_merid_'+str(int(u_deep_merid))+'_energy_outputs_3', codebase=cb)
 
                 exp.diag_table = diag 
                 exp.namelist = namelist 
@@ -141,7 +153,8 @@ if __name__=="__main__":
                     'shallow_dynamics_nml':{
                         'h_0': equilibrium_geopotential,
                         'u_deep_mag'   : u_deep_mag_val,
-                        'n_merid_deep_flow': u_deep_merid,                    
+                        'n_merid_deep_flow': u_deep_merid,         
+                        # 'u_upper_mag_init':  u_deep_mag_val,
                     },
                     'shallow_physics_nml': {
                         'h_0': equilibrium_geopotential, 
