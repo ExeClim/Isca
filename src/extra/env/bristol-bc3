@@ -1,0 +1,16 @@
+echo loadmodules for Bristol Bluecrystal 3
+
+
+# No purge as causes crash
+                                                            
+module add shared default-environment
+module load languages/python-anaconda-4.2-3.5
+
+module add intel-cluster-studio/compiler/64/13.1/117
+module add openmpi/intel/64/1.6.5
+module add tools/intel_builds/tau-2.23.1-openmpi
+module add libraries/intel_builds/netcdf-4.3
+module add tools/git-2.18.0
+
+export F90=mpif90
+export CC=mpicc

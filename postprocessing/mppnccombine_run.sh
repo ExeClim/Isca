@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # 1. Load the necessary tools into the environment
-module purge
+#module purge
 source $GFDL_BASE/src/extra/env/$GFDL_ENV
 module list
 
