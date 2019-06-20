@@ -156,7 +156,7 @@ logical :: do_mass_correction     = .true. , &
            use_implicit           = .true.,  &
            triang_trunc           = .true.,  &
            graceful_shutdown      = .false., &
-		   make_symmetric         = .false. !GC/RG Add namelist option to run model as zonally symmetric
+           make_symmetric         = .false. !GC/RG Add namelist option to run model as zonally symmetric
 
 
 integer :: damping_order       = 2, &
@@ -250,22 +250,21 @@ character(len=128) :: tname, longname, units
 if(module_is_initialized) return
 
 #ifdef INTERNAL_FILE_NML
-    read (input_nml_file, nml=spectral_dynamics_nml, iostat=io)
-    ierr = check_nml_error(io, 'spectral_dynamics_nml')
+     read (input_nml_file, nml=spectral_dynamics_nml, iostat=io)
+     ierr = check_nml_error(io, 'spectral_dynamics_nml')
 #else
-    unit = open_namelist_file()
-    ierr=1
-    do while (ierr /= 0)
-      read(unit, nml=spectral_dynamics_nml, iostat=io, end=20)
-      ierr = check_nml_error (io, 'spectral_dynamics_nml')
-    enddo
-20  call close_file (unit)
+     unit = open_namelist_file()
+     ierr=1
+     do while (ierr /= 0)
+       read(unit, nml=spectral_dynamics_nml, iostat=io, end=20)
+       ierr = check_nml_error (io, 'spectral_dynamics_nml')
+     enddo
+ 20  call close_file (unit)
 #endif
 
 call write_version_number(version, tagname)
 if(mpp_pe() == mpp_root_pe()) write (stdlog(), nml=spectral_dynamics_nml)
 call write_version_number(tracer_type_version, tracer_type_tagname)
-
 Time_step  = Time_step_in
 Alarm_interval = set_time(print_interval(2), print_interval(1))
 Alarm_time = Time + Alarm_interval

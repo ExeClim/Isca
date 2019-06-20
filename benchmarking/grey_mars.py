@@ -4,7 +4,7 @@ from isca import IscaCodeBase, GreyCodeBase, DiagTable, Experiment, Namelist, GF
 from isca.util import exp_progress
 #from ntfy import notify
 
-NCORES = 32
+NCORES = 16
 
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -144,15 +144,16 @@ namelist = Namelist({
     },
 
     'spectral_dynamics_nml': {
+        'damping_coeff_div' : -1.,
         'num_levels': 25,
         'exponent': 2.5,
         'scale_heights': 4,
         'surf_res': 0.1,
         'robert_coeff': 4e-2,
-        'do_water_correction': False,
         'vert_coord_option': 'input',
         'initial_sphum': 0.,
-        'valid_range_T': [0, 700]
+        'valid_range_T': [0, 700],
+        'do_water_correction': False
     },
 
     'vert_coordinate_nml': {
