@@ -18,11 +18,11 @@ NETCDF_LIBS = `nc-config --libs`
 #  -diag-disable 6843:
 #       This suppresses the warning: `warning #6843: A dummy argument with an explicit INTENT(OUT) declaration is not given an explicit value.` of which
 #       there are a lot of instances in the GFDL codebase.
-FFLAGS = $(CPPFLAGS) -g -s real64 -eefmZ0 -dC -h develop -dynamic -hsystem_alloc -h cpu=arm-thunderx2 -h zero
+FFLAGS = $(CPPFLAGS) -fpp -stack_temps -safe_cray_ptr -ftz -assume byterecl -shared-intel -i4 -r8 -g -O2 -diag-disable 6843
 #FFLAGS = $(CPPFLAGS) -fltconsistency -stack_temps -safe_cray_ptr -ftz -shared-intel -assume byterecl -g -O0 -i4 -r8 -check -warn -warn noerrors -debug variable_locations -inline_debug_info -traceback
 FC = $(F90)
 LD = $(F90) $(NETCDF_LIBS)
 #CC = mpicc
 
-LDFLAGS = -lnetcdff -lnetcdf -shared-intel -G0 -hsystem_alloc -h cpu=arm-thunderx2 -h zero -e0
+LDFLAGS = -lnetcdff -lnetcdf -lmpi -shared-intel
 CFLAGS = -D__IFC

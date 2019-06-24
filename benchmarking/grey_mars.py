@@ -77,6 +77,7 @@ namelist = Namelist({
         'roughness_moist':0.,                
         'two_stream_gray': True,     #Use grey radiation
         'do_lscale_cond': False,
+        'convection_scheme': 'NONE'
     },
 
     'vert_turb_driver_nml': {
@@ -239,7 +240,7 @@ if __name__=="__main__":
                 exp.namelist['astronomy_nml']['per'] = per_value
 
 #            with exp_progress(exp, description='o%.0f d{day}' % scale):
-                exp.run(1, use_restart=False, num_cores=NCORES)
+                exp.run(1, use_restart=True, num_cores=NCORES)
                 for i in range(2, 241):
 #                with exp_progress(exp, description='o%.0f d{day}' % scale):
                     exp.run(i, num_cores=NCORES)

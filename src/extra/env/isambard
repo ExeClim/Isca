@@ -1,1 +1,2 @@
 echo loadmodules for Isambard
+GFDL_MKMF_TEMPLATE=cray_aarch64
