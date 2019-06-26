@@ -1,0 +1,8 @@
+#!/bin/sh
+#PBS -q long 
+#PBS -l select=1:ncpus=36 
+#PBS -l walltime=0:60:00
+
+module load lang/python/anaconda/3.7-2019.03.biopython
+source activate isca_env
+python held_suarez/held_suarez_test_case.py

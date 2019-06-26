@@ -1,0 +1,15 @@
+echo loadmodules for Blue pebble
+module purge
+
+# Load modules
+module load lang/python/anaconda/3.7-2019.03.biopython
+module load lang/intel-parallel-studio-xe/2019.u3
+module load lib/netcdf/4.70
+
+# Compiler variables
+export F90=mpiifort
+export CC=mpiicc
+
+# Find the NetCDF library
+export CPATH="/sw/lib/netcdf-c-4.7.0/include:${CPATH}"
+
