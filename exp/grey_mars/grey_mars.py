@@ -44,7 +44,7 @@ diag.add_field('atmosphere', 'precipitation', time_avg=True)
 
 diag.add_field('atmosphere', 'dt_tg_convection', time_avg=True)
 
-diag.add_field('mixed_layer', 't_surf', time_avg=True)
+diag.add_field('mixed_layer', 't_surf', time_avg=False)
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True)
 diag.add_field('mixed_layer', 'flux_t', time_avg=True)
 

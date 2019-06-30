@@ -30,7 +30,7 @@ use fms_mod, only: open_namelist_file
 use                fms_mod, only: mpp_pe, mpp_root_pe, error_mesg, NOTE, FATAL, write_version_number, stdlog, &
                                   close_file, open_restart_file, file_exist, set_domain,                      &
                                   read_data, write_data, check_nml_error, lowercase, uppercase, mpp_npes,     &
-                                  field_size
+                                  field_size, open_namelist_file
 
 use          constants_mod, only: rdgas, rvgas, grav, cp_air, omega, radius, pi
 
@@ -250,7 +250,9 @@ character(len=128) :: tname, longname, units
 if(module_is_initialized) return
 
 #ifdef INTERNAL_FILE_NML
-     read (input_nml_file, nml=spectral_dynamics_nml, iostat=io)
+     unit = open_namelist_file ( )
+     read (unit, nml=spectral_dynamics_nml, iostat=io)
+     call close_file(unit)
      ierr = check_nml_error(io, 'spectral_dynamics_nml')
 #else
      unit = open_namelist_file()

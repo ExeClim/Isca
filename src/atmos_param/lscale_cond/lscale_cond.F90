@@ -264,13 +264,15 @@ subroutine precip_evap (pmass, tin, qin, qsat, dqsat, hlcp, &
 !
 !-----------------------------------------------------------------------
 
-  integer  unit,io,ierr, logunit
+  integer  unit, io, ierr, logunit
 
 !----------- read namelist ---------------------------------------------
 
 #ifdef INTERNAL_FILE_NML
-      read (input_nml_file, nml=lscale_cond_nml, iostat=io)
-      ierr = check_nml_error(io,"lscale_cond_nml")
+   unit = open_namelist_file ( )
+   read (unit, nml=lscale_cond_nml, iostat=io)
+   call close_file(unit)
+   ierr = check_nml_error(io,"lscale_cond_nml")
 #else
       if (file_exist('input.nml')) then
          unit = open_namelist_file ()

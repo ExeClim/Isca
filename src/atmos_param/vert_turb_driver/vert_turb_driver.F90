@@ -61,7 +61,7 @@ use            mpp_mod, only: input_nml_file
 use            fms_mod, only: mpp_pe, mpp_root_pe, stdlog, &
                               error_mesg, open_namelist_file, file_exist, &
                               check_nml_error, close_file, FATAL, &
-                              write_version_number
+                              write_version_number, close_file
  
 
 use  field_manager_mod, only: MODEL_ATMOS
@@ -583,7 +583,9 @@ subroutine vert_turb_driver_init (lonb, latb, id, jd, kd, axes, Time, &
 !--------------- read namelist ------------------
 
 #ifdef INTERNAL_FILE_NML
-   read (input_nml_file, nml=vert_turb_driver_nml, iostat=io)
+   unit = open_namelist_file()
+   read (unit, nml=vert_turb_driver_nml, iostat=io)
+   call close_file(unit)
    ierr = check_nml_error(io,'vert_turb_driver_nml')
 #else   
       if (file_exist('input.nml')) then

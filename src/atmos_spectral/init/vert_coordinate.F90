@@ -38,7 +38,7 @@ use fms_mod, only: open_namelist_file
 
 use fms_mod, only: mpp_pe, mpp_root_pe, error_mesg, FATAL, &
                    write_version_number, stdlog, close_file, &
-                   check_nml_error
+                   check_nml_error, open_namelist_file, close_file
 
 use constants_mod, only: pi
 
@@ -193,7 +193,9 @@ pk = 0.
 bk = 0.
 
 #ifdef INTERNAL_FILE_NML
-    read (input_nml_file, nml=vert_coordinate_nml, iostat=io)
+    namelist_unit = open_namelist_file()
+    read (namelist_unit, nml=vert_coordinate_nml, iostat=io)
+    call close_file(namelist_unit)
     ierr = check_nml_error(io, 'vert_coordinate_nml')
 #else
     namelist_unit = open_namelist_file()

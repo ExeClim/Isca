@@ -41,6 +41,7 @@
       pointer( ptr_local,  clocal  ) 
       pointer( ptr_remote, cremote )
 
+
       stackuse = size(clocal(:))+size(cremote(:))
       if( stackuse.GT.mpp_domains_stack_size )then
           write( text, '(i8)' )stackuse
@@ -120,7 +121,7 @@
          if(PRESENT(default_data)) then
             global = default_data
          else
-         !   global = 0 !func(global) !perhaps write a function to check the type of global? 
+            global = MPP_DEFAULT_VALUE
          endif
 
          do k = 1, ke

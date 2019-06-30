@@ -51,7 +51,7 @@ namelist = Namelist({
         'calendar': 'thirty_day',
         'current_date': [2000,1,1,0,0,0]
     },
-
+    
     'atmosphere_nml': {
         'idealized_moist_model': False  # False for Newtonian Cooling.  True for Isca/Frierson
     },
