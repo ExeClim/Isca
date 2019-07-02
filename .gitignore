@@ -27,3 +27,5 @@ src/extra/python/scripts/archived/
 mima_pz.txt
 test/.cache
 test/results.xml
+*.sh.e*
+*.sh.o*
