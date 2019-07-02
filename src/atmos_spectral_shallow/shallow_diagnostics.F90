@@ -56,7 +56,7 @@ character(len=84) :: mod_name = 'shallow_diagnostics'
 
 logical :: module_is_initialized = .false.
 
-integer :: id_vor, id_stream, id_pv, id_u, id_v, id_div, id_h, id_trs, id_tr, id_d_geopot, id_u_sqd, id_v_sqd, id_h_sqd, id_u_sqd_mean, id_v_sqd_mean, id_h_sqd_mean, id_ekin, id_ekin_density, id_eq_geopot, id_e_kin_real_units, id_e_pot_real_units, id_e_tot_real_units, id_u_rms
+integer :: id_vor, id_stream, id_pv, id_u, id_v, id_div, id_h, id_trs, id_tr, id_d_geopot, id_u_sqd, id_v_sqd, id_h_sqd, id_u_sqd_mean, id_v_sqd_mean, id_h_sqd_mean, id_ekin, id_ekin_density, id_eq_geopot, id_e_kin_real_units, id_e_pot_real_units, id_e_tot_real_units, id_u_rms, id_vcomp_vor, id_ucomp_vcomp
 
 integer :: is, ie, js, je
 
@@ -126,6 +126,10 @@ id_e_pot_real_units = register_diag_field(mod_name, 'e_pot_real_units' , Time, '
 id_e_tot_real_units = register_diag_field(mod_name, 'e_tot_real_units' , Time, 'e_tot_real_units'              , 'J/kg'      ) 
 
 id_u_rms = register_diag_field(mod_name, 'u_rms' , Time, 'r_rms'              , 'm/s'      ) 
+
+id_vcomp_vor    = register_diag_field(mod_name, 'vcomp_vor'   , axis_2d, Time, 'vcomp * relative vorticity'  , 'm/s^2'      )
+
+id_ucomp_vcomp    = register_diag_field(mod_name, 'ucomp_vcomp'   , axis_2d, Time, 'ucomp * vcomp'  , 'm^2/s^2'      )
 
 module_is_initialized = .true.
 
@@ -243,6 +247,10 @@ if (id_u_rms > 0) then
     used = send_data(id_u_rms      , (area_weighted_global_mean(Grid%u       (:,:, time_index)**2) + area_weighted_global_mean(Grid%v       (:,:, time_index)**2))**0.5,  time)
 
 endif
+
+
+if(id_vcomp_vor       > 0) used = send_data(id_vcomp_vor      , Grid%v       (:,:, time_index) * Grid%vor       (:,:, time_index)     , time)
+if(id_ucomp_vcomp     > 0) used = send_data(id_ucomp_vcomp    , Grid%u     (:,:, time_index) * Grid%v     (:,:, time_index)    , time)
 
 return
 end subroutine shallow_diagnostics
