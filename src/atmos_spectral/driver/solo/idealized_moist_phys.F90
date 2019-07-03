@@ -676,7 +676,7 @@ end select
         axes(1:2), Time, 'Rain from convection','kg/m/m/s')
 !endif
 
-if (r_conv_scheme .eq. DRY_CONV .and. do_lscale_cond .eq. .true.) then
+if (r_conv_scheme .eq. DRY_CONV .and. do_lscale_cond .eqv. .true.) then
         call error_mesg('idealized_moist_phys','do_lscale_cond is .true. but r_conv_scheme is dry. These options may not be consistent.', WARNING)
 endif
 
@@ -868,7 +868,7 @@ dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
 
 
 ! Perform large scale convection
-if ( do_lscale_cond .eq. .true.) then
+if ( do_lscale_cond .eqv. .true.) then
   ! Large scale convection is a function of humidity only.  This is
   ! inconsistent with the dry convection scheme, don't run it!
   rain = 0.0; snow = 0.0

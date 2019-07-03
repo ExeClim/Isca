@@ -104,6 +104,6 @@ exp.set_resolution(*RESOLUTION)
 
 #Lets do a run!
 if __name__ == '__main__':
-    exp.run(1, num_cores=NCORES, use_restart=False, run_idb=True)
+    exp.run(1, num_cores=NCORES, use_restart=False, run_idb=False)
     for i in range(2, 13):
-        exp.run(i, num_cores=NCORES,run_idb=True)  # use the restart i-1 by default
+        exp.run(i, num_cores=NCORES,run_idb=False)  # use the restart i-1 by default

@@ -49,7 +49,7 @@ use          fms_mod, only: file_exist, check_nml_error,                &
                             open_restart_file,                          &
                             mpp_clock_id, mpp_clock_begin,              &
                             mpp_clock_end, CLOCK_COMPONENT, set_domain, &
-                            nullify_domain, uppercase
+                            nullify_domain, uppercase, open_namelist_file, close_file
 use       fms_io_mod, only: fms_io_exit
 
 use  mpp_mod,         only: mpp_set_current_pelist
@@ -173,7 +173,9 @@ contains
 !----- read namelist -------
 
 #ifdef INTERNAL_FILE_NML
-     read (input_nml_file, nml=main_nml, iostat=io)
+     unit = open_namelist_file()
+     read (unit, nml=main_nml, iostat=io)
+     call mpp_close (unit)
      ierr = check_nml_error(io, 'main_nml')
 #else
    unit = open_namelist_file ( )
