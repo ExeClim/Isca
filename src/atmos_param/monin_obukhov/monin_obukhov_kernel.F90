@@ -18,6 +18,14 @@
 !! along with FMS. if not, see: http://www.gnu.org/licenses/gpl.txt  !!
 !!                                                                   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#ifdef dim_128
+#define DIM 64
+#endif
+#ifdef dim_128
+#undef DIM
+#define DIM 128
+#endif
+
 
 #include <fms_platform.h>
 
@@ -143,7 +151,7 @@ _PURE subroutine monin_obukhov_drag_1d(grav, vonkarm,               &
   logical, intent(in   ), dimension(n)  :: avail  ! provided mask 
   integer, intent(out  )                :: ier
 
-  real   , dimension(n) :: rich, fm, ft, fq, zz
+  real   , dimension(DIM) :: rich, fm, ft, fq, zz
   logical, dimension(n) :: mask, mask_1, mask_2
   real   , dimension(n) :: delta_b !!, us, bs, qs
   real                  :: r_crit, sqrt_drag_min
@@ -164,7 +172,7 @@ _PURE subroutine monin_obukhov_drag_1d(grav, vonkarm,               &
        integer, intent(in   )                :: n
        real   , intent(in   ), dimension(n)  :: rich, z, z0, zt, zq
        logical, intent(in   ), dimension(n)  :: mask
-       real   , intent(  out), dimension(n)  :: f_m, f_t, f_q
+       real   , intent(  out), dimension(DIM)  :: f_m, f_t, f_q
        integer, intent(  out)                :: ier
      end subroutine monin_obukhov_solve_zeta
   end interface
@@ -257,7 +265,7 @@ _PURE subroutine monin_obukhov_solve_zeta(error, zeta_min, max_iter, small,  &
   integer, intent(in   )                :: n
   real   , intent(in   ), dimension(n)  :: rich, z, z0, zt, zq
   logical, intent(in   ), dimension(n)  :: mask
-  real   , intent(  out), dimension(n)  :: f_m, f_t, f_q
+  real   , intent(  out), dimension(DIM)  :: f_m, f_t, f_q
   integer, intent(  out)                :: ier
 
 
