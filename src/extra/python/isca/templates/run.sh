@@ -16,10 +16,15 @@ export MALLOC_CHECK_=0
 cp {{ execdir }}/{{ executable }} {{ executable }}
 
 if [ $debug == True ]; then
-   echo "Opening idb for debugging"
-   exec idb -gdb  {{ executable}}
+   echo "Opening gdb for debugging"
+   exec gdb  {{ executable}}
 else
-  exec nice -{{nice_score}} mpirun {{mpirun_opts}} -np {{ num_cores }} {{ execdir }}/{{ executable }}
+  # defaults to mpirun -> export EXECUTION_TYPE=APRUN for Cray systems 
+  if [[ -z "${EXECUTION_TYPE}" ]] || [ "${EXECUTION_TYPE^^}" = "MPIRUN" ]; then
+    exec nice -{{nice_score}} mpirun {{mpirun_opts}} -n {{ num_cores }} {{ execdir }}/{{ executable }}
+  elif [ "${EXECUTION_TYPE^^}" = "APRUN" ]; then
+    exec nice -{{nice_score}} aprun {{mpirun_opts}} -n {{ num_cores }} {{ execdir }}/{{ executable }}
+  fi
 fi
 
 err_code=$?
