@@ -23,5 +23,5 @@ FFLAGS = $(CPPFLAGS) $(NETCDF_LIBS) -cpp -fcray-pointer \
 FC = $(F90)
 LD = $(F90) $(NETCDF_LIBS)
 
-LDFLAGS = -lnetcdff -lnetcdf  -lmpi
+LDFLAGS = -lnetcdff -lnetcdf -lmpi
 CFLAGS = -D__IFC
