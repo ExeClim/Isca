@@ -238,7 +238,9 @@ if(lw_scheme == B_SCHNEIDER_LIU) then
 endif
 
 if ((lw_scheme == B_BYRNE).or.(lw_scheme == B_GEEN)) then
-    if (pstd_mks/=pstd_mks_earth) call error_mesg('two_stream_gray_rad','Pstd_mks and pstd_mks_earth are not the same in the this run, but lw scheme will use pstd_mks_earth because abs coeffs in Byrne and Geen schemes are non-dimensionalized by Earth surface pressure.', NOTE)
+   if (pstd_mks/=pstd_mks_earth) then
+   call error_mesg('two_stream_gray_rad','Pstd_mks and pstd_mks_earth are not the same in the this run, but lw scheme will use pstd_mks_earth because abs coeffs in Byrne and Geen schemes are non-dimensionalized by Earth surface pressure.', NOTE)
+   endif
 endif
 
 
