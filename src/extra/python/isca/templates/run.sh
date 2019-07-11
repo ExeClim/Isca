@@ -16,8 +16,8 @@ export MALLOC_CHECK_=0
 cp {{ execdir }}/{{ executable }} {{ executable }}
 
 if [ $debug == True ]; then
-   echo "Opening gdb for debugging"
-   exec gdb  {{ executable}}
+   echo "Opening idb for debugging"
+   exec idb -gdb  {{ executable}}
 else
   # defaults to mpirun -> export EXECUTION_TYPE=APRUN for Cray systems 
   if [[ -z "${EXECUTION_TYPE}" ]] || [ "${EXECUTION_TYPE^^}" = "MPIRUN" ]; then
