@@ -353,7 +353,7 @@ do k=1,num_levels+1
   if(k == num_levels+1) then
     Tr = T0
   else
-    Tr = T0 + lapse/(zt**-alpha + z(k)**-alpha)**(1./alpha)
+    Tr = T0 + lapse/(zt** (-alpha) + z(k)** (-alpha))**(1./alpha)
   endif
   LC1_t(:,k) = Tr + LC1_t(:,k)
 enddo
