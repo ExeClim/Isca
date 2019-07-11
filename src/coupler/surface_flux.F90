@@ -35,7 +35,7 @@ module surface_flux_mod
 !
 ! ============================================================================
 
-use             fms_mod, only: FATAL, close_file, mpp_pe, mpp_root_pe, write_version_number, error_mesg, FATAL
+use             fms_mod, only: FATAL, close_file, mpp_pe, mpp_root_pe, write_version_number, error_mesg
 use             fms_mod, only: file_exist, check_nml_error, open_namelist_file, stdlog
 use   monin_obukhov_mod, only: mo_drag, mo_profile
 use   frierson_monin_obukhov_mod, only: frierson_mo_drag

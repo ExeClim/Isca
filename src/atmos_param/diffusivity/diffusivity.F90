@@ -180,7 +180,9 @@ integer :: unit, ierr, io, logunit
 
       if (file_exist('input.nml')) then
 #ifdef INTERNAL_FILE_NML
-         read (input_nml_file, nml=diffusivity_nml, iostat=io)
+         unit = open_namelist_file()
+         read (unit, nml=diffusivity_nml, iostat=io)
+         call close_file(unit)
          ierr = check_nml_error(io,"diffusivity_nml")
 #else
          unit = open_namelist_file ()
