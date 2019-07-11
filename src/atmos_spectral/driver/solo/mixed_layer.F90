@@ -525,7 +525,6 @@ if ( id_heat_cap > 0 ) used = send_data ( id_heat_cap, land_sea_heat_capacity )
 !s end surface heat capacity calculation
 
 module_is_initialized = .true.
-print *, 't_surf=', t_surf
 
 return
 end subroutine mixed_layer_init
