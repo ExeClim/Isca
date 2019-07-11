@@ -1,5 +1,5 @@
 #!/bin/sh
-#PBS -q long 
+#PBS -q mvlong 
 #PBS -l select=1:ncpus=36 
 #PBS -l walltime=0:60:00
 
