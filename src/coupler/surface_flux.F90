@@ -36,7 +36,7 @@ module surface_flux_mod
 ! ============================================================================
 
 use             fms_mod, only: FATAL, close_file, mpp_pe, mpp_root_pe, write_version_number
-use             fms_mod, only: file_exist, check_nml_error, open_namelist_file, stdlog
+use             fms_mod, only: file_exist, check_nml_error, open_namelist_file, stdlog, close_file
 use   monin_obukhov_mod, only: mo_drag, mo_profile
 use  sat_vapor_pres_mod, only: escomp, descomp
 use       constants_mod, only: cp_air, hlv, stefan, rdgas, rvgas, grav, vonkarm, dens_h2o
@@ -828,8 +828,10 @@ subroutine surface_flux_init
 
   ! read namelist
 #ifdef INTERNAL_FILE_NML
-      read (input_nml_file, surface_flux_nml, iostat=io)
-     ierr = check_nml_error(io, 'surface_flux_nml')      
+   unit = open_namelist_file()
+   read (unit, surface_flux_nml, iostat=io)
+   call close_file(unit)
+   ierr = check_nml_error(io, 'surface_flux_nml')      
 #else
   if ( file_exist('input.nml')) then
      unit = open_namelist_file ()

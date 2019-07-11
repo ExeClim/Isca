@@ -19,6 +19,16 @@
 !!                                                                   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+!!!!TODO Fix this file to use macro defs or save f_m
+!!#ifdef dim_128
+!!#define DIM 64
+!!#endif
+!!#ifdef dim_128
+!!#undef DIM
+!!#define DIM 128
+!!#endif
+
+
 #include <fms_platform.h>
 
 ! -*-F90-*-

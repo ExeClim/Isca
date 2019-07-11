@@ -298,7 +298,10 @@ real,   dimension(:,:), intent(in), optional   :: lonb
 !    read namelist.
 !-----------------------------------------------------------------------
 #ifdef INTERNAL_FILE_NML
-      read (input_nml_file, astronomy_nml, iostat=io)
+      unit = open_namelist_file()
+      read (unit, astronomy_nml, iostat=io)
+      close_file(unit)
+      ierr = check_nml_error(io,'astronomy_nml')
 #else
       if ( file_exist('input.nml')) then
         unit =  open_namelist_file ( )

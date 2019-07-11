@@ -27,8 +27,9 @@ module atmosphere_mod
   use fms_mod, only: open_namelist_file, close_file
 #endif
 
-use                  fms_mod, only: set_domain, write_version_number, field_size, file_exist, stdlog, &
-                                    mpp_pe, mpp_root_pe, error_mesg, FATAL, read_data, write_data, nullify_domain
+use                  fms_mod, only: set_domain, write_version_number, field_size, file_exist, stdlog, check_nml_error, &
+                                    mpp_pe, mpp_root_pe, error_mesg, FATAL, read_data, write_data, nullify_domain, &
+                                    open_namelist_file, close_file
 
 use            constants_mod, only: grav, pi
 
@@ -113,7 +114,7 @@ subroutine atmosphere_init(Time_init, Time, Time_step_in)
 
 type (time_type), intent(in)  :: Time_init, Time, Time_step_in
 
-integer :: seconds, days, lon_max, lat_max, ntr, nt, i, j, nml_unit, io, stdlog_unit
+integer :: seconds, days, lon_max, lat_max, ntr, nt, i, j, nml_unit, io, stdlog_unit, unit, ierr
 integer, dimension(4) :: siz
 real, dimension(2) :: time_pointers
 character(len=64) :: file, tr_name
@@ -124,7 +125,10 @@ if(module_is_initialized) return
 call write_version_number(version, tagname)
 
 #ifdef INTERNAL_FILE_NML
-   read (input_nml_file, nml=atmosphere_nml, iostat=io)
+     unit = open_namelist_file ( )
+     read (unit, nml=atmosphere_nml, iostat=io)
+     call close_file(unit)
+     ierr = check_nml_error(io, 'atmosphere_nml')
 #else  
    if ( file_exist('input.nml') ) then
       nml_unit = open_namelist_file()

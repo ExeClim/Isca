@@ -6,7 +6,8 @@ module idealized_moist_phys_mod
   use fms_mod, only: open_namelist_file, close_file
 #endif
 
-use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, FATAL, WARNING, read_data, field_size, uppercase, mpp_pe
+use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, FATAL, WARNING, read_data, field_size, &
+                   uppercase, mpp_pe, open_namelist_file, check_nml_error
 
 use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS, dens_h2o !mj cp_air needed for rrtmg !s pstd_mks needed for pref calculation
 
@@ -282,7 +283,7 @@ type(time_type), intent(in) :: Time, Time_step_in
 integer, intent(in) :: nhum
 real, intent(in), dimension(:,:) :: rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init
 
-integer :: io, nml_unit, stdlog_unit, seconds, days, id, jd, kd
+integer :: io, nml_unit, stdlog_unit, seconds, days, id, jd, kd, unit, ierr
 real, dimension (size(rad_lonb_2d,1)-1, size(rad_latb_2d,2)-1) :: sgsmtn !s added for damping_driver
 
 !s added for land reading
@@ -305,7 +306,10 @@ if(module_is_initialized) return
 call write_version_number(version, tagname)
 
 #ifdef INTERNAL_FILE_NML
-   read (input_nml_file, nml=idealized_moist_phys_nml, iostat=io)
+   unit = open_namelist_file ( )
+   read (unit, nml=idealized_moist_phys_nml, iostat=io)
+   call close_file(unit)
+   ierr = check_nml_error(io, 'idealized_moist_phys_nml')
 #else
    if ( file_exist('input.nml') ) then
       nml_unit = open_namelist_file()
@@ -678,7 +682,7 @@ end select
 
 if (r_conv_scheme .eq. DRY_CONV .and. do_lscale_cond .eqv. .true.) then
         call error_mesg('idealized_moist_phys','do_lscale_cond is .true. but r_conv_scheme is dry. These options may not be consistent.', WARNING)
-endif
+  endif
 
 if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, dt_real)
 

@@ -1,0 +1,26 @@
+# template for the Cray Fortran compiler on a Cavium ThunderX2 system
+# typical use with mkmf
+# mkmf -t template.ifc -c"-Duse_libMPI -Duse_netCDF" path_names /usr/local/include
+CPPFLAGS = -I/usr/local/include
+NETCDF_LIBS = `nc-config --libs`
+
+# FFLAGS:
+#  -g: Generate symbolic debugging info in code
+#  -s real64: Use 64 bit (8 byte) real numbers
+#  -ef: Generate module files in lowercase
+#  -eZ: Use a Fortran preprocessor for macros
+#  -e0: Initialise all numbers as 0
+#  -h develop: Developer debugging for faster compilation
+#  -dynamic: Use dynamic linking
+#  -h cpu=arm-thunderx2: Compile for the thunderx2 processor
+
+FFLAGS = $(CPPFLAGS) -g -s real64 -efZ0 -h develop -dynamic -hsystem_alloc -h cpu=arm-thunderx2 -Ddim_128
+#FFLAGS = $(CPPFLAGS) -fltconsistency -stack_temps -safe_cray_ptr -ftz -shared-intel -assume byterecl -g -O0 -i4 -r8 -check -warn -warn noerrors -debug variable_locations -inline_debug_info -traceback
+FC = $(F90)
+LD = $(F90) $(NETCDF_LIBS)
+#CC = mpicc
+
+LDFLAGS = -lnetcdff -lnetcdf -G0 -hsystem_alloc -h cpu=arm-thunderx2 -e0 
+CFLAGS = -D__IFC
+
+MONIN_OBUKHOV_KERNEL_FLAGS = -ev

@@ -197,7 +197,7 @@ MODULE diag_manager_mod
 #endif
 
   USE fms_mod, ONLY: error_mesg, FATAL, WARNING, NOTE, stdout, stdlog, write_version_number,&
-       & file_exist, fms_error_handler, check_nml_error
+       & file_exist, fms_error_handler, check_nml_error,open_namelist_file, close_file
   USE diag_axis_mod, ONLY: diag_axis_init, get_axis_length, max_axes, get_axis_num
   USE diag_util_mod, ONLY: get_subfield_size, log_diag_field_info, update_bounds,&
        & check_out_of_bounds, check_bounds_are_exact_dynamic, check_bounds_are_exact_static,&
@@ -2783,9 +2783,9 @@ CONTAINS
     INTEGER, PARAMETER :: FltKind = FLOAT_KIND
     INTEGER, PARAMETER :: DblKind = DOUBLE_KIND
     INTEGER :: diag_subset_output
-    INTEGER :: mystat
+    INTEGER :: mystat, ierr
     INTEGER, ALLOCATABLE, DIMENSION(:) :: pelist
-    INTEGER :: stdlog_unit, stdout_unit
+    INTEGER :: stdlog_unit, stdout_unit, unit
 #ifndef INTERNAL_FILE_NML
     INTEGER :: nml_unit
 #endif
@@ -2832,7 +2832,10 @@ CONTAINS
     END IF
 
 #ifdef INTERNAL_FILE_NML
-    READ (input_nml_file, NML=diag_manager_nml, IOSTAT=mystat)
+   unit = open_namelist_file ( )
+   read (unit, nml=diag_manager_nml, iostat=mystat)
+   call close_file(unit)
+   ierr = check_nml_error(mystat, "lscale_cond_nml")
 #else
     IF ( file_exist('input.nml') ) THEN
        nml_unit = open_namelist_file()

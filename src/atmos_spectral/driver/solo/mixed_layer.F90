@@ -333,7 +333,6 @@ else if( do_read_sst ) then !s Added so that if we are reading sst values then w
 
 elseif (prescribe_initial_dist) then
 !  call error_mesg('mixed_layer','mixed_layer restart file not found - initializing from prescribed distribution', WARNING)
-
     t_surf(:,:) = tconst - delta_T*((3.*sin(rad_lat_2d)**2.)-1.)/3.
 
 else

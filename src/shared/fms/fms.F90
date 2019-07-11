@@ -657,7 +657,7 @@ end subroutine fms_end
     IF ( .NOT.module_is_initialized) CALL fms_init()
 
     check_nml_error = IOSTAT
-
+    
     ! Return on valid IOSTAT values
     IF ( IOSTAT <= 0 .OR. IOSTAT == nml_errors%multipleNMLSinFile ) RETURN
 

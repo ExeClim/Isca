@@ -36,7 +36,8 @@ use           fms_mod, only: error_mesg, FATAL, file_exist,       &
                              check_nml_error,                     &
                              mpp_pe, mpp_root_pe, close_file,     &
                              write_version_number, stdlog,        &
-                             uppercase, read_data, write_data, set_domain
+                             uppercase, read_data, write_data,    &
+                             set_domain, open_namelist_file
 
 use  time_manager_mod, only: time_type, get_time
 
@@ -303,7 +304,9 @@ contains
 !     ----- read namelist -----
 
 #ifdef INTERNAL_FILE_NML
-     read (input_nml_file, nml=hs_forcing_nml, iostat=io)
+     unit = open_namelist_file ( )
+     read (unit, nml=hs_forcing_nml, iostat=io)
+     call close_file(unit)
      ierr = check_nml_error(io, 'hs_forcing_nml')
 #else
       if (file_exist('input.nml')) then

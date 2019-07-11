@@ -61,8 +61,8 @@ diag.add_field('two_stream', 'ang', time_avg=True)
 namelist = Namelist({
     'main_nml': {
         'dt_atmos': 110,
-        'days': 0.,
-        'seconds': 30.*88440.,
+        'days': 0,
+        'seconds': 30*88440,
         'calendar': 'no_calendar'
     },
 
