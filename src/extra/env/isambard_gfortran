@@ -1,0 +1,19 @@
+echo load modules for Isambard GNU
+
+# export environment variables
+export F90=ftn
+export CC=cc
+export EXECUTION_TYPE=APRUN
+export GFDL_MKMF_TEMPLATE=isambard_gfortran
+
+# clear environment
+#module purge
+
+# load modules
+module load cray-netcdf-hdf5parallel/4.6.1.3
+module load cray-python/3.6.5.6
+module load PrgEnv-gnu/6.0.5
+module load gdb4hpc/3.0.10
+
+# for performance analysis
+module load perftools

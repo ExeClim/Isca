@@ -18,10 +18,10 @@ NETCDF_LIBS = `nf-config --fflags  --flibs`
 
 FFLAGS = $(CPPFLAGS) $(NETCDF_LIBS) -cpp -fcray-pointer \
           -O2 -ffree-line-length-none -fno-range-check \
-           -fdefault-real-8 -fdefault-double-8
+           -fdefault-real-8 -fdefault-double-8 -fbacktrace
 
 FC = $(F90)
 LD = $(F90) $(NETCDF_LIBS)
 
-LDFLAGS = -lnetcdff -lnetcdf -lmpi
+LDFLAGS = -lnetcdff -lnetcdf 
 CFLAGS = -D__IFC
