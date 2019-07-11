@@ -142,7 +142,6 @@ class Experiment(Logger, EventEmitter):
 
     def write_namelist(self, outdir):
         namelist_file = P(outdir, 'input.nml')
-#        self.namelist.end_comma = True # append comma to each namelist entry
         self.log.info('Writing namelist to %r' % namelist_file)
         self.namelist.write(namelist_file)
 
