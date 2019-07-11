@@ -42,14 +42,16 @@ use time_manager_mod, only: time_type, set_time, get_time,  &
                             NOLEAP, NO_CALENDAR, set_calendar_type, &
 			    set_date, get_date
 
-use          fms_mod, only: file_exist, check_nml_error,                &
-                            error_mesg, FATAL, WARNING,                 &
-                            mpp_pe, mpp_root_pe, fms_init, fms_end,     &
-                            stdlog, stdout, write_version_number,       &
-                            open_restart_file,                          &
-                            mpp_clock_id, mpp_clock_begin,              &
-                            mpp_clock_end, CLOCK_COMPONENT, set_domain, &
-                            nullify_domain, uppercase, open_namelist_file
+use          fms_mod, only: file_exist, check_nml_error,                  &
+                            error_mesg, FATAL, WARNING,                   &
+                            mpp_pe, mpp_root_pe, fms_init, fms_end,       &
+                            stdlog, stdout, write_version_number,         &
+                            open_restart_file,                            &
+                            mpp_clock_id, mpp_clock_begin,                &
+                            mpp_clock_end, CLOCK_COMPONENT, set_domain,   &
+                            nullify_domain, uppercase, open_namelist_file,& 
+                            close_file
+
 use       fms_io_mod, only: fms_io_exit
 
 use  mpp_mod,         only: mpp_set_current_pelist

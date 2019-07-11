@@ -680,7 +680,7 @@ end select
         axes(1:2), Time, 'Rain from convection','kg/m/m/s')
 !endif
 
-   if (r_conv_scheme .eq. DRY_CONV .and. do_lscale_cond .eqv. .true.) then
+if (r_conv_scheme .eq. DRY_CONV .and. do_lscale_cond .eqv. .true.) then
         call error_mesg('idealized_moist_phys','do_lscale_cond is .true. but r_conv_scheme is dry. These options may not be consistent.', WARNING)
   endif
 
