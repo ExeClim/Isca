@@ -79,7 +79,7 @@ use grid_fourier_mod, only: grid_fourier_init, grid_fourier_end, trans_grid_to_f
 !---------------------------------------------------------------------------
 
 implicit none
-private
+! private
 
 interface trans_spherical_to_grid
    module procedure trans_spherical_to_grid_3d,  &
