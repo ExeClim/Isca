@@ -591,7 +591,7 @@ contains
    
 ! coefficients/weights for computing values at grid box interfaces
 ! only recompute coefficients for a column when layer depth has changed
-
+   !dir$ IVDEP
    do j = 1, size(dz,2)
    do i = 1, size(dz,1)
 
@@ -621,6 +621,7 @@ contains
      enddo
      dzs(i,j,:) = dz(i,j,:)
      zwts(0:3,i,j,:) = zwt(0:3,i,j,:)
+
    else
 
    ! use previously computed coefficients

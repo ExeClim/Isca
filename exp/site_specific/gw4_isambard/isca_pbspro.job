@@ -1,0 +1,7 @@
+#!/bin/sh
+#PBS -q arm
+#PBS -l select=1:ncpus=64
+#PBS -l walltime=01:00:00
+
+source ~/isca_env/bin/activate
+python $GFDL_BASE/exp/test_cases/held_suarez/held_suarez_test_case.py

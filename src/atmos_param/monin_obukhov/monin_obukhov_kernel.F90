@@ -19,14 +19,35 @@
 !!                                                                   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!!!!TODO Fix this file to use macro defs or save f_m
-!!#ifdef dim_128
-!!#define DIM 64
-!!#endif
-!!#ifdef dim_128
-!!#undef DIM
-!!#define DIM 128
-!!#endif
+! User must define n based on model resolution
+!| Resolution | DIM |
+!|------------|-----|
+!| T21        | 64  |
+!| T42        | 128 |
+!| T85        | 256 |
+!| T170       | 512 |
+
+#define CRAY_DIM n
+
+#ifdef cray_dim_64
+#undef CRAY_DIM
+#define CRAY_DIM 64
+#endif
+
+#ifdef cray_dim_128
+#undef CRAY_DIM
+#define CRAY_DIM 128
+#endif
+
+#ifdef cray_dim_256
+#undef CRAY_DIM
+#define CRAY_DIM 256
+#endif
+
+#ifdef cray_dim_512
+#undef CRAY_DIM
+#define CRAY_DIM 512
+#endif
 
 
 #include <fms_platform.h>
@@ -153,7 +174,7 @@ _PURE subroutine monin_obukhov_drag_1d(grav, vonkarm,               &
   logical, intent(in   ), dimension(n)  :: avail  ! provided mask 
   integer, intent(out  )                :: ier
 
-  real   , dimension(n) :: rich, fm, ft, fq, zz
+  real   , dimension(CRAY_DIM)   :: rich, zz, fm, ft, fq
   logical, dimension(n) :: mask, mask_1, mask_2
   real   , dimension(n) :: delta_b !!, us, bs, qs
   real                  :: r_crit, sqrt_drag_min
@@ -267,7 +288,7 @@ _PURE subroutine monin_obukhov_solve_zeta(error, zeta_min, max_iter, small,  &
   integer, intent(in   )                :: n
   real   , intent(in   ), dimension(n)  :: rich, z, z0, zt, zq
   logical, intent(in   ), dimension(n)  :: mask
-  real   , intent(  out), dimension(n)  :: f_m, f_t, f_q
+  real   , intent(  out), dimension(CRAY_DIM)  :: f_m, f_t, f_q
   integer, intent(  out)                :: ier
 
 

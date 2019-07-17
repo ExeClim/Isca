@@ -38,6 +38,7 @@ double dist_between_boxes(const double *x1, const double *y1, const double *z1, 
 int inside_edge(double x0, double y0, double x1, double y1, double x, double y);
 int line_intersect_2D_3D(double *a1, double *a2, double *q1, double *q2,
 		         double *intersect, double *u_a, double *u_q);
+int isHeadNode(struct Node *list, struct Node nodeIn);
 
 /*******************************************************************************
   int get_maxxgrid
@@ -1826,7 +1827,7 @@ double grid_box_radius(const double *x, const double *y, const double *z, int n)
 double dist_between_boxes(const double *x1, const double *y1, const double *z1, int n1,
 			  const double *x2, const double *y2, const double *z2, int n2)
 {
-  double dist;
+  double dist = 0;
   int i, j;
 
   for(i=0; i<n1; i++) {

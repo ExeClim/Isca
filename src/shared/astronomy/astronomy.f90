@@ -160,7 +160,12 @@ integer :: second_ae = 0     ! second of specified autumnal equinox
 integer :: num_angles = 3600 ! number of intervals into which the year
                              ! is divided to compute orbital positions
 
-logical :: use_mean_anom_in_rrsun_calc = .TRUE. !It appears the standard astronomy module uses the mean anomaly for calculating the orbital distances on eccentric orbits, rather than the true anomaly. Keeping this behaviour default for legacy, but .FALSE. seems more correct.
+                             ! It appears the standard astronomy module uses
+                             ! the mean anomaly for calculating the orbital 
+                             ! distances on eccentric orbits, rather than the
+                             ! true anomaly. Keeping this behaviour default for
+                             ! legacy, but .FALSE. seems more correct.
+logical :: use_mean_anom_in_rrsun_calc = .TRUE. 
 logical :: use_old_r_inv_squared
 
 namelist /astronomy_nml/ ecc, obliq, per, period, &
