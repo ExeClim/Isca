@@ -976,6 +976,7 @@
               packed_data = nint((data-field%add)/field%scale)
               error = NF_PUT_VARA_INT   ( mpp_file(unit)%ncid, field%id, start, axsiz, packed_data )
           end if
+
           !print *, 'debug_axg Field name: ',field%name, ', Error: ',error,' Output: ', data  
           call netcdf_err( error, mpp_file(unit), field=field )
 #endif    
