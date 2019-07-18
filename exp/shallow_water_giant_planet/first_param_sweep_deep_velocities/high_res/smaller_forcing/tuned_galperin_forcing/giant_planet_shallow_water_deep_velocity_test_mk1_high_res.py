@@ -29,7 +29,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 #Tell model how to write diagnostics
 diag = DiagTable()
 diag.add_file('atmos_monthly', 30, 'days', time_units='days')
-# diag.add_file('atmos_daily', 1, 'days', time_units='days')
+#diag.add_file('atmos_daily', 1, 'days', time_units='days')
 
 #Tell model which diagnostics to write
 diag.add_field('shallow_diagnostics', 'ucomp', time_avg=True)
@@ -41,6 +41,9 @@ diag.add_field('shallow_diagnostics', 'pv', time_avg=True)
 diag.add_field('shallow_diagnostics', 'pv_corrected', time_avg=True)
 diag.add_field('shallow_diagnostics', 'stream', time_avg=True)
 diag.add_field('shallow_diagnostics', 'deep_geopot', time_avg=True)
+diag.add_field('shallow_diagnostics', 'vcomp_vor', time_avg=True)
+diag.add_field('shallow_diagnostics', 'ucomp_vcomp', time_avg=True)
+
 # diag.add_field('shallow_diagnostics', 'trs', time_avg=True)
 # diag.add_field('shallow_diagnostics', 'tr', time_avg=True)
 diag.add_field('stirring_mod', 'stirring', time_avg=True)
