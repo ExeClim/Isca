@@ -41,6 +41,9 @@ diag.add_field('shallow_diagnostics', 'pv', time_avg=True)
 diag.add_field('shallow_diagnostics', 'pv_corrected', time_avg=True)
 diag.add_field('shallow_diagnostics', 'stream', time_avg=True)
 diag.add_field('shallow_diagnostics', 'deep_geopot', time_avg=True)
+diag.add_field('shallow_diagnostics', 'vcomp_vor', time_avg=True)
+diag.add_field('shallow_diagnostics', 'ucomp_vcomp', time_avg=True)
+
 # diag.add_field('shallow_diagnostics', 'trs', time_avg=True)
 # diag.add_field('shallow_diagnostics', 'tr', time_avg=True)
 diag.add_field('stirring_mod', 'stirring', time_avg=True)
@@ -124,7 +127,7 @@ if __name__=="__main__":
         for u_deep_mag_val in [50.]:
 
             if u_deep_mag_val!=0.:
-                u_deep_merid_arr = [27]
+                u_deep_merid_arr = [23]
                 # u_deep_merid_arr = [5,7,9]
 
             else:
@@ -175,5 +178,5 @@ if __name__=="__main__":
                 })
 
                 exp.run(1, use_restart=False, num_cores=NCORES)
-                for i in range(2,361):
+                for i in range(2,481):
                     exp.run(i, num_cores=NCORES)
