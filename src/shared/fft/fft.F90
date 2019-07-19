@@ -68,7 +68,9 @@ use      fms_mod, only: write_version_number,  &
 use    fft99_mod, only: fft991, set99
 #endif
 #endif
-
+#ifdef FFTW3
+use fftw3, only : fftw3_init, fftw3_end, grid_to_fourier_fftw, fourier_to_grid_fftw
+#endif
 implicit none
 private
 
@@ -188,12 +190,19 @@ end interface
 
 !---------------------- private data -----------------------------------
 
+#ifdef FFTW3
+
+
+#endif
 ! tables for trigonometric constants and factors
 ! (not all will be used)
 real(R8_KIND), allocatable, dimension(:) :: table8
 real(R4_KIND), allocatable, dimension(:) :: table4
 real         , allocatable, dimension(:) :: table99
 integer      , allocatable, dimension(:) :: ifax
+
+
+
 
 logical :: do_log =.true.
 integer :: leng, leng1, leng2, lenc    ! related to transform size
@@ -262,6 +271,7 @@ contains
 !    argument "grid".
 !
 !-----------------------------------------------------------------------
+
 #ifdef SGICRAY
 #  ifdef _CRAY
 !  local storage for cray fft
@@ -306,7 +316,9 @@ contains
 !----------------transform to fourier coefficients (+1)-----------------
 
       num   = size(grid,2)    ! number of transforms
-
+#ifdef FFTW3
+      ! print *, 'fft_grid_to_fourier_float_2d'
+#else
 #ifdef SGICRAY
 !  Cray/SGI fft
       scale = 1./real(leng)
@@ -345,6 +357,7 @@ contains
       enddo
       enddo
 #  endif
+#endif
 #endif
 !-----------------------------------------------------------------------
 
@@ -424,7 +437,10 @@ contains
 #endif
 !-----------------------------------------------------------------------
 !----------------inverse transform to real space (-1)-------------------
+#ifdef FFTW3
+      ! print *, 'fft_fourier_to_grid_float_2d fftw3'
 
+#else
 #ifdef SGICRAY
 !  Cray/SGI fft
       scale = 1.0
@@ -469,6 +485,7 @@ contains
       enddo
 #  endif
 #endif
+#endif
 
 !-----------------------------------------------------------------------
 
@@ -502,6 +519,11 @@ contains
 !    argument "grid".
 !
 !-----------------------------------------------------------------------
+!goto fftw3
+#ifdef FFTW3
+real(R8_KIND), dimension(size(grid,2),leng) :: data
+complex(kind=8), dimension(size(grid,2),lenc) :: work
+#else
 #ifdef SGICRAY
 #  ifdef _CRAY
 !  local storage for cray fft
@@ -520,11 +542,12 @@ contains
    real, dimension(leng1,size(grid,2)) :: work
 #  endif   
 #endif   
+#endif
 
 #if defined(SGICRAY) || defined(NAGFFT)
    real(R8_KIND) :: scale
 #endif
-   integer :: j, k, num, len_grid
+   integer(kind=8) :: j, k, num, len_grid
 #ifdef NAGFFT
    integer :: ifail
 #endif
@@ -549,6 +572,11 @@ contains
 !----------------transform to fourier coefficients (+1)-----------------
 
       num   = size(grid,2)    ! number of transforms
+
+#ifdef FFTW3
+      ! print *, 'fft_grid_to_fourier_double_2d fftw3'
+      call grid_to_fourier_fftw(num, leng+1, lenc, grid, fourier)
+#else
 #ifdef SGICRAY
 !  Cray/SGI fft
       scale = 1./float(leng)
@@ -586,6 +614,7 @@ contains
       enddo
 #  endif
 #endif
+#endif
 !-----------------------------------------------------------------------
 
  end function fft_grid_to_fourier_double_2d
@@ -620,6 +649,10 @@ contains
 !    argument "fourier".
 !
 !-----------------------------------------------------------------------
+#ifdef FFTW3
+real(R8_KIND), dimension(size(grid,2),leng) :: data
+complex(kind=8), dimension(size(grid,2),leng) :: work
+#else
 #ifdef SGICRAY
 #  ifdef _CRAY
 !  local storage for cray fft
@@ -638,11 +671,12 @@ contains
    real, dimension(leng1,size(fourier,2)) :: work
 #  endif   
 #endif   
+#endif
 
 #if defined(SGICRAY) || defined(NAGFFT)
    real(R8_KIND) :: scale
 #endif
-   integer :: j, k, num, len_fourier
+   integer(kind=8) :: j, k, num, len_fourier
 #ifdef NAGFFT
    integer :: ifail
 #endif
@@ -667,7 +701,11 @@ contains
 #endif
 !-----------------------------------------------------------------------
 !----------------inverse transform to real space (-1)-------------------
+#ifdef FFTW3
+      ! print *, 'fft_fourier_to_grid_double_2d fftw3' 
+      call fourier_to_grid_fftw(num, leng+1, lenc, fourier, grid)
 
+#else
 #ifdef SGICRAY
 !  Cray/SGI fft
       scale = 1.0
@@ -711,6 +749,7 @@ contains
          grid(1:leng,j) = data(1:leng,j)
       enddo
 #  endif
+#endif
 #endif
 
 !-----------------------------------------------------------------------
@@ -874,6 +913,15 @@ contains
 !  variables that save length of transform
       leng = n; leng1 = n+1; leng2 = n+2; lenc = n/2+1
 
+#ifdef FFTW3
+! print *, 'Using fftw3'
+call fftw3_init(leng, lenc)
+
+! allocate (table99(3*leng/2+1))
+! allocate (ifax(10))
+
+
+#else
 #ifdef SGICRAY
 #  ifdef _CRAY
 !  initialization for cray
@@ -892,7 +940,7 @@ contains
 #  ifdef NAGFFT
 !  initialization for nag fft
       ifail8 = 0
-      allocate (table8(100+2*leng))   ! size may be too large?
+      allocate (table8(100+2*leng))   ! size may be too large?a
       call c06fpf ( 1, leng, data8, 'i', table8, work8, ifail8 )
 
 !  will not allow float kind for nag
@@ -909,6 +957,7 @@ contains
       allocate (ifax(10))
       call set99 ( table99, ifax, leng )
 #  endif
+#endif
 #endif
 
       module_is_initialized = .true.
@@ -950,9 +999,11 @@ contains
 
       leng = 0; leng1 = 0; leng2 = 0; lenc = 0
 
+
       if (allocated(table4))  deallocate (table4)
       if (allocated(table8))  deallocate (table8)
       if (allocated(table99)) deallocate (table99)
+
 
       module_is_initialized = .false.
 

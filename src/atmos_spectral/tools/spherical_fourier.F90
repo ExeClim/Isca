@@ -256,7 +256,6 @@ subroutine trans_spherical_to_fourier_3d(spherical,fourier)
         end if
      end do
   end do DOMAIN_LOOP
-
   return
 end subroutine trans_spherical_to_fourier_3d
 

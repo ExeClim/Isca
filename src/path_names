@@ -45,6 +45,7 @@ atmos_spectral/tools/grid_fourier.F90
 atmos_spectral/tools/spec_mpp.F90
 atmos_spectral/tools/spherical.F90
 atmos_spectral/tools/spherical_fourier.F90
+atmos_spectral/tools/spherical_fourier_fftw.F90
 atmos_spectral/tools/transforms.F90
 coupler/surface_flux.F90
 shared/axis_utils/axis_utils.F90

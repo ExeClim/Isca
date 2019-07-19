@@ -301,7 +301,7 @@ call get_spec_domain(ms, me, ns, ne)
    
 ! initialize spherical_fourier (which initializes spherical)
 call spherical_fourier_init(radius, lat_max, num_fourier, fourier_inc, num_spherical, &
-                            south_to_north=south_to_north_local, make_symmetric=make_symmetric_local)   
+                            south_to_north=south_to_north_local, make_symmetric=make_symmetric_local)  
 
 trunc_fourier = num_fourier
 

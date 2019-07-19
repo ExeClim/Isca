@@ -968,7 +968,7 @@ if(minval(tg(:,:,:,future)) < valid_range_t(1) .or. maxval(tg(:,:,:,future)) > v
         &,ug(ii,jj,kk,future)
 !jm
   if (.not.graceful_shutdown) then
-    call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
+    ! call error_mesg('spectral_dynamics','temperatures out of valid range', FATAL)
   endif
 endif
 
