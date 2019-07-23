@@ -114,7 +114,7 @@ call uv_grid_from_vor_div(vors, divs, ug, vg)
 !  initial spectral fields (and spectrally-filtered) grid fields
 
 call trans_grid_to_spherical(tg, ts)
-call trans_spherical_to_grid(ts, tg)
+call trans_spherical_to_grid(ts, tg) 
 
 call trans_grid_to_spherical(ln_psg, ln_ps)
 call trans_spherical_to_grid(ln_ps,  ln_psg)

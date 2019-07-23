@@ -472,7 +472,6 @@ complex, dimension (0:num_lon/2,          js:je, size(grid,3)) :: fourier_g
 complex, dimension (ms:me, je-js+1, size(grid,3), grid_layout(2)) :: fourier_s
 
 integer(kind=kind(spherical)) :: c1, c2, c3
-
 if(.not.module_is_initialized) then
   call error_mesg('trans_grid_to_spherical','transforms module is not initialized', FATAL)
 end if

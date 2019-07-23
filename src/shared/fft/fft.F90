@@ -313,7 +313,7 @@ contains
                                    'length of input data too small.')
 #endif
 !-----------------------------------------------------------------------
-!----------------transform to fourier coefficients (+1)-----------------
+!----------------transform to fourier coefficients (+1)----------------- 
 
       num   = size(grid,2)    ! number of transforms
 #ifdef FFTW3
@@ -519,10 +519,8 @@ contains
 !    argument "grid".
 !
 !-----------------------------------------------------------------------
-!goto fftw3
 #ifdef FFTW3
-real(R8_KIND), dimension(size(grid,2),leng) :: data
-complex(kind=8), dimension(size(grid,2),lenc) :: work
+! use fftw3
 #else
 #ifdef SGICRAY
 #  ifdef _CRAY
@@ -539,15 +537,15 @@ complex(kind=8), dimension(size(grid,2),lenc) :: work
 #  else
 !  local storage for temperton fft
    real, dimension(leng2,size(grid,2)) :: data
-   real, dimension(leng1,size(grid,2)) :: work
-#  endif   
+   real, dimension(leng1,size(grid,2)) :: work 
+#  endif     
 #endif   
 #endif
 
 #if defined(SGICRAY) || defined(NAGFFT)
    real(R8_KIND) :: scale
-#endif
-   integer(kind=8) :: j, k, num, len_grid
+#endif   
+   integer(kind=4) :: j, k, num, len_grid, i
 #ifdef NAGFFT
    integer :: ifail
 #endif
@@ -574,12 +572,11 @@ complex(kind=8), dimension(size(grid,2),lenc) :: work
       num   = size(grid,2)    ! number of transforms
 
 #ifdef FFTW3
-      ! print *, 'fft_grid_to_fourier_double_2d fftw3'
-      call grid_to_fourier_fftw(num, leng+1, lenc, grid, fourier)
+call grid_to_fourier_fftw(num, leng1, lenc, grid, fourier)
 #else
 #ifdef SGICRAY
 !  Cray/SGI fft
-      scale = 1./float(leng)
+      scale = 1. / float(leng)
 #  ifdef _CRAY
       call scfftm (-1,leng,num,scale, grid,leng1, fourier,lenc,  &
                    table8, work, 0)
@@ -650,8 +647,7 @@ complex(kind=8), dimension(size(grid,2),lenc) :: work
 !
 !-----------------------------------------------------------------------
 #ifdef FFTW3
-real(R8_KIND), dimension(size(grid,2),leng) :: data
-complex(kind=8), dimension(size(grid,2),leng) :: work
+! use fftw3
 #else
 #ifdef SGICRAY
 #  ifdef _CRAY
@@ -676,7 +672,7 @@ complex(kind=8), dimension(size(grid,2),leng) :: work
 #if defined(SGICRAY) || defined(NAGFFT)
    real(R8_KIND) :: scale
 #endif
-   integer(kind=8) :: j, k, num, len_fourier
+   integer(kind=4) :: j, k, num, len_fourier
 #ifdef NAGFFT
    integer :: ifail
 #endif
@@ -702,9 +698,7 @@ complex(kind=8), dimension(size(grid,2),leng) :: work
 !-----------------------------------------------------------------------
 !----------------inverse transform to real space (-1)-------------------
 #ifdef FFTW3
-      ! print *, 'fft_fourier_to_grid_double_2d fftw3' 
-      call fourier_to_grid_fftw(num, leng+1, lenc, fourier, grid)
-
+call fourier_to_grid_fftw(num, leng+1, lenc, fourier, grid)
 #else
 #ifdef SGICRAY
 !  Cray/SGI fft
@@ -914,18 +908,13 @@ complex(kind=8), dimension(size(grid,2),leng) :: work
       leng = n; leng1 = n+1; leng2 = n+2; lenc = n/2+1
 
 #ifdef FFTW3
-! print *, 'Using fftw3'
 call fftw3_init(leng, lenc)
-
-! allocate (table99(3*leng/2+1))
-! allocate (ifax(10))
-
 
 #else
 #ifdef SGICRAY
 #  ifdef _CRAY
 !  initialization for cray
-!  float kind may not apply for cray
+!  float kind may not apply for cray  
       allocate (table4(100+2*leng), table8(100+2*leng))   ! size may be too large?
       call scfftm (0,leng,1,0.0, dummy4, 1, cdummy4, 1, table4, dummy4, 0)
       call scfftm (0,leng,1,0.0, dummy8, 1, cdummy8, 1, table8, dummy8, 0)
