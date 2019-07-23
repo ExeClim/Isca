@@ -30,36 +30,35 @@ inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
-#diag.add_file('atmos_monthly', 30, 'days', time_units='days')
-diag.add_file('atmos_ts', 15, 'minutes', time_units='minutes')
+diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 
 #Tell model which diagnostics to write
-diag.add_field('dynamics', 'ps')
+diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
-diag.add_field('atmosphere', 'precipitation')
-diag.add_field('mixed_layer', 't_surf')
-diag.add_field('dynamics', 'sphum')
-diag.add_field('dynamics', 'ucomp')
-diag.add_field('dynamics', 'vcomp')
-diag.add_field('dynamics', 'temp')
-diag.add_field('dynamics', 'vor')
-diag.add_field('dynamics', 'div')
+diag.add_field('atmosphere', 'precipitation', time_avg=True)
+diag.add_field('mixed_layer', 't_surf', time_avg=True)
+diag.add_field('dynamics', 'sphum', time_avg=True)
+diag.add_field('dynamics', 'ucomp', time_avg=True)
+diag.add_field('dynamics', 'vcomp', time_avg=True)
+diag.add_field('dynamics', 'temp', time_avg=True)
+diag.add_field('dynamics', 'vor', time_avg=True)
+diag.add_field('dynamics', 'div', time_avg=True)
 
 #radiative tendencies
-diag.add_field('socrates', 'soc_tdt_lw')
-diag.add_field('socrates', 'soc_tdt_sw')
-diag.add_field('socrates', 'soc_tdt_rad')
+diag.add_field('socrates', 'soc_tdt_lw', time_avg=True)
+diag.add_field('socrates', 'soc_tdt_sw', time_avg=True)
+diag.add_field('socrates', 'soc_tdt_rad', time_avg=True)
 
 #net (up) and down surface fluxes
-diag.add_field('socrates', 'soc_surf_flux_lw')
-diag.add_field('socrates', 'soc_surf_flux_sw')
-diag.add_field('socrates', 'soc_surf_flux_lw_down')
-diag.add_field('socrates', 'soc_surf_flux_sw_down')
+diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_sw', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_lw_down', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
 #net (up) TOA and downard fluxes
-diag.add_field('socrates', 'soc_olr')
-diag.add_field('socrates', 'soc_toa_sw') 
-diag.add_field('socrates', 'soc_toa_sw_down') #!this does not work
+diag.add_field('socrates', 'soc_olr', time_avg=True)
+diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
+diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
 
 # additional output options commented out 
 #diag.add_field('socrates', 'soc_co2', time_avg=True)
@@ -73,8 +72,8 @@ exp.inputfiles = inputfiles
 #Define values for the 'core' namelist
 exp.namelist = namelist = Namelist({
     'main_nml':{
-     'days'   : 0,
-     'hours'  : 4,
+     'days'   : 30,
+     'hours'  : 0,
      'minutes': 0,
      'seconds': 0,
      'dt_atmos':600,
@@ -93,7 +92,7 @@ exp.namelist = namelist = Namelist({
         'chunk_size': 16,
         'use_pressure_interp_for_half_levels':False,
         'tidally_locked':False,
-        'solday': 90
+        #'solday': 90
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -199,6 +198,6 @@ if __name__=="__main__":
         cb.compile()
         #Set up the experiment object, with the first argument being the experiment name.
         #This will be the name of the folder that the data will appear in.
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)
-        #for i in range(2,121):
-        #    exp.run(i, num_cores=NCORES)
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
+        for i in range(2,121):
+            exp.run(i, num_cores=NCORES)
