@@ -61,6 +61,8 @@ diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
 
 # additional output options commented out 
+#diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
+#diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_co2', time_avg=True)
 #diag.add_field('socrates', 'soc_ozone', time_avg=True) 
 #diag.add_field('socrates', 'soc_coszen', time_avg=True) 
