@@ -45,13 +45,21 @@ diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
 
+#radiative tendencies
 diag.add_field('socrates', 'soc_tdt_lw', time_avg=True)
 diag.add_field('socrates', 'soc_tdt_sw', time_avg=True)
 diag.add_field('socrates', 'soc_tdt_rad', time_avg=True)
+
+#net (up) and down surface fluxes
 diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_sw', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_lw_down', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
+#net (up) TOA and downard fluxes
 diag.add_field('socrates', 'soc_olr', time_avg=True)
-diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
+diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
+diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
+
 # additional output options commented out 
 #diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
 #diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
@@ -85,7 +93,8 @@ exp.namelist = namelist = Namelist({
         'store_intermediate_rad':True,
         'chunk_size': 16,
         'use_pressure_interp_for_half_levels':False,
-        'tidally_locked':False
+        'tidally_locked':False,
+        #'solday': 90
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -191,6 +200,6 @@ if __name__=="__main__":
         cb.compile()
         #Set up the experiment object, with the first argument being the experiment name.
         #This will be the name of the folder that the data will appear in.
-        exp.run(1, use_restart=False, num_cores=NCORES)
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
         for i in range(2,121):
             exp.run(i, num_cores=NCORES)
