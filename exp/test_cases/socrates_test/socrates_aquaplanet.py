@@ -45,13 +45,21 @@ diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
 
+#radiative tendencies
 diag.add_field('socrates', 'soc_tdt_lw', time_avg=True)
 diag.add_field('socrates', 'soc_tdt_sw', time_avg=True)
 diag.add_field('socrates', 'soc_tdt_rad', time_avg=True)
+
+#net (up) and down surface fluxes
 diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_sw', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_lw_down', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
+#net (up) TOA and downard fluxes
 diag.add_field('socrates', 'soc_olr', time_avg=True)
-diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
+diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
+diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True) 
+
 # additional output options commented out 
 #diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
 #diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
