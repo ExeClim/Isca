@@ -571,15 +571,15 @@ if(.not.module_is_initialized) then
   call error_mesg('mixed_layer','mixed_layer module is not initialized',FATAL)
 endif
 
-if(update_albedo_from_ice) then
-	call read_ice_conc(Time_next)
-	land_ice_mask=.false.
-	where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
-		land_ice_mask=.true.
-	end where
-else
+! if(update_albedo_from_ice) then
+! 	call read_ice_conc(Time_next)
+! 	land_ice_mask=.false.
+! 	where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
+! 		land_ice_mask=.true.
+! 	end where
+! else
 	land_ice_mask=land_mask
-endif
+! endif
 
 call albedo_calc(albedo_out,Time_next)
 
