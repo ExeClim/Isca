@@ -66,7 +66,7 @@ module mpp_mod
 !   <TT>get</TT>s on which it is based cannot currently be implemented in
 !   a cluster environment (there are recent announcements from Compaq that
 !   occasion hope).
-!   
+!    
 !   The message-passing requirements of climate and weather codes can be
 !   reduced to a fairly simple minimal set, which is easily implemented in
 !   any message-passing API. <TT>mpp_mod</TT> provides this API.

@@ -1036,12 +1036,12 @@ integer :: ntrans(2) = (/ 60, 90 /)
     allocate (ain(n+1,lot),aout(n+1,lot),four(n/2+1,lot))
     call random_number (ain(1:n,:))
     aout(1:n,:) = ain(1:n,:)
-
+ 
     call fft_init (n)
   ! transform grid to fourier and back
     four = fft_grid_to_fourier (aout)
     aout = fft_fourier_to_grid (four)
-
+ 
   ! print original and transformed
     do j=1,lot
     do i=1,n

@@ -968,6 +968,7 @@ end subroutine get_grid_boundaries
 !-------------------------------------------------------------------------
 subroutine reverse_transpose_fourier( fourier_s, fourier_g )
 !-------------------------------------------------------------------------
+include 'mpif.h'
   complex, intent(in)  :: fourier_s(:,:,:,0:)
   complex, intent(out) :: fourier_g(0:,:,:)
   complex, dimension(xmaxsize*ymaxsize*size(fourier_s,3)) :: get_data
@@ -986,25 +987,41 @@ subroutine reverse_transpose_fourier( fourier_s, fourier_g )
   call mpp_get_compute_domains( spectral_domain_x, xsbegin, xsend, xspecsize )
   nput = size(fourier_s,1)*size(fourier_s,2)*size(fourier_s,3)
   fourier_g(ms:me,:,:) = fourier_s(:,:,:,jpos)
+  
   do jj = 1,grid_layout(2)-1
      jp = mod(jpos+jj,grid_layout(2))
      jm = mod(jpos-jj+grid_layout(2),grid_layout(2))
      pp = pelist(jp)
      pm = pelist(jm)
+
+    print *, 'jj, jp, jm, pp, pm, nput, nget, mpp_pe', jj, jp, jm, pp, pm, nput, nget, mpp_pe()
+    
+
      nget = xspecsize(jm)*ygridsize(jm)*size(fourier_s,3)
      ! Force use of "scalar", integer pointer mpp interface
      call mpp_transmit( put_data=fourier_s(1,1,1,jp), plen=nput, to_pe=pp, &
-                        get_data=get_data(1), glen=nget, from_pe=pm )
+                        get_data=get_data(1), glen=nget, from_pe=pm)
+                      
+    
+     if ( mpp_pe() == mpp_root_pe() ) then
+        print *, '------------------------'
+     endif
+
+     call mpp_sync()
      nget = 0
      do k = 1,size(fourier_g,3)
         do j = 1,size(fourier_g,2)
            do i = xsbegin(jm),xsend(jm)
+              !  if ( mpp_pe() == mpp_root_pe() ) then
+              !     print *, 'nget ,i, j, k', nget, i, j, k
+              !  endif
               nget = nget + 1
               fourier_g(i,j,k) = get_data(nget)
            end do
         end do
      end do
   end do
+
   call mpp_sync()
   return
 end subroutine reverse_transpose_fourier

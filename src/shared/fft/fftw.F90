@@ -100,15 +100,15 @@ end subroutine grid_to_fourier_float_2d_fftw
 
 subroutine fftw3_init(leng, lenc)
     integer, intent(in) :: leng, lenc
-
+    print *, 'Using FFTW3' 
     ! setup real -> complex transform
-    real_input_pointer = fftw_alloc_real(int(leng, C_SIZE_T))
+    real_input_pointer = fftw_alloc_real(int(leng, C_SIZE_T)) 
     call c_f_pointer(real_input_pointer, real_input, [leng])
 
     complex_output_pointer = fftw_alloc_complex(int(lenc, C_SIZE_T))
     call c_f_pointer(complex_output_pointer, complex_output, [leng])
 
-    call dfftw_plan_dft_r2c_1d(real_input_pointer, leng, real_input, complex_output, FFTW_MEASURE)
+    call dfftw_plan_dft_r2c_1d(real_input_pointer, leng, real_input, complex_output, FFTW_ESTIMATE)
 
     ! setup complex -> real transform
     complex_input_pointer = fftw_alloc_complex(int((lenc), C_SIZE_T))
@@ -117,7 +117,7 @@ subroutine fftw3_init(leng, lenc)
     real_output_pointer = fftw_alloc_real(int(leng, C_SIZE_T))
     call c_f_pointer(real_output_pointer, real_output, [leng])
 
-    call dfftw_plan_dft_c2r_1d(complex_input_pointer, leng, complex_input, real_output, FFTW_MEASURE)
+    call dfftw_plan_dft_c2r_1d(complex_input_pointer, leng, complex_input, real_output, FFTW_ESTIMATE)
 
     module_is_initialized = .true.
 end subroutine fftw3_init
