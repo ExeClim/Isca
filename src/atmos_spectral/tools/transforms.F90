@@ -376,12 +376,13 @@ return
 end subroutine reset_num_lon_in_transform
 
 !--------------------------------------------------------------------------
- subroutine trans_spherical_to_grid_3d(spherical, grid)
+ subroutine trans_spherical_to_grid_3d(spherical, grid, block)
 !--------------------------------------------------------------------------
 
 complex, intent (in), dimension (ms:,ns:,:) :: spherical
 real, intent(out), dimension (is:,:,:) :: grid
 real, dimension(num_lon,size(grid,2),size(grid,3)) :: grid_xglobal
+logical, intent(in), optional :: block
 
 integer(kind=kind(spherical)) :: c1, c2, c3
 
@@ -390,6 +391,11 @@ complex, dimension (ms:me, je-js+1, size(grid,3), grid_layout(2)) :: fourier_s
 logical :: grid_x_is_global, spectral_y_is_global
 type(domain1D) :: spectral_domain_y
 integer, allocatable :: pelist(:)
+logical :: block_comm = .true.
+
+if(PRESENT(block)) then 
+  block_comm = block
+endif
 
 if(.not.module_is_initialized) then
   call error_mesg('trans_spherical_to_grid','transforms module is not initialized', FATAL)
@@ -410,6 +416,8 @@ if( size(spherical,2).ne.ne-ns+1 )&
 if( size(spherical,3).ne.size(grid,3) )&
      call mpp_error( FATAL, 'TRANS_SPHERICAL_TO_GRID: size(spherical,3).ne.size(grid,3.' )
 
+
+
 call trans_spherical_to_fourier( spherical, fourier_s )
 call mpp_get_compute_domain( spectral_domain, y_is_global=spectral_y_is_global )
 if( .NOT.spectral_y_is_global )then
@@ -419,7 +427,7 @@ if( .NOT.spectral_y_is_global )then
     call mpp_sum( fourier_s          , size(fourier_s(:,:,:,:)), pelist )
 end if
 
-call reverse_transpose_fourier( fourier_s, fourier_g )
+call reverse_transpose_fourier( fourier_s, fourier_g, block=block_comm )
 
 fourier_g(trunc_fourier+1:num_lon/2,:,:) = cmplx(0.,0.)
 call mpp_get_compute_domain( grid_domain, x_is_global=grid_x_is_global )
@@ -966,15 +974,24 @@ subroutine get_grid_boundaries(lon_boundaries, lat_boundaries,global)
 end subroutine get_grid_boundaries
 
 !-------------------------------------------------------------------------
-subroutine reverse_transpose_fourier( fourier_s, fourier_g )
+subroutine reverse_transpose_fourier( fourier_s, fourier_g , block)
 !-------------------------------------------------------------------------
-include 'mpif.h'
   complex, intent(in)  :: fourier_s(:,:,:,0:)
   complex, intent(out) :: fourier_g(0:,:,:)
+  logical, optional, intent(in) :: block
   complex, dimension(xmaxsize*ymaxsize*size(fourier_s,3)) :: get_data
   integer :: i,j,k, jj, jp, jm, pp, pm, nput, nget, jpos
   type(domain1D) :: spectral_domain_x, grid_domain_y
   integer, dimension(0:grid_layout(2)-1) :: pelist, ygridsize, xspecsize, xsbegin, xsend
+  real :: start_time = 0.0, stop_time = 0.0
+
+  logical :: block_comm = .false.
+
+  if(PRESENT(block)) then 
+    block_comm = block
+  endif
+
+
 
   if(.not.module_is_initialized) then
     call error_mesg('reverse_transpose_fourier','transforms module is not initialized', FATAL)
@@ -994,27 +1011,17 @@ include 'mpif.h'
      pp = pelist(jp)
      pm = pelist(jm)
 
-    print *, 'jj, jp, jm, pp, pm, nput, nget, mpp_pe', jj, jp, jm, pp, pm, nput, nget, mpp_pe()
-    
-
      nget = xspecsize(jm)*ygridsize(jm)*size(fourier_s,3)
      ! Force use of "scalar", integer pointer mpp interface
+     call cpu_time(start_time)
      call mpp_transmit( put_data=fourier_s(1,1,1,jp), plen=nput, to_pe=pp, &
-                        get_data=get_data(1), glen=nget, from_pe=pm)
-                      
-    
-     if ( mpp_pe() == mpp_root_pe() ) then
-        print *, '------------------------'
-     endif
-
-     call mpp_sync()
+                        get_data=get_data(1), glen=nget, from_pe=pm,block=block_comm)
+     call cpu_time(stop_time)
+    !  write (*,'(f15.9)') stop_time - start_time 
      nget = 0
      do k = 1,size(fourier_g,3)
         do j = 1,size(fourier_g,2)
            do i = xsbegin(jm),xsend(jm)
-              !  if ( mpp_pe() == mpp_root_pe() ) then
-              !     print *, 'nget ,i, j, k', nget, i, j, k
-              !  endif
               nget = nget + 1
               fourier_g(i,j,k) = get_data(nget)
            end do
@@ -1022,9 +1029,18 @@ include 'mpif.h'
      end do
   end do
 
-  call mpp_sync()
   return
 end subroutine reverse_transpose_fourier
+
+
+
+
+
+
+subroutine mpp_broadcast()
+
+
+end subroutine
 
 !-------------------------------------------------------------------------
 subroutine transpose_fourier( fourier_g, fourier_s )

@@ -202,7 +202,7 @@ subroutine trans_spherical_to_fourier_3d(spherical,fourier)
   nj = je-js+1 !this version requires grid domains equal in Y
   if( debug )write( 0,'(a,i2,2i4)' )'pe, nd, nj=', mpp_pe(), nd, nj
 
-  if( mod(ns,2).EQ.0 )then
+  if( mod(ns,2).EQ.0 ) then
       neven = ns
       nodd = ns+1
   else
