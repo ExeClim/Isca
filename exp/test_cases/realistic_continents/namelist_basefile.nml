@@ -102,7 +102,7 @@
     water_correction_limit  = 200.e2,
     robert_coeff            = 0.03,
     reference_sea_level_press=1.e5,
-    num_levels              = 40,
+    num_levels              = 25,
     valid_range_t 	        = 100. 800.,
     initial_sphum           = 2.e-6,
     vert_coord_option       = 'uneven_sigma',

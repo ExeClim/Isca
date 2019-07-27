@@ -3,7 +3,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 16 
+NCORES = 16
 NUM_LEVELS = 25
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
@@ -58,16 +58,33 @@ diag.add_field('cloud_simple', 'tot_cld_amt', time_avg=True)
 diag.add_field('cloud_simple', 'high_cld_amt', time_avg=True)
 diag.add_field('cloud_simple', 'mid_cld_amt', time_avg=True)
 diag.add_field('cloud_simple', 'low_cld_amt', time_avg=True)
+diag.add_field('cloud_simple', 'low_cld_amt_park', time_avg=True)
 diag.add_field('cloud_simple', 'eis', time_avg=True)
 diag.add_field('cloud_simple', 'ectei', time_avg=True)
 diag.add_field('cloud_simple', 'lts', time_avg=True)
 diag.add_field('cloud_simple', 'zlcl', time_avg=True)
 diag.add_field('cloud_simple', 'z700', time_avg=True)
-diag.add_field('cloud_simple', 'gamma', time_avg=True)
+diag.add_field('cloud_simple', 'gamma850', time_avg=True)
+diag.add_field('cloud_simple', 'gamma700', time_avg=True)
+diag.add_field('cloud_simple', 'gamma_DL', time_avg=True)
 diag.add_field('cloud_simple', 'theta', time_avg=True)
-diag.add_field('cloud_simple', 'dtheta', time_avg=True)
+diag.add_field('cloud_simple', 'dthdp', time_avg=True)
 diag.add_field('cloud_simple', 'theta0', time_avg=True)
 diag.add_field('cloud_simple', 'theta700', time_avg=True)
+diag.add_field('cloud_simple', 'ELF', time_avg=True)
+diag.add_field('cloud_simple', 'beta1', time_avg=True)
+diag.add_field('cloud_simple', 'beta2', time_avg=True)
+diag.add_field('cloud_simple', 'zinv', time_avg=True)
+diag.add_field('cloud_simple', 'alpha', time_avg=True)
+diag.add_field('cloud_simple', 'DS', time_avg=True)
+diag.add_field('cloud_simple', 'IS', time_avg=True)
+diag.add_field('cloud_simple', 'RH_inv_minus', time_avg=True)
+diag.add_field('cloud_simple', 'qv_inv_minus', time_avg=True)
+diag.add_field('cloud_simple', 'qv_inv_plus', time_avg=True)
+diag.add_field('cloud_simple', 'qs_inv_minus', time_avg=True)
+diag.add_field('cloud_simple', 'es_inv_minus', time_avg=True)
+diag.add_field('cloud_simple', 'temp_inv_minus', time_avg=True)
+diag.add_field('cloud_simple', 'pinv', time_avg=True)
 
 diag.add_field('mixed_layer', 'albedo', time_avg=True)
 # additional output options commented out
@@ -82,13 +99,11 @@ diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
               os.path.join(base_dir,'input/sst_clim_amip.nc'), os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')]
 
-#sc_diag_names = ['eis_rh']
-#sc_diag_names = ['eis_wood']
-sc_diag_names = ['eis_wood_rh'] #'eis_wood_rh_base_gt_val'] #'ectei']#, 'eis_rh'] #'ectei_rh']#
+sc_diag_names = ['Park_ELF'] #'eis_wood_rh_base_gt_val'] #'ectei']#, 'eis_rh'] #'ectei_rh']#
 for sc_diag_name in sc_diag_names:
-    exp = Experiment('soc_test_amip_linear_qcl_with_temp_sc_'+sc_diag_name+'_test_code_error', codebase=cb)
-    #exp = Experiment('soc_test_amip_linear_qcl_with_temp_sc_test', codebase=cb)
-    #exp = Experiment('soc_test_with_clouds_amip_land_linear_qcl_two_paras', codebase=cb)
+    print(sc_diag_name)
+    exp = Experiment('soc_test_amip_linear_qcl_with_temp_sc_'+sc_diag_name+'_diag_proxy_test_zlcl_rh_change_rhumin', codebase=cb)
+    #exp = Experiment('soc_test_amip_linear_qcl_with_temp_sc_'+sc_diag_name+'_diag_proxy_test_zlcl_rh0.8', codebase=cb)
     exp.clear_rundir()
 
     exp.diag_table = diag
@@ -101,7 +116,7 @@ for sc_diag_name in sc_diag_names:
     coeff_arr = list(np.reshape(arr_tmp, np.size(arr_tmp), order='F')) # Fortran order
 
     #Define values for the 'core' namelist
-    exp.namelist = namelist = Namelist({
+    exp.namelist = Namelist({
         'main_nml':{
          'days'   : 30,
          'hours'  : 0,
@@ -157,7 +172,8 @@ for sc_diag_name in sc_diag_names:
             'do_qcl_with_temp': True,
             'do_cloud_amount_diags': True,
             'do_add_stratocumulus': True,
-            'sc_diag_method': sc_diag_name,
+            'sc_diag_method':  sc_diag_name,
+            #'do_read_ts': True,
         },
 
         'vert_turb_driver_nml': {
@@ -214,6 +230,7 @@ for sc_diag_name in sc_diag_names:
         'sat_vapor_pres_nml': {
                'do_simple': True,
                'construct_table_wrt_liq_and_ice': True,
+               'show_all_bad_values': True,
            },
 
         'damping_driver_nml': {
@@ -259,9 +276,14 @@ for sc_diag_name in sc_diag_names:
     })
 
     if __name__=="__main__":
+        print(exp.namelist)
         cb.compile(debug=False)
+        '''
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
+        for i in range(2, 25):
+            exp.run(i, num_cores=NCORES, overwrite_data=False)
+        '''
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
-
         for i in range(2, 25):
             exp.run(i, num_cores=NCORES, overwrite_data=True)
 

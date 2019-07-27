@@ -3,18 +3,11 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 16
+NCORES = 16 
 NUM_LEVELS = 25
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 cb = SocratesCodeBase.from_directory(GFDL_BASE)
-
-exp = Experiment('soc_test_with_clouds_amip_land_linear_qcl_with_temp_diag_cld_amt', codebase=cb)
-#exp = Experiment('soc_test_with_clouds_amip_land_linear_qcl_two_paras', codebase=cb)
-exp.clear_rundir()
-
-inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
-              os.path.join(base_dir,'input/sst_clim_amip.nc'), os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -22,16 +15,22 @@ diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 
 #Tell model which diagnostics to write
 diag.add_field('dynamics', 'ps', time_avg=True)
+diag.add_field('dynamics', 'slp', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
-diag.add_field('dynamics', 'slp', time_avg=True)
 diag.add_field('dynamics', 'zsurf', time_avg=True)
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('atmosphere', 'rh', time_avg=True)
+diag.add_field('atmosphere', 'temp_2m', time_avg=True)
+diag.add_field('atmosphere', 'q_2m', time_avg=True)
+diag.add_field('atmosphere', 'rh_2m', time_avg=True)
+diag.add_field('atmosphere', 'u_10m', time_avg=True)
+diag.add_field('atmosphere', 'v_10m', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
+diag.add_field('dynamics', 'omega', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
@@ -45,25 +44,7 @@ diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
 diag.add_field('socrates', 'soc_toa_swup', time_avg=True)
 
-diag.add_field('socrates', 'soc_olr_clr', time_avg=True)
-diag.add_field('socrates', 'soc_toa_sw_clr', time_avg=True)
-diag.add_field('socrates', 'soc_toa_swup_clr', time_avg=True)
-diag.add_field('socrates', 'soc_flux_lw_clr', time_avg=True)
-diag.add_field('socrates', 'soc_flux_sw_clr', time_avg=True)
-
-diag.add_field('cloud_simple', 'cf', time_avg=True)
-diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
-diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
-diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
-diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
-diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
-diag.add_field('cloud_simple', 'tot_cld_amt', time_avg=True)
-diag.add_field('cloud_simple', 'high_cld_amt', time_avg=True)
-diag.add_field('cloud_simple', 'mid_cld_amt', time_avg=True)
-diag.add_field('cloud_simple', 'low_cld_amt', time_avg=True)
-
 diag.add_field('mixed_layer', 'albedo', time_avg=True)
-
 # additional output options commented out
 diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
@@ -72,18 +53,18 @@ diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_coszen', time_avg=True)
 #diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
+
+inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
+              os.path.join(base_dir,'input/sst_clim_amip.nc'), os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')]
+
+exp = Experiment('soc_test_amip_no_cld_land', codebase=cb)
+exp.clear_rundir()
+
 exp.diag_table = diag
 exp.inputfiles = inputfiles
 
-coeff_fn = '/home/links/ql260/Documents/Exps_Analysis/clouds/data/paras_a_b.npy'
-arr = np.load(coeff_fn)
-arr_tmp = np.ones((100,2), dtype='double')*-999
-arr_tmp[0:len(arr),:] = arr
-coeff_arr = list(np.reshape(arr_tmp, np.size(arr_tmp), order='F')) # Fortran order
-
-
 #Define values for the 'core' namelist
-exp.namelist = namelist = Namelist({
+exp.namelist = Namelist({
     'main_nml':{
      'days'   : 30,
      'hours'  : 0,
@@ -119,26 +100,12 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection
-        'do_cloud_simple': True,
+        #'convection_scheme': 'FULL_BETTS_MILLER',
+        'do_cloud_simple': False,
         'do_clear_sky_pass': True,
         'land_option' : 'input',
         'land_file_name' : 'INPUT/era_land_t42.nc',
         'land_roughness_prefactor' :10.0,
-    },
-
-    'cloud_simple_nml': {
-        'simple_cca': 0.0,
-        'rhcsfc': 0.95,
-        'rhc700': 0.7,
-        'rhc200': 0.3,
-        'do_simple_rhcrit': False,
-        'do_read_scm_rhcrit': False,
-        'do_linear_diag': True,
-        'scm_linear_coeffs': coeff_arr, 
-        #'do_qcl_two_paras': True,
-        'do_qcl_with_temp': True,
-        'do_add_stratocumulus': False,
-        'do_cloud_amount_diags': True,
     },
 
     'vert_turb_driver_nml': {
@@ -157,7 +124,8 @@ exp.namelist = namelist = Namelist({
     'surface_flux_nml': {
         'use_virtual_temp': False,
         'do_simple': True,
-        'old_dtaudv': True
+        'old_dtaudv': True,
+        'land_humidity_prefactor': 0.7,
     },
 
     'atmosphere_nml': {
@@ -179,6 +147,8 @@ exp.namelist = namelist = Namelist({
         'do_sc_sst': True,                      # Do specified ssts (need both to be true)
         'sst_file': 'sst_clim_amip',            # Set name of sst input file
         'specify_sst_over_ocean_only': True,    # Make sure sst only specified in regions of ocean.
+        'ice_albedo_value': 0.7,                # What value of albedo to use in regions of ice
+        'ice_concentration_threshold': 0.5,     # ice concentration threshold above which to make albedo equal to ice_albedo_value
     },
 
     'qe_moist_convection_nml': {
@@ -195,6 +165,7 @@ exp.namelist = namelist = Namelist({
     'sat_vapor_pres_nml': {
            'do_simple': True,
            'construct_table_wrt_liq_and_ice': True,
+           'show_all_bad_values': True,
        },
 
     'damping_driver_nml': {
@@ -240,9 +211,9 @@ exp.namelist = namelist = Namelist({
 })
 
 if __name__=="__main__":
+    print(exp.namelist)
     cb.compile(debug=False)
-    exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
-
+    exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
     for i in range(2, 25):
-        exp.run(i, num_cores=NCORES)
+        exp.run(i, num_cores=NCORES, overwrite_data=True)
 

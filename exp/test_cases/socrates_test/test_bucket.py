@@ -3,7 +3,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 16 
+NCORES = 16
 NUM_LEVELS = 25
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
@@ -19,11 +19,21 @@ diag.add_field('dynamics', 'slp', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
 diag.add_field('dynamics', 'zsurf', time_avg=True)
-diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('atmosphere', 'temp_2m', time_avg=True)
+diag.add_field('atmosphere', 'q_2m', time_avg=True)
+diag.add_field('atmosphere', 'rh_2m', time_avg=True)
 diag.add_field('atmosphere', 'u_10m', time_avg=True)
 diag.add_field('atmosphere', 'v_10m', time_avg=True)
+diag.add_field('atmosphere', 'convection_rain', time_avg=True)
+diag.add_field('atmosphere', 'condensation_rain', time_avg=True)
+diag.add_field('atmosphere', 'precipitation', time_avg=True)
+
+diag.add_field('atmosphere', 'bucket_depth', time_avg=True)
+diag.add_field('atmosphere', 'bucket_depth_cond', time_avg=True)
+diag.add_field('atmosphere', 'bucket_depth_conv', time_avg=True)
+diag.add_field('atmosphere', 'bucket_depth_lh', time_avg=True)
+
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
@@ -32,6 +42,8 @@ diag.add_field('dynamics', 'omega', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
+diag.add_field('dynamics', 'height', time_avg=True)
+diag.add_field('dynamics', 'height_half', time_avg=True)
 
 diag.add_field('socrates', 'soc_tdt_lw', time_avg=True)
 diag.add_field('socrates', 'soc_tdt_sw', time_avg=True)
@@ -52,24 +64,44 @@ diag.add_field('cloud_simple', 'cf', time_avg=True)
 diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
 diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
 diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
-diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
+#diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
 diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
 diag.add_field('cloud_simple', 'tot_cld_amt', time_avg=True)
 diag.add_field('cloud_simple', 'high_cld_amt', time_avg=True)
 diag.add_field('cloud_simple', 'mid_cld_amt', time_avg=True)
 diag.add_field('cloud_simple', 'low_cld_amt', time_avg=True)
+diag.add_field('cloud_simple', 'low_cld_amt_park', time_avg=True)
 diag.add_field('cloud_simple', 'eis', time_avg=True)
 diag.add_field('cloud_simple', 'ectei', time_avg=True)
 diag.add_field('cloud_simple', 'lts', time_avg=True)
 diag.add_field('cloud_simple', 'zlcl', time_avg=True)
 diag.add_field('cloud_simple', 'z700', time_avg=True)
-diag.add_field('cloud_simple', 'gamma', time_avg=True)
+##diag.add_field('cloud_simple', 'gamma850', time_avg=True)
+#diag.add_field('cloud_simple', 'gamma700', time_avg=True)
+#diag.add_field('cloud_simple', 'gamma_DL', time_avg=True)
 diag.add_field('cloud_simple', 'theta', time_avg=True)
-diag.add_field('cloud_simple', 'dtheta', time_avg=True)
-diag.add_field('cloud_simple', 'theta0', time_avg=True)
-diag.add_field('cloud_simple', 'theta700', time_avg=True)
+diag.add_field('cloud_simple', 'dthdp', time_avg=True)
+#diag.add_field('cloud_simple', 'theta0', time_avg=True)
+#diag.add_field('cloud_simple', 'theta700', time_avg=True)
+diag.add_field('cloud_simple', 'ELF', time_avg=True)
+diag.add_field('cloud_simple', 'beta1', time_avg=True)
+diag.add_field('cloud_simple', 'beta2', time_avg=True)
+diag.add_field('cloud_simple', 'zinv', time_avg=True)
+diag.add_field('cloud_simple', 'alpha', time_avg=True)
+#diag.add_field('cloud_simple', 'DS', time_avg=True)
+#diag.add_field('cloud_simple', 'IS', time_avg=True)
+#diag.add_field('cloud_simple', 'RH_inv_minus', time_avg=True)
+#diag.add_field('cloud_simple', 'qv_inv_minus', time_avg=True)
+#diag.add_field('cloud_simple', 'qv_inv_plus', time_avg=True)
+#diag.add_field('cloud_simple', 'qs_inv_minus', time_avg=True)
+#diag.add_field('cloud_simple', 'es_inv_minus', time_avg=True)
+#diag.add_field('cloud_simple', 'temp_inv_minus', time_avg=True)
+#diag.add_field('cloud_simple', 'pinv', time_avg=True)
+diag.add_field('cloud_simple', 'conv_cf', time_avg=True)
 
 diag.add_field('mixed_layer', 'albedo', time_avg=True)
+diag.add_field('mixed_layer', 'flux_lhe', time_avg=True)    # latent heat flux (up) at surface
+diag.add_field('mixed_layer', 'flux_t', time_avg=True)      # sensible heat flux (up) at surface
 # additional output options commented out
 diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
@@ -79,29 +111,21 @@ diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 #diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
 
-inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
-              os.path.join(base_dir,'input/sst_clim_amip.nc'), os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')]
+inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'), os.path.join(base_dir,'input/sst_clim_amip.nc'),
+              os.path.join(GFDL_BASE,'input/land_masks/era_land_t42_filtered.nc'), os.path.join(base_dir, 'input/siconc_clim_amip.nc')]
 
-#sc_diag_names = ['eis_rh']
-#sc_diag_names = ['eis_wood']
-sc_diag_names = ['eis_wood_rh'] #'eis_wood_rh_base_gt_val'] #'ectei']#, 'eis_rh'] #'ectei_rh']#
+sc_diag_names = ['Park_ELF']
 for sc_diag_name in sc_diag_names:
-    exp = Experiment('soc_test_amip_linear_qcl_with_temp_sc_'+sc_diag_name+'_test_code_error', codebase=cb)
-    #exp = Experiment('soc_test_amip_linear_qcl_with_temp_sc_test', codebase=cb)
-    #exp = Experiment('soc_test_with_clouds_amip_land_linear_qcl_two_paras', codebase=cb)
+    print(sc_diag_name)
+    #exp = Experiment('soc_test_amip_new_linear_add_conv_cf_rhe_lcl_tower_2', codebase=cb)
+    exp = Experiment('soc_test_bucket_evap_0.6_nml', codebase=cb)
     exp.clear_rundir()
 
     exp.diag_table = diag
     exp.inputfiles = inputfiles
 
-    coeff_fn = '/home/links/ql260/Documents/Exps_Analysis/clouds/data/paras_a_b.npy'
-    arr = np.load(coeff_fn)
-    arr_tmp = np.ones((100,2), dtype='double')*-999
-    arr_tmp[0:len(arr),:] = arr
-    coeff_arr = list(np.reshape(arr_tmp, np.size(arr_tmp), order='F')) # Fortran order
-
     #Define values for the 'core' namelist
-    exp.namelist = namelist = Namelist({
+    exp.namelist = Namelist({
         'main_nml':{
          'days'   : 30,
          'hours'  : 0,
@@ -140,24 +164,28 @@ for sc_diag_name in sc_diag_names:
             'do_cloud_simple': True,
             'do_clear_sky_pass': True,
             'land_option' : 'input',
-            'land_file_name' : 'INPUT/era_land_t42.nc',
+            'land_file_name' : 'INPUT/era_land_t42_filtered.nc',
             'land_roughness_prefactor' :10.0,
+            'roughness_mom': 2.e-04, #Ocean roughness lengths  
+            'roughness_heat': 2.e-04, #Ocean roughness lengths  
+            'roughness_moist': 2.e-04, #Ocean roughness lengths  
+            'bucket':True, #Run with the bucket model
+            'init_bucket_depth_land':0.15, 
         },
 
         'cloud_simple_nml': {
-            'simple_cca': 0.0,
-            'rhcsfc': 0.95,
-            'rhc700': 0.7,
-            'rhc200': 0.3,
-            'do_simple_rhcrit': False,
+            'cf_diag_formula_name': 'linear',
             'do_read_scm_rhcrit': False,
-            'do_linear_diag': True,
-            'scm_linear_coeffs': coeff_arr, 
-            #'do_qcl_two_paras': True,
+            #'do_simple_rhcrit': True,
             'do_qcl_with_temp': True,
             'do_cloud_amount_diags': True,
             'do_add_stratocumulus': True,
             'sc_diag_method': sc_diag_name,
+            'intermediate_outputs_diags': True,
+            #'do_read_ts': True,
+            'do_conv_cld': True,
+            'pshallow': 7.5e4,
+            'cf_min': 1e-4,
         },
 
         'vert_turb_driver_nml': {
@@ -176,7 +204,11 @@ for sc_diag_name in sc_diag_names:
         'surface_flux_nml': {
             'use_virtual_temp': False,
             'do_simple': True,
-            'old_dtaudv': True
+            'old_dtaudv': True,
+            #'land_humidity_prefactor': 0.6,
+            #'land_evap_prefactor': 1,
+            #'land_humidity_prefactor': 1,
+            #'land_evap_prefactor': 0.6,
         },
 
         'atmosphere_nml': {
@@ -198,8 +230,12 @@ for sc_diag_name in sc_diag_names:
             'do_sc_sst': True,                      # Do specified ssts (need both to be true)
             'sst_file': 'sst_clim_amip',            # Set name of sst input file
             'specify_sst_over_ocean_only': True,    # Make sure sst only specified in regions of ocean.
+            # Copy from realistic_continents namelist
+            'update_albedo_from_ice': True,          # Use the simple ice model to update surface albedo
+            'ice_albedo_value': 0.7,                # What value of albedo to use in regions of ice
+            'ice_concentration_threshold': 0.5,      # ice concentration threshold above which to make albedo equal to ice_albedo_value        
         },
-
+            # Copy from realistic_continents namelist
         'qe_moist_convection_nml': {
             'rhbm': 0.7,
             'Tmin': 160.,
@@ -214,6 +250,7 @@ for sc_diag_name in sc_diag_names:
         'sat_vapor_pres_nml': {
                'do_simple': True,
                'construct_table_wrt_liq_and_ice': True,
+               'show_all_bad_values': True,
            },
 
         'damping_driver_nml': {
@@ -245,7 +282,7 @@ for sc_diag_name in sc_diag_names:
             'valid_range_t': [100.,800.],
             'initial_sphum': [2.e-6],
             'vert_coord_option': 'uneven_sigma',
-            'surf_res': 0.2, #Parameter that sets the vertical distribution of sigma levels
+            'surf_res': 0.03, #0.2, #Parameter that sets the vertical distribution of sigma levels
             'scale_heights': 11.0,
             'exponent': 7.0,
             'robert_coeff': 0.03,
@@ -253,15 +290,20 @@ for sc_diag_name in sc_diag_names:
         },
 
         'spectral_init_cond_nml':{
-            'topog_file_name': 'era_land_t42.nc',
+            'topog_file_name': 'era_land_t42_filtered.nc',
             'topography_option': 'input',
         },
     })
 
     if __name__=="__main__":
+        print(exp.namelist)
         cb.compile(debug=False)
+        '''
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
+        for i in range(2, 3):
+            exp.run(i, num_cores=NCORES, overwrite_data=False)
+        '''
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
-
         for i in range(2, 25):
             exp.run(i, num_cores=NCORES, overwrite_data=True)
 

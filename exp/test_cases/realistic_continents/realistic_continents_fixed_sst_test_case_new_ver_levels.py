@@ -25,7 +25,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('realistic_continents_fixed_sst_test_experiment_rh2m', codebase=cb)
+exp = Experiment('realistic_continents_fixed_sst_test_experiment_rh2m_new_vert_levels', codebase=cb)
 
 #Add any input files that are necessary for a particular experiment.
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
@@ -72,6 +72,11 @@ exp.update_namelist({
         'specify_sst_over_ocean_only' : True, #Make sure sst only specified in regions of ocean.
     },
 
+    'spectral_dynamics_nml': {
+        'surf_res': 0.03, #Parameter that sets the vertical distribution of sigma levels
+    },
+
+ 
 })
 
 #Lets do a run!
