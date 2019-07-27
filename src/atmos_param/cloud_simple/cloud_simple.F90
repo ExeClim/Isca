@@ -6,7 +6,8 @@ module cloud_simple_mod
   use fms_mod, only: open_namelist_file, close_file
 #endif
 
-  use             fms_mod, only: stdlog, FATAL, WARNING, NOTE, error_mesg, uppercase
+  use             fms_mod, only: stdlog, FATAL, WARNING, NOTE, error_mesg, uppercase, &
+				 check_nml_error
   use    time_manager_mod, only: time_type
   use  sat_vapor_pres_mod, only: compute_qs, lookup_es
   use    diag_manager_mod, only: register_diag_field, send_data
@@ -77,16 +78,20 @@ module cloud_simple_mod
   subroutine cloud_simple_init (axes, Time)
     type(time_type), intent(in)       :: Time
     integer, intent(in), dimension(4) :: axes
-    integer :: io ,stdlog_unit
+    integer :: io, ierr, nml_unit, stdlog_unit
     character(len=32) :: tmp_str = ''
 
 #ifdef INTERNAL_FILE_NML
     read (input_nml_file, nml=cloud_simple_nml, iostat=io)
+    ierr = check_nml_error(io, 'cloud_simple_nml')
 #else
     if ( file_exist('input.nml') ) then
       nml_unit = open_namelist_file()
-      read (nml_unit, cloud_simple_nml, iostat=io)
-      call close_file(nml_unit)
+      ierr=1; do while (ierr /= 0)
+         read (nml_unit, nml=cloud_simple_nml, iostat=io, end=10)
+         ierr = check_nml_error(io, 'cloud_simple_nml')
+      enddo
+10    call close_file(nml_unit)
     endif
 #endif
     stdlog_unit = stdlog()
