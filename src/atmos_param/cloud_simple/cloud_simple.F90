@@ -7,7 +7,7 @@ module cloud_simple_mod
 #endif
 
   use             fms_mod, only: stdlog, FATAL, WARNING, NOTE, error_mesg, uppercase, &
-				 check_nml_error
+                                 check_nml_error
   use    time_manager_mod, only: time_type
   use  sat_vapor_pres_mod, only: compute_qs, lookup_es
   use    diag_manager_mod, only: register_diag_field, send_data
@@ -296,6 +296,7 @@ module cloud_simple_mod
       call calc_rhcrit(p_full, rhcrit, scm_rhcrit)
     end if
 
+    conv_cf = 0.0
     if(do_conv_cld) then
       call calc_convective_cf(temp, q_hum, rh_in_cf, precip, conv_cf, p_full, wg_full, Time)
     end if
