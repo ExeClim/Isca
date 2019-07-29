@@ -248,7 +248,7 @@ contains
     call SBM_convection_scheme(dt, Tin, qin, p_full, p_half, rain, snow, &
          deltaT, deltaq, kLZBs, CAPE, CIN,invtau_q_relaxation,           &
          invtau_t_relaxation, Tref, qref,                                &
-         val_min, val_max, val_inc, lcl_temp_table, convflag)
+         val_min, val_max, val_inc, lcl_temp_table, convflag, kLCLs)
      
   end subroutine qe_moist_convection
 
@@ -256,7 +256,7 @@ contains
   
   subroutine SBM_convection_scheme(dt, Tin, qin, p_full, p_half, rain,  snow, &
        deltaT, deltaq, kLZBs, CAPE, CIN, invtau_q_relaxation, invtau_t_relaxation,&
-       Tref, qref, val_min, val_max, val_inc, lcl_temp_table, convflag)
+       Tref, qref, val_min, val_max, val_inc, lcl_temp_table, convflag, kLCLs)
    
     !-----------------------------------------------------------------------
     !
@@ -276,7 +276,7 @@ contains
     real, intent(out), dimension(:,:)      :: rain, snow, CAPE, CIN
     real, intent(out), dimension(:,:)      :: invtau_q_relaxation, invtau_t_relaxation
     real, intent(out), dimension(:,:,:)    :: deltaT, deltaq, Tref, qref
-    integer, intent(out), dimension(:,:)   :: kLZBs, convflag
+    integer, intent(out), dimension(:,:)   :: kLZBs, convflag, kLCLs
     
     integer                                :: k_surface, i, j, kLZB
     real, dimension(size(Tin, 3))          ::     &
