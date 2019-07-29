@@ -238,7 +238,8 @@ real, allocatable, dimension(:,:) ::                                          &
      land_ones                 ! land points (all zeros)
 
 integer, allocatable, dimension(:,:) ::                                       &
-     klzbs                     ! stored level of zero buoyancy values; QL, change data type to integer
+     klzbs,                &   ! stored level of zero buoyancy values; QL, change data type to integer
+     klcls                     ! stored level of lifting condensation level values, QL add
 
 real, allocatable, dimension(:,:) ::                                          &
      cape,                 &   ! convectively available potential energy
@@ -504,6 +505,7 @@ allocate(cond_dt_qg  (is:ie, js:je, num_levels))
 
 allocate(coldT        (is:ie, js:je)); coldT = .false.
 allocate(klzbs        (is:ie, js:je))
+allocate(klcls        (is:ie, js:je))  ! QL added
 allocate(cape         (is:ie, js:je))
 allocate(cin          (is:ie, js:je))
 allocate(invtau_q_relaxation  (is:ie, js:je))
@@ -841,7 +843,8 @@ case(SIMPLE_BETTS_CONV)
                                 q_ref,                        convflag,      &
                                 klzbs,                            cape,      &
                                   cin,             invtau_q_relaxation,      &
-                  invtau_t_relaxation,                           t_ref)
+                  invtau_t_relaxation,                           t_ref,      &
+                                klcls)
    tg_tmp = conv_dt_tg + tg(:,:,:,previous)
    qg_tmp = conv_dt_qg + grid_tracers(:,:,:,previous,nsphum)
 !  note the delta's are returned rather than the time derivatives
@@ -869,7 +872,7 @@ case(FULL_BETTS_MILLER_CONV)
                                   klzbs,                         cape,       &
                                     cin,                        t_ref,       &
                     invtau_t_relaxation,          invtau_q_relaxation,       &
-                               capeflag)
+                               capeflag,                        klcls)
 
    tg_tmp = conv_dt_tg + tg(:,:,:,previous)
    qg_tmp = conv_dt_qg + grid_tracers(:,:,:,previous,nsphum)

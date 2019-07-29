@@ -101,7 +101,7 @@ contains
    subroutine betts_miller (dt, tin, qin, pfull, phalf, coldT, &
                            rain, snow, tdel, qdel, q_ref, bmflag, &
                            klzbs, cape, cin, t_ref,invtau_bm_t,invtau_bm_q, &
-                           capeflag, mask, conv)
+                           capeflag, klcls, mask, conv)
 
 !-----------------------------------------------------------------------
 !
@@ -144,7 +144,7 @@ contains
    logical   , intent(in) , dimension(:,:):: coldT
    real   , intent(out), dimension(:,:)   :: rain,snow, cape, &
        cin, invtau_bm_t, invtau_bm_q, capeflag
-   integer, intent(out), dimension(:,:)   :: bmflag, klzbs
+   integer, intent(out), dimension(:,:)   :: bmflag, klzbs, klcls
    real   , intent(out), dimension(:,:,:) :: tdel, qdel, q_ref, t_ref
    real   , intent(in) , dimension(:,:,:), optional :: mask
    logical, intent(in) , dimension(:,:,:), optional :: conv

@@ -189,7 +189,7 @@ contains
   subroutine qe_moist_convection (dt, Tin, qin, p_full, p_half, coldT, &
                                   rain, snow, deltaT, deltaq, qref, convflag, &
                                   kLZBs, CAPE, CIN, invtau_q_relaxation, &
-                                  invtau_t_relaxation, Tref)
+                                  invtau_t_relaxation, Tref, kLCLs)
 
     !-----------------------------------------------------------------------
     !
@@ -233,7 +233,7 @@ contains
     
     real   , intent(out), dimension(:,:)   :: rain, snow, CAPE, CIN
     real   , intent(out), dimension(:,:)   :: invtau_q_relaxation, invtau_t_relaxation
-    integer, intent(out), dimension(:,:)   :: kLZBs, convflag
+    integer, intent(out), dimension(:,:)   :: convflag, kLZBs, kLCLs
     real   , intent(out), dimension(:,:,:) :: deltaT, deltaq, qref, Tref
 
     !-----------------------------------------------------------------------
