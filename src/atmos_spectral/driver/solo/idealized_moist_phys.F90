@@ -239,7 +239,7 @@ real, allocatable, dimension(:,:) ::                                          &
 
 integer, allocatable, dimension(:,:) ::                                       &
      klzbs,                &   ! stored level of zero buoyancy values; QL, change data type to integer
-     klcls                     ! stored level of lifting condensation level values, QL add
+     klcls                     ! stored lifting condensation level values, QL add
 
 real, allocatable, dimension(:,:) ::                                          &
      cape,                 &   ! convectively available potential energy
@@ -893,7 +893,7 @@ case(FULL_BETTS_MILLER_CONV)
 case(DRY_CONV)
     call dry_convection(Time, tg(:, :, :, previous),                         &
                         p_full(:,:,:,previous), p_half(:,:,:,previous),      &
-                        conv_dt_tg, cape, cin)
+                        conv_dt_tg, cape, cin, klzbs, klcls)
 
     tg_tmp = conv_dt_tg*delta_t + tg(:,:,:,previous)
     qg_tmp = grid_tracers(:,:,:,previous,nsphum)
