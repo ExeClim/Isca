@@ -237,8 +237,10 @@ logical, allocatable, dimension(:,:) ::                                       &
 real, allocatable, dimension(:,:) ::                                          &
      land_ones                 ! land points (all zeros)
 
+integer, allocatable, dimension(:,:) ::                                       &
+     klzbs                     ! stored level of zero buoyancy values; QL, change data type to integer
+
 real, allocatable, dimension(:,:) ::                                          &
-     klzbs,                &   ! stored level of zero buoyancy values
      cape,                 &   ! convectively available potential energy
      cin,                  &   ! convective inhibition (this and the above are before the adjustment)
      invtau_q_relaxation,  &   ! temperature relaxation time scale
@@ -840,7 +842,6 @@ case(SIMPLE_BETTS_CONV)
                                 klzbs,                            cape,      &
                                   cin,             invtau_q_relaxation,      &
                   invtau_t_relaxation,                           t_ref)
-
    tg_tmp = conv_dt_tg + tg(:,:,:,previous)
    qg_tmp = conv_dt_qg + grid_tracers(:,:,:,previous,nsphum)
 !  note the delta's are returned rather than the time derivatives

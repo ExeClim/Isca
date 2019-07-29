@@ -231,9 +231,9 @@ contains
     real   , intent(in)                    :: dt
     logical, intent(in) , dimension(:,:)   :: coldT
     
-    real   , intent(out), dimension(:,:)   :: rain, snow, kLZBs, CAPE, CIN
+    real   , intent(out), dimension(:,:)   :: rain, snow, CAPE, CIN
     real   , intent(out), dimension(:,:)   :: invtau_q_relaxation, invtau_t_relaxation
-    integer, intent(out), dimension(:,:)   :: convflag
+    integer, intent(out), dimension(:,:)   :: kLZBs, convflag
     real   , intent(out), dimension(:,:,:) :: deltaT, deltaq, qref, Tref
 
     !-----------------------------------------------------------------------
@@ -275,9 +275,8 @@ contains
     real, intent(in), dimension(:)         :: lcl_temp_table
     real, intent(out), dimension(:,:)      :: rain, snow, CAPE, CIN
     real, intent(out), dimension(:,:)      :: invtau_q_relaxation, invtau_t_relaxation
-    real, intent(out), dimension(:,:)      :: kLZBs
     real, intent(out), dimension(:,:,:)    :: deltaT, deltaq, Tref, qref
-    integer, intent(out), dimension(:,:)   :: convflag    
+    integer, intent(out), dimension(:,:)   :: kLZBs, convflag
     
     integer                                :: k_surface, i, j, kLZB
     real, dimension(size(Tin, 3))          ::     &
