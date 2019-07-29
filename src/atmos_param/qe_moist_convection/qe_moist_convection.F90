@@ -278,15 +278,13 @@ contains
     real, intent(out), dimension(:,:,:)    :: deltaT, deltaq, Tref, qref
     integer, intent(out), dimension(:,:)   :: kLZBs, convflag, kLCLs
     
-    integer                                :: k_surface, i, j, kLZB
+    integer                                :: k_surface, i, j, kLZB, kLCL
     real, dimension(size(Tin, 3))          ::     &
          deltaq_parcel, deltaT_parcel, T_parcel, r_parcel, qref_parcel, Tref_parcel
     real, dimension(size(Tin, 1), size(Tin, 2))            :: Pq
     real, dimension(size(Tin,1), size(Tin,2), size(Tin,3)) :: rin
     real                                   :: cape_parcel, cin_parcel, Pq_parcel, Pt_parcel
     real                                   :: invtau_q_relaxation_parcel, invtau_t_relaxation_parcel
-
-
 
 
     ! Initialization of parameters and variables
@@ -317,12 +315,14 @@ contains
           ! parcel lifted from lowest model level
           call CAPE_calculation(k_surface, p_full(i,j,:), p_half(i,j,:), &
                Tin(i,j,:), rin(i,j,:), kLZB, T_parcel, r_parcel,         &
-               cape_parcel, cin_parcel, val_min, val_max, lcl_temp_table)
+               cape_parcel, cin_parcel, val_min, val_max, lcl_temp_table,&
+               kLCL)
             
           ! Store values
           CAPE(i,j)  = cape_parcel
           CIN(i,j)   = cin_parcel
           kLZBs(i,j) = kLZB
+          kLCLs(i,j) = kLCL
           
           ! If CAPE>0, set reference temperature and humidity above and below 
           ! the LZB (Level of Zero Buoyancy) 
@@ -393,7 +393,7 @@ contains
   !#######################################################################
   
   subroutine CAPE_calculation(k_surface, p_full, p_half, Tin, rin, kLZB, &
-       Tp, rp, CAPE, CIN, val_min, val_max, lcl_temp_table)
+       Tp, rp, CAPE, CIN, val_min, val_max, lcl_temp_table, kLCL)
 
     ! Calculates CAPE, CIN, level of zero buoyancy, and parcel properties 
     ! (second order accurate in delta(ln p) and exact LCL calculation)
@@ -404,13 +404,13 @@ contains
     real, intent(in), dimension(:)       :: Tin, rin
     real, intent(in)                     :: val_min , val_max
     real, intent(in), dimension(:)       :: lcl_temp_table
-    integer, intent(out)                 :: kLZB
+    integer, intent(out)                 :: kLZB, kLCL
     real, intent(out), dimension(:)      :: Tp, rp
     real, intent(out)                    :: CAPE, CIN
     
     logical                              :: nocape, saturated, skip
     real                                 :: pLZB, T0, r0, es, rs, pLCL
-    integer                              :: kLFC, k, kLCL
+    integer                              :: kLFC, k
     real, dimension(size(Tin))           :: Tin_virtual
     
     nocape = .true.
