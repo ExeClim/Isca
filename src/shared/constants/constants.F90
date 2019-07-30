@@ -203,6 +203,9 @@ real, public, parameter :: RHOAIR      = 1.292269
 real, public, parameter :: ALOGMIN     = -50.0
 
 !------------ miscellaneous constants ---------------
+! <DATA NAME="GAS_CONSTANT" UNITS="kg m^2 / s^2 / K / mol" TYPE="real" DEFAULT="8.3144598">
+!   Gas constant = N_A * k_B, where N_A is avagadro's number, and k_b is the boltzmann constant
+! </DATA>
 ! <DATA NAME="STEFAN" UNITS="W/m^2/deg^4" TYPE="real" DEFAULT="5.6734e-8">
 !   Stefan-Boltzmann constant
 ! </DATA>
@@ -231,6 +234,7 @@ real, public, parameter :: ALOGMIN     = -50.0
 !   a small number to prevent divide by zero exceptions
 ! </DATA>
 
+real, public, parameter :: GAS_CONSTANT = 8.314 !(Consistent with correct value of 8.3144598 and value gotten by doing earth_rdgas * wtmair / 1000 = 8.313941376)
 real, public, parameter :: STEFAN  = 5.6734e-8
 real, public, parameter :: VONKARM = 0.40
 real, public, parameter :: PI      = 3.14159265358979323846

@@ -47,6 +47,7 @@ class Experiment(Logger, EventEmitter):
             'num_fourier': 42,
             'num_spherical': 43,
         },
+
         'T21': {
             'lon_max': 64,
             'lat_max': 32,
@@ -318,6 +319,7 @@ class Experiment(Logger, EventEmitter):
                 combinetool(self.codebase.builddir, restartfile)
                 sh.rm(glob.glob(restartfile+'.????'))
                 self.log.debug("Restart file %s combined" % restartfile)
+
             self.emit('run:combined', self, i)
         else:
             for file in self.diag_table.files:
