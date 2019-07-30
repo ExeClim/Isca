@@ -910,6 +910,7 @@ case(RAS_CONV)
                 p_half(:,:,:,previous), z_half(:,:,:,previous), coldT,  delta_t,     &
                 conv_dt_tg,   conv_dt_qg, dt_ug_conv,  dt_vg_conv,                   &
                 rain, snow,   do_strat,                                              &
+                klzbs,  klcls,                                                       &
                 !OPTIONAL
                 mask,  kbot,                                                         &
                 !OPTIONAL OUT
