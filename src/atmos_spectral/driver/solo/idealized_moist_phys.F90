@@ -187,7 +187,13 @@ real, allocatable, dimension(:,:)   ::                                        &
      rough,                &   ! roughness for vert_turb_driver
      albedo,               &   !s albedo now defined in mixed_layer_init
      coszen,               &   !s make sure this is ready for assignment in run_rrtmg
-     pbltop                    !s Used as an input to damping_driver, outputted from vert_turb_driver
+     pbltop,               &   !s Used as an input to damping_driver, outputted from vert_turb_driver
+     ex_del_m, 		   &   !mp586 for 10m winds and 2m temp
+     ex_del_h,		   &   !mp586 for 10m winds and 2m temp
+     ex_del_q,		   &   !mp586 for 10m winds and 2m temp
+     temp_2m,		   &   !mp586 for 10m winds and 2m temp
+     u_10m,		   &   !mp586 for 10m winds and 2m temp
+     v_10m		       !mp586 for 10m winds and 2m temp
 
 real, allocatable, dimension(:,:,:) ::                                        &
      diff_m,               &   ! momentum diffusion coeff.
@@ -252,7 +258,10 @@ integer ::           &
      id_diss_heat_ray,&  ! Heat dissipated by rayleigh bottom drag if gp_surface=.True.
      id_z_tg,        &   ! Relative humidity
      id_cape,        &
-     id_cin
+     id_cin,	     & 	     
+     id_temp_2m,      & !mp586 for 10m winds and 2m temp
+     id_u_10m, 	     & !mp586 for 10m winds and 2m temp
+     id_v_10m	       !mp586 for 10m winds and 2m temp
 
 integer, allocatable, dimension(:,:) :: convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
@@ -434,6 +443,12 @@ allocate(dhdt_atm    (is:ie, js:je))
 allocate(dedq_atm    (is:ie, js:je))
 allocate(dtaudv_atm  (is:ie, js:je))
 allocate(dtaudu_atm  (is:ie, js:je))
+allocate(ex_del_m (is:ie, js:je))	!mp586 added for 10m wind and 2m temp
+allocate(ex_del_h (is:ie, js:je))	!mp586 added for 10m wind and 2m temp
+allocate(ex_del_q (is:ie, js:je))	!mp586 added for 10m wind and 2m temp
+allocate(temp_2m (is:ie, js:je))	!mp586 added for 10m wind and 2m temp
+allocate(u_10m (is:ie, js:je))		!mp586 added for 10m wind and 2m temp
+allocate(v_10m (is:ie, js:je))		!mp586 added for 10m wind and 2m temp
 allocate(land        (is:ie, js:je)); land = .false.
 allocate(land_ones   (is:ie, js:je)); land_ones = 0.0
 allocate(avail       (is:ie, js:je)); avail = .true.
@@ -609,6 +624,19 @@ if(bucket) then
   id_bucket_depth_lh = register_diag_field(mod_name, 'bucket_depth_lh',      &         ! RG Add bucket
        axes(1:2), Time, 'Tendency of bucket depth induced by LH', 'm/s')
 endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
+
+id_temp_2m = register_diag_field(mod_name, 'temp_2m',            &         !mp586 add 2m temp
+     axes(1:2), Time, 'Air temperature 2m above surface', 'K')
+id_u_10m = register_diag_field(mod_name, 'u_10m',                &         !mp586 add 10m wind (u)
+     axes(1:2), Time, 'Zonal wind 10m above surface', 'm/s')
+id_v_10m = register_diag_field(mod_name, 'v_10m',                &         !mp586 add 10m wind (v)
+     axes(1:2), Time, 'Meridional wind 10m above surface', 'm/s')
+
+!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 select case(r_conv_scheme)
 
@@ -916,6 +944,19 @@ if(.not.mixed_layer_bc) then
 !!$  t_surf = surface_temperature(tg(:,:,:,previous), p_full(:,:,:,current), p_half(:,:,:,current))
 end if
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
+
+!id_temp_2m = register_diag_field(mod_name, 'temp_2m',            &         ! mp586 add 2m temp
+!     axes(1:2), Time, 'Air temperature 2m above surface', 'K')
+!id_u_10m = register_diag_field(mod_name, 'u_10m',		 &	   ! mp586 add 10m wind (u)
+!     axes(1:2), Time, 'Zonal wind 10m above surface', 'm/s')
+!id_v_10m = register_diag_field(mod_name, 'v_10m',  	   	 &         ! mp586 add 10m wind (v)
+!     axes(1:2), Time, 'Meridional wind 10m above surface', 'm/s')
+
+!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 if(.not.gp_surface) then 
 call surface_flux(                                                          &
                   tg(:,:,num_levels,previous),                              &
@@ -961,11 +1002,29 @@ call surface_flux(                                                          &
                                 dedq_atm(:,:),                              & ! is intent(out)
                               dtaudu_atm(:,:),                              & ! is intent(out)
                               dtaudv_atm(:,:),                              & ! is intent(out)
-                                      delta_t,                              &
+			        ex_del_m(:,:),				    & ! mp586 for 10m winds and 2m temp
+			        ex_del_h(:,:),				    & ! mp586 for 10m winds and 2m temp
+			        ex_del_q(:,:),				    & ! mp586 for 10m winds and 2m temp
+			         temp_2m(:,:),				    & ! mp586 for 10m winds and 2m temp
+			           u_10m(:,:),				    & ! mp586 for 10m winds and 2m temp	
+			           v_10m(:,:),				    & ! mp586 for 10m winds and 2m temp
+                 	              delta_t,                              &
                                     land(:,:),                              &
                                .not.land(:,:),                              &
                                    avail(:,:)  )
 endif
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
+
+if(id_temp_2m > 0) used = send_data(id_temp_2m, temp_2m, Time)	! mp586 add 2m temp
+if(id_u_10m > 0) used = send_data(id_u_10m, u_10m, Time) 		! mp586 add 10m wind (u)
+if(id_v_10m > 0) used = send_data(id_v_10m, v_10m, Time)		! mp586 add 10m wind (v)
+
+
+!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! Now complete the radiation calculation by computing the upward and net fluxes.
 
@@ -1000,7 +1059,7 @@ if(gp_surface) then
     call compute_rayleigh_bottom_drag( 1,                     ie-is+1, &
                                        1,                     je-js+1, &
                                      Time,                    delta_t, &
-                   rad_lat(:,:),         dt_ug(:,:,:      ), &
+                   		     rad_lat(:,:),         dt_ug(:,:,:      ), &
                         dt_vg(:,:,:     ),                             &
                        ug(:,:,:,previous),         vg(:,:,:,previous), &
                      p_half(:,:,:,previous),     p_full(:,:,:,previous), &
