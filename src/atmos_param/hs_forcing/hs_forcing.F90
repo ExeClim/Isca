@@ -101,7 +101,7 @@ private
    real :: heat_capacity=4.2e6      ! equivalent to a 1m mixed layer water ocean
    real :: ml_depth=1               ! depth for heat capacity calculation
    real :: spinup_time=10800.     ! number of days to spin up heat capacity for - req. multiple of orbital_period
-   real :: equinox_day = 0.
+   real :: equinox_day = 0. !N.b. the definition of declination is different here to what's in astronomy.F90 (the astronomy.F90 version has a minus sign. So to get equivalent behaviour to two-stream-grey/rrtm/socrates, the equinox_day here ought to be different by 0.5. I.e. here it should be 0.25 to get Earth-like calendar, rather than 0.75 elsewhere.)
 
 
 !-----------------------------------------------------------------------
