@@ -201,7 +201,9 @@ real, allocatable, dimension(:,:)   ::                                        &
      ex_del_q,		   &   !mp586 for 10m winds and 2m temp
      temp_2m,		   &   !mp586 for 10m winds and 2m temp
      u_10m,		   &   !mp586 for 10m winds and 2m temp
-     v_10m		       !mp586 for 10m winds and 2m temp
+     v_10m,		   &   !mp586 for 10m winds and 2m temp
+     q_2m,                 &   ! Add 2m specific humidity
+     rh_2m                     ! Add 2m relative humidity
 
 real, allocatable, dimension(:,:,:) ::                                        &
      diff_m,               &   ! momentum diffusion coeff.
@@ -269,7 +271,9 @@ integer ::           &
      id_cin,	     & 	     
      id_temp_2m,      & !mp586 for 10m winds and 2m temp
      id_u_10m, 	     & !mp586 for 10m winds and 2m temp
-     id_v_10m	       !mp586 for 10m winds and 2m temp
+     id_v_10m,       & !mp586 for 10m winds and 2m temp
+     id_q_2m,        & ! Add 2m specific humidity
+     id_rh_2m          ! Add 2m relative humidity
 
 integer, allocatable, dimension(:,:) :: convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
@@ -451,12 +455,14 @@ allocate(dhdt_atm    (is:ie, js:je))
 allocate(dedq_atm    (is:ie, js:je))
 allocate(dtaudv_atm  (is:ie, js:je))
 allocate(dtaudu_atm  (is:ie, js:je))
-allocate(ex_del_m (is:ie, js:je))	!mp586 added for 10m wind and 2m temp
-allocate(ex_del_h (is:ie, js:je))	!mp586 added for 10m wind and 2m temp
-allocate(ex_del_q (is:ie, js:je))	!mp586 added for 10m wind and 2m temp
-allocate(temp_2m (is:ie, js:je))	!mp586 added for 10m wind and 2m temp
-allocate(u_10m (is:ie, js:je))		!mp586 added for 10m wind and 2m temp
-allocate(v_10m (is:ie, js:je))		!mp586 added for 10m wind and 2m temp
+allocate(ex_del_m    (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
+allocate(ex_del_h    (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
+allocate(ex_del_q    (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
+allocate(temp_2m     (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
+allocate(u_10m       (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
+allocate(v_10m       (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
+allocate(q_2m        (is:ie, js:je)) ! Add 2m specific humidity
+allocate(rh_2m       (is:ie, js:je)) ! Add 2m relative humidity
 allocate(land        (is:ie, js:je)); land = .false.
 allocate(land_ones   (is:ie, js:je)); land_ones = 0.0
 allocate(avail       (is:ie, js:je)); avail = .true.
@@ -646,6 +652,11 @@ id_v_10m = register_diag_field(mod_name, 'v_10m',                &         !mp58
 !!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+id_q_2m = register_diag_field(mod_name, 'sphum_2m',                  &
+     axes(1:2), Time, 'Specific humidity 2m above surface', 'kg/kg')       !Add 2m specific humidity
+id_rh_2m = register_diag_field(mod_name, 'rh_2m',                &
+     axes(1:2), Time, 'Relative humidity 2m above surface', 'percent')     !Add 2m relative humidity
+
 select case(r_conv_scheme)
 
 case(SIMPLE_BETTS_CONV)
@@ -772,7 +783,6 @@ real, dimension(:,:,:,:),   intent(inout) :: dt_tracers
 
 real :: delta_t
 real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
-
 
 real, intent(in) , dimension(:,:,:), optional :: mask
 integer, intent(in) , dimension(:,:),   optional :: kbot
@@ -1026,6 +1036,8 @@ call surface_flux(                                                          &
 			         temp_2m(:,:),				    & ! mp586 for 10m winds and 2m temp
 			           u_10m(:,:),				    & ! mp586 for 10m winds and 2m temp	
 			           v_10m(:,:),				    & ! mp586 for 10m winds and 2m temp
+                                    q_2m(:,:),                              & ! Add 2m specific humidity
+                                   rh_2m(:,:),                              & ! Add 2m relative humidity
                  	              delta_t,                              &
                                     land(:,:),                              &
                                .not.land(:,:),                              &
@@ -1043,6 +1055,9 @@ if(id_v_10m > 0) used = send_data(id_v_10m, v_10m, Time)		! mp586 add 10m wind (
 
 !!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+if(id_q_2m > 0) used = send_data(id_q_2m, q_2m, Time)           ! Add 2m specific humidity
+if(id_rh_2m > 0) used = send_data(id_rh_2m, rh_2m*1e2, Time)    ! Add 2m relative humidity
 
 ! Now complete the radiation calculation by computing the upward and net fluxes.
 
