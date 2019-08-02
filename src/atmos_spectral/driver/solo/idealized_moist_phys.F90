@@ -992,7 +992,7 @@ end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 if(.not.gp_surface) then 
-call surface_flux(                                                          &
+  call surface_flux(                                                        &
                   tg(:,:,num_levels,previous),                              &
  grid_tracers(:,:,num_levels,previous,nsphum),                              &
                   ug(:,:,num_levels,previous),                              &
@@ -1049,25 +1049,24 @@ call surface_flux(                                                          &
                                .not.land(:,:),                              &
                                    avail(:,:)  )
 
-if(id_flux_u > 0) used = send_data(id_flux_u, flux_u, Time)
-if(id_flux_v > 0) used = send_data(id_flux_v, flux_v, Time)
+  if(id_flux_u > 0) used = send_data(id_flux_u, flux_u, Time)
+  if(id_flux_v > 0) used = send_data(id_flux_v, flux_v, Time)
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
+
+  if(id_temp_2m > 0) used = send_data(id_temp_2m, temp_2m, Time)    ! mp586 add 2m temp
+  if(id_u_10m > 0) used = send_data(id_u_10m, u_10m, Time)          ! mp586 add 10m wind (u)
+  if(id_v_10m > 0) used = send_data(id_v_10m, v_10m, Time)          ! mp586 add 10m wind (v)
+
+
+  !!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  if(id_q_2m > 0) used = send_data(id_q_2m, q_2m, Time)           ! Add 2m specific humidity
+  if(id_rh_2m > 0) used = send_data(id_rh_2m, rh_2m*1e2, Time)    ! Add 2m relative humidity
 
 endif
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
-
-if(id_temp_2m > 0) used = send_data(id_temp_2m, temp_2m, Time)	! mp586 add 2m temp
-if(id_u_10m > 0) used = send_data(id_u_10m, u_10m, Time) 		! mp586 add 10m wind (u)
-if(id_v_10m > 0) used = send_data(id_v_10m, v_10m, Time)		! mp586 add 10m wind (v)
-
-
-!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-if(id_q_2m > 0) used = send_data(id_q_2m, q_2m, Time)           ! Add 2m specific humidity
-if(id_rh_2m > 0) used = send_data(id_rh_2m, rh_2m*1e2, Time)    ! Add 2m relative humidity
 
 ! Now complete the radiation calculation by computing the upward and net fluxes.
 
