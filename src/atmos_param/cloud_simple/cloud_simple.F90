@@ -298,7 +298,8 @@ module cloud_simple_mod
 
     conv_cf = 0.0
     if(do_conv_cld) then
-      call calc_convective_cf(temp, q_hum, rh_in_cf, precip, conv_cf, p_full, wg_full, Time)
+      !call calc_convective_cf(temp, q_hum, rh_in_cf, precip, conv_cf, p_full, Time)
+      call calc_convective_cf2(temp, q_hum, rh_in_cf, precip, conv_cf, p_full, Time)
     end if
 
     ! rh_e is the effective RH
@@ -325,7 +326,6 @@ module cloud_simple_mod
 
   end subroutine cloud_simple
 
-
   subroutine add_stratiform_cld(temp, p_full, p_half, z_full, rh_in_cf, q_hum, temp_2m, wg_full, cf, Time)
     real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, rh_in_cf, wg_full
     type(time_type),   intent(in)       :: Time
@@ -342,7 +342,7 @@ module cloud_simple_mod
     character(len=32) :: tmp_str = ''
     integer :: i, j, k, k700, kb, k_surf
 
-    call calc_theta_dthdp(temp, p_full, p_half, theta, dthdp, kdthdp)
+    call calc_theta_dthdp(temp, temp_2m, p_full, p_half, theta, dthdp, kdthdp)
 
     k_surf = size(temp, 3)
 
@@ -367,82 +367,64 @@ module cloud_simple_mod
                               qs_inv_minus(i,j), es_inv_minus(i,j), pinv(i,j), &
                               Gamma700(i,j), Gamma_DL(i,j))
         end if
-        do k=1, size(temp, 3)
-          if(kdthdp(i,j).ne.0 .and. k.eq.kdthdp(i,j) .and. wg_full(i,j,k)>0) then
-            if (k<k_surf) then
-              kb = k+1
-            else
-              kb = k
-            end if
-            if(uppercase(trim(sc_diag_method)) == 'CAM') then
-              strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
-              cf(i,j,k) = max(strat, cf(i,j,k))
-            end if
-            if(uppercase(trim(sc_diag_method)) == 'SLINGO') then
-              strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
-              rhb_frac = min(1.0, max(0.0, (rh_in_cf(i,j,kb) - 0.6) / 0.2))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-            end if
-            if(uppercase(trim(sc_diag_method)) == 'SLINGO_NO_RH') then
-              strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
-            if(uppercase(trim(sc_diag_method)) == 'DTHDP') then
-              strat = min(1.0, max(0.0, -3.1196*dthdp(i,j,k) - 0.1246))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
-            if(uppercase(trim(sc_diag_method)) == 'EIS_WOOD') then
-              !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
-              strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
-            if(uppercase(trim(sc_diag_method)) == 'EIS_WOOD_DTHDP') then
-              !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
-              strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
-              if(dthdp(i,j,k) < dthdp_min) then
-                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-              end if
-            end if
-            if(uppercase(trim(sc_diag_method)) == 'EIS_WOOD_RH') then
-              strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh_in_cf(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
-              rhb_frac = min(1.0, max(0.0, (rh_in_cf(i,j,kb)-0.6) / 0.2))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-              !cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
-            if(uppercase(trim(sc_diag_method)) == 'EIS_WOOD_RH_BASE_GT_VAL') then
-              if (rh_in_cf(i,j,kb) > 0.8) then
-                  strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
-                  cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-              end if
-            end if
 
-            if(uppercase(trim(sc_diag_method)) == 'EIS_RH') then
-              !if (eis(i,j)>0.0) then
-              strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh_in_cf(i,j,k)-6.45e-19)))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
-            if(uppercase(trim(sc_diag_method)) == 'ECTEI') then
-              ! Kawai, Koshiro and Webb, 2017
-              strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
-            if(uppercase(trim(sc_diag_method)) == 'ECTEI_RH') then
-              ! Kawai, Koshiro and Webb, 2017
-              strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
-              rhb_frac = min(1.0, max(0.0, (rh_in_cf(i,j,kb)-0.6) / 0.2))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-            end if
-            if(uppercase(trim(sc_diag_method)) == 'PARK_ELF') then
-              ! Park and Shin, 2019, ACP
-              strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
+        k = kdthdp(i,j)
+        if(k.ne.0 .and. wg_full(i,j,k)>0) then
+          kb = min(k+1, k_surf)
+
+          if(uppercase(trim(sc_diag_method)) == 'CAM') then
+            strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
+            cf(i,j,k) = max(strat, cf(i,j,k))
           end if
-          low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
-        end do
+          if(uppercase(trim(sc_diag_method)) == 'SLINGO') then
+            strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
+            rhb_frac = min(1.0, max(0.0, (rh_in_cf(i,j,kb) - 0.6) / 0.2))
+            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+          end if
+          if(uppercase(trim(sc_diag_method)) == 'SLINGO_NO_RH') then
+            strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
+            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+          end if
+          if(uppercase(trim(sc_diag_method)) == 'DTHDP') then
+            strat = min(1.0, max(0.0, -3.1196*dthdp(i,j,k) - 0.1246))
+            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+          end if
+          if(uppercase(trim(sc_diag_method)) == 'EIS_WOOD') then
+            !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
+            strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
+            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+          end if
+          if(uppercase(trim(sc_diag_method)) == 'EIS_WOOD_RH') then
+            strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh_in_cf(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
+            rhb_frac = min(1.0, max(0.0, (rh_in_cf(i,j,kb)-0.6) / 0.2))
+            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+            !cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+          end if
+          if(uppercase(trim(sc_diag_method)) == 'EIS_RH') then
+            !if (eis(i,j)>0.0) then
+            strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh_in_cf(i,j,k)-6.45e-19)))
+            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+          end if
+          if(uppercase(trim(sc_diag_method)) == 'ECTEI') then
+            ! Kawai, Koshiro and Webb, 2017
+            strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
+            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+          end if
+          if(uppercase(trim(sc_diag_method)) == 'ECTEI_RH') then
+            ! Kawai, Koshiro and Webb, 2017
+            strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
+            rhb_frac = min(1.0, max(0.0, (rh_in_cf(i,j,kb)-0.6) / 0.2))
+            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+          end if
+          if(uppercase(trim(sc_diag_method)) == 'PARK_ELF') then
+            ! Park and Shin, 2019, ACP
+            strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+          end if
+        end if
+        low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
       end do
     end do
-
 
     if(intermediate_outputs_diags) then
       !Add some diagnostic ouputs
@@ -454,32 +436,33 @@ module cloud_simple_mod
   end subroutine add_stratiform_cld
 
 
-  subroutine calc_theta_dthdp(temp, pfull, phalf, theta, dthdp, kdthdp)
-    real,    intent(in),  dimension(:,:,:)  :: temp, pfull, phalf
-    real,    intent(out), dimension(:,:,:)  :: theta, dthdp
-    integer, intent(out), dimension(:,:)    :: kdthdp
+  subroutine calc_theta_dthdp(temp, temp_2m, pfull, phalf, theta, dthdp, kdthdp)
+    real,    intent(in),  dimension(:,:,:) :: temp, pfull, phalf
+    real,    intent(in),  dimension(:,:)   :: temp_2m
+    real,    intent(out), dimension(:,:,:) :: theta, dthdp
+    integer, intent(out), dimension(:,:)   :: kdthdp
     !integer, intent(out) :: k700
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: p0
-    real, dimension(size(temp,1), size(temp,2)) :: dthdpmn
+    real, dimension(size(temp,1), size(temp,2)) :: dthdp_min
     real :: premib
-    integer :: i, j, k
+    integer :: i, j, k, kb
     !real, dimension(size(temp,3)) :: pfull_mean
 
     p0 = 1.0e5
-    dthdpmn = -0.125
+    dthdp_min = -0.125  ! d_theta / d_p, lapse rate
     kdthdp = 0
     premib = 7.0e4
     dthdp = 0.0
+    kb = size(temp,3)
 
     theta = temp * (p0 / pfull)**(RDGAS / CP_AIR)
     do i=1, size(temp,1)
       do j=1, size(temp,2)
-        do k=2, size(temp,3)
-          dthdp(i,j,k) = (theta(i,j,k) - theta(i,j,k-1)) / (phalf(i,j,k) - phalf(i,j,k-1)) * 1.0e2
+        do k=1, size(temp,3)-1
+          dthdp(i,j,k) = (theta(i,j,k) - theta(i,j,k+1)) / (phalf(i,j,k) - phalf(i,j,k+1)) * 1.0e2
           if (phalf(i,j,k) >= premib) then
-            !dthdp(i,j,k) = (theta(i,j,k) - theta(i,j,k-1)) / (phalf(i,j,k) - phalf(i,j,k-1)) * 1.0e2
-            if (dthdp(i,j,k) < dthdpmn(i,j)) then
-              dthdpmn(i,j) = dthdp(i,j,k)
+            if (dthdp(i,j,k) < dthdp_min(i,j)) then
+              dthdp_min(i,j) = dthdp(i,j,k)
               kdthdp(i,j) = k     ! index of interface of max inversion
             end if
           end if
@@ -487,18 +470,16 @@ module cloud_simple_mod
 
         ! Also check between the bottom layer and the surface
         ! Only perform this check if the criteria were not met above
-        !if ( kdthdp(i,j) .eq. 0) then
-        !  !dthdp = 100.0_r8 * (thetas(i) - theta(i,pver)) / (ps(i)-pmid(i,pver))
-        !  dthdp(i,j,1) = (theta(i,j,k) - theta(i,j,1)) / (phalf(i,j,k) - phalf(i,j,k-1)) * 1.0e2
-        !  if (dthdp < dthdpmn(i)) then
-        !     dthdpmn(i) = dthdp
-        !     kdthdp(i) = pver     ! index of interface of max inversion
-        !  endif
-        !endif
+        if(kdthdp(i,j) .eq. 0) then
+          dthdp(i,j,kb) = (theta(i,j,kb)-temp_2m(i,j)) / (phalf(i,j,kb)-1e5) * 1.0e2
+          if (dthdp(i,j,kb) < dthdp_min(i,j)) then
+             dthdp_min(i,j) = dthdp(i,j,kb)
+             kdthdp(i,j) = kb     ! index of interface of max inversion
+          endif
+        endif
       end do
     end do
-    !pfull_mean = sum(sum(pfull,1), 1) / (size(pfull,1)*size(pfull,2))
-    !k700 = minloc(abs(pfull_mean - 7.0e4), 1)
+
   end subroutine calc_theta_dthdp
 
 
@@ -524,6 +505,7 @@ module cloud_simple_mod
     real, intent(out), dimension(:,:,:) :: reff_rad
 
     reff_rad =  10.0 * frac_liq + 20.0 * (1.0 - frac_liq)  !units in microns
+    !reff_rad =  10.0 * frac_liq + 30.0 * (1.0 - frac_liq)  !units in microns
 
   end subroutine calc_reff
 
@@ -652,6 +634,9 @@ module cloud_simple_mod
     if (do_qcl_with_temp) then
       in_cloud_qcl = 0.2 * (temp-220.0) / (280.0-220.0)
       in_cloud_qcl = MAX(3.0e-4, MIN(0.2, in_cloud_qcl)) / 1.0e3 ! convert to kg/kg
+
+      !in_cloud_qcl = 0.15 * (temp-220.0) / (280.0-220.0)
+      !in_cloud_qcl = MAX(3.0e-4, MIN(0.15, in_cloud_qcl)) / 1.0e3 ! convert to kg/kg
     else
       ! in_cloud_qcl as a function of height
       in_cloud_qcl = 3.0e-4 + (1.0-3.0e-4) * (p_full-2.0e4) / 8.0e4
@@ -661,8 +646,8 @@ module cloud_simple_mod
     qcl_rad = cf * in_cloud_qcl
   end subroutine calc_qcl_rad
 
-  subroutine calc_convective_cf(temp, q_hum, rh_in_cf, precip, conv_cf, pfull, wg_full, Time)
-    real, intent(in),  dimension(:,:,:) :: temp, q_hum, rh_in_cf, pfull, wg_full
+  subroutine calc_convective_cf(temp, q_hum, rh_in_cf, precip, conv_cf, pfull, Time)
+    real, intent(in),  dimension(:,:,:) :: temp, q_hum, rh_in_cf, pfull
     real, intent(in),  dimension(:,:)   :: precip
     type(time_type),   intent(in)       :: Time
     real, intent(out), dimension(:,:,:) :: conv_cf
@@ -674,7 +659,7 @@ module cloud_simple_mod
 
     precip_mm_per_day = precip * 24.0 * 3600.0  ! change units to mm/day
 
-    a = -0.125 * log(0.14)
+    a = -0.125 * log(0.14)  !0.246
     b = 0.125
     tower_scale_coeff = 0.25
 
@@ -696,10 +681,10 @@ module cloud_simple_mod
 
     where (pfull < pshallow)
       conv_cf = conv_cf * tower_scale_coeff
-    elsewhere
-      conv_cf = conv_cf * tower_scale_coeff * 2
+    !elsewhere
+    !  conv_cf = conv_cf
     end where
-    !conv_cf = conv_cf * tower_scale_coeff
+    !!!!!!conv_cf = conv_cf * tower_scale_coeff
 
     ! Output the diagnostics
     if (id_conv_cf > 0) then
@@ -707,6 +692,52 @@ module cloud_simple_mod
     endif
 
   end subroutine calc_convective_cf
+
+
+  subroutine calc_convective_cf2(temp, q_hum, rh_in_cf, precip, conv_cf, pfull, Time)
+    real, intent(in),  dimension(:,:,:) :: temp, q_hum, rh_in_cf, pfull
+    real, intent(in),  dimension(:,:)   :: precip
+    type(time_type),   intent(in)       :: Time
+    real, intent(out), dimension(:,:,:) :: conv_cf
+    real, dimension(size(pfull,1), size(pfull,2)) :: precip_mm_per_day, plcl2d, conv_cf_tmp
+    real    :: convcld_a, convcld_b, used !tower_scale_coeff,
+    integer :: i, j, k, klcl, ktop, nlayers
+
+    call calc_plcl2d(pfull, temp, q_hum, rh_in_cf, plcl2d)
+
+    precip_mm_per_day = precip * 24.0 * 3600.0  ! change units to mm/day
+
+    convcld_a = -0.125 * log(0.14)  !0.246,  0.001 !
+    convcld_b =  0.125 !0.0418 !
+    !tower_scale_coeff = 0.25
+
+    conv_cf = 0.0
+    conv_cf_tmp = convcld_a + convcld_b * log(1.0+precip_mm_per_day)
+
+    ktop = 3
+    do i=1, size(temp,1)
+      do j=1, size(temp,2)
+        klcl = minloc(abs(pfull(i,j,:) - plcl2d(i,j)), 1)
+        nlayers = klcl - ktop + 1
+        !write(*,*) 'klcl, nlay', plcl2d(i,j), klcl, nlayers,  conv_cf_tmp(i,j)
+        conv_cf(i,j,ktop:klcl) = 1.0 - (1.0 - conv_cf_tmp(i,j))**(1.0 / nlayers)
+        !write(*,*) 'conv k',  conv_cf(i,j,ktop:klcl)
+      end do
+    end do
+
+    !where (pfull < pshallow)
+    !  conv_cf = conv_cf * tower_scale_coeff
+    !!elsewhere
+    !!  conv_cf = conv_cf
+    !end where
+
+    ! Output the diagnostics
+    if (id_conv_cf > 0) then
+      used = send_data(id_conv_cf, conv_cf, Time)
+    endif
+
+  end subroutine calc_convective_cf2
+
 
   subroutine calc_plcl2d(pfull, temp, q_hum, rh, plcl2d)
     real, intent(in),  dimension(:,:,:) :: temp, rh, pfull, q_hum
