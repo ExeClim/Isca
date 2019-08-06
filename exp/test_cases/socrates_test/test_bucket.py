@@ -71,33 +71,33 @@ diag.add_field('cloud_simple', 'high_cld_amt', time_avg=True)
 diag.add_field('cloud_simple', 'mid_cld_amt', time_avg=True)
 diag.add_field('cloud_simple', 'low_cld_amt', time_avg=True)
 diag.add_field('cloud_simple', 'low_cld_amt_park', time_avg=True)
-diag.add_field('cloud_simple', 'eis', time_avg=True)
-diag.add_field('cloud_simple', 'ectei', time_avg=True)
-diag.add_field('cloud_simple', 'lts', time_avg=True)
-diag.add_field('cloud_simple', 'zlcl', time_avg=True)
-diag.add_field('cloud_simple', 'z700', time_avg=True)
-##diag.add_field('cloud_simple', 'gamma850', time_avg=True)
-#diag.add_field('cloud_simple', 'gamma700', time_avg=True)
-#diag.add_field('cloud_simple', 'gamma_DL', time_avg=True)
-diag.add_field('cloud_simple', 'theta', time_avg=True)
-diag.add_field('cloud_simple', 'dthdp', time_avg=True)
-#diag.add_field('cloud_simple', 'theta0', time_avg=True)
-#diag.add_field('cloud_simple', 'theta700', time_avg=True)
-diag.add_field('cloud_simple', 'ELF', time_avg=True)
-diag.add_field('cloud_simple', 'beta1', time_avg=True)
-diag.add_field('cloud_simple', 'beta2', time_avg=True)
-diag.add_field('cloud_simple', 'zinv', time_avg=True)
-diag.add_field('cloud_simple', 'alpha', time_avg=True)
-#diag.add_field('cloud_simple', 'DS', time_avg=True)
-#diag.add_field('cloud_simple', 'IS', time_avg=True)
-#diag.add_field('cloud_simple', 'RH_inv_minus', time_avg=True)
-#diag.add_field('cloud_simple', 'qv_inv_minus', time_avg=True)
-#diag.add_field('cloud_simple', 'qv_inv_plus', time_avg=True)
-#diag.add_field('cloud_simple', 'qs_inv_minus', time_avg=True)
-#diag.add_field('cloud_simple', 'es_inv_minus', time_avg=True)
-#diag.add_field('cloud_simple', 'temp_inv_minus', time_avg=True)
-#diag.add_field('cloud_simple', 'pinv', time_avg=True)
-diag.add_field('cloud_simple', 'conv_cf', time_avg=True)
+#  diag.add_field('cloud_simple', 'eis', time_avg=True)
+#  diag.add_field('cloud_simple', 'ectei', time_avg=True)
+#  diag.add_field('cloud_simple', 'lts', time_avg=True)
+#  diag.add_field('cloud_simple', 'zlcl', time_avg=True)
+#  diag.add_field('cloud_simple', 'z700', time_avg=True)
+#  ##diag.add_field('cloud_simple', 'gamma850', time_avg=True)
+#  #diag.add_field('cloud_simple', 'gamma700', time_avg=True)
+#  #diag.add_field('cloud_simple', 'gamma_DL', time_avg=True)
+#  diag.add_field('cloud_simple', 'theta', time_avg=True)
+#  diag.add_field('cloud_simple', 'dthdp', time_avg=True)
+#  #diag.add_field('cloud_simple', 'theta0', time_avg=True)
+#  #diag.add_field('cloud_simple', 'theta700', time_avg=True)
+#  diag.add_field('cloud_simple', 'ELF', time_avg=True)
+#  diag.add_field('cloud_simple', 'beta1', time_avg=True)
+#  diag.add_field('cloud_simple', 'beta2', time_avg=True)
+#  diag.add_field('cloud_simple', 'zinv', time_avg=True)
+#  diag.add_field('cloud_simple', 'alpha', time_avg=True)
+#  #diag.add_field('cloud_simple', 'DS', time_avg=True)
+#  #diag.add_field('cloud_simple', 'IS', time_avg=True)
+#  #diag.add_field('cloud_simple', 'RH_inv_minus', time_avg=True)
+#  #diag.add_field('cloud_simple', 'qv_inv_minus', time_avg=True)
+#  #diag.add_field('cloud_simple', 'qv_inv_plus', time_avg=True)
+#  #diag.add_field('cloud_simple', 'qs_inv_minus', time_avg=True)
+#  #diag.add_field('cloud_simple', 'es_inv_minus', time_avg=True)
+#  #diag.add_field('cloud_simple', 'temp_inv_minus', time_avg=True)
+#  #diag.add_field('cloud_simple', 'pinv', time_avg=True)
+#  diag.add_field('cloud_simple', 'conv_cf', time_avg=True)
 
 diag.add_field('mixed_layer', 'albedo', time_avg=True)
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True)    # latent heat flux (up) at surface
@@ -118,7 +118,10 @@ sc_diag_names = ['Park_ELF']
 for sc_diag_name in sc_diag_names:
     print(sc_diag_name)
     #exp = Experiment('soc_test_amip_new_linear_add_conv_cf_rhe_lcl_tower_2', codebase=cb)
-    exp = Experiment('soc_test_bucket_evap_0.6_nml', codebase=cb)
+    #exp = Experiment('soc_test_bucket_conv_new_coeff', codebase=cb)
+    #exp = Experiment('soc_test_bucket_no_conv_ice_radius_30', codebase=cb)
+    #exp = Experiment('soc_test_bucket_conv_ice_radius_30', codebase=cb)
+    exp = Experiment('soc_test_linear_bucket', codebase=cb)
     exp.clear_rundir()
 
     exp.diag_table = diag
@@ -179,13 +182,13 @@ for sc_diag_name in sc_diag_names:
             #'do_simple_rhcrit': True,
             'do_qcl_with_temp': True,
             'do_cloud_amount_diags': True,
-            'do_add_stratocumulus': True,
-            'sc_diag_method': sc_diag_name,
-            'intermediate_outputs_diags': True,
+            'do_add_stratocumulus': False, # True,
+            #'sc_diag_method': sc_diag_name,
+            #'intermediate_outputs_diags': True,
             #'do_read_ts': True,
-            'do_conv_cld': True,
-            'pshallow': 7.5e4,
-            'cf_min': 1e-4,
+            #'do_conv_cld': True,
+            #'pshallow': 7.5e4,
+            #'cf_min': 1e-5,
         },
 
         'vert_turb_driver_nml': {
@@ -207,8 +210,8 @@ for sc_diag_name in sc_diag_names:
             'old_dtaudv': True,
             #'land_humidity_prefactor': 0.6,
             #'land_evap_prefactor': 1,
-            #'land_humidity_prefactor': 1,
-            #'land_evap_prefactor': 0.6,
+            'land_humidity_prefactor': 1,
+            'land_evap_prefactor': 0.6,
         },
 
         'atmosphere_nml': {
@@ -298,12 +301,12 @@ for sc_diag_name in sc_diag_names:
     if __name__=="__main__":
         print(exp.namelist)
         cb.compile(debug=False)
-        '''
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
-        for i in range(2, 3):
+        for i in range(2, 25):
             exp.run(i, num_cores=NCORES, overwrite_data=False)
         '''
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
         for i in range(2, 25):
             exp.run(i, num_cores=NCORES, overwrite_data=True)
+        '''
 

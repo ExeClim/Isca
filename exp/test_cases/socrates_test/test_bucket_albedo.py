@@ -3,7 +3,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 16 
+NCORES = 16
 NUM_LEVELS = 25
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
@@ -28,6 +28,12 @@ diag.add_field('atmosphere', 'v_10m', time_avg=True)
 diag.add_field('atmosphere', 'convection_rain', time_avg=True)
 diag.add_field('atmosphere', 'condensation_rain', time_avg=True)
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
+
+diag.add_field('atmosphere', 'bucket_depth', time_avg=True)
+diag.add_field('atmosphere', 'bucket_depth_cond', time_avg=True)
+diag.add_field('atmosphere', 'bucket_depth_conv', time_avg=True)
+diag.add_field('atmosphere', 'bucket_depth_lh', time_avg=True)
+
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
@@ -94,6 +100,8 @@ diag.add_field('cloud_simple', 'alpha', time_avg=True)
 diag.add_field('cloud_simple', 'conv_cf', time_avg=True)
 
 diag.add_field('mixed_layer', 'albedo', time_avg=True)
+diag.add_field('mixed_layer', 'flux_lhe', time_avg=True)    # latent heat flux (up) at surface
+diag.add_field('mixed_layer', 'flux_t', time_avg=True)      # sensible heat flux (up) at surface
 # additional output options commented out
 diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
@@ -110,7 +118,10 @@ sc_diag_names = ['Park_ELF']
 for sc_diag_name in sc_diag_names:
     print(sc_diag_name)
     #exp = Experiment('soc_test_amip_new_linear_add_conv_cf_rhe_lcl_tower_2', codebase=cb)
-    exp = Experiment('soc_test_rewrite_no_conv_evap_0.6', codebase=cb)
+    #exp = Experiment('soc_test_bucket_conv_new_coeff', codebase=cb)
+    #exp = Experiment('soc_test_bucket_no_conv_ice_radius_30', codebase=cb)
+    #exp = Experiment('soc_test_bucket_conv_ice_radius_30', codebase=cb)
+    exp = Experiment('soc_test_bucket_conv_albedo_0.12', codebase=cb)
     exp.clear_rundir()
 
     exp.diag_table = diag
@@ -161,21 +172,22 @@ for sc_diag_name in sc_diag_names:
             'roughness_mom': 2.e-04, #Ocean roughness lengths  
             'roughness_heat': 2.e-04, #Ocean roughness lengths  
             'roughness_moist': 2.e-04, #Ocean roughness lengths  
+            'bucket':True, #Run with the bucket model
+            'init_bucket_depth_land':0.15, 
         },
 
         'cloud_simple_nml': {
             'cf_diag_formula_name': 'linear',
-            #'do_simple_rhcrit': False,
             'do_read_scm_rhcrit': False,
+            #'do_simple_rhcrit': True,
             'do_qcl_with_temp': True,
             'do_cloud_amount_diags': True,
             'do_add_stratocumulus': True,
             'sc_diag_method': sc_diag_name,
             'intermediate_outputs_diags': True,
             #'do_read_ts': True,
-            #'do_conv_cld': True,
-            'do_conv_cld': False,
-            'pshallow': 7.5e4,
+            'do_conv_cld': True,
+            #'pshallow': 7.5e4,
             'cf_min': 1e-5,
         },
 
@@ -196,10 +208,10 @@ for sc_diag_name in sc_diag_names:
             'use_virtual_temp': False,
             'do_simple': True,
             'old_dtaudv': True,
+            #'land_humidity_prefactor': 0.6,
+            #'land_evap_prefactor': 1,
             'land_humidity_prefactor': 1,
-            'land_evap_prefactor': 1,
-            #'land_humidity_prefactor': 1,
-            #'land_evap_prefactor': 0.6,
+            'land_evap_prefactor': 0.6,
         },
 
         'atmosphere_nml': {
@@ -214,7 +226,7 @@ for sc_diag_name in sc_diag_names:
             'depth': 20.0,                          # Depth of mixed layer used
             'land_option': 'input',                 # Tell mixed layer to get land mask from input file
             'land_h_capacity_prefactor': 0.1,       # What factor to multiply mixed-layer depth by over land.
-            'albedo_value': 0.2,                    # Ocean albedo value
+            'albedo_value': 0.12,                    # Ocean albedo value
             'land_albedo_prefactor': 1.3,           # What factor to multiply ocean albedo by over land
             'do_qflux': False,                      # Don't use the prescribed analytical formula for q-fluxes
             'do_read_sst': True,                    # Read in sst values from input file
@@ -289,13 +301,12 @@ for sc_diag_name in sc_diag_names:
     if __name__=="__main__":
         print(exp.namelist)
         cb.compile(debug=False)
-        '''
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)#, run_idb=True)
-        for i in range(2, 3):
+        for i in range(2, 25):
             exp.run(i, num_cores=NCORES, overwrite_data=False)
         '''
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
         for i in range(2, 25):
             exp.run(i, num_cores=NCORES, overwrite_data=True)
-
+        '''
 
