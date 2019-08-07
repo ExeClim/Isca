@@ -317,7 +317,7 @@ contains
 
       num   = size(grid,2)    ! number of transforms
 #ifdef FFTW3
-      ! print *, 'fft_grid_to_fourier_float_2d'
+      call grid_to_fourier_fftw(num, leng1, lenc, grid, fourier)
 #else
 #ifdef SGICRAY
 !  Cray/SGI fft
@@ -438,8 +438,7 @@ contains
 !-----------------------------------------------------------------------
 !----------------inverse transform to real space (-1)-------------------
 #ifdef FFTW3
-      ! print *, 'fft_fourier_to_grid_float_2d fftw3'
-
+      call fourier_to_grid_fftw(num, leng+1, lenc, fourier, grid)
 #else
 #ifdef SGICRAY
 !  Cray/SGI fft

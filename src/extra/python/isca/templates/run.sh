@@ -23,7 +23,7 @@ else
   if [[ -z "${EXECUTION_TYPE}" ]] || [ "${EXECUTION_TYPE^^}" = "MPIRUN" ]; then
     exec nice -{{nice_score}} mpirun {{mpirun_opts}} -n {{ num_cores }} {{ execdir }}/{{ executable }}
   elif [ "${EXECUTION_TYPE^^}" = "APRUN" ]; then
-    exec nice -{{nice_score}} aprun {{mpirun_opts}} -n {{ num_cores }} {{ execdir }}/{{ executable }}
+    exec nice -{{nice_score}} aprun {{mpirun_opts}} -n {{ num_cores }} {{ execdir }}/{{ executable }} 
   fi
 fi
 
