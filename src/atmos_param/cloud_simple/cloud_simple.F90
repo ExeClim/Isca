@@ -272,10 +272,10 @@ module cloud_simple_mod
 
 
   subroutine cloud_simple(p_half, p_full, Time, temp, q_hum, z_full, &
-                          wg_full, temp_2m, precip, &
+                          wg_full, psg, temp_2m, precip, &
                           cf, reff_rad, qcl_rad)  ! outs
     real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, wg_full
-    real, intent(in),  dimension(:,:)   :: temp_2m, precip
+    real, intent(in),  dimension(:,:)   :: psg, temp_2m, precip
     type(time_type),   intent(in)       :: Time
     real, intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: qs, frac_liq, rh_in_cf, &
@@ -298,18 +298,18 @@ module cloud_simple_mod
 
     conv_cf = 0.0
     if(do_conv_cld) then
-      !call calc_convective_cf(temp, q_hum, rh_in_cf, precip, conv_cf, p_full, Time)
-      call calc_convective_cf2(temp, q_hum, rh_in_cf, precip, conv_cf, p_full, Time)
+      call calc_convective_cf(temp, q_hum, rh_in_cf, precip, conv_cf, p_full, Time)
+      !call calc_convective_cf2(temp, q_hum, rh_in_cf, precip, conv_cf, p_full, Time)
     end if
 
     ! rh_e is the effective RH
     rh_e = rh_in_cf * (1.0 - conv_cf)
     !call calc_stratiform_cf(p_full, rh_in_cf, q_hum, qs, rhcrit, qcl_rad, cf)
-    call calc_stratiform_cf(p_full, rh_e, q_hum, qs, rhcrit, qcl_rad, cf)
+    call calc_stratiform_cf(p_full, psg, rh_e, q_hum, qs, rhcrit, qcl_rad, cf)
 
     if (do_add_stratocumulus) then
       !call add_stratiform_cld(temp, p_full, p_half, z_full, rh_in_cf, q_hum, temp_2m, wg_full, cf, Time)
-      call add_stratiform_cld(temp, p_full, p_half, z_full, rh_e, q_hum, temp_2m, wg_full, cf, Time)
+      call add_stratiform_cld(temp, p_full, p_half, z_full, rh_e, q_hum, temp_2m, psg, wg_full, cf, Time)
     end if
 
     if(do_conv_cld) then
@@ -326,10 +326,10 @@ module cloud_simple_mod
 
   end subroutine cloud_simple
 
-  subroutine add_stratiform_cld(temp, p_full, p_half, z_full, rh_in_cf, q_hum, temp_2m, wg_full, cf, Time)
+  subroutine add_stratiform_cld(temp, p_full, p_half, z_full, rh_in_cf, q_hum, temp_2m, psg, wg_full, cf, Time)
     real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, rh_in_cf, wg_full
     type(time_type),   intent(in)       :: Time
-    real, intent(in),  dimension(:,:)   :: temp_2m
+    real, intent(in),  dimension(:,:)   :: temp_2m, psg
     real, intent(out), dimension(:,:,:) :: cf
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: theta, dthdp
     integer, dimension(size(temp,1), size(temp,2)) :: kdthdp
@@ -340,9 +340,9 @@ module cloud_simple_mod
     real, dimension(size(temp,3)) :: rin
     real :: strat, rhb_frac
     character(len=32) :: tmp_str = ''
-    integer :: i, j, k, k700, kb, k_surf
+    integer :: i, j, k, k700, kb, k_surf, kk
 
-    call calc_theta_dthdp(temp, temp_2m, p_full, p_half, theta, dthdp, kdthdp)
+    call calc_theta_dthdp(temp, temp_2m, p_full, p_half, psg, theta, dthdp, kdthdp)
 
     k_surf = size(temp, 3)
 
@@ -369,6 +369,7 @@ module cloud_simple_mod
         end if
 
         k = kdthdp(i,j)
+        !write(*,*) 'QL test:i,j,kcld:',i,j,kdthdp(i,j), dthdp(i,j,k)
         if(k.ne.0 .and. wg_full(i,j,k)>0) then
           kb = min(k+1, k_surf)
 
@@ -420,6 +421,7 @@ module cloud_simple_mod
             ! Park and Shin, 2019, ACP
             strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
             cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+            !cf(i,j,k) = min(1.0, max(0.0, strat))
           end if
         end if
         low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
@@ -435,27 +437,25 @@ module cloud_simple_mod
     end if
   end subroutine add_stratiform_cld
 
-
-  subroutine calc_theta_dthdp(temp, temp_2m, pfull, phalf, theta, dthdp, kdthdp)
+  subroutine calc_theta_dthdp(temp, temp_2m, pfull, phalf, ps, theta, dthdp, kdthdp)
     real,    intent(in),  dimension(:,:,:) :: temp, pfull, phalf
-    real,    intent(in),  dimension(:,:)   :: temp_2m
+    real,    intent(in),  dimension(:,:)   :: temp_2m, ps
     real,    intent(out), dimension(:,:,:) :: theta, dthdp
     integer, intent(out), dimension(:,:)   :: kdthdp
-    !integer, intent(out) :: k700
-    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: p0
     real, dimension(size(temp,1), size(temp,2)) :: dthdp_min
     real :: premib
     integer :: i, j, k, kb
-    !real, dimension(size(temp,3)) :: pfull_mean
 
-    p0 = 1.0e5
     dthdp_min = -0.125  ! d_theta / d_p, lapse rate
     kdthdp = 0
     premib = 7.0e4
     dthdp = 0.0
     kb = size(temp,3)
 
-    theta = temp * (p0 / pfull)**(RDGAS / CP_AIR)
+    do k=1,size(temp,3)
+      theta(:,:,k) =  temp(:,:,k) * (ps / pfull(:,:,k))**(RDGAS / CP_AIR)
+    end do
+
     do i=1, size(temp,1)
       do j=1, size(temp,2)
         do k=1, size(temp,3)-1
@@ -471,7 +471,8 @@ module cloud_simple_mod
         ! Also check between the bottom layer and the surface
         ! Only perform this check if the criteria were not met above
         if(kdthdp(i,j) .eq. 0) then
-          dthdp(i,j,kb) = (theta(i,j,kb)-temp_2m(i,j)) / (phalf(i,j,kb)-1e5) * 1.0e2
+          !dthdp(i,j,kb) = (theta(i,j,kb)-temp_2m(i,j)) / (phalf(i,j,kb)-1e5) * 1.0e2
+          dthdp(i,j,kb) = (theta(i,j,kb)-temp_2m(i,j)) / (phalf(i,j,kb)-ps(i,j)) * 1.0e2
           if (dthdp(i,j,kb) < dthdp_min(i,j)) then
              dthdp_min(i,j) = dthdp(i,j,kb)
              kdthdp(i,j) = kb     ! index of interface of max inversion
@@ -552,9 +553,10 @@ module cloud_simple_mod
 
   end subroutine calc_rhcrit
 
-  subroutine calc_stratiform_cf(pfull, rh, q_hum, qsat, rhcrit, qcl_rad, cf)
+  subroutine calc_stratiform_cf(pfull, ps, rh, q_hum, qsat, rhcrit, qcl_rad, cf)
     ! Calculate LS (stratiform) cloud fraction as a simple linear function of RH
     real, intent(in),  dimension(:,:,:) :: pfull, rh, q_hum, qsat, rhcrit, qcl_rad
+    real, intent(in),  dimension(:,:)   :: ps
     real, intent(out), dimension(:,:,:) :: cf
     real, dimension(size(pfull,1), size(pfull,2), size(pfull,3)) :: rhc
     real :: mid_top, mid_base, p_para, alpha_0, gamma ! For Xu and Krueger (1996)
@@ -600,7 +602,7 @@ module cloud_simple_mod
         end where
 
       case(B_LINEAR)
-        call calc_cf_linear(pfull, rh, cf)
+        call calc_cf_linear(pfull, rh, ps, cf)
 
       case default
         call error_mesg('cloud_simple', 'invalid cloud fraction diagnostic formula', FATAL)
@@ -610,16 +612,23 @@ module cloud_simple_mod
 
   end subroutine calc_stratiform_cf
 
-  subroutine calc_cf_linear(p_full, rh, cf)
+  subroutine calc_cf_linear(p_full, rh, ps, cf)
     ! Calculate LS (stratiform) cloud fraction as a linear function of RH
     real, intent(in),  dimension(:,:,:) :: p_full, rh
+    real, intent(in),  dimension(:,:)   :: ps
     real, intent(out), dimension(:,:,:) :: cf
     real, dimension(size(p_full,1), size(p_full,2), size(p_full,3)) :: coeff_a, coeff_b
-    real :: ps
+    integer :: k
+    !real :: ps
 
-    ps = 1.0e5 !Pa
-    coeff_a = a_top + (a_surf-a_top) * exp(1.0 - (ps/p_full)**nx)
-    coeff_b = b_top + (b_surf-b_top) * exp(1.0 - (ps/p_full)**nx)
+    !ps = 1.0e5 !Pa
+    !coeff_a = a_top + (a_surf-a_top) * exp(1.0 - (ps/p_full)**nx)
+    !coeff_b = b_top + (b_surf-b_top) * exp(1.0 - (ps/p_full)**nx)
+
+    do k=1,size(rh,3)
+      coeff_a(:,:,k) = a_top + (a_surf-a_top) * exp(1.0 - (ps/p_full(:,:,k))**nx)
+      coeff_b(:,:,k) = b_top + (b_surf-b_top) * exp(1.0 - (ps/p_full(:,:,k))**nx)
+    end do
 
     cf = coeff_a * rh + coeff_b
     cf = MAX(0.0, MIN(1.0, cf))
@@ -724,12 +733,6 @@ module cloud_simple_mod
         !write(*,*) 'conv k',  conv_cf(i,j,ktop:klcl)
       end do
     end do
-
-    !where (pfull < pshallow)
-    !  conv_cf = conv_cf * tower_scale_coeff
-    !!elsewhere
-    !!  conv_cf = conv_cf
-    !end where
 
     ! Output the diagnostics
     if (id_conv_cf > 0) then
