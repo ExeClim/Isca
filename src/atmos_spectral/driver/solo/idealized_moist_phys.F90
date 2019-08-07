@@ -794,12 +794,12 @@ endif
 
 end subroutine idealized_moist_phys_init
 !=================================================================================================================================
-subroutine idealized_moist_phys(Time, p_half, p_full, z_half, z_full, ug, vg, wg_full, tg, grid_tracers, &
+subroutine idealized_moist_phys(Time, p_half, p_full, z_half, z_full, ug, vg, psg, wg_full, tg, grid_tracers, &
                                 previous, current, dt_ug, dt_vg, dt_tg, dt_tracers, mask, kbot)
 
 type(time_type),            intent(in)    :: Time
 real, dimension(:,:,:,:),   intent(in)    :: p_half, p_full, z_half, z_full, ug, vg, tg
-real, dimension(:,:,:),     intent(in)    :: wg_full
+real, dimension(:,:,:),     intent(in)    :: psg, wg_full
 real, dimension(:,:,:,:,:), intent(in)    :: grid_tracers
 integer,                    intent(in)    :: previous, current
 real, dimension(:,:,:),     intent(inout) :: dt_ug, dt_vg, dt_tg
@@ -992,6 +992,7 @@ if(do_cloud_simple) then
                       grid_tracers(:,:,:,previous,nsphum), &
                       z_full(:,:,:,current),               &
                       wg_full(:,:,:),                      &
+                      psg(:,:,current),                    &
                       temp_2m(:,:),                        &
                       convective_rain(:,:),                &
                       ! outs -
