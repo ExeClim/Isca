@@ -11,9 +11,13 @@ module add openmpi/intel/64/1.6.5
 module add tools/intel_builds/tau-2.23.1-openmpi
 module add libraries/intel_builds/netcdf-4.3
 module add tools/git-2.18.0
+module add fftw3/intel/64/3.3.3
 
 # source psxevars
-#source /cm/shared/languages/Intel-Compiler-XE-16-U2/parallel_studio_xe_2016.2.062/psxevars.sh
-export F90=mpif90
-#export F90=mpiifort
+export FC=mpif90
 export CC=mpicc
+
+export CPATH=$CPATH:/cm/shared/apps/fftw/intel/64/3.3.3/include
+export CPATH=$CPATH:/cm/shared/libraries/intel_build/netcdf-4/include
+export CPATH=$CPATH:/cm/shared/libraries/intel_build/hdf5-1.8.12/include
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/cm/shared/apps/fftw/intel/64/3.3.3/lib
