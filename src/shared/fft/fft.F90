@@ -68,7 +68,9 @@ use      fms_mod, only: write_version_number,  &
 use    fft99_mod, only: fft991, set99
 #endif
 #endif
-
+#ifdef FFTW3
+use fftw3, only : fftw3_init, fftw3_end, grid_to_fourier_fftw, fourier_to_grid_fftw
+#endif
 implicit none
 private
 
@@ -188,12 +190,19 @@ end interface
 
 !---------------------- private data -----------------------------------
 
+#ifdef FFTW3
+
+
+#endif
 ! tables for trigonometric constants and factors
 ! (not all will be used)
 real(R8_KIND), allocatable, dimension(:) :: table8
 real(R4_KIND), allocatable, dimension(:) :: table4
 real         , allocatable, dimension(:) :: table99
 integer      , allocatable, dimension(:) :: ifax
+
+
+
 
 logical :: do_log =.true.
 integer :: leng, leng1, leng2, lenc    ! related to transform size
@@ -262,6 +271,7 @@ contains
 !    argument "grid".
 !
 !-----------------------------------------------------------------------
+
 #ifdef SGICRAY
 #  ifdef _CRAY
 !  local storage for cray fft
@@ -303,10 +313,12 @@ contains
                                    'length of input data too small.')
 #endif
 !-----------------------------------------------------------------------
-!----------------transform to fourier coefficients (+1)-----------------
+!----------------transform to fourier coefficients (+1)----------------- 
 
       num   = size(grid,2)    ! number of transforms
-
+#ifdef FFTW3
+      call grid_to_fourier_fftw(num, leng1, lenc, grid, fourier)
+#else
 #ifdef SGICRAY
 !  Cray/SGI fft
       scale = 1./real(leng)
@@ -345,6 +357,7 @@ contains
       enddo
       enddo
 #  endif
+#endif
 #endif
 !-----------------------------------------------------------------------
 
@@ -424,7 +437,9 @@ contains
 #endif
 !-----------------------------------------------------------------------
 !----------------inverse transform to real space (-1)-------------------
-
+#ifdef FFTW3
+      call fourier_to_grid_fftw(num, leng+1, lenc, fourier, grid)
+#else
 #ifdef SGICRAY
 !  Cray/SGI fft
       scale = 1.0
@@ -469,6 +484,7 @@ contains
       enddo
 #  endif
 #endif
+#endif
 
 !-----------------------------------------------------------------------
 
@@ -502,6 +518,9 @@ contains
 !    argument "grid".
 !
 !-----------------------------------------------------------------------
+#ifdef FFTW3
+! use fftw3
+#else
 #ifdef SGICRAY
 #  ifdef _CRAY
 !  local storage for cray fft
@@ -517,14 +536,15 @@ contains
 #  else
 !  local storage for temperton fft
    real, dimension(leng2,size(grid,2)) :: data
-   real, dimension(leng1,size(grid,2)) :: work
-#  endif   
+   real, dimension(leng1,size(grid,2)) :: work 
+#  endif     
 #endif   
+#endif
 
 #if defined(SGICRAY) || defined(NAGFFT)
    real(R8_KIND) :: scale
-#endif
-   integer :: j, k, num, len_grid
+#endif   
+   integer(kind=4) :: j, k, num, len_grid, i
 #ifdef NAGFFT
    integer :: ifail
 #endif
@@ -549,9 +569,13 @@ contains
 !----------------transform to fourier coefficients (+1)-----------------
 
       num   = size(grid,2)    ! number of transforms
+
+#ifdef FFTW3
+call grid_to_fourier_fftw(num, leng1, lenc, grid, fourier)
+#else
 #ifdef SGICRAY
 !  Cray/SGI fft
-      scale = 1./float(leng)
+      scale = 1. / float(leng)
 #  ifdef _CRAY
       call scfftm (-1,leng,num,scale, grid,leng1, fourier,lenc,  &
                    table8, work, 0)
@@ -585,6 +609,7 @@ contains
       enddo
       enddo
 #  endif
+#endif
 #endif
 !-----------------------------------------------------------------------
 
@@ -620,6 +645,9 @@ contains
 !    argument "fourier".
 !
 !-----------------------------------------------------------------------
+#ifdef FFTW3
+! use fftw3
+#else
 #ifdef SGICRAY
 #  ifdef _CRAY
 !  local storage for cray fft
@@ -638,11 +666,12 @@ contains
    real, dimension(leng1,size(fourier,2)) :: work
 #  endif   
 #endif   
+#endif
 
 #if defined(SGICRAY) || defined(NAGFFT)
    real(R8_KIND) :: scale
 #endif
-   integer :: j, k, num, len_fourier
+   integer(kind=4) :: j, k, num, len_fourier
 #ifdef NAGFFT
    integer :: ifail
 #endif
@@ -667,7 +696,9 @@ contains
 #endif
 !-----------------------------------------------------------------------
 !----------------inverse transform to real space (-1)-------------------
-
+#ifdef FFTW3
+call fourier_to_grid_fftw(num, leng+1, lenc, fourier, grid)
+#else
 #ifdef SGICRAY
 !  Cray/SGI fft
       scale = 1.0
@@ -711,6 +742,7 @@ contains
          grid(1:leng,j) = data(1:leng,j)
       enddo
 #  endif
+#endif
 #endif
 
 !-----------------------------------------------------------------------
@@ -874,10 +906,14 @@ contains
 !  variables that save length of transform
       leng = n; leng1 = n+1; leng2 = n+2; lenc = n/2+1
 
+#ifdef FFTW3
+call fftw3_init(leng, lenc)
+
+#else
 #ifdef SGICRAY
 #  ifdef _CRAY
 !  initialization for cray
-!  float kind may not apply for cray
+!  float kind may not apply for cray  
       allocate (table4(100+2*leng), table8(100+2*leng))   ! size may be too large?
       call scfftm (0,leng,1,0.0, dummy4, 1, cdummy4, 1, table4, dummy4, 0)
       call scfftm (0,leng,1,0.0, dummy8, 1, cdummy8, 1, table8, dummy8, 0)
@@ -892,7 +928,7 @@ contains
 #  ifdef NAGFFT
 !  initialization for nag fft
       ifail8 = 0
-      allocate (table8(100+2*leng))   ! size may be too large?
+      allocate (table8(100+2*leng))   ! size may be too large?a
       call c06fpf ( 1, leng, data8, 'i', table8, work8, ifail8 )
 
 !  will not allow float kind for nag
@@ -909,6 +945,7 @@ contains
       allocate (ifax(10))
       call set99 ( table99, ifax, leng )
 #  endif
+#endif
 #endif
 
       module_is_initialized = .true.
@@ -950,9 +987,11 @@ contains
 
       leng = 0; leng1 = 0; leng2 = 0; lenc = 0
 
+
       if (allocated(table4))  deallocate (table4)
       if (allocated(table8))  deallocate (table8)
       if (allocated(table99)) deallocate (table99)
+
 
       module_is_initialized = .false.
 
@@ -996,12 +1035,12 @@ integer :: ntrans(2) = (/ 60, 90 /)
     allocate (ain(n+1,lot),aout(n+1,lot),four(n/2+1,lot))
     call random_number (ain(1:n,:))
     aout(1:n,:) = ain(1:n,:)
-
+ 
     call fft_init (n)
   ! transform grid to fourier and back
     four = fft_grid_to_fourier (aout)
     aout = fft_fourier_to_grid (four)
-
+ 
   ! print original and transformed
     do j=1,lot
     do i=1,n

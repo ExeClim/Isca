@@ -146,6 +146,7 @@ end if
 
 grid1(1:size(grid,1),:,:) = grid
 grid1(size(grid,1)+1,:,:) = grid(1,:,:)
+
 fourier = fft_grid_to_fourier(grid1)
 
 return
