@@ -1,0 +1,19 @@
+echo loadmodules for Bristol Bluecrystal 4
+
+module purge
+
+#module load languages/anaconda3
+#module load OpenMPI/3.0.0-GCC-7.2.0-2.29
+#module load libs/netcdf/4.4.1.1.MPI
+#module load libs/fftw/3.3.6
+
+# GNU compiler                                                                                                                                                                         
+module load languages/anaconda3 
+module load gompi/2017a
+module load libs/fftw/3.3.6
+
+#export CPATH=$CPATH:/mnt/storage/software/libraries/intel/netcdf-4.4.1.1-mpi/include
+
+export F90=mpifort
+export CC=mpicc
+
