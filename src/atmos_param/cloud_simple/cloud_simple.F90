@@ -423,7 +423,7 @@ module cloud_simple_mod
             !cf(i,j,k) = min(1.0, max(0.0, strat))
           end if
           low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
-        end do
+        end if
       end do
     end do
 
@@ -462,8 +462,8 @@ module cloud_simple_mod
           dthdp(i,j,k) = (theta(i,j,k) - theta(i,j,k-1)) / (phalf(i,j,k) - phalf(i,j,k-1)) * 1.0e2
           if (phalf(i,j,k) >= premib) then
             !dthdp(i,j,k) = (theta(i,j,k) - theta(i,j,k-1)) / (phalf(i,j,k) - phalf(i,j,k-1)) * 1.0e2
-            if (dthdp(i,j,k) < dthdpmn(i,j)) then
-              dthdpmn(i,j) = dthdp(i,j,k)
+            if (dthdp(i,j,k) < dthdp_min(i,j)) then
+              dthdp_min(i,j) = dthdp(i,j,k)
               kdthdp(i,j) = k     ! index of interface of max inversion
             end if
           end if
@@ -653,8 +653,8 @@ module cloud_simple_mod
     qcl_rad = cf * in_cloud_qcl
   end subroutine calc_qcl_rad
 
-  subroutine calc_convective_cf(temp, q_hum, rh_in_cf, precip, conv_cf, pfull, wg_full, Time)
-    real, intent(in),  dimension(:,:,:) :: temp, q_hum, rh_in_cf, pfull, wg_full
+  subroutine calc_convective_cf(temp, q_hum, rh_in_cf, precip, conv_cf, pfull, Time)
+    real, intent(in),  dimension(:,:,:) :: temp, q_hum, rh_in_cf, pfull
     real, intent(in),  dimension(:,:)   :: precip
     type(time_type),   intent(in)       :: Time
     real, intent(out), dimension(:,:,:) :: conv_cf
