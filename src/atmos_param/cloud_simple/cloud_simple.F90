@@ -351,7 +351,7 @@ module cloud_simple_mod
         rin = q_hum(i,j,:) / (1.0 - q_hum(i,j,:)) !mixing ratio
         k700 = minloc(abs(p_full(i,j,:) - 7.0e4), 1)
         tmp_str = uppercase(trim(sc_diag_method))
-        if (tmp_str(1:3)=='EIS') then
+        if (tmp_str(1:3)=='EIS' .or. tmp_str(1:5)=='ECTEI') then
           call calc_eis(p_full(i,j,:), z_full(i,j,:), temp(i,j,:), temp_2m(i,j), rin, rh_in_cf(i,j,:), &
                         eis(i,j), zlcl(i,j), z700(i,j), Gamma850(i,j), LTS(i,j))
         end if
@@ -578,7 +578,7 @@ module cloud_simple_mod
 
         where (pfull > mid_base)
           rhc = 0.8
-        elsewhere (pfull < mid_base)
+        elsewhere (pfull < mid_top)
           rhc = 0.8
         elsewhere
           rhc = 0.65
