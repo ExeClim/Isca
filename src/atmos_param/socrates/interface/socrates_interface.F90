@@ -59,8 +59,8 @@ MODULE socrates_interface_mod
   INTEGER :: id_soc_flux_lw, id_soc_flux_sw
   INTEGER :: id_soc_flux_lw_clr, id_soc_flux_sw_clr
   INTEGER :: id_soc_olr, id_soc_toa_sw
-  INTEGER :: id_soc_toa_swup, id_soc_toa_sw_down
-  INTEGER :: id_soc_olr_clr, id_soc_toa_sw_clr, id_soc_toa_swup_clr ! clear-sky case
+  INTEGER :: id_soc_toa_sw_up, id_soc_toa_sw_down
+  INTEGER :: id_soc_olr_clr, id_soc_toa_sw_clr, id_soc_toa_sw_up_clr ! clear-sky case
   INTEGER :: id_soc_ozone, id_soc_co2, id_soc_coszen
   INTEGER :: n_soc_bands_lw, n_soc_bands_sw
   INTEGER :: n_soc_bands_lw_hires, n_soc_bands_sw_hires
@@ -78,7 +78,7 @@ MODULE socrates_interface_mod
   REAL(r_def), allocatable, dimension(:,:)   :: net_surf_sw_down_store, surf_lw_down_store, surf_lw_net_store, &
                                                 surf_sw_down_store, toa_sw_down_store, &
                                                 toa_sw_store, olr_store, coszen_store, &
-                                                toa_sw_clr_store, olr_clr_store, toa_swup_store, toa_swup_clr_store
+                                                toa_sw_clr_store, olr_clr_store, toa_sw_up_store, toa_sw_up_clr_store
   REAL(r_def), allocatable, dimension(:,:,:) :: outputted_soc_spectral_olr, spectral_olr_store, outputted_soc_spectral_olr_clr
   REAL(r_def), allocatable, dimension(:)     :: soc_bins_lw, soc_bins_sw
 
@@ -287,8 +287,8 @@ write(stdlog_unit, socrates_rad_nml)
          'socrates Net TOA SW flux (down)', & 
          'watts/m2', missing_value=missing_value               )
 
-    id_soc_toa_swup = &
-         register_diag_field ( soc_mod_name, 'soc_toa_swup', axes(1:2), Time, &
+    id_soc_toa_sw_up = &
+         register_diag_field ( soc_mod_name, 'soc_toa_sw_up', axes(1:2), Time, &
          'socrates upward TOA SW flux', &
          'watts/m2', missing_value=missing_value               )
 
@@ -308,8 +308,8 @@ write(stdlog_unit, socrates_rad_nml)
             'clear-sky socrates Net TOA SW flux (down)', &
             'watts/m2', missing_value=missing_value               )
 
-        id_soc_toa_swup_clr = &
-            register_diag_field ( soc_mod_name, 'soc_toa_swup_clr', axes(1:2), Time, &
+        id_soc_toa_sw_up_clr = &
+            register_diag_field ( soc_mod_name, 'soc_toa_sw_up_clr', axes(1:2), Time, &
             'clear-sky socrates upward TOA SW flux', &
             'watts/m2', missing_value=missing_value               )
 
@@ -415,8 +415,8 @@ write(stdlog_unit, socrates_rad_nml)
         endif
 
         ! QL, add upward shortwave radiation flux
-        if (id_soc_toa_swup > 0) then
-            allocate(toa_swup_store(size(lonb,1)-1, size(latb,2)-1))
+        if (id_soc_toa_sw_up > 0) then
+            allocate(toa_sw_up_store(size(lonb,1)-1, size(latb,2)-1))
         endif
 
         ! QL, clear-sky diagnostics
@@ -437,8 +437,8 @@ write(stdlog_unit, socrates_rad_nml)
                 allocate(toa_sw_clr_store(size(lonb,1)-1, size(latb,2)-1))
             endif
 
-            if (id_soc_toa_swup_clr > 0) then
-                allocate(toa_swup_clr_store(size(lonb,1)-1, size(latb,2)-1))
+            if (id_soc_toa_sw_up_clr > 0) then
+                allocate(toa_sw_up_clr_store(size(lonb,1)-1, size(latb,2)-1))
             endif
         end if
 
@@ -828,7 +828,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
     real, dimension(size(temp_in,1), size(temp_in,2)) :: coszen, fracsun, surf_lw_net, olr, toa_sw, &
                                                          p2, toa_sw_down, surf_sw_down, &
-                                                         olr_clr, toa_sw_clr, toa_swup, toa_swup_clr ! QL, add clear-sky variables
+                                                         olr_clr, toa_sw_clr, toa_sw_up, toa_sw_up_clr ! QL, add clear-sky variables
     real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: ozone_in, co2_in
     real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: thd_sw_flux_net, thd_lw_flux_net, thd_sw_flux_clr_net, thd_lw_flux_clr_net
 
@@ -876,8 +876,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                     toa_sw = toa_sw_store 
                 endif
 
-                if (id_soc_toa_swup > 0) then
-                    toa_swup = toa_swup_store
+                if (id_soc_toa_sw_up > 0) then
+                    toa_sw_up = toa_sw_up_store
                 endif
 
                 ! QL, clear-sky diagnostics
@@ -898,8 +898,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                         toa_sw_clr = toa_sw_clr_store
                     endif
 
-                    if (id_soc_toa_swup_clr > 0) then
-                        toa_swup_clr = toa_swup_clr_store
+                    if (id_soc_toa_sw_up_clr > 0) then
+                        toa_sw_up_clr = toa_sw_up_clr_store
                     endif
                 end if
 
@@ -932,11 +932,11 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                 surf_lw_net = 0.
                 toa_sw = 0.
                 olr = 0.
-                toa_swup = 0.
+                toa_sw_up = 0.
                 if (do_clear_sky_pass) then
                     olr_clr = 0.
                     toa_sw_clr = 0.
-                    toa_swup_clr = 0.
+                    toa_sw_up_clr = 0.
                     thd_sw_flux_clr_net = 0.
                     thd_lw_flux_clr_net = 0.
                 end if
@@ -980,8 +980,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             if(id_soc_toa_sw_down > 0) then
                 used = send_data ( id_soc_toa_sw_down, toa_sw_down, Time_diag)
             endif
-            if(id_soc_toa_swup > 0) then
-                used = send_data ( id_soc_toa_swup, toa_swup, Time_diag)
+            if(id_soc_toa_sw_up > 0) then
+                used = send_data ( id_soc_toa_sw_up, toa_sw_up, Time_diag)
             endif
             if (do_clear_sky_pass) then
                 if(id_soc_olr_clr > 0) then
@@ -990,8 +990,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                 if(id_soc_toa_sw_clr > 0) then
                     used = send_data ( id_soc_toa_sw_clr, toa_sw_clr, Time_diag)
                 endif
-                if(id_soc_toa_swup_clr > 0) then
-                    used = send_data ( id_soc_toa_swup_clr, toa_swup_clr, Time_diag)
+                if(id_soc_toa_sw_up_clr > 0) then
+                    used = send_data ( id_soc_toa_sw_up_clr, toa_sw_up_clr, Time_diag)
                 endif
                 if(id_soc_flux_lw_clr > 0) then
                     used = send_data ( id_soc_flux_lw_clr, thd_lw_flux_clr_net, Time_diag)
@@ -1198,7 +1198,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        toa_sw_down(:,:) = REAL(output_soc_flux_sw_down(:,:,1))
        thd_sw_flux_net = REAL(output_soc_flux_sw_up - output_soc_flux_sw_down)
        !QL, add new variable to store the upward shortwave flux at TOA
-       toa_swup(:,:) = REAL(output_soc_flux_sw_up(:,:,1))
+       toa_sw_up(:,:) = REAL(output_soc_flux_sw_up(:,:,1))
 
        if (do_clear_sky_pass) then
            CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,                     &
@@ -1210,7 +1210,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
            toa_sw_clr(:,:) = REAL(output_soc_flux_sw_down_clr(:,:,1)-output_soc_flux_sw_up_clr(:,:,1))
            thd_sw_flux_clr_net = REAL(output_soc_flux_sw_up_clr - output_soc_flux_sw_down_clr)
-           toa_swup_clr(:,:) = REAL(output_soc_flux_sw_up_clr(:,:,1))
+           toa_sw_up_clr(:,:) = REAL(output_soc_flux_sw_up_clr(:,:,1))
        end if
 
        temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_sw)
@@ -1253,8 +1253,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                 toa_sw_store = toa_sw
             endif 
 
-            if (id_soc_toa_swup > 0) then
-                toa_swup_store = toa_swup
+            if (id_soc_toa_sw_up > 0) then
+                toa_sw_up_store = toa_sw_up
             endif
 
             ! QL, clear-sky diagnostics
@@ -1275,8 +1275,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                     toa_sw_clr_store = toa_sw_clr
                 endif
 
-                if (id_soc_toa_swup_clr > 0) then
-                    toa_swup_clr_store = toa_swup_clr
+                if (id_soc_toa_sw_up_clr > 0) then
+                    toa_sw_up_clr_store = toa_sw_up_clr
                 endif
             end if
 
@@ -1326,8 +1326,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
         if(id_soc_toa_sw_down > 0) then
             used = send_data ( id_soc_toa_sw_down, toa_sw_down, Time_diag)
         endif
-        if(id_soc_toa_swup > 0) then
-            used = send_data ( id_soc_toa_swup, toa_swup, Time_diag)
+        if(id_soc_toa_sw_up > 0) then
+            used = send_data ( id_soc_toa_sw_up, toa_sw_up, Time_diag)
         endif
         if (do_clear_sky_pass) then
             if(id_soc_olr_clr > 0) then
@@ -1336,8 +1336,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             if(id_soc_toa_sw_clr > 0) then
                 used = send_data ( id_soc_toa_sw_clr, toa_sw_clr, Time_diag)
             endif
-            if(id_soc_toa_swup_clr > 0) then
-                used = send_data ( id_soc_toa_swup_clr, toa_swup_clr, Time_diag)
+            if(id_soc_toa_sw_up_clr > 0) then
+                used = send_data ( id_soc_toa_sw_up_clr, toa_sw_up_clr, Time_diag)
             endif
             if(id_soc_flux_lw_clr > 0) then
                 used = send_data ( id_soc_flux_lw_clr, thd_lw_flux_clr_net, Time_diag)
