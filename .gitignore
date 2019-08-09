@@ -31,3 +31,4 @@ test/.cache
 test/results.xml
 tmp_*
 tmp*
+tmp.*
