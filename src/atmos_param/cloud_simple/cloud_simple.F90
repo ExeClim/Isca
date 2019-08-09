@@ -60,6 +60,12 @@ module cloud_simple_mod
   real :: b_top      = -0.07
   real :: nx         = 8
 
+  ! For slingo80 scheme
+  real :: slingo_rhc_low = 0.8
+  real :: slingo_rhc_mid = 0.65
+  real :: slingo_rhc_high = 0.8
+
+
   namelist /cloud_simple_nml/ simple_cca, rhcsfc, rhc700, rhc200, &
                               cf_diag_formula_name, &
                               do_read_scm_rhcrit, scm_rhcrit, &
@@ -69,7 +75,8 @@ module cloud_simple_mod
                               intermediate_outputs_diags, &
                               dthdp_min, do_read_ts, &
                               a_surf, a_top, b_surf, b_top, nx, &
-                              do_conv_cld, pshallow, cf_min
+                              do_conv_cld, pshallow, cf_min, &
+                              slingo_rhc_low, slingo_rhc_mid, slingo_rhc_high
 
   contains
 
@@ -533,16 +540,14 @@ module cloud_simple_mod
     end if
 
     if (do_read_scm_rhcrit) then
-      if(do_read_scm_rhcrit) then
-        if(scm_rhcrit(size(p_full,3)) .eq. FILL_VALUE) then
-          call error_mesg('cloud_simple', 'Input rhcrit must be specified on model '// &
-                          'pressure levels but not enough levels specified', FATAL)
-        endif
-        if(scm_rhcrit(size(p_full,3)+1) .ne. FILL_VALUE) then
-          call error_mesg('cloud_simple', 'Input rhcrit must be specified on model '// &
-                          'pressure levels but too many levels specified', FATAL)
-        endif
-      end if
+      if(scm_rhcrit(size(p_full,3)) .eq. FILL_VALUE) then
+        call error_mesg('cloud_simple', 'Input rhcrit must be specified on model '// &
+                        'pressure levels but not enough levels specified', FATAL)
+      endif
+      if(scm_rhcrit(size(p_full,3)+1) .ne. FILL_VALUE) then
+        call error_mesg('cloud_simple', 'Input rhcrit must be specified on model '// &
+                        'pressure levels but too many levels specified', FATAL)
+      endif
 
       do i=1, size(p_full,1)
         do j=1, size(p_full,2)
@@ -577,11 +582,11 @@ module cloud_simple_mod
         rhc = 0.0
 
         where (pfull > mid_base)
-          rhc = 0.8
+          rhc = slingo_rhc_low
         elsewhere (pfull < mid_top)
-          rhc = 0.8
+          rhc = slingo_rhc_high
         elsewhere
-          rhc = 0.65
+          rhc = slingo_rhc_mid
         end where
 
         where (rh<rhc)
