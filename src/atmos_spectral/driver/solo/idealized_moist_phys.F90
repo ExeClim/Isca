@@ -237,8 +237,11 @@ logical, allocatable, dimension(:,:) ::                                       &
 real, allocatable, dimension(:,:) ::                                          &
      land_ones                 ! land points (all zeros)
 
+integer, allocatable, dimension(:,:) ::                                       &
+     klzbs,                &   ! stored level of zero buoyancy values; QL, change data type to integer
+     klcls                     ! stored lifting condensation level values, QL add
+
 real, allocatable, dimension(:,:) ::                                          &
-     klzbs,                &   ! stored level of zero buoyancy values
      cape,                 &   ! convectively available potential energy
      cin,                  &   ! convective inhibition (this and the above are before the adjustment)
      invtau_q_relaxation,  &   ! temperature relaxation time scale
@@ -502,6 +505,7 @@ allocate(cond_dt_qg  (is:ie, js:je, num_levels))
 
 allocate(coldT        (is:ie, js:je)); coldT = .false.
 allocate(klzbs        (is:ie, js:je))
+allocate(klcls        (is:ie, js:je))  ! QL added
 allocate(cape         (is:ie, js:je))
 allocate(cin          (is:ie, js:je))
 allocate(invtau_q_relaxation  (is:ie, js:je))
@@ -839,8 +843,8 @@ case(SIMPLE_BETTS_CONV)
                                 q_ref,                        convflag,      &
                                 klzbs,                            cape,      &
                                   cin,             invtau_q_relaxation,      &
-                  invtau_t_relaxation,                           t_ref)
-
+                  invtau_t_relaxation,                           t_ref,      &
+                                klcls)
    tg_tmp = conv_dt_tg + tg(:,:,:,previous)
    qg_tmp = conv_dt_qg + grid_tracers(:,:,:,previous,nsphum)
 !  note the delta's are returned rather than the time derivatives
@@ -868,7 +872,7 @@ case(FULL_BETTS_MILLER_CONV)
                                   klzbs,                         cape,       &
                                     cin,                        t_ref,       &
                     invtau_t_relaxation,          invtau_q_relaxation,       &
-                               capeflag)
+                               capeflag,                        klcls)
 
    tg_tmp = conv_dt_tg + tg(:,:,:,previous)
    qg_tmp = conv_dt_qg + grid_tracers(:,:,:,previous,nsphum)
@@ -889,7 +893,7 @@ case(FULL_BETTS_MILLER_CONV)
 case(DRY_CONV)
     call dry_convection(Time, tg(:, :, :, previous),                         &
                         p_full(:,:,:,previous), p_half(:,:,:,previous),      &
-                        conv_dt_tg, cape, cin)
+                        conv_dt_tg, cape, cin, klzbs, klcls)
 
     tg_tmp = conv_dt_tg*delta_t + tg(:,:,:,previous)
     qg_tmp = grid_tracers(:,:,:,previous,nsphum)
@@ -906,6 +910,7 @@ case(RAS_CONV)
                 p_half(:,:,:,previous), z_half(:,:,:,previous), coldT,  delta_t,     &
                 conv_dt_tg,   conv_dt_qg, dt_ug_conv,  dt_vg_conv,                   &
                 rain, snow,   do_strat,                                              &
+                klzbs,  klcls,                                                       &
                 !OPTIONAL
                 mask,  kbot,                                                         &
                 !OPTIONAL OUT
@@ -989,7 +994,9 @@ if(do_cloud_simple) then
                       wg_full(:,:,:),                      &
                       psg(:,:,current),                    &
                       temp_2m(:,:),                        &
+                      q_2m(:,:),                           &
                       convective_rain(:,:),                &
+                      klcls(:,:),                          &
                       ! outs -
                       cf_rad(:,:,:), reff_rad(:,:,:),      &
                       qcl_rad(:,:,:)                       &

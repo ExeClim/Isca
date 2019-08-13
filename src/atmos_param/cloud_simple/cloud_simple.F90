@@ -19,12 +19,14 @@ module cloud_simple_mod
   logical ::   do_init = .true.  ! Check if init needs to be run
 
   real :: zerodegc = 273.15
-  integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf, id_rhcrit, &
-             id_dthdp, id_kdthdp, &
-             id_eis, id_ectei, id_zlcl, id_gamma_850, id_gamma_DL, id_gamma_700, id_theta, id_z700, id_lts, &
-             id_zinv, id_ELF, id_beta1, id_beta2, id_IS, id_DS, id_alpha, id_RH_inv_minus, &
-             id_qv_inv_minus, id_qv_inv_plus, id_temp_inv_minus, id_qs_inv_minus, id_es_inv_minus, id_pinv, &
-             id_low_cld_amt_park, id_conv_cf
+  integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf, id_rhcrit
+  integer :: id_conv_cf
+  ! ----- outputs for EIS, ECTEI and ELF diagnostics ----- !
+  integer :: id_theta, id_dthdp, id_lts, id_eis, id_ectei, id_zlcl, &
+             id_gamma_850, id_gamma_DL, id_gamma_700, id_z700, &
+             id_zinv, id_ELF, id_beta1, id_beta2, id_IS, id_DS, id_alpha, &
+             id_low_cld_amt_park
+  ! ----- outputs for cloud amount diagnostics ----- !
   integer :: id_tot_cld_amt, id_high_cld_amt, id_mid_cld_amt, id_low_cld_amt
 
   character(len=14), parameter ::   mod_name_cld = "cloud_simple"
@@ -82,11 +84,81 @@ module cloud_simple_mod
 
   !-----------------------------------------------
 
+  subroutine convective_cloud_init(axes, Time)
+    type(time_type), intent(in)       :: Time
+    integer, intent(in), dimension(4) :: axes
+
+    id_conv_cf = register_diag_field (mod_name_cld, 'conv_cf', axes(1:3), Time, &
+        'Convective cloud fraction for the simple cloud scheme', 'unitless: values 0-1')
+  end subroutine convective_cloud_init
+
+  subroutine marine_strat_cloud_init(axes, Time)
+    type(time_type), intent(in)       :: Time
+    integer, intent(in), dimension(4) :: axes
+    character(len=32) :: tmp_str = ''
+
+    call error_mesg('cloud_simple', 'The stratomulus diagnosis method is '// &
+                    uppercase(trim(sc_diag_method)), NOTE)
+
+    tmp_str = uppercase(trim(sc_diag_method))
+
+    if (tmp_str(1:3)=='EIS' .or. tmp_str(1:5)=='ECTEI' .or. tmp_str(1:4)=='PARK') then
+      id_eis = register_diag_field (mod_name_cld, 'eis', axes(1:2), Time, &
+                      'estimated inversion strength', 'K')
+    end if
+
+    if (tmp_str(1:5)=='ECTEI' .or. tmp_str(1:4)=='PARK') then
+      id_ectei = register_diag_field (mod_name_cld, 'ectei', axes(1:2), Time, &
+                      'estimated cloud top entrainment index', 'K')
+    end if
+
+    if (tmp_str(1:4)=='PARK') then
+      id_ELF    = register_diag_field (mod_name_cld, 'ELF', axes(1:2), Time, &
+                      'estimated low cloud fraction', '')
+    end if
+
+    id_zlcl = register_diag_field (mod_name_cld, 'zlcl', axes(1:2), Time, &
+                  'height of lcl', 'meter')
+    id_theta = register_diag_field (mod_name_cld, 'theta', axes(1:3), Time, &
+                  'potential temperature', 'K')
+    id_lts = register_diag_field (mod_name_cld, 'lts', axes(1:2), Time, &
+                  'low-tropospheric stability', 'K')
+    if(intermediate_outputs_diags) then
+      id_dthdp = register_diag_field (mod_name_cld, 'dthdp', axes(1:3), Time, &
+                        'dtheta/dp', 'K/hPa' )
+      id_z700 = register_diag_field ( mod_name_cld, 'z700', axes(1:2), Time, &
+                        'height of 700mb', 'meter')
+      if (tmp_str(1:3)=='EIS') then
+        id_gamma_850 = register_diag_field (mod_name_cld, 'gamma850', axes(1:2), Time, &
+                        'moist lapse rate at 850hPa', 'K/m')
+      end if
+      if (tmp_str(1:4)=='PARK') then
+        id_beta1  = register_diag_field (mod_name_cld, 'beta1', axes(1:2), Time, &
+                        'first low-level cloud suppression parameter', '')
+        id_beta2  = register_diag_field (mod_name_cld, 'beta2', axes(1:2), Time, &
+                        'second low-level cloud suppression parameter', '')
+        id_zinv   = register_diag_field (mod_name_cld, 'zinv', axes(1:2), Time, &
+                        'height of invesion layer', 'meter')
+        id_DS     = register_diag_field (mod_name_cld, 'DS', axes(1:2), Time, &
+                        'decoupling strength', 'K')
+        id_IS     = register_diag_field (mod_name_cld, 'IS', axes(1:2), Time, &
+                        'inversion strength', 'K')
+        id_alpha  = register_diag_field (mod_name_cld, 'alpha', axes(1:2), Time, &
+                        'decoupling parameter', '')
+        id_low_cld_amt_park = register_diag_field ( mod_name_cld, 'low_cld_amt_park', axes(1:2), Time, &
+                        'low cloud amount estimated from Park method', 'percent' )
+        id_gamma_DL = register_diag_field (mod_name_cld, 'gamma_DL', axes(1:2), Time, &
+                        'moist lapse rate at decoupling layer', 'K/m')
+        id_gamma_700 = register_diag_field (mod_name_cld, 'gamma700', axes(1:2), Time, &
+                        'moist lapse rate at 700hPa', 'K/m')
+      end if
+    end if
+  end subroutine marine_strat_cloud_init
+
   subroutine cloud_simple_init (axes, Time)
     type(time_type), intent(in)       :: Time
     integer, intent(in), dimension(4) :: axes
     integer :: io, ierr, nml_unit, stdlog_unit
-    character(len=32) :: tmp_str = ''
 
 #ifdef INTERNAL_FILE_NML
     read (input_nml_file, nml=cloud_simple_nml, iostat=io)
@@ -135,143 +207,40 @@ module cloud_simple_mod
       do_simple_rhcrit = .false.
     end if
 
-    if(do_add_stratocumulus) then
-      call error_mesg('cloud_simple', 'The stratomulus diagnosis method is '// &
-                  uppercase(trim(sc_diag_method)), NOTE)
-    end if
-
     !register diagnostics
-    id_cf = register_diag_field ( mod_name_cld, 'cf', axes(1:3), Time, &
-              'Cloud fraction for the simple cloud scheme', 'unitless: values 0-1')
-
-    if (do_cloud_amount_diags) then
-      id_tot_cld_amt = register_diag_field ( mod_name_cld, 'tot_cld_amt', axes(1:2), Time, &
-                            'total cloud amount', 'percent' )
-
-      id_high_cld_amt = register_diag_field ( mod_name_cld, 'high_cld_amt', axes(1:2), Time, &
-                            'high cloud amount', 'percent' )
-
-      id_mid_cld_amt = register_diag_field ( mod_name_cld, 'mid_cld_amt', axes(1:2), Time, &
-                            'mid cloud amount', 'percent' )
-
-      id_low_cld_amt = register_diag_field ( mod_name_cld, 'low_cld_amt', axes(1:2), Time, &
-                            'low cloud amount', 'percent' )
-    end if
-
-    if(do_add_stratocumulus) then
-
-      tmp_str = uppercase(trim(sc_diag_method))
-
-      if (tmp_str(1:3)=='EIS' .or. tmp_str(1:5)=='ECTEI' .or. tmp_str(1:4)=='PARK') then
-        id_eis = register_diag_field ( mod_name_cld, 'eis', axes(1:2), Time, &
-                        'estimated inversion strength', 'K' )
-      end if
-
-      if (tmp_str(1:5)=='ECTEI' .or. tmp_str(1:4)=='PARK') then
-        id_ectei = register_diag_field ( mod_name_cld, 'ectei', axes(1:2), Time, &
-                        'estimated cloud top entrainment index', 'K' )
-      end if
-
-      if (tmp_str(1:4)=='PARK') then
-        id_ELF    = register_diag_field ( mod_name_cld, 'ELF', axes(1:2), Time, &
-                        'estimated low cloud fraction', '' )
-      end if
-
-      id_zlcl = register_diag_field ( mod_name_cld, 'zlcl', axes(1:2), Time, &
-                    'height of lcl', 'meter' )
-
-      id_theta = register_diag_field ( mod_name_cld, 'theta', axes(1:3), Time, &
-                    'potential temperature', 'K' )
-
-      id_z700 = register_diag_field ( mod_name_cld, 'z700', axes(1:2), Time, &
-                    'height of 700mb', 'meter' )
-
-      id_lts = register_diag_field ( mod_name_cld, 'lts', axes(1:2), Time, &
-                    'low-tropospheric stability', 'K' )
-
-      id_dthdp = register_diag_field ( mod_name_cld, 'dthdp', axes(1:3), Time, &
-                    'dtheta/dp', 'K/hPa' )
-
-      if(intermediate_outputs_diags) then
-
-        if (tmp_str(1:3)=='EIS') then
-          id_gamma_850 = register_diag_field ( mod_name_cld, 'gamma850', axes(1:2), Time, &
-                            'moist lapse rate at 850hPa', 'K/m' )
-        end if
-
-        if (tmp_str(1:4)=='PARK') then
-          id_beta1  = register_diag_field ( mod_name_cld, 'beta1', axes(1:2), Time, &
-                          'first low-level cloud suppression parameter', '' )
-
-          id_beta2  = register_diag_field ( mod_name_cld, 'beta2', axes(1:2), Time, &
-                          'second low-level cloud suppression parameter', '' )
-
-          id_zinv   = register_diag_field ( mod_name_cld, 'zinv', axes(1:2), Time, &
-                          'height of invesion layer', 'meter' )
-
-          id_DS     = register_diag_field ( mod_name_cld, 'DS', axes(1:2), Time, &
-                          'decoupling strength', 'K' )
-
-          id_IS     = register_diag_field ( mod_name_cld, 'IS', axes(1:2), Time, &
-                          'inversion strength', 'K' )
-
-          id_alpha  = register_diag_field ( mod_name_cld, 'alpha', axes(1:2), Time, &
-                          'decoupling parameter', '' )
-
-          id_RH_inv_minus = register_diag_field ( mod_name_cld, 'RH_inv_minus', axes(1:2), Time, &
-                              'relative humidity below the inversion layer', '' )
-
-          id_qv_inv_minus = register_diag_field ( mod_name_cld, 'qv_inv_minus', axes(1:2), Time, &
-                                'sphum below inversion layer', 'kg/kg' )
-
-          id_qv_inv_plus = register_diag_field ( mod_name_cld, 'qv_inv_plus', axes(1:2), Time, &
-                            'sphum above inversion layer', 'kg/kg' )
-
-          id_qs_inv_minus = register_diag_field ( mod_name_cld, 'qs_inv_minus', axes(1:2), Time, &
-                              'saturation sphum below inversion layer', 'kg/kg' )
-
-          id_es_inv_minus = register_diag_field ( mod_name_cld, 'es_inv_minus', axes(1:2), Time, &
-                             'saturation water pressure below inversion layer', 'Pa' )
-
-          id_temp_inv_minus = register_diag_field ( mod_name_cld, 'temp_inv_minus', axes(1:2), Time, &
-                              'temperature below inversion layer', 'K' )
-
-          id_pinv = register_diag_field ( mod_name_cld, 'pinv', axes(1:2), Time, &
-                               'pressure level of inversion layer', 'Pa' )
-
-          id_low_cld_amt_park = register_diag_field ( mod_name_cld, 'low_cld_amt_park', axes(1:2), Time, &
-                              'low cloud amount estimated from Park method', 'percent' )
-
-          id_gamma_DL = register_diag_field ( mod_name_cld, 'gamma_DL', axes(1:2), Time, &
-                               'moist lapse rate at decoupling layer', 'K/m')
-
-          id_gamma_700 = register_diag_field ( mod_name_cld, 'gamma700', axes(1:2), Time, &
-                                'moist lapse rate at 700hPa', 'K/m' )
-        end if
-
-      end if
-    end if
-
-    if (do_conv_cld) then
-      id_conv_cf = register_diag_field ( mod_name_cld, 'conv_cf', axes(1:3), Time, &
-        'Convective cloud fraction for the simple cloud scheme', 'unitless: values 0-1')
-    end if
-
-    id_frac_liq = register_diag_field ( mod_name_cld, 'frac_liq', axes(1:3), Time, &
+    id_cf = register_diag_field (mod_name_cld, 'cf', axes(1:3), Time, &
+                    'Cloud fraction for the simple cloud scheme', 'unitless: values 0-1')
+    id_frac_liq = register_diag_field (mod_name_cld, 'frac_liq', axes(1:3), Time, &
                     'Liquid cloud fraction (liquid, mixed-ice phase, ice)', 'unitless: values 0-1')
-
-    id_reff_rad = register_diag_field ( mod_name_cld, 'reff_rad', axes(1:3), Time, &
+    id_reff_rad = register_diag_field (mod_name_cld, 'reff_rad', axes(1:3), Time, &
                     'Effective cloud particle radius', 'microns')
-
-    id_qcl_rad = register_diag_field ( mod_name_cld, 'qcl_rad', axes(1:3), Time, &
+    id_qcl_rad = register_diag_field (mod_name_cld, 'qcl_rad', axes(1:3), Time, &
                     'Specific humidity of cloud liquid', 'kg/kg')
-
-    id_rh_in_cf = register_diag_field ( mod_name_cld, 'rh_in_cf', axes(1:3), Time, &
+    id_rh_in_cf = register_diag_field (mod_name_cld, 'rh_in_cf', axes(1:3), Time, &
                     'RH as a percent', '%')
 
     if(do_simple_rhcrit) then
-      id_rhcrit = register_diag_field ( mod_name_cld, 'rhcrit', axes(1:3), Time, &
+      id_rhcrit = register_diag_field (mod_name_cld, 'rhcrit', axes(1:3), Time, &
                     'RH as a percent', '%')
+    end if
+
+    if (do_cloud_amount_diags) then
+      id_tot_cld_amt = register_diag_field (mod_name_cld, 'tot_cld_amt', axes(1:2), Time, &
+                            'total cloud amount', 'percent')
+      id_high_cld_amt = register_diag_field (mod_name_cld, 'high_cld_amt', axes(1:2), Time, &
+                            'high cloud amount', 'percent')
+      id_mid_cld_amt = register_diag_field (mod_name_cld, 'mid_cld_amt', axes(1:2), Time, &
+                            'mid cloud amount', 'percent')
+      id_low_cld_amt = register_diag_field (mod_name_cld, 'low_cld_amt', axes(1:2), Time, &
+                            'low cloud amount', 'percent')
+    end if
+
+    if(do_add_stratocumulus) then
+      call marine_strat_cloud_init(axes, Time)
+    end if
+
+    if (do_conv_cld) then
+      call convective_cloud_init(axes, Time)
     end if
 
     do_init = .false.  !initialisation completed
@@ -279,10 +248,11 @@ module cloud_simple_mod
 
 
   subroutine cloud_simple(p_half, p_full, Time, temp, q_hum, z_full, &
-                          wg_full, psg, temp_2m, precip, &
+                          wg_full, psg, temp_2m, q_2m, precip, klcls, &
                           cf, reff_rad, qcl_rad)  ! outs
     real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, wg_full
-    real, intent(in),  dimension(:,:)   :: psg, temp_2m, precip
+    real, intent(in),  dimension(:,:)   :: psg, temp_2m, precip, q_2m
+    integer, intent(in), dimension(:,:) :: klcls
     type(time_type),   intent(in)       :: Time
     real, intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: qs, frac_liq, rh_in_cf, &
@@ -305,18 +275,18 @@ module cloud_simple_mod
 
     conv_cf = 0.0
     if(do_conv_cld) then
-      call calc_convective_cf(temp, q_hum, rh_in_cf, precip, conv_cf, p_full, Time)
-      !call calc_convective_cf2(temp, q_hum, rh_in_cf, precip, conv_cf, p_full, Time)
+      call calc_convective_cf(p_full, precip, klcls, conv_cf, Time)
+      !call calc_convective_cf2(p_full, precip, klcls, conv_cf, Time)
     end if
 
     ! rh_e is the effective RH
     rh_e = rh_in_cf * (1.0 - conv_cf)
-    !call calc_stratiform_cf(p_full, rh_in_cf, q_hum, qs, rhcrit, qcl_rad, cf)
+
     call calc_stratiform_cf(p_full, psg, rh_e, q_hum, qs, rhcrit, qcl_rad, cf)
 
     if (do_add_stratocumulus) then
-      !call add_stratiform_cld(temp, p_full, p_half, z_full, rh_in_cf, q_hum, temp_2m, wg_full, cf, Time)
-      call add_stratiform_cld(temp, p_full, p_half, z_full, rh_e, q_hum, temp_2m, psg, wg_full, cf, Time)
+      call add_stratiform_cld(temp, p_full, p_half, z_full, rh_e, q_hum, &
+                              temp_2m, q_2m, psg, wg_full, klcls, cf, Time)
     end if
 
     if(do_conv_cld) then
@@ -333,60 +303,47 @@ module cloud_simple_mod
 
   end subroutine cloud_simple
 
-  subroutine add_stratiform_cld(temp, p_full, p_half, z_full, rh_in_cf, q_hum, temp_2m, psg, wg_full, cf, Time)
-    real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, rh_in_cf, wg_full
+  subroutine add_stratiform_cld(temp, p_full, p_half, z_full, rh, q_hum, temp_2m, q_2m, psg, wg_full, klcls, cf, Time)
+    implicit none
+    real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, rh, wg_full
     type(time_type),   intent(in)       :: Time
-    real, intent(in),  dimension(:,:)   :: temp_2m, psg
+    real, intent(in),  dimension(:,:)   :: temp_2m, q_2m, psg
+    integer, intent(in), dimension(:,:) :: klcls
     real, intent(out), dimension(:,:,:) :: cf
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: theta, dthdp
     integer, dimension(size(temp,1), size(temp,2)) :: kdthdp
-    real,    dimension(size(temp,1), size(temp,2)) :: eis, ectei, zlcl, z700, LTS,    &
-              zinv, beta1, beta2, ELF, Gamma700, Gamma_DL, Gamma850, IS, DS, alpha,   &
-              RH_inv_minus, qv_inv_minus, qv_inv_plus, temp_inv_minus, qs_inv_minus,  &
-              es_inv_minus, pinv, low_ca_park
-    real, dimension(size(temp,3)) :: rin
-    real :: strat, rhb_frac
+    real,    dimension(size(temp,1), size(temp,2)) :: eis, ectei, ELF, low_ca_park
+    real :: strat, rhb_frac, used
     character(len=32) :: tmp_str = ''
     integer :: i, j, k, k700, kb, k_surf, kk
 
+    k_surf = size(temp, 3)
+
     call calc_theta_dthdp(temp, temp_2m, p_full, p_half, psg, theta, dthdp, kdthdp)
 
-    k_surf = size(temp, 3)
+    tmp_str = uppercase(trim(sc_diag_method))
+    if (tmp_str(1:3)=='EIS' .or. tmp_str(1:5)=='ECTEI') then
+      call calc_eis(p_full, z_full, temp, temp_2m, psg, klcls, eis, Time)
+    end if
+    if (tmp_str(1:5)=='ECTEI') then
+      call calc_ectei(p_full, q_hum, q_2m, eis, ectei, Time)
+    end if
+    if (tmp_str(1:4)=='PARK') then
+      call calc_Park_proxies(p_full, z_full, temp, temp_2m, q_hum, q_2m, klcls, ELF, Time)
+    end if
 
     do i=1, size(temp, 1)
       do j=1, size(temp, 2)
-        rin = q_hum(i,j,:) / (1.0 - q_hum(i,j,:)) !mixing ratio
-        k700 = minloc(abs(p_full(i,j,:) - 7.0e4), 1)
-        tmp_str = uppercase(trim(sc_diag_method))
-        if (tmp_str(1:3)=='EIS' .or. tmp_str(1:5)=='ECTEI') then
-          call calc_eis(p_full(i,j,:), z_full(i,j,:), temp(i,j,:), temp_2m(i,j), rin, rh_in_cf(i,j,:), &
-                        eis(i,j), zlcl(i,j), z700(i,j), Gamma850(i,j), LTS(i,j))
-        end if
-        if (tmp_str(1:5)=='ECTEI') then
-          call calc_ectei(k700, q_hum(i,j,:), eis(i,j), ectei(i,j))
-        end if
-        if (tmp_str(1:4)=='PARK') then
-          call calc_Park_proxies(p_full(i,j,:), z_full(i,j,:), temp(i,j,:), temp_2m(i,j), rin, &
-                              q_hum(i,j,:), rh_in_cf(i,j,:), LTS(i,j), eis(i,j), ectei(i,j), &
-                              IS(i,j), DS(i,j), alpha(i,j), zlcl(i,j), z700(i,j), zinv(i,j), &
-                              RH_inv_minus(i,j), beta1(i,j), beta2(i,j), ELF(i,j), &
-                              qv_inv_minus(i,j), qv_inv_plus(i,j), temp_inv_minus(i,j), &
-                              qs_inv_minus(i,j), es_inv_minus(i,j), pinv(i,j), &
-                              Gamma700(i,j), Gamma_DL(i,j))
-        end if
-
         k = kdthdp(i,j)
-        !write(*,*) 'QL test:i,j,kcld:',i,j,kdthdp(i,j), dthdp(i,j,k)
         if(k.ne.0 .and. wg_full(i,j,k)>0) then
           kb = min(k+1, k_surf)
-
           if(uppercase(trim(sc_diag_method)) == 'CAM') then
             strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
             cf(i,j,k) = max(strat, cf(i,j,k))
           end if
           if(uppercase(trim(sc_diag_method)) == 'SLINGO') then
             strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
-            rhb_frac = min(1.0, max(0.0, (rh_in_cf(i,j,kb) - 0.6) / 0.2))
+            rhb_frac = min(1.0, max(0.0, (rh(i,j,kb) - 0.6) / 0.2))
             cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
           end if
           if(uppercase(trim(sc_diag_method)) == 'SLINGO_NO_RH') then
@@ -403,14 +360,14 @@ module cloud_simple_mod
             cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
           end if
           if(uppercase(trim(sc_diag_method)) == 'EIS_WOOD_RH') then
-            strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh_in_cf(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
-            rhb_frac = min(1.0, max(0.0, (rh_in_cf(i,j,kb)-0.6) / 0.2))
+            strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
+            rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
             cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
             !cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
           end if
           if(uppercase(trim(sc_diag_method)) == 'EIS_RH') then
             !if (eis(i,j)>0.0) then
-            strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh_in_cf(i,j,k)-6.45e-19)))
+            strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh(i,j,k)-6.45e-19)))
             cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
           end if
           if(uppercase(trim(sc_diag_method)) == 'ECTEI') then
@@ -421,7 +378,7 @@ module cloud_simple_mod
           if(uppercase(trim(sc_diag_method)) == 'ECTEI_RH') then
             ! Kawai, Koshiro and Webb, 2017
             strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
-            rhb_frac = min(1.0, max(0.0, (rh_in_cf(i,j,kb)-0.6) / 0.2))
+            rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
             cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
           end if
           if(uppercase(trim(sc_diag_method)) == 'PARK_ELF') then
@@ -430,17 +387,22 @@ module cloud_simple_mod
             cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
             !cf(i,j,k) = min(1.0, max(0.0, strat))
           end if
+          low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
         end if
-        low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
       end do
     end do
 
+    if (id_theta > 0) then
+      used = send_data(id_theta, theta, Time)
+    end if
+
     if(intermediate_outputs_diags) then
-      !Add some diagnostic ouputs
-      call output_diags(dthdp, eis, ectei, zlcl, z700, Gamma850, &
-            theta, LTS, zinv, ELF, beta1, beta2, &
-            IS, DS, alpha, RH_inv_minus, qv_inv_minus, qv_inv_plus, &
-            temp_inv_minus, qs_inv_minus, es_inv_minus, pinv, low_ca_park, Gamma700, Gamma_DL, Time)
+      if (id_dthdp > 0) then
+        used = send_data(id_dthdp, dthdp, Time)
+      end if
+      if (id_low_cld_amt_park > 0) then
+        used = send_data(id_low_cld_amt_park, low_ca_park, Time)
+      end if
     end if
   end subroutine add_stratiform_cld
 
@@ -516,7 +478,6 @@ module cloud_simple_mod
     !reff_rad =  10.0 * frac_liq + 30.0 * (1.0 - frac_liq)  !units in microns
 
   end subroutine calc_reff
-
 
   subroutine calc_rhcrit(p_full, rhcrit, scm_rhcrit)
     !get the RH needed as a threshold for the cloud fraction calc.
@@ -660,16 +621,17 @@ module cloud_simple_mod
     qcl_rad = cf * in_cloud_qcl
   end subroutine calc_qcl_rad
 
-  subroutine calc_convective_cf(temp, q_hum, rh_in_cf, precip, conv_cf, pfull, Time)
-    real, intent(in),  dimension(:,:,:) :: temp, q_hum, rh_in_cf, pfull
+  subroutine calc_convective_cf(pfull, precip, klcls, conv_cf, Time)
+    real, intent(in),  dimension(:,:,:) :: pfull
     real, intent(in),  dimension(:,:)   :: precip
+    integer, intent(in), dimension(:,:) :: klcls
     type(time_type),   intent(in)       :: Time
     real, intent(out), dimension(:,:,:) :: conv_cf
-    real, dimension(size(pfull,1), size(pfull,2)) :: precip_mm_per_day, plcl2d
+    real, dimension(size(pfull,1), size(pfull,2)) :: precip_mm_per_day, plcl
     real    :: a, b, tower_scale_coeff, used
     integer :: k
 
-    call calc_plcl2d(pfull, temp, q_hum, rh_in_cf, plcl2d)
+    call calc_lcls(klcls, pfull=pfull, plcls=plcl)
 
     precip_mm_per_day = precip * 24.0 * 3600.0  ! change units to mm/day
 
@@ -678,6 +640,7 @@ module cloud_simple_mod
     tower_scale_coeff = 0.25
 
     conv_cf = 0.0
+
     do k=1, size(pfull,3)
       where (precip_mm_per_day<0.14)
         conv_cf(:,:,k) = 0.0
@@ -686,17 +649,14 @@ module cloud_simple_mod
       elsewhere
         conv_cf(:,:,k) = a + b * log(precip_mm_per_day)
       end where
-
       ! Convective clouds only exist when above LCL
-      where(pfull(:,:,k) > plcl2d)
+      where(pfull(:,:,k) > plcl)
         conv_cf(:,:,k) = 0.0
       end where
     end do
 
     where (pfull < pshallow)
       conv_cf = conv_cf * tower_scale_coeff
-    !elsewhere
-    !  conv_cf = conv_cf
     end where
     !!!!!!conv_cf = conv_cf * tower_scale_coeff
 
@@ -707,35 +667,32 @@ module cloud_simple_mod
 
   end subroutine calc_convective_cf
 
-
-  subroutine calc_convective_cf2(temp, q_hum, rh_in_cf, precip, conv_cf, pfull, Time)
-    real, intent(in),  dimension(:,:,:) :: temp, q_hum, rh_in_cf, pfull
+  subroutine calc_convective_cf2(pfull, precip, klcls, conv_cf, Time)
+    real, intent(in),  dimension(:,:,:) :: pfull
     real, intent(in),  dimension(:,:)   :: precip
+    integer, intent(in), dimension(:,:) :: klcls
     type(time_type),   intent(in)       :: Time
     real, intent(out), dimension(:,:,:) :: conv_cf
     real, dimension(size(pfull,1), size(pfull,2)) :: precip_mm_per_day, plcl2d, conv_cf_tmp
-    real    :: convcld_a, convcld_b, used !tower_scale_coeff,
+    real    :: convcld_a, convcld_b, used
     integer :: i, j, k, klcl, ktop, nlayers
 
-    call calc_plcl2d(pfull, temp, q_hum, rh_in_cf, plcl2d)
+    call calc_lcls(klcls, pfull=pfull, plcls=plcl2d)
 
     precip_mm_per_day = precip * 24.0 * 3600.0  ! change units to mm/day
 
-    convcld_a = -0.125 * log(0.14)  !0.246,  0.001 !
+    convcld_a = -0.125 * log(0.14)  !0.246, ! 0.001
     convcld_b =  0.125 !0.0418 !
-    !tower_scale_coeff = 0.25
 
     conv_cf = 0.0
-    conv_cf_tmp = convcld_a + convcld_b * log(1.0+precip_mm_per_day)
+    conv_cf_tmp = convcld_a + convcld_b * log(1.0 + precip_mm_per_day)
 
     ktop = 3
-    do i=1, size(temp,1)
-      do j=1, size(temp,2)
-        klcl = minloc(abs(pfull(i,j,:) - plcl2d(i,j)), 1)
+    do i=1, size(pfull,1)
+      do j=1, size(pfull,2)
+        klcl = klcls(i,j)
         nlayers = klcl - ktop + 1
-        !write(*,*) 'klcl, nlay', plcl2d(i,j), klcl, nlayers,  conv_cf_tmp(i,j)
         conv_cf(i,j,ktop:klcl) = 1.0 - (1.0 - conv_cf_tmp(i,j))**(1.0 / nlayers)
-        !write(*,*) 'conv k',  conv_cf(i,j,ktop:klcl)
       end do
     end do
 
@@ -746,24 +703,8 @@ module cloud_simple_mod
 
   end subroutine calc_convective_cf2
 
-
-  subroutine calc_plcl2d(pfull, temp, q_hum, rh, plcl2d)
-    real, intent(in),  dimension(:,:,:) :: temp, rh, pfull, q_hum
-    real, intent(out), dimension(:,:)   :: plcl2d
-    real :: tlcl, zlcl
-    real, dimension(size(temp,3)) :: rin
-    integer :: i, j
-
-    do i=1, size(temp,1)
-      do j=1, size(temp,2)
-        rin = q_hum(i,j,:) / (1.0 - q_hum(i,j,:)) !mixing ratio
-        call calc_lcl(pfull(i,j,:), temp(i,j,:), rin, rh(i,j,:), plcl2d(i,j), tlcl, zlcl)
-      end do
-    end do
-
-  end subroutine calc_plcl2d
-
   subroutine merge_strat_conv_clouds(cf, conv_cf)
+    implicit none
     real, intent(in),  dimension(:,:,:) :: conv_cf
     real, intent(out), dimension(:,:,:) :: cf
 
@@ -771,6 +712,212 @@ module cloud_simple_mod
     cf = 1.0 - (1.0 - cf) * (1.0 - conv_cf) ! Random overlap
 
   end subroutine merge_strat_conv_clouds
+
+  subroutine calc_lcls(klcls, pfull, temp, zfull, plcls, tlcls, zlcls)
+    ! Example to call:
+    ! call calc_lcls(klcls, pfull=p_full, plcls=plcl2d)
+    implicit none
+    integer, intent(in), dimension(:,:) :: klcls
+    real, intent(in),  dimension(:,:,:), optional :: temp, pfull, zfull
+    real, intent(out), dimension(:,:),   optional :: plcls, tlcls, zlcls
+    integer :: i, j
+
+    do i=1, size(klcls,1)
+      do j=1, size(klcls,2)
+        if(present(pfull) .and. present(plcls)) then
+          plcls(i,j) = pfull(i,j,klcls(i,j))
+        end if
+        if(present(temp) .and. present(tlcls)) then
+          tlcls(i,j) =  temp(i,j,klcls(i,j))
+        end if
+        if (present(zfull) .and. present(zlcls)) then
+          zlcls(i,j) = zfull(i,j,klcls(i,j))
+        end if
+
+        if(.not.((present(pfull) .and. present(plcls)) .or. &
+                 (present(temp)  .and. present(tlcls)) .or. &
+                 (present(zfull) .and. present(zlcls)))) then
+          call error_mesg('calc_lcls in cloud_simple', 'At least one group of '// &
+                'pfull(plcls), temp(tlcls) and zfull(zlcls) should exist.', FATAL)
+        end if
+      end do
+    end do
+
+  end subroutine calc_lcls
+
+  subroutine calc_eis(pfull, zfull, temp, ts, ps, klcls, eis, Time)
+    ! Estimated inversion stability
+    ! Refer to: Wood and Bretherton, 2006, Journal of Climate
+    implicit none
+    real,    intent(in),  dimension(:,:,:) :: pfull, zfull, temp
+    real,    intent(in),  dimension(:,:)   :: ts, ps
+    integer, intent(in),  dimension(:,:)   :: klcls
+    type(time_type),      intent(in)       :: Time
+    real,    intent(out), dimension(:,:)   :: eis
+    real, dimension(size(temp,1), size(temp,2)) :: zlcl, z700, Gamma850, LTS
+    real    :: pstar, T850, es, qs, used
+    integer :: k700, i, j
+
+    pstar = 1.e5 ! Pa
+
+    do i=1, size(temp,1)
+      do j=1, size(temp,2)
+        k700 = minloc(abs(pfull(i,j,:) - 7.0e4), 1)
+        LTS(i,j) = temp(i,j,k700)*((pstar/pfull(i,j,k700))**(RDGAS/CP_AIR)) - &
+                   ts(i,j)*(pstar/ps(i,j))**(RDGAS/CP_AIR)
+        T850 = (temp(i,j,k700) + ts(i,j)) / 2.0
+        call lookup_es(T850, es)
+        qs = 0.622 * es / (8.5e4 - es)
+        Gamma850(i,j) = GRAV / CP_AIR * (1.0 - (1.0 + HLV*qs/RDGAS/T850) &
+                        / (1.0 + HLV**2 * qs/CP_AIR/RVGAS/T850**2))
+        z700(i,j) = zfull(i,j,k700)
+      end do
+    end do
+
+    call calc_lcls(klcls, zfull=zfull, zlcls=zlcl)
+    eis = LTS - Gamma850 * (z700 - zlcl)
+
+    ! ----- output diagnositics ------ !
+    if(id_eis > 0) then
+      used = send_data (id_eis, eis, Time)
+    end if
+    if(id_lts > 0) then
+      used = send_data (id_lts, LTS, Time)
+    end if
+    if(id_zlcl > 0) then
+      used = send_data (id_zlcl, zlcl, Time)
+    end if
+
+    if(intermediate_outputs_diags) then
+      if(id_z700 > 0) then
+        used = send_data (id_z700, z700, Time)
+      end if
+      if(id_gamma_850 > 0) then
+        used = send_data (id_gamma_850, Gamma850, Time)
+      end if
+    end if
+  end subroutine calc_eis
+
+  subroutine calc_ectei(pfull, q_hum, q_surf, eis, ectei, Time)
+    ! Estimated Cloud Top Entrainment Index (ECTEI)
+    ! Refer to: Eq(3) in Kawai, Koshiro and Webb, 2017, Journal of Climate
+    implicit none
+    real, intent(in),  dimension(:,:,:) :: pfull, q_hum
+    real, intent(in),  dimension(:,:)   :: q_surf, eis
+    type(time_type),   intent(in)       :: Time
+    real, intent(out), dimension(:,:)   :: ectei
+    real, dimension(size(pfull,1),size(pfull,2)) :: q_700
+    integer :: k700, i, j
+    real :: k_en, C_qgap, beta, used
+
+    k_en = 0.7
+    C_qgap = 0.76
+    beta = (1.0 - k_en) * C_qgap
+
+    do i=1, size(pfull,1)
+      do j=1, size(pfull,2)
+        k700 = minloc(abs(pfull(i,j,:) - 7.0e4), 1)
+        q_700(i,j) = q_hum(i,j,k700)
+      end do
+    end do
+
+    ectei = eis - beta * HLV / CP_AIR * (q_surf - q_700)
+
+    if(id_ectei > 0) then
+      used = send_data (id_ectei, ectei, Time)
+    end if
+  end subroutine calc_ectei
+
+  subroutine calc_Park_proxies(pfull, zfull, temp, ts, q_hum, q_surf, klcls, ELF, Time)
+    ! Refer to: Park and Shin, 2019, Atmospheric Chemistry and Physics
+    ! https://www.atmos-chem-phys.net/19/5635/2019/
+
+    implicit none
+    real,    intent(in),  dimension(:,:,:) :: pfull, zfull, temp, q_hum
+    real,    intent(in),  dimension(:,:)   :: ts, q_surf
+    integer, intent(in),  dimension(:,:)   :: klcls
+    type(time_type),      intent(in)       :: Time
+    real,    intent(out), dimension(:,:)   :: ELF
+    real, dimension(size(temp,1), size(temp,2)) :: plcl, tlcl, zlcl, z700, Gamma_DL, &
+                                    Gamma700, LTS, z_ML, zinv, qv_ML, beta2
+    ! other paramters
+    real, dimension(size(temp,1), size(temp,2)) :: beta1, IS, DS, eis, ectei, alpha, f_para
+    real :: pstar, delta_zs, theta_ML, used
+    integer :: k700, i, j
+
+    delta_zs = 2750.0 ! meter, constant
+    pstar = 1.0e5 ! Pa
+    kappa = RDGAS / CP_AIR
+
+    call calc_lcls(klcls, pfull, temp, zfull, plcl, tlcl, zlcl)
+
+    do i=1, size(pfull,1)
+      do j=1, size(pfull,2)
+        k700 = minloc(abs(pfull(i,j,:) - 7.0e4), 1)
+        z700(i,j) = zfull(i,j,k700)
+        ! Mixed Layer is the LCL
+        call calc_moist_lapse_rate(tlcl(i,j), plcl(i,j), Gamma_DL(i,j))
+        call calc_moist_lapse_rate(temp(i,j,k700), pfull(i,j,k700), Gamma700(i,j))
+        theta_ML = tlcl(i,j) * (pstar / plcl(i,j))**kappa
+        LTS(i,j) = temp(i,j,k700) * (pstar / pfull(i,j,k700))**kappa - theta_ML
+        qv_ML(i,j) = q_hum(i,j,klcls(i,j))
+      end do
+    end do
+
+    z_ML = zlcl
+    zinv = -LTS/Gamma700 + z700 + delta_zs*(Gamma_DL/Gamma700)
+
+    ! Rest zinv
+    where(zinv<z_ML)
+      zinv = z_ML
+    end where
+    where(zinv>z_ML+delta_zs)
+      zinv = z_ML + delta_zs
+    end where
+
+    ! low-level cloud suppression parameters (LCS)
+    beta2 = sqrt(zinv*zlcl) / delta_zs
+    ! freeze-dry factor (Vavrus and Waliser, 2008)
+    f_para = max(0.15, min(1.0, qv_ML/0.003))
+    ! Estimated low-cloud fraction (ELF)
+    ELF = f_para * (1.0 - beta2)
+
+    ! ----- output diagnostics ----- !
+    if(id_ELF>0) then
+      used = send_data(id_ELF, ELF, Time)
+    end if
+    if(id_lts>0) then
+      used = send_data(id_lts, LTS, Time)
+    end if
+    if(id_zlcl>0) then
+      used = send_data(id_zlcl, zlcl, Time)
+    end if
+
+    if(intermediate_outputs_diags) then
+      !============= Other prameters =============!
+      beta1 = (zinv+zlcl) / delta_zs
+      alpha = (zinv - z_ML) / delta_zs
+      IS = (1.0 - alpha) * Gamma_DL * delta_zs
+      DS = alpha * Gamma_DL * delta_zs
+      eis = LTS + Gamma_DL*z_ML - Gamma700*z700
+      call calc_ectei(pfull, q_hum, q_surf, eis, ectei, Time)
+      !============= Other prameters =============!
+
+      !Add some diagnostic ouputs
+      call output_extra_diags_for_Park_ELF(Time, beta1, beta2, &
+              alpha, eis, IS, DS, z700, zinv, Gamma700, Gamma_DL)
+    end if
+  end subroutine calc_Park_proxies
+
+  subroutine calc_moist_lapse_rate(T, p, Gamma)
+    real, intent(in)  :: T, p
+    real, intent(out) :: Gamma
+    real :: es, qs
+
+    call lookup_es(T, es)
+    qs = 0.622 * es / (p - es)
+    Gamma = (GRAV/CP_AIR) * (1.0 - (1.0 + HLV*qs/RDGAS/T) / (1.0 + HLV**2 * qs/CP_AIR/RVGAS/T**2))
+  end subroutine calc_moist_lapse_rate
 
   subroutine diag_cloud_amount(cf, p_full, p_half, Time)
     real, intent(in),  dimension(:,:,:) :: cf, p_full, p_half
@@ -860,7 +1007,6 @@ module cloud_simple_mod
     mid_ca = (1.0 - mid_ca) * 1.0e2
     low_ca = (1.0 - low_ca) * 1.0e2
   end subroutine compute_isccp_clds
-
 
   subroutine compute_isccp_clds2(pfull, nclds, ktop, cldamt, high_ca, mid_ca, low_ca)
     real,     dimension(:,:,:), intent(in)  :: pfull, cldamt
@@ -1079,378 +1225,71 @@ module cloud_simple_mod
     end do
   end subroutine max_rnd_overlap
 
-
-  subroutine calc_eis(pfull, zfull, tin, ts_in, rin, rhumin, eis, zlcl, z700, Gamma850, LTS)
-    ! Estimated inversion stability
-    ! Refer to: Wood and Bretherton, 2006, Journal of Climate
-    implicit none
-    real, intent(in), dimension(:)  :: pfull, zfull, tin, rin, rhumin
-    real, intent(in)                :: ts_in
-    real, intent(out)               :: eis, zlcl, z700, Gamma850, LTS
-    real    :: pstar, ts, tk, T850, es, qs, tlcl, plcl
-    integer :: ks, k700
-
-    k700 = minloc(abs(pfull(:) - 7.0e4), 1)
-    pstar = 1.e5 ! Pa
-    ks = size(tin, 1)
-    tk = tin(k700)
-    !LTS = tk*((pstar/7.e4)**(RDGAS/CP_AIR)) - ts*(pstar/pfull(ks))**(RDGAS/CP_AIR)
-    if(do_read_ts) then
-      ts = ts_in
-      LTS = tk*((pstar/pfull(k700))**(RDGAS/CP_AIR)) - ts
-    else
-      ts = tin(ks)
-      LTS = tk*((pstar/pfull(k700))**(RDGAS/CP_AIR)) - ts*(pstar/pfull(ks))**(RDGAS/CP_AIR)
-    end if
-    T850 = (tk + ts) / 2.0
-    !es = 610.78 * exp(17.27*(T850-KELVIN)/(T850-KELVIN+237.3))
-    call lookup_es(T850, es)
-    qs = 0.622 * es / (8.5e4 - es)
-    Gamma850 = (GRAV/CP_AIR) * (1.0 - (1.0 + HLV*qs/RDGAS/T850) / (1.0 + HLV**2 * qs/CP_AIR/RVGAS/T850**2))
-    call calc_lcl(pfull, tin, rin, rhumin, plcl, tlcl, zlcl)
-    !z700 = RDGAS * ts / GRAV * log(pstar/7.0e4)
-    !z700 = RDGAS * ts / GRAV * log(pfull(ks)/pfull(k700))
-    z700 = zfull(k700)
-    eis = LTS - Gamma850 * (z700 - zlcl)
-  end subroutine calc_eis
-
-  subroutine calc_ectei(k700, qin, eis, ectei)
-    ! Estimated Cloud Top Entrainment Index (ECTEI)
-    ! Refer to: Kawai, Koshiro and Webb, 2017, Journal of Climate
-    implicit none
-    real, intent(in), dimension(:)  :: qin
-    real, intent(in)                :: eis
-    integer, intent(in)             :: k700
-    real, intent(out)               :: ectei
-    real :: k_en, C_qgap, beta
-    integer :: ks
-
-    ks = size(qin, 1)
-
-    k_en = 0.7
-    C_qgap = 0.76
-    beta = (1.0 - k_en) * C_qgap
-
-    ectei = eis - beta * HLV / CP_AIR * (qin(ks) - qin(k700))
-  end subroutine calc_ectei
-
-  subroutine calc_moist_lapse_rate(T, p, Gamma)
-    real, intent(in)  :: T, p
-    real, intent(out) :: Gamma
-    real :: es, qs
-
-    call lookup_es(T, es)
-    qs = 0.622 * es / (p - es)
-    Gamma = (GRAV/CP_AIR) * (1.0 - (1.0 + HLV*qs/RDGAS/T) / (1.0 + HLV**2 * qs/CP_AIR/RVGAS/T**2))
-  end subroutine calc_moist_lapse_rate
-
-  subroutine calc_Park_proxies(pfull, zfull, tin, ts_in, rin, qin, rhumin, LTS, eis, ectei, IS, DS, &
-                             alpha, zlcl, z700, zinv, RH_inv_minus, beta1, beta2, ELF, &
-                             qv_inv_minus, qv_inv_plus, temp_inv_minus, qs_inv_minus, es_inv_minus, pinv, &
-                             Gamma700, Gamma_DL)
-      ! Refer to: Park and Shin, 2019, Atmospheric Chemistry and Physics
-      implicit none
-      real, intent(in), dimension(:)  :: pfull, zfull, tin, rin, qin, rhumin
-      real, intent(in)                :: ts_in
-      real, intent(out)               :: zlcl, z700, zinv, beta1, beta2, ELF, IS, DS, LTS, eis, ectei, alpha, RH_inv_minus, &
-                                         qv_inv_minus, qv_inv_plus, temp_inv_minus, qs_inv_minus, es_inv_minus, pinv, &
-                                         Gamma700,  Gamma_DL
-      real    :: pstar, delta_zs, ts, tk, tlcl, plcl, qv_ML, f_para, kappa, z_ML, &
-                Gamma700_qv, z750, theta_ML, theta_inv_minus
-      integer :: ks, klcl, k700, k750
-
-      k700 = minloc(abs(pfull(:) - 7.0e4), 1)
-
-      delta_zs = 2750.0 ! meter, constant
-      pstar = 1.0e5      ! Pa
-
-      ks = size(tin, 1)
-      tk = tin(k700)
-      z700 = zfull(k700)
-      kappa = RDGAS / CP_AIR
-
-      if(do_read_ts) then
-        ts = ts_in
-      else
-        ts = tin(ks)
-      end if
-
-      ! Mixed Layer is the LCL
-      call calc_lcl(pfull, tin, rin, rhumin, plcl, tlcl, zlcl)
-      call calc_moist_lapse_rate(tlcl, plcl, Gamma_DL)
-      call calc_moist_lapse_rate(tk, pfull(k700), Gamma700)
-
-      z_ML = zlcl
-      theta_ML = tlcl*(pstar/plcl)**kappa
-      LTS = tk*(pstar/pfull(k700))**kappa - theta_ML
-
-      zinv = -LTS/Gamma700 + z700 + delta_zs*(Gamma_DL/Gamma700)
-      ! Rest zinv
-      if(zinv<z_ML) then
-        zinv = z_ML
-      end if
-      if(zinv>z_ML+delta_zs) then
-        zinv = z_ML + delta_zs
-      end if
-
-      !============= Other prameters =============!
-      alpha = (zinv - z_ML) / delta_zs
-      IS = (1.0-alpha) * Gamma_DL * delta_zs
-      DS = alpha * Gamma_DL * delta_zs
-      eis = LTS + Gamma_DL*z_ML - Gamma700*z700
-      call calc_ectei(k700, qin, eis, ectei)
-      !============= Other prameters =============!
-
-      ! low-level cloud suppression parameters (LCS)
-      beta1 = (zinv+zlcl) / delta_zs
-      beta2 = sqrt(zinv*zlcl) / delta_zs
-      !if (zinv<0 .or. zlcl<0) then
-      !  write(*,*) 'QL test, beta nan, zinv, zlcl, z_ML', beta2, zinv, zlcl, z_ML
-      !end if
-
-      klcl = minloc(abs(pfull - plcl), 1)
-      qv_ML = qin(klcl)
-
-      !k750 = 22
-      k750 = minloc(abs(pfull - 7.5e4), 1)
-      !z750 = zfull(k750)
-
-      Gamma700_qv = (qin(k700)-qin(k750)) / (z750-z700)
-      qv_inv_plus = qin(k700) - Gamma700_qv*(z700-zinv)
-      qv_inv_minus = alpha*qv_inv_plus + (1.0-alpha)*qv_ML
-      theta_inv_minus = DS + theta_ML
-      pinv = pstar * exp(-GRAV/RDGAS/ts*zinv)
-      temp_inv_minus = theta_inv_minus / (pstar/pinv)**kappa
-      call lookup_es(temp_inv_minus, es_inv_minus)
-      qs_inv_minus = 0.622*es_inv_minus/(pinv-es_inv_minus)
-      RH_inv_minus = qv_inv_minus / qs_inv_minus
-
-      ! freeze-dry factor (Vavrus and Waliser, 2008)
-      f_para = max(0.15, min(1.0, qv_ML/0.003))
-
-      ! estimated low-cloud fraction
-      ELF = f_para * (1.0 - beta2)
-      !if (zinv<0) then
-      !write(*,*) 'QL test: Park test, ELF, LTS, zinv, zlcl, z700, Gamma_DL, Gamma700, tlcl, t700, plcl, p700,beta1, beta2, f:', &
-      !            ELF, LTS, zinv, zlcl, z700, Gamma_DL, Gamma700, tlcl, tin(k700), plcl, pfull(k700), beta1, beta2, f_para
-      !end if
-
-      ! Test why the z700 is strange...
-      !if (z700>1e4) then
-      !write(*,*) 'QL test: Park test, ELF, LTS, zinv, zlcl, z700, Gamma_DL, Gamma700, tlcl, t700, plcl, p700,beta1, beta2, f:', &
-      !            ELF, LTS, zinv, zlcl, z700, Gamma_DL, Gamma700, tlcl, tin(k700), plcl, pfull(k700), beta1, beta2, f_para
-      !end if
-  end subroutine calc_Park_proxies
-
-  subroutine calc_lcl(p, tin, rin, rhumin, plcl, tlcl, zlcl)
-    ! Return the pressure, temperature and height of LCL
-    implicit none
-    real, intent(in), dimension(:)         :: p, tin, rin, rhumin
-    real, intent(out)                      :: zlcl, tlcl, plcl
-    integer   :: ks
-    real      :: t0, r0, es, rs, theta0, pstar, value!, zlcl_romps !, zlcl2
-
-    pstar = 1.e5
-    plcl = 0.
-    tlcl = 0.
-
-    ks = size(tin, 1)
-
-    ! start with surface parcel
-    t0 = tin(ks)
-    r0 = rin(ks)
-    ! calculate the lifting condensation level by the following:
-    ! are you saturated to begin with?
-
-    call lookup_es(t0, es)
-    rs = RDGAS / RVGAS * es / p(ks)
-    if (r0.ge.rs) then
-      ! if you're already saturated, set lcl to be the surface value.
-      plcl = p(ks)
-      tlcl = tin(ks)
-    else
-      ! if not saturated to begin with, use the analytic expression to calculate the
-      ! exact pressure and temperature where you?re saturated.
-      theta0 = tin(ks) * (pstar/p(ks))**KAPPA
-      ! the expression that we utilize is
-      ! log(r/theta**(1/KAPPA)*pstar*RVGAS/RDGAS/es00) = log(es/T**(1/KAPPA))
-      ! The right hand side of this is only a function of temperature, therefore
-      ! this is put into a lookup table to solve for temperature.
-      if (r0.gt.0.) then
-        value = log(theta0**(-1.0/KAPPA)*r0*pstar*RVGAS/RDGAS/es0)
-        call lcltabl(value, tlcl)
-        plcl = pstar * (tlcl/theta0)**(1.0/KAPPA)
-        ! just in case plcl is very high up
-        if (plcl.lt.p(1)) then
-           plcl = p(1)
-           tlcl = theta0 * (plcl/pstar)**KAPPA
-           write (*,*) 'hi lcl'
-        end if
-      else
-        ! if the parcel sp hum is zero or negative, set lcl to top level
-        plcl = p(1)
-        tlcl = theta0 * (plcl/pstar)**KAPPA
-      end if
-    end if
-    !zlcl2 = RDGAS * tin(ks) * log(pstar/plcl) / GRAV
-    !zlcl2 = CP_AIR/GRAV * (tin(ks)-55.0 - (1.0/(tin(ks)-55.0) - log(0.8)/2840.)**(-1))
-    !write(*,*) 'QL test: rh(ks)', rin(ks)
-    !zlcl = max(0.0, CP_AIR/GRAV * (tin(ks)-55.0 - (1.0/(tin(ks)-55.0) - log(rhumin(ks))/2840.)**(-1)))
-    zlcl = RDGAS*tin(ks)*log(pstar/p(ks))/GRAV + CP_AIR/GRAV * (tin(ks)-55.0 - (1.0/(tin(ks)-55.0) - log(rhumin(ks))/2840.)**(-1))
-    !zlcl = CP_AIR/GRAV * (tin(ks)-55.0 - (1.0/(tin(ks)-55.0) - log(rhumin(ks))/2840.)**(-1))
-    !if (abs(zlcl2-zlcl)>50) then
-    !  write(*,*) 'QL test: zlcl2, zlcl', zlcl2, zlcl
-    !end if
-    !zlcl_romps = lcl(p(ks), tin(ks), rhl=rhumin(ks), return_ldl=.false.)
-    !if (abs(zlcl_romps-zlcl)>10) then
-    !  write(*,*) 'QL test: zlcl, zlcl_romps', zlcl, zlcl_romps
-    !end if
-  end subroutine calc_lcl
-
   subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, rhcrit, Time)
     real, intent(in), dimension(:,:,:) :: cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, rhcrit
     type(time_type) , intent(in)       :: Time
     real :: used
 
-    if ( id_cf > 0 ) then
-      used = send_data ( id_cf, cf, Time)
+    if (id_cf > 0) then
+      used = send_data (id_cf, cf, Time)
     endif
-
-    if ( id_reff_rad > 0 ) then
-      used = send_data ( id_reff_rad, reff_rad, Time)
+    if (id_reff_rad > 0) then
+      used = send_data (id_reff_rad, reff_rad, Time)
     endif
-
-    if ( id_frac_liq > 0 ) then
-      used = send_data ( id_frac_liq, frac_liq, Time)
+    if (id_frac_liq > 0) then
+      used = send_data (id_frac_liq, frac_liq, Time)
     endif
-
-    if ( id_qcl_rad > 0 ) then
-      used = send_data ( id_qcl_rad, qcl_rad, Time)
+    if (id_qcl_rad > 0) then
+      used = send_data (id_qcl_rad, qcl_rad, Time)
     endif
-
-    if ( id_rh_in_cf > 0 ) then
-      used = send_data ( id_rh_in_cf, rh_in_cf*100., Time)
+    if (id_rh_in_cf > 0) then
+      used = send_data (id_rh_in_cf, rh_in_cf*100., Time)
     endif
-
-    if ( id_rhcrit > 0 ) then
-      used = send_data ( id_rhcrit, rhcrit*100.0, Time)
+    if (id_rhcrit > 0) then
+      used = send_data (id_rhcrit, rhcrit*100.0, Time)
     endif
   end subroutine output_cloud_diags
 
-  subroutine output_diags(dthdp, eis, ectei, zlcl, z700, Gamma850,    &
-                          theta, LTS, zinv, ELF, beta1, beta2,  &
-                          IS, DS, alpha, RH_inv_minus, qv_inv_minus, qv_inv_plus, &
-                          temp_inv_minus, qs_inv_minus, es_inv_minus, pinv, low_ca_park, &
-                          Gamma700, Gamma_DL, Time)
-    real, intent(in), dimension(:,:,:) :: theta, dthdp
-    real, intent(in), dimension(:,:)   :: eis, ectei, zlcl, z700, Gamma850, &
-                                          LTS, zinv, ELF, beta1, beta2, &
-                                          IS, DS, alpha, RH_inv_minus, qv_inv_minus, qv_inv_plus, &
-                                          temp_inv_minus,  qs_inv_minus, es_inv_minus, pinv, low_ca_park, &
-                                          Gamma700, Gamma_DL
-    type(time_type) , intent(in)       :: Time
+  subroutine output_extra_diags_for_Park_ELF(Time, beta1, beta2, &
+               alpha, eis, IS, DS, z700, zinv, Gamma700, Gamma_DL)
+
+    real, intent(in), dimension(:,:) :: beta1, beta2, alpha, eis, &
+                            IS, DS, z700, zinv, Gamma700, Gamma_DL
+    type(time_type) , intent(in) :: Time
     real :: used
 
-    if ( id_low_cld_amt_park > 0 ) then
-      used = send_data ( id_low_cld_amt_park, low_ca_park, Time)
+    if (id_eis>0) then
+      ! Notice the eis here is a little different from that in calc_eis
+      used = send_data (id_eis, eis, Time)
     endif
-
-    if ( id_eis > 0 ) then
-      used = send_data ( id_eis, eis, Time)
+    if (id_beta1 > 0) then
+      used = send_data (id_beta1, beta1, Time)
     endif
-
-    if ( id_ectei > 0 ) then
-      used = send_data ( id_ectei, ectei, Time)
+    if (id_beta2 > 0) then
+      used = send_data (id_beta2, beta2, Time)
     endif
-
-    if ( id_ELF > 0 ) then
-      used = send_data ( id_ELF, ELF, Time)
+    if (id_alpha > 0) then
+      used = send_data (id_alpha, alpha, Time)
     endif
-
-    if ( id_beta1 > 0 ) then
-      used = send_data ( id_beta1, beta1, Time)
+    if (id_DS > 0) then
+      used = send_data(id_DS, DS, Time)
     endif
-
-    if ( id_beta2 > 0 ) then
-      used = send_data ( id_beta2, beta2, Time)
+    if (id_IS > 0) then
+      used = send_data (id_IS, IS, Time)
     endif
-
-    if ( id_alpha > 0 ) then
-      used = send_data ( id_alpha, alpha, Time)
+    if (id_zinv > 0) then
+      used = send_data (id_zinv, zinv, Time)
     endif
-
-    if ( id_DS > 0 ) then
-      used = send_data ( id_DS, DS, Time)
+    if (id_z700 > 0) then
+      used = send_data (id_z700, z700, Time)
     endif
-
-    if ( id_IS > 0 ) then
-      used = send_data ( id_IS, IS, Time)
+    if (id_gamma_700 > 0) then
+      used = send_data (id_gamma_700, Gamma700, Time)
     endif
-
-    if ( id_RH_inv_minus > 0 ) then
-      used = send_data ( id_RH_inv_minus, RH_inv_minus, Time)
+    if (id_gamma_DL > 0) then
+      used = send_data (id_gamma_DL, Gamma_DL, Time)
     endif
-
-    if ( id_zinv > 0 ) then
-      used = send_data ( id_zinv, zinv, Time)
-    endif
-
-    if ( id_zlcl > 0 ) then
-      used = send_data ( id_zlcl, zlcl, Time)
-    endif
-
-    if ( id_qv_inv_minus > 0 ) then
-      used = send_data ( id_qv_inv_minus, qv_inv_minus, Time)
-    endif
-
-    if ( id_qv_inv_plus > 0 ) then
-      used = send_data ( id_qv_inv_plus, qv_inv_plus, Time)
-    endif
-
-    if ( id_temp_inv_minus > 0 ) then
-      used = send_data ( id_temp_inv_minus, temp_inv_minus, Time)
-    endif
-
-    if ( id_qs_inv_minus > 0 ) then
-      used = send_data ( id_qs_inv_minus, qs_inv_minus, Time)
-    endif
-
-    if ( id_es_inv_minus > 0 ) then
-      used = send_data ( id_es_inv_minus, es_inv_minus, Time)
-    endif
-
-    if ( id_pinv > 0 ) then
-      used = send_data ( id_pinv, pinv, Time)
-    endif
-
-    if ( id_lts > 0 ) then
-      used = send_data ( id_lts, LTS, Time)
-    endif
-
-    if ( id_z700 > 0 ) then
-      used = send_data ( id_z700, z700, Time)
-    endif
-
-    if ( id_gamma_850 > 0 ) then
-      used = send_data ( id_gamma_850, Gamma850, Time)
-    endif
-
-    if ( id_gamma_700 > 0 ) then
-      used = send_data ( id_gamma_700, Gamma700, Time)
-    endif
-
-    if ( id_gamma_DL > 0 ) then
-      used = send_data ( id_gamma_DL, Gamma_DL, Time)
-    endif
-
-    if ( id_theta > 0 ) then
-      used = send_data ( id_theta, theta, Time)
-    endif
-
-    if ( id_dthdp > 0 ) then
-      used = send_data ( id_dthdp, dthdp, Time)
-    endif
-  end subroutine output_diags
+  end subroutine output_extra_diags_for_Park_ELF
 
   subroutine output_cloud_amount(tca, high_ca, mid_ca, low_ca, Time)
     real, intent(in), dimension(:,:)   :: tca, high_ca, mid_ca, low_ca
@@ -1460,15 +1299,12 @@ module cloud_simple_mod
     if ( id_tot_cld_amt > 0 ) then
       used = send_data ( id_tot_cld_amt, tca, Time)
     endif
-
     if ( id_high_cld_amt > 0 ) then
       used = send_data ( id_high_cld_amt, high_ca, Time)
     endif
-
     if ( id_mid_cld_amt > 0 ) then
       used = send_data ( id_mid_cld_amt, mid_ca, Time)
     endif
-
     if ( id_low_cld_amt > 0 ) then
       used = send_data ( id_low_cld_amt, low_ca, Time)
     endif
