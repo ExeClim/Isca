@@ -415,7 +415,7 @@ module cloud_simple_mod
     real :: premib
     integer :: i, j, k, kb
 
-    dthdp_min = -0.125  ! d_theta / d_p, lapse rate
+    dthdp_min = -0.1 !-0.125  ! d_theta / d_p, lapse rate
     kdthdp = 0
     premib = 7.0e4
     dthdp = 0.0
