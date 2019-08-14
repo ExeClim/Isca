@@ -978,18 +978,6 @@ if(.not.mixed_layer_bc) then
 !!$  t_surf = surface_temperature(tg(:,:,:,previous), p_full(:,:,:,current), p_half(:,:,:,current))
 end if
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
-
-!id_temp_2m = register_diag_field(mod_name, 'temp_2m',            &         ! mp586 add 2m temp
-!     axes(1:2), Time, 'Air temperature 2m above surface', 'K')
-!id_u_10m = register_diag_field(mod_name, 'u_10m',		 &	   ! mp586 add 10m wind (u)
-!     axes(1:2), Time, 'Zonal wind 10m above surface', 'm/s')
-!id_v_10m = register_diag_field(mod_name, 'v_10m',  	   	 &         ! mp586 add 10m wind (v)
-!     axes(1:2), Time, 'Meridional wind 10m above surface', 'm/s')
-
-!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 if(.not.gp_surface) then 
   call surface_flux(                                                        &

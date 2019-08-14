@@ -518,7 +518,7 @@ subroutine surface_flux_1d (                                           &
        ex_del_m, ex_del_h, ex_del_q, avail  )
 
 
-! adapted from https://github.com/mom-ocean/MOM5/blob/99168b44ab45f4f5b4fa2544a0c3f644f0afb666/src/coupler/surface_flux.F90, L 1984 ff 
+! adapted from https://github.com/mom-ocean/MOM5/blob/3702ad86f9653f4e315b98613eb824a47d89cf00/src/coupler/flux_exchange.F90#L1932
 
 
      !    ------- reference temp -----------
