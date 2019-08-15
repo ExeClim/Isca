@@ -556,6 +556,8 @@ module cloud_simple_mod
           cf = ((rh-rhc)/(1-rhc)) ** 2
         end where
 
+        cf = min(1.0, cf)
+
       case(B_XR96)
         p_para = 0.25
         alpha_0 = 100.0
