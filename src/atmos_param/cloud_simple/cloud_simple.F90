@@ -44,6 +44,7 @@ module cloud_simple_mod
   logical :: intermediate_outputs_diags = .false.
   logical :: do_read_ts = .false.
   logical :: do_conv_cld = .false.
+  logical :: do_adjust_low_cld = .false.
   real, parameter :: FILL_VALUE = -999.0 ! Fill value for arrays
   real, dimension(100) :: scm_rhcrit = FILL_VALUE   ! Input array for single column critical RH. Max number of levels = 100
 
@@ -67,6 +68,8 @@ module cloud_simple_mod
   real :: slingo_rhc_mid = 0.65
   real :: slingo_rhc_high = 0.8
 
+  ! For low clout adjustment
+  real :: omega_adj_threshold  = -0.1 !Pa/s, -3.6hPa/hour
 
   namelist /cloud_simple_nml/ simple_cca, rhcsfc, rhc700, rhc200, &
                               cf_diag_formula_name, &
@@ -78,7 +81,8 @@ module cloud_simple_mod
                               dthdp_min, do_read_ts, &
                               a_surf, a_top, b_surf, b_top, nx, &
                               do_conv_cld, pshallow, cf_min, &
-                              slingo_rhc_low, slingo_rhc_mid, slingo_rhc_high
+                              slingo_rhc_low, slingo_rhc_mid, slingo_rhc_high, &
+                              do_adjust_low_cld, omega_adj_threshold
 
   contains
 
@@ -284,6 +288,10 @@ module cloud_simple_mod
 
     call calc_stratiform_cf(p_full, psg, rh_e, q_hum, qs, rhcrit, qcl_rad, cf)
 
+    if(do_adjust_low_cld) then
+      call adjust_low_cld(p_full, wg_full, cf)
+    end if
+
     if (do_add_stratocumulus) then
       call add_stratiform_cld(temp, p_full, p_half, z_full, rh_e, q_hum, &
                               temp_2m, q_2m, psg, wg_full, klcls, cf, Time)
@@ -302,6 +310,23 @@ module cloud_simple_mod
     call output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, rhcrit, Time)
 
   end subroutine cloud_simple
+
+  subroutine adjust_low_cld(p_full, wg_full, cf)
+    real, intent(in),    dimension(:,:,:) :: p_full, wg_full
+    real, intent(inout), dimension(:,:,:) :: cf
+    real :: premib, omega
+
+    premib = 7.0e4 !Pa
+    !omega_adj_threshold = -0.1   !Pa/s
+
+    where(p_full>premib .and. omega_adj_threshold<wg_full .and. wg_full<0.0)
+      cf = wg_full / omega_adj_threshold * cf
+    elsewhere (p_full>premib .and. wg_full>=0.0)
+      cf = 0
+    elsewhere
+      cf = cf
+    end where
+  end subroutine adjust_low_cld
 
   subroutine add_stratiform_cld(temp, p_full, p_half, z_full, rh, q_hum, temp_2m, q_2m, psg, wg_full, klcls, cf, Time)
     implicit none
@@ -415,7 +440,7 @@ module cloud_simple_mod
     real :: premib
     integer :: i, j, k, kb
 
-    dthdp_min = -0.1 !-0.125  ! d_theta / d_p, lapse rate
+    dthdp_min = -0.125  ! d_theta / d_p, lapse rate
     kdthdp = 0
     premib = 7.0e4
     dthdp = 0.0
