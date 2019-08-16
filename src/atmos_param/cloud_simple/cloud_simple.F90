@@ -25,7 +25,7 @@ module cloud_simple_mod
   integer :: id_theta, id_dthdp, id_lts, id_eis, id_ectei, id_zlcl, &
              id_gamma_850, id_gamma_DL, id_gamma_700, id_z700, &
              id_zinv, id_ELF, id_beta1, id_beta2, id_IS, id_DS, id_alpha, &
-             id_low_cld_amt_park
+             id_low_cld_amt_park, id_marine_strat
   ! ----- outputs for cloud amount diagnostics ----- !
   integer :: id_tot_cld_amt, id_high_cld_amt, id_mid_cld_amt, id_low_cld_amt
 
@@ -53,7 +53,7 @@ module cloud_simple_mod
   real :: rhc700     = 0.7
   real :: rhc200     = 0.3
   real :: cf_min     = 1e-10
-  real :: dthdp_min  = -0.125
+  real :: dthdp_min_threshold = -0.125
   real :: pshallow   = 7.5e4 ! copy from am4 diag_cloud.F90
 
   ! Parameters to control the coefficients profile of linear function of RH
@@ -71,6 +71,10 @@ module cloud_simple_mod
   ! For low clout adjustment
   real :: omega_adj_threshold  = -0.1 !Pa/s, -3.6hPa/hour
 
+  ! Park_ELF
+  real :: elf_a = 0.86
+  real :: elf_b = 0.02
+
   namelist /cloud_simple_nml/ simple_cca, rhcsfc, rhc700, rhc200, &
                               cf_diag_formula_name, &
                               do_read_scm_rhcrit, scm_rhcrit, &
@@ -78,11 +82,12 @@ module cloud_simple_mod
                               do_cloud_amount_diags, adjust_top, &
                               do_add_stratocumulus, sc_diag_method, &
                               intermediate_outputs_diags, &
-                              dthdp_min, do_read_ts, &
+                              dthdp_min_threshold, do_read_ts, &
                               a_surf, a_top, b_surf, b_top, nx, &
                               do_conv_cld, pshallow, cf_min, &
                               slingo_rhc_low, slingo_rhc_mid, slingo_rhc_high, &
-                              do_adjust_low_cld, omega_adj_threshold
+                              do_adjust_low_cld, omega_adj_threshold, &
+                              elf_a, elf_b
 
   contains
 
@@ -121,12 +126,16 @@ module cloud_simple_mod
                       'estimated low cloud fraction', '')
     end if
 
+    id_marine_strat = register_diag_field ( mod_name_cld, 'marine_strat', axes(1:3), Time, &
+                      'marine low stratus cloud amount', '0-1' )
+
     id_zlcl = register_diag_field (mod_name_cld, 'zlcl', axes(1:2), Time, &
                   'height of lcl', 'meter')
     id_theta = register_diag_field (mod_name_cld, 'theta', axes(1:3), Time, &
                   'potential temperature', 'K')
     id_lts = register_diag_field (mod_name_cld, 'lts', axes(1:2), Time, &
                   'low-tropospheric stability', 'K')
+
     if(intermediate_outputs_diags) then
       id_dthdp = register_diag_field (mod_name_cld, 'dthdp', axes(1:3), Time, &
                         'dtheta/dp', 'K/hPa' )
@@ -335,7 +344,7 @@ module cloud_simple_mod
     real, intent(in),  dimension(:,:)   :: temp_2m, q_2m, psg
     integer, intent(in), dimension(:,:) :: klcls
     real, intent(out), dimension(:,:,:) :: cf
-    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: theta, dthdp
+    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: theta, dthdp, marine_strat
     integer, dimension(size(temp,1), size(temp,2)) :: kdthdp
     real,    dimension(size(temp,1), size(temp,2)) :: eis, ectei, ELF, low_ca_park
     real :: strat, rhb_frac, used
@@ -357,6 +366,7 @@ module cloud_simple_mod
       call calc_Park_proxies(p_full, z_full, temp, temp_2m, q_hum, q_2m, klcls, ELF, Time)
     end if
 
+    marine_strat = 0.0
     do i=1, size(temp, 1)
       do j=1, size(temp, 2)
         k = kdthdp(i,j)
@@ -408,17 +418,25 @@ module cloud_simple_mod
           end if
           if(uppercase(trim(sc_diag_method)) == 'PARK_ELF') then
             ! Park and Shin, 2019, ACP
-            strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+            !strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+            strat = min(1.0, max(0.0, elf_a*ELF(i,j) + elf_b))
             cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
             !cf(i,j,k) = min(1.0, max(0.0, strat))
           end if
-          low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+          marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
+        end if
+        if(uppercase(trim(sc_diag_method)) == 'PARK_ELF') then
+          low_ca_park(i,j) = min(1.0, max(0.0, elf_a*ELF(i,j) + elf_b))
         end if
       end do
     end do
 
     if (id_theta > 0) then
       used = send_data(id_theta, theta, Time)
+    end if
+
+    if (id_marine_strat > 0) then
+      used = send_data(id_marine_strat, marine_strat, Time)
     end if
 
     if(intermediate_outputs_diags) then
@@ -436,44 +454,30 @@ module cloud_simple_mod
     real,    intent(in),  dimension(:,:)   :: temp_2m, ps
     real,    intent(out), dimension(:,:,:) :: theta, dthdp
     integer, intent(out), dimension(:,:)   :: kdthdp
-    real, dimension(size(temp,1), size(temp,2)) :: dthdp_min
-    real :: premib
+    real, dimension(size(temp,1), size(temp,2)) :: dthdp_min, theta_0
+    real :: premib, pstar
     integer :: i, j, k, kb
 
-    dthdp_min = -0.125  ! d_theta / d_p, lapse rate
+    dthdp_min = dthdp_min_threshold  ! d_theta / d_p, lapse rate
     kdthdp = 0
     premib = 7.0e4
     dthdp = 0.0
-    kb = size(temp,3)
+    pstar = 1.0e5
 
-    do k=1,size(temp,3)
-      theta(:,:,k) =  temp(:,:,k) * (ps / pfull(:,:,k))**(RDGAS / CP_AIR)
+    kb = size(temp,3)  !bottom level
+
+    do k=1,kb
+      theta(:,:,k) =  temp(:,:,k) * (pstar / pfull(:,:,k))**(RDGAS / CP_AIR)
     end do
 
-    do i=1, size(temp,1)
-      do j=1, size(temp,2)
-        do k=1, size(temp,3)-1
-          dthdp(i,j,k) = (theta(i,j,k) - theta(i,j,k+1)) / (phalf(i,j,k) - phalf(i,j,k+1)) * 1.0e2
-          if (phalf(i,j,k) >= premib) then
-            if (dthdp(i,j,k) < dthdp_min(i,j)) then
-              dthdp_min(i,j) = dthdp(i,j,k)
-              kdthdp(i,j) = k     ! index of interface of max inversion
-            end if
-          end if
-        end do
-
-        ! Also check between the bottom layer and the surface
-        ! Only perform this check if the criteria were not met above
-        if(kdthdp(i,j) .eq. 0) then
-          !dthdp(i,j,kb) = (theta(i,j,kb)-temp_2m(i,j)) / (phalf(i,j,kb)-1e5) * 1.0e2
-          dthdp(i,j,kb) = (theta(i,j,kb)-temp_2m(i,j)) / (phalf(i,j,kb)-ps(i,j)) * 1.0e2
-          if (dthdp(i,j,kb) < dthdp_min(i,j)) then
-             dthdp_min(i,j) = dthdp(i,j,kb)
-             kdthdp(i,j) = kb     ! index of interface of max inversion
-          endif
-        endif
-      end do
+    do k=1,kb-1
+      dthdp(:,:,k) = (theta(:,:,k) - theta(:,:,k+1)) / (phalf(:,:,k) - phalf(:,:,k+1)) * 1.0e2
     end do
+
+    theta_0 = temp_2m * (pstar / ps)**(RDGAS / CP_AIR)
+    dthdp(:,:,kb) = (theta(:,:,kb) - theta_0) / (phalf(:,:,kb) - ps) * 1.0e2
+
+    kdthdp = minloc(dthdp, dim=3, mask=(phalf>premib).and.(dthdp<dthdp_min_threshold))
 
   end subroutine calc_theta_dthdp
 
