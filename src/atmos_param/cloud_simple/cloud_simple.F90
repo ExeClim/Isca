@@ -349,7 +349,7 @@ module cloud_simple_mod
     integer :: i, j, k, k700, kb, k_surf, kk
 
     k_surf = size(temp, 3)
-    omega_pos_threshold = 0.5*100/3600
+    omega_pos_threshold = 0.4*100/3600
 
     call calc_theta_dthdp(temp, temp_2m, p_full, p_half, psg, theta, dthdp, kdthdp)
 
@@ -370,57 +370,57 @@ module cloud_simple_mod
         kk = kdthdp(i,j)
         kb = min(kk+1, k_surf)
         do k=kk-2, kb
-            if (wg_full(i,j,k)> omega_pos_threshold .and. dthdp(i,j,k) < dthdp_min_threshold) then
-              if(method_str == 'LTS') then
-                strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
-                cf(i,j,k) = max(strat, cf(i,j,k))
-              end if
-              if(method_str == 'SLINGO') then
-                strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
-                rhb_frac = min(1.0, max(0.0, (rh(i,j,kb) - 0.6) / 0.2))
-                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-              end if
-              if(method_str == 'SLINGO_NO_RH') then
-                strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
-                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-              end if
-              if(method_str == 'DTHDP') then
-                strat = min(1.0, max(0.0, -3.1196*dthdp(i,j,k) - 0.1246))
-                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-              end if
-              if(method_str == 'EIS_WOOD') then
-                !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
-                strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
-                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-              end if
-              if(method_str == 'EIS_WOOD_RH') then
-                strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
-                rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
-                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-              end if
-              if(method_str == 'EIS_RH') then
-                strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh(i,j,k)-6.45e-19)))
-                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-              end if
-              if(method_str == 'ECTEI') then
-                ! Kawai, Koshiro and Webb, 2017
-                strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
-                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-              end if
-              if(method_str == 'ECTEI_RH') then
-                ! Kawai, Koshiro and Webb, 2017
-                strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
-                rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
-                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-              end if
-              if(method_str == 'PARK_ELF') then
-                ! Park and Shin, 2019, ACP
-                strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
-                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-              end if
-              cf(i,j,k) = min(1.0, dthdp(i,j,k)/dthdp(i,j,kk)) * cf(i,j,k)
+          if (wg_full(i,j,k)> omega_pos_threshold .and. dthdp(i,j,k) < dthdp_min_threshold) then
+            if(method_str == 'LTS') then
+              strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
+              cf(i,j,k) = max(strat, cf(i,j,k))
             end if
+            if(method_str == 'SLINGO') then
+              strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
+              rhb_frac = min(1.0, max(0.0, (rh(i,j,kb) - 0.6) / 0.2))
+              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+            end if
+            if(method_str == 'SLINGO_NO_RH') then
+              strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
+              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+            end if
+            if(method_str == 'DTHDP') then
+              strat = min(1.0, max(0.0, -3.1196*dthdp(i,j,k) - 0.1246))
+              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+            end if
+            if(method_str == 'EIS_WOOD') then
+              !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
+              strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
+              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+            end if
+            if(method_str == 'EIS_WOOD_RH') then
+              strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
+              rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
+              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+            end if
+            if(method_str == 'EIS_RH') then
+              strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh(i,j,k)-6.45e-19)))
+              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+            end if
+            if(method_str == 'ECTEI') then
+              ! Kawai, Koshiro and Webb, 2017
+              strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
+              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+            end if
+            if(method_str == 'ECTEI_RH') then
+              ! Kawai, Koshiro and Webb, 2017
+              strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
+              rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
+              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+            end if
+            if(method_str == 'PARK_ELF') then
+              ! Park and Shin, 2019, ACP
+              strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+            end if
+            cf(i,j,k) = min(1.0, dthdp(i,j,k)/dthdp(i,j,kk)) * cf(i,j,k)
             marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
+          end if
         end do
         if(intermediate_outputs_diags .and. method_str=='PARK_ELF') then
           low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
