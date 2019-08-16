@@ -53,7 +53,7 @@ module cloud_simple_mod
   real :: rhc700     = 0.7
   real :: rhc200     = 0.3
   real :: cf_min     = 1e-10
-  real :: dthdp_min_threshold = -0.125
+  real :: dthdp_min_threshold = -0.05 !K/hPa, which is -0.125 in CESM1.2.1
   real :: pshallow   = 7.5e4 ! copy from am4 diag_cloud.F90
 
   ! Parameters to control the coefficients profile of linear function of RH
@@ -64,16 +64,12 @@ module cloud_simple_mod
   real :: nx         = 8
 
   ! For slingo80 scheme
-  real :: slingo_rhc_low = 0.8
-  real :: slingo_rhc_mid = 0.65
+  real :: slingo_rhc_low  = 0.8
+  real :: slingo_rhc_mid  = 0.65
   real :: slingo_rhc_high = 0.8
 
   ! For low clout adjustment
-  real :: omega_adj_threshold  = -0.1 !Pa/s, -3.6hPa/hour
-
-  ! Park_ELF
-  real :: elf_a = 0.86
-  real :: elf_b = 0.02
+  real :: omega_adj_threshold = -0.1 !Pa/s
 
   namelist /cloud_simple_nml/ simple_cca, rhcsfc, rhc700, rhc200, &
                               cf_diag_formula_name, &
@@ -86,8 +82,8 @@ module cloud_simple_mod
                               a_surf, a_top, b_surf, b_top, nx, &
                               do_conv_cld, pshallow, cf_min, &
                               slingo_rhc_low, slingo_rhc_mid, slingo_rhc_high, &
-                              do_adjust_low_cld, omega_adj_threshold, &
-                              elf_a, elf_b
+                              do_adjust_low_cld, omega_adj_threshold
+
 
   contains
 
@@ -104,30 +100,30 @@ module cloud_simple_mod
   subroutine marine_strat_cloud_init(axes, Time)
     type(time_type), intent(in)       :: Time
     integer, intent(in), dimension(4) :: axes
-    character(len=32) :: tmp_str = ''
+    character(len=32) :: method_str = ''
 
     call error_mesg('cloud_simple', 'The stratomulus diagnosis method is '// &
                     uppercase(trim(sc_diag_method)), NOTE)
 
-    tmp_str = uppercase(trim(sc_diag_method))
+    method_str = uppercase(trim(sc_diag_method))
 
-    if (tmp_str(1:3)=='EIS' .or. tmp_str(1:5)=='ECTEI' .or. tmp_str(1:4)=='PARK') then
+    if (method_str(1:3)=='EIS' .or. method_str(1:5)=='ECTEI' .or. method_str(1:4)=='PARK') then
       id_eis = register_diag_field (mod_name_cld, 'eis', axes(1:2), Time, &
                       'estimated inversion strength', 'K')
     end if
 
-    if (tmp_str(1:5)=='ECTEI' .or. tmp_str(1:4)=='PARK') then
+    if (method_str(1:5)=='ECTEI' .or. method_str(1:4)=='PARK') then
       id_ectei = register_diag_field (mod_name_cld, 'ectei', axes(1:2), Time, &
                       'estimated cloud top entrainment index', 'K')
     end if
 
-    if (tmp_str(1:4)=='PARK') then
+    if (method_str(1:4)=='PARK') then
       id_ELF    = register_diag_field (mod_name_cld, 'ELF', axes(1:2), Time, &
                       'estimated low cloud fraction', '')
     end if
 
     id_marine_strat = register_diag_field ( mod_name_cld, 'marine_strat', axes(1:3), Time, &
-                      'marine low stratus cloud amount', '0-1' )
+                        'marine low stratus cloud amount', '0-1' )
 
     id_zlcl = register_diag_field (mod_name_cld, 'zlcl', axes(1:2), Time, &
                   'height of lcl', 'meter')
@@ -135,17 +131,16 @@ module cloud_simple_mod
                   'potential temperature', 'K')
     id_lts = register_diag_field (mod_name_cld, 'lts', axes(1:2), Time, &
                   'low-tropospheric stability', 'K')
-
     if(intermediate_outputs_diags) then
       id_dthdp = register_diag_field (mod_name_cld, 'dthdp', axes(1:3), Time, &
                         'dtheta/dp', 'K/hPa' )
       id_z700 = register_diag_field ( mod_name_cld, 'z700', axes(1:2), Time, &
                         'height of 700mb', 'meter')
-      if (tmp_str(1:3)=='EIS') then
+      if (method_str(1:3)=='EIS') then
         id_gamma_850 = register_diag_field (mod_name_cld, 'gamma850', axes(1:2), Time, &
                         'moist lapse rate at 850hPa', 'K/m')
       end if
-      if (tmp_str(1:4)=='PARK') then
+      if (method_str(1:4)=='PARK') then
         id_beta1  = register_diag_field (mod_name_cld, 'beta1', axes(1:2), Time, &
                         'first low-level cloud suppression parameter', '')
         id_beta2  = register_diag_field (mod_name_cld, 'beta2', axes(1:2), Time, &
@@ -172,6 +167,7 @@ module cloud_simple_mod
     type(time_type), intent(in)       :: Time
     integer, intent(in), dimension(4) :: axes
     integer :: io, ierr, nml_unit, stdlog_unit
+    character(len=32) :: method_str = ''
 
 #ifdef INTERNAL_FILE_NML
     read (input_nml_file, nml=cloud_simple_nml, iostat=io)
@@ -190,22 +186,23 @@ module cloud_simple_mod
     write(stdlog_unit, cloud_simple_nml)
 
     ! Select cloud fraction diag formula
-    if(uppercase(trim(cf_diag_formula_name)) == 'SPOOKIE') then
+    method_str = uppercase(trim(cf_diag_formula_name))
+    if(method_str == 'SPOOKIE') then
       cf_diag_formula = B_SPOOKIE
       call error_mesg('cloud_simple', 'Using default SPOOKIE cloud fraction diagnostic formula.', NOTE)
-    else if(uppercase(trim(cf_diag_formula_name)) == 'SUNDQVIST') then
+    else if(method_str == 'SUNDQVIST') then
       cf_diag_formula = B_SUNDQVIST
       call error_mesg('cloud_simple', 'Using Sundqvist (1987) cloud fraction diagnostic formula.', NOTE)
-    else if(uppercase(trim(cf_diag_formula_name)) == 'LINEAR') then
+    else if(method_str == 'LINEAR') then
       cf_diag_formula = B_LINEAR
       call error_mesg('cloud_simple', 'Using linear cloud fraction diagnostic formula.', NOTE)
-    else if(uppercase(trim(cf_diag_formula_name)) == 'SMITH') then
+    else if(method_str == 'SMITH') then
       cf_diag_formula = B_SMITH
       call error_mesg('cloud_simple', 'Using Smith (1990) cloud fraction diagnostic formula.', NOTE)
-    else if(uppercase(trim(cf_diag_formula_name)) == 'SLINGO') then
+    else if(method_str == 'SLINGO') then
       cf_diag_formula = B_SLINGO
       call error_mesg('cloud_simple', 'Using Slingo (1980) cloud fraction diagnostic formula.', NOTE)
-    else if(uppercase(trim(cf_diag_formula_name)) == 'XR96') then
+    else if(method_str == 'XR96') then
       cf_diag_formula = B_XR96
       call error_mesg('cloud_simple', 'Using Xu and Krueger (1996) cloud fraction diagnostic formula.', NOTE)
     else
@@ -294,7 +291,6 @@ module cloud_simple_mod
 
     ! rh_e is the effective RH
     rh_e = rh_in_cf * (1.0 - conv_cf)
-
     call calc_stratiform_cf(p_full, psg, rh_e, q_hum, qs, rhcrit, qcl_rad, cf)
 
     if(do_adjust_low_cld) then
@@ -329,9 +325,10 @@ module cloud_simple_mod
     !omega_adj_threshold = -0.1   !Pa/s
 
     where(p_full>premib .and. omega_adj_threshold<wg_full .and. wg_full<0.0)
-      cf = wg_full / omega_adj_threshold * cf
+      cf = min(1.0, wg_full/omega_adj_threshold) * cf
     elsewhere (p_full>premib .and. wg_full>=0.0)
-      cf = 0
+      cf = 0.0
+      !cf = min(1.0, wg_full/abs(omega_adj_threshold)) * cf
     elsewhere
       cf = cf
     end where
@@ -347,86 +344,86 @@ module cloud_simple_mod
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: theta, dthdp, marine_strat
     integer, dimension(size(temp,1), size(temp,2)) :: kdthdp
     real,    dimension(size(temp,1), size(temp,2)) :: eis, ectei, ELF, low_ca_park
-    real :: strat, rhb_frac, used
-    character(len=32) :: tmp_str = ''
+    real :: strat, rhb_frac, used, omega_pos_threshold
+    character(len=32) :: method_str = ''
     integer :: i, j, k, k700, kb, k_surf, kk
 
     k_surf = size(temp, 3)
+    omega_pos_threshold = 0.5*100/3600
 
     call calc_theta_dthdp(temp, temp_2m, p_full, p_half, psg, theta, dthdp, kdthdp)
 
-    tmp_str = uppercase(trim(sc_diag_method))
-    if (tmp_str(1:3)=='EIS' .or. tmp_str(1:5)=='ECTEI') then
+    method_str = uppercase(trim(sc_diag_method))
+    if (method_str(1:3)=='EIS' .or. method_str(1:5)=='ECTEI') then
       call calc_eis(p_full, z_full, temp, temp_2m, psg, klcls, eis, Time)
     end if
-    if (tmp_str(1:5)=='ECTEI') then
+    if (method_str(1:5)=='ECTEI') then
       call calc_ectei(p_full, q_hum, q_2m, eis, ectei, Time)
     end if
-    if (tmp_str(1:4)=='PARK') then
-      call calc_Park_proxies(p_full, z_full, temp, temp_2m, q_hum, q_2m, klcls, ELF, Time)
+    if (method_str(1:4)=='PARK') then
+      call calc_Park_proxies(p_full, psg, z_full, temp, temp_2m, q_hum, q_2m, klcls, ELF, Time)
     end if
 
     marine_strat = 0.0
     do i=1, size(temp, 1)
       do j=1, size(temp, 2)
-        k = kdthdp(i,j)
-        if(k.ne.0 .and. wg_full(i,j,k)>0) then
-          kb = min(k+1, k_surf)
-          if(uppercase(trim(sc_diag_method)) == 'CAM') then
-            strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
-            cf(i,j,k) = max(strat, cf(i,j,k))
-          end if
-          if(uppercase(trim(sc_diag_method)) == 'SLINGO') then
-            strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
-            rhb_frac = min(1.0, max(0.0, (rh(i,j,kb) - 0.6) / 0.2))
-            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-          end if
-          if(uppercase(trim(sc_diag_method)) == 'SLINGO_NO_RH') then
-            strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
-            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-          end if
-          if(uppercase(trim(sc_diag_method)) == 'DTHDP') then
-            strat = min(1.0, max(0.0, -3.1196*dthdp(i,j,k) - 0.1246))
-            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-          end if
-          if(uppercase(trim(sc_diag_method)) == 'EIS_WOOD') then
-            !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
-            strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
-            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-          end if
-          if(uppercase(trim(sc_diag_method)) == 'EIS_WOOD_RH') then
-            strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
-            rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
-            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-            !cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-          end if
-          if(uppercase(trim(sc_diag_method)) == 'EIS_RH') then
-            !if (eis(i,j)>0.0) then
-            strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh(i,j,k)-6.45e-19)))
-            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-          end if
-          if(uppercase(trim(sc_diag_method)) == 'ECTEI') then
-            ! Kawai, Koshiro and Webb, 2017
-            strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
-            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-          end if
-          if(uppercase(trim(sc_diag_method)) == 'ECTEI_RH') then
-            ! Kawai, Koshiro and Webb, 2017
-            strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
-            rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
-            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-          end if
-          if(uppercase(trim(sc_diag_method)) == 'PARK_ELF') then
-            ! Park and Shin, 2019, ACP
-            !strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
-            strat = min(1.0, max(0.0, elf_a*ELF(i,j) + elf_b))
-            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            !cf(i,j,k) = min(1.0, max(0.0, strat))
-          end if
-          marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
-        end if
-        if(uppercase(trim(sc_diag_method)) == 'PARK_ELF') then
-          low_ca_park(i,j) = min(1.0, max(0.0, elf_a*ELF(i,j) + elf_b))
+        kk = kdthdp(i,j)
+        kb = min(kk+1, k_surf)
+        do k=kk-2, kb
+            if (wg_full(i,j,k)> omega_pos_threshold .and. dthdp(i,j,k) < dthdp_min_threshold) then
+              if(method_str == 'LTS') then
+                strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
+                cf(i,j,k) = max(strat, cf(i,j,k))
+              end if
+              if(method_str == 'SLINGO') then
+                strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
+                rhb_frac = min(1.0, max(0.0, (rh(i,j,kb) - 0.6) / 0.2))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+              end if
+              if(method_str == 'SLINGO_NO_RH') then
+                strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+              end if
+              if(method_str == 'DTHDP') then
+                strat = min(1.0, max(0.0, -3.1196*dthdp(i,j,k) - 0.1246))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+              end if
+              if(method_str == 'EIS_WOOD') then
+                !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
+                strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+              end if
+              if(method_str == 'EIS_WOOD_RH') then
+                strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
+                rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+              end if
+              if(method_str == 'EIS_RH') then
+                strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh(i,j,k)-6.45e-19)))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+              end if
+              if(method_str == 'ECTEI') then
+                ! Kawai, Koshiro and Webb, 2017
+                strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+              end if
+              if(method_str == 'ECTEI_RH') then
+                ! Kawai, Koshiro and Webb, 2017
+                strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
+                rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+              end if
+              if(method_str == 'PARK_ELF') then
+                ! Park and Shin, 2019, ACP
+                strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+                cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+              end if
+              cf(i,j,k) = min(1.0, dthdp(i,j,k)/dthdp(i,j,kk)) * cf(i,j,k)
+            end if
+            marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
+        end do
+        if(intermediate_outputs_diags .and. method_str=='PARK_ELF') then
+          low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
         end if
       end do
     end do
@@ -434,7 +431,6 @@ module cloud_simple_mod
     if (id_theta > 0) then
       used = send_data(id_theta, theta, Time)
     end if
-
     if (id_marine_strat > 0) then
       used = send_data(id_marine_strat, marine_strat, Time)
     end if
@@ -458,9 +454,9 @@ module cloud_simple_mod
     real :: premib, pstar
     integer :: i, j, k, kb
 
-    dthdp_min = dthdp_min_threshold  ! d_theta / d_p, lapse rate
+    dthdp_min = dthdp_min_threshold  !d_theta / d_p *1e2, lapse rate
     kdthdp = 0
-    premib = 7.0e4
+    premib = 7.5e4
     dthdp = 0.0
     pstar = 1.0e5
 
@@ -584,8 +580,6 @@ module cloud_simple_mod
         elsewhere
           cf = ((rh-rhc)/(1-rhc)) ** 2
         end where
-
-        cf = min(1.0, cf)
 
       case(B_XR96)
         p_para = 0.25
@@ -859,13 +853,13 @@ module cloud_simple_mod
     end if
   end subroutine calc_ectei
 
-  subroutine calc_Park_proxies(pfull, zfull, temp, ts, q_hum, q_surf, klcls, ELF, Time)
+  subroutine calc_Park_proxies(pfull, ps, zfull, temp, ts, q_hum, q_surf, klcls, ELF, Time)
     ! Refer to: Park and Shin, 2019, Atmospheric Chemistry and Physics
     ! https://www.atmos-chem-phys.net/19/5635/2019/
 
     implicit none
     real,    intent(in),  dimension(:,:,:) :: pfull, zfull, temp, q_hum
-    real,    intent(in),  dimension(:,:)   :: ts, q_surf
+    real,    intent(in),  dimension(:,:)   :: ts, q_surf, ps
     integer, intent(in),  dimension(:,:)   :: klcls
     type(time_type),      intent(in)       :: Time
     real,    intent(out), dimension(:,:)   :: ELF
@@ -889,7 +883,8 @@ module cloud_simple_mod
         ! Mixed Layer is the LCL
         call calc_moist_lapse_rate(tlcl(i,j), plcl(i,j), Gamma_DL(i,j))
         call calc_moist_lapse_rate(temp(i,j,k700), pfull(i,j,k700), Gamma700(i,j))
-        theta_ML = tlcl(i,j) * (pstar / plcl(i,j))**kappa
+        !theta_ML = tlcl(i,j) * (pstar / plcl(i,j))**kappa
+        theta_ML = ts(i,j) * (pstar / ps(i,j))**kappa
         LTS(i,j) = temp(i,j,k700) * (pstar / pfull(i,j,k700))**kappa - theta_ML
         qv_ML(i,j) = q_hum(i,j,klcls(i,j))
       end do
