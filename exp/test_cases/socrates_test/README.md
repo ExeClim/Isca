@@ -87,6 +87,8 @@ and run the test-case `socrates_aquaplanet.py`. This will compile and run Isca w
 
 * In the future, we will look to generate `path_names` dynamically. However, in the meantime, please begin by updating your `path_names` file to include **every** fortran file in the directory `src/radiance_core/` directory of Socrates. All the files in this folder are likely to be essential for compiling the version of Socrates you are using.
 
+* You may also find errors of the type `multiple definition of MAIN`. This happens because various pieces of code within Socrates are designed to be run offline, meaning they have MAIN sections. These MAIN sections cause conflicts with Isca's MAIN section, and so the relevant Socrates files cannot be part of Isca's compiled version. To get around this error, remove from `path_names` any Socrates files that cause this error (i.e. remove the relevant files from `path_names` that start with `atmos_param/socrates/src` not Isca's MAIN program, which is `atmos_solo/atmos_model.F90`).
+
 * If you still can't get Isca to compile with Socrates, then check your compiler options against ours in `$GFDL_BASE/src/extra/python/isca/templates/mkmf.template.ia64`.
 
 
