@@ -5,7 +5,7 @@ from isca.util import exp_progress
 from ntfy import notify
 import os
 
-NCORES = 16
+NCORES = 32
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
 # a CodeBase can be a directory on the computer,
@@ -24,7 +24,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 
 cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
-inputfiles = [os.path.join(base_dir,'input/sp_lw_17_dsa_mars'), os.path.join(base_dir,'input/sp_sw_42_dsa_mars_sun'), os.path.join(base_dir,'input/sp_lw_17_dsa_mars_k'), os.path.join(base_dir,'input/sp_sw_42_dsa_mars_sun_k')]
+inputfiles = [os.path.join(base_dir,'input/sp_lw_17_dsa_mars'), os.path.join(base_dir,'input/sp_sw_42_dsa_mars_sun'), os.path.join(base_dir,'input/sp_lw_17_dsa_mars_k'), os.path.join(base_dir,'input/sp_sw_42_dsa_mars_sun_k'), os.path.join(base_dir,'input/t42_mola_mars.nc')]
 
 # create a diagnostics output file for daily snapshots
 diag = DiagTable()
@@ -37,6 +37,8 @@ diag.add_file('atmos_daily',88440 , 'seconds', time_units='days')
 diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk', time_avg=True)
 diag.add_field('dynamics', 'pk', time_avg=True)
+diag.add_field('dynamics', 'zsurf', time_avg=True)
+
 diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
@@ -157,7 +159,8 @@ namelist = Namelist({
         'do_water_correction': False,
         'vert_coord_option': 'input',
         'initial_sphum': 0.,
-        'valid_range_T': [0, 700]
+        'valid_range_T': [0, 700], 
+        'ocean_topog_smoothing': 0.8,
     },
 
     'vert_coordinate_nml': {
@@ -232,6 +235,11 @@ namelist = Namelist({
         'rotation_period':88308,
     },
 
+    'spectral_init_cond_nml': {
+        'topog_file_name': 't42_mola_mars.nc',
+        'topography_option': 'input',
+    },
+
 })
 
 if __name__=="__main__":
@@ -247,7 +255,7 @@ if __name__=="__main__":
     for conv in conv_schemes:
         for depth_val in depths:
             for per_value in pers:
-                exp = Experiment('soc_mars_mk36_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val), codebase=cb)
+                exp = Experiment('soc_mars_mk36_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val)+'_with_mola_topo', codebase=cb)
                 exp.clear_rundir()
 
                 exp.diag_table = diag
