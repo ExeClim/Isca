@@ -7,23 +7,13 @@ NETCDF_LIBS = `nf-config --fflags  --flibs`
 # FFLAGS:
 #  -cpp: Use the fortran preprocessor
 #  -ffree-line-length-none -fno-range-check: Allow arbitrarily long lines
-#  -fcray-pointer: Cray pointers don't alias other variables.
-#  -ftz: Denormal numbers are flushed to zero.
-#  -assume byterecl: Specifies the units for the OPEN statement as bytes.
-#  -shared-intel:  Load intel libraries dynamically
-#  -i4: 4 byte integers
+#  -fcray-pointer: Cray pointers don't alias other variables
 #  -fdefault-real-8: 8 byte reals (compatability for some parts of GFDL code)
 #  -fdefault-double-8: 8 byte doubles (compat. with RRTM)
+#  -ftree-vectorize: Enable SIMD instructions
 #  -O2: Level 2 speed optimisations
 
-FFLAGS = $(CPPFLAGS) $(NETCDF_LIBS) -cpp -fcray-pointer \
-          -O2 -ffree-line-length-none -fno-range-check \
-           -fbacktrace -target-cpu=arm-thunderx2 
-
-#FFLAGS = $(CPPFLAGS) $(NETCDF_LIBS) -cpp -fcray-pointer \
-#          -O2 -ffree-line-length-none -fno-range-check \
-#          -fdefault-real-8 -fdefault-double-8 -fbacktrace \
-#	       -target-cpu=arm-thunderx2 
+FFLAGS = $(CPPFLAGS) $(NETCDF_LIBS) -cpp -fcray-pointer  -O2 -ffree-line-length-none -fno-range-check -target-cpu=arm-thunderx2 -ftree-vectorize -march=armv8.1-a -mcpu=thunderx2t99 -mtune=thunderx2t99
 
 FC = $(F90)
 LD = $(F90) $(NETCDF_LIBS)
