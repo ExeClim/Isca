@@ -48,6 +48,7 @@ cd $execdir
 echo $pathnames
 
 # execute mkmf to create makefile
+
 cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 {{compile_flags}}"
 
 # cppdefs for FFTW3
