@@ -1,0 +1,8 @@
+#!/bin/sh
+#PBS -q arm
+#PBS -l select=1:ncpus=64
+#PBS -l walltime=01:00:00
+
+source ~/pyi3/bin/activate
+python $GFDL_BASE/exp/site_specific/gw4_isambard/held_suarez_test_case.py
+
