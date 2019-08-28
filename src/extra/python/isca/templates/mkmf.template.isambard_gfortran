@@ -13,7 +13,7 @@ NETCDF_LIBS = `nf-config --fflags  --flibs`
 #  -ftree-vectorize: Enable SIMD instructions
 #  -O2: Level 2 speed optimisations
 
-FFLAGS = $(CPPFLAGS) $(NETCDF_LIBS) -cpp -fcray-pointer  -O2 -ffree-line-length-none -fno-range-check -target-cpu=arm-thunderx2 -ftree-vectorize -march=armv8.1-a -mcpu=thunderx2t99 -mtune=thunderx2t99
+FFLAGS = $(CPPFLAGS) $(NETCDF_LIBS) -cpp -fcray-pointer  -O2 -ffree-line-length-none -fno-range-check -target-cpu=arm-thunderx2 -ftree-vectorize -march=armv8.1-a -mcpu=thunderx2t99 -mtune=thunderx2t99 -fdefault-real-8 -fdefault-double-8
 
 FC = $(F90)
 LD = $(F90) $(NETCDF_LIBS)
