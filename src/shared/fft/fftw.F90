@@ -42,7 +42,7 @@ module fftw3
 contains
 
 !
-! Real -> Complex
+! Real to complex double precision fft
 !
 subroutine grid_to_fourier_double_2d_fftw(num, leng, lenc, grid, fourier)
 
@@ -59,9 +59,9 @@ do j = 1, num
   do i = 1, leng - 1
     real_input(i) = grid(i,j)
   enddo
-
+#   ifdef OVERLOAD_C8
   call dfftw_execute_dft_r2c(real_input_pointer, real_input, complex_output)
-
+#   endif
   do i = 1, lenc
     fourier(i, j) = complex_output(i) * fact
   enddo
@@ -71,7 +71,7 @@ end subroutine grid_to_fourier_double_2d_fftw
 
 
 ! 
-! Complex -> Real
+! Complex to real double precision fft
 !
 subroutine fourier_to_grid_double_2d_fftw(num, leng, lenc, fourier, grid)
 
@@ -86,9 +86,9 @@ do j = 1, num
   do i = 1, lenc
     complex_input(i) = fourier(i, j)
   enddo
-
+#   ifdef OVERLOAD_C8
   call dfftw_execute_dft_c2r(complex_input_pointer, complex_input, real_output)
-
+#   endif
   do i = 1, leng - 1
     grid(i, j) = real_output(i)
   enddo
@@ -98,7 +98,9 @@ return
 
 end subroutine fourier_to_grid_double_2d_fftw
 
-! kind=4
+!
+! Complex to real dingle precison fft
+!
 subroutine fourier_to_grid_float_2d_fftw(num, leng, lenc, fourier, grid)
 
 integer(kind=4),            intent(in)    :: num    ! number of transformations
@@ -112,9 +114,9 @@ do j = 1, num
   do i = 1, lenc
     complex_input(i) = fourier(i, j)
   enddo
-
+#   ifdef OVERLOAD_C4
   call fftwf_execute_dft_c2r(complex_input_pointer, complex_input, real_output)
-
+#   endif
   do i = 1, leng - 1
     grid(i, j) = real_output(i)
   enddo
@@ -124,6 +126,9 @@ return
   
 end subroutine fourier_to_grid_float_2d_fftw
 
+!
+! Real to complex single precision fft
+!
 subroutine grid_to_fourier_float_2d_fftw(num, leng, lenc, grid, fourier)
   
 integer(kind=4),            intent(in)    :: num    ! number of transformations
@@ -139,9 +144,9 @@ do j = 1, num
   do i = 1, leng - 1
     real_input(i) = grid(i,j)
   enddo
-
+#   ifdef OVERLOAD_C4
   call fftwf_execute_dft_r2c(real_input_pointer, real_input, complex_output)
-
+#   endif
   do i = 1, lenc
     fourier(i, j) = complex_output(i) * fact
   enddo
@@ -149,6 +154,9 @@ enddo
 return
 end subroutine grid_to_fourier_float_2d_fftw
 
+!
+! Initalise variables for fftw and setup plans
+!
 subroutine fftw3_init(leng, lenc)
     integer, intent(in) :: leng, lenc
     print *, 'Using FFTW3' 
@@ -198,7 +206,9 @@ subroutine fftw3_init(leng, lenc)
     module_is_initialized = .true.
 end subroutine fftw3_init
 
-
+!
+! Clean up all fftw variables
+!
 subroutine fftw3_end()
   call fftw_cleanup()
   module_is_initialized = .false.

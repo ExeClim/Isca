@@ -141,7 +141,6 @@ shared/diag_manager/diag_manager.F90
 shared/diag_manager/diag_output.F90
 shared/diag_manager/diag_table.F90
 shared/diag_manager/diag_util.F90
-shared/fft/fftw.F90
 shared/fft/fft99.F90
 shared/fft/fft.F90
 shared/field_manager/field_manager.F90
