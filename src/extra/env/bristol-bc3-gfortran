@@ -1,0 +1,10 @@
+echo Loading basic gfortran environment
+
+# this defaults to ia64, but we will use gfortran, not ifort
+module load openmpi/gcc/64/2.1.1
+module load netcdf/gcc/64/4.2
+module load fftw3/gcc/64/3.3.3
+module load netcdf/gfortran/64/4.2
+
+export F90=mpif90
+export CC=mpicc

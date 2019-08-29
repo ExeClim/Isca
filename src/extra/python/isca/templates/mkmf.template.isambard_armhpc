@@ -14,7 +14,8 @@ NETCDF_LIBS = `nc-config --libs`
 #  -dynamic: Use dynamic linking
 #  -h cpu=arm-thunderx2: Compile for the thunderx2 processor
 
-FFLAGS = $(CPPFLAGS) -g -cpp -r8 -i8
+#FFLAGS = $(CPPFLAGS) -g -cpp -r8 -O2 -fstack-arrays -mcpu=native 
+FFLAGS = $(CPPFLAGS) -g -cpp -r8 -O2 -mcpu=native -ffp-contract=fast -ffree-form -ffree-line-length-none -D_NOGETPID
 #FFLAGS = $(CPPFLAGS) -fltconsistency -stack_temps -safe_cray_ptr -ftz -shared-intel -assume byterecl -g -O0 -i4 -r8 -check -warn -warn noerrors -debug variable_locations -inline_debug_info -traceback
 FC = $(F90)
 LD = $(F90) $(NETCDF_LIBS)

@@ -18,10 +18,16 @@ NETCDF_LIBS = `nf-config --fflags  --flibs`
 
 FFLAGS = $(CPPFLAGS) $(NETCDF_LIBS) -cpp -fcray-pointer \
           -O2 -ffree-line-length-none -fno-range-check \
-           -fdefault-real-8 -fdefault-double-8
+           -fdefault-real-8 -fdefault-double-8 \
+	    -I/mnt/storage/scratch/qv18258/local/include \
+	    -L/mnt/storage/scratch/qv18258/local/lib \
+	    -I/mnt/storage/scratch/qv18258/netcdf_gcc/include \
+	    -L/mnt/storage/scratch/qv18258/netcdf_gcc/lib \
+	    -lnetcdff -lnetcdf -lmpi -lhdf5_hl -lhdf5 -lz -lcurl -lfftw3
 
 FC = $(F90)
 LD = $(F90) $(NETCDF_LIBS)
 
-LDFLAGS = -lnetcdff -lnetcdf 
-CFLAGS = -D__IFC
+LDFLAGS = -lnetcdff -lnetcdf -lmpi -lhdf5_hl -lhdf5 -lz -lcurl -I/mnt/storage/scratch/qv18258/local/include -L/mnt/storage/scratch/qv18258/local/lib -lfftw3
+CFLAGS = -D__IFC -I/mnt/storage/scratch/qv18258/netcdf_gcc/include -L/mnt/storage/scratch/qv18258/netcdf_gcc/lib -lnetcdff -lnetcdf -lmpi -lhdf5_hl -lhdf5 -lz -lcurl
+LIBS="-lnetcdf -lhdf5_hl -lhdf5 -lz -lcurl"
