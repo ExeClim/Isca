@@ -48,12 +48,7 @@ cd $execdir
 echo $pathnames
 
 # execute mkmf to create makefile
-#<<<<<<< HEAD
-#cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C4 -DOVERLOAD_R4  {{compile_flags}}"
-#=======
-cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C4 -DOVERLOAD_R4 -DFFTW3 {{compile_flags}}"
-
-#>>>>>>> 1a7b297cabe3b3e29ef838afde1e01007c9daf2f
+cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8  {{compile_flags}}"
 $mkmf  -a $sourcedir -t $template -p $executable -c "$cppDefs" $pathnames $sourcedir/shared/include $sourcedir/shared/mpp/include
 
 make
