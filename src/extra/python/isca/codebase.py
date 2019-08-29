@@ -301,7 +301,11 @@ class DryCodeBase(GreyCodeBase):
     name = 'dry'
     executable_name = 'held_suarez.x'
 
-
+class DryCodeBaseFFTW(DryCodeBase):
+    """The Held-Suarez model using FFTW
+    """
+    name = 'dry_fftw'
+    executable_name = 'held_suarez.x'
 
 # class ShallowCodeBase(CodeBase):
 #     """The Shallow Water Equations.

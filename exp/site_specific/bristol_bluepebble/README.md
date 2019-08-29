@@ -51,7 +51,7 @@ Then make the `Isca_work` and `Isca_data` directories:
 (isca_env) $ bash
 ```
 
-Now everything should be set up and we can try a test run. The following should compile and run 12 months of a Held-Suarez test case, at T85 resolution spread over 64 cores. 
+Now everything should be set up and we can try a test run. The following should compile and run 12 months of a Held-Suarez test case. 
 
 ```{bash}
 (isca_env) $ cd Isca/exp/site-specific/bristol_bluepebble
