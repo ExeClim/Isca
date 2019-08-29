@@ -1,6 +1,6 @@
 # Instructions for running Isca on GW4's Isambard Supercomputer (GNU compiler)
 
-These instructions are intended to get you up-and-running with a simple Held-Suarez test case. They assume you are starting with a default user environment on BlueCrystal 3, so some changes might be needed if you have already modified your environment.
+These instructions are intended to get you up-and-running with a simple Held-Suarez test case. They assume you are starting with a default user environment on Isambard, so some changes might be needed if you have already modified your environment.
 
 Isamabard is a cray supercomputer comprised of Arm processor nodes. This means that configuration is slightly different to that of the usual Intel-based machines. 
 
