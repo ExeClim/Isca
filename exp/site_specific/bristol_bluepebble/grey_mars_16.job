@@ -1,0 +1,13 @@
+#!/bin/sh
+#PBS -l select=1:ncpus=28:mem=20GB
+#PBS -l walltime=04:00:00
+
+module load tools/git/2.22.0
+source activate isca_env
+
+ulimit -a
+
+python $BENCHMARK_ISCA/src/main.py -mincores 16 -maxcores 16 -r T85 -codebase grey_mars -fc testing
+
+
+#python $GFDL_BASE/exp/grey_mars/grey_mars.py
