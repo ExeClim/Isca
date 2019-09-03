@@ -258,10 +258,10 @@ module cloud_simple_mod
 
 
   subroutine cloud_simple(p_half, p_full, Time, temp, q_hum, z_full, &
-                          wg_full, psg, temp_2m, q_2m, precip, klcls, &
+                          wg_full, psg, temp_2m, q_2m, rh_2m, precip, klcls, &
                           cf, reff_rad, qcl_rad)  ! outs
     real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, wg_full
-    real, intent(in),  dimension(:,:)   :: psg, temp_2m, precip, q_2m
+    real, intent(in),  dimension(:,:)   :: psg, temp_2m, precip, q_2m, rh_2m
     integer, intent(in), dimension(:,:) :: klcls
     type(time_type),   intent(in)       :: Time
     real, intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
@@ -285,8 +285,8 @@ module cloud_simple_mod
 
     conv_cf = 0.0
     if(do_conv_cld) then
-      call calc_convective_cf(p_full, precip, klcls, conv_cf, Time)
-      !call calc_convective_cf2(p_full, precip, klcls, conv_cf, Time)
+      !call calc_convective_cf(p_full, precip, klcls, conv_cf, Time)
+      call calc_convective_cf2(p_full, precip, klcls, conv_cf, Time)
     end if
 
     ! rh_e is the effective RH
@@ -299,7 +299,7 @@ module cloud_simple_mod
 
     if (do_add_stratocumulus) then
       call add_stratiform_cld(temp, p_full, p_half, z_full, rh_e, q_hum, &
-                              temp_2m, q_2m, psg, wg_full, klcls, cf, Time)
+                              temp_2m, q_2m, rh_2m, psg, wg_full, klcls, cf, Time)
     end if
 
     if(do_conv_cld) then
@@ -324,21 +324,23 @@ module cloud_simple_mod
     premib = 7.0e4 !Pa
     !omega_adj_threshold = -0.1   !Pa/s
 
-    where(p_full>premib .and. omega_adj_threshold<wg_full .and. wg_full<0.0)
-      cf = min(1.0, wg_full/omega_adj_threshold) * cf
-    elsewhere (p_full>premib .and. wg_full>=0.0)
+    !where(p_full>premib .and. omega_adj_threshold<wg_full .and. wg_full<0.0)
+    !  cf = min(1.0, wg_full/omega_adj_threshold) * cf
+    !elsewhere (p_full>premib .and. wg_full>=0.0)
+    where (p_full>premib .and. wg_full>=0.0)
+    !elsewhere (wg_full>=0.0)
       cf = 0.0
       !cf = min(1.0, wg_full/abs(omega_adj_threshold)) * cf
-    elsewhere
-      cf = cf
+    !elsewhere
+    !  cf = cf
     end where
   end subroutine adjust_low_cld
 
-  subroutine add_stratiform_cld(temp, p_full, p_half, z_full, rh, q_hum, temp_2m, q_2m, psg, wg_full, klcls, cf, Time)
+  subroutine add_stratiform_cld(temp, p_full, p_half, z_full, rh, q_hum, temp_2m, q_2m, rh_2m, psg, wg_full, klcls, cf, Time)
     implicit none
     real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, rh, wg_full
     type(time_type),   intent(in)       :: Time
-    real, intent(in),  dimension(:,:)   :: temp_2m, q_2m, psg
+    real, intent(in),  dimension(:,:)   :: temp_2m, q_2m, rh_2m, psg
     integer, intent(in), dimension(:,:) :: klcls
     real, intent(out), dimension(:,:,:) :: cf
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: theta, dthdp, marine_strat
@@ -349,7 +351,7 @@ module cloud_simple_mod
     integer :: i, j, k, k700, kb, k_surf, kk
 
     k_surf = size(temp, 3)
-    omega_pos_threshold = 0.4*100/3600
+    omega_pos_threshold = 1.0*100/3600
 
     call calc_theta_dthdp(temp, temp_2m, p_full, p_half, psg, theta, dthdp, kdthdp)
 
@@ -361,16 +363,18 @@ module cloud_simple_mod
       call calc_ectei(p_full, q_hum, q_2m, eis, ectei, Time)
     end if
     if (method_str(1:4)=='PARK') then
-      call calc_Park_proxies(p_full, psg, z_full, temp, temp_2m, q_hum, q_2m, klcls, ELF, Time)
+      call calc_Park_proxies(p_full, psg, z_full, temp, temp_2m, q_hum, q_2m, rh_2m, klcls, ELF, Time)
     end if
 
     marine_strat = 0.0
     do i=1, size(temp, 1)
       do j=1, size(temp, 2)
+        k700 = minloc(abs(p_full(i,j,:) - 7.0e4), 1)
         kk = kdthdp(i,j)
         kb = min(kk+1, k_surf)
-        do k=kk-2, kb
-          if (wg_full(i,j,k)> omega_pos_threshold .and. dthdp(i,j,k) < dthdp_min_threshold) then
+        !do k=kk-2, kb
+        k = kk
+          if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold) then
             if(method_str == 'LTS') then
               strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
               cf(i,j,k) = max(strat, cf(i,j,k))
@@ -415,15 +419,17 @@ module cloud_simple_mod
             end if
             if(method_str == 'PARK_ELF') then
               ! Park and Shin, 2019, ACP
-              strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+              !strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+              strat = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
               cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
             end if
             cf(i,j,k) = min(1.0, dthdp(i,j,k)/dthdp(i,j,kk)) * cf(i,j,k)
             marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
           end if
-        end do
+        !end do
         if(intermediate_outputs_diags .and. method_str=='PARK_ELF') then
-          low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+          !low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+          low_ca_park(i,j) = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
         end if
       end do
     end do
@@ -738,12 +744,14 @@ module cloud_simple_mod
 
   end subroutine merge_strat_conv_clouds
 
-  subroutine calc_lcls(klcls, pfull, temp, zfull, plcls, tlcls, zlcls)
+  subroutine calc_lcls(klcls, pfull, temp, zfull, ts, rh_surf, plcls, tlcls, zlcls)
     ! Example to call:
     ! call calc_lcls(klcls, pfull=p_full, plcls=plcl2d)
+    ! rh_surf in range [0,1]
     implicit none
     integer, intent(in), dimension(:,:) :: klcls
     real, intent(in),  dimension(:,:,:), optional :: temp, pfull, zfull
+    real, intent(in),  dimension(:,:),   optional :: rh_surf, ts
     real, intent(out), dimension(:,:),   optional :: plcls, tlcls, zlcls
     integer :: i, j
 
@@ -758,12 +766,20 @@ module cloud_simple_mod
         if (present(zfull) .and. present(zlcls)) then
           zlcls(i,j) = zfull(i,j,klcls(i,j))
         end if
+        if (present(rh_surf) .and. present(ts) .and. present(zlcls)) then
+          ! Bolton (1980) equation
+          ! Refer to: https://journals.ametsoc.org/doi/pdf/10.1175/JAS-D-17-0102.1
+          zlcls(i,j) = max(0.0, CP_AIR/GRAV * (ts(i,j)-55.0 - (1.0/(ts(i,j)-55.0) - log(rh_surf(i,j))/2840.)**(-1)))
+          !zlcls(i,j) = CP_AIR/GRAV * (ts(i,j)-55.0 - (1.0/(ts(i,j)-55.0) - log(rh_surf(i,j))/2840.)**(-1))
+          !write(*,*) 'QL',  i,j, rh_surf(i,j), zlcls(i,j)
+        end if
 
         if(.not.((present(pfull) .and. present(plcls)) .or. &
                  (present(temp)  .and. present(tlcls)) .or. &
-                 (present(zfull) .and. present(zlcls)))) then
+                 (present(zfull) .and. present(zlcls)) .or. &
+                 (present(rh_surf) .and. present(ts) .and. present(zlcls)))) then
           call error_mesg('calc_lcls in cloud_simple', 'At least one group of '// &
-                'pfull(plcls), temp(tlcls) and zfull(zlcls) should exist.', FATAL)
+                'pfull(plcls), temp(tlcls) and zfull/rh_surf(zlcls) should exist.', FATAL)
         end if
       end do
     end do
@@ -853,28 +869,32 @@ module cloud_simple_mod
     end if
   end subroutine calc_ectei
 
-  subroutine calc_Park_proxies(pfull, ps, zfull, temp, ts, q_hum, q_surf, klcls, ELF, Time)
+  subroutine calc_Park_proxies(pfull, ps, zfull, temp, ts, q_hum, q_surf, rh_surf, klcls, ELF, Time)
     ! Refer to: Park and Shin, 2019, Atmospheric Chemistry and Physics
     ! https://www.atmos-chem-phys.net/19/5635/2019/
 
     implicit none
     real,    intent(in),  dimension(:,:,:) :: pfull, zfull, temp, q_hum
-    real,    intent(in),  dimension(:,:)   :: ts, q_surf, ps
+    real,    intent(in),  dimension(:,:)   :: ts, q_surf, ps, rh_surf
     integer, intent(in),  dimension(:,:)   :: klcls
     type(time_type),      intent(in)       :: Time
     real,    intent(out), dimension(:,:)   :: ELF
     real, dimension(size(temp,1), size(temp,2)) :: plcl, tlcl, zlcl, z700, Gamma_DL, &
                                     Gamma700, LTS, z_ML, zinv, qv_ML, beta2
     ! other paramters
-    real, dimension(size(temp,1), size(temp,2)) :: beta1, IS, DS, eis, ectei, alpha, f_para
+    real, dimension(size(temp,1), size(temp,2)) :: beta1, IS, DS, eis, ectei, alpha, f_para !qs_surf, 
     real :: pstar, delta_zs, theta_ML, used
     integer :: k700, i, j
+
+    !call compute_qs(ts, ps, qs_surf)
+    !rh_surf = q_surf / qs_surf
 
     delta_zs = 2750.0 ! meter, constant
     pstar = 1.0e5 ! Pa
     kappa = RDGAS / CP_AIR
 
-    call calc_lcls(klcls, pfull, temp, zfull, plcl, tlcl, zlcl)
+    !write(*,*) 'QL max of rh_2m', maxval(rh_surf)
+    call calc_lcls(klcls, pfull=pfull, temp=temp, ts=ts, rh_surf=rh_surf, plcls=plcl, tlcls=tlcl, zlcls=zlcl)
 
     do i=1, size(pfull,1)
       do j=1, size(pfull,2)
@@ -956,8 +976,8 @@ module cloud_simple_mod
     call max_rnd_overlap(cf, p_full, p_half, nclds, ktop, kbot, cldamt)
     call compute_tca_random(nclds, cldamt, tca)
     call expand_cloud(nclds, ktop, kbot, cldamt, cloud)
-    call compute_isccp_clds2(p_full, nclds, ktop, cldamt, high_ca, mid_ca, low_ca)
-    !call compute_isccp_clds(p_full, cloud, high_ca, mid_ca, low_ca)
+    !call compute_isccp_clds2(p_full, nclds, ktop, cldamt, high_ca, mid_ca, low_ca)
+    call compute_isccp_clds(p_full, cloud, high_ca, mid_ca, low_ca)
 
     ! Diagnostics output
     call output_cloud_amount(tca, high_ca, mid_ca, low_ca, Time)

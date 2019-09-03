@@ -995,6 +995,7 @@ if(do_cloud_simple) then
                       psg(:,:,current),                    &
                       temp_2m(:,:),                        &
                       q_2m(:,:),                           &
+                      rh_2m(:,:),                          &
                       convective_rain(:,:),                &
                       klcls(:,:),                          &
                       ! outs -
