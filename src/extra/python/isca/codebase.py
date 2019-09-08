@@ -301,7 +301,7 @@ class DryCodeBase(GreyCodeBase):
     name = 'dry'
     executable_name = 'held_suarez.x'
 
-class DryCodeBaseFFTW(DryCodeBase):
+class DryCodeBaseFFTW(GreyCodeBase):
     """The Held-Suarez model using FFTW
     """
     name = 'dry_fftw'
