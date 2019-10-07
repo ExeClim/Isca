@@ -998,6 +998,7 @@ if(do_cloud_simple) then
                       rh_2m(:,:),                          &
                       convective_rain(:,:),                &
                       klcls(:,:),                          &
+                      klzbs(:,:),                          &
                       ! outs -
                       cf_rad(:,:,:), reff_rad(:,:,:),      &
                       qcl_rad(:,:,:)                       &

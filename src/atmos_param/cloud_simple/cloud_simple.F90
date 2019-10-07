@@ -28,6 +28,9 @@ module cloud_simple_mod
              id_low_cld_amt_park, id_marine_strat
   ! ----- outputs for cloud amount diagnostics ----- !
   integer :: id_tot_cld_amt, id_high_cld_amt, id_mid_cld_amt, id_low_cld_amt
+  integer :: id_tot_cld_amt_mxr, id_high_cld_amt_mxr, id_mid_cld_amt_mxr, id_low_cld_amt_mxr, &
+             id_tot_cld_amt_max, id_high_cld_amt_max, id_mid_cld_amt_max, id_low_cld_amt_max, &
+             id_tot_cld_amt_rnd, id_high_cld_amt_rnd, id_mid_cld_amt_rnd, id_low_cld_amt_rnd
 
   character(len=14), parameter ::   mod_name_cld = "cloud_simple"
 
@@ -39,12 +42,13 @@ module cloud_simple_mod
   logical :: do_read_scm_rhcrit = .false.
   logical :: do_qcl_with_temp = .false.
   logical :: do_cloud_amount_diags = .true.
-  logical :: adjust_top = .true.
+  logical :: do_test_overlap = .false.
   logical :: do_add_stratocumulus = .false.
   logical :: intermediate_outputs_diags = .false.
   logical :: do_read_ts = .false.
   logical :: do_conv_cld = .false.
   logical :: do_adjust_low_cld = .false.
+  logical :: adjust_top = .false.
   real, parameter :: FILL_VALUE = -999.0 ! Fill value for arrays
   real, dimension(100) :: scm_rhcrit = FILL_VALUE   ! Input array for single column critical RH. Max number of levels = 100
 
@@ -52,9 +56,10 @@ module cloud_simple_mod
   real :: rhcsfc     = 0.95
   real :: rhc700     = 0.7
   real :: rhc200     = 0.3
-  real :: cf_min     = 1e-10
+  real :: cf_min     = 1e-4
   real :: dthdp_min_threshold = -0.05 !K/hPa, which is -0.125 in CESM1.2.1
   real :: pshallow   = 7.5e4 ! copy from am4 diag_cloud.F90
+  real :: conv_rain_min = 0.14 ! mm/day, threshold to produce conv cld
 
   ! Parameters to control the coefficients profile of linear function of RH
   real :: a_surf     = 2.7
@@ -75,14 +80,15 @@ module cloud_simple_mod
                               cf_diag_formula_name, &
                               do_read_scm_rhcrit, scm_rhcrit, &
                               do_qcl_with_temp, &
-                              do_cloud_amount_diags, adjust_top, &
+                              do_cloud_amount_diags, adjust_top, do_test_overlap, &
                               do_add_stratocumulus, sc_diag_method, &
                               intermediate_outputs_diags, &
                               dthdp_min_threshold, do_read_ts, &
                               a_surf, a_top, b_surf, b_top, nx, &
                               do_conv_cld, pshallow, cf_min, &
                               slingo_rhc_low, slingo_rhc_mid, slingo_rhc_high, &
-                              do_adjust_low_cld, omega_adj_threshold
+                              do_adjust_low_cld, omega_adj_threshold, &
+                              conv_rain_min
 
 
   contains
@@ -243,6 +249,34 @@ module cloud_simple_mod
                             'mid cloud amount', 'percent')
       id_low_cld_amt = register_diag_field (mod_name_cld, 'low_cld_amt', axes(1:2), Time, &
                             'low cloud amount', 'percent')
+      if (do_test_overlap) then
+        id_tot_cld_amt_mxr = register_diag_field (mod_name_cld, 'tot_cld_amt_mxr', axes(1:2), Time, &
+                'total cloud amount', 'percent')
+        id_high_cld_amt_mxr = register_diag_field (mod_name_cld, 'high_cld_amt_mxr', axes(1:2), Time, &
+                'high cloud amount', 'percent')
+        id_mid_cld_amt_mxr = register_diag_field (mod_name_cld, 'mid_cld_amt_mxr', axes(1:2), Time, &
+                'mid cloud amount', 'percent')
+        id_low_cld_amt_mxr = register_diag_field (mod_name_cld, 'low_cld_amt_mxr', axes(1:2), Time, &
+                'low cloud amount', 'percent')
+        ! Max overlap
+        id_tot_cld_amt_max = register_diag_field (mod_name_cld, 'tot_cld_amt_max', axes(1:2), Time, &
+                'total cloud amount', 'percent')
+        id_high_cld_amt_max = register_diag_field (mod_name_cld, 'high_cld_amt_max', axes(1:2), Time, &
+                'high cloud amount', 'percent')
+        id_mid_cld_amt_max = register_diag_field (mod_name_cld, 'mid_cld_amt_max', axes(1:2), Time, &
+                'mid cloud amount', 'percent')
+        id_low_cld_amt_max = register_diag_field (mod_name_cld, 'low_cld_amt_max', axes(1:2), Time, &
+                'low cloud amount', 'percent')
+        ! Random overlap
+        id_tot_cld_amt_rnd = register_diag_field (mod_name_cld, 'tot_cld_amt_rnd', axes(1:2), Time, &
+                'total cloud amount', 'percent')
+        id_high_cld_amt_rnd = register_diag_field (mod_name_cld, 'high_cld_amt_rnd', axes(1:2), Time, &
+                'high cloud amount', 'percent')
+        id_mid_cld_amt_rnd = register_diag_field (mod_name_cld, 'mid_cld_amt_rnd', axes(1:2), Time, &
+                'mid cloud amount', 'percent')
+        id_low_cld_amt_rnd = register_diag_field (mod_name_cld, 'low_cld_amt_rnd', axes(1:2), Time, &
+                'low cloud amount', 'percent')
+      end if
     end if
 
     if(do_add_stratocumulus) then
@@ -258,11 +292,11 @@ module cloud_simple_mod
 
 
   subroutine cloud_simple(p_half, p_full, Time, temp, q_hum, z_full, &
-                          wg_full, psg, temp_2m, q_2m, rh_2m, precip, klcls, &
+                          wg_full, psg, temp_2m, q_2m, rh_2m, precip, klcls, klzbs, &
                           cf, reff_rad, qcl_rad)  ! outs
     real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, wg_full
     real, intent(in),  dimension(:,:)   :: psg, temp_2m, precip, q_2m, rh_2m
-    integer, intent(in), dimension(:,:) :: klcls
+    integer, intent(in), dimension(:,:) :: klcls, klzbs
     type(time_type),   intent(in)       :: Time
     real, intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: qs, frac_liq, rh_in_cf, &
@@ -286,7 +320,8 @@ module cloud_simple_mod
     conv_cf = 0.0
     if(do_conv_cld) then
       !call calc_convective_cf(p_full, precip, klcls, conv_cf, Time)
-      call calc_convective_cf2(p_full, precip, klcls, conv_cf, Time)
+      call calc_convective_cf2(p_full, precip, klcls, klzbs, conv_cf, Time)
+      !call add_anvil_clouds(p_full, precip, klcls, klzbs, conv_cf, Time)
     end if
 
     ! rh_e is the effective RH
@@ -310,6 +345,11 @@ module cloud_simple_mod
 
     if (do_cloud_amount_diags) then
       call diag_cloud_amount(cf, p_full, p_half, Time)
+      if (do_test_overlap) then
+        call diag_cldamt_maxrnd_overlap(cf, p_full, Time)
+        call diag_cldamt_max_overlap(cf, p_full, Time)
+        call diag_cldamt_random_overlap(cf, p_full, Time)
+      end if
     end if
 
     call output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, rhcrit, Time)
@@ -336,6 +376,66 @@ module cloud_simple_mod
     end where
   end subroutine adjust_low_cld
 
+
+  subroutine estimate_stratiform_cld(method_str, i, j, k, kb, pfull, cf, rh, theta, eis, dthdp, ectei, ELF)
+    implicit none
+    integer, intent(in) :: i, j, k
+    character(len=32), intent(in) :: method_str
+    real, intent(in),  dimension(:,:,:) :: rh, theta, pfull, dthdp
+    integer, intent(in) :: kb
+    real, intent(in),  dimension(:,:)  :: eis, ectei, ELF
+    real, intent(out), dimension(:,:,:) :: cf
+    real :: strat, rhb_frac
+    integer :: k700, k_surf
+    
+    k_surf = size(pfull, 3)
+    k700 = minloc(abs(pfull(i,j,:) - 7.0e4), 1)
+  
+    if(method_str == 'LTS') then
+      strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
+      cf(i,j,k) = max(strat, cf(i,j,k))
+    else if(method_str == 'SLINGO') then
+      strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
+      rhb_frac = min(1.0, max(0.0, (rh(i,j,kb) - 0.6) / 0.2))
+      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+    else if(method_str == 'SLINGO_NO_RH') then
+      strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
+      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+    else if(method_str == 'DTHDP') then
+      strat = min(1.0, max(0.0, -3.1196*dthdp(i,j,k) - 0.1246))
+      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+    else if(method_str == 'EIS_WOOD') then
+      !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
+      strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
+      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+    else if(method_str == 'EIS_WOOD_RH') then
+      strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
+      rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
+      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+    else if(method_str == 'EIS_RH') then
+      strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh(i,j,k)-6.45e-19)))
+      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+    else if(method_str == 'ECTEI') then
+      ! Kawai, Koshiro and Webb, 2017
+      strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
+      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+    else if(method_str == 'ECTEI_RH') then
+      ! Kawai, Koshiro and Webb, 2017
+      strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
+      rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
+      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+    else if(method_str == 'PARK_ELF') then
+      ! Park and Shin, 2019, ACP
+      !strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+      strat = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
+      !strat = min(1.0, max(0.0, 1.11*ELF(i,j)-0.107))
+      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+    else
+      call error_mesg('cloud_simple', method_str//' is not supported yet!', FATAL)
+    end if
+  end subroutine estimate_stratiform_cld
+
+
   subroutine add_stratiform_cld(temp, p_full, p_half, z_full, rh, q_hum, temp_2m, q_2m, rh_2m, psg, wg_full, klcls, cf, Time)
     implicit none
     real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, rh, wg_full
@@ -344,14 +444,16 @@ module cloud_simple_mod
     integer, intent(in), dimension(:,:) :: klcls
     real, intent(out), dimension(:,:,:) :: cf
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: theta, dthdp, marine_strat
-    integer, dimension(size(temp,1), size(temp,2)) :: kdthdp
+    integer, dimension(size(temp,1), size(temp,2)) :: kdthdp, kinvs
     real,    dimension(size(temp,1), size(temp,2)) :: eis, ectei, ELF, low_ca_park
     real :: strat, rhb_frac, used, omega_pos_threshold
     character(len=32) :: method_str = ''
-    integer :: i, j, k, k700, kb, k_surf, kk
+    integer :: i, j, k, k700, kb, k_surf, kk, nlev
 
-    k_surf = size(temp, 3)
-    omega_pos_threshold = 1.0*100/3600
+    eis = 0.0
+    ectei = 0.0
+    ELF = 0.0
+    dthdp = 0.0
 
     call calc_theta_dthdp(temp, temp_2m, p_full, p_half, psg, theta, dthdp, kdthdp)
 
@@ -363,74 +465,72 @@ module cloud_simple_mod
       call calc_ectei(p_full, q_hum, q_2m, eis, ectei, Time)
     end if
     if (method_str(1:4)=='PARK') then
-      call calc_Park_proxies(p_full, psg, z_full, temp, temp_2m, q_hum, q_2m, rh_2m, klcls, ELF, Time)
+      call calc_Park_proxies(p_full, psg, z_full, temp, temp_2m, q_hum, q_2m, rh_2m, klcls, ELF, kinvs, Time)
     end if
 
+    k_surf = size(temp, 3)
+    omega_pos_threshold = 0. !1.4*100/3600
     marine_strat = 0.0
+
     do i=1, size(temp, 1)
       do j=1, size(temp, 2)
-        k700 = minloc(abs(p_full(i,j,:) - 7.0e4), 1)
+
+        ! =========== Add off-coast marine stratiform clods =========== !
+        !if (method_str(1:4)=='PARK') then
+        !  kk = kinvs(i,j)
+        !  !write(*,*) 'QL kinv,kk',kinvs(i,j), kdthdp(i,j)
+        !else
+        !  kk = kdthdp(i,j)
+        !end if
+
         kk = kdthdp(i,j)
         kb = min(kk+1, k_surf)
-        !do k=kk-2, kb
-        k = kk
-          if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold) then
-            if(method_str == 'LTS') then
-              strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
-              cf(i,j,k) = max(strat, cf(i,j,k))
-            end if
-            if(method_str == 'SLINGO') then
-              strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
-              rhb_frac = min(1.0, max(0.0, (rh(i,j,kb) - 0.6) / 0.2))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-            end if
-            if(method_str == 'SLINGO_NO_RH') then
-              strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
-            if(method_str == 'DTHDP') then
-              strat = min(1.0, max(0.0, -3.1196*dthdp(i,j,k) - 0.1246))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
-            if(method_str == 'EIS_WOOD') then
-              !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
-              strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
-            if(method_str == 'EIS_WOOD_RH') then
-              strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
-              rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-            end if
-            if(method_str == 'EIS_RH') then
-              strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh(i,j,k)-6.45e-19)))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
-            if(method_str == 'ECTEI') then
-              ! Kawai, Koshiro and Webb, 2017
-              strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
-            if(method_str == 'ECTEI_RH') then
-              ! Kawai, Koshiro and Webb, 2017
-              strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
-              rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-            end if
-            if(method_str == 'PARK_ELF') then
-              ! Park and Shin, 2019, ACP
-              !strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
-              strat = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
-              cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-            end if
-            cf(i,j,k) = min(1.0, dthdp(i,j,k)/dthdp(i,j,kk)) * cf(i,j,k)
+        do k=kk,kk
+        !k = kk
+          !if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold) then
+          if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold .and. p_full(i,j,k)>8.5e4) then
+          !if (kk.ne.0 .and. dthdp(i,j,k)<dthdp_min_threshold) then
+          ! .and. dthdp(i,j,k)<dthdp_min_threshold
+          !if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. p_full(i,j,k)>7.5e4 ) then
+            call estimate_stratiform_cld(method_str, i, j, k, kb, p_full, cf, rh, theta, eis, dthdp, ectei, ELF)
+            !cf(i,j,k) = min(1.0, max(0.0, cf(i,j,k)*2))
+            !cf(i,j,k) = min(1.0, abs(dthdp(i,j,k)/dthdp(i,j,kk))) * cf(i,j,k)
             marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
           end if
-        !end do
+        end do
+
+        ! =========== Other stratiform clouds except temperature inversion areas =========== !
+        ! This is the first try, the souther ocean is improved a lot,
+        ! but subtropical region provide too much low clouds 
+        !if (method_str(1:4)=='PARK' .and. p_full(i,j,kk)>7.5e4) then
+        
+        ! if (method_str(1:4)=='PARK') then
+        !   kk = kinvs(i,j)
+        ! end if
+        ! !if (method_str(1:4)=='PARK' .and. p_full(i,j,kk)>7.5e4 .and. dthdp(i,j,kk)>-0.06) then
+        ! if (method_str(1:4)=='PARK' .and. p_full(i,j,kk)>7.5e4 &
+        !     .and. wg_full(i,j,kk)<0 .and. dthdp(i,j,kk)>-0.06) then
+        !   call estimate_stratiform_cld(method_str, i, j, kk, kb, p_full, cf, rh, theta, eis, dthdp, ectei, ELF)
+        !   marine_strat(i,j,kk) = min(1.0, max(0.0, cf(i,j,kk)))
+        ! end if
+
         if(intermediate_outputs_diags .and. method_str=='PARK_ELF') then
           !low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
           low_ca_park(i,j) = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
         end if
+
+        !nlev = 0
+        !do k=1,k_surf
+        !  if(p_full(i,j,k)>7.0e4 .and. k<=klcls(i,j)) then
+        !    !call estimate_stratiform_cld(method_str, i, j, k, kb, pfull, cf, rh, theta, eis, dthdp, ectei, ELF)
+        !   nlev = nlev + 1
+        !  end if
+        !end do
+        !call estimate_stratiform_cld(method_str, i, j, k, kb, pfull, cf, rh, theta, eis, dthdp, ectei, ELF)
+        !nlev = klcls(i,j) - k700 + 1
+        !do k=k700,klcls(i,j)
+        !  cf(i,j,k) = 1.0 - (1.0 - cf(i,j,k))**(1/nlev) !min(1.0, max(0.0, 1.0-(1.0-cf(i,j,k))**(1/nlev))) ! Random overlap
+        !end do
       end do
     end do
 
@@ -451,6 +551,122 @@ module cloud_simple_mod
     end if
   end subroutine add_stratiform_cld
 
+  !subroutine add_stratiform_cld(temp, p_full, p_half, z_full, rh, q_hum, temp_2m, q_2m, rh_2m, psg, wg_full, klcls, cf, Time)
+  !  implicit none
+  !  real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, rh, wg_full
+  !  type(time_type),   intent(in)       :: Time
+  !  real, intent(in),  dimension(:,:)   :: temp_2m, q_2m, rh_2m, psg
+  !  integer, intent(in), dimension(:,:) :: klcls
+  !  real, intent(out), dimension(:,:,:) :: cf
+  !  real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: theta, dthdp, marine_strat
+  !  integer, dimension(size(temp,1), size(temp,2)) :: kdthdp
+  !  real,    dimension(size(temp,1), size(temp,2)) :: eis, ectei, ELF, low_ca_park
+  !  real :: strat, rhb_frac, used, omega_pos_threshold
+  !  character(len=32) :: method_str = ''
+  !  integer :: i, j, k, k700, kb, k_surf, kk
+  !
+  !  k_surf = size(temp, 3)
+  !  omega_pos_threshold = 1.0*100/3600
+  !
+  !  call calc_theta_dthdp(temp, temp_2m, p_full, p_half, psg, theta, dthdp, kdthdp)
+  !
+  !  method_str = uppercase(trim(sc_diag_method))
+  !  if (method_str(1:3)=='EIS' .or. method_str(1:5)=='ECTEI') then
+  !    call calc_eis(p_full, z_full, temp, temp_2m, psg, klcls, eis, Time)
+  !  end if
+  !  if (method_str(1:5)=='ECTEI') then
+  !    call calc_ectei(p_full, q_hum, q_2m, eis, ectei, Time)
+  !  end if
+  !  if (method_str(1:4)=='PARK') then
+  !    call calc_Park_proxies(p_full, psg, z_full, temp, temp_2m, q_hum, q_2m, rh_2m, klcls, ELF, Time)
+  !  end if
+  !
+  !  marine_strat = 0.0
+  !  do i=1, size(temp, 1)
+  !    do j=1, size(temp, 2)
+  !      kk = kdthdp(i,j)
+  !      kb = min(kk+1, k_surf)
+  !      !do k=kk-2, kb
+  !      k = kk
+  !        if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold) then
+  !          if(method_str == 'LTS') then
+  !            strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
+  !            cf(i,j,k) = max(strat, cf(i,j,k))
+  !          end if
+  !          if(method_str == 'SLINGO') then
+  !            strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
+  !            rhb_frac = min(1.0, max(0.0, (rh(i,j,kb) - 0.6) / 0.2))
+  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+  !          end if
+  !          if(method_str == 'SLINGO_NO_RH') then
+  !            strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
+  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+  !          end if
+  !          if(method_str == 'DTHDP') then
+  !            strat = min(1.0, max(0.0, -3.1196*dthdp(i,j,k) - 0.1246))
+  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+  !          end if
+  !          if(method_str == 'EIS_WOOD') then
+  !            !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
+  !            strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
+  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+  !          end if
+  !          if(method_str == 'EIS_WOOD_RH') then
+  !            strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
+  !            rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
+  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+  !          end if
+  !          if(method_str == 'EIS_RH') then
+  !            strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh(i,j,k)-6.45e-19)))
+  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+  !          end if
+  !          if(method_str == 'ECTEI') then
+  !            ! Kawai, Koshiro and Webb, 2017
+  !            strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
+  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+  !          end if
+  !          if(method_str == 'ECTEI_RH') then
+  !            ! Kawai, Koshiro and Webb, 2017
+  !            strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
+  !            rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
+  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+  !          end if
+  !          if(method_str == 'PARK_ELF') then
+  !            ! Park and Shin, 2019, ACP
+  !            !strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+  !            strat = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
+  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+  !          end if
+  !          cf(i,j,k) = min(1.0, dthdp(i,j,k)/dthdp(i,j,kk)) * cf(i,j,k)
+  !          marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
+  !        end if
+  !      !end do
+  !
+  !      if(intermediate_outputs_diags .and. method_str=='PARK_ELF') then
+  !        !low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
+  !        low_ca_park(i,j) = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
+  !      end if
+  !
+  !    end do
+  !  end do
+  !
+  !  if (id_theta > 0) then
+  !    used = send_data(id_theta, theta, Time)
+  !  end if
+  !  if (id_marine_strat > 0) then
+  !    used = send_data(id_marine_strat, marine_strat, Time)
+  !  end if
+  !
+  !  if(intermediate_outputs_diags) then
+  !    if (id_dthdp > 0) then
+  !      used = send_data(id_dthdp, dthdp, Time)
+  !    end if
+  !    if (id_low_cld_amt_park > 0) then
+  !      used = send_data(id_low_cld_amt_park, low_ca_park, Time)
+  !    end if
+  !  end if
+  !end subroutine add_stratiform_cld
+
   subroutine calc_theta_dthdp(temp, temp_2m, pfull, phalf, ps, theta, dthdp, kdthdp)
     real,    intent(in),  dimension(:,:,:) :: temp, pfull, phalf
     real,    intent(in),  dimension(:,:)   :: temp_2m, ps
@@ -462,7 +678,7 @@ module cloud_simple_mod
 
     dthdp_min = dthdp_min_threshold  !d_theta / d_p *1e2, lapse rate
     kdthdp = 0
-    premib = 7.5e4
+    premib = 8.5e4
     dthdp = 0.0
     pstar = 1.0e5
 
@@ -489,13 +705,19 @@ module cloud_simple_mod
     ! linearly interpolate between T=0 and -40C
     real, intent(in),  dimension(:,:,:) :: temp
     real, intent(out), dimension(:,:,:) :: frac_liq
+    real :: t_max, t_min
 
-    where (temp > zerodegc)
+    t_max = -5
+    t_min = -40
+
+    !where (temp > zerodegc)
+    where (temp > zerodegc+t_max)
         frac_liq = 1.0
-    elsewhere (temp < zerodegc-40.0)
+    elsewhere (temp < zerodegc+t_min)
         frac_liq = 0.0
     elsewhere
-        frac_liq = 1.0 - (zerodegc-temp) / 40.0
+        !frac_liq = 1.0 - (zerodegc-temp) / 40.0
+        frac_liq = (temp-zerodegc - t_min) / (t_max-t_min)
     end where
 
   end subroutine calc_liq_frac
@@ -505,8 +727,8 @@ module cloud_simple_mod
     real, intent(in),  dimension(:,:,:) :: frac_liq
     real, intent(out), dimension(:,:,:) :: reff_rad
 
-    reff_rad =  10.0 * frac_liq + 20.0 * (1.0 - frac_liq)  !units in microns
-    !reff_rad =  10.0 * frac_liq + 30.0 * (1.0 - frac_liq)  !units in microns
+    !reff_rad =  10.0 * frac_liq + 20.0 * (1.0 - frac_liq)  !units in microns
+    reff_rad =  14.0 * frac_liq + 25.0 * (1.0 - frac_liq)  !units in microns
 
   end subroutine calc_reff
 
@@ -557,6 +779,7 @@ module cloud_simple_mod
     real, intent(out), dimension(:,:,:) :: cf
     real, dimension(size(pfull,1), size(pfull,2), size(pfull,3)) :: rhc
     real :: mid_top, mid_base, p_para, alpha_0, gamma ! For Xu and Krueger (1996)
+    integer :: i, j, k
 
     select case(cf_diag_formula)
       case(B_SPOOKIE)
@@ -592,11 +815,25 @@ module cloud_simple_mod
         alpha_0 = 100.0
         gamma = 0.49
 
-        where (rh.ge.1)
-          cf = 1.0
-        elsewhere
-          cf = rh**p_para * (1.0 - EXP(-alpha_0*qcl_rad / (qsat-q_hum)**gamma))
-        end where
+        !where (rh.ge.1)
+        !  cf = 1.0
+        !elsewhere
+        !  cf = rh**p_para * (1.0 - EXP(-alpha_0*qcl_rad / (qsat-q_hum)**gamma))
+        !end where
+        cf = rh**p_para * (1.0 - EXP(-alpha_0*qcl_rad / (qsat-q_hum)**gamma))
+        cf = min(1.0, max(0.0, cf))
+        
+        do i=1,size(cf, 1)
+          do j=1,size(cf, 2)
+            do k = 1,size(cf,3)
+              !if (cf(i,j,k)>0) then
+                write(*,*) 'i, j, k=', i, j, k, 'cf=', cf(i,j,k), 'qcl=', qcl_rad(i,j,k), &
+                  'rh=', rh(i,j,k), 'qs=', qsat(i,j,k), 'q_hum=', q_hum(i,j,k)
+              !end if
+            end do
+          end do
+        end do
+
 
       case(B_LINEAR)
         call calc_cf_linear(pfull, rh, ps, cf)
@@ -698,34 +935,65 @@ module cloud_simple_mod
 
   end subroutine calc_convective_cf
 
-  subroutine calc_convective_cf2(pfull, precip, klcls, conv_cf, Time)
+  subroutine calc_convective_cf2(pfull, precip, klcls, klzbs, conv_cf, Time)
     real, intent(in),  dimension(:,:,:) :: pfull
     real, intent(in),  dimension(:,:)   :: precip
-    integer, intent(in), dimension(:,:) :: klcls
+    integer, intent(in), dimension(:,:) :: klcls, klzbs
     type(time_type),   intent(in)       :: Time
     real, intent(out), dimension(:,:,:) :: conv_cf
     real, dimension(size(pfull,1), size(pfull,2)) :: precip_mm_per_day, plcl2d, conv_cf_tmp
-    real    :: convcld_a, convcld_b, used
-    integer :: i, j, k, klcl, ktop, nlayers
+    real    :: convcld_a, convcld_b, used, tower_scale_coeff
+    integer :: i, j, k, klcl, ktop, nlayers, k_tower
 
     call calc_lcls(klcls, pfull=pfull, plcls=plcl2d)
 
+    ! conv_rain_min = 4 mm/day
     precip_mm_per_day = precip * 24.0 * 3600.0  ! change units to mm/day
 
-    convcld_a = -0.125 * log(0.14)  !0.246, ! 0.001
+    !convcld_a = -0.125 * log(0.14)  !0.246, ! 0.001
+    convcld_a = -0.125 * log(conv_rain_min)
     convcld_b =  0.125 !0.0418 !
+    tower_scale_coeff = 0.25
 
     conv_cf = 0.0
-    conv_cf_tmp = convcld_a + convcld_b * log(1.0 + precip_mm_per_day)
+    !conv_cf_tmp = convcld_a + convcld_b * log(1.0 + precip_mm_per_day)
 
-    ktop = 3
+    where (precip_mm_per_day<conv_rain_min) 
+        conv_cf_tmp = 0.0
+    elsewhere(precip_mm_per_day>85.0)
+        conv_cf_tmp = 0.8
+    elsewhere
+        conv_cf_tmp = convcld_a + convcld_b * log(precip_mm_per_day)
+    end where
+
+    !ktop = 3
     do i=1, size(pfull,1)
       do j=1, size(pfull,2)
         klcl = klcls(i,j)
-        nlayers = klcl - ktop + 1
-        conv_cf(i,j,ktop:klcl) = 1.0 - (1.0 - conv_cf_tmp(i,j))**(1.0 / nlayers)
+        ktop = klzbs(i,j)
+        !if (ktop.ne.0 .and. klcl.ne.ktop) then
+        if (ktop.ne.0 .and. pfull(i,j,ktop)<4e4 .and. klcl.ne.ktop) then
+          !nlayers = klcl - ktop
+          ! Random overlap assumption
+          ! conv_cf(i,j,ktop:klcl) = 1.0 - (1.0 - conv_cf_tmp(i,j))**(1.0 / nlayers)
+          ! Maxmimum overlap
+          !conv_cf(i,j,ktop:klcl) = conv_cf_tmp(i,j)*0.25
+          ! Third try:
+          conv_cf(i,j,ktop:klcl) = conv_cf_tmp(i,j) !*0.5 !*0.5
+          !write(*,*) 'QL', i,j, klcl, ktop, nlayers, conv_cf(i,j,klcl), pfull(i,j,ktop)
+          ! k_tower = minloc(abs(pfull(i,j,:) - pshallow), 1)
+          ! if (k_tower>ktop .and. k_tower<klcl) then
+          !   conv_cf(i,j,ktop:k_tower) = conv_cf_tmp(i,j) * tower_scale_coeff
+          ! end if
+        end if
       end do
     end do
+
+    !where (pfull < pshallow)
+    !  conv_cf = conv_cf * tower_scale_coeff
+    !end where
+
+    !conv_cf = min(0.6, max(0.0, conv_cf))
 
     ! Output the diagnostics
     if (id_conv_cf > 0) then
@@ -734,6 +1002,54 @@ module cloud_simple_mod
 
   end subroutine calc_convective_cf2
 
+  subroutine add_anvil_clouds(pfull, precip, klcls, klzbs, conv_cf, Time)
+    real, intent(in),  dimension(:,:,:) :: pfull
+    real, intent(in),  dimension(:,:)   :: precip
+    integer, intent(in), dimension(:,:) :: klcls, klzbs
+    type(time_type),   intent(in)       :: Time
+    real, intent(out), dimension(:,:,:) :: conv_cf
+    real, dimension(size(pfull,1), size(pfull,2)) :: precip_mm_per_day, plcl2d, conv_cf_tmp
+    real    :: convcld_a, convcld_b, used, tower_scale_coeff
+    integer :: i, j, k, klcl, ktop, nlayers, k_tower
+
+    call calc_lcls(klcls, pfull=pfull, plcls=plcl2d)
+
+    precip_mm_per_day = precip * 24.0 * 3600.0  ! change units to mm/day
+
+    convcld_a = -0.125 * log(0.14)  !0.246, ! 0.001
+    convcld_b =  0.125 !0.0418 !
+    tower_scale_coeff = 0.25
+
+    conv_cf = 0.0
+    conv_cf_tmp = convcld_a + convcld_b * log(1.0 + precip_mm_per_day)
+
+    !ktop = 3
+    do i=1, size(pfull,1)
+      do j=1, size(pfull,2)
+        klcl = klcls(i,j)
+        ktop = klzbs(i,j)
+        if (ktop.ne.0 .and. klcl.ne.ktop) then
+          !conv_cf(i,j,ktop:klcl) = conv_cf_tmp(i,j) !*0.5 !*0.5
+          k_tower = minloc(abs(pfull(i,j,:) - 4.e4), 1)
+          if (k_tower>ktop .and. k_tower<klcl) then
+            !conv_cf(i,j,ktop:k_tower) = min(0.6, max(0.0, (conv_cf_tmp(i,j)-0.3)*2))
+            conv_cf(i,j,ktop:k_tower) = conv_cf_tmp(i,j) * 0.25 !*0.5
+            !write(*,*) 'QL anvil', conv_cf_tmp(i,j)*0.25
+          end if
+        end if
+      end do
+    end do
+
+    !conv_cf = min(0.6, max(0.0, conv_cf))
+
+    ! Output the diagnostics
+    if (id_conv_cf > 0) then
+      used = send_data(id_conv_cf, conv_cf, Time)
+    endif
+
+  end subroutine add_anvil_clouds
+
+
   subroutine merge_strat_conv_clouds(cf, conv_cf)
     implicit none
     real, intent(in),  dimension(:,:,:) :: conv_cf
@@ -741,7 +1057,8 @@ module cloud_simple_mod
 
     !cf = max(cf, conv_cf)
     cf = 1.0 - (1.0 - cf) * (1.0 - conv_cf) ! Random overlap
-
+    ! Refer to CAM5
+    !cf = (1-conv_cf) * cf + conv_cf
   end subroutine merge_strat_conv_clouds
 
   subroutine calc_lcls(klcls, pfull, temp, zfull, ts, rh_surf, plcls, tlcls, zlcls)
@@ -869,7 +1186,7 @@ module cloud_simple_mod
     end if
   end subroutine calc_ectei
 
-  subroutine calc_Park_proxies(pfull, ps, zfull, temp, ts, q_hum, q_surf, rh_surf, klcls, ELF, Time)
+  subroutine calc_Park_proxies(pfull, ps, zfull, temp, ts, q_hum, q_surf, rh_surf, klcls, ELF, kinvs, Time)
     ! Refer to: Park and Shin, 2019, Atmospheric Chemistry and Physics
     ! https://www.atmos-chem-phys.net/19/5635/2019/
 
@@ -879,6 +1196,7 @@ module cloud_simple_mod
     integer, intent(in),  dimension(:,:)   :: klcls
     type(time_type),      intent(in)       :: Time
     real,    intent(out), dimension(:,:)   :: ELF
+    integer, intent(out), dimension(:,:)   :: kinvs
     real, dimension(size(temp,1), size(temp,2)) :: plcl, tlcl, zlcl, z700, Gamma_DL, &
                                     Gamma700, LTS, z_ML, zinv, qv_ML, beta2
     ! other paramters
@@ -920,6 +1238,13 @@ module cloud_simple_mod
     where(zinv>z_ML+delta_zs)
       zinv = z_ML + delta_zs
     end where
+
+    do i=1, size(pfull,1)
+      do j=1, size(pfull,2)
+        kinvs(i,j) = minloc(abs(zinv(i,j)-zfull(i,j,:)), 1)
+        !write(*,*) 'QL', i,j, kinvs(i,j)
+      end do
+    end do
 
     ! low-level cloud suppression parameters (LCS)
     beta2 = sqrt(zinv*zlcl) / delta_zs
@@ -975,128 +1300,17 @@ module cloud_simple_mod
 
     call max_rnd_overlap(cf, p_full, p_half, nclds, ktop, kbot, cldamt)
     call compute_tca_random(nclds, cldamt, tca)
-    call expand_cloud(nclds, ktop, kbot, cldamt, cloud)
-    !call compute_isccp_clds2(p_full, nclds, ktop, cldamt, high_ca, mid_ca, low_ca)
-    call compute_isccp_clds(p_full, cloud, high_ca, mid_ca, low_ca)
+    !call expand_cloud(nclds, ktop, kbot, cldamt, cloud)
+    call compute_isccp_clds2(p_full, nclds, ktop, cldamt, high_ca, mid_ca, low_ca)
 
     ! Diagnostics output
-    call output_cloud_amount(tca, high_ca, mid_ca, low_ca, Time)
+    call output_cldamt(tca, high_ca, mid_ca, low_ca, Time)
   end subroutine diag_cloud_amount
-
-  subroutine compute_tca_random(nclds, cldamt, tca)
-    ! This subroutine was adapted from AM4 src/atmos_param/clouds/clouds.F90
-    integer, intent(in)  :: nclds (:,:)
-    real,    intent(in)  :: cldamt(:,:,:)
-    real,    intent(out) :: tca   (:,:)
-    integer :: i, j, k
-
-    !---- compute total cloud amount assuming that -----
-    !       independent clouds overlap randomly
-    tca = 1.0
-    do i=1,size(cldamt,1)
-      do j=1,size(cldamt,2)
-        do k = 1,nclds(i,j)
-          tca(i,j) = tca(i,j) * (1.0 - cldamt(i,j,k))
-        enddo
-      enddo
-    enddo
-    tca = (1.0 - tca) * 1.0e2 ! unit percent
-  end subroutine compute_tca_random
-
-  subroutine expand_cloud(nclds, ktop, kbtm, cloud_in, cloud_out)
-    integer, intent(in)  :: nclds(:,:), ktop(:,:,:), kbtm(:,:,:)
-    real,    intent(in)  :: cloud_in (:,:,:)
-    real,    intent(out) :: cloud_out(:,:,:)
-    integer :: i, j, n
-
-    cloud_out = 0.0
-    do j=1,size(nclds,2)
-      do i=1,size(nclds,1)
-         do n=1,nclds(i,j)
-           cloud_out(i,j,ktop(i,j,n):kbtm(i,j,n)) = cloud_in(i,j,n)
-         enddo
-      enddo
-    enddo
-  end subroutine expand_cloud
-
-  subroutine compute_isccp_clds(pfull, cloud, high_ca, mid_ca, low_ca)
-    !   define arrays giving the fractional cloudiness for clouds with
-    !   tops within the ISCCP definitions of high (10-440 hPa), middle
-    !   (440-680 hPa) and low (680-1000 hPa).
-    real,  dimension(:,:,:),   intent(in)  :: pfull, cloud
-    real,  dimension(:,:),     intent(out) :: high_ca, mid_ca, low_ca
-    real,  parameter :: mid_btm = 6.8e4, high_btm = 4.4e4
-    ! local array
-    integer :: i, j, k
-
-    !---- compute high, middle and low cloud amounts assuming that -----
-    !       independent clouds overlap randomly
-    high_ca = 1.0
-    mid_ca = 1.0
-    low_ca = 1.0
-
-    do j=1, size(cloud,2)
-      do i=1, size(cloud,1)
-        do k = 1, size(cloud,3)
-          if (pfull(i,j,k)  <=  high_btm) then
-            high_ca(i,j) = high_ca(i,j) * (1. - cloud(i,j,k))
-          else if ((pfull(i,j,k) > high_btm) .and. (pfull(i,j,k) <= mid_btm)) then
-            mid_ca(i,j) = mid_ca(i,j) * (1. - cloud(i,j,k))
-          else if (pfull(i,j,k) > mid_btm ) then
-            low_ca(i,j) = low_ca(i,j) * (1. - cloud(i,j,k))
-         endif
-        enddo
-      enddo
-    enddo
-
-    high_ca = (1.0 - high_ca) * 1.0e2
-    mid_ca = (1.0 - mid_ca) * 1.0e2
-    low_ca = (1.0 - low_ca) * 1.0e2
-  end subroutine compute_isccp_clds
-
-  subroutine compute_isccp_clds2(pfull, nclds, ktop, cldamt, high_ca, mid_ca, low_ca)
-    real,     dimension(:,:,:), intent(in)  :: pfull, cldamt
-    integer,  dimension(:,:),   intent(in)  :: nclds
-    integer,  dimension(:,:,:), intent(in)  :: ktop
-    real,     dimension(:,:),   intent(out) :: high_ca, mid_ca, low_ca
-    real,     parameter :: mid_btm = 6.8e4, high_btm = 4.4e4
-    ! local array
-    integer :: i, j, k, k_top
-
-    high_ca = 1.0
-    mid_ca  = 1.0
-    low_ca  = 1.0
-
-    do i=1,size(cldamt,1)
-      do j=1,size(cldamt,2)
-        do k = 1,nclds(i,j)
-          k_top = ktop(i,j,k)
-          if (pfull(i,j,k_top)>mid_btm) then
-            low_ca(i,j) = low_ca(i,j) * (1.0 - cldamt(i,j,k))
-          else if (pfull(i,j,k_top)<high_btm) then
-            high_ca(i,j) = high_ca(i,j) * (1.0 - cldamt(i,j,k))
-          else
-            mid_ca(i,j) = mid_ca(i,j) * (1.0 - cldamt(i,j,k))
-          end if
-        enddo
-      enddo
-    enddo
-
-    low_ca  = (1.0 - low_ca)  * 1.0e2 ! unit percent
-    mid_ca  = (1.0 - mid_ca)  * 1.0e2
-    high_ca = (1.0 - high_ca) * 1.0e2
-
-  end subroutine compute_isccp_clds2
 
   subroutine max_rnd_overlap(cf, pfull, phalf, nclds, ktop, kbot, cldamt)
     !max_rnd_overlap returns various cloud specification properties
     !    obtained with the maximum-random overlap assumption.
 
-    ! intent(out) variables:
-    !   nclds        Number of (random overlapping) clouds in column
-    !   ktop         Level of the top of the cloud
-    !   kbot         Level of the bottom of the cloud
-    !   cldamt       Cloud amount of condensed cloud [ dimensionless ]
     real,    dimension(:,:,:), intent(in)             :: cf, pfull, phalf
     integer, dimension(:,:),   intent(out)            :: nclds
     integer, dimension(:,:,:), intent(out)            :: ktop, kbot
@@ -1112,44 +1326,13 @@ module cloud_simple_mod
     real       :: totcld_bot, max_bot
     real       :: totcld_top, max_top, tmp_val
     integer    :: i, j, k, kc, t
-    !--------------------------------------------------------------------
-    !   local variables:
-    !       kdim              number of model layers
-    !       top_t             used temporarily as tag for cloud top index
-    !       bot_t             used temporarily as tag for cloud bottom index
-    !       tmp_top           used temporarily as tag for cloud top index
-    !       tmp_bot           used temporarily as tag for cloud bottom index
-    !       nlev              number of levels in the cloud
-    !       already_in_cloud  if true, previous layer contained cloud
-    !       cloud_bottom_reached
-    !                         if true, the cloud-free layer beneath a cloud
-    !                         has been reached
-    !       maxcldfrac        maximum cloud fraction in any layer of cloud
-    !                         [ fraction ]
-    !       totcld_bot        total cloud fraction from bottom view
-    !       max_bot           largest cloud fraction face from bottom view
-    !       totcld_top        total cloud fraction from top view
-    !       max_top           largest cloud fraction face from top view
-    !       tmp_val           temporary number used in the assigning of top
-    !                         [ (kg condensate / m**2) * microns ]
-    !       i,j,k,kc,t        do-loop indices
-    !----------------------------------------------------------------------
 
-    !---------------------------------------------------------------------
-    !    define the number of vertical layers in the model. initialize the
-    !    output fields to correspond to the absence of clouds.
-    !---------------------------------------------------------------------
     kdim     = size(cf,3)
     nclds    = 0
     ktop     = 1
     kbot     = 1
     cldamt   = 0.0
-    !--------------------------------------------------------------------
-    !    find the levels with cloud in each column. determine the vertical
-    !    extent of each individual cloud, treating cloud in adjacent layers
-    !    as components of a multi-layer cloud, and then calculate appropr-
-    !    iate values of water paths and effective particle size.
-    !--------------------------------------------------------------------
+
     do j=1,size(cf,2)
       do i=1,size(cf,1)
         ! set a flag indicating that we are searching for the next cloud top.
@@ -1159,13 +1342,6 @@ module cloud_simple_mod
         do k=1,kdim
           ! find a layer containing cloud in the column.
           if (cf(i,j,k) .gt. cf_min) then
-            !--------------------------------------------------------------------
-            !    if the previous layer was not cloudy, then a new cloud has been
-            !    found. increment the cloud counter, set the flag to indicate the
-            !    layer is in a cloud, save its cloud top level, initialize the
-            !    values of its ice and liquid contents and fractional area and
-            !    effective crystal and drop sizes.
-            !--------------------------------------------------------------------
             if (.not. already_in_cloud)  then
               nclds(i,j) = nclds(i,j) + 1
               already_in_cloud = .true.
@@ -1173,20 +1349,9 @@ module cloud_simple_mod
               ktop(i,j,nclds(i,j)) = k
               maxcldfrac = 0.0
             endif
-            !---------------------------------------------------------------------
-            !    add this layer's contributions to the current cloud. total liquid
-            !    content, ice content, largest cloud fraction and condensate-
-            !    weighted effective droplet and crystal radii are accumulated over
-            !    the cloud.
-            !---------------------------------------------------------------------
             maxcldfrac = MAX(maxcldfrac, cf(i,j,k))
           endif
-          !--------------------------------------------------------------------
-          !    when the cloud-free layer below a cloud is reached, or if the
-          !    bottom model level is reached, define the cloud bottom level and
-          !    set a flag indicating that mean values for the cloud may now be
-          !    calculated.
-          !--------------------------------------------------------------------
+
           if (cf(i,j,k) <= cf_min .and. already_in_cloud) then
             cloud_bottom_reached = .true.
             kbot(i,j,nclds(i,j)) = k - 1
@@ -1216,13 +1381,7 @@ module cloud_simple_mod
                 totcld_top = 0.
                 max_bot    = 0.
                 max_top    = 0.
-                !--------------------------------------------------------------------
-                !    to find the adjusted cloud top, begin at current top and work
-                !    downward. find the layer which is most exposed when viewed from
-                !    the top; i.e., the cloud fraction increase is largest for that
-                !    layer. the adjusted cloud base is found equivalently, starting
-                !    from the actual cloud base and working upwards.
-                !--------------------------------------------------------------------
+
                 do t=1,nlev
                   ! find adjusted cloud top.
                   top_t   = ktop(i,j,nclds(i,j)) + t - 1
@@ -1270,6 +1429,260 @@ module cloud_simple_mod
       end do
     end do
   end subroutine max_rnd_overlap
+
+  subroutine compute_tca_random(nclds, cldamt, tca)
+    ! This subroutine was adapted from AM4 src/atmos_param/clouds/clouds.F90
+    integer, intent(in)  :: nclds (:,:)
+    real,    intent(in)  :: cldamt(:,:,:)
+    real,    intent(out) :: tca   (:,:)
+    integer :: i, j, k
+
+    !---- compute total cloud amount assuming that -----
+    !       independent clouds overlap randomly
+    tca = 1.0
+    do i=1,size(cldamt,1)
+      do j=1,size(cldamt,2)
+        do k = 1,nclds(i,j)
+          tca(i,j) = tca(i,j) * (1.0 - cldamt(i,j,k))
+        enddo
+      enddo
+    enddo
+    tca = (1.0 - tca) * 1.0e2 ! unit percent
+  end subroutine compute_tca_random
+
+  subroutine compute_isccp_clds2(pfull, nclds, ktop, cldamt, high_ca, mid_ca, low_ca)
+    real,     dimension(:,:,:), intent(in)  :: pfull, cldamt
+    integer,  dimension(:,:),   intent(in)  :: nclds
+    integer,  dimension(:,:,:), intent(in)  :: ktop
+    real,     dimension(:,:),   intent(out) :: high_ca, mid_ca, low_ca
+    real,     parameter :: mid_btm = 6.8e4, high_btm = 4.4e4
+    ! local array
+    integer :: i, j, k, k_top
+
+    high_ca = 1.0
+    mid_ca  = 1.0
+    low_ca  = 1.0
+
+    do i=1,size(cldamt,1)
+      do j=1,size(cldamt,2)
+        do k = 1,nclds(i,j)
+          k_top = ktop(i,j,k)
+          if (pfull(i,j,k_top)>mid_btm) then
+            low_ca(i,j) = low_ca(i,j) * (1.0 - cldamt(i,j,k))
+          else if (pfull(i,j,k_top)<high_btm) then
+            high_ca(i,j) = high_ca(i,j) * (1.0 - cldamt(i,j,k))
+          else
+            mid_ca(i,j) = mid_ca(i,j) * (1.0 - cldamt(i,j,k))
+          end if
+        enddo
+      enddo
+    enddo
+
+    low_ca  = (1.0 - low_ca)  * 1.0e2 ! unit percent
+    mid_ca  = (1.0 - mid_ca)  * 1.0e2
+    high_ca = (1.0 - high_ca) * 1.0e2
+
+  end subroutine compute_isccp_clds2
+
+  subroutine diag_cldamt_maxrnd_overlap(cf, p_full, Time)
+    real, intent(in),  dimension(:,:,:) :: cf, p_full
+    type(time_type),   intent(in)       :: Time
+    real, dimension(size(cf,1), size(cf,2)) :: tca, high_ca, mid_ca, low_ca
+    integer :: i, j, ks, ke !, ks_mid, ke_mid
+    logical, dimension(size(cf,3)) :: ind_mid
+    real :: mid_btm = 7e4, high_btm = 4e4
+
+    tca = 1.0
+    high_ca = 1.0
+    mid_ca = 1.0
+    low_ca = 1.0
+
+    do i=1,size(cf,1)
+      do j=1,size(cf,2)
+        ! total cloud amount
+        !ks = 1
+        !ke = size(cf,3)
+        !call max_rnd_overlap_single_lev(cf(i,j,ks:ke), p_full(i,j,ks:ke), tca(i,j))
+
+        ! high cloud amount
+        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
+        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
+        call max_rnd_overlap_single_lev(cf(i,j,ks:ke), p_full(i,j,ks:ke), high_ca(i,j))
+        !ks_mid = ke + 1
+
+        ! low cloud amount
+        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_btm)
+        ke = size(cf,3) !maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_btm)
+        call max_rnd_overlap_single_lev(cf(i,j,ks:ke), p_full(i,j,ks:ke), low_ca(i,j))
+        !ke_mid = ks - 1
+
+        ! middle cloud amount
+        !ks = ks_mid
+        !ke = ke_mid
+        ind_mid = high_btm<=p_full(i,j,:) .and. p_full(i,j,:)<=mid_btm
+        ks = minloc(p_full(i,j,:), 1, mask=ind_mid)
+        ke = maxloc(p_full(i,j,:), 1, mask=ind_mid)
+        call max_rnd_overlap_single_lev(cf(i,j,ks:ke), p_full(i,j,ks:ke), mid_ca(i,j))
+      enddo
+    enddo
+    tca = 1.0 - (1.0-high_ca)*(1.0-mid_ca)*(1.0-low_ca)
+
+    ! Diagnostics output
+    call output_cldamt_max_random(tca, high_ca, mid_ca, low_ca, Time)
+  end subroutine diag_cldamt_maxrnd_overlap
+
+  subroutine diag_cldamt_max_overlap(cf, p_full, Time)
+    real, intent(in),  dimension(:,:,:) :: cf, p_full
+    type(time_type),   intent(in)       :: Time
+    real, dimension(size(cf,1), size(cf,2)) :: tca, high_ca, mid_ca, low_ca
+    integer :: i, j, ks, ke
+    logical, dimension(size(cf,3)) :: ind_mid
+    real :: mid_btm = 7e4, high_btm = 4e4
+    tca = 1.0
+    high_ca = 1.0
+    mid_ca = 1.0
+    low_ca = 1.0
+
+    ! total cld amount
+    tca = maxval(cf, 3)
+
+    do i=1,size(cf,1)
+      do j=1,size(cf,2)
+        ! high cloud amount
+        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
+        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
+        high_ca(i,j) = maxval(cf(i,j,ks:ke), 1)
+
+        ! low cloud amount
+        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_btm)
+        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_btm)
+        low_ca(i,j) = maxval(cf(i,j,ks:ke), 1)
+
+        ! middle cloud amount
+        ind_mid = high_btm<=p_full(i,j,:) .and. p_full(i,j,:)<=mid_btm
+        ks = minloc(p_full(i,j,:), 1, mask=ind_mid)
+        ke = maxloc(p_full(i,j,:), 1, mask=ind_mid)
+        mid_ca(i,j) = maxval(cf(i,j,ks:ke), 1)
+      enddo
+    enddo
+
+    ! Diagnostics output
+    call output_cldamt_max(tca, high_ca, mid_ca, low_ca, Time)
+  end subroutine diag_cldamt_max_overlap
+
+  subroutine diag_cldamt_random_overlap(cf, p_full, Time)
+    real, intent(in),  dimension(:,:,:) :: cf, p_full
+    type(time_type),   intent(in)       :: Time
+    real, dimension(size(cf,1), size(cf,2)) :: tca, high_ca, mid_ca, low_ca
+    integer :: i, j, ks, ke
+    logical, dimension(size(cf,3)) :: ind_mid
+    real :: mid_btm = 7e4, high_btm = 4e4
+
+    tca = 1.0
+    high_ca = 1.0
+    mid_ca = 1.0
+    low_ca = 1.0
+
+    do i=1,size(cf,1)
+      do j=1,size(cf,2)
+        ! total cloud amount
+        !ks = 1
+        !ke = size(cf,3)
+        !call random_overlap_single_lev(cf(i,j,ks:ke), tca(i,j))
+
+        ! high cloud amount
+        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
+        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
+        call random_overlap_single_lev(cf(i,j,ks:ke), high_ca(i,j))
+
+        ! low cloud amount
+        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_btm)
+        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_btm)
+        call random_overlap_single_lev(cf(i,j,ks:ke), low_ca(i,j))
+
+        ! middle cloud amount
+        ind_mid = high_btm<=p_full(i,j,:) .and. p_full(i,j,:)<=mid_btm
+        ks = minloc(p_full(i,j,:), 1, mask=ind_mid)
+        ke = maxloc(p_full(i,j,:), 1, mask=ind_mid)
+        call random_overlap_single_lev(cf(i,j,ks:ke), mid_ca(i,j))
+      enddo
+    enddo
+    tca = 1.0 - (1.0-high_ca)*(1.0-mid_ca)*(1.0-low_ca)
+
+    ! Diagnostics output
+    call output_cldamt_random(tca, high_ca, mid_ca, low_ca, Time)
+  end subroutine diag_cldamt_random_overlap
+
+  subroutine max_rnd_overlap_single_lev(cf, pfull, cldamt)
+    implicit none
+    real, dimension(:), intent(in) :: cf, pfull
+    real, intent(out) :: cldamt
+    ! local variables:
+    integer, dimension(size(cf,1)) :: ktop, kbot
+    real,    dimension(size(cf,1)) :: cldamt_cs
+    integer :: nclds, kdim, k
+    logical :: already_in_cloud, cloud_bottom_reached
+    real    :: maxcldfrac
+
+    kdim  = size(cf,1)
+    nclds = 0
+    ktop  = 1
+    kbot  = 1
+    maxcldfrac = 0.0
+  
+    ! set a flag indicating that we are searching for the next cloud top.
+    already_in_cloud = .false.
+    cloud_bottom_reached = .false.
+    ! march down the column.
+    do k=1,kdim
+      ! find a layer containing cloud in the column.
+      if (cf(k) .gt. cf_min) then
+        if (.not. already_in_cloud) then
+          nclds = nclds + 1
+          already_in_cloud = .true.
+          cloud_bottom_reached = .false.
+          ktop(nclds) = k
+          maxcldfrac = 0.0
+        endif
+        maxcldfrac = MAX(maxcldfrac, cf(k))
+      endif
+
+      if (cf(k) <= cf_min .and. already_in_cloud) then
+        cloud_bottom_reached = .true.
+        kbot(nclds) = k - 1
+      else if (already_in_cloud .and. k == kdim) then
+        cloud_bottom_reached = .true.
+        kbot(nclds) = kdim
+      endif
+
+      if (cloud_bottom_reached) then
+        cldamt_cs(nclds) = maxcldfrac
+        already_in_cloud = .false.
+        cloud_bottom_reached = .false.
+      endif ! (cloud_bottom_reached)
+    end do
+
+    ! Random overlap
+    cldamt = 1.0
+    do k=1, nclds
+      cldamt = cldamt * (1-cldamt_cs(k))
+    end do
+    cldamt = 1.0 - cldamt
+  end subroutine max_rnd_overlap_single_lev
+
+  subroutine random_overlap_single_lev(cf, cldamt)
+    implicit none
+    real, dimension(:), intent(in) :: cf
+    real, intent(out) :: cldamt
+    integer :: k
+
+    ! Random overlap
+    cldamt = 1.0
+    do k=1,size(cf,1)
+      cldamt = cldamt * (1-cf(k))
+    end do
+    cldamt = 1.0 - cldamt
+  end subroutine random_overlap_single_lev
 
   subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, rhcrit, Time)
     real, intent(in), dimension(:,:,:) :: cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, rhcrit
@@ -1337,9 +1750,9 @@ module cloud_simple_mod
     endif
   end subroutine output_extra_diags_for_Park_ELF
 
-  subroutine output_cloud_amount(tca, high_ca, mid_ca, low_ca, Time)
-    real, intent(in), dimension(:,:)   :: tca, high_ca, mid_ca, low_ca
-    type(time_type) , intent(in)       :: Time
+  subroutine output_cldamt(tca, high_ca, mid_ca, low_ca, Time)
+    real, intent(in), dimension(:,:) :: tca, high_ca, mid_ca, low_ca
+    type(time_type),  intent(in)     :: Time
     real :: used
 
     if ( id_tot_cld_amt > 0 ) then
@@ -1354,7 +1767,65 @@ module cloud_simple_mod
     if ( id_low_cld_amt > 0 ) then
       used = send_data ( id_low_cld_amt, low_ca, Time)
     endif
-  end subroutine output_cloud_amount
+  end subroutine output_cldamt
+
+  subroutine output_cldamt_max_random(tca, high_ca, mid_ca, low_ca, Time)
+    real, intent(in), dimension(:,:) :: tca, high_ca, mid_ca, low_ca
+    type(time_type),  intent(in)     :: Time
+    real :: used
+
+    if ( id_tot_cld_amt > 0 ) then
+      used = send_data ( id_tot_cld_amt_mxr, tca*1e2, Time)
+    endif
+    if ( id_high_cld_amt > 0 ) then
+      used = send_data ( id_high_cld_amt_mxr, high_ca*1e2, Time)
+    endif
+    if ( id_mid_cld_amt > 0 ) then
+      used = send_data ( id_mid_cld_amt_mxr, mid_ca*1e2, Time)
+    endif
+    if ( id_low_cld_amt > 0 ) then
+      used = send_data ( id_low_cld_amt_mxr, low_ca*1e2, Time)
+    endif
+  end subroutine output_cldamt_max_random
+
+  subroutine output_cldamt_max(tca, high_ca, mid_ca, low_ca, Time)
+    real, intent(in), dimension(:,:) :: tca, high_ca, mid_ca, low_ca
+    type(time_type),  intent(in)     :: Time
+    real :: used
+
+    if ( id_tot_cld_amt_max > 0 ) then
+      used = send_data ( id_tot_cld_amt_max, tca*1e2, Time)
+    endif
+    if ( id_high_cld_amt_max > 0 ) then
+      used = send_data ( id_high_cld_amt_max, high_ca*1e2, Time)
+    endif
+    if ( id_mid_cld_amt_max > 0 ) then
+      used = send_data ( id_mid_cld_amt_max, mid_ca*1e2, Time)
+    endif
+    if ( id_low_cld_amt_max > 0 ) then
+      used = send_data ( id_low_cld_amt_max, low_ca*1e2, Time)
+    endif
+  end subroutine output_cldamt_max
+
+
+  subroutine output_cldamt_random(tca, high_ca, mid_ca, low_ca, Time)
+    real, intent(in), dimension(:,:) :: tca, high_ca, mid_ca, low_ca
+    type(time_type),  intent(in)     :: Time
+    real :: used
+
+    if ( id_tot_cld_amt_rnd > 0 ) then
+      used = send_data ( id_tot_cld_amt_rnd, tca*1e2, Time)
+    endif
+    if ( id_high_cld_amt_rnd > 0 ) then
+      used = send_data ( id_high_cld_amt_rnd, high_ca*1e2, Time)
+    endif
+    if ( id_mid_cld_amt_rnd > 0 ) then
+      used = send_data ( id_mid_cld_amt_rnd, mid_ca*1e2, Time)
+    endif
+    if ( id_low_cld_amt_rnd > 0 ) then
+      used = send_data ( id_low_cld_amt_rnd, low_ca*1e2, Time)
+    endif
+  end subroutine output_cldamt_random
 
   subroutine cloud_simple_end()
   ! If alloocated are added in init then deallocate them here.
