@@ -89,7 +89,7 @@ real    :: dt_rad_avg     = -1
 character(len=32) :: rad_scheme = 'frierson'
 
 integer, parameter :: B_GEEN = 1,  B_FRIERSON = 2, &
-                      B_BYRNE = 3, B_SCHNEIDER_LIU=4
+                      B_BYRNE = 3, B_SCHNEIDER_LIU=4, B_SCHNEIDER_TITAN=5
 integer, private :: sw_scheme = B_FRIERSON
 integer, private :: lw_scheme = B_FRIERSON
 
@@ -113,6 +113,11 @@ real    :: sw_tau_exponent_gp = 1.0
 real    :: diabatic_acce = 1.0
 real,save :: gp_albedo, Ga_asym, g_asym
 
+!constants for Schneider Titan radiation
+real :: titan_asymmetry_factor = 0.65
+real :: titan_single_albedo = 0.95
+real :: titan_albedo_surface = 0.3
+
 ! parameters for Byrne and OGorman radiation scheme
 real :: bog_a = 0.8678
 real :: bog_b = 1997.9
@@ -130,7 +135,8 @@ real, allocatable, dimension(:,:,:) :: lw_up_win, lw_down_win, lw_dtrans_win
 real, allocatable, dimension(:,:,:) :: b_win, sw_dtrans
 real, allocatable, dimension(:,:)   :: sw_wv, del_sol_tau, sw_tau_k, lw_del_tau, lw_del_tau_win
 
-real, save :: pi, deg_to_rad , rad_to_deg
+real, save :: pi, deg_to_rad , rad_to_deg, Ga, albedo_inf, albedo_mod, intensity_inflation 
+
 
 !extras for reading in co2 concentration
 logical                             :: do_read_co2=.false.
@@ -148,7 +154,9 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 		   window, carbon_conc, rad_scheme, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
            use_time_average_coszen, dt_rad_avg,&
-           diabatic_acce !Schneider Liu values
+           diabatic_acce, & !Schneider Liu values
+           titan_asymmetry_factor, titan_single_albedo, &
+           titan_albedo_surface
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -225,6 +233,9 @@ else if(uppercase(trim(rad_scheme)) == 'BYRNE') then
 else if(uppercase(trim(rad_scheme)) == 'SCHNEIDER') then
   lw_scheme = B_SCHNEIDER_LIU
   call error_mesg('two_stream_gray_rad','Using Schneider & Liu (2009) radiation scheme for GIANT PLANETS.', NOTE)
+else if(uppercase(trim(rad_scheme)) == 'SCHNEIDER_TITAN') then
+    lw_scheme = B_SCHNEIDER_TITAN
+    call error_mesg('two_stream_gray_rad','Using Schneider et al (2012) radiation scheme for TITAN.', NOTE)  
 else
   call error_mesg('two_stream_gray_rad','"'//trim(rad_scheme)//'"'//' is not a valid radiation scheme.', FATAL)
 endif
@@ -236,6 +247,24 @@ if(lw_scheme == B_SCHNEIDER_LIU) then
 	gp_albedo     = ( sqrt(1. - g_asym*single_albedo) - sqrt(1. - single_albedo) )        &
            / ( sqrt(1. - g_asym*single_albedo) + sqrt(1. - single_albedo) );
 	Ga_asym         = 2.*sqrt( (1. - single_albedo) * (1. - g_asym*single_albedo) );
+endif
+
+if(lw_scheme == B_SCHNEIDER_TITAN) then
+    ! Modified by LJJ
+    ! albedo of a semi-inifinite scattering atmosphere
+    albedo_inf  = ( sqrt(1. - titan_asymmetry_factor*titan_single_albedo) - sqrt(1. - titan_single_albedo) )        &
+        / ( sqrt(1. - titan_asymmetry_factor*titan_single_albedo) + sqrt(1. - titan_single_albedo) );
+
+    ! End modification
+
+    !auxiliary quantities in computation of solar flux
+    albedo_mod       = (-titan_albedo_surface + albedo_inf) / (1. - titan_albedo_surface*albedo_inf)
+    !N.B. switched the sign of the numerator in albedo mod compared to tapios github as tapio version had albedo_mod<0. New one has albedo_mod ~ 0.2, as in Schneider 2012 supplemental material.
+
+    ! rescaling factor for optical depth due to scattering
+    Ga          = 2.*sqrt( (1. - titan_single_albedo) * (1. - titan_asymmetry_factor*titan_single_albedo) );
+
+    intensity_inflation       = 1. / (1. + albedo_mod * albedo_inf * exp(-2*Ga*atm_abs))
 endif
 
 if ((lw_scheme == B_BYRNE).or.(lw_scheme == B_GEEN)) then
@@ -534,6 +563,21 @@ case(B_SCHNEIDER_LIU)
      sw_down(:,:,k)   = insolation(:,:) * (1.0-gp_albedo)* exp(- Ga_asym * sw_tau(:,:,k))
   end do
 
+case(B_SCHNEIDER_TITAN)
+
+    sw_tau_0    = (1.0 - sw_diff*sin(lat)**2)*atm_abs
+
+    do k = 1, n+1
+        sw_tau(:,:,k) = sw_tau_0 * (p_half(:,:,k)/pstd_mks)**solar_exponent
+    end do
+
+    ! compute downward shortwave flux
+    do k = 1, n+1
+       sw_down(:,:,k)   = insolation(:,:) * intensity_inflation &
+                          * (albedo_inf * albedo_mod * exp(Ga * (sw_tau(:,:,k) - 2.*sw_tau_0)) &
+                          + exp(-Ga * sw_tau(:,:,k)))
+    end do
+
 case default
  call error_mesg('two_stream_gray_rad','invalid radiation scheme',FATAL)
 
@@ -600,7 +644,7 @@ case(B_BYRNE)
      lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
   end do
 
-case(B_FRIERSON)
+case(B_FRIERSON, B_SCHNEIDER_TITAN)
   ! longwave optical thickness function of latitude and pressure
   lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
   lw_tau_0 = lw_tau_0 * odp ! scale by optical depth parameter - default 1
@@ -716,7 +760,7 @@ case(B_GEEN)
   end do
   lw_up = lw_up + lw_up_win
 
-case(B_FRIERSON, B_BYRNE)
+case(B_FRIERSON, B_BYRNE, B_SCHNEIDER_TITAN)
   ! compute upward longwave flux by integrating upward
   lw_up(:,:,n+1)    = b_surf
   do k = n, 1, -1
@@ -737,9 +781,18 @@ case default
 end select
 
 ! compute upward shortwave flux (here taken to be constant)
-do k = 1, n+1
-   sw_up(:,:,k)   = albedo(:,:) * sw_down(:,:,n+1)
-end do
+select case(sw_scheme)
+    case(B_SCHNEIDER_TITAN)
+        do k = 1,n+1
+              sw_up(:,:,k)   = insolation(:,:) * intensity_inflation          &
+                               * (albedo_mod * exp(Ga * (sw_tau(:,:,k) - 2.*sw_tau_0)) & 
+                                  + albedo_inf * exp(-Ga * sw_tau(:,:,k)))
+        end do
+    case default 
+        do k = 1, n+1
+            sw_up(:,:,k)   = albedo(:,:) * sw_down(:,:,n+1)
+        end do
+end select
 
 ! net fluxes (positive up)
 lw_flux  = lw_up - lw_down
