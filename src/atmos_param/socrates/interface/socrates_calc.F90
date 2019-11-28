@@ -19,9 +19,6 @@ contains
 
 ! ==================================================================================
 
-
-
-
 ! Set up the call to the Socrates radiation scheme
 ! -----------------------------------------------------------------------------
 !DIAG Added Time
@@ -34,7 +31,9 @@ subroutine socrates_calc(Time_diag,control, spectrum,                           
   l_planet_grey_surface, planet_albedo, planet_emissivity,                     &
   layer_heat_capacity,                                                         &
   cld_frac, reff_rad, mmr_cl_rad,                                              &
-  flux_direct, flux_down, flux_up, heating_rate, spectral_olr)
+  flux_direct, flux_down, flux_up,                                             &
+  flux_direct_clear, flux_down_clear, flux_up_clear,                           &
+  heating_rate, spectral_olr, tot_cloud_cover)
 
 use rad_pcf
 use def_control,  only: StrCtrl
@@ -130,11 +129,19 @@ real(r_def), intent(out) :: flux_down(n_profile, 0:n_layer)
 !   Downwards flux (Wm-2)
 real(r_def), intent(out) :: flux_up(n_profile, 0:n_layer)
 !   Upwards flux (Wm-2)
+real(r_def), intent(out) :: flux_direct_clear(n_profile, 0:n_layer)
+!   Direct (unscattered) downwards flux under clear-sky condition (Wm-2)
+real(r_def), intent(out) :: flux_down_clear(n_profile, 0:n_layer)
+!   Downwards flux under clear-sky condition (Wm-2)
+real(r_def), intent(out) :: flux_up_clear(n_profile, 0:n_layer)
+!   Upwards flux under clear-sky condition  (Wm-2)
 real(r_def), intent(out) :: heating_rate(n_profile, n_layer)
 !   Heating rate (Ks-1)
 
 REAL(r_def), INTENT(inout), optional :: spectral_olr(:,:)
 !   Spectral OLR
+real(r_def), intent(out), optional :: tot_cloud_cover(n_profile)
+!   Total cloud cover
 
 
 ! Dimensions:
@@ -178,8 +185,8 @@ call set_bound(control, dimen, spectrum, bound, n_profile,                     &
 
 ! call set_cld(control, dimen, spectrum, cld, n_profile)
 
-  zeros_cld = 0.
-  ten_microns_cld = 1.
+zeros_cld = 0.
+ten_microns_cld = 1.
 call set_cld(cld, control, dimen, spectrum, n_profile, n_layer, &
             liq_frac      = cld_frac,     &
             ice_frac      = zeros_cld,     &
@@ -192,7 +199,6 @@ call set_aer(control, dimen, spectrum, aer, n_profile)
 
 ! DEPENDS ON: radiance_calc
 call radiance_calc(control, dimen, spectrum, atm, cld, aer, bound, radout)
-
 
 ! set heating rates and diagnostics
 do l=1, n_profile
@@ -208,10 +214,17 @@ do l=1, n_profile
     flux_direct(l, i) = radout%flux_direct(l, i, 1)
     flux_down(l, i)   = radout%flux_down(l, i, 1)
     flux_up(l, i)     = radout%flux_up(l, i, 1)
+
+    flux_direct_clear(l, i) = radout%flux_direct_clear(l, i, 1)
+    flux_down_clear(l, i)   = radout%flux_down_clear(l, i, 1)
+    flux_up_clear(l, i)     = radout%flux_up_clear(l, i, 1)
   end do
   if (present(spectral_olr)) then
      spectral_olr(l,:) = radout%flux_up_clear_band(l,0,:)
   endif
+  if (present(tot_cloud_cover)) then
+    tot_cloud_cover(l) = radout%tot_cloud_cover(l)
+ endif
 end do
 
 call deallocate_out(radout)
@@ -221,7 +234,6 @@ call deallocate_cld_prsc(cld)
 call deallocate_cld(cld)
 call deallocate_bound(bound)
 call deallocate_atm(atm)
-
 
 end subroutine socrates_calc
 end module socrates_calc_mod

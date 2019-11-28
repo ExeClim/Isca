@@ -11,8 +11,8 @@ module cloud_simple_mod
   use    time_manager_mod, only: time_type
   use  sat_vapor_pres_mod, only: compute_qs, lookup_es
   use    diag_manager_mod, only: register_diag_field, send_data
-  use       constants_mod, only: CP_AIR, GRAV, RDGAS, RVGAS, HLV, KAPPA, ES0, KELVIN
-  use    betts_miller_mod, only: lcltabl
+  use       constants_mod, only: CP_AIR, GRAV, RDGAS, RVGAS, HLV, KAPPA, ES0, KELVIN, RADIUS
+  use             lcl_mod, only: lcl
 
   implicit none
 
@@ -30,7 +30,8 @@ module cloud_simple_mod
   integer :: id_tot_cld_amt, id_high_cld_amt, id_mid_cld_amt, id_low_cld_amt
   integer :: id_tot_cld_amt_mxr, id_high_cld_amt_mxr, id_mid_cld_amt_mxr, id_low_cld_amt_mxr, &
              id_tot_cld_amt_max, id_high_cld_amt_max, id_mid_cld_amt_max, id_low_cld_amt_max, &
-             id_tot_cld_amt_rnd, id_high_cld_amt_rnd, id_mid_cld_amt_rnd, id_low_cld_amt_rnd
+             id_tot_cld_amt_rnd, id_high_cld_amt_rnd, id_mid_cld_amt_rnd, id_low_cld_amt_rnd, &
+             id_tot_cld_amt_cam, id_high_cld_amt_cam, id_mid_cld_amt_cam, id_low_cld_amt_cam
 
   character(len=14), parameter ::   mod_name_cld = "cloud_simple"
 
@@ -43,6 +44,7 @@ module cloud_simple_mod
   logical :: do_qcl_with_temp = .false.
   logical :: do_cloud_amount_diags = .true.
   logical :: do_test_overlap = .false.
+  logical :: do_cam_cld_cover_diag = .true.
   logical :: do_add_stratocumulus = .false.
   logical :: intermediate_outputs_diags = .false.
   logical :: do_read_ts = .false.
@@ -76,6 +78,19 @@ module cloud_simple_mod
   ! For low clout adjustment
   real :: omega_adj_threshold = -0.1 !Pa/s
 
+  ! For effective cloud droplet radius
+  real :: reff_liq = 14.0 ! mm
+  real :: reff_ice = 25.0 
+
+  ! For in-cloud liquid water
+  real :: qcl_val = 0.2 ! g/kg
+
+  ! Define constants for Earth mass and Newtonian gravational constant
+  ! Refer to: https://github.com/Unidata/MetPy/ --> src/metpy/constants.py
+  real :: EARTH_MASS = 5.9722e24 ! kg
+  ! Refer to: https://physics.nist.gov/cgi-bin/cuu/Value?bg
+  real :: GRAV_CONST = 6.674e-11 !m^3 / kg / s^2
+
   namelist /cloud_simple_nml/ simple_cca, rhcsfc, rhc700, rhc200, &
                               cf_diag_formula_name, &
                               do_read_scm_rhcrit, scm_rhcrit, &
@@ -88,7 +103,8 @@ module cloud_simple_mod
                               do_conv_cld, pshallow, cf_min, &
                               slingo_rhc_low, slingo_rhc_mid, slingo_rhc_high, &
                               do_adjust_low_cld, omega_adj_threshold, &
-                              conv_rain_min
+                              conv_rain_min, qcl_val, reff_liq, reff_ice, &
+                              do_cam_cld_cover_diag
 
 
   contains
@@ -176,13 +192,14 @@ module cloud_simple_mod
     character(len=32) :: method_str = ''
 
 #ifdef INTERNAL_FILE_NML
-    read (input_nml_file, nml=cloud_simple_nml, iostat=io)
+    read(input_nml_file, nml=cloud_simple_nml, iostat=io)
     ierr = check_nml_error(io, 'cloud_simple_nml')
 #else
-    if ( file_exist('input.nml') ) then
+    if (file_exist('input.nml')) then
       nml_unit = open_namelist_file()
-      ierr=1; do while (ierr /= 0)
-         read (nml_unit, nml=cloud_simple_nml, iostat=io, end=10)
+      ierr = 1
+      do while (ierr /= 0)
+         read(nml_unit, nml=cloud_simple_nml, iostat=io, end=10)
          ierr = check_nml_error(io, 'cloud_simple_nml')
       enddo
 10    call close_file(nml_unit)
@@ -277,6 +294,16 @@ module cloud_simple_mod
         id_low_cld_amt_rnd = register_diag_field (mod_name_cld, 'low_cld_amt_rnd', axes(1:2), Time, &
                 'low cloud amount', 'percent')
       end if
+      if (do_cam_cld_cover_diag) then
+        id_tot_cld_amt_cam = register_diag_field (mod_name_cld, 'tot_cld_amt_cam', axes(1:2), Time, &
+                'total cloud amount', 'percent')
+        id_high_cld_amt_cam = register_diag_field (mod_name_cld, 'high_cld_amt_cam', axes(1:2), Time, &
+                'high cloud amount', 'percent')
+        id_mid_cld_amt_cam = register_diag_field (mod_name_cld, 'mid_cld_amt_cam', axes(1:2), Time, &
+                'mid cloud amount', 'percent')
+        id_low_cld_amt_cam = register_diag_field (mod_name_cld, 'low_cld_amt_cam', axes(1:2), Time, &
+                'low cloud amount', 'percent')
+      end if
     end if
 
     if(do_add_stratocumulus) then
@@ -349,6 +376,9 @@ module cloud_simple_mod
         call diag_cldamt_maxrnd_overlap(cf, p_full, Time)
         call diag_cldamt_max_overlap(cf, p_full, Time)
         call diag_cldamt_random_overlap(cf, p_full, Time)
+      end if
+      if (do_cam_cld_cover_diag) then
+        call cloud_cover_diags_cam(cf, p_full, p_half, Time)
       end if
     end if
 
@@ -485,6 +515,7 @@ module cloud_simple_mod
 
         kk = kdthdp(i,j)
         kb = min(kk+1, k_surf)
+        !do k = kk-1, kb
         do k=kk,kk
         !k = kk
           !if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold) then
@@ -504,20 +535,15 @@ module cloud_simple_mod
         ! but subtropical region provide too much low clouds 
         !if (method_str(1:4)=='PARK' .and. p_full(i,j,kk)>7.5e4) then
         
-        ! if (method_str(1:4)=='PARK') then
-        !   kk = kinvs(i,j)
-        ! end if
-        ! !if (method_str(1:4)=='PARK' .and. p_full(i,j,kk)>7.5e4 .and. dthdp(i,j,kk)>-0.06) then
-        ! if (method_str(1:4)=='PARK' .and. p_full(i,j,kk)>7.5e4 &
-        !     .and. wg_full(i,j,kk)<0 .and. dthdp(i,j,kk)>-0.06) then
-        !   call estimate_stratiform_cld(method_str, i, j, kk, kb, p_full, cf, rh, theta, eis, dthdp, ectei, ELF)
-        !   marine_strat(i,j,kk) = min(1.0, max(0.0, cf(i,j,kk)))
-        ! end if
-
-        if(intermediate_outputs_diags .and. method_str=='PARK_ELF') then
-          !low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
-          low_ca_park(i,j) = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
-        end if
+        !if (method_str(1:4)=='PARK') then
+        !  kk = kinvs(i,j)
+        !end if
+        !!if (method_str(1:4)=='PARK' .and. p_full(i,j,kk)>7.5e4 .and. dthdp(i,j,kk)>-0.06) then
+        !if (method_str(1:4)=='PARK' .and. p_full(i,j,kk)>7.5e4 &
+        !    .and. wg_full(i,j,kk)<0 .and. dthdp(i,j,kk)>-0.06) then
+        !  call estimate_stratiform_cld(method_str, i, j, kk, kb, p_full, cf, rh, theta, eis, dthdp, ectei, ELF)
+        !  marine_strat(i,j,kk) = min(1.0, max(0.0, cf(i,j,kk)))
+        !end if
 
         !nlev = 0
         !do k=1,k_surf
@@ -678,7 +704,7 @@ module cloud_simple_mod
 
     dthdp_min = dthdp_min_threshold  !d_theta / d_p *1e2, lapse rate
     kdthdp = 0
-    premib = 8.5e4
+    premib = 8.0e4
     dthdp = 0.0
     pstar = 1.0e5
 
@@ -728,7 +754,8 @@ module cloud_simple_mod
     real, intent(out), dimension(:,:,:) :: reff_rad
 
     !reff_rad =  10.0 * frac_liq + 20.0 * (1.0 - frac_liq)  !units in microns
-    reff_rad =  14.0 * frac_liq + 25.0 * (1.0 - frac_liq)  !units in microns
+    !reff_rad =  14.0 * frac_liq + 25.0 * (1.0 - frac_liq)  !units in microns
+    reff_rad =  reff_liq * frac_liq + reff_ice * (1.0 - frac_liq)  !units in microns
 
   end subroutine calc_reff
 
@@ -815,25 +842,40 @@ module cloud_simple_mod
         alpha_0 = 100.0
         gamma = 0.49
 
-        !where (rh.ge.1)
-        !  cf = 1.0
-        !elsewhere
-        !  cf = rh**p_para * (1.0 - EXP(-alpha_0*qcl_rad / (qsat-q_hum)**gamma))
-        !end where
-        cf = rh**p_para * (1.0 - EXP(-alpha_0*qcl_rad / (qsat-q_hum)**gamma))
-        cf = min(1.0, max(0.0, cf))
-        
-        do i=1,size(cf, 1)
-          do j=1,size(cf, 2)
-            do k = 1,size(cf,3)
-              !if (cf(i,j,k)>0) then
-                write(*,*) 'i, j, k=', i, j, k, 'cf=', cf(i,j,k), 'qcl=', qcl_rad(i,j,k), &
-                  'rh=', rh(i,j,k), 'qs=', qsat(i,j,k), 'q_hum=', q_hum(i,j,k)
-              !end if
+        where (rh.ge.1)
+          cf = 1.0
+        elsewhere (rh.le.0)
+          cf = 0.0
+        elsewhere
+          cf = rh**p_para * (1.0 - EXP(-alpha_0*qcl_rad / (qsat-q_hum)**gamma))
+          ! If only use rh**p_para, then the cld fraction is too large...
+        end where
+
+        do i=1, size(cf,1)
+          do j=1, size(cf,2)
+            do k=1, size(cf,3)
+            !write(*,*) 'sum(qcl_rad)=', sum(qcl_rad)
+            !if (sum(cf)>0) then
+              !write(*,*) 'size=', size(qcl_rad,1), size(qcl_rad,2), size(qcl_rad,3)
+              !write(*,*) 'qsat=', qsat(1, 1, 24) * 1e3, 'q_hum=', q_hum(1, 1, 24) * 1e3 , &
+              !     'qcl_rad=',qcl_rad(1, 1, 24) * 1e3, 'cf=', cf(1, 1, 24), 'rh=', rh(1, 1, 24)
+            !end if
+            !write(*,*) 'qcl_rad=', qcl_rad(:, 63, 127) * 1e3
+            !write(*,*) 'size qcl_rad=', size(qcl_rad,1), size(qcl_rad,2), size(qcl_rad,3)
+            !write(*,*) 'qcl_rad=', qcl_rad * 1e3
+            if (isnan(cf(i,j,k))) then
+              write(*,*) 'NaN i,j,k=', i, j,k, 'qsat=', qsat(i,j,k) * 1e3, 'q_hum=', q_hum(i,j,k) * 1e3 , &
+              'qcl_rad=',qcl_rad(i,j,k) * 1e3, 'cf=', cf(i,j,k), 'rh=', rh(i,j,k)
+            end if
+            if (qcl_rad(i,j,k)>0) then
+              !write(*,*) 'size=', size(qcl_rad,1), size(qcl_rad,2), size(qcl_rad,3)
+              write(*,*) 'i,j,k=', i, j,k, 'qsat=', qsat(i,j,k) * 1e3, 'q_hum=', q_hum(i,j,k) * 1e3 , &
+                   'qcl_rad=',qcl_rad(i,j,k) * 1e3, 'cf=', cf(i,j,k), 'rh=', rh(i,j,k), &
+                   'term2=', (1.0 - EXP(-alpha_0*qcl_rad(i,j,k) / (qsat(i,j,k)-q_hum(i,j,k))**gamma))
+            end if
             end do
           end do
         end do
-
 
       case(B_LINEAR)
         call calc_cf_linear(pfull, rh, ps, cf)
@@ -875,8 +917,10 @@ module cloud_simple_mod
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: in_cloud_qcl
 
     if (do_qcl_with_temp) then
-      in_cloud_qcl = 0.2 * (temp-220.0) / (280.0-220.0)
-      in_cloud_qcl = MAX(3.0e-4, MIN(0.2, in_cloud_qcl)) / 1.0e3 ! convert to kg/kg
+      !in_cloud_qcl = 0.2 * (temp-220.0) / (280.0-220.0)
+      !in_cloud_qcl = MAX(3.0e-4, MIN(0.2, in_cloud_qcl)) / 1.0e3 ! convert to kg/kg
+      in_cloud_qcl =  qcl_val * (temp-220.0) / (280.0-220.0)
+      in_cloud_qcl = MAX(3.0e-4, MIN(qcl_val, in_cloud_qcl)) / 1.0e3 ! convert to kg/kg
 
       !in_cloud_qcl = 0.15 * (temp-220.0) / (280.0-220.0)
       !in_cloud_qcl = MAX(3.0e-4, MIN(0.15, in_cloud_qcl)) / 1.0e3 ! convert to kg/kg
@@ -958,12 +1002,13 @@ module cloud_simple_mod
     conv_cf = 0.0
     !conv_cf_tmp = convcld_a + convcld_b * log(1.0 + precip_mm_per_day)
 
-    where (precip_mm_per_day<conv_rain_min) 
+    where (precip_mm_per_day<conv_rain_min)
         conv_cf_tmp = 0.0
-    elsewhere(precip_mm_per_day>85.0)
-        conv_cf_tmp = 0.8
+    !elsewhere(precip_mm_per_day>85.0)
+    !    conv_cf_tmp = 0.8
     elsewhere
         conv_cf_tmp = convcld_a + convcld_b * log(precip_mm_per_day)
+        conv_cf_tmp = min(0.8, max(0.0, conv_cf_tmp))
     end where
 
     !ktop = 3
@@ -1055,22 +1100,36 @@ module cloud_simple_mod
     real, intent(in),  dimension(:,:,:) :: conv_cf
     real, intent(out), dimension(:,:,:) :: cf
 
-    !cf = max(cf, conv_cf)
-    cf = 1.0 - (1.0 - cf) * (1.0 - conv_cf) ! Random overlap
+    cf = max(cf, conv_cf)
+    !cf = 1.0 - (1.0 - cf) * (1.0 - conv_cf) ! Random overlap
     ! Refer to CAM5
     !cf = (1-conv_cf) * cf + conv_cf
   end subroutine merge_strat_conv_clouds
 
-  subroutine calc_lcls(klcls, pfull, temp, zfull, ts, rh_surf, plcls, tlcls, zlcls)
+  function geopotential_to_height(geopot) result(height)
+    ! Calculates the height from geopotential
+    ! See https://unidata.github.io/MetPy/latest/api/generated/metpy.calc.geopotential_to_height.html
+    ! and https://github.com/Unidata/MetPy --> src/metpy/calc/basic.py
+
+    implicit none
+    real, intent(in),  dimension(:,:,:) :: geopot
+    real, dimension(size(geopot,1),size(geopot,2),size(geopot,3)):: height, scaled
+
+    scaled = geopot * RADIUS
+    height = scaled * RADIUS / (GRAV_CONST * EARTH_MASS - scaled)
+  end function geopotential_to_height
+
+  subroutine calc_lcls(klcls, pfull, temp, zfull, ts, ps, rh_surf, plcls, tlcls, zlcls)
     ! Example to call:
     ! call calc_lcls(klcls, pfull=p_full, plcls=plcl2d)
     ! rh_surf in range [0,1]
     implicit none
     integer, intent(in), dimension(:,:) :: klcls
     real, intent(in),  dimension(:,:,:), optional :: temp, pfull, zfull
-    real, intent(in),  dimension(:,:),   optional :: rh_surf, ts
+    real, intent(in),  dimension(:,:),   optional :: rh_surf, ts, ps
     real, intent(out), dimension(:,:),   optional :: plcls, tlcls, zlcls
     integer :: i, j
+    !real :: zlcl_l
 
     do i=1, size(klcls,1)
       do j=1, size(klcls,2)
@@ -1083,18 +1142,29 @@ module cloud_simple_mod
         if (present(zfull) .and. present(zlcls)) then
           zlcls(i,j) = zfull(i,j,klcls(i,j))
         end if
-        if (present(rh_surf) .and. present(ts) .and. present(zlcls)) then
+        if (present(rh_surf) .and. present(ts) .and. present(ps) .and. present(zlcls)) then
           ! Bolton (1980) equation
           ! Refer to: https://journals.ametsoc.org/doi/pdf/10.1175/JAS-D-17-0102.1
-          zlcls(i,j) = max(0.0, CP_AIR/GRAV * (ts(i,j)-55.0 - (1.0/(ts(i,j)-55.0) - log(rh_surf(i,j))/2840.)**(-1)))
+          !zlcls(i,j) = max(0.0, CP_AIR/GRAV * (ts(i,j)-55.0 - (1.0/(ts(i,j)-55.0) - log(rh_surf(i,j))/2840.)**(-1)))
+          ! The following one is not so correct as it is c_pm not c_p should be used in
           !zlcls(i,j) = CP_AIR/GRAV * (ts(i,j)-55.0 - (1.0/(ts(i,j)-55.0) - log(rh_surf(i,j))/2840.)**(-1))
           !write(*,*) 'QL',  i,j, rh_surf(i,j), zlcls(i,j)
+
+          ! Use the exact LCL formula from D. M. Romps [2017, JAS 74(12)]
+          zlcls(i,j) = lcl(ps(i,j), ts(i,j), rh=rh_surf(i,j))
+          
+          !old_zlcl = CP_AIR/GRAV * (ts(i,j)-55.0 - (1.0/(ts(i,j)-55.0) - log(rh_surf(i,j))/2840.)**(-1))
+          !write(*,*) 'QL i,j, zlcl, zlcl_old, diff=',  i, j, zlcls(i,j), old_zlcl, old_zlcl-zlcls(i,j)
+          ! if (zlcls(i,j)<0) then
+          !   zlcl_l = lcl(ps(i,j), ts(i,j), rh=rh_surf(i,j), return_ldl=.true.)
+          !   write(*,*) 'QL i,j, zlcl, zlcl_l, ps, ts, rhs=',  i, j, zlcls(i,j), zlcl_l, ps(i,j), ts(i,j), rh_surf(i,j)
+          ! end if
         end if
 
         if(.not.((present(pfull) .and. present(plcls)) .or. &
                  (present(temp)  .and. present(tlcls)) .or. &
                  (present(zfull) .and. present(zlcls)) .or. &
-                 (present(rh_surf) .and. present(ts) .and. present(zlcls)))) then
+                 (present(rh_surf) .and. present(ts) .and. present(ps) .and. present(zlcls)))) then
           call error_mesg('calc_lcls in cloud_simple', 'At least one group of '// &
                 'pfull(plcls), temp(tlcls) and zfull/rh_surf(zlcls) should exist.', FATAL)
         end if
@@ -1113,9 +1183,11 @@ module cloud_simple_mod
     type(time_type),      intent(in)       :: Time
     real,    intent(out), dimension(:,:)   :: eis
     real, dimension(size(temp,1), size(temp,2)) :: zlcl, z700, Gamma850, LTS
+    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: zfull_height
     real    :: pstar, T850, es, qs, used
     integer :: k700, i, j
 
+    zfull_height = geopotential_to_height(zfull*GRAV)
     pstar = 1.e5 ! Pa
 
     do i=1, size(temp,1)
@@ -1128,11 +1200,12 @@ module cloud_simple_mod
         qs = 0.622 * es / (8.5e4 - es)
         Gamma850(i,j) = GRAV / CP_AIR * (1.0 - (1.0 + HLV*qs/RDGAS/T850) &
                         / (1.0 + HLV**2 * qs/CP_AIR/RVGAS/T850**2))
-        z700(i,j) = zfull(i,j,k700)
+        !z700(i,j) = zfull(i,j,k700)
+        z700(i,j) = zfull_height(i,j,k700)
       end do
     end do
 
-    call calc_lcls(klcls, zfull=zfull, zlcls=zlcl)
+    call calc_lcls(klcls, zfull=zfull_height, zlcls=zlcl)
     eis = LTS - Gamma850 * (z700 - zlcl)
 
     ! ----- output diagnositics ------ !
@@ -1201,6 +1274,7 @@ module cloud_simple_mod
                                     Gamma700, LTS, z_ML, zinv, qv_ML, beta2
     ! other paramters
     real, dimension(size(temp,1), size(temp,2)) :: beta1, IS, DS, eis, ectei, alpha, f_para !qs_surf, 
+    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: zfull_height
     real :: pstar, delta_zs, theta_ML, used
     integer :: k700, i, j
 
@@ -1211,13 +1285,26 @@ module cloud_simple_mod
     pstar = 1.0e5 ! Pa
     kappa = RDGAS / CP_AIR
 
+    zfull_height = geopotential_to_height(zfull*GRAV)
+
     !write(*,*) 'QL max of rh_2m', maxval(rh_surf)
-    call calc_lcls(klcls, pfull=pfull, temp=temp, ts=ts, rh_surf=rh_surf, plcls=plcl, tlcls=tlcl, zlcls=zlcl)
+    call calc_lcls(klcls, pfull=pfull, temp=temp, ts=ts, ps=ps, rh_surf=rh_surf, &
+                   plcls=plcl, tlcls=tlcl, zlcls=zlcl)
+
+    where(zlcl < 0)
+      zlcl = 0.0
+    end where
 
     do i=1, size(pfull,1)
       do j=1, size(pfull,2)
         k700 = minloc(abs(pfull(i,j,:) - 7.0e4), 1)
-        z700(i,j) = zfull(i,j,k700)
+        !z700(i,j) = zfull(i,j,k700)
+        z700(i,j) = zfull_height(i,j,k700)
+
+        !if (abs(zfull(i,j,k700)-z700(i,j))>5) then
+        !  write(*,*) 'QL i,j, z700_g, z700_h=', i, j, zfull(i,j,k700), z700(i,j)
+        !end if
+
         ! Mixed Layer is the LCL
         call calc_moist_lapse_rate(tlcl(i,j), plcl(i,j), Gamma_DL(i,j))
         call calc_moist_lapse_rate(temp(i,j,k700), pfull(i,j,k700), Gamma700(i,j))
@@ -1232,17 +1319,19 @@ module cloud_simple_mod
     zinv = -LTS/Gamma700 + z700 + delta_zs*(Gamma_DL/Gamma700)
 
     ! Rest zinv
-    where(zinv<z_ML)
+    where(zinv < z_ML)
       zinv = z_ML
     end where
-    where(zinv>z_ML+delta_zs)
+    where(zinv > z_ML+delta_zs)
       zinv = z_ML + delta_zs
     end where
 
     do i=1, size(pfull,1)
       do j=1, size(pfull,2)
-        kinvs(i,j) = minloc(abs(zinv(i,j)-zfull(i,j,:)), 1)
-        !write(*,*) 'QL', i,j, kinvs(i,j)
+        !kinvs(i,j) = minloc(abs(zinv(i,j)-zfull(i,j,:)), 1)
+        kinvs(i,j) = minloc(abs(zinv(i,j)-zfull_height(i,j,:)), 1)
+        !write(*,*) 'QL i,j, kinvs=', i,j,kinvs(i,j)
+        !write(*,*) 'QL i,j, zinv=', i,j,zinv(i,j)
       end do
     end do
 
@@ -1266,7 +1355,7 @@ module cloud_simple_mod
 
     if(intermediate_outputs_diags) then
       !============= Other prameters =============!
-      beta1 = (zinv+zlcl) / delta_zs
+      beta1 = (zinv + zlcl) / delta_zs
       alpha = (zinv - z_ML) / delta_zs
       IS = (1.0 - alpha) * Gamma_DL * delta_zs
       DS = alpha * Gamma_DL * delta_zs
@@ -1483,6 +1572,176 @@ module cloud_simple_mod
     high_ca = (1.0 - high_ca) * 1.0e2
 
   end subroutine compute_isccp_clds2
+
+
+  subroutine cldovrlap(pint, cld, nmxrgn, pmxrgn)
+  !subroutine cldovrlap(lchnk   ,ncol    ,pint    ,cld     ,nmxrgn  ,pmxrgn  )
+    !  This code is borrowed from CESM.
+    !-----------------------------------------------------------------------
+    ! Purpose: 
+    ! Partitions each column into regions with clouds in neighboring layers.
+    ! This information is used to implement maximum overlap in these regions
+    ! with random overlap between them.
+    ! On output,
+    !    nmxrgn contains the number of regions in each column
+    !    pmxrgn contains the interface pressures for the lower boundaries of
+    !           each region! 
+    ! Author: W. Collins
+    !-----------------------------------------------------------------------
+    !
+    ! Input arguments
+    !
+    !integer, intent(in) :: ncol                ! number of atmospheric columns
+    real, intent(in), dimension(:,:,:) :: pint  ! Interface pressure
+    real, intent(in), dimension(:,:,:) :: cld   ! Fractional cloud cover
+    !
+    ! Output arguments
+    !
+    ! Number of maximally overlapped regions
+    integer,  intent(out), dimension(size(cld,1), size(cld,2)) :: nmxrgn 
+    real, intent(out), dimension(size(pint,1), size(pint,2), size(pint,3)) :: pmxrgn
+    ! Maximum values of pressure for each maximally overlapped region.
+    !    0->pmxrgn(i,1) is range of pressure for
+    !    1st region,pmxrgn(i,1)->pmxrgn(i,2) for
+    !    2nd region, etc
+    !
+    !---------------------------Local variables-----------------------------
+    !
+    integer :: i, j  ! Lat/Longitude index
+    integer :: k     ! Level index
+    integer :: n     ! Max-overlap region counter
+
+    real, dimension(size(pint,1), size(pint,2), size(pint,3)) :: pnm  ! Interface pressure
+
+    logical :: cld_found                          ! Flag for detection of cloud
+    logical, dimension(size(cld,3)) :: cld_layer  ! Flag for cloud in layer
+    !
+    !------------------------------------------------------------------------
+    !
+    integer :: pver, pverp
+
+    pver = size(cld,3)
+    pverp = pver + 1
+    
+    do i = 1,size(cld,1)
+      do j = 1,size(cld,2)
+        cld_found = .false.
+        cld_layer(:) = cld(i,j,:) > 0.0
+        pmxrgn(i,j,:) = 0.0
+        pnm(i,j,:) = pint(i,j,:) !* 10.0  ! why multiplied by 10?
+        n = 1
+        do k = 1, pver
+          if (cld_layer(k) .and.  .not. cld_found) then
+              cld_found = .true.
+          else if ( .not. cld_layer(k) .and. cld_found) then
+            cld_found = .false.
+            if (count(cld_layer(k:pver)) == 0) then
+              exit
+            endif
+            pmxrgn(i,j,n) = pnm(i,j,k)
+            n = n + 1
+          endif
+        end do
+        pmxrgn(i,j,n) = pnm(i,j,pverp)
+        nmxrgn(i,j) = n
+      end do
+    end do
+  end subroutine cldovrlap
+
+  subroutine cloud_cover_diags_cam(cld, pmid, pint, Time)
+    !!! pmid is pfull, and pint is phalf
+    real,    intent(in), dimension(:,:,:) :: cld, pmid, pint
+    ! Total, low, middle and high random overlap cloud cover
+    real, dimension(size(cld,1), size(cld,2)) :: cldtot, cldlow, cldmed, cldhgh 
+    
+    type(time_type),  intent(in)  :: Time
+    real :: used
+
+    !---------------------------Local workspace-----------------------------
+    integer :: i,j,k       ! lat/lon,level indices
+    integer, dimension(size(cld,1), size(cld,2)) :: irgn    ! Max-overlap region index
+    integer :: max_nmxrgn  ! maximum value of nmxrgn over columns
+    integer :: ityp        ! Type counter
+    real, dimension(size(cld,1), size(cld,2)) :: clrsky      ! Max-random clear sky fraction
+    real, dimension(size(cld,1), size(cld,2)) :: clrskymax   ! Maximum overlap clear sky fraction
+    
+    !------------------------------Parameters-------------------------------
+    real, parameter :: plowmax=1.2e5, plowmin=7.0e4  ! Max/min prs for low cloud cover range
+    real, parameter :: pmedmax=7.0e4, pmedmin=4.0e4  ! Max/min prs for mid cloud cover range
+    real, parameter :: phghmax=4.0e4, phghmin=5.0e3  ! Max/min prs for hgh cloud cover range
+
+    real, dimension(4) :: ptypmin
+    real, dimension(4) :: ptypmax
+ 
+    data ptypmin /phghmin, plowmin, pmedmin, phghmin/
+    data ptypmax /plowmax, plowmax, pmedmax, phghmax/
+
+    integer, dimension(size(cld,1), size(cld,2)) :: nmxrgn 
+    real, dimension(size(pint,1), size(pint,2), size(pint,3)) :: pmxrgn
+
+    ! call the overlap subroutine to obtain the nmxrgn and pmxrgn
+    call cldovrlap(pint, cld, nmxrgn, pmxrgn)
+
+    ! Initialize region number
+    max_nmxrgn = -1
+    do i=1,size(cld,1)
+      do j=1,size(cld,2)
+        max_nmxrgn = max(max_nmxrgn, nmxrgn(i,j))
+      end do
+    end do
+
+    do ityp= 1,4
+      irgn = 1
+      do k =1,max_nmxrgn-1
+          do i=1,size(cld,1)
+            do j=1,size(cld,2)
+              if (pmxrgn(i,j,irgn(i,j)) < ptypmin(ityp) .and. irgn(i,j) < nmxrgn(i,j)) then
+                  irgn(i,j) = irgn(i,j) + 1
+              end if
+            end do
+          end do
+      end do
+      !
+      ! Compute cloud amount by estimating clear-sky amounts
+      !
+      clrsky = 1.0
+      clrskymax = 1.0
+      do k=1,size(cld,3)
+        do i=1,size(cld,1)
+          do j=1,size(cld,2)
+            if (pmid(i,j,k) >= ptypmin(ityp) .and. pmid(i,j,k) <= ptypmax(ityp)) then
+                if (pmxrgn(i,j,irgn(i,j)) < pmid(i,j,k) .and. irgn(i,j) < nmxrgn(i,j)) then
+                  irgn(i,j) = irgn(i,j) + 1
+                  clrsky(i,j) = clrsky(i,j) * clrskymax(i,j)
+                  clrskymax(i,j) = 1.0
+                endif
+                clrskymax(i,j) = min(clrskymax(i,j), 1.0-cld(i,j,k))
+            endif
+          end do
+        end do
+      end do
+
+      if (ityp == 1) cldtot = 1.0 - (clrsky * clrskymax)
+      if (ityp == 2) cldlow = 1.0 - (clrsky * clrskymax)
+      if (ityp == 3) cldmed = 1.0 - (clrsky * clrskymax)
+      if (ityp == 4) cldhgh = 1.0 - (clrsky * clrskymax)
+    end do
+
+    ! Write the output diagnostics
+    if ( id_tot_cld_amt_cam > 0 ) then
+      used = send_data ( id_tot_cld_amt_cam, cldtot*1e2, Time)
+    endif
+    if ( id_high_cld_amt_cam > 0 ) then
+      used = send_data ( id_high_cld_amt_cam, cldlow*1e2, Time)
+    endif
+    if ( id_mid_cld_amt_cam > 0 ) then
+      used = send_data ( id_mid_cld_amt_cam, cldmed*1e2, Time)
+    endif
+    if ( id_low_cld_amt_cam > 0 ) then
+      used = send_data ( id_low_cld_amt_cam, cldhgh*1e2, Time)
+    endif
+
+  end subroutine cloud_cover_diags_cam
 
   subroutine diag_cldamt_maxrnd_overlap(cf, p_full, Time)
     real, intent(in),  dimension(:,:,:) :: cf, p_full

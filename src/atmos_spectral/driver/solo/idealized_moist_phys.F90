@@ -6,7 +6,8 @@ module idealized_moist_phys_mod
   use fms_mod, only: open_namelist_file, close_file
 #endif
 
-use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, FATAL, WARNING, read_data, field_size, uppercase, mpp_pe
+use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, &
+                   FATAL, WARNING, read_data, field_size, uppercase, mpp_pe, check_nml_error
 
 use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS, dens_h2o !mj cp_air needed for rrtmg !s pstd_mks needed for pref calculation
 
@@ -111,7 +112,6 @@ logical :: do_ras = .false.
 
 ! Cloud options
 logical :: do_cloud_simple = .false.
-logical :: do_clear_sky_pass = .false. ! QL, Are the clear-sky radiation diagnostics to be calculated?
 
 !s Radiation options
 logical :: two_stream_gray = .true.
@@ -148,13 +148,13 @@ real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
 ! end RG Add bucket
 
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
-                                      do_cloud_simple, do_clear_sky_pass,            &
+                                      do_cloud_simple,                               &
                                       two_stream_gray, do_rrtm_radiation, do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
-                                      land_option, land_file_name, land_field_name,   & !s options for idealised land
-                                      land_roughness_prefactor,               &
-                                      gp_surface, convection_scheme,          &
+                                      land_option, land_file_name, land_field_name,  & !s options for idealised land
+                                      land_roughness_prefactor,                      &
+                                      gp_surface, convection_scheme,                 &
                                       bucket, init_bucket_depth, init_bucket_depth_land, & !RG Add bucket
                                       max_bucket_depth_land, robert_bucket, raw_bucket, &
                                       do_socrates_radiation
@@ -314,7 +314,7 @@ type(time_type), intent(in) :: Time, Time_step_in
 integer, intent(in) :: nhum
 real, intent(in), dimension(:,:) :: rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init
 
-integer :: io, nml_unit, stdlog_unit, seconds, days, id, jd, kd
+integer :: io, ierr, nml_unit, stdlog_unit, seconds, days, id, jd, kd
 real, dimension (size(rad_lonb_2d,1)-1, size(rad_latb_2d,2)-1) :: sgsmtn !s added for damping_driver
 
 !s added for land reading
@@ -338,11 +338,16 @@ call write_version_number(version, tagname)
 
 #ifdef INTERNAL_FILE_NML
    read (input_nml_file, nml=idealized_moist_phys_nml, iostat=io)
+   ierr = check_nml_error(io, 'idealized_moist_phys_nml')
 #else
    if ( file_exist('input.nml') ) then
       nml_unit = open_namelist_file()
-      read (nml_unit, idealized_moist_phys_nml, iostat=io)
-      call close_file(nml_unit)
+      ierr = 1
+      do while (ierr /= 0)
+        read(nml_unit, idealized_moist_phys_nml, iostat=io, end=10)
+        ierr = check_nml_error(io, 'idealized_moist_phys_nml')
+      enddo
+10    call close_file(nml_unit)
    endif
 #endif
 stdlog_unit = stdlog()
@@ -739,12 +744,6 @@ end select
         axes(1:2), Time, 'Rain from convection','kg/m/m/s')
 !endif
 
-if (.not. do_cloud_simple .and. do_clear_sky_pass) then
-  call error_mesg( 'idealized_moist_phys_init', &
-  'do_clear_sky_pass MUST be false when do_cloud_simple is false.', WARNING)
-  do_clear_sky_pass = .false.
-end if
-
 if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, dt_real)
 
 #ifdef RRTM_NO_COMPILE
@@ -770,7 +769,7 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
     endif
 #else
 if (do_socrates_radiation) then
-    call socrates_init(is, ie, js, je, num_levels, axes, Time, rad_lat, rad_lonb_2d, rad_latb_2d, Time_step_in, do_cloud_simple, do_clear_sky_pass)
+    call socrates_init(is, ie, js, je, num_levels, axes, Time, rad_lat, rad_lonb_2d, rad_latb_2d, Time_step_in, do_cloud_simple)
 endif
 #endif
 
@@ -982,7 +981,7 @@ endif
  !Set to zero regarles of if clouds are used in radiation code
  cf_rad   = 0.
  reff_rad = 0.
- qcl_rad  = 0.
+ qcl_rad  = 1e-8
 
 if(do_cloud_simple) then
 
@@ -1155,7 +1154,7 @@ if (do_socrates_radiation) then
     endif
     call run_socrates(Time, Time+Time_step, rad_lat, rad_lon, tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum), t_surf(:,:), p_full(:,:,:,current), &
                       p_half(:,:,:,current),z_full(:,:,:,current),z_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t, &
-                      do_cloud_simple, do_clear_sky_pass, cf_rad(:,:,:), reff_rad(:,:,:), qcl_rad(:,:,:) )
+                      do_cloud_simple, cf_rad(:,:,:), reff_rad(:,:,:), qcl_rad(:,:,:) )
 endif
 #endif
 
