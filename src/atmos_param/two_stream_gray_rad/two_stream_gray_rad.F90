@@ -164,7 +164,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
            id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun, &
            id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2, id_mars_solar_long, id_rrsun, id_true_anom, &
-           id_time_since_ae, id_dec, id_ang
+           id_time_since_ae, id_dec, id_ang, id_tau_lw, id_tau_sw
 
 character(len=10), parameter :: mod_name = 'two_stream'
 
@@ -377,6 +377,16 @@ end select
         register_diag_field ( mod_name, 'flux_sw', axes(half), Time, &
                'Net shortwave radiative flux (positive up)', &
                'W/m^2', missing_value=missing_value               )
+
+    id_tau_lw = &
+        register_diag_field ( mod_name, 'tau_lw', axes(half), Time, &
+               'Long-wave optical depth', &
+               'None', missing_value=missing_value               )
+
+    id_tau_sw = &
+        register_diag_field ( mod_name, 'tau_sw', axes(half), Time, &
+               'Short-wave optical depth', &
+               'None', missing_value=missing_value               )       
 
     id_coszen  = &
                register_diag_field ( mod_name, 'coszen', axes(1:2), Time, &
@@ -853,6 +863,14 @@ endif
 if ( id_sw_dtrans > 0 ) then
    used = send_data ( id_sw_dtrans, sw_dtrans, Time_diag)
 endif
+!---------optical depths (at half levels) ---------
+if ( id_tau_lw > 0 ) then
+   used = send_data ( id_tau_lw, lw_tau, Time_diag)
+endif
+if ( id_tau_sw > 0 ) then
+   used = send_data ( id_tau_sw, sw_tau, Time_diag)
+endif
+
 
 return
 end subroutine two_stream_gray_rad_up
