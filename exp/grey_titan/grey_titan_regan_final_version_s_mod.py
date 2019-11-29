@@ -65,6 +65,10 @@ diag.add_field('two_stream', 'time_since_ae', time_avg=True)
 diag.add_field('two_stream', 'true_anomaly', time_avg=True)
 diag.add_field('two_stream', 'dec', time_avg=True)
 diag.add_field('two_stream', 'ang', time_avg=True)
+diag.add_field('two_stream', 'flux_sw', time_avg=True)
+diag.add_field('two_stream', 'flux_lw', time_avg=True)
+diag.add_field('two_stream', 'tau_sw', time_avg=True)
+diag.add_field('two_stream', 'tau_lw', time_avg=True)
 
 # define namelist values as python dictionary
 namelist = Namelist({
@@ -113,7 +117,7 @@ namelist = Namelist({
     },
 
     'mixed_layer_nml': {
-        'tconst' : 120.,
+        'tconst' : 90.,
         'prescribe_initial_dist':True,
         'evaporation':False,   
         'albedo_value': 0.3,
@@ -152,7 +156,7 @@ namelist = Namelist({
     },
 
     'spectral_dynamics_nml': {
-        'num_levels': 60,
+        'num_levels':60 ,
         'exponent': 7.0,
         'scale_heights': 11,
         'surf_res': 0.5,
@@ -166,10 +170,10 @@ namelist = Namelist({
     'two_stream_gray_rad_nml': {
         'rad_scheme': 'frierson',            #Select radiation scheme to use, which in this case is Frierson
         'do_seasonal': True,
-        'atm_abs': 30,
+        'atm_abs': 5,
         'sw_diff':0.0,
-        'ir_tau_eq':25,        
-        'ir_tau_pole':25,
+        'ir_tau_eq':10,        
+        'ir_tau_pole':10,
         'linear_tau': 1.0,
         'equinox_day':0.0,
         'use_time_average_coszen':True,
@@ -199,7 +203,7 @@ namelist = Namelist({
 
 
     'spectral_init_cond_nml': { #namelist additional to the Mars script
-        'initial_temperature': 200.
+        'initial_temperature': 90.
     },
 
     'astronomy_nml': { 
@@ -238,7 +242,7 @@ if __name__=="__main__":
     for conv in conv_schemes:
         for depth_val in depths:
             for per_value in pers:
-                exp = Experiment('grey_titan_T42_60_levels', codebase=cb) #name of folder in which .nc files are output
+                exp = Experiment('grey_titan_T42_60_levels_tapio_optical_dep', codebase=cb) #name of folder in which .nc files are output
                 exp.clear_rundir()
 
                 exp.diag_table = diag

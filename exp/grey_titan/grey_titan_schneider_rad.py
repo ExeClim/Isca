@@ -6,8 +6,8 @@ from isca import IscaCodeBase, GreyCodeBase, DiagTable, Experiment, Namelist, GF
 from isca.util import exp_progress
 from ntfy import notify
 
-NCORES = 16 #8 cores for T21, 16 for T42
-RESOLUTION = 'T42', 18 #T42 horizontal resolution, 25 levels in pressure
+NCORES = 8 #8 cores for T21, 16 for T42
+RESOLUTION = 'T21', 18 #T42 horizontal resolution, 25 levels in pressure
 
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -75,7 +75,7 @@ diag.add_field('two_stream', 'tau_lw', time_avg=True)
 # define namelist values as python dictionary
 namelist = Namelist({
     'main_nml': {
-        'dt_atmos': 178, #time step in seconds, multiple of length of day
+        'dt_atmos': 2.*178, #time step in seconds, multiple of length of day
         'days': 0.,
         'seconds': 2.*1379678, #length of time in each .nc file
         'calendar': 'no_calendar'
@@ -178,7 +178,7 @@ namelist = Namelist({
         'do_seasonal': True,
         'atm_abs':5.,
         'sw_diff':0.0,
-        'solar_exponent':0.21,
+        'solar_exponent':0.42,
         'ir_tau_eq':10,        
         'ir_tau_pole':10,
         'linear_tau': 0.15,
@@ -245,7 +245,7 @@ if __name__=="__main__":
     for conv in conv_schemes:
         for depth_val in depths:
             for per_value in pers:
-                exp = Experiment('grey_titan_T42_daily_tapio_rad_with_sponge_mk10_tau_diag_18_levels', codebase=cb) #name of folder in which .nc files are output
+                exp = Experiment('grey_titan_T21_daily_tapio_rad_with_sponge_mk12_tau_diag_18_levels', codebase=cb) #name of folder in which .nc files are output
                 exp.clear_rundir()
 
                 exp.diag_table = diag
@@ -261,7 +261,7 @@ if __name__=="__main__":
 
 #            with exp_progress(exp, description='o%.0f d{day}' % scale):
                 exp.run(1, use_restart=False, num_cores=NCORES)
-                for i in range(2, 401):
+                for i in range(2, 12001):
 #                with exp_progress(exp, description='o%.0f d{day}' % scale):
                     exp.run(i, num_cores=NCORES)
                 notify('top down with conv scheme = '+conv+' has completed', 'isca')
