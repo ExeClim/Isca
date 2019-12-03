@@ -7,7 +7,7 @@ from isca.util import exp_progress
 from ntfy import notify
 
 NCORES = 8 #8 cores for T21, 16 for T42
-RESOLUTION = 'T21', 18 #T42 horizontal resolution, 25 levels in pressure
+RESOLUTION = 'T21', 60 #T42 horizontal resolution, 25 levels in pressure
 
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -252,7 +252,7 @@ if __name__=="__main__":
     for conv in conv_schemes:
         for depth_val in depths:
             for per_value in pers:
-                exp = Experiment('grey_titan_T21_daily_tapio_rad_with_sponge_mk12_tau_diag_18_levels_dry_conv_fixed', codebase=cb) #name of folder in which .nc files are output
+                exp = Experiment('grey_titan_T21_daily_tapio_rad_with_sponge_mk12_tau_diag_60_levels_dry_conv_fixed', codebase=cb) #name of folder in which .nc files are output
                 exp.clear_rundir()
 
                 exp.diag_table = diag
