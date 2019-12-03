@@ -28,9 +28,9 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 # create a diagnostics output file for daily snapshots
 diag = DiagTable()
 #for atmos_monthly: 30 'days' in a 'month' multiplied by length of day in seconds
-diag.add_file('atmos_monthly', 30*1379678, 'seconds', time_units='days') 
+#diag.add_file('atmos_monthly', 30*1379678, 'seconds', time_units='days') 
 #for atmos_daily: length of 'day' in seconds
-#diag.add_file('atmos_daily', 1379678 , 'seconds', time_units='days')
+diag.add_file('atmos_daily', 1379678 , 'seconds', time_units='days')
 #diag.add_file('atmos_e_daily',1 , 'days', time_units='days')
 #diag.add_file('atmos_timestep', 240, 'seconds', time_units='days')
 
@@ -71,7 +71,7 @@ namelist = Namelist({
     'main_nml': {
         'dt_atmos': 178, #time step in seconds, multiple of length of day
         'days': 0.,
-        'seconds': 30.*1379678, #length of time in each .nc file
+        'seconds': 2.*1379678, #length of time in each .nc file
         'calendar': 'no_calendar'
     },
 
@@ -239,7 +239,7 @@ if __name__=="__main__":
     for conv in conv_schemes:
         for depth_val in depths:
             for per_value in pers:
-                exp = Experiment('grey_titan_T42', codebase=cb) #name of folder in which .nc files are output
+                exp = Experiment('grey_titan_T42_daily', codebase=cb) #name of folder in which .nc files are output
                 exp.clear_rundir()
 
                 exp.diag_table = diag
@@ -255,7 +255,7 @@ if __name__=="__main__":
 
 #            with exp_progress(exp, description='o%.0f d{day}' % scale):
                 exp.run(1, use_restart=False, num_cores=NCORES)
-                for i in range(2, 111):
+                for i in range(2, 401):
 #                with exp_progress(exp, description='o%.0f d{day}' % scale):
                     exp.run(i, num_cores=NCORES)
                 notify('top down with conv scheme = '+conv+' has completed', 'isca')
