@@ -165,7 +165,12 @@ namelist = Namelist({
         'do_water_correction': False,
         'vert_coord_option': 'uneven_sigma',
         'initial_sphum': 0.,
-        'valid_range_T': [0, 700]
+        'valid_range_T': [0, 700],
+        'make_symmetric':True,
+    },
+
+    'diffusivity_nml': {
+        'free_atm_diff':True,#Turn on vertical diffusion in the free atmosphere 
     },
 
     'vert_coordinate_nml': {
@@ -245,7 +250,7 @@ if __name__=="__main__":
     for conv in conv_schemes:
         for depth_val in depths:
             for per_value in pers:
-                exp = Experiment('grey_titan_T21_daily_tapio_rad_with_sponge_mk12_tau_diag_60_levels', codebase=cb) #name of folder in which .nc files are output
+                exp = Experiment('grey_titan_T21_daily_tapio_rad_with_sponge_mk12_tau_diag_60_levels_axisym', codebase=cb) #name of folder in which .nc files are output
                 exp.clear_rundir()
 
                 exp.diag_table = diag
