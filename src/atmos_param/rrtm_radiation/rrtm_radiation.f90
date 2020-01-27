@@ -164,8 +164,8 @@
 !!!!!! mp586 added for annual mean insolation!!!!!
 
 		logical            :: frierson_solar_rad =.false.
-		real(kind=rb)	   :: del_sol
-		real(kind=rb)	   :: del_sw
+		real(kind=rb)	   :: del_sol = 0.95 ! frierson 2006 default = 1.4, but 0.95 gets the curve closer to the annual mean insolation 
+		real(kind=rb)	   :: del_sw = 0.0 !frierson 2006 default 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -206,7 +206,7 @@
              &h2o_lower_limit,temp_lower_limit,temp_upper_limit,co2ppmv, &
              &do_fixed_water,fixed_water,fixed_water_pres,fixed_water_lat, &
              &slowdown_rad, &
-             &store_intermediate_rad, do_rad_time_avg, frierson_solar_rad, dt_rad, dt_rad_avg, & !mp586 added frierson_solar_rad for annual mean insolation
+             &store_intermediate_rad, do_rad_time_avg, frierson_solar_rad, del_sol, del_sw, dt_rad, dt_rad_avg, & !mp586 added frierson_solar_rad, del_sol, del_sw for annual mean insolation
              &lonstep, do_zm_tracers, do_zm_rad, &
              &do_precip_albedo, precip_albedo_mode, precip_albedo, precip_lat,&
              &do_read_co2, co2_file, co2_variable_name, use_dyofyr, solrad, &
@@ -647,9 +647,6 @@
 
 !!!!! mp586 addition for annual mean insolation !!!!!
 !!!! following https://github.com/sit23/Isca/blob/master/src/atmos_param/socrates/interface/socrates_interface.F90#L888 !!!!
-
-		del_sol = 0.95 ! mp586: frierson 2006 default = 1.4, but 0.95 gets the curve closer to the annual mean insolation 
-		del_sw = 0.0 !frierson 2006 default 
 
        	if (frierson_solar_rad .eq. .true.) then
             p2     = (1. - 3.*sin(lat(:,:))**2)/4.
