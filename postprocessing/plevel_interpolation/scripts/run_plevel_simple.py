@@ -7,11 +7,11 @@ import pdb
 import subprocess
 
 start_time=time.time()
-base_dir='/home/sthomson/datadir_isca/'
-exp_name_list = ['project_7_ice_albedo_False_t42']
-avg_or_daily_list=['monthly']
+base_dir=os.environ['GFDL_DATA']
+exp_name_list = ['exp_name_here']
+avg_or_daily_list=['daily']
 start_file=1
-end_file=7
+end_file=12
 nfiles=(end_file-start_file)+1
 
 level_set='standard' #Default is the standard levels used previously. ssw_diagnostics are the ones blanca requested for MiMa validation
