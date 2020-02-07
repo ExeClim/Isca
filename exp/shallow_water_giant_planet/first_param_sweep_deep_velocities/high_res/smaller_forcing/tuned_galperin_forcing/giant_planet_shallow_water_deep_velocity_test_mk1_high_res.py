@@ -119,9 +119,9 @@ namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
 
-    for forcing_amplitude in [7.5, 5., 10.]:
+    for forcing_amplitude in [7.5]:
 
-        for damping_time in [ 10000., 1000., 100000.]:
+        for damping_time in [ 100000.]:
             u_deep_mag_val = 50.
 
             if u_deep_mag_val!=0.:
@@ -174,5 +174,5 @@ if __name__=="__main__":
                 })
 
                 exp.run(1, use_restart=False, num_cores=NCORES, multi_node=True)
-                for i in range(2,721):
+                for i in range(721,841):
                     exp.run(i, num_cores=NCORES, multi_node=True)
