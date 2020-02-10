@@ -1001,10 +1001,10 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
            if(do_rad_time_avg) then
 	         r_dt_rad_avg=real(dt_rad_avg)
 	         dt_rad_radians = (r_dt_rad_avg/day_in_s)*2.0*pi
-	         call diurnal_solar(rad_lat, rad_lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians, true_anom=true_anomaly, dec=dec, ang=ang_out)
+	         call diurnal_solar(rad_lat, rad_lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians, true_anom=true_anomaly, dec_out=dec, ang_out=ang_out)
            else
 	         ! Seasonal Cycle: Use astronomical parameters to calculate insolation
-	         call diurnal_solar(rad_lat, rad_lon, gmt, time_since_ae, coszen, fracsun, rrsun, true_anom=true_anomaly, dec=dec, ang=ang_out)
+	         call diurnal_solar(rad_lat, rad_lon, gmt, time_since_ae, coszen, fracsun, rrsun, true_anom=true_anomaly, dec_out=dec, ang_out=ang_out)
            end if
 
            if (id_mars_solar_long > 0) then

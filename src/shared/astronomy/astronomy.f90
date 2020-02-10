@@ -1124,7 +1124,7 @@ end subroutine get_ref_date_of_ae
 !
 subroutine diurnal_solar_2d (lat, lon, gmt, time_since_ae, cosz, &
                              fracday, rrsun, dt, allow_negative_cosz, &
-                             half_day_out, true_anom, dec, ang)
+                             half_day_out, true_anom, dec_out, ang_out)
 
 !---------------------------------------------------------------------
 !    diurnal_solar_2d returns 2d fields of cosine of zenith angle,
@@ -1140,13 +1140,14 @@ real,                 intent(out)          :: rrsun
 real,                 intent(in), optional :: dt
 logical,              intent(in), optional :: allow_negative_cosz
 real, dimension(:,:), intent(out), optional :: half_day_out
-real,                 intent(out), optional :: true_anom, dec, ang
+real,                 intent(out), optional :: true_anom, dec_out, ang_out
 
 !---------------------------------------------------------------------
 !   local variables
 
       real, dimension(size(lat,1),size(lat,2)) :: t, tt, h, aa, bb,  &
                                                   st, stt, sh
+      real :: dec, ang
       logical :: Lallow_negative
 
 !---------------------------------------------------------------------
@@ -1188,6 +1189,10 @@ real,                 intent(out), optional :: true_anom, dec, ang
 !---------------------------------------------------------------------
       ang = angle(time_since_ae)
       dec = declination(ang)
+
+      if (present(ang_out)) ang_out = ang
+      if (present(dec_out)) dec_out = dec      
+
       if (use_old_r_inv_squared) then
           rrsun = r_inv_squared(ang)
       else
