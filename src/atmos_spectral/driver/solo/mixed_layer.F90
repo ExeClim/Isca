@@ -133,6 +133,7 @@ character(len=256) :: ice_file_name  = 'siconc_clim_amip'
 real    :: ice_albedo_value = 0.7
 real    :: ice_concentration_threshold = 0.5
 logical :: update_albedo_from_ice = .false.
+logical :: update_land_mask_from_ice = .false.
 character(len=256) :: ice_albedo_method = 'step_function'
 
 logical :: add_latent_heat_flux_anom = .false.
@@ -153,6 +154,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               land_albedo_prefactor,                         &  !s
                               load_qflux,qflux_file_name,time_varying_qflux, &
                               update_albedo_from_ice, ice_file_name,         &
+                              update_land_mask_from_ice,                    &
                               ice_albedo_value, specify_sst_over_ocean_only, &
                               ice_concentration_threshold, ice_albedo_method,&
                               add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
@@ -611,14 +613,14 @@ if(.not.module_is_initialized) then
   call error_mesg('mixed_layer','mixed_layer module is not initialized',FATAL)
 endif
 
-if(update_albedo_from_ice) then
-  call read_ice_conc(Time_next)
-  land_ice_mask=.false.
-  where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
-    land_ice_mask=.true.
-  end where
+if(update_land_mask_from_ice) then
+	call read_ice_conc(Time_next)
+	land_ice_mask=.false.
+	! where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
+	! 	land_ice_mask=.true.
+	! end where
 else
-  land_ice_mask=land_mask
+    land_ice_mask=land_mask
 endif
 
 call albedo_calc(albedo_out,Time_next)
