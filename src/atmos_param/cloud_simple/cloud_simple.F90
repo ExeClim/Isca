@@ -11,64 +11,58 @@ module cloud_simple_mod
   use    time_manager_mod, only: time_type
   use  sat_vapor_pres_mod, only: compute_qs, lookup_es
   use    diag_manager_mod, only: register_diag_field, send_data
-  use       constants_mod, only: CP_AIR, GRAV, RDGAS, RVGAS, HLV, KAPPA, ES0, KELVIN, RADIUS
+  use       constants_mod, only: CP_AIR, GRAV, RDGAS, RVGAS, HLV, KAPPA, RADIUS, TFREEZE
   use             lcl_mod, only: lcl
 
   implicit none
 
-  logical ::   do_init = .true.  ! Check if init needs to be run
+  character(len=14), parameter :: mod_name_cld = "cloud_simple"
 
-  real :: zerodegc = 273.15
-  integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf, id_rhcrit
-  integer :: id_conv_cf
-  ! ----- outputs for EIS, ECTEI and ELF diagnostics ----- !
-  integer :: id_theta, id_dthdp, id_lts, id_eis, id_ectei, id_zlcl, &
-             id_gamma_850, id_gamma_DL, id_gamma_700, id_z700, &
-             id_zinv, id_ELF, id_beta1, id_beta2, id_IS, id_DS, id_alpha, &
-             id_low_cld_amt_park, id_marine_strat
-  ! ----- outputs for cloud amount diagnostics ----- !
-  integer :: id_tot_cld_amt, id_high_cld_amt, id_mid_cld_amt, id_low_cld_amt
-  integer :: id_tot_cld_amt_mxr, id_high_cld_amt_mxr, id_mid_cld_amt_mxr, id_low_cld_amt_mxr, &
-             id_tot_cld_amt_max, id_high_cld_amt_max, id_mid_cld_amt_max, id_low_cld_amt_max, &
-             id_tot_cld_amt_rnd, id_high_cld_amt_rnd, id_mid_cld_amt_rnd, id_low_cld_amt_rnd, &
-             id_tot_cld_amt_cam, id_high_cld_amt_cam, id_mid_cld_amt_cam, id_low_cld_amt_cam
-
-  character(len=14), parameter ::   mod_name_cld = "cloud_simple"
-
-  integer, parameter :: B_SPOOKIE=1, B_SUNDQVIST=2, B_LINEAR=3, B_SMITH=4, B_SLINGO=5, B_XR96=6
-  integer, private :: cf_diag_formula = B_LINEAR
+  integer, parameter :: B_SPOOKIE=1, B_SUNDQVIST=2, B_LINEAR=3, &
+                        B_SMITH=4, B_SLINGO=5, B_XR96=6
+  integer, private  :: cf_diag_formula = B_LINEAR
   character(len=32) :: cf_diag_formula_name = 'linear'
   character(len=32) :: sc_diag_method = 'Park_ELF'
+  
+  logical :: do_init = .true.  ! Check if init needs to be run
   logical :: do_simple_rhcrit = .false.
-  logical :: do_read_scm_rhcrit = .false.
+  logical :: do_fitted_rhcrit = .false.
   logical :: do_qcl_with_temp = .false.
   logical :: do_cloud_amount_diags = .true.
   logical :: do_test_overlap = .false.
   logical :: do_cam_cld_cover_diag = .true.
   logical :: do_add_stratocumulus = .false.
   logical :: intermediate_outputs_diags = .false.
-  logical :: do_read_ts = .false.
   logical :: do_conv_cld = .false.
   logical :: do_adjust_low_cld = .false.
   logical :: adjust_top = .false.
-  real, parameter :: FILL_VALUE = -999.0 ! Fill value for arrays
-  real, dimension(100) :: scm_rhcrit = FILL_VALUE   ! Input array for single column critical RH. Max number of levels = 100
+  logical :: do_qcl_with_PDF = .false.
 
-  real :: simple_cca = 0.0
   real :: rhcsfc     = 0.95
   real :: rhc700     = 0.7
   real :: rhc200     = 0.3
   real :: cf_min     = 1e-4
-  real :: dthdp_min_threshold = -0.05 !K/hPa, which is -0.125 in CESM1.2.1
-  real :: pshallow   = 7.5e4 ! copy from am4 diag_cloud.F90
-  real :: conv_rain_min = 0.14 ! mm/day, threshold to produce conv cld
+  real :: dthdp_min_threshold = -0.05   ! K/hPa, which is -0.125 in CESM1.2.1
+  real :: pshallow   = 7.5e4            ! copy from GFDL/AM4 diag_cloud.F90
+  real :: conv_rain_min = 0.14          ! mm/day, threshold to produce conv cld
+
+  ! Parameters to control the liquid cloud fraction
+  real :: T_max = -5    ! Units in Celcius
+  real :: T_min = -40   ! Units in Celcius
+
+  ! Parameters to control the fitted critical RH profile
+  real :: rhc_surf = 0.8
+  real :: rhc_top = 0.4
+  real :: n_rhc = 3.1
+
+  real :: qv_polar_val = 0.003 ! kg/kg
 
   ! Parameters to control the coefficients profile of linear function of RH
-  real :: a_surf     = 2.7
-  real :: a_top      = 0.35
-  real :: b_surf     = -2.2
-  real :: b_top      = -0.07
-  real :: nx         = 8
+  real :: a_surf = 2.7
+  real :: a_top  = 0.35
+  real :: b_surf = -2.2
+  real :: b_top  = -0.07
+  real :: nx     = 8
 
   ! For slingo80 scheme
   real :: slingo_rhc_low  = 0.8
@@ -79,111 +73,50 @@ module cloud_simple_mod
   real :: omega_adj_threshold = -0.1 !Pa/s
 
   ! For effective cloud droplet radius
-  real :: reff_liq = 14.0 ! mm
+  real :: reff_liq = 14.0   ! micron
   real :: reff_ice = 25.0 
 
   ! For in-cloud liquid water
-  real :: qcl_val = 0.2 ! g/kg
+  real :: qcl_val = 0.2     ! g/kg
 
   ! Define constants for Earth mass and Newtonian gravational constant
   ! Refer to: https://github.com/Unidata/MetPy/ --> src/metpy/constants.py
-  real :: EARTH_MASS = 5.9722e24 ! kg
+  real :: EARTH_MASS = 5.9722e24  ! kg
   ! Refer to: https://physics.nist.gov/cgi-bin/cuu/Value?bg
-  real :: GRAV_CONST = 6.674e-11 !m^3 / kg / s^2
+  real :: GRAV_CONST = 6.674e-11  ! m^3 / kg / s^2
 
-  namelist /cloud_simple_nml/ simple_cca, rhcsfc, rhc700, rhc200, &
-                              cf_diag_formula_name, &
-                              do_read_scm_rhcrit, scm_rhcrit, &
-                              do_qcl_with_temp, &
-                              do_cloud_amount_diags, adjust_top, do_test_overlap, &
+  ! ----- outputs for baisc cloud diagnostics ----- !
+  integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf, id_rhcrit
+  integer :: id_conv_cf
+
+  ! ----- outputs for EIS, ECTEI and ELF diagnostics ----- !
+  integer :: id_theta, id_dthdp, id_lts, id_eis, id_ectei, id_zlcl,       &
+             id_gamma_850, id_gamma_DL, id_gamma_700, id_z700,            &
+             id_zinv, id_ELF, id_beta1, id_beta2, id_IS, id_DS, id_alpha, &
+             id_low_cld_amt_park, id_marine_strat
+  
+  ! ----- outputs for cloud amount diagnostics ----- !
+  integer :: id_tot_cld_amt, id_high_cld_amt, id_mid_cld_amt, id_low_cld_amt
+  integer :: id_tot_cld_amt_mxr, id_high_cld_amt_mxr, id_mid_cld_amt_mxr, id_low_cld_amt_mxr, &
+             id_tot_cld_amt_max, id_high_cld_amt_max, id_mid_cld_amt_max, id_low_cld_amt_max, &
+             id_tot_cld_amt_rnd, id_high_cld_amt_rnd, id_mid_cld_amt_rnd, id_low_cld_amt_rnd, &
+             id_tot_cld_amt_cam, id_high_cld_amt_cam, id_mid_cld_amt_cam, id_low_cld_amt_cam
+
+  namelist /cloud_simple_nml/ rhcsfc, rhc700, rhc200, &
+                              do_fitted_rhcrit, rhc_surf, rhc_top, n_rhc, &
+                              T_min, T_max, qcl_val, reff_liq, reff_ice, &
+                              cf_diag_formula_name, do_qcl_with_temp, &
                               do_add_stratocumulus, sc_diag_method, &
-                              intermediate_outputs_diags, &
-                              dthdp_min_threshold, do_read_ts, &
+                              intermediate_outputs_diags, dthdp_min_threshold, &
                               a_surf, a_top, b_surf, b_top, nx, &
-                              do_conv_cld, pshallow, cf_min, &
+                              do_conv_cld, pshallow, conv_rain_min, &
                               slingo_rhc_low, slingo_rhc_mid, slingo_rhc_high, &
-                              do_adjust_low_cld, omega_adj_threshold, &
-                              conv_rain_min, qcl_val, reff_liq, reff_ice, &
-                              do_cam_cld_cover_diag
-
+                              omega_adj_threshold, &
+                              do_cloud_amount_diags, adjust_top, cf_min, &
+                              do_test_overlap, do_cam_cld_cover_diag, &
+                              do_adjust_low_cld, qv_polar_val, do_qcl_with_PDF
 
   contains
-
-  !-----------------------------------------------
-
-  subroutine convective_cloud_init(axes, Time)
-    type(time_type), intent(in)       :: Time
-    integer, intent(in), dimension(4) :: axes
-
-    id_conv_cf = register_diag_field (mod_name_cld, 'conv_cf', axes(1:3), Time, &
-        'Convective cloud fraction for the simple cloud scheme', 'unitless: values 0-1')
-  end subroutine convective_cloud_init
-
-  subroutine marine_strat_cloud_init(axes, Time)
-    type(time_type), intent(in)       :: Time
-    integer, intent(in), dimension(4) :: axes
-    character(len=32) :: method_str = ''
-
-    call error_mesg('cloud_simple', 'The stratomulus diagnosis method is '// &
-                    uppercase(trim(sc_diag_method)), NOTE)
-
-    method_str = uppercase(trim(sc_diag_method))
-
-    if (method_str(1:3)=='EIS' .or. method_str(1:5)=='ECTEI' .or. method_str(1:4)=='PARK') then
-      id_eis = register_diag_field (mod_name_cld, 'eis', axes(1:2), Time, &
-                      'estimated inversion strength', 'K')
-    end if
-
-    if (method_str(1:5)=='ECTEI' .or. method_str(1:4)=='PARK') then
-      id_ectei = register_diag_field (mod_name_cld, 'ectei', axes(1:2), Time, &
-                      'estimated cloud top entrainment index', 'K')
-    end if
-
-    if (method_str(1:4)=='PARK') then
-      id_ELF    = register_diag_field (mod_name_cld, 'ELF', axes(1:2), Time, &
-                      'estimated low cloud fraction', '')
-    end if
-
-    id_marine_strat = register_diag_field ( mod_name_cld, 'marine_strat', axes(1:3), Time, &
-                        'marine low stratus cloud amount', '0-1' )
-
-    id_zlcl = register_diag_field (mod_name_cld, 'zlcl', axes(1:2), Time, &
-                  'height of lcl', 'meter')
-    id_theta = register_diag_field (mod_name_cld, 'theta', axes(1:3), Time, &
-                  'potential temperature', 'K')
-    id_lts = register_diag_field (mod_name_cld, 'lts', axes(1:2), Time, &
-                  'low-tropospheric stability', 'K')
-    if(intermediate_outputs_diags) then
-      id_dthdp = register_diag_field (mod_name_cld, 'dthdp', axes(1:3), Time, &
-                        'dtheta/dp', 'K/hPa' )
-      id_z700 = register_diag_field ( mod_name_cld, 'z700', axes(1:2), Time, &
-                        'height of 700mb', 'meter')
-      if (method_str(1:3)=='EIS') then
-        id_gamma_850 = register_diag_field (mod_name_cld, 'gamma850', axes(1:2), Time, &
-                        'moist lapse rate at 850hPa', 'K/m')
-      end if
-      if (method_str(1:4)=='PARK') then
-        id_beta1  = register_diag_field (mod_name_cld, 'beta1', axes(1:2), Time, &
-                        'first low-level cloud suppression parameter', '')
-        id_beta2  = register_diag_field (mod_name_cld, 'beta2', axes(1:2), Time, &
-                        'second low-level cloud suppression parameter', '')
-        id_zinv   = register_diag_field (mod_name_cld, 'zinv', axes(1:2), Time, &
-                        'height of invesion layer', 'meter')
-        id_DS     = register_diag_field (mod_name_cld, 'DS', axes(1:2), Time, &
-                        'decoupling strength', 'K')
-        id_IS     = register_diag_field (mod_name_cld, 'IS', axes(1:2), Time, &
-                        'inversion strength', 'K')
-        id_alpha  = register_diag_field (mod_name_cld, 'alpha', axes(1:2), Time, &
-                        'decoupling parameter', '')
-        id_low_cld_amt_park = register_diag_field ( mod_name_cld, 'low_cld_amt_park', axes(1:2), Time, &
-                        'low cloud amount estimated from Park method', 'percent' )
-        id_gamma_DL = register_diag_field (mod_name_cld, 'gamma_DL', axes(1:2), Time, &
-                        'moist lapse rate at decoupling layer', 'K/m')
-        id_gamma_700 = register_diag_field (mod_name_cld, 'gamma700', axes(1:2), Time, &
-                        'moist lapse rate at 700hPa', 'K/m')
-      end if
-    end if
-  end subroutine marine_strat_cloud_init
 
   subroutine cloud_simple_init (axes, Time)
     type(time_type), intent(in)       :: Time
@@ -233,8 +166,8 @@ module cloud_simple_mod
                 ' is not a valid cloud fraction diagnostic formula.', FATAL)
     endif
 
-    if (cf_diag_formula .eq. B_SPOOKIE .or. cf_diag_formula .eq. B_SUNDQVIST .or. &
-        cf_diag_formula .eq. B_SMITH) then
+    if (cf_diag_formula .eq. B_SPOOKIE .or. cf_diag_formula .eq. B_SUNDQVIST &
+        .or. cf_diag_formula .eq. B_SMITH) then
       do_simple_rhcrit = .true.
     else
       do_simple_rhcrit = .false.
@@ -315,9 +248,91 @@ module cloud_simple_mod
     end if
 
     do_init = .false.  !initialisation completed
+
   end subroutine cloud_simple_init
 
+  subroutine convective_cloud_init(axes, Time)
+    type(time_type), intent(in)       :: Time
+    integer, intent(in), dimension(4) :: axes
 
+    id_conv_cf = register_diag_field (mod_name_cld, 'conv_cf', axes(1:3), Time, &
+        'Convective cloud fraction for the simple cloud scheme', 'unitless: values 0-1')
+
+  end subroutine convective_cloud_init
+
+  subroutine marine_strat_cloud_init(axes, Time)
+    type(time_type), intent(in)       :: Time
+    integer, intent(in), dimension(4) :: axes
+    character(len=32) :: method_str = ''
+
+    call error_mesg('cloud_simple', 'The stratomulus diagnosis method is '// &
+                    uppercase(trim(sc_diag_method)), NOTE)
+
+    method_str = uppercase(trim(sc_diag_method))
+
+    if (method_str(1:3)=='EIS' .or. method_str(1:5)=='ECTEI' &
+        .or. method_str(1:4)=='PARK') then
+      id_eis = register_diag_field (mod_name_cld, 'eis', axes(1:2), Time, &
+                  'estimated inversion strength', 'K')
+    end if
+
+    if (method_str(1:5)=='ECTEI' .or. method_str(1:4)=='PARK') then
+      id_ectei = register_diag_field (mod_name_cld, 'ectei', axes(1:2), Time, &
+                      'estimated cloud top entrainment index', 'K')
+    end if
+
+    if (method_str(1:4)=='PARK') then
+      id_ELF = register_diag_field (mod_name_cld, 'ELF', axes(1:2), Time, &
+                  'estimated low cloud fraction', '')
+    end if
+
+    id_marine_strat = register_diag_field ( mod_name_cld, 'marine_strat', axes(1:3), Time, &
+                        'marine low stratus cloud amount', '0-1' )
+
+    id_zlcl = register_diag_field (mod_name_cld, 'zlcl', axes(1:2), Time, &
+                  'height of lcl', 'meter')
+    id_theta = register_diag_field (mod_name_cld, 'theta', axes(1:3), Time, &
+                  'potential temperature', 'K')
+    id_lts = register_diag_field (mod_name_cld, 'lts', axes(1:2), Time, &
+                  'low-tropospheric stability', 'K')
+  
+    if(intermediate_outputs_diags) then
+      id_dthdp = register_diag_field (mod_name_cld, 'dthdp', axes(1:3), Time, &
+                        'dtheta/dp', 'K/hPa' )
+      id_z700 = register_diag_field ( mod_name_cld, 'z700', axes(1:2), Time, &
+                        'height of 700mb', 'meter')
+      
+      if (method_str(1:3)=='EIS') then
+        id_gamma_850 = register_diag_field (mod_name_cld, 'gamma850', axes(1:2), Time, &
+                          'moist lapse rate at 850hPa', 'K/m')
+      end if
+
+      if (method_str(1:4)=='PARK') then
+        id_beta1  = register_diag_field (mod_name_cld, 'beta1', axes(1:2), Time, &
+                        'first low-level cloud suppression parameter', '')
+        id_beta2  = register_diag_field (mod_name_cld, 'beta2', axes(1:2), Time, &
+                        'second low-level cloud suppression parameter', '')
+        id_zinv   = register_diag_field (mod_name_cld, 'zinv', axes(1:2), Time, &
+                        'height of invesion layer', 'meter')
+        id_DS     = register_diag_field (mod_name_cld, 'DS', axes(1:2), Time, &
+                        'decoupling strength', 'K')
+        id_IS     = register_diag_field (mod_name_cld, 'IS', axes(1:2), Time, &
+                        'inversion strength', 'K')
+        id_alpha  = register_diag_field (mod_name_cld, 'alpha', axes(1:2), Time, &
+                        'decoupling parameter', '')
+        id_low_cld_amt_park = register_diag_field ( mod_name_cld, 'low_cld_amt_park', axes(1:2), Time, &
+                        'low cloud amount estimated from Park method', 'percent' )
+        id_gamma_DL = register_diag_field (mod_name_cld, 'gamma_DL', axes(1:2), Time, &
+                        'moist lapse rate at decoupling layer', 'K/m')
+        id_gamma_700 = register_diag_field (mod_name_cld, 'gamma700', axes(1:2), Time, &
+                        'moist lapse rate at 700hPa', 'K/m')
+      end if
+    end if
+  
+  end subroutine marine_strat_cloud_init
+
+  
+  ! ====================== Main Cloud Subroutine ====================== !
   subroutine cloud_simple(p_half, p_full, Time, temp, q_hum, z_full, &
                           wg_full, psg, temp_2m, q_2m, rh_2m, precip, klcls, klzbs, &
                           cf, reff_rad, qcl_rad)  ! outs
@@ -341,7 +356,7 @@ module cloud_simple_mod
     call calc_reff(frac_liq, reff_rad)
 
     if (do_simple_rhcrit) then
-      call calc_rhcrit(p_full, rhcrit, scm_rhcrit)
+      call calc_rhcrit(p_full, rhcrit)
     end if
 
     conv_cf = 0.0
@@ -353,10 +368,10 @@ module cloud_simple_mod
 
     ! rh_e is the effective RH
     rh_e = rh_in_cf * (1.0 - conv_cf)
-    call calc_stratiform_cf(p_full, psg, rh_e, q_hum, qs, rhcrit, qcl_rad, cf)
+    call calc_large_scale_cld_frac(p_full, psg, rh_e, q_hum, qs, rhcrit, qcl_rad, cf)
 
     if(do_adjust_low_cld) then
-      call adjust_low_cld(p_full, wg_full, cf)
+      call adjust_low_cld(p_full, psg, wg_full, cf, q_hum)
     end if
 
     if (do_add_stratocumulus) then
@@ -368,7 +383,12 @@ module cloud_simple_mod
       call merge_strat_conv_clouds(cf, conv_cf)
     end if
 
-    call calc_qcl_rad(p_full, temp, cf, qcl_rad)
+    if ((cf_diag_formula .eq. B_SUNDQVIST) .and. do_qcl_with_PDF) then
+      ! Here test the qcl_rad from intergration of PDF for Sundqvist formula
+      call calc_qcl_rad_Sundqvist(rhcrit, qs, cf, qcl_rad)
+    else
+      call calc_qcl_rad(p_full, temp, cf, qcl_rad)
+    end if
 
     if (do_cloud_amount_diags) then
       call diag_cloud_amount(cf, p_full, p_half, Time)
@@ -386,26 +406,112 @@ module cloud_simple_mod
 
   end subroutine cloud_simple
 
-  subroutine adjust_low_cld(p_full, wg_full, cf)
-    real, intent(in),    dimension(:,:,:) :: p_full, wg_full
+  subroutine calc_liq_frac(temp, frac_liq)
+    ! All liquid if above T_max and all ice below T_min,
+    ! linearly interpolate between T_min and T_max
+    real, intent(in),  dimension(:,:,:) :: temp
+    real, intent(out), dimension(:,:,:) :: frac_liq
+    real :: T_max, T_min
+
+    where (temp > TFREEZE + T_max)
+        frac_liq = 1.0
+    elsewhere (temp < TFREEZE + T_min)
+        frac_liq = 0.0
+    elsewhere
+        frac_liq = (temp - TFREEZE - T_min) / (T_max - T_min)
+    end where
+
+  end subroutine calc_liq_frac
+
+  subroutine calc_reff(frac_liq, reff_rad)
+    real, intent(in),  dimension(:,:,:) :: frac_liq
+    real, intent(out), dimension(:,:,:) :: reff_rad
+
+    reff_rad =  reff_liq * frac_liq + reff_ice * (1.0 - frac_liq)
+
+  end subroutine calc_reff
+
+  subroutine calc_rhcrit(p_full, rhcrit)
+    !get the RH needed as a threshold for the cloud fraction calc.
+    real, intent(in),  dimension(:,:,:) :: p_full
+    real, intent(out), dimension(:,:,:) :: rhcrit
+    real :: p_surf
+
+    p_surf = 1e5
+
+    !if (do_simple_rhcrit) then
+      ! Calculate RHcrit as function of pressure
+    ! where (p_full > 7.0e4)
+    !   rhcrit = rhcsfc - (rhcsfc - rhc700) * (p_surf - p_full) / (p_surf - 7.0e4)
+    ! elsewhere (p_full > 2.0e4)
+    !   rhcrit = rhc700 - (rhc700 - rhc200) * (7.0e4 - p_full) / 5.0e4
+    ! elsewhere
+    !   rhcrit = rhc200
+    ! endwhere
+    !  end if
+
+    if (do_fitted_rhcrit) then
+        rhcrit = rhc_top + (rhc_surf - rhc_top) * exp(1.0 - (p_surf/p_full)**n_rhc)
+    else
+      where (p_full > 7.0e4)
+        rhcrit = rhcsfc - (rhcsfc - rhc700) * (p_surf - p_full) / (p_surf - 7.0e4)
+      elsewhere (p_full > 2.0e4)
+        rhcrit = rhc700 - (rhc700 - rhc200) * (7.0e4 - p_full) / 5.0e4
+      elsewhere
+        rhcrit = rhc200
+      endwhere
+    end if
+
+  end subroutine calc_rhcrit
+
+  subroutine adjust_low_cld(p_full, psg, wg_full, cf, q_hum)
+    real, intent(in),    dimension(:,:,:) :: p_full, wg_full, q_hum
+    real, intent(in),    dimension(:,:)   :: psg
     real, intent(inout), dimension(:,:,:) :: cf
     real :: premib, omega
+    integer :: k
 
-    premib = 7.0e4 !Pa
+    !premib = 7.0e4 !Pa
     !omega_adj_threshold = -0.1   !Pa/s
 
     !where(p_full>premib .and. omega_adj_threshold<wg_full .and. wg_full<0.0)
     !  cf = min(1.0, wg_full/omega_adj_threshold) * cf
     !elsewhere (p_full>premib .and. wg_full>=0.0)
-    where (p_full>premib .and. wg_full>=0.0)
+    !where (p_full>premib .and. wg_full>=0.0)
     !elsewhere (wg_full>=0.0)
-      cf = 0.0
-      !cf = min(1.0, wg_full/abs(omega_adj_threshold)) * cf
+    !  cf = 0.0
+    !  !cf = min(1.0, wg_full/abs(omega_adj_threshold)) * cf
     !elsewhere
     !  cf = cf
-    end where
-  end subroutine adjust_low_cld
+    !end where
 
+    ! where (p_full>premib)
+    !   cf = cf * MAX(0.15, MIN(1.0, q_hum/qv_polar_val))
+    ! end where
+
+    
+    ! VAVRUS and WALISER, 2008, An Improved Parameterization for Simulating
+    !   Arctic Cloud Amount in the CCSM3 Climate Model, 
+    !   Journal of Climate, DOI: 10.1175/2008JCLI2299.1
+    !
+    ! Excerpt from the conclusion of paper: 
+    !
+    ! "The low cloud restriction currently hinders application of freezedry
+    ! over the highly elevated terrain of Greenland and Antarctica, 
+    ! although a refinement could specify that clouds
+    ! be adjusted within a specified pressure range above the
+    ! surface, rather than below a prescribed pressure value."
+   
+    do k=1,size(p_full,3)
+      ! if (p_full(1,1,k)> psg(1,1)-3e4) then
+      !   write(*,*) 'p_full(1,1, k)=', k, p_full(1,1,k), 'psg(1,1)=', psg(1,1)
+      ! endif
+      where (p_full(:,:,k) > psg-3.0e4)
+        cf(:,:,k) = cf(:,:,k) * MAX(0.15, MIN(1.0, q_hum(:,:,k) / qv_polar_val))
+      end where
+    end do
+
+  end subroutine adjust_low_cld
 
   subroutine estimate_stratiform_cld(method_str, i, j, k, kb, pfull, cf, rh, theta, eis, dthdp, ectei, ELF)
     implicit none
@@ -464,7 +570,6 @@ module cloud_simple_mod
       call error_mesg('cloud_simple', method_str//' is not supported yet!', FATAL)
     end if
   end subroutine estimate_stratiform_cld
-
 
   subroutine add_stratiform_cld(temp, p_full, p_half, z_full, rh, q_hum, temp_2m, q_2m, rh_2m, psg, wg_full, klcls, cf, Time)
     implicit none
@@ -577,122 +682,6 @@ module cloud_simple_mod
     end if
   end subroutine add_stratiform_cld
 
-  !subroutine add_stratiform_cld(temp, p_full, p_half, z_full, rh, q_hum, temp_2m, q_2m, rh_2m, psg, wg_full, klcls, cf, Time)
-  !  implicit none
-  !  real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, rh, wg_full
-  !  type(time_type),   intent(in)       :: Time
-  !  real, intent(in),  dimension(:,:)   :: temp_2m, q_2m, rh_2m, psg
-  !  integer, intent(in), dimension(:,:) :: klcls
-  !  real, intent(out), dimension(:,:,:) :: cf
-  !  real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: theta, dthdp, marine_strat
-  !  integer, dimension(size(temp,1), size(temp,2)) :: kdthdp
-  !  real,    dimension(size(temp,1), size(temp,2)) :: eis, ectei, ELF, low_ca_park
-  !  real :: strat, rhb_frac, used, omega_pos_threshold
-  !  character(len=32) :: method_str = ''
-  !  integer :: i, j, k, k700, kb, k_surf, kk
-  !
-  !  k_surf = size(temp, 3)
-  !  omega_pos_threshold = 1.0*100/3600
-  !
-  !  call calc_theta_dthdp(temp, temp_2m, p_full, p_half, psg, theta, dthdp, kdthdp)
-  !
-  !  method_str = uppercase(trim(sc_diag_method))
-  !  if (method_str(1:3)=='EIS' .or. method_str(1:5)=='ECTEI') then
-  !    call calc_eis(p_full, z_full, temp, temp_2m, psg, klcls, eis, Time)
-  !  end if
-  !  if (method_str(1:5)=='ECTEI') then
-  !    call calc_ectei(p_full, q_hum, q_2m, eis, ectei, Time)
-  !  end if
-  !  if (method_str(1:4)=='PARK') then
-  !    call calc_Park_proxies(p_full, psg, z_full, temp, temp_2m, q_hum, q_2m, rh_2m, klcls, ELF, Time)
-  !  end if
-  !
-  !  marine_strat = 0.0
-  !  do i=1, size(temp, 1)
-  !    do j=1, size(temp, 2)
-  !      kk = kdthdp(i,j)
-  !      kb = min(kk+1, k_surf)
-  !      !do k=kk-2, kb
-  !      k = kk
-  !        if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold) then
-  !          if(method_str == 'LTS') then
-  !            strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
-  !            cf(i,j,k) = max(strat, cf(i,j,k))
-  !          end if
-  !          if(method_str == 'SLINGO') then
-  !            strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
-  !            rhb_frac = min(1.0, max(0.0, (rh(i,j,kb) - 0.6) / 0.2))
-  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-  !          end if
-  !          if(method_str == 'SLINGO_NO_RH') then
-  !            strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
-  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-  !          end if
-  !          if(method_str == 'DTHDP') then
-  !            strat = min(1.0, max(0.0, -3.1196*dthdp(i,j,k) - 0.1246))
-  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-  !          end if
-  !          if(method_str == 'EIS_WOOD') then
-  !            !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
-  !            strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
-  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-  !          end if
-  !          if(method_str == 'EIS_WOOD_RH') then
-  !            strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
-  !            rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
-  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-  !          end if
-  !          if(method_str == 'EIS_RH') then
-  !            strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh(i,j,k)-6.45e-19)))
-  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-  !          end if
-  !          if(method_str == 'ECTEI') then
-  !            ! Kawai, Koshiro and Webb, 2017
-  !            strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
-  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-  !          end if
-  !          if(method_str == 'ECTEI_RH') then
-  !            ! Kawai, Koshiro and Webb, 2017
-  !            strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
-  !            rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
-  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-  !          end if
-  !          if(method_str == 'PARK_ELF') then
-  !            ! Park and Shin, 2019, ACP
-  !            !strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
-  !            strat = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
-  !            cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-  !          end if
-  !          cf(i,j,k) = min(1.0, dthdp(i,j,k)/dthdp(i,j,kk)) * cf(i,j,k)
-  !          marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
-  !        end if
-  !      !end do
-  !
-  !      if(intermediate_outputs_diags .and. method_str=='PARK_ELF') then
-  !        !low_ca_park(i,j) = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
-  !        low_ca_park(i,j) = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
-  !      end if
-  !
-  !    end do
-  !  end do
-  !
-  !  if (id_theta > 0) then
-  !    used = send_data(id_theta, theta, Time)
-  !  end if
-  !  if (id_marine_strat > 0) then
-  !    used = send_data(id_marine_strat, marine_strat, Time)
-  !  end if
-  !
-  !  if(intermediate_outputs_diags) then
-  !    if (id_dthdp > 0) then
-  !      used = send_data(id_dthdp, dthdp, Time)
-  !    end if
-  !    if (id_low_cld_amt_park > 0) then
-  !      used = send_data(id_low_cld_amt_park, low_ca_park, Time)
-  !    end if
-  !  end if
-  !end subroutine add_stratiform_cld
-
   subroutine calc_theta_dthdp(temp, temp_2m, pfull, phalf, ps, theta, dthdp, kdthdp)
     real,    intent(in),  dimension(:,:,:) :: temp, pfull, phalf
     real,    intent(in),  dimension(:,:)   :: temp_2m, ps
@@ -725,82 +714,8 @@ module cloud_simple_mod
 
   end subroutine calc_theta_dthdp
 
-
-  subroutine calc_liq_frac(temp, frac_liq)
-    ! All liquid if above zero and all ice below -40C
-    ! linearly interpolate between T=0 and -40C
-    real, intent(in),  dimension(:,:,:) :: temp
-    real, intent(out), dimension(:,:,:) :: frac_liq
-    real :: t_max, t_min
-
-    t_max = -5
-    t_min = -40
-
-    !where (temp > zerodegc)
-    where (temp > zerodegc+t_max)
-        frac_liq = 1.0
-    elsewhere (temp < zerodegc+t_min)
-        frac_liq = 0.0
-    elsewhere
-        !frac_liq = 1.0 - (zerodegc-temp) / 40.0
-        frac_liq = (temp-zerodegc - t_min) / (t_max-t_min)
-    end where
-
-  end subroutine calc_liq_frac
-
-  subroutine calc_reff(frac_liq, reff_rad)
-    ! The effective cloud radius is bounded between 10 and 20 microns
-    real, intent(in),  dimension(:,:,:) :: frac_liq
-    real, intent(out), dimension(:,:,:) :: reff_rad
-
-    !reff_rad =  10.0 * frac_liq + 20.0 * (1.0 - frac_liq)  !units in microns
-    !reff_rad =  14.0 * frac_liq + 25.0 * (1.0 - frac_liq)  !units in microns
-    reff_rad =  reff_liq * frac_liq + reff_ice * (1.0 - frac_liq)  !units in microns
-
-  end subroutine calc_reff
-
-  subroutine calc_rhcrit(p_full, rhcrit, scm_rhcrit)
-    !get the RH needed as a threshold for the cloud fraction calc.
-    real, intent(in),  dimension(:,:,:) :: p_full
-    real, intent(in),  dimension(:)     :: scm_rhcrit
-    real, intent(out), dimension(:,:,:) :: rhcrit
-    real    :: p_surf
-    integer :: i, j, k
-
-    p_surf = 1e5
-
-    if (do_simple_rhcrit) then
-      ! Calculate RHcrit as function of pressure
-      where (p_full > 7.0e4)
-        rhcrit = rhcsfc - (rhcsfc - rhc700) * (p_surf - p_full) / (p_surf - 7.0e4)
-      elsewhere (p_full > 2.0e4)
-        rhcrit = rhc700 - (rhc700 - rhc200) * (7.0e4 - p_full) / 5.0e4
-      elsewhere
-        rhcrit = rhc200
-      endwhere
-    end if
-
-    if (do_read_scm_rhcrit) then
-      if(scm_rhcrit(size(p_full,3)) .eq. FILL_VALUE) then
-        call error_mesg('cloud_simple', 'Input rhcrit must be specified on model '// &
-                        'pressure levels but not enough levels specified', FATAL)
-      endif
-      if(scm_rhcrit(size(p_full,3)+1) .ne. FILL_VALUE) then
-        call error_mesg('cloud_simple', 'Input rhcrit must be specified on model '// &
-                        'pressure levels but too many levels specified', FATAL)
-      endif
-
-      do i=1, size(p_full,1)
-        do j=1, size(p_full,2)
-            rhcrit(i,j,:) = scm_rhcrit(1:size(p_full,3))
-        end do
-      end do
-    end if
-
-  end subroutine calc_rhcrit
-
-  subroutine calc_stratiform_cf(pfull, ps, rh, q_hum, qsat, rhcrit, qcl_rad, cf)
-    ! Calculate LS (stratiform) cloud fraction as a simple linear function of RH
+  subroutine calc_large_scale_cld_frac(pfull, ps, rh, q_hum, qsat, rhcrit, qcl_rad, cf)
+    ! Calculate large scale (stratiform) cloud fraction
     real, intent(in),  dimension(:,:,:) :: pfull, rh, q_hum, qsat, rhcrit, qcl_rad
     real, intent(in),  dimension(:,:)   :: ps
     real, intent(out), dimension(:,:,:) :: cf
@@ -814,6 +729,7 @@ module cloud_simple_mod
 
       case(B_SUNDQVIST)
         cf = 1.0 - ((1.0 - MIN(rh,1.0)) / (1.0 - rhcrit))**0.5
+        !cf = cf * MAX(0.15, MIN(1.0, q_hum/0.003))
 
       case(B_SMITH)
         cf = 1.0 - (3.0 / sqrt(2.0) * (1.0 - MIN(rh,1.0))/(1.0 - rhcrit))**(2.0/3.0)
@@ -851,32 +767,6 @@ module cloud_simple_mod
           ! If only use rh**p_para, then the cld fraction is too large...
         end where
 
-        do i=1, size(cf,1)
-          do j=1, size(cf,2)
-            do k=1, size(cf,3)
-            !write(*,*) 'sum(qcl_rad)=', sum(qcl_rad)
-            !if (sum(cf)>0) then
-              !write(*,*) 'size=', size(qcl_rad,1), size(qcl_rad,2), size(qcl_rad,3)
-              !write(*,*) 'qsat=', qsat(1, 1, 24) * 1e3, 'q_hum=', q_hum(1, 1, 24) * 1e3 , &
-              !     'qcl_rad=',qcl_rad(1, 1, 24) * 1e3, 'cf=', cf(1, 1, 24), 'rh=', rh(1, 1, 24)
-            !end if
-            !write(*,*) 'qcl_rad=', qcl_rad(:, 63, 127) * 1e3
-            !write(*,*) 'size qcl_rad=', size(qcl_rad,1), size(qcl_rad,2), size(qcl_rad,3)
-            !write(*,*) 'qcl_rad=', qcl_rad * 1e3
-            if (isnan(cf(i,j,k))) then
-              write(*,*) 'NaN i,j,k=', i, j,k, 'qsat=', qsat(i,j,k) * 1e3, 'q_hum=', q_hum(i,j,k) * 1e3 , &
-              'qcl_rad=',qcl_rad(i,j,k) * 1e3, 'cf=', cf(i,j,k), 'rh=', rh(i,j,k)
-            end if
-            if (qcl_rad(i,j,k)>0) then
-              !write(*,*) 'size=', size(qcl_rad,1), size(qcl_rad,2), size(qcl_rad,3)
-              write(*,*) 'i,j,k=', i, j,k, 'qsat=', qsat(i,j,k) * 1e3, 'q_hum=', q_hum(i,j,k) * 1e3 , &
-                   'qcl_rad=',qcl_rad(i,j,k) * 1e3, 'cf=', cf(i,j,k), 'rh=', rh(i,j,k), &
-                   'term2=', (1.0 - EXP(-alpha_0*qcl_rad(i,j,k) / (qsat(i,j,k)-q_hum(i,j,k))**gamma))
-            end if
-            end do
-          end do
-        end do
-
       case(B_LINEAR)
         call calc_cf_linear(pfull, rh, ps, cf)
 
@@ -886,7 +776,7 @@ module cloud_simple_mod
 
     cf = MAX(0.0, MIN(1.0, cf))
 
-  end subroutine calc_stratiform_cf
+  end subroutine calc_large_scale_cld_frac
 
   subroutine calc_cf_linear(p_full, rh, ps, cf)
     ! Calculate LS (stratiform) cloud fraction as a linear function of RH
@@ -931,7 +821,21 @@ module cloud_simple_mod
     end if
 
     qcl_rad = cf * in_cloud_qcl
+
   end subroutine calc_qcl_rad
+
+
+  subroutine calc_qcl_rad_Sundqvist(rhcrit, qs, cf, qcl_rad)
+    ! calculate cloud water content
+    real, intent(in),  dimension(:,:,:) :: rhcrit, qs, cf
+    real, intent(out), dimension(:,:,:) :: qcl_rad
+
+    ! Width (half): W= (1-rhcrit)*qs
+    ! grid mean qt: qt = W * CF^2
+    qcl_rad = (1.0 - rhcrit) * qs * cf**2
+
+  end subroutine calc_qcl_rad_Sundqvist
+
 
   subroutine calc_convective_cf(pfull, precip, klcls, conv_cf, Time)
     real, intent(in),  dimension(:,:,:) :: pfull
@@ -1093,7 +997,6 @@ module cloud_simple_mod
     endif
 
   end subroutine add_anvil_clouds
-
 
   subroutine merge_strat_conv_clouds(cf, conv_cf)
     implicit none
@@ -1572,7 +1475,6 @@ module cloud_simple_mod
     high_ca = (1.0 - high_ca) * 1.0e2
 
   end subroutine compute_isccp_clds2
-
 
   subroutine cldovrlap(pint, cld, nmxrgn, pmxrgn)
   !subroutine cldovrlap(lchnk   ,ncol    ,pint    ,cld     ,nmxrgn  ,pmxrgn  )
@@ -2065,7 +1967,6 @@ module cloud_simple_mod
       used = send_data ( id_low_cld_amt_max, low_ca*1e2, Time)
     endif
   end subroutine output_cldamt_max
-
 
   subroutine output_cldamt_random(tca, high_ca, mid_ca, low_ca, Time)
     real, intent(in), dimension(:,:) :: tca, high_ca, mid_ca, low_ca
