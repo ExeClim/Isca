@@ -6,27 +6,27 @@ module cloud_simple_mod
   use fms_mod, only: open_namelist_file, close_file
 #endif
 
-  use                fms_mod, only: stdlog, FATAL, WARNING, NOTE, error_mesg, uppercase, &
-                                   check_nml_error
+  use                fms_mod, only: stdlog, FATAL, WARNING, NOTE, error_mesg, &
+                                    uppercase, check_nml_error
   use       time_manager_mod, only: time_type
   use     sat_vapor_pres_mod, only: compute_qs, lookup_es
   use       diag_manager_mod, only: register_diag_field, send_data
   use          constants_mod, only: CP_AIR, GRAV, RDGAS, RVGAS, HLV, KAPPA, RADIUS, TFREEZE
   use                lcl_mod, only: lcl
-  use  cloud_cover_diags_mod, only: cloud_cover_diags_init, cloud_cover_diags, &
-                                    cloud_cover_diags_end
+  use  large_scale_cloud_mod, only: large_scale_cloud_init, large_scale_cloud_diag, &
+                                    large_scale_cloud_end
   use marine_strat_cloud_mod, only: marine_strat_cloud_init, marine_strat_cloud_diag, &
                                     marine_strat_cloud_end
   use   convective_cloud_mod, only: convective_cloud_init, convective_cloud_diag, &
                                     convective_cloud_end
-  use  large_scale_cloud_mod, only: large_scale_cloud_init, large_scale_cloud_diag, &
-                                    large_scale_cloud_end
+  use  cloud_cover_diags_mod, only: cloud_cover_diags_init, cloud_cover_diags, &
+                                    cloud_cover_diags_end
+
   implicit none
 
   character(len=14), parameter :: mod_name_cld = "cloud_simple"
 
   logical :: do_init = .true.  ! Check if init needs to be run
-
   logical :: do_qcl_with_temp = .false.
   logical :: do_cloud_cover_diags = .true.
   logical :: do_add_stratocumulus = .false.
@@ -47,10 +47,9 @@ module cloud_simple_mod
   integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf
 
   namelist /cloud_simple_nml/ &
-            T_min, T_max, qcl_val, reff_liq, reff_ice, &
-            do_qcl_with_temp, &
-            do_add_stratocumulus, do_conv_cld,  &
-            do_cloud_cover_diags
+            T_min, T_max, reff_liq, reff_ice, &
+            qcl_val, do_qcl_with_temp, &
+            do_add_stratocumulus, do_conv_cld, do_cloud_cover_diags
 
   contains
 
