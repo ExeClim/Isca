@@ -35,6 +35,7 @@ install:
   - conda list
   - cd $GFDL_PYDIR 
   - pip install -e .
+  - cd $GFDL_BASE
 
 script:
   - if [[ "$CONDA_ENV" == "docs" ]]; then
