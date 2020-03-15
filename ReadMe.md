@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/dennissergeev/Isca.svg?branch=master)](https://travis-ci.com/dennissergeev/Isca)
+
 # Isca
 
 Isca is a framework for the idealized modelling of the global circulation of
