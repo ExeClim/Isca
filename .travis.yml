@@ -30,6 +30,7 @@ install:
       conda env create -n test_env --file ci/environment_$CONDA_ENV.yml;
     fi;
   - source $GFDL_ENV
+  - source $HOME/miniconda/etc/profile.d/conda.sh
   - conda activate test_env
   - conda list
   - cd $GFDL_PYDIR 
