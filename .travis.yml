@@ -34,7 +34,7 @@ install:
   - conda activate test_env
   - conda list
   - cd $GFDL_PYDIR 
-  - python setup.py develop
+  - pip install -e .
 
 script:
   - if [[ "$CONDA_ENV" == "docs" ]]; then
