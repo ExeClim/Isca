@@ -17,4 +17,5 @@ dependencies:
 - pytest
 - pyvista
 - sh
+- tqdm
 - xarray
