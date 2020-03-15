@@ -1,5 +1,4 @@
 language: minimal
-sudo: false
 notifications:
   email: false
 
@@ -39,7 +38,7 @@ install:
 
 script:
   - if [[ "$CONDA_ENV" == "docs" ]]; then
-      echo "NotImplementedYet: here be future docs building command";
+      echo "Here be future docs building command";
     else
       pytest -v;
     fi;
