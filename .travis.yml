@@ -4,11 +4,11 @@ notifications:
 
 env:
   global:
-    - GFDL_BASE=`pwd` 
-    - GFDL_ENV="$HOME/Isca/src/extra/env/ubuntu_conda"
+    - GFDL_BASE=$TRAVIS_BUILD_DIR
+    - GFDL_ENV="$TRAVIS_BUILD_DIR/src/extra/env/ubuntu_conda"
     - GFDL_WORK="$HOME/gfdl_work"
     - GFDL_DATA="$HOME/gfdl_data"
-    - GFDL_PYDIR="$HOME/src/extra/python"
+    - GFDL_PYDIR="$TRAVIS_BUILD_DIR/src/extra/python"
 
 matrix:
   fast_finish: true
@@ -16,8 +16,6 @@ matrix:
     - env: CONDA_ENV=py37
 
 before_install:
-  - echo $GFDL_BASE
-  - exit
   - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -31,7 +29,6 @@ install:
   - if [[ "$CONDA_ENV" == "py37" ]]; then
       conda env create -n test_env --file ci/environment_$CONDA_ENV.yml;
     fi;
-  - pwd
   - source $GFDL_ENV
   - conda activate test_env
   - conda list
