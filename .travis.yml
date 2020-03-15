@@ -28,7 +28,7 @@ before_install:
 
 install:
   - if [[ "$CONDA_ENV" == "py37" ]]; then
-      conda env create -n test_env --file ci/requirements-$CONDA_ENV.yml;
+      conda env create -n test_env --file ci/requirements_$CONDA_ENV.yml;
     fi;
   - source $GFDL_ENV
   - conda activate test_env
