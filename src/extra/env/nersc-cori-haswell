@@ -1,0 +1,10 @@
+source /etc/profile.d/modules.sh
+
+module load cray-netcdf
+module load cray-hdf5-parallel
+module load git
+
+# Linux, Intel Compiler, Cori
+
+export F90=ftn
+export CC=CC
