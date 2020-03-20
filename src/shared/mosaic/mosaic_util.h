@@ -84,7 +84,6 @@ struct Node *getNode(struct Node *list, struct Node inNode);
 int sameNode(struct Node node1, struct Node node2);
 void deleteNode(struct Node *list);
 void initNode(struct Node *node);
-int isHeadNode(struct Node *list, struct Node nodeIn);
 void copyNode(struct Node *node_out, struct Node node_in);
 void assignNode(struct Node *node, double x, double y, double z, int intersect, double u, int inbound);
 void removeNode(struct Node *list, struct Node nodeIn);
