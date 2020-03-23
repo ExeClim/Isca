@@ -1,0 +1,26 @@
+if [[  "$(module list -t 2>&1 | grep -i PrgEnv-intel)" ]] ; then
+   module swap PrgEnv-intel PrgEnv-gnu
+fi
+
+if [[  "$(module list -t 2>&1 | grep -i PrgEnv-cray)" ]] ; then
+   module swap PrgEnv-cray PrgEnv-gnu
+fi
+
+if [[  "$(module list -t 2>&1 | grep -i craype-haswell)" ]] ; then
+   module swap craype-haswell craype-mic-knl
+fi
+
+#echo Loading basic gfortran environment
+export GFDL_MKMF_TEMPLATE=cori.knl.gfort
+module load cray-netcdf/4.6.3.0
+module load git
+
+
+# Linux, Intel Compiler, Cori
+
+export F90=ftn
+export CC=cc
+export CXX=cc 
+export FC=ftn 
+
+
