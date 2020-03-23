@@ -1,8 +1,8 @@
 
 # Instructions for running Isca on the Haswell nodes of Cori at NERSC
 
-These instructions are intended to get you up-and-running with a simple Held-Suarez test case. They assume you are starting with a default user environment on BlueCrystal 4, so some changes might be needed if you have already modified your environment. Please don't hesistate to get in touch (w.seviour@bristol.ac.uk) if you have any questions.
-
+These instructions are intended to get you up-and-running with a simple Held-Suarez test case. They assume you are starting with a default user environment on Cori, so some changes might be needed if you have already modified your environment. Please don't hesistate to get in touch (w.seviour@bristol.ac.uk) if you have any questions.
+jdjdj
 Now you can clone the Isca repository:
 
 ```{bash}
@@ -37,7 +37,7 @@ Finally, we'll need to update the `~/.bashrc` file. Add the following lines:
 # directory of the Isca source code
 export GFDL_BASE=$HOME/Isca
 # "environment" configuration for emps-gv4
-export GFDL_ENV=nersc-cori-haswell
+export GFDL_ENV=nersc-cori-knl-gfort
 # temporary working directory used in running the model
 export GFDL_WORK=$SCRATCH/gfdl_work
 # directory for storing model output
