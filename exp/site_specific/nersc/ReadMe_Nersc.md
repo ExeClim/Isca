@@ -1,12 +1,12 @@
 
 # Instructions for running Isca on the Haswell nodes of Cori at NERSC
 
-These instructions are intended to get you up-and-running with a simple Held-Suarez test case. They assume you are starting with a default user environment on Cori, so some changes might be needed if you have already modified your environment. Please don't hesistate to get in touch (w.seviour@bristol.ac.uk) if you have any questions.
-jdjdj
-Now you can clone the Isca repository:
+These instructions are intended to get you up-and-running with a simple Held-Suarez test case. 
+
+Start by cloning the Isca repository:
 
 ```{bash}
-$ git clone git@github.com:ExeClim/Isca.git
+$ git clone git@github.com:aramirezreyes/Isca.git
 $ cd Isca
 ```
 
@@ -36,8 +36,8 @@ Finally, we'll need to update the `~/.bashrc` file. Add the following lines:
 ```{bash}
 # directory of the Isca source code
 export GFDL_BASE=$HOME/Isca
-# "environment" configuration for emps-gv4
-export GFDL_ENV=nersc-cori-knl-gfort
+#This variable sets up the specific "environment" for Cori
+export GFDL_ENV=nersc-cori-knl
 # temporary working directory used in running the model
 export GFDL_WORK=$SCRATCH/gfdl_work
 # directory for storing model output
@@ -47,9 +47,9 @@ export GFDL_DATA=$SCRATCH/gfdl_data
 Then make the `Isca_work` and `Isca_data` directories:
 
 ```{bash}
-(isca_env) $ mkdir -p /mnt/storage/home/$USER/scratch/Isca_work
-(isca_env} $ mkdir -p /mnt/storage/home/$USER/scratch/Isca_data
-(isca_env) $ bash
+(isca_env) $ mkdir -p $SCRATCH/Isca_work
+(isca_env} $ mkdir -p $SCRATCH/Isca_data
+
 ```
 Now everything should be set up and we can try a test run. The following should compile and run 12 months of a Held-Suarez test case, at T42 resolution spread over 16 cores. 
 
