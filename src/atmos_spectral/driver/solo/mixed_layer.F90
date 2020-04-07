@@ -37,7 +37,7 @@ use  field_manager_mod, only: MODEL_ATMOS
 
 use tracer_manager_mod, only: get_tracer_names, get_number_tracers
 
-use      constants_mod, only: HLV, PI, RHO_CP, CP_AIR
+use      constants_mod, only: HLV, PI, RHO_CP, CP_AIR, KELVIN
 
 use   diag_manager_mod, only: register_diag_field, register_static_field, send_data
 
@@ -107,6 +107,7 @@ logical :: do_qflux         = .false. !mj
 logical :: do_warmpool      = .false. !mj
 logical :: do_read_sst      = .false. !mj
 logical :: do_sc_sst        = .false. !mj
+logical :: do_ape_sst  = .false. 
 logical :: specify_sst_over_ocean_only = .false.
 character(len=256) :: sst_file
 character(len=256) :: land_option = 'none'
@@ -129,10 +130,10 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               delta_T, prescribe_initial_dist,albedo_value,  &
                               land_depth,trop_depth,                         &  !mj
                               trop_cap_limit, heat_cap_limit, np_cap_factor, &  !mj
-			                        do_qflux,do_warmpool,        &  !mj
+			                  do_qflux,do_warmpool,              &  !mj
                               albedo_choice,higher_albedo,albedo_exp,        &  !mj
                               albedo_cntr,albedo_wdth,lat_glacier,           &  !mj
-                              do_read_sst,do_sc_sst,sst_file,                &  !mj
+                              do_read_sst,do_sc_sst,do_ape_sst,sst_file,     &  !mj
                               land_option,slandlon,slandlat,                 &  !mj
                               elandlon,elandlat,                             &  !mj
                               land_h_capacity_prefactor,                     &  !s
@@ -142,7 +143,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               ice_albedo_value, specify_sst_over_ocean_only, &
                               ice_concentration_threshold,                   &
                               add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
-                              flux_lhe_anom_field_name
+                              flux_lhe_anom_field_name, qflux_field_name
 
 !=================================================================================================================================
 
@@ -535,6 +536,7 @@ end subroutine mixed_layer_init
 subroutine mixed_layer (                                               &
      Time,                                                             &
      Time_next,                                                        &
+     js, je,                                                           &
      t_surf,                                                           &
      flux_t,                                                           &
      flux_q,                                                           &
@@ -552,20 +554,21 @@ subroutine mixed_layer (                                               &
      albedo_out)
 
 ! ---- arguments -----------------------------------------------------------
-type(time_type), intent(in)       :: Time, Time_next
-real, intent(in),  dimension(:,:) :: &
-     net_surf_sw_down, surf_lw_down
-real, intent(in), dimension(:,:) :: &
-     flux_t,    flux_q,     flux_r
+type(time_type), intent(in)         :: Time, Time_next
+integer, intent(in)                 :: js, je
+real, intent(in), dimension(:,:)    :: net_surf_sw_down, surf_lw_down
+real, intent(in), dimension(:,:)    :: flux_t, flux_q, flux_r
 real, intent(inout), dimension(:,:) :: t_surf
-real, intent(in), dimension(:,:) :: &
-   dhdt_surf, dedt_surf, dedq_surf, &
-   drdt_surf, dhdt_atm, dedq_atm
-real, intent(in) :: dt
-real, intent(out), dimension(:,:) :: albedo_out
+real, intent(in), dimension(:,:)    :: dhdt_surf, dedt_surf, dedq_surf, &
+                                       drdt_surf, dhdt_atm, dedq_atm
+real, intent(in)                    :: dt
+real, intent(out), dimension(:,:)   :: albedo_out
 type(surf_diff_type), intent(inout) :: Tri_surf
 logical, dimension(size(land_mask,1),size(land_mask,2)) :: land_ice_mask
 
+!local variables
+
+integer :: j
 
 if(.not.module_is_initialized) then
   call error_mesg('mixed_layer','mixed_layer module is not initialized',FATAL)
@@ -643,21 +646,42 @@ endif
 
 !s Surface heat_capacity calculation based on that in MiMA by mj
 
-if(do_sc_sst) then !mj sst read from input file
-         ! read at the new time, as that is what we are stepping to
-         call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
 
-         if(specify_sst_over_ocean_only) then
-	     where (.not.land_ice_mask) delta_t_surf = sst_new - t_surf
-             where (.not.land_ice_mask) t_surf = t_surf + delta_t_surf			 
+if(do_sc_sst) then !mj sst read from input file
+     ! read at the new time, as that is what we are stepping to
+     call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
+
+     if(specify_sst_over_ocean_only) then
+         where (.not.land_ice_mask) delta_t_surf = sst_new - t_surf
+         where (.not.land_ice_mask) t_surf = t_surf + delta_t_surf			 
 	 else
 	     delta_t_surf = sst_new - t_surf
 	     t_surf = t_surf + delta_t_surf
 	 endif
-	     
 end if
 
-if ((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
+if(do_ape_sst) then 
+    ! use analytic form for setting SST at each timestep.
+    ! see appendix equation 1 of Neale and Hoskins 2000
+    !     "A standard test for AGCMs including their 
+    !      physical parametrizations: I: the proposal"
+    ! using a constant longitude.
+    do j=js,je   
+        if ( (rad_lat_2d(1,j) .gt. -PI/3.) .and. (rad_lat_2d(1,j) .lt. PI/3.) ) then 
+            ! between 60N-60S
+            sst_new(:,j) = KELVIN+( 27.0*( 1 - (sin( 3./2. * rad_lat_2d(:,j) )**2 ) ))  
+            !write(6,*) 'SST profile', rad_lat_2d(1,j)*180/PI, ' j:', j, ' sst:', sst_new(1,j)
+        else
+            ! from 60N/S to pole
+            sst_new(:,j) = KELVIN
+            !write(6,*) 'SST is zero', rad_lat_2d(1,j)*180/PI, ' j:', j, ' sst:', sst_new(1,j)
+        endif
+    enddo
+    delta_t_surf = sst_new - t_surf
+    t_surf = sst_new
+endif
+
+if ((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only) .or. .not.(do_ape_sst)) then
   !s use the land_sea_heat_capacity calculated in mixed_layer_init
 
 	! Now update the mixed layer surface temperature using an implicit step
@@ -671,10 +695,10 @@ if ((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
 
     if(do_sc_sst.and.specify_sst_over_ocean_only) then
         where (land_ice_mask) delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-	where (land_ice_mask) t_surf = t_surf + delta_t_surf			 
+	    where (land_ice_mask) t_surf = t_surf + delta_t_surf			 
     else
         delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-	t_surf = t_surf + delta_t_surf
+	    t_surf = t_surf + delta_t_surf
     endif
 
 endif !s end of if(do_sc_sst).
