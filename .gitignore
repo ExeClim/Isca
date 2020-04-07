@@ -29,3 +29,4 @@ mima_pz.txt
 src/atmos_param/socrates/src/trunk*
 test/.cache
 test/results.xml
+exp/itcz_mip_exp/itcz_mip_q_flux.nc 
