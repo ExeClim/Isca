@@ -13,35 +13,40 @@ __author__='Stephen Thomson'
 def read_data( base_dir, exp_name, start_file, end_file, avg_or_daily, use_interpolated_pressure_level_data, model='fms13', file_name=None):
 
     if model=='fms13':
+        if file_name is None:
 
-        possible_format_strs = [[base_dir+'/'+exp_name+'/run%03d' % m for m in range(start_file, end_file+1)],
-                                [base_dir+'/'+exp_name+'/run%04d' % m for m in range(start_file, end_file+1)],
-                                [base_dir+'/'+exp_name+'/run%d'   % m for m in range(start_file, end_file+1)]]
+            possible_format_strs = [[base_dir+'/'+exp_name+'/run%03d' % m for m in range(start_file, end_file+1)],
+                                    [base_dir+'/'+exp_name+'/run%04d' % m for m in range(start_file, end_file+1)],
+                                    [base_dir+'/'+exp_name+'/run%d'   % m for m in range(start_file, end_file+1)]]
 
-        if(use_interpolated_pressure_level_data):
-            if avg_or_daily == 'monthly':
-#                 extra='_interp.nc'
-                extra='_interp_new_height.nc'
+            if(use_interpolated_pressure_level_data):
+                if avg_or_daily == 'monthly':
+    #                 extra='_interp.nc'
+                    extra='_interp_new_height.nc'
 
+                else:
+                    extra='_interp_new_height_temp.nc'
             else:
-                extra='_interp_new_height_temp.nc'
+                extra='.nc'
+
+            thd_string = '/atmos_'+avg_or_daily+extra
+
+            for format_str_files in possible_format_strs:
+                files_temp = format_str_files
+
+                thd_files = [s + thd_string for s in files_temp]
+
+                thd_files_exist=[os.path.isfile(s) for s in thd_files]
+
+                if thd_files_exist[0]:
+                    break
+
+                if not thd_files_exist[0] and possible_format_strs.index(format_str_files)==(len(possible_format_strs)-1):
+                    raise EOFError('EXITING BECAUSE NO APPROPRIATE FORMAT STR', [thd_files[elem] for elem in [0] if not thd_files_exist[elem]])
+
         else:
-            extra='.nc'
-
-        thd_string = '/atmos_'+avg_or_daily+extra
-
-        for format_str_files in possible_format_strs:
-            files_temp = format_str_files
-
-            thd_files = [s + thd_string for s in files_temp]
-
+            thd_files=[base_dir+'/'+exp_name+'/'+file_name+'.nc']
             thd_files_exist=[os.path.isfile(s) for s in thd_files]
-
-            if thd_files_exist[0]:
-                break
-
-            if not thd_files_exist[0] and possible_format_strs.index(format_str_files)==(len(possible_format_strs)-1):
-                raise EOFError('EXITING BECAUSE NO APPROPRIATE FORMAT STR', [thd_files[elem] for elem in [0] if not thd_files_exist[elem]])
 
 
         print(thd_files[0])

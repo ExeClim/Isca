@@ -15,10 +15,10 @@ import pdb
 __author__='Stephen Thomson'
 
 
-def qflux_calc(dataset, model_params, output_file_name, ice_file_name=None, groupby_name='months'):
+def qflux_calc(dataset, model_params, output_file_name, ice_file_name=None, groupby_name='months', ignore_ice_for_calculation=False):
 
     if groupby_name=='months':
-        time_varying_ice = ice_mask_calculation(dataset, dataset.land, ice_file_name)
+        time_varying_ice = ice_mask_calculation(dataset, dataset.land, ice_file_name, ignore_ice_for_calculation=ignore_ice_for_calculation)
         upper_ocean_heat_content(dataset, model_params, time_varying_ice)
         net_surf_energy_flux(dataset, model_params)
         deep_ocean_heat_content(dataset, model_params)
@@ -27,7 +27,7 @@ def qflux_calc(dataset, model_params, output_file_name, ice_file_name=None, grou
         output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':output_file_name} #Have specified that var name is the same as file name as this is what the fortran assumes.
         
     elif groupby_name=='dayofyear':
-        time_varying_ice = ice_mask_calculation(dataset, dataset.land, ice_file_name)
+        time_varying_ice = ice_mask_calculation(dataset, dataset.land, ice_file_name, ignore_ice_for_calculation=ignore_ice_for_calculation)
         upper_ocean_heat_content(dataset, model_params, time_varying_ice, dayofyear_or_months='dayofyear')
         net_surf_energy_flux(dataset, model_params)
         deep_ocean_heat_content(dataset, model_params)
@@ -36,7 +36,7 @@ def qflux_calc(dataset, model_params, output_file_name, ice_file_name=None, grou
         output_dict={'manual_grid_option':False, 'is_thd':False, 'num_years':1., 'time_spacing_days':12, 'file_name':output_file_name+'.nc', 'var_name':output_file_name}    
         
     elif groupby_name=='all_time':
-        time_varying_ice = ice_mask_calculation(dataset, dataset.land, ice_file_name, dayofyear_or_months=groupby_name)
+        time_varying_ice = ice_mask_calculation(dataset, dataset.land, ice_file_name, dayofyear_or_months=groupby_name, ignore_ice_for_calculation=ignore_ice_for_calculation)
         upper_ocean_heat_content(dataset, model_params, time_varying_ice, dayofyear_or_months=groupby_name)
         net_surf_energy_flux(dataset, model_params, dayofyear_or_months=groupby_name)
         deep_ocean_heat_content(dataset, model_params, dayofyear_or_months=groupby_name)
@@ -53,30 +53,35 @@ def time_gradient(data_in, delta_t):
 
     return data_out
     
-def ice_mask_calculation(dataset, land_array, ice_file_name, dayofyear_or_months='months'):
+def ice_mask_calculation(dataset, land_array, ice_file_name, dayofyear_or_months='months', ignore_ice_for_calculation=False):
 
-    try:
-        ice_climatology=dataset['ice_conc'].groupby(dayofyear_or_months).mean('time').load()
-        ice_array=ice_climatology.values
-        ice_idx=ice_array !=0.
-        ice_array[ice_idx]=1.0
-        time_varying_ice=True
-        print('have gotten ice concentration from climatology')
-    except KeyError:
-
+    if ignore_ice_for_calculation:
+        ice_array=np.zeros_like(land_array)
+        time_varying_ice = False
+        print('Ignoring any ice climatology')        
+    else:
         try:
-            ice_data_temp         = xarray.open_dataset(ice_file_name, decode_times=False)
-            albedo_constant_value = ice_data_temp['albedo']
-            albedo_array          = albedo_constant_value.values.squeeze()
-            ice_idx               = np.round(albedo_array, decimals=2) == 0.7
-            ice_array=np.zeros_like(albedo_array)
-            ice_array[ice_idx]    = 1.0
-            time_varying_ice      = False
-            print('have gotten ice concentration from one month albedo')
-        except TypeError:
-            ice_array=np.zeros_like(land_array)
-            time_varying_ice = False
-            print('no ice climatology')
+            ice_climatology=dataset['ice_conc'].groupby(dayofyear_or_months).mean('time').load()
+            ice_array=ice_climatology.values
+            ice_idx=ice_array !=0.
+            ice_array[ice_idx]=1.0
+            time_varying_ice=True
+            print('have gotten ice concentration from climatology')
+        except KeyError:
+
+            try:
+                ice_data_temp         = xarray.open_dataset(ice_file_name, decode_times=False)
+                albedo_constant_value = ice_data_temp['albedo']
+                albedo_array          = albedo_constant_value.values.squeeze()
+                ice_idx               = np.round(albedo_array, decimals=2) == 0.7
+                ice_array=np.zeros_like(albedo_array)
+                ice_array[ice_idx]    = 1.0
+                time_varying_ice      = False
+                print('have gotten ice concentration from one month albedo')
+            except TypeError:
+                ice_array=np.zeros_like(land_array)
+                time_varying_ice = False
+                print('no ice climatology')
 
     land_ice_mask=np.zeros_like(ice_array)
 
@@ -191,7 +196,12 @@ def net_surf_energy_flux(dataset, model_params, dayofyear_or_months='months'):
 
 #    scaling_factor=1.0
 
-    print('using scale factor for SW of '+ str(scaling_factor))
+    try:
+        scaling_factor_string = str(scaling_factor.values)
+    except:
+        scaling_factor_string = str(scaling_factor)        
+
+    print('using scale factor for SW of '+ scaling_factor_string)
 
     net_surf_energy_fl=(scaling_factor*dataset['flux_sw_clim']+dataset['flux_lw_clim']-(model_params['sigma_sb']*dataset['sst_clim']**4.0)-dataset['flux_t_clim']-dataset['flux_lhe_clim'])*(1.0-dataset['land_ice_mask'])
 
@@ -233,38 +243,53 @@ def regrid_in_time(dataset, groupby_name):
         
         dataset['masked_ocean_transport'] = (('months_ax','lat','lon'), dataset_to_output)
 
-def check_surface_flux_dims(dataset):
+def check_surface_flux_dims(dataset, rad_scheme_type):
     ''' This surface flux checker is designed to decide if we're using grey rad or not. If we're using grey rad then the definition
     of flux_sw and flux_lw are different to RRTM. The script was written to use RRTM output, so it changes variable names etc to be 
     equivalent to RRTM definitions.
     '''
 
-    flux_dims = dataset['flux_sw'].dims
+    lower_case_rad_scheme = rad_scheme_type.lower()
 
-    if 'phalf' in flux_dims:
-        dataset.rename({'flux_sw':'flux_sw'+'_3d'}, inplace=True)
-        max_pressure = dataset.phalf.max()
-        flux_at_bottom_phalf_level = dataset['flux_sw_3d'].sel(phalf=max_pressure)
-        new_dims = ('time','lat','lon')
-        dataset['flux_sw'] = (new_dims, flux_at_bottom_phalf_level)
+    if lower_case_rad_scheme not in ['socrates', 'rrtm', 'grey']:
+        raise NotImplementedError(f"Radiation scheme should be one of 'socrates', 'rrtm' or 'grey'. The value entered was {lower_case_rad_scheme}")
 
-    flux_dims_lw = dataset['flux_lw'].dims
+    if lower_case_rad_scheme=='rrtm':
+        print('No renaming of variables required when using RRTM')
+    elif lower_case_rad_scheme=='grey':
+        print('Renaming variables to enable use of grey radiation')
 
-    if 'phalf' in flux_dims_lw:
-        dataset.rename({'flux_lw':'flux_lw'+'_3d'}, inplace=True)
-        try:
-            # Script assumes flux_lw is the surface lw down (i.e. not a net flux). This is the case with RRTM, but with
-            # grey radiation 'flux_lw' is the net lw flux in 3D. So we take the lwdn_sfc output from grey rad and rename it
-            # flux_lw. 
-            dataset['lwdn_sfc']
-            dataset.rename({'lwdn_sfc':'flux_lw'}, inplace=True)
-        except:
-            #If lwdn_sfc is not available, then we re-calculate it from flux_lw by adding back sigma*t_surf**4, then call it flux_lw
-            print('lwdn_sfc not present when using grey radiation, so re-calculating it from flux_lw.')
+        flux_dims = dataset['flux_sw'].dims
+
+        if 'phalf' in flux_dims:
+            dataset.rename({'flux_sw':'flux_sw'+'_3d'}, inplace=True)
             max_pressure = dataset.phalf.max()
-            lwdn_sfc = dataset.flux_lw_3d.sel(phalf=max_pressure) + sigma_sb*dataset.t_surf**4.
+            flux_at_bottom_phalf_level = dataset['flux_sw_3d'].sel(phalf=max_pressure)
             new_dims = ('time','lat','lon')
-            dataset['flux_lw'] = (new_dims, lwdn_sfc)
+            dataset['flux_sw'] = (new_dims, flux_at_bottom_phalf_level)
+
+        flux_dims_lw = dataset['flux_lw'].dims
+
+        if 'phalf' in flux_dims_lw:
+            dataset.rename({'flux_lw':'flux_lw'+'_3d'}, inplace=True)
+            try:
+                # Script assumes flux_lw is the surface lw down (i.e. not a net flux). This is the case with RRTM, but with
+                # grey radiation 'flux_lw' is the net lw flux in 3D. So we take the lwdn_sfc output from grey rad and rename it
+                # flux_lw. 
+                dataset['lwdn_sfc']
+                dataset.rename({'lwdn_sfc':'flux_lw'}, inplace=True)
+            except:
+                #If lwdn_sfc is not available, then we re-calculate it from flux_lw by adding back sigma*t_surf**4, then call it flux_lw
+                print('lwdn_sfc not present when using grey radiation, so re-calculating it from flux_lw.')
+                max_pressure = dataset.phalf.max()
+                lwdn_sfc = dataset.flux_lw_3d.sel(phalf=max_pressure) + sigma_sb*dataset.t_surf**4.
+                new_dims = ('time','lat','lon')
+                dataset['flux_lw'] = (new_dims, lwdn_sfc)
+
+    elif lower_case_rad_scheme=='socrates':
+        print('Renaming variables to enable use of socrates radiation')        
+        dataset.rename({'soc_surf_flux_sw':'flux_sw'}, inplace=True)
+        dataset.rename({'soc_surf_flux_lw_down':'flux_lw'}, inplace=True)        
 
 if __name__ == "__main__":
 
@@ -281,18 +306,21 @@ if __name__ == "__main__":
 
 
     input_dir=GFDL_BASE
-    base_dir=GFDL_DATA
-    land_file='input/land.nc'
-    base_exp_name='annual_mean_ice_post_princeton_fixed_sst/' #Folder containing the python script and input files that ran the experiment
-    exp_name='annual_mean_ice_post_princeton_fixed_sst_1' #Folder within the data directory where the files can be found
+    base_dir='/disca/share/sit204/data_from_isca_cpu/cssp_perturb_exps/control/'
+    land_file='input/era-spectral7_T42_64x128.out.nc'
+    base_exp_name='socrates_fast_land/' #Folder containing the python script and input files that ran the experiment
+    exp_name='soc_ga3_do_simple_false_cmip_o3_bucket/grouped_nc_files/' #Folder within the data directory where the files can be found
 #    ice_file_name=base_dir+'annual_mean_ice_albedo_change_test_mk2_4320_dt_rad_4/'+'run360/'+'atmos_monthly.nc'
-    ice_file_name = '/scratch/sit204/data_isca/realistic_continents_fixed_sst_test_experiment_albedo/run0001/atmos_daily.nc'
-    output_file_name='ami_test_interp' #Proposed name of your output qflux file. Will also be qflux field name in q-flux netcdf file as the fortran assumes file-name = field name. No need to add '.nc' or any file paths in this variable as otherwise they will end up in the field name too. Output file will be stored in the same directory as this script.
+    ice_file_name = None
+    ignore_ice=True
+    output_file_name='soc_ga3_bucket_jra_55_ice_temps' #Proposed name of your output qflux file. Will also be qflux field name in q-flux netcdf file as the fortran assumes file-name = field name. No need to add '.nc' or any file paths in this variable as otherwise they will end up in the field name too. Output file will be stored in the same directory as this script.
 
-    start_file=240
-    end_file=360
+    start_file=121
+    end_file=3000
     land_present=True
     use_interpolated_pressure_level_data = False #Conditions the script on whether to expect data on sigma levels (if False) or pressure levels (if True). Script should be insensitive to this choice if both sets of files exist. 
+
+    use_clim = True
 
     #Set time increments of input files (e.g. `monthly` for `atmos_monthly` files.
     avg_or_daily='monthly'
@@ -302,13 +330,21 @@ if __name__ == "__main__":
 
     model_params = sagp.model_params_set(input_dir, delta_t=720., ml_depth=20., res=42)
 
-    dataset, time_arr, size_list = io.read_data( base_dir,exp_name,start_file,end_file,avg_or_daily,use_interpolated_pressure_level_data)
+    if use_clim:
+        clim_str = '_clim'
+    else:
+        clim_str = ''
+    file_name = 'atmos_'+avg_or_daily+'_together_interp_new_height_temp_not_below_ground'+str(start_file)+'_'+str(end_file)+clim_str
+
+    dataset, time_arr, size_list = io.read_data( base_dir,exp_name,start_file,end_file,avg_or_daily,use_interpolated_pressure_level_data, file_name=file_name)
 
     land_array, topo_array = io.read_land(input_dir,base_exp_name,land_present,use_interpolated_pressure_level_data,size_list,land_file)
     dataset['land'] = (('lat','lon'),land_array)
 
-    check_surface_flux_dims(dataset)
+    which_radiation_scheme_are_you_using = 'socrates'
+
+    check_surface_flux_dims(dataset, which_radiation_scheme_are_you_using)
     
-    qflux_calc(dataset, model_params, output_file_name, ice_file_name, groupby_name=time_divisions_of_qflux_to_be_calculated)
+    qflux_calc(dataset, model_params, output_file_name, ice_file_name, groupby_name=time_divisions_of_qflux_to_be_calculated, ignore_ice_for_calculation=ignore_ice)
 
 

@@ -1,5 +1,7 @@
 import numpy as np
 from netCDF4 import Dataset
+import gauss_grid as gg
+import pdb
 
 def cell_area_all(t_res,base_dir, radius=6376.0e3):
     """read in grid from approriate file, and return 2D array of grid cell areas in metres**2."""
@@ -11,7 +13,7 @@ def cell_area_all(t_res,base_dir, radius=6376.0e3):
     lonb = resolution_file.variables['lonb'][:]
     latb = resolution_file.variables['latb'][:]
 
-    area_array,xsize_array,ysize_array = cell_area_calculate(lons, lats, lonb, latb, radius)
+    area_array,xsize_array,ysize_array = cell_area_calculate(lons, lats, lonb, latb)
 
 
     return area_array,xsize_array,ysize_array
@@ -49,23 +51,31 @@ def cell_area_from_xar(dataset, lat_name='lat', lon_name = 'lon', latb_name='lat
         latb = dataset[latb_name].values
         lonb = dataset[lonb_name].values
     except KeyError:
-        delta_lat=(lats[1]-lats[0])
-        if np.all((lats[1:10]-lats[0:9]) == delta_lat):
+        delta_lat=np.round(lats[1]-lats[0],4)
+        if np.all(np.round(lats[1:10]-lats[0:9],4) == delta_lat):
             latb = np.zeros((len(lats)+1))
 
             for latb_idx in range(len(lats)):
-                latb[latb_idx] = lats[latb_idx]-delta_lat / 2.
-            latb[-1] = lats[-1] + delta_lat / 2.
+                latb[latb_idx] = np.round(lats[latb_idx],4)-delta_lat / 2.
+            latb[-1] = np.round(lats[-1],4) + delta_lat / 2.
+        else:
+            n_lat_model = lats.shape[0]
+            model_grid_lats = gg.gaussian_latitudes(int(n_lat_model/2.))[0]
+            if np.all(np.around(model_grid_lats,2)==np.around(lats,2)):
+                model_grid_latbs_bounds = gg.gaussian_latitudes(int(n_lat_model/2.))[1]            
+                latb = [model_grid_latbs_bounds[i][0] for i in range(n_lat_model)]
+                latb.append(90.)                
+        dataset['latb'] = (('latb'), latb)
 
-        delta_lon=(lons[1]-lons[0])
-        if np.all((lons[1:10]-lons[0:9]) == delta_lon):
+        delta_lon=np.round(lons[1]-lons[0],4)
+        if np.all(np.round(lons[1:10]-lons[0:9],4) == delta_lon):
             lonb = np.zeros((len(lons)+1))
 
             for lonb_idx in range(len(lons)):
-                lonb[lonb_idx] = lons[lonb_idx]-delta_lon / 2.
-            lonb[-1] = lons[-1] + delta_lon / 2.  
-            
-            
+                lonb[lonb_idx] = np.round(lons[lonb_idx],4)-delta_lon / 2.
+            lonb[-1] = np.round(lons[-1],4) + delta_lon / 2.  
+
+        dataset['lonb'] = (('lonb'), lonb)
 
     area_array,xsize_array,ysize_array = cell_area_calculate(lons, lats, lonb, latb, radius)
 
