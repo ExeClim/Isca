@@ -133,7 +133,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               do_qflux,do_warmpool,                          &  !mj
                               albedo_choice,higher_albedo,albedo_exp,        &  !mj
                               albedo_cntr,albedo_wdth,lat_glacier,           &  !mj
-                              do_read_sst,do_sc_sst,do_ape_sst,sst_file,     &  !mj
+                              do_read_sst,do_sc_sst,sst_file,                &  !mj
                               land_option,slandlon,slandlat,                 &  !mj
                               elandlon,elandlat,                             &  !mj
                               land_h_capacity_prefactor,                     &  !s
@@ -143,7 +143,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               ice_albedo_value, specify_sst_over_ocean_only, &
                               ice_concentration_threshold,                   &
                               add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
-                              flux_lhe_anom_field_name, qflux_field_name
+                              flux_lhe_anom_field_name, do_ape_sst
 
 !=================================================================================================================================
 
@@ -456,13 +456,13 @@ select case (albedo_choice)
     enddo
   case (4) ! exponential increase with albedo_exp
      do j = 1, size(t_surf,2)
-    lat = abs(deg_lat(js+j-1))
-        albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*(lat/90.)**albedo_exp
+       lat = abs(deg_lat(js+j-1))
+       albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*(lat/90.)**albedo_exp
      enddo
   case (5) ! tanh increase around albedo_cntr with albedo_wdth
      do j = 1, size(t_surf,2)
-    lat = abs(deg_lat(js+j-1))
-        albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
+       lat = abs(deg_lat(js+j-1))
+       albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
              0.5*(1+tanh((lat-albedo_cntr)/albedo_wdth))
      enddo
 end select
@@ -471,14 +471,14 @@ albedo_initial=albedo
 
 if (update_albedo_from_ice) then
     call interpolator_init( ice_interp, trim(ice_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
-        call read_ice_conc(Time)
+    call read_ice_conc(Time)
     call albedo_calc(albedo,Time)
 else
     if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
 endif
 
 !s begin surface heat capacity calculation
-   if(.not.do_sc_sst.or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
+   if((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only).or.(.not.do_ape_sst))then
          land_sea_heat_capacity = depth*RHO_CP
     if(trim(land_option) .ne. 'input') then
          if ( trop_capacity .ne. depth*RHO_CP .or. np_cap_factor .ne. 1. ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0.
@@ -685,7 +685,7 @@ if (do_ape_sst) then
     t_surf = sst_new
 endif
 
-if ((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only) .or. .not.(do_ape_sst)) then
+if ((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only).or.(.not.do_ape_sst)) then
   !s use the land_sea_heat_capacity calculated in mixed_layer_init
 
     ! Now update the mixed layer surface temperature using an implicit step
