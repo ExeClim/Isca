@@ -491,7 +491,7 @@ if (do_sc_sst) then
 else
     if (do_ape_sst) then
         ! if using specified sst without land, do not calc the heat capacity
-        do_calc_eff_heat_cap = .false.
+        do_calc_eff_heat_cap = .true. ! BUG testing only - should be .false.
     end if
 endif
 
