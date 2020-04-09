@@ -106,9 +106,11 @@ integer :: albedo_choice    = 1 ! 1->constant or following 'where(land)', 2->NH 
 logical :: do_qflux         = .false. !mj
 logical :: do_warmpool      = .false. !mj
 logical :: do_read_sst      = .false. !mj
-logical :: do_sc_sst        = .false. !mj
+logical :: do_sc_sst        = .false. !mj use specified SSTs
 logical :: do_ape_sst       = .false. ! use the AquaPlanet Experiement (APE) sst profile.
 logical :: specify_sst_over_ocean_only = .false.
+logical :: do_calc_eff_heat_cap = .true. ! assumes specified SST are off the default.
+
 character(len=256) :: sst_file
 character(len=256) :: land_option = 'none'
 real,dimension(10) :: slandlon=0,slandlat=0,elandlon=-1,elandlat=-1
@@ -218,7 +220,6 @@ integer, intent(in) :: is, ie, js, je, num_levels
 
 logical, intent(in), dimension(:,:) :: land
 logical, intent(in)                 :: restart_file_bucket_depth
-
 
 integer :: j
 real    :: rad_qwidth
@@ -477,13 +478,31 @@ else
     if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
 endif
 
+! Note: do_calc_eff_heat_cap is true by default and control when the surface 
+! heat capacity is calculated (land and ocean). 
+if (do_sc_sst) then
+    ! if using specified sst then do not calc the heat capacity
+    if (specify_sst_over_ocean_only) then
+        ! unless the heat capacity over land is needed
+        do_calc_eff_heat_cap = .true.
+    else
+        do_calc_eff_heat_cap = .false.
+    endif
+else
+    if (do_ape_sst) then
+        ! if using specified sst without land, do not calc the heat capacity
+        do_calc_eff_heat_cap = .false.
+    end if
+endif
+
+
 !s begin surface heat capacity calculation
-   if((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only).or.(.not.do_ape_sst))then
-         land_sea_heat_capacity = depth*RHO_CP
+if (do_calc_eff_heat_cap) then
+    land_sea_heat_capacity = depth*RHO_CP
     if(trim(land_option) .ne. 'input') then
          if ( trop_capacity .ne. depth*RHO_CP .or. np_cap_factor .ne. 1. ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0.
             do j=js,je
-           lat = deg_lat(j)
+               lat = deg_lat(j)
                if ( lat .gt. 0. ) then
                   loc_cap = depth*RHO_CP*np_cap_factor
                else
@@ -521,7 +540,7 @@ endif
     else  !trim(land_option) .eq. 'input'
         where(land) land_sea_heat_capacity = land_h_capacity_prefactor*land_sea_heat_capacity
     endif !end of if (trim(land_option) .ne. 'input')
-    endif !end of if(.not.do_sc_sst)
+endif !end of if(.not.do_sc_sst)
 
 if ( id_heat_cap > 0 ) used = send_data ( id_heat_cap, land_sea_heat_capacity )
 !s end surface heat capacity calculation
@@ -646,7 +665,6 @@ endif
 
 !s Surface heat_capacity calculation based on that in MiMA by mj
 
-
 if(do_sc_sst) then !mj sst read from input file
      ! read at the new time, as that is what we are stepping to
      call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
@@ -685,7 +703,8 @@ if (do_ape_sst) then
     t_surf = sst_new
 endif
 
-if ((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only).or.(.not.do_ape_sst)) then
+
+if (do_calc_eff_heat_cap) then
   !s use the land_sea_heat_capacity calculated in mixed_layer_init
 
     ! Now update the mixed layer surface temperature using an implicit step
