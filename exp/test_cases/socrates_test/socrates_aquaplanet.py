@@ -57,9 +57,13 @@ diag.add_field('socrates', 'soc_surf_flux_lw_down', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
 #net (up) TOA and downard fluxes
 diag.add_field('socrates', 'soc_olr', time_avg=True)
+<<<<<<< HEAD
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
 diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
 
+=======
+diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
+>>>>>>> 4d2517d99d3c46cad93915ffd20b06a38a508f60
 diag.add_field('cloud_simple', 'cf_rad', time_avg=True)
 diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
 diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
@@ -205,9 +209,11 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
 
-        cb.compile(debug=True)
+        cb.compile(debug=False)
         #Set up the experiment object, with the first argument being the experiment name.
         #This will be the name of the folder that the data will appear in.
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
+
+
         for i in range(2,121):
             exp.run(i, num_cores=NCORES)
