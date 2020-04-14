@@ -57,13 +57,9 @@ diag.add_field('socrates', 'soc_surf_flux_lw_down', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
 #net (up) TOA and downard fluxes
 diag.add_field('socrates', 'soc_olr', time_avg=True)
-<<<<<<< HEAD
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
 diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
 
-=======
-diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
->>>>>>> 4d2517d99d3c46cad93915ffd20b06a38a508f60
 diag.add_field('cloud_simple', 'cf_rad', time_avg=True)
 diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
 diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
