@@ -220,9 +220,9 @@ exp.namelist = namelist = Namelist({
 if __name__=="__main__":
 
         cb.compile(debug=False)
-        overwrite=False
+        overwrite=True
 
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
 
-        for i in range(2,121):
-            exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
+        #for i in range(2,121):
+        #    exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
