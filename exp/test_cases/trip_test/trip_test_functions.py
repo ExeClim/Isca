@@ -96,12 +96,18 @@ def get_nml_diag(test_case_name):
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist                   
                  
+    if 'ape_aquaplanet' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/ape_aquaplanet/'))
+        from socrates_ape_aquaplanet_T42 import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist        
+
     return nml_out, input_files  
 
 def list_all_test_cases_implemented_in_trip_test():
 
     #List of test cases to check
-    exps_implemented = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'socrates_aquaplanet', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
+    exps_implemented = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'socrates_aquaplanet', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm', 'ape_aquaplanet']
 
     return exps_implemented
 
@@ -154,7 +160,7 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
     #Do the run for each of the commits in turn
     for s in [base_commit, later_commit]:
         exp_name = test_case_name+'_trip_test_21_'+s
-        if 'socrates' in test_case_name:
+        if 'socrates' in test_case_name or 'ape_aquaplanet' in test_case_name:
             cb = SocratesCodeBase(repo=repo_to_use, commit=s)
         else:
             cb = IscaCodeBase(repo=repo_to_use, commit=s)

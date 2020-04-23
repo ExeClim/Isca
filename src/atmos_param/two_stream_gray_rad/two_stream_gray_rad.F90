@@ -75,6 +75,7 @@ real    :: del_sw          = 0.0
 real    :: ir_tau_eq       = 6.0
 real    :: ir_tau_pole     = 1.5
 real    :: atm_abs         = 0.0
+real    :: odp = 1.0  ! odp = optical depth parameter. Used to simulate GHG concentration, taken from Tapio FMS, added by Nathanael Wong
 real    :: sw_diff         = 0.0
 real    :: linear_tau      = 0.1
 real    :: wv_exponent     = 4.0
@@ -87,7 +88,7 @@ real    :: dt_rad_avg     = -1
 
 character(len=32) :: rad_scheme = 'frierson'
 
-integer, parameter :: B_GEEN = 1,      B_FRIERSON = 2, &
+integer, parameter :: B_GEEN = 1,  B_FRIERSON = 2, &
                       B_BYRNE = 3, B_SCHNEIDER_LIU=4
 integer, private :: sw_scheme = B_FRIERSON
 integer, private :: lw_scheme = B_FRIERSON
@@ -139,7 +140,7 @@ character(len=256)                  :: co2_variable_name='co2'       !  file nam
 
 
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
-           ir_tau_eq, ir_tau_pole, atm_abs, sw_diff, &
+           ir_tau_eq, ir_tau_pole, odp, atm_abs, sw_diff, &
            linear_tau, del_sw, wv_exponent, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
@@ -573,6 +574,7 @@ case(B_BYRNE)
 case(B_FRIERSON)
   ! longwave optical thickness function of latitude and pressure
   lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
+  lw_tau_0 = lw_tau_0 * odp ! scale by optical depth parameter - default 1
 
   ! compute optical depths for each model level
   do k = 1, n+1
