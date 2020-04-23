@@ -18,13 +18,15 @@ module large_scale_cloud_mod
   character(len=14), parameter :: mod_name = "ls_cloud"
 
   integer, parameter :: B_SPOOKIE=1, B_SUNDQVIST=2, B_LINEAR=3, &
-                        B_SMITH=4, B_SLINGO=5, B_XR96=6
+                        B_SMITH=4, B_SLINGO=5, B_XR96=6, B_LINEAR11=7
   integer, private  :: cf_diag_formula = B_LINEAR
   character(len=32) :: cf_diag_formula_name = 'linear'
 
   logical :: do_simple_rhcrit = .false.
   logical :: do_fitted_rhcrit = .false.
   logical :: do_adjust_low_cld = .false.
+  logical :: do_poly_rhcrit = .false.
+  logical :: do_adjust_polar_cld = .false.
 
   real :: rhcsfc     = 0.95
   real :: rhc700     = 0.7
@@ -36,6 +38,7 @@ module large_scale_cloud_mod
   real :: n_rhc = 3.1
 
   real :: qv_polar_val = 0.003 ! kg/kg
+  real :: n_power = 2.5
 
   ! Parameters to control the coefficients
   ! profile of linear function of RH
@@ -45,24 +48,32 @@ module large_scale_cloud_mod
   real :: b_top  = -0.07
   real :: nx     = 8
 
+  ! Linear go through (1, 1)
+  real :: a_surf_11 = 42
+  real :: a_top_11  = 12
+  real :: nx_11     = 8.5
+
   ! For slingo80 scheme
   real :: slingo_rhc_low  = 0.8
   real :: slingo_rhc_mid  = 0.65
   real :: slingo_rhc_high = 0.8
 
-  ! For low clout adjustment
-  real :: omega_adj_threshold = -0.1 !Pa/s
+  ! ! For low clout adjustment
+  real :: omega_adj_threshold = 0.1 !Pa/s
 
   integer :: id_rhcrit
 
   namelist /large_scale_cloud_nml/ &
             rhcsfc, rhc700, rhc200, &
             do_fitted_rhcrit, rhc_surf, rhc_top, n_rhc, &
+            do_poly_rhcrit, &
             cf_diag_formula_name, &
             a_surf, a_top, b_surf, b_top, nx, &
+            a_surf_11, a_top_11, nx_11, &
             slingo_rhc_low, slingo_rhc_mid, slingo_rhc_high, &
-            omega_adj_threshold, &
-            do_adjust_low_cld, qv_polar_val
+            do_adjust_low_cld, omega_adj_threshold, &
+            qv_polar_val, &
+            do_adjust_polar_cld, n_power
 
   contains
 
@@ -80,8 +91,8 @@ module large_scale_cloud_mod
       nml_unit = open_namelist_file()
       ierr = 1
       do while (ierr /= 0)
-          read(nml_unit, nml=large_scale_cloud_nml, iostat=io, end=10)
-          ierr = check_nml_error(io, 'large_scale_cloud_nml')
+        read(nml_unit, nml=large_scale_cloud_nml, iostat=io, end=10)
+        ierr = check_nml_error(io, 'large_scale_cloud_nml')
       enddo
 10    call close_file(nml_unit)
     endif
@@ -103,6 +114,10 @@ module large_scale_cloud_mod
     else if(method_str == 'LINEAR') then
       cf_diag_formula = B_LINEAR
       call error_mesg(mod_name, 'Using linear cloud fraction diagnostic formula.', NOTE)
+
+    else if(method_str == 'LINEAR11') then
+      cf_diag_formula = B_LINEAR11
+      call error_mesg(mod_name, 'Using linear cloud fraction diagnostic formula (go through (1,1) point).', NOTE)
 
     else if(method_str == 'SMITH') then
       cf_diag_formula = B_SMITH
@@ -153,6 +168,10 @@ module large_scale_cloud_mod
       call adjust_low_cld(pfull, ps, wg_full, cf, q_hum)
     end if
 
+    if(do_adjust_polar_cld) then
+      call adjust_polar_cld(pfull, ps, cf, q_hum)
+    end if
+
     if (id_rhcrit > 0) then
       used = send_data (id_rhcrit, rhcrit*100.0, Time)
     endif
@@ -164,7 +183,9 @@ module large_scale_cloud_mod
     real, intent(in),  dimension(:,:,:) :: p_full
     real, intent(out), dimension(:,:,:) :: rhcrit
     real :: p_surf
+    real, dimension(size(p_full,1), size(p_full,2), size(p_full,3)) :: sigma
 
+    real :: rhc1, rhc2, zrhc
     p_surf = 1e5
 
     !if (do_simple_rhcrit) then
@@ -180,6 +201,13 @@ module large_scale_cloud_mod
 
     if (do_fitted_rhcrit) then
         rhcrit = rhc_top + (rhc_surf - rhc_top) * exp(1.0 - (p_surf/p_full)**n_rhc)
+    else if (do_poly_rhcrit) then
+        rhc1 = 0.8
+        rhc2 = 1.73
+        zrhc = 0.95 !0.85
+        sigma = p_full / p_surf
+        rhcrit = zrhc - rhc1*sigma * (1.0-sigma) * (1.0 + rhc2*(sigma-0.5))
+        !rhcrit = poly_rhc_surf*sigma + poly_rhc_top*(1.0-sigma) + sigma * (1.0-sigma) * (1.0 + rhc2*(sigma-0.5))
     else
       where (p_full > 7.0e4)
         rhcrit = rhcsfc - (rhcsfc - rhc700) * (p_surf - p_full) / (p_surf - 7.0e4)
@@ -199,24 +227,32 @@ module large_scale_cloud_mod
     real :: premib, omega
     integer :: k
 
-    !premib = 7.0e4 !Pa
-    !omega_adj_threshold = -0.1   !Pa/s
+    premib = 7.0e4 !Pa
+    !omega_adj_threshold = 0.1 !-0.1   !Pa/s
 
-    !where(p_full>premib .and. omega_adj_threshold<wg_full .and. wg_full<0.0)
+    ! where(p_full>premib .and. omega_adj_threshold<wg_full .and. wg_full<0.0)
     !  cf = min(1.0, wg_full/omega_adj_threshold) * cf
-    !elsewhere (p_full>premib .and. wg_full>=0.0)
-    !where (p_full>premib .and. wg_full>=0.0)
-    !elsewhere (wg_full>=0.0)
-    !  cf = 0.0
+    ! !elsewhere (p_full>premib .and. wg_full>=0.0)
+    ! !where (p_full>premib .and. wg_full>=0.0)
+    ! !elsewhere (wg_full>=0.0)
+    ! ! cf = 0.0
     !  !cf = min(1.0, wg_full/abs(omega_adj_threshold)) * cf
-    !elsewhere
-    !  cf = cf
-    !end where
+    ! !elsewhere
+    ! ! cf = cf
+    ! end where
 
+    where (p_full>premib .and. omega_adj_threshold>wg_full .and. wg_full>0.0)
+     cf = min(1.0, wg_full/omega_adj_threshold) * cf
+    end where
+    where (p_full>premib .and. wg_full>=omega_adj_threshold)
+      cf = 0.0
+    end where
+
+    ! =================================================================== !
+    ! Polar region adjustment !
     ! where (p_full>premib)
     !   cf = cf * MAX(0.15, MIN(1.0, q_hum/qv_polar_val))
     ! end where
-
 
     ! VAVRUS and WALISER, 2008, An Improved Parameterization for Simulating
     !   Arctic Cloud Amount in the CCSM3 Climate Model,
@@ -230,16 +266,42 @@ module large_scale_cloud_mod
     ! be adjusted within a specified pressure range above the
     ! surface, rather than below a prescribed pressure value."
 
-    do k=1,size(p_full,3)
-      ! if (p_full(1,1,k)> psg(1,1)-3e4) then
-      !   write(*,*) 'p_full(1,1, k)=', k, p_full(1,1,k), 'psg(1,1)=', psg(1,1)
-      ! endif
-      where (p_full(:,:,k) > psg-3.0e4)
-        cf(:,:,k) = cf(:,:,k) * MAX(0.15, MIN(1.0, q_hum(:,:,k) / qv_polar_val))
-      end where
-    end do
+    ! do k=1,size(p_full,3)
+    !   ! if (p_full(1,1,k)> psg(1,1)-3e4) then
+    !   !   write(*,*) 'p_full(1,1, k)=', k, p_full(1,1,k), 'psg(1,1)=', psg(1,1)
+    !   ! endif
+    !   where (p_full(:,:,k) > psg-3.0e4)
+    !     cf(:,:,k) = cf(:,:,k) * MAX(0.15, MIN(1.0, q_hum(:,:,k) / qv_polar_val))
+    !   end where
+    ! end do
 
   end subroutine adjust_low_cld
+
+  subroutine adjust_polar_cld(p_full, psg, cf, q_hum)
+    real, intent(in),    dimension(:,:,:) :: p_full, q_hum
+    real, intent(in),    dimension(:,:)   :: psg
+    real, intent(inout), dimension(:,:,:) :: cf
+    integer :: k
+    real, dimension(size(cf,1), size(cf,2)) :: qv_k
+  
+    ! VAVRUS and WALISER, 2008, An Improved Parameterization for Simulating
+    !   Arctic Cloud Amount in the CCSM3 Climate Model,
+    !   Journal of Climate, DOI: 10.1175/2008JCLI2299.1
+    !
+    ! Excerpt from the conclusion of paper:
+    !
+    ! "The low cloud restriction currently hinders application of freezedry
+    ! over the highly elevated terrain of Greenland and Antarctica,
+    ! although a refinement could specify that clouds
+    ! be adjusted within a specified pressure range above the
+    ! surface, rather than below a prescribed pressure value."
+
+    do k=1,size(p_full,3)
+        qv_k = (p_full(:,:,k) / psg)**n_power * qv_polar_val
+        cf(:,:,k) = cf(:,:,k) * MAX(0.15, MIN(1.0, q_hum(:,:,k) / qv_k))
+    end do
+
+  end subroutine adjust_polar_cld
 
   subroutine calc_large_scale_cld_frac(pfull, ps, rh, q_hum, qsat, rhcrit, qcl_rad, cf)
     ! Calculate large scale (stratiform) cloud fraction
@@ -296,6 +358,9 @@ module large_scale_cloud_mod
 
       case(B_LINEAR)
         call calc_cf_linear(pfull, rh, ps, cf)
+      
+      case(B_LINEAR11)
+        call calc_cf_linear11(pfull, rh, ps, cf)
 
       case default
         call error_mesg(mod_name, 'invalid cloud fraction diagnostic formula', FATAL)
@@ -326,6 +391,21 @@ module large_scale_cloud_mod
     cf = coeff_a * rh + coeff_b
     cf = MAX(0.0, MIN(1.0, cf))
   end subroutine calc_cf_linear
+
+  subroutine calc_cf_linear11(p_full, rh, ps, cf)
+    ! Calculate LS (stratiform) cloud fraction as a linear function of RH
+    real, intent(in),  dimension(:,:,:) :: p_full, rh
+    real, intent(in),  dimension(:,:)   :: ps
+    real, intent(out), dimension(:,:,:) :: cf
+    real, dimension(size(p_full,1), size(p_full,2), size(p_full,3)) :: coeff_a
+    integer :: k 
+    do k=1,size(rh,3)
+      coeff_a(:,:,k) = a_top_11 + (a_surf_11-a_top_11) * exp(1.0 - (ps/p_full(:,:,k))**nx_11)
+    end do
+
+    cf = coeff_a * (rh - 1.0) + 1.0
+    cf = MAX(0.0, MIN(1.0, cf))
+  end subroutine calc_cf_linear11
 
   subroutine large_scale_cloud_end()
 

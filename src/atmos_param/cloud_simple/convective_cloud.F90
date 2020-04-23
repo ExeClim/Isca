@@ -40,8 +40,8 @@ module convective_cloud_mod
       nml_unit = open_namelist_file()
       ierr = 1
       do while (ierr /= 0)
-          read(nml_unit, nml=convective_cloud_nml, iostat=io, end=10)
-          ierr = check_nml_error(io, 'convective_cloud_nml')
+        read(nml_unit, nml=convective_cloud_nml, iostat=io, end=10)
+        ierr = check_nml_error(io, 'convective_cloud_nml')
       enddo
 10    call close_file(nml_unit)
     endif

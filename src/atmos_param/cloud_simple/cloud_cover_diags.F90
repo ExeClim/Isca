@@ -17,7 +17,7 @@ module cloud_cover_diags_mod
 
   logical :: adjust_top = .false.
   logical :: do_test_overlap = .false.
-  logical :: do_cam_cld_cover_diag = .true.
+  logical :: do_cam_cld_cover_diag = .false.
 
   real :: cf_min = 1e-4
 
@@ -48,8 +48,8 @@ module cloud_cover_diags_mod
       nml_unit = open_namelist_file()
       ierr = 1
       do while (ierr /= 0)
-          read(nml_unit, nml=cloud_cover_diag_nml, iostat=io, end=10)
-          ierr = check_nml_error(io, 'cloud_cover_diag_nml')
+        read(nml_unit, nml=cloud_cover_diag_nml, iostat=io, end=10)
+        ierr = check_nml_error(io, 'cloud_cover_diag_nml')
       enddo
 10    call close_file(nml_unit)
     endif

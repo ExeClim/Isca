@@ -34,8 +34,13 @@ module marine_strat_cloud_mod
   ! Refer to: https://physics.nist.gov/cgi-bin/cuu/Value?bg
   real :: GRAV_CONST = 6.674e-11  ! m^3 / kg / s^2
 
+  ! Linear coefficient for Park_ELF scheme
+  real :: park_a = 1.272
+  real :: park_b = -0.366
+
   namelist /marine_strat_cloud_nml/ &
-            sc_diag_method, intermediate_outputs_diags, dthdp_min_threshold
+            sc_diag_method, intermediate_outputs_diags, dthdp_min_threshold, &
+            park_a, park_b
 
   contains
 
@@ -176,21 +181,28 @@ module marine_strat_cloud_mod
         !end if
 
         kk = kdthdp(i,j)
-        kb = min(kk+1, k_surf)
-        !do k = kk-1, kb
-        do k=kk,kk
-        !k = kk
-          !if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold) then
-          if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold .and. p_full(i,j,k)>8.5e4) then
-          !if (kk.ne.0 .and. dthdp(i,j,k)<dthdp_min_threshold) then
-          ! .and. dthdp(i,j,k)<dthdp_min_threshold
-          !if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. p_full(i,j,k)>7.5e4 ) then
-            call estimate_stratiform_cld(method_str, i, j, k, kb, p_full, cf, rh, theta, eis, dthdp, ectei, ELF)
-            !cf(i,j,k) = min(1.0, max(0.0, cf(i,j,k)*2))
-            !cf(i,j,k) = min(1.0, abs(dthdp(i,j,k)/dthdp(i,j,kk))) * cf(i,j,k)
-            marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
-          end if
-        end do
+        !write(*,*) 'QL i,j,kk,dthdp=', i, j, kdthdp(i,j), dthdp(i,j,kk)
+    
+        if (kk .ne. 0) then 
+          kb = min(kk+1, k_surf)
+          do k = kk, kb
+          !do k=kk,kk
+          !k = kk
+            !if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold) then
+            if (wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold .and. p_full(i,j,k)>8.0e4) then
+            !if (kk.ne.0 .and. dthdp(i,j,k)<dthdp_min_threshold) then
+            ! .and. dthdp(i,j,k)<dthdp_min_threshold
+            !if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. p_full(i,j,k)>7.5e4 ) then
+              call estimate_stratiform_cld(method_str, i, j, k, kb, p_full, cf, rh, theta, eis, dthdp, ectei, ELF)
+              !cf(i,j,k) = min(1.0, max(0.0, cf(i,j,k)*2))
+              !cf(i,j,k) = min(1.0, abs(dthdp(i,j,k)/dthdp(i,j,kk))) * cf(i,j,k)
+              marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
+              ! if (marine_strat(i,j,k)>0.01) then
+              !   write(*,*) 'QL i,j,kk,dthdp, sc=', i, j, kdthdp(i,j), p_full(i,j,k), dthdp(i,j,k), ELF(i,j), marine_strat(i,j,k)
+              ! endif
+            end if
+          end do
+        endif
 
         ! =========== Other stratiform clouds except temperature inversion areas =========== !
         ! This is the first try, the souther ocean is improved a lot,
@@ -289,7 +301,9 @@ module marine_strat_cloud_mod
     else if(method_str == 'PARK_ELF') then
       ! Park and Shin, 2019, ACP
       !strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
-      strat = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
+      !strat = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
+      strat = min(1.0, max(0.0, park_a * ELF(i,j) + park_b))
+      !strat = min(1.0, max(0.0, 1.272*ELF(i,j)))
       !strat = min(1.0, max(0.0, 1.11*ELF(i,j)-0.107))
       cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
     else
@@ -325,7 +339,7 @@ module marine_strat_cloud_mod
     theta_0 = temp_2m * (pstar / ps)**(RDGAS / CP_AIR)
     dthdp(:,:,kb) = (theta(:,:,kb) - theta_0) / (phalf(:,:,kb) - ps) * 1.0e2
 
-    kdthdp = minloc(dthdp, dim=3, mask=(phalf>premib).and.(dthdp<dthdp_min_threshold))
+    kdthdp = minloc(dthdp, dim=3, mask=(pfull>premib).and.(dthdp<dthdp_min_threshold))
 
   end subroutine calc_theta_dthdp
 
