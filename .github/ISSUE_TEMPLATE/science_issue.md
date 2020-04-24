@@ -18,7 +18,7 @@ we are all here voluntarily to help others use Isca.
 NOTE:
 Isca team members are all full-time research scientists, so while we are very happy to provide
 some support, response times may vary. If you need in-depth support, then we may suggest that one
- of us becomes a co-author on your next paper by providing a long-term support on the issue.
+ of us becomes a co-author on your next paper by providing long-term support on the issue.
 -->
 
 <!--

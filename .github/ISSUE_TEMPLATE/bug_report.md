@@ -18,7 +18,7 @@ we are all here voluntarily to help others use Isca.
 NOTE:
 Isca team members are all full-time research scientists, so while we are very happy to provide
 some support, response times may vary. If you need in-depth support, then we may suggest that one
- of us becomes a co-author on your next paper by providing a long-term support on the issue.
+ of us becomes a co-author on your next paper by providing long-term support on the issue.
 -->
 
 <!--
@@ -38,8 +38,15 @@ If applicable, add screenshots to help explain your problem.
 -->
 
 -----
+**Isca version**
+<!--
+Please provide here your recent commit ID and tell us if you are working off your own fork or just
+using the main Execlim verion.
+-->
+
+-----
 **System Information:**
-To help us track down bugs faster, please provide the details about the machine you run Isca on.
+To help us track down bugs faster, please provide the details about the machine where you run Isca.
 
 To do this, run the following code in Python:
 ```py
