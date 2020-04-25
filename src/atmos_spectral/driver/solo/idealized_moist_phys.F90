@@ -1131,8 +1131,7 @@ endif
     endif
 #else
 if (do_socrates_radiation) then
-       ! Socrates interface
-
+    ! Socrates interface
     if(do_cloud_simple) then
        reff_rad = 1.e-6 * reff_rad ! Simple cloud scheme outputs radii in microns. Socrates expects it in metres.
     endif
@@ -1159,8 +1158,6 @@ if(gp_surface) then
 endif
 
 
-
-
 !----------------------------------------------------------------------
 !    Copied from MiMA physics_driver.f90
 !    call damping_driver to calculate the various model dampings that
@@ -1178,8 +1175,6 @@ if(do_damping) then
                              dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:),             &
                              z_pbl) !s have taken the names of arrays etc from vert_turb_driver below. Watch ntp from 2006 call to this routine?
 endif
-
-
 
 
 if(turb) then
@@ -1220,7 +1215,6 @@ if(turb) then
    if(.not.(mixed_layer_bc.or.gp_surface)) then
      call error_mesg('atmosphere','no diffusion implentation for non-mixed layer b.c.',FATAL)
    endif
-
 
 ! We must use gcm_vert_diff_down and _up rather than gcm_vert_diff as the surface flux
 ! depends implicitly on the surface values
@@ -1283,7 +1277,6 @@ endif ! if(turb) then
    call rh_calc (p_full(:,:,:,previous),tg_tmp,qg_tmp,RH)
    if(id_rh >0) used = send_data(id_rh, RH*100., Time)
 
-
 ! RG Add bucket
 ! Timestepping for bucket.
 ! NB In tapios github, all physics is still in atmosphere.F90 and this leapfrogging is done there.
@@ -1336,9 +1329,6 @@ if(bucket) then
 endif
 ! end Add bucket section
 
-
-
-
 end subroutine idealized_moist_phys
 !=================================================================================================================================
 subroutine idealized_moist_phys_end
@@ -1368,7 +1358,6 @@ end subroutine idealized_moist_phys_end
 subroutine rh_calc(pfull,T,qv,RH) !s subroutine copied from 2006 FMS MoistModel file moist_processes.f90 (v14 2012/06/22 14:50:00).
 
         IMPLICIT NONE
-
 
         REAL, INTENT (IN),    DIMENSION(:,:,:) :: pfull,T,qv
         REAL, INTENT (OUT),   DIMENSION(:,:,:) :: RH
