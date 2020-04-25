@@ -209,8 +209,8 @@ real, allocatable, dimension(:,:)   ::                                        &
      temp_2m,              &   !mp586 for 10m winds and 2m temp
      u_10m,                &   !mp586 for 10m winds and 2m temp
      v_10m,                &   !mp586 for 10m winds and 2m temp
-     q_2m,                 &   !QL Add 2m humidity
-     rh_2m                     !QL Add 2m relative humidity
+     q_2m,                 &   ! Add 2m humidity
+     rh_2m                     ! Add 2m relative humidity
 
 real, allocatable, dimension(:,:,:) ::                                        &
      diff_m,               &   ! momentum diffusion coeff.
@@ -238,8 +238,8 @@ real, allocatable, dimension(:,:) ::                                          &
      land_ones                 ! land points (all zeros)
 
 integer, allocatable, dimension(:,:) ::                                       &
-     klzbs,                &   ! stored level of zero buoyancy values; QL, change data type to integer
-     klcls                     ! stored lifting condensation level values, QL add
+     klzbs,                &   ! stored level of zero buoyancy values
+     klcls                     ! stored lifting condensation level values
 
 real, allocatable, dimension(:,:) ::                                          &
      cape,                 &   ! convectively available potential energy
@@ -249,7 +249,7 @@ real, allocatable, dimension(:,:) ::                                          &
      rain,                 &   ! Can be resolved or  parameterised
      snow,                 &   !
      precip,               &   ! cumulus rain  + resolved rain  + resolved snow
-     convective_rain           ! QL add, save the result for convective rain
+     convective_rain           ! save the result for convective rain
 
 
 real, allocatable, dimension(:,:,:) :: &
@@ -284,8 +284,8 @@ integer ::           &
      id_temp_2m,     & !mp586 for 10m winds and 2m temp
      id_u_10m,       & !mp586 for 10m winds and 2m temp
      id_v_10m,       & !mp586 for 10m winds and 2m temp
-     id_q_2m,        & !QL Add 2m humidity
-     id_rh_2m          !QL Add 2m relative humidity
+     id_q_2m,        & ! Add 2m humidity
+     id_rh_2m          ! Add 2m relative humidity
 
 
 integer, allocatable, dimension(:,:) :: convflag ! indicates which qe convection subroutines are used
@@ -483,8 +483,8 @@ allocate(ex_del_q (is:ie, js:je))   !mp586 added for 10m wind and 2m temp
 allocate(temp_2m (is:ie, js:je))    !mp586 added for 10m wind and 2m temp
 allocate(u_10m (is:ie, js:je))      !mp586 added for 10m wind and 2m temp
 allocate(v_10m (is:ie, js:je))      !mp586 added for 10m wind and 2m temp
-allocate(q_2m (is:ie, js:je))       ! QL Add 2m humidity
-allocate(rh_2m (is:ie, js:je))      ! QL Add 2m relative humidity
+allocate(q_2m (is:ie, js:je))       ! Add 2m humidity
+allocate(rh_2m (is:ie, js:je))      ! Add 2m relative humidity
 allocate(land        (is:ie, js:je)); land = .false.
 allocate(land_ones   (is:ie, js:je)); land_ones = 0.0
 allocate(avail       (is:ie, js:je)); avail = .true.
@@ -510,7 +510,7 @@ allocate(cond_dt_qg  (is:ie, js:je, num_levels))
 
 allocate(coldT        (is:ie, js:je)); coldT = .false.
 allocate(klzbs        (is:ie, js:je))
-allocate(klcls        (is:ie, js:je))  ! QL added
+allocate(klcls        (is:ie, js:je))
 allocate(cape         (is:ie, js:je))
 allocate(cin          (is:ie, js:je))
 allocate(invtau_q_relaxation  (is:ie, js:je))
@@ -828,7 +828,7 @@ if (bucket) then
 endif
 
 rain = 0.0; snow = 0.0; precip = 0.0
-convective_rain = 0.0 ! QL added
+convective_rain = 0.0
 
 select case(r_conv_scheme)
 
@@ -944,7 +944,7 @@ end select
 dt_tg = dt_tg + conv_dt_tg
 dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
 
-convective_rain = precip ! QL added
+convective_rain = precip
 
 ! Perform large scale convection
 if (r_conv_scheme .ne. DRY_CONV) then
@@ -995,9 +995,7 @@ if(do_cloud_simple) then
                       temp_2m(:,:),                        &
                       q_2m(:,:),                           &
                       rh_2m(:,:),                          &
-                      convective_rain(:,:),                &
                       klcls(:,:),                          &
-                      klzbs(:,:),                          &
                       ! outs -
                       cf_rad(:,:,:), reff_rad(:,:,:),      &
                       qcl_rad(:,:,:)                       &
@@ -1094,8 +1092,8 @@ call surface_flux(                                                          &
                                  temp_2m(:,:),                              & ! mp586 for 10m winds and 2m temp
                                    u_10m(:,:),                              & ! mp586 for 10m winds and 2m temp
                                    v_10m(:,:),                              & ! mp586 for 10m winds and 2m temp
-                                    q_2m(:,:),                              & ! QL Add 2m humidity
-                                   rh_2m(:,:),                              & ! QL Add 2m relative humidty
+                                    q_2m(:,:),                              & ! Add 2m humidity
+                                   rh_2m(:,:),                              & ! Add 2m relative humidty
                                       delta_t,                              &
                                     land(:,:),                              &
                                .not.land(:,:),                              &
@@ -1111,8 +1109,8 @@ if(id_v_10m > 0) used = send_data(id_v_10m, v_10m, Time)       ! mp586 add 10m w
 
 !!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-if(id_q_2m > 0) used = send_data(id_q_2m, q_2m, Time)       ! QL Add 2m humidity
-if(id_rh_2m > 0) used = send_data(id_rh_2m, rh_2m*1e2, Time)    ! QL Add 2m humidity
+if(id_q_2m > 0) used = send_data(id_q_2m, q_2m, Time)         ! Add 2m humidity
+if(id_rh_2m > 0) used = send_data(id_rh_2m, rh_2m*1e2, Time)  ! Add 2m humidity
 
 ! Now complete the radiation calculation by computing the upward and net fluxes.
 

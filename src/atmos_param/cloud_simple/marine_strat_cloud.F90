@@ -133,17 +133,20 @@ module marine_strat_cloud_mod
 
   end subroutine marine_strat_cloud_init
 
-  subroutine marine_strat_cloud_diag(temp, p_full, p_half, z_full, rh, q_hum, temp_2m, q_2m, rh_2m, psg, wg_full, klcls, cf, Time)
+  subroutine marine_strat_cloud_diag(temp, p_full, p_half, z_full, rh, q_hum, temp_2m, &
+                                      q_2m, rh_2m, psg, wg_full, klcls, cf, Time)
     implicit none
     real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, rh, wg_full
     type(time_type),   intent(in)       :: Time
     real, intent(in),  dimension(:,:)   :: temp_2m, q_2m, rh_2m, psg
     integer, intent(in), dimension(:,:) :: klcls
     real, intent(out), dimension(:,:,:) :: cf
+    
+    ! local variables
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: theta, dthdp, marine_strat
     integer, dimension(size(temp,1), size(temp,2)) :: kdthdp, kinvs
     real,    dimension(size(temp,1), size(temp,2)) :: eis, ectei, ELF, low_ca_park
-    real :: strat, rhb_frac, used, omega_pos_threshold
+    real :: strat, used, omega_pos_threshold
     character(len=32) :: method_str = ''
     integer :: i, j, k, k700, kb, k_surf, kk, nlev
 
@@ -162,7 +165,8 @@ module marine_strat_cloud_mod
       call calc_ectei(p_full, q_hum, q_2m, eis, ectei, Time)
     end if
     if (method_str(1:4)=='PARK') then
-      call calc_Park_proxies(p_full, psg, z_full, temp, temp_2m, q_hum, q_2m, rh_2m, klcls, ELF, kinvs, Time)
+      call calc_Park_proxies(p_full, psg, z_full, temp, temp_2m, q_hum, &
+                             q_2m, rh_2m, klcls, ELF, kinvs, Time)
     end if
 
     k_surf = size(temp, 3)
@@ -171,66 +175,21 @@ module marine_strat_cloud_mod
 
     do i=1, size(temp, 1)
       do j=1, size(temp, 2)
-
         ! =========== Add off-coast marine stratiform clods =========== !
-        !if (method_str(1:4)=='PARK') then
-        !  kk = kinvs(i,j)
-        !  !write(*,*) 'QL kinv,kk',kinvs(i,j), kdthdp(i,j)
-        !else
-        !  kk = kdthdp(i,j)
-        !end if
-
         kk = kdthdp(i,j)
-        !write(*,*) 'QL i,j,kk,dthdp=', i, j, kdthdp(i,j), dthdp(i,j,kk)
-    
-        if (kk .ne. 0) then 
+
+        if (kk .ne. 0) then   
           kb = min(kk+1, k_surf)
           do k = kk, kb
-          !do k=kk,kk
-          !k = kk
-            !if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold) then
-            if (wg_full(i,j,k)>omega_pos_threshold .and. dthdp(i,j,k)<dthdp_min_threshold .and. p_full(i,j,k)>8.0e4) then
-            !if (kk.ne.0 .and. dthdp(i,j,k)<dthdp_min_threshold) then
-            ! .and. dthdp(i,j,k)<dthdp_min_threshold
-            !if (kk.ne.0 .and. wg_full(i,j,k)>omega_pos_threshold .and. p_full(i,j,k)>7.5e4 ) then
-              call estimate_stratiform_cld(method_str, i, j, k, kb, p_full, cf, rh, theta, eis, dthdp, ectei, ELF)
-              !cf(i,j,k) = min(1.0, max(0.0, cf(i,j,k)*2))
-              !cf(i,j,k) = min(1.0, abs(dthdp(i,j,k)/dthdp(i,j,kk))) * cf(i,j,k)
+            if (wg_full(i,j,k)>omega_pos_threshold .and. &
+                dthdp(i,j,k)<dthdp_min_threshold .and. p_full(i,j,k)>8.0e4) then
+              call estimate_stratiform_cld(method_str, i, j, k, kb, p_full, &
+                                      cf, rh, theta, eis, dthdp, ectei, ELF)
               marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
-              ! if (marine_strat(i,j,k)>0.01) then
-              !   write(*,*) 'QL i,j,kk,dthdp, sc=', i, j, kdthdp(i,j), p_full(i,j,k), dthdp(i,j,k), ELF(i,j), marine_strat(i,j,k)
-              ! endif
             end if
           end do
         endif
 
-        ! =========== Other stratiform clouds except temperature inversion areas =========== !
-        ! This is the first try, the souther ocean is improved a lot,
-        ! but subtropical region provide too much low clouds
-        !if (method_str(1:4)=='PARK' .and. p_full(i,j,kk)>7.5e4) then
-
-        !if (method_str(1:4)=='PARK') then
-        !  kk = kinvs(i,j)
-        !end if
-        !!if (method_str(1:4)=='PARK' .and. p_full(i,j,kk)>7.5e4 .and. dthdp(i,j,kk)>-0.06) then
-        !if (method_str(1:4)=='PARK' .and. p_full(i,j,kk)>7.5e4 &
-        !    .and. wg_full(i,j,kk)<0 .and. dthdp(i,j,kk)>-0.06) then
-        !  call estimate_stratiform_cld(method_str, i, j, kk, kb, p_full, cf, rh, theta, eis, dthdp, ectei, ELF)
-        !  marine_strat(i,j,kk) = min(1.0, max(0.0, cf(i,j,kk)))
-        !end if
-
-        !nlev = 0
-        !do k=1,k_surf
-        !  if(p_full(i,j,k)>7.0e4 .and. k<=klcls(i,j)) then
-        !    !call estimate_stratiform_cld(method_str, i, j, k, kb, pfull, cf, rh, theta, eis, dthdp, ectei, ELF)
-        !   nlev = nlev + 1
-        !  end if
-        !end do
-        !call estimate_stratiform_cld(method_str, i, j, k, kb, pfull, cf, rh, theta, eis, dthdp, ectei, ELF)
-        !nlev = klcls(i,j) - k700 + 1
-        !do k=k700,klcls(i,j)
-        !  cf(i,j,k) = 1.0 - (1.0 - cf(i,j,k))**(1/nlev) !min(1.0, max(0.0, 1.0-(1.0-cf(i,j,k))**(1/nlev))) ! Random overlap
-        !end do
       end do
     end do
 
@@ -251,13 +210,14 @@ module marine_strat_cloud_mod
     end if
   end subroutine marine_strat_cloud_diag
 
-  subroutine estimate_stratiform_cld(method_str, i, j, k, kb, pfull, cf, rh, theta, eis, dthdp, ectei, ELF)
+  subroutine estimate_stratiform_cld(method_str, i, j, k, kb, pfull, & 
+                                cf, rh, theta, eis, dthdp, ectei, ELF)
     implicit none
     integer, intent(in) :: i, j, k
+    integer, intent(in) :: kb
     character(len=32), intent(in) :: method_str
     real, intent(in),  dimension(:,:,:) :: rh, theta, pfull, dthdp
-    integer, intent(in) :: kb
-    real, intent(in),  dimension(:,:)  :: eis, ectei, ELF
+    real, intent(in),  dimension(:,:)   :: eis, ectei, ELF
     real, intent(out), dimension(:,:,:) :: cf
     real :: strat, rhb_frac
     integer :: k700, k_surf
@@ -268,46 +228,31 @@ module marine_strat_cloud_mod
     if(method_str == 'LTS') then
       strat = min(1.0, max(0.0, (theta(i,j,k700) - theta(i,j,k_surf)) * 0.057 - 0.5573))
       cf(i,j,k) = max(strat, cf(i,j,k))
+
     else if(method_str == 'SLINGO') then
       strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
       rhb_frac = min(1.0, max(0.0, (rh(i,j,kb) - 0.6) / 0.2))
       cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-    else if(method_str == 'SLINGO_NO_RH') then
-      strat = min(1.0, max(0.0, -6.67*dthdp(i,j,k) - 0.667))
-      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-    else if(method_str == 'DTHDP') then
-      strat = min(1.0, max(0.0, -3.1196*dthdp(i,j,k) - 0.1246))
-      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+
     else if(method_str == 'EIS_WOOD') then
       !strat = min(1.0, max(0.0, 0.0221*eis(i,j) + 0.1128))
       strat = min(1.0, max(0.0, 0.06*eis(i,j) + 0.14)) ! Wood and Betherton, 2006
       cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-    else if(method_str == 'EIS_WOOD_RH') then
-      strat = min(1.0, max(0.0, 0.06*eis(i,j)+0.14)) !* (rh(i,j,kb)-0.6)/0.2)) ! Wood and Betherton, 2006
-      rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
-      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
-    else if(method_str == 'EIS_RH') then
-      strat = min(1.0, max(0.0, (0.092*eis(i,j)+ 0.027)*(2.078*rh(i,j,k)-6.45e-19)))
-      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+
     else if(method_str == 'ECTEI') then
       ! Kawai, Koshiro and Webb, 2017
       strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
       cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
-    else if(method_str == 'ECTEI_RH') then
-      ! Kawai, Koshiro and Webb, 2017
-      strat = min(1.0, max(0.0, 0.031*ectei(i,j) + 0.39))
-      rhb_frac = min(1.0, max(0.0, (rh(i,j,kb)-0.6) / 0.2))
-      cf(i,j,k) = min(1.0, max(cf(i,j,k), strat*rhb_frac))
+  
     else if(method_str == 'PARK_ELF') then
       ! Park and Shin, 2019, ACP
-      !strat = min(1.0, max(0.0, 0.86*ELF(i,j) + 0.02))
-      !strat = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
+      ! strat = min(1.0, max(0.0, 1.272*ELF(i,j)-0.366))
       strat = min(1.0, max(0.0, park_a * ELF(i,j) + park_b))
-      !strat = min(1.0, max(0.0, 1.272*ELF(i,j)))
-      !strat = min(1.0, max(0.0, 1.11*ELF(i,j)-0.107))
       cf(i,j,k) = min(1.0, max(cf(i,j,k), strat))
+   
     else
       call error_mesg('cloud_simple', method_str//' is not supported yet!', FATAL)
+   
     end if
   end subroutine estimate_stratiform_cld
 
@@ -316,18 +261,16 @@ module marine_strat_cloud_mod
     real,    intent(in),  dimension(:,:)   :: temp_2m, ps
     real,    intent(out), dimension(:,:,:) :: theta, dthdp
     integer, intent(out), dimension(:,:)   :: kdthdp
-    real, dimension(size(temp,1), size(temp,2)) :: dthdp_min, theta_0
+    real, dimension(size(temp,1), size(temp,2)) :: theta_0
     real :: premib, pstar
     integer :: i, j, k, kb
 
-    dthdp_min = dthdp_min_threshold  !d_theta / d_p *1e2, lapse rate
     kdthdp = 0
     premib = 8.0e4
     dthdp = 0.0
     pstar = 1.0e5
 
-    kb = size(temp,3)  !bottom level
-
+    kb = size(temp, 3)  !bottom level
     do k=1,kb
       theta(:,:,k) =  temp(:,:,k) * (pstar / pfull(:,:,k))**(RDGAS / CP_AIR)
     end do
@@ -342,7 +285,6 @@ module marine_strat_cloud_mod
     kdthdp = minloc(dthdp, dim=3, mask=(pfull>premib).and.(dthdp<dthdp_min_threshold))
 
   end subroutine calc_theta_dthdp
-
 
   function geopotential_to_height(geopot) result(height)
     ! Calculates the height from geopotential
@@ -367,36 +309,25 @@ module marine_strat_cloud_mod
     real, intent(in),  dimension(:,:),   optional :: rh_surf, ts, ps
     real, intent(out), dimension(:,:),   optional :: plcls, tlcls, zlcls
     integer :: i, j
-    !real :: zlcl_l
 
     do i=1, size(klcls,1)
       do j=1, size(klcls,2)
+
         if(present(pfull) .and. present(plcls)) then
           plcls(i,j) = pfull(i,j,klcls(i,j))
         end if
+
         if(present(temp) .and. present(tlcls)) then
           tlcls(i,j) =  temp(i,j,klcls(i,j))
         end if
+
         if (present(zfull) .and. present(zlcls)) then
           zlcls(i,j) = zfull(i,j,klcls(i,j))
         end if
-        if (present(rh_surf) .and. present(ts) .and. present(ps) .and. present(zlcls)) then
-          ! Bolton (1980) equation
-          ! Refer to: https://journals.ametsoc.org/doi/pdf/10.1175/JAS-D-17-0102.1
-          !zlcls(i,j) = max(0.0, CP_AIR/GRAV * (ts(i,j)-55.0 - (1.0/(ts(i,j)-55.0) - log(rh_surf(i,j))/2840.)**(-1)))
-          ! The following one is not so correct as it is c_pm not c_p should be used in
-          !zlcls(i,j) = CP_AIR/GRAV * (ts(i,j)-55.0 - (1.0/(ts(i,j)-55.0) - log(rh_surf(i,j))/2840.)**(-1))
-          !write(*,*) 'QL',  i,j, rh_surf(i,j), zlcls(i,j)
 
+        if (present(rh_surf) .and. present(ts) .and. present(ps) .and. present(zlcls)) then
           ! Use the exact LCL formula from D. M. Romps [2017, JAS 74(12)]
           zlcls(i,j) = lcl(ps(i,j), ts(i,j), rh=rh_surf(i,j))
-
-          !old_zlcl = CP_AIR/GRAV * (ts(i,j)-55.0 - (1.0/(ts(i,j)-55.0) - log(rh_surf(i,j))/2840.)**(-1))
-          !write(*,*) 'QL i,j, zlcl, zlcl_old, diff=',  i, j, zlcls(i,j), old_zlcl, old_zlcl-zlcls(i,j)
-          ! if (zlcls(i,j)<0) then
-          !   zlcl_l = lcl(ps(i,j), ts(i,j), rh=rh_surf(i,j), return_ldl=.true.)
-          !   write(*,*) 'QL i,j, zlcl, zlcl_l, ps, ts, rhs=',  i, j, zlcls(i,j), zlcl_l, ps(i,j), ts(i,j), rh_surf(i,j)
-          ! end if
         end if
 
         if(.not.((present(pfull) .and. present(plcls)) .or. &
@@ -406,13 +337,14 @@ module marine_strat_cloud_mod
           call error_mesg('calc_lcls in cloud_simple', 'At least one group of '// &
                 'pfull(plcls), temp(tlcls) and zfull/rh_surf(zlcls) should exist.', FATAL)
         end if
+
       end do
     end do
 
   end subroutine calc_lcls
 
   subroutine calc_eis(pfull, zfull, temp, ts, ps, klcls, eis, Time)
-    ! Estimated inversion stability
+    ! Estimated inversion stability (EIS)
     ! Refer to: Wood and Bretherton, 2006, Journal of Climate
     implicit none
     real,    intent(in),  dimension(:,:,:) :: pfull, zfull, temp
@@ -422,7 +354,7 @@ module marine_strat_cloud_mod
     real,    intent(out), dimension(:,:)   :: eis
     real, dimension(size(temp,1), size(temp,2)) :: zlcl, z700, Gamma850, LTS
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: zfull_height
-    real    :: pstar, T850, es, qs, used
+    real    :: pstar, T850, used
     integer :: k700, i, j
 
     zfull_height = geopotential_to_height(zfull*GRAV)
@@ -434,11 +366,7 @@ module marine_strat_cloud_mod
         LTS(i,j) = temp(i,j,k700)*((pstar/pfull(i,j,k700))**(RDGAS/CP_AIR)) - &
                    ts(i,j)*(pstar/ps(i,j))**(RDGAS/CP_AIR)
         T850 = (temp(i,j,k700) + ts(i,j)) / 2.0
-        call lookup_es(T850, es)
-        qs = 0.622 * es / (8.5e4 - es)
-        Gamma850(i,j) = GRAV / CP_AIR * (1.0 - (1.0 + HLV*qs/RDGAS/T850) &
-                        / (1.0 + HLV**2 * qs/CP_AIR/RVGAS/T850**2))
-        !z700(i,j) = zfull(i,j,k700)
+        call calc_moist_lapse_rate(T850, 8.5e4, Gamma850(i,j))
         z700(i,j) = zfull_height(i,j,k700)
       end do
     end do
@@ -497,8 +425,11 @@ module marine_strat_cloud_mod
     end if
   end subroutine calc_ectei
 
-  subroutine calc_Park_proxies(pfull, ps, zfull, temp, ts, q_hum, q_surf, rh_surf, klcls, ELF, kinvs, Time)
+  subroutine calc_Park_proxies(pfull, ps, zfull, temp, ts, q_hum, q_surf, &
+                                rh_surf, klcls, ELF, kinvs, Time)
     ! Refer to: Park and Shin, 2019, Atmospheric Chemistry and Physics
+    ! Heuristic estimation of low-level cloud fraction over the globe 
+    ! based on a decoupling parameterization
     ! https://www.atmos-chem-phys.net/19/5635/2019/
 
     implicit none
@@ -509,15 +440,12 @@ module marine_strat_cloud_mod
     real,    intent(out), dimension(:,:)   :: ELF
     integer, intent(out), dimension(:,:)   :: kinvs
     real, dimension(size(temp,1), size(temp,2)) :: plcl, tlcl, zlcl, z700, Gamma_DL, &
-                                    Gamma700, LTS, z_ML, zinv, qv_ML, beta2
+                                          Gamma700, LTS, z_ML, zinv, qv_ML, beta2
     ! other paramters
-    real, dimension(size(temp,1), size(temp,2)) :: beta1, IS, DS, eis, ectei, alpha, f_para !qs_surf,
+    real, dimension(size(temp,1), size(temp,2)) :: beta1, IS, DS, eis, ectei, alpha, f_para
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: zfull_height
     real :: pstar, delta_zs, theta_ML, used
     integer :: k700, i, j
-
-    !call compute_qs(ts, ps, qs_surf)
-    !rh_surf = q_surf / qs_surf
 
     delta_zs = 2750.0 ! meter, constant
     pstar = 1.0e5 ! Pa
@@ -525,9 +453,8 @@ module marine_strat_cloud_mod
 
     zfull_height = geopotential_to_height(zfull*GRAV)
 
-    !write(*,*) 'QL max of rh_2m', maxval(rh_surf)
-    call calc_lcls(klcls, pfull=pfull, temp=temp, ts=ts, ps=ps, rh_surf=rh_surf, &
-                   plcls=plcl, tlcls=tlcl, zlcls=zlcl)
+    call calc_lcls(klcls, pfull=pfull, temp=temp, ts=ts, ps=ps, & 
+              rh_surf=rh_surf, plcls=plcl, tlcls=tlcl, zlcls=zlcl)
 
     where(zlcl < 0)
       zlcl = 0.0
@@ -536,17 +463,12 @@ module marine_strat_cloud_mod
     do i=1, size(pfull,1)
       do j=1, size(pfull,2)
         k700 = minloc(abs(pfull(i,j,:) - 7.0e4), 1)
-        !z700(i,j) = zfull(i,j,k700)
         z700(i,j) = zfull_height(i,j,k700)
-
-        !if (abs(zfull(i,j,k700)-z700(i,j))>5) then
-        !  write(*,*) 'QL i,j, z700_g, z700_h=', i, j, zfull(i,j,k700), z700(i,j)
-        !end if
-
+        
         ! Mixed Layer is the LCL
         call calc_moist_lapse_rate(tlcl(i,j), plcl(i,j), Gamma_DL(i,j))
         call calc_moist_lapse_rate(temp(i,j,k700), pfull(i,j,k700), Gamma700(i,j))
-        !theta_ML = tlcl(i,j) * (pstar / plcl(i,j))**kappa
+
         theta_ML = ts(i,j) * (pstar / ps(i,j))**kappa
         LTS(i,j) = temp(i,j,k700) * (pstar / pfull(i,j,k700))**kappa - theta_ML
         qv_ML(i,j) = q_hum(i,j,klcls(i,j))
@@ -566,10 +488,7 @@ module marine_strat_cloud_mod
 
     do i=1, size(pfull,1)
       do j=1, size(pfull,2)
-        !kinvs(i,j) = minloc(abs(zinv(i,j)-zfull(i,j,:)), 1)
         kinvs(i,j) = minloc(abs(zinv(i,j)-zfull_height(i,j,:)), 1)
-        !write(*,*) 'QL i,j, kinvs=', i,j,kinvs(i,j)
-        !write(*,*) 'QL i,j, zinv=', i,j,zinv(i,j)
       end do
     end do
 
@@ -599,7 +518,6 @@ module marine_strat_cloud_mod
       DS = alpha * Gamma_DL * delta_zs
       eis = LTS + Gamma_DL*z_ML - Gamma700*z700
       call calc_ectei(pfull, q_hum, q_surf, eis, ectei, Time)
-      !============= Other prameters =============!
 
       !Add some diagnostic ouputs
       call output_extra_diags_for_Park_ELF(Time, beta1, beta2, &
@@ -611,6 +529,10 @@ module marine_strat_cloud_mod
     real, intent(in)  :: T, p
     real, intent(out) :: Gamma
     real :: es, qs
+    
+    ! Eq(5) in the following paper:
+    ! Wood & Bretherton (2006). On the relationship between stratiform low cloud
+    ! cover and lower-tropospheric stability. Journal of climate, 19(24), 6425-6432.
 
     call lookup_es(T, es)
     qs = 0.622 * es / (p - es)

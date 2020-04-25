@@ -18,7 +18,7 @@ module large_scale_cloud_mod
   character(len=14), parameter :: mod_name = "ls_cloud"
 
   integer, parameter :: B_SPOOKIE=1, B_SUNDQVIST=2, B_LINEAR=3, &
-                        B_SMITH=4, B_SLINGO=5, B_XR96=6, B_LINEAR11=7
+                        B_SMITH=4, B_SLINGO=5, B_XR96=6
   integer, private  :: cf_diag_formula = B_LINEAR
   character(len=32) :: cf_diag_formula_name = 'linear'
 
@@ -28,52 +28,43 @@ module large_scale_cloud_mod
   logical :: do_poly_rhcrit = .false.
   logical :: do_adjust_polar_cld = .false.
 
-  real :: rhcsfc     = 0.95
-  real :: rhc700     = 0.7
-  real :: rhc200     = 0.3
+  real :: rhcsfc = 0.95
+  real :: rhc700 = 0.7
+  real :: rhc200 = 0.3
 
   ! Parameters to control the fitted critical RH profile
   real :: rhc_surf = 0.8
-  real :: rhc_top = 0.4
-  real :: n_rhc = 3.1
+  real :: rhc_top  = 0.4
+  real :: n_rhc    = 3.1
 
-  real :: qv_polar_val = 0.003 ! kg/kg
-  real :: n_power = 2.5
+  ! Parameters for the freeze-dry problem in polar region
+  real :: qv_polar_val    = 0.003  ! kg/kg
+  real :: adj_polar_power = 2.5
 
-  ! Parameters to control the coefficients
-  ! profile of linear function of RH
-  real :: a_surf = 2.7
-  real :: a_top  = 0.35
-  real :: b_surf = -2.2
-  real :: b_top  = -0.07
-  real :: nx     = 8
-
-  ! Linear go through (1, 1)
-  real :: a_surf_11 = 42
-  real :: a_top_11  = 12
-  real :: nx_11     = 8.5
+  ! Parameters to control linear coefficient profile
+  real :: linear_a_surf = 42
+  real :: linear_a_top  = 12
+  real :: linear_n      = 8.5
 
   ! For slingo80 scheme
   real :: slingo_rhc_low  = 0.8
   real :: slingo_rhc_mid  = 0.65
   real :: slingo_rhc_high = 0.8
 
-  ! ! For low clout adjustment
+  ! For low cloud adjustment
   real :: omega_adj_threshold = 0.1 !Pa/s
 
   integer :: id_rhcrit
 
   namelist /large_scale_cloud_nml/ &
             rhcsfc, rhc700, rhc200, &
-            do_fitted_rhcrit, rhc_surf, rhc_top, n_rhc, &
-            do_poly_rhcrit, &
+            do_fitted_rhcrit, do_poly_rhcrit, &
+            rhc_surf, rhc_top, n_rhc, &
             cf_diag_formula_name, &
-            a_surf, a_top, b_surf, b_top, nx, &
-            a_surf_11, a_top_11, nx_11, &
+            linear_a_surf, linear_a_top, linear_n, &
             slingo_rhc_low, slingo_rhc_mid, slingo_rhc_high, &
             do_adjust_low_cld, omega_adj_threshold, &
-            qv_polar_val, &
-            do_adjust_polar_cld, n_power
+            do_adjust_polar_cld, qv_polar_val, adj_polar_power
 
   contains
 
@@ -109,14 +100,10 @@ module large_scale_cloud_mod
 
     else if(method_str == 'SUNDQVIST') then
       cf_diag_formula = B_SUNDQVIST
-      call error_mesg(mod_name, 'Using Sundqvist (1987) cloud fraction diagnostic formula.', NOTE)
+      call error_mesg(mod_name, 'Using Sundqvist (1989) cloud fraction diagnostic formula.', NOTE)
 
     else if(method_str == 'LINEAR') then
       cf_diag_formula = B_LINEAR
-      call error_mesg(mod_name, 'Using linear cloud fraction diagnostic formula.', NOTE)
-
-    else if(method_str == 'LINEAR11') then
-      cf_diag_formula = B_LINEAR11
       call error_mesg(mod_name, 'Using linear cloud fraction diagnostic formula (go through (1,1) point).', NOTE)
 
     else if(method_str == 'SMITH') then
@@ -188,19 +175,8 @@ module large_scale_cloud_mod
     real :: rhc1, rhc2, zrhc
     p_surf = 1e5
 
-    !if (do_simple_rhcrit) then
-      ! Calculate RHcrit as function of pressure
-    ! where (p_full > 7.0e4)
-    !   rhcrit = rhcsfc - (rhcsfc - rhc700) * (p_surf - p_full) / (p_surf - 7.0e4)
-    ! elsewhere (p_full > 2.0e4)
-    !   rhcrit = rhc700 - (rhc700 - rhc200) * (7.0e4 - p_full) / 5.0e4
-    ! elsewhere
-    !   rhcrit = rhc200
-    ! endwhere
-    !  end if
-
     if (do_fitted_rhcrit) then
-        rhcrit = rhc_top + (rhc_surf - rhc_top) * exp(1.0 - (p_surf/p_full)**n_rhc)
+        rhcrit = rhc_top + (rhc_surf - rhc_top) * EXP(1.0 - (p_surf/p_full)**n_rhc)
     else if (do_poly_rhcrit) then
         rhc1 = 0.8
         rhc2 = 1.73
@@ -228,18 +204,6 @@ module large_scale_cloud_mod
     integer :: k
 
     premib = 7.0e4 !Pa
-    !omega_adj_threshold = 0.1 !-0.1   !Pa/s
-
-    ! where(p_full>premib .and. omega_adj_threshold<wg_full .and. wg_full<0.0)
-    !  cf = min(1.0, wg_full/omega_adj_threshold) * cf
-    ! !elsewhere (p_full>premib .and. wg_full>=0.0)
-    ! !where (p_full>premib .and. wg_full>=0.0)
-    ! !elsewhere (wg_full>=0.0)
-    ! ! cf = 0.0
-    !  !cf = min(1.0, wg_full/abs(omega_adj_threshold)) * cf
-    ! !elsewhere
-    ! ! cf = cf
-    ! end where
 
     where (p_full>premib .and. omega_adj_threshold>wg_full .and. wg_full>0.0)
      cf = min(1.0, wg_full/omega_adj_threshold) * cf
@@ -247,33 +211,6 @@ module large_scale_cloud_mod
     where (p_full>premib .and. wg_full>=omega_adj_threshold)
       cf = 0.0
     end where
-
-    ! =================================================================== !
-    ! Polar region adjustment !
-    ! where (p_full>premib)
-    !   cf = cf * MAX(0.15, MIN(1.0, q_hum/qv_polar_val))
-    ! end where
-
-    ! VAVRUS and WALISER, 2008, An Improved Parameterization for Simulating
-    !   Arctic Cloud Amount in the CCSM3 Climate Model,
-    !   Journal of Climate, DOI: 10.1175/2008JCLI2299.1
-    !
-    ! Excerpt from the conclusion of paper:
-    !
-    ! "The low cloud restriction currently hinders application of freezedry
-    ! over the highly elevated terrain of Greenland and Antarctica,
-    ! although a refinement could specify that clouds
-    ! be adjusted within a specified pressure range above the
-    ! surface, rather than below a prescribed pressure value."
-
-    ! do k=1,size(p_full,3)
-    !   ! if (p_full(1,1,k)> psg(1,1)-3e4) then
-    !   !   write(*,*) 'p_full(1,1, k)=', k, p_full(1,1,k), 'psg(1,1)=', psg(1,1)
-    !   ! endif
-    !   where (p_full(:,:,k) > psg-3.0e4)
-    !     cf(:,:,k) = cf(:,:,k) * MAX(0.15, MIN(1.0, q_hum(:,:,k) / qv_polar_val))
-    !   end where
-    ! end do
 
   end subroutine adjust_low_cld
 
@@ -287,17 +224,12 @@ module large_scale_cloud_mod
     ! VAVRUS and WALISER, 2008, An Improved Parameterization for Simulating
     !   Arctic Cloud Amount in the CCSM3 Climate Model,
     !   Journal of Climate, DOI: 10.1175/2008JCLI2299.1
-    !
-    ! Excerpt from the conclusion of paper:
-    !
-    ! "The low cloud restriction currently hinders application of freezedry
-    ! over the highly elevated terrain of Greenland and Antarctica,
-    ! although a refinement could specify that clouds
-    ! be adjusted within a specified pressure range above the
-    ! surface, rather than below a prescribed pressure value."
-
+    ! 
+    ! A difference from the paper is we adjust the clouds not only near the 
+    ! surface but through all the levels of atmosphere
+  
     do k=1,size(p_full,3)
-        qv_k = (p_full(:,:,k) / psg)**n_power * qv_polar_val
+        qv_k = (p_full(:,:,k) / psg)**adj_polar_power * qv_polar_val
         cf(:,:,k) = cf(:,:,k) * MAX(0.15, MIN(1.0, q_hum(:,:,k) / qv_k))
     end do
 
@@ -317,13 +249,24 @@ module large_scale_cloud_mod
         cf = (rh - rhcrit) / (1.0 - rhcrit)
 
       case(B_SUNDQVIST)
-        cf = 1.0 - ((1.0 - MIN(rh,1.0)) / (1.0 - rhcrit))**0.5
-        !cf = cf * MAX(0.15, MIN(1.0, q_hum/0.003))
+        ! Refer to: Sundqvist et al., 1989, MWR, Condensation and Cloud Parameterization 
+        ! Studies with a Mesoscale Numerical Weather Prediction Model 
+        ! https://journals.ametsoc.org/doi/10.1175/1520-0493(1989)117%3C1641:CACPSW%3E2.0.CO%3B2
+        !
+        ! Eq (3.13) in the paper above
 
+        cf = 1.0 - ((1.0 - MIN(rh,1.0)) / (1.0 - rhcrit))**0.5
+      
       case(B_SMITH)
+        ! Refer to: Smith (1990). A scheme for predicting layer clouds and their water 
+        ! in a general circulation model. QJRMS, 116(492), 435-460.
+
         cf = 1.0 - (3.0 / sqrt(2.0) * (1.0 - MIN(rh,1.0))/(1.0 - rhcrit))**(2.0/3.0)
 
       case(B_SLINGO)
+        ! Refer to: Slingo (1980). A cloud parametrization scheme derived from
+        ! GATE data for use with a numerical model. QJRMS, 106(450), 747-770.
+
         mid_base = 8.0e4
         mid_top = 4.0e4
         rhc = 0.0
@@ -343,6 +286,9 @@ module large_scale_cloud_mod
         end where
 
       case(B_XR96)
+        ! Refer to: Xu & Randall (1996). A semiempirical cloudiness parameterization 
+        ! for use in climate models. JAS, 53(21), 3084-3102.
+
         p_para = 0.25
         alpha_0 = 100.0
         gamma = 0.49
@@ -353,14 +299,10 @@ module large_scale_cloud_mod
           cf = 0.0
         elsewhere
           cf = rh**p_para * (1.0 - EXP(-alpha_0*qcl_rad / (qsat-q_hum)**gamma))
-          ! If only use rh**p_para, then the cld fraction is too large...
         end where
-
+      
       case(B_LINEAR)
         call calc_cf_linear(pfull, rh, ps, cf)
-      
-      case(B_LINEAR11)
-        call calc_cf_linear11(pfull, rh, ps, cf)
 
       case default
         call error_mesg(mod_name, 'invalid cloud fraction diagnostic formula', FATAL)
@@ -375,37 +317,18 @@ module large_scale_cloud_mod
     real, intent(in),  dimension(:,:,:) :: p_full, rh
     real, intent(in),  dimension(:,:)   :: ps
     real, intent(out), dimension(:,:,:) :: cf
-    real, dimension(size(p_full,1), size(p_full,2), size(p_full,3)) :: coeff_a, coeff_b
-    integer :: k
-    !real :: ps
-
-    !ps = 1.0e5 !Pa
-    !coeff_a = a_top + (a_surf-a_top) * exp(1.0 - (ps/p_full)**nx)
-    !coeff_b = b_top + (b_surf-b_top) * exp(1.0 - (ps/p_full)**nx)
-
-    do k=1,size(rh,3)
-      coeff_a(:,:,k) = a_top + (a_surf-a_top) * exp(1.0 - (ps/p_full(:,:,k))**nx)
-      coeff_b(:,:,k) = b_top + (b_surf-b_top) * exp(1.0 - (ps/p_full(:,:,k))**nx)
-    end do
-
-    cf = coeff_a * rh + coeff_b
-    cf = MAX(0.0, MIN(1.0, cf))
-  end subroutine calc_cf_linear
-
-  subroutine calc_cf_linear11(p_full, rh, ps, cf)
-    ! Calculate LS (stratiform) cloud fraction as a linear function of RH
-    real, intent(in),  dimension(:,:,:) :: p_full, rh
-    real, intent(in),  dimension(:,:)   :: ps
-    real, intent(out), dimension(:,:,:) :: cf
     real, dimension(size(p_full,1), size(p_full,2), size(p_full,3)) :: coeff_a
     integer :: k 
+
     do k=1,size(rh,3)
-      coeff_a(:,:,k) = a_top_11 + (a_surf_11-a_top_11) * exp(1.0 - (ps/p_full(:,:,k))**nx_11)
+      coeff_a(:,:,k) = linear_a_top + (linear_a_surf-linear_a_top) * &
+                        EXP(1.0 - (ps/p_full(:,:,k))**linear_n)
     end do
 
     cf = coeff_a * (rh - 1.0) + 1.0
     cf = MAX(0.0, MIN(1.0, cf))
-  end subroutine calc_cf_linear11
+
+  end subroutine calc_cf_linear
 
   subroutine large_scale_cloud_end()
 

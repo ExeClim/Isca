@@ -17,27 +17,17 @@ module cloud_simple_mod
                                     large_scale_cloud_end
   use marine_strat_cloud_mod, only: marine_strat_cloud_init, marine_strat_cloud_diag, &
                                     marine_strat_cloud_end
-  use   convective_cloud_mod, only: convective_cloud_init, convective_cloud_diag, &
-                                    convective_cloud_end
   use  cloud_cover_diags_mod, only: cloud_cover_diags_init, cloud_cover_diags, &
                                     cloud_cover_diags_end
-  use  statistical_cloud_mod, only: statistical_cloud_init, statistical_cloud, &
-                                    statistical_cloud_end
 
   implicit none
 
   character(len=14), parameter :: mod_name_cld = "cloud_simple"
 
   logical :: do_init = .true.  ! Check if init needs to be run
-  logical :: do_qcl_with_temp = .false.
+  logical :: do_qcl_with_temp = .true.
   logical :: do_cloud_cover_diags = .true.
   logical :: do_add_stratocumulus = .false.
-  logical :: do_conv_cld = .false.
-  logical :: do_statistical_cloud = .false.
-  !logical :: do_adjust_low_cld = .false.
-
-  ! For low clout adjustment
-  !real :: omega_adj_threshold = 0.1 !Pa/s
 
   ! Parameters to control the liquid cloud fraction
   real :: T_max = -5    ! Units in Celcius
@@ -56,10 +46,7 @@ module cloud_simple_mod
   namelist /cloud_simple_nml/ &
             T_min, T_max, reff_liq, reff_ice, &
             qcl_val, do_qcl_with_temp, &
-            do_add_stratocumulus, do_conv_cld, &
-            do_cloud_cover_diags, &
-            !do_adjust_low_cld, omega_adj_threshold, &
-            do_statistical_cloud
+            do_add_stratocumulus, do_cloud_cover_diags
 
   contains
 
@@ -99,11 +86,7 @@ module cloud_simple_mod
 
     call large_scale_cloud_init(axes, Time)
 
-    if (do_statistical_cloud) call statistical_cloud_init(axes, Time)
-
     if (do_add_stratocumulus) call marine_strat_cloud_init(axes, Time)
-
-    if (do_conv_cld)          call convective_cloud_init(axes, Time)
 
     if (do_cloud_cover_diags) call cloud_cover_diags_init(axes, Time)
 
@@ -113,15 +96,15 @@ module cloud_simple_mod
 
   ! ====================== Main Cloud Subroutine ====================== !
   subroutine cloud_simple(p_half, p_full, Time, temp, q_hum, z_full, &
-                          wg_full, psg, temp_2m, q_2m, rh_2m, precip, klcls, klzbs, &
+                          wg_full, psg, temp_2m, q_2m, rh_2m, klcls, &
                           cf, reff_rad, qcl_rad)  ! outs
     real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, wg_full
-    real, intent(in),  dimension(:,:)   :: psg, temp_2m, precip, q_2m, rh_2m
-    integer, intent(in), dimension(:,:) :: klcls, klzbs
+    real, intent(in),  dimension(:,:)   :: psg, temp_2m, q_2m, rh_2m
+    integer, intent(in), dimension(:,:) :: klcls
     type(time_type),   intent(in)       :: Time
     real, intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
-    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: qs, frac_liq, rh_in_cf, &
-                                                                 conv_cf, rh_e
+    real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: qs, frac_liq, rh_in_cf
+
     !check initiation has been done - ie read in parameters
     if (do_init) call error_mesg ('cloud_simple',  &
          'cloud_simple_init has not been called.', FATAL)
@@ -131,58 +114,23 @@ module cloud_simple_mod
     rh_in_cf = q_hum / qs
 
     call calc_liq_frac(temp, frac_liq)
+    
     call calc_reff(frac_liq, reff_rad)
 
-    conv_cf = 0.0
-    if(do_conv_cld) then
-      call convective_cloud_diag(p_full, precip, klcls, klzbs, conv_cf, Time)
-    end if
-
-    ! rh_e is the effective RH
-    rh_e = rh_in_cf * (1.0 - conv_cf)
-    call large_scale_cloud_diag(p_full, psg, rh_e, q_hum, qs, qcl_rad, wg_full, cf, Time)
+    call large_scale_cloud_diag(p_full, psg, rh_in_cf, q_hum, qs, qcl_rad, wg_full, cf, Time)
 
     if (do_add_stratocumulus) then
-      call marine_strat_cloud_diag(temp, p_full, p_half, z_full, rh_e, q_hum, &
+      call marine_strat_cloud_diag(temp, p_full, p_half, z_full, rh_in_cf, q_hum, &
               temp_2m, q_2m, rh_2m, psg, wg_full, klcls, cf, Time)
     end if
 
-    ! if(do_adjust_low_cld) then
-    !   call adjust_low_cld(p_full, psg, wg_full, cf, q_hum)
-    ! end if
-
-    if(do_conv_cld) call merge_strat_conv_clouds(cf, conv_cf)
-
     call calc_qcl_rad(p_full, temp, cf, qcl_rad)
-
-    ! not sure the position of this call, but should after initially calculation of qcl_rad
-    if (do_statistical_cloud) call statistical_cloud(temp, q_hum, p_full, qcl_rad, cf)
 
     if (do_cloud_cover_diags) call cloud_cover_diags(cf, p_full, p_half, Time)
 
     call output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, Time)
 
   end subroutine cloud_simple
-
-  ! subroutine adjust_low_cld(p_full, psg, wg_full, cf, q_hum)
-  !   real, intent(in),    dimension(:,:,:) :: p_full, wg_full, q_hum
-  !   real, intent(in),    dimension(:,:)   :: psg
-  !   real, intent(inout), dimension(:,:,:) :: cf
-  !   real :: premib, omega
-  !   integer :: k
-
-  !   premib = 7.0e4 !Pa
-  !   !omega_adj_threshold = 0.1 !-0.1   !Pa/s
-
-  !   where (p_full>premib .and. omega_adj_threshold>wg_full .and. wg_full>0.0)
-  !    cf = min(1.0, wg_full/omega_adj_threshold) * cf
-  !   end where
-  !   where (p_full>premib .and. wg_full>=omega_adj_threshold)
-  !     cf = 0.0
-  !   end where
-
-  ! end subroutine adjust_low_cld
-
 
   subroutine calc_liq_frac(temp, frac_liq)
     ! All liquid if above T_max and all ice below T_min,
@@ -215,13 +163,8 @@ module cloud_simple_mod
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: in_cloud_qcl
 
     if (do_qcl_with_temp) then
-      !in_cloud_qcl = 0.2 * (temp-220.0) / (280.0-220.0)
-      !in_cloud_qcl = MAX(3.0e-4, MIN(0.2, in_cloud_qcl)) / 1.0e3 ! convert to kg/kg
       in_cloud_qcl =  qcl_val * (temp-220.0) / (280.0-220.0)
       in_cloud_qcl = MAX(3.0e-4, MIN(qcl_val, in_cloud_qcl)) / 1.0e3 ! convert to kg/kg
-
-      !in_cloud_qcl = 0.15 * (temp-220.0) / (280.0-220.0)
-      !in_cloud_qcl = MAX(3.0e-4, MIN(0.15, in_cloud_qcl)) / 1.0e3 ! convert to kg/kg
     else
       ! in_cloud_qcl as a function of height
       in_cloud_qcl = 3.0e-4 + (1.0-3.0e-4) * (p_full-2.0e4) / 8.0e4
@@ -231,17 +174,6 @@ module cloud_simple_mod
     qcl_rad = cf * in_cloud_qcl
 
   end subroutine calc_qcl_rad
-
-  subroutine merge_strat_conv_clouds(cf, conv_cf)
-    implicit none
-    real, intent(in),  dimension(:,:,:) :: conv_cf
-    real, intent(out), dimension(:,:,:) :: cf
-
-    cf = max(cf, conv_cf)
-    !cf = 1.0 - (1.0 - cf) * (1.0 - conv_cf) ! Random overlap
-    ! Refer to CAM5
-    !cf = (1-conv_cf) * cf + conv_cf
-  end subroutine merge_strat_conv_clouds
 
   subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, Time)
     real, intent(in), dimension(:,:,:) :: cf, reff_rad, frac_liq, qcl_rad, rh_in_cf
@@ -271,8 +203,6 @@ module cloud_simple_mod
     ! If alloocated are added in init then deallocate them here.
     call large_scale_cloud_end()
     if (do_add_stratocumulus)  call marine_strat_cloud_end()
-    if (do_conv_cld)           call convective_cloud_end()
-    if (do_statistical_cloud)  call statistical_cloud_end()
     if (do_cloud_cover_diags)  call cloud_cover_diags_end()
 
   end subroutine cloud_simple_end
