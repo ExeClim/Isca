@@ -67,7 +67,7 @@ module marine_strat_cloud_mod
     stdlog_unit = stdlog()
     write(stdlog_unit, marine_strat_cloud_nml)
 
-    call error_mesg('marine_stat_cloud', 'The stratomulus diagnosis method is '// &
+    call error_mesg(mod_name, 'The stratomulus diagnosis method is '// &
                     uppercase(trim(sc_diag_method)), NOTE)
 
     method_str = uppercase(trim(sc_diag_method))

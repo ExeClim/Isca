@@ -19,24 +19,16 @@ module cloud_cover_diags_mod
   ! and the default is 'maximum-random'.
   character(len=32) :: overlap_assumption = 'maximum-random'
 
-  ! If true, output cloud covers based on all of the three assumptions
-  logical :: do_test_overlap = .false.
+  real :: cf_min = 0.0  ! The clear-sky threshold
 
-  real :: cf_min = 0.0 ! The cloud free threshold
-
-  real :: mid_btm  = 7.0e4 ! Bottom (Top) pressure of middle (low) clouds
-  real :: high_btm = 4.0e4 ! Bottom (Top) pressure of high (middle) clouds
+  real :: mid_cld_bottom  = 7.0e4 ! Bottom (Top) pressure of middle (low) clouds
+  real :: high_cld_bottom = 4.0e4 ! Bottom (Top) pressure of high (middle) clouds
 
   ! ----- outputs for cloud amount diagnostics ----- !
   integer :: id_tot_cld_amt, id_high_cld_amt, id_mid_cld_amt, id_low_cld_amt
 
-  ! if do_test_overlap is .true., then output cloud covers based on all of the three assumptions
-  integer :: id_tot_cld_amt_mxr, id_high_cld_amt_mxr, id_mid_cld_amt_mxr, id_low_cld_amt_mxr
-  integer :: id_tot_cld_amt_max, id_high_cld_amt_max, id_mid_cld_amt_max, id_low_cld_amt_max
-  integer :: id_tot_cld_amt_rnd, id_high_cld_amt_rnd, id_mid_cld_amt_rnd, id_low_cld_amt_rnd
-
   namelist /cloud_cover_diag_nml/ &
-              overlap_assumption, cf_min, mid_btm, high_btm, do_test_overlap
+            overlap_assumption, cf_min, mid_cld_bottom, high_cld_bottom
 
   contains
 
@@ -65,6 +57,9 @@ module cloud_cover_diags_mod
     stdlog_unit = stdlog()
     write(stdlog_unit, cloud_cover_diag_nml)
 
+    call error_mesg(mod_name, 'The cloud overlap assumption is '// &
+                    uppercase(trim(overlap_assumption)), NOTE)
+
     id_tot_cld_amt = register_diag_field (mod_name, 'tot_cld_amt', axes(1:2), Time, &
                           'total cloud amount (%)', 'percent')
     id_high_cld_amt = register_diag_field (mod_name, 'high_cld_amt', axes(1:2), Time, &
@@ -73,38 +68,6 @@ module cloud_cover_diags_mod
                           'mid cloud amount (%)', 'percent')
     id_low_cld_amt = register_diag_field (mod_name, 'low_cld_amt', axes(1:2), Time, &
                           'low cloud amount (%)', 'percent')
-
-    if (do_test_overlap) then
-      ! Maximum-random overlap
-      id_tot_cld_amt_mxr = register_diag_field (mod_name, 'tot_cld_amt_mxr', axes(1:2), Time, &
-              'total cloud amount (maximum-random assumption)', 'percent')
-      id_high_cld_amt_mxr = register_diag_field (mod_name, 'high_cld_amt_mxr', axes(1:2), Time, &
-              'high cloud amount (maximum-random assumption)', 'percent')
-      id_mid_cld_amt_mxr = register_diag_field (mod_name, 'mid_cld_amt_mxr', axes(1:2), Time, &
-              'mid cloud amount (maximum-random assumption)', 'percent')
-      id_low_cld_amt_mxr = register_diag_field (mod_name, 'low_cld_amt_mxr', axes(1:2), Time, &
-              'low cloud amount (maximum-random assumption)', 'percent')
-
-      ! Maximum overlap
-      id_tot_cld_amt_max = register_diag_field (mod_name, 'tot_cld_amt_max', axes(1:2), Time, &
-              'total cloud amount (maximum assumption)', 'percent')
-      id_high_cld_amt_max = register_diag_field (mod_name, 'high_cld_amt_max', axes(1:2), Time, &
-              'high cloud amount (maximum assumption)', 'percent')
-      id_mid_cld_amt_max = register_diag_field (mod_name, 'mid_cld_amt_max', axes(1:2), Time, &
-              'mid cloud amount (maximum assumption)', 'percent')
-      id_low_cld_amt_max = register_diag_field (mod_name, 'low_cld_amt_max', axes(1:2), Time, &
-              'low cloud amount (maximum assumption)', 'percent')
-
-      ! Random overlap
-      id_tot_cld_amt_rnd = register_diag_field (mod_name, 'tot_cld_amt_rnd', axes(1:2), Time, &
-              'total cloud amount (random assumption)', 'percent')
-      id_high_cld_amt_rnd = register_diag_field (mod_name, 'high_cld_amt_rnd', axes(1:2), Time, &
-              'high cloud amount (random assumption)', 'percent')
-      id_mid_cld_amt_rnd = register_diag_field (mod_name, 'mid_cld_amt_rnd', axes(1:2), Time, &
-              'mid cloud amount (random assumption)', 'percent')
-      id_low_cld_amt_rnd = register_diag_field (mod_name, 'low_cld_amt_rnd', axes(1:2), Time, &
-              'low cloud amount (random assumption)', 'percent')
-    end if
 
   end subroutine cloud_cover_diags_init
 
@@ -115,36 +78,121 @@ module cloud_cover_diags_mod
     real, intent(in),  dimension(:,:,:) :: cf, p_full, p_half
     type(time_type),   intent(in)       :: Time
     character(len=32) :: overlap_str = ''
-    real, dimension(size(cf,1), size(cf,2)) :: tca, low_ca, mid_ca, high_ca
 
     overlap_str = uppercase(trim(overlap_assumption))
 
     if (overlap_str == 'MAXIMUM-RANDOM') then
-      call diag_cldamt_maxrnd_overlap(cf, p_full, p_half, Time, tca, high_ca, mid_ca, low_ca)
+      call diag_cldamt_maxrnd_overlap(cf, p_full, p_half, Time)
 
     else if (overlap_str == 'MAXIMUM') then
-      call diag_cldamt_max_overlap(cf, p_full, Time, tca, high_ca, mid_ca, low_ca)
+      call diag_cldamt_max_overlap(cf, p_full, Time)
 
     else if (overlap_str == 'RANDOM') then
-      call diag_cldamt_random_overlap(cf, p_full, Time, tca, high_ca, mid_ca, low_ca)
+      call diag_cldamt_random_overlap(cf, p_full, Time)
 
     else
       call error_mesg(mod_name, '"'//trim(overlap_assumption)//'"'// &
-        ' is not a valid cloud overlap assumption.', FATAL)
-    end if
-
-    ! Diagnostics output
-    call output_cldamt(tca, high_ca, mid_ca, low_ca, Time)
-
-    if (do_test_overlap) then
-      call diag_cldamt_maxrnd_overlap(cf, p_full, p_half, Time, tca, high_ca, mid_ca, low_ca)
-      call diag_cldamt_max_overlap(cf, p_full, Time, tca, high_ca, mid_ca, low_ca)
-      call diag_cldamt_random_overlap(cf, p_full, Time, tca, high_ca, mid_ca, low_ca)
+              ' is not a valid cloud overlap assumption.', FATAL)
     end if
 
   end subroutine cloud_cover_diags
 
-  subroutine cldovrlap(pint, cld, nmxrgn, pmxrgn)
+  subroutine diag_cldamt_maxrnd_overlap(cf, pmid, pint, Time)
+    ! Original codes are from CESM, refer to:
+    ! https://github.com/E3SM-Project/E3SM/blob/master/components/cam/src/physics/cam/cloud_cover_diags.F90
+
+    !!! pmid is pfull, and pint is phalf
+    real, intent(in),  dimension(:,:,:) :: cf, pmid, pint
+    type(time_type),   intent(in)       :: Time
+
+    !---------------------------Local workspace-----------------------------
+    ! Total, low, middle and high random overlap cloud cover
+    real, dimension(size(cf,1), size(cf,2)) :: tot_ca, hgh_ca, mid_ca, low_ca
+
+    integer :: i, j, k     ! lat, lon, level indices
+    integer, dimension(size(cf,1), size(cf,2)) :: irgn    ! Max-overlap region index
+    integer :: max_nmxrgn  ! maximum value of nmxrgn over columns
+    integer :: ityp        ! Type counter
+    real, dimension(size(cf,1), size(cf,2)) :: clrsky      ! Max-random clear sky fraction
+    real, dimension(size(cf,1), size(cf,2)) :: clrskymax   ! Maximum overlap clear sky fraction
+    integer, dimension(size(cf,1), size(cf,2)) :: nmxrgn
+    real, dimension(size(pint,1), size(pint,2), size(pint,3)) :: pmxrgn
+
+    !------------------------------Cloud Range Paramters-------------------------------
+    real :: plowmax, plowmin   ! Max/min prs for low cloud cover range
+    real :: pmedmax, pmedmin   ! Max/min prs for mid cloud cover range
+    real :: phghmax, phghmin   ! Max/min prs for hgh cloud cover range
+
+    real, dimension(4) :: ptypmin
+    real, dimension(4) :: ptypmax
+
+    plowmax = 1.2e5
+    plowmin = mid_cld_bottom
+
+    pmedmax = mid_cld_bottom
+    pmedmin = high_cld_bottom
+
+    phghmax = high_cld_bottom
+    phghmin = 5.0e3
+
+    ptypmin = (/ phghmin, plowmin, pmedmin, phghmin /)
+    ptypmax = (/ plowmax, plowmax, pmedmax, phghmax /)
+
+    ! call the overlap subroutine to obtain the nmxrgn and pmxrgn
+    call cldovrlap(pint, cf, nmxrgn, pmxrgn)
+
+    ! Initialize region number
+    max_nmxrgn = -1
+    do i = 1,size(cf,1)
+      do j = 1,size(cf,2)
+        max_nmxrgn = max(max_nmxrgn, nmxrgn(i,j))
+      end do
+    end do
+
+    do ityp = 1,4
+      irgn = 1
+      do k = 1,max_nmxrgn-1
+          do i = 1,size(cf,1)
+            do j = 1,size(cf,2)
+              if (pmxrgn(i,j,irgn(i,j)) < ptypmin(ityp) .and. irgn(i,j) < nmxrgn(i,j)) then
+                  irgn(i,j) = irgn(i,j) + 1
+              end if
+            end do
+          end do
+      end do
+      !
+      ! Compute cloud amount by estimating clear-sky amounts
+      !
+      clrsky = 1.0
+      clrskymax = 1.0
+
+      do i = 1,size(cf,1)
+        do j = 1,size(cf,2)
+          do k = 1,size(cf,3)
+            if (pmid(i,j,k) >= ptypmin(ityp) .and. pmid(i,j,k) <= ptypmax(ityp)) then
+                if (pmxrgn(i,j,irgn(i,j)) < pmid(i,j,k) .and. irgn(i,j) < nmxrgn(i,j)) then
+                  irgn(i,j) = irgn(i,j) + 1
+                  clrsky(i,j) = clrsky(i,j) * clrskymax(i,j)
+                  clrskymax(i,j) = 1.0
+                endif
+                clrskymax(i,j) = min(clrskymax(i,j), 1.0-cf(i,j,k))
+            endif
+          end do
+        end do
+      end do
+
+      if (ityp == 1) tot_ca = 1.0 - (clrsky * clrskymax)
+      if (ityp == 2) low_ca = 1.0 - (clrsky * clrskymax)
+      if (ityp == 3) mid_ca = 1.0 - (clrsky * clrskymax)
+      if (ityp == 4) hgh_ca = 1.0 - (clrsky * clrskymax)
+    end do
+
+    ! Diagnostics output
+    call output_cldamt(tot_ca, hgh_ca, mid_ca, low_ca, Time)
+
+  end subroutine diag_cldamt_maxrnd_overlap
+
+  subroutine cldovrlap(pint, cf, nmxrgn, pmxrgn)
     ! The original codes are from CAM.
     ! Please refer to:
     !  https://github.com/E3SM-Project/E3SM/blob/master/components/cam/src/physics/cam/pkg_cldoptics.F90#L136
@@ -154,20 +202,20 @@ module cloud_cover_diags_mod
     ! Partitions each column into regions with clouds in neighboring layers.
     ! This information is used to implement maximum overlap in these regions
     ! with random overlap between them.
-    ! On output,
+    ! On output:
     !    nmxrgn contains the number of regions in each column
-    !    pmxrgn contains the interface pressures for the lower boundaries of
-    !           each region!
+    !    pmxrgn contains the interface pressures for the lower boundaries of each region!
+    !
     ! Author: W. Collins
     !-----------------------------------------------------------------------
 
     ! Input arguments
     real, intent(in), dimension(:,:,:) :: pint  ! Interface pressure
-    real, intent(in), dimension(:,:,:) :: cld   ! Fractional cloud cover
+    real, intent(in), dimension(:,:,:) :: cf   ! Fractional cloud cover
 
     ! Output arguments
     ! Number of maximally overlapped regions
-    integer, intent(out), dimension(size(cld,1), size(cld,2)) :: nmxrgn
+    integer, intent(out), dimension(size(cf,1), size(cf,2)) :: nmxrgn
     real, intent(out), dimension(size(pint,1), size(pint,2), size(pint,3)) :: pmxrgn
 
     !---------------------------Local variables-----------------------------
@@ -177,17 +225,17 @@ module cloud_cover_diags_mod
 
     real, dimension(size(pint,1), size(pint,2), size(pint,3)) :: pnm  ! Interface pressure
     logical :: cld_found                          ! Flag for detection of cloud
-    logical, dimension(size(cld,3)) :: cld_layer  ! Flag for cloud in layer
+    logical, dimension(size(cf,3)) :: cld_layer  ! Flag for cloud in layer
     integer :: pver, pverp
 
-    pver = size(cld,3)
+    pver = size(cf,3)
     pverp = pver + 1
 
-    do i = 1,size(cld,1)
-      do j = 1,size(cld,2)
+    do i = 1,size(cf,1)
+      do j = 1,size(cf,2)
         cld_found = .false.
         ! True if cloud fraction greater than cf_min
-        cld_layer(:) = cld(i,j,:) > cf_min    ! 0.0
+        cld_layer(:) = cf(i,j,:) > cf_min    ! 0.0
         pmxrgn(i,j,:) = 0.0
         pnm(i,j,:) = pint(i,j,:)
         n = 1
@@ -209,212 +257,81 @@ module cloud_cover_diags_mod
     end do
   end subroutine cldovrlap
 
-  subroutine diag_cldamt_maxrnd_overlap(cld, pmid, pint, Time, tca, high_ca, mid_ca, low_ca)
-    ! Original codes are from CESM, refer to:
-    ! https://github.com/E3SM-Project/E3SM/blob/master/components/cam/src/physics/cam/cloud_cover_diags.F90
-
-    !!! pmid is pfull, and pint is phalf
-    real, intent(in),  dimension(:,:,:) :: cld, pmid, pint
-    type(time_type),   intent(in)       :: Time
-    real, intent(out), dimension(:,:)   :: tca, high_ca, mid_ca, low_ca
-
-    !---------------------------Local workspace-----------------------------
-    ! Total, low, middle and high random overlap cloud cover
-    real :: used
-
-    integer :: i,j,k       ! lat/lon,level indices
-    integer, dimension(size(cld,1), size(cld,2)) :: irgn    ! Max-overlap region index
-    integer :: max_nmxrgn  ! maximum value of nmxrgn over columns
-    integer :: ityp        ! Type counter
-    real, dimension(size(cld,1), size(cld,2)) :: clrsky      ! Max-random clear sky fraction
-    real, dimension(size(cld,1), size(cld,2)) :: clrskymax   ! Maximum overlap clear sky fraction
-    integer, dimension(size(cld,1), size(cld,2)) :: nmxrgn
-    real, dimension(size(pint,1), size(pint,2), size(pint,3)) :: pmxrgn
-
-    !------------------------------Cloud Range Paramters-------------------------------
-    real :: plowmax=1.2e5,  plowmin         ! Max/min prs for low cloud cover range
-    real :: pmedmax,        pmedmin         ! Max/min prs for mid cloud cover range
-    real :: phghmax,        phghmin=5.0e3   ! Max/min prs for hgh cloud cover range
-
-    real, dimension(4) :: ptypmin
-    real, dimension(4) :: ptypmax
-
-    plowmin = mid_btm
-    pmedmax = mid_btm
-    pmedmin = high_btm
-    phghmax = high_btm
-
-    ptypmin = (/phghmin, plowmin, pmedmin, phghmin/)
-    ptypmax = (/plowmax, plowmax, pmedmax, phghmax/)
-
-    ! call the overlap subroutine to obtain the nmxrgn and pmxrgn
-    call cldovrlap(pint, cld, nmxrgn, pmxrgn)
-
-    ! Initialize region number
-    max_nmxrgn = -1
-    do i=1,size(cld,1)
-      do j=1,size(cld,2)
-        max_nmxrgn = max(max_nmxrgn, nmxrgn(i,j))
-      end do
-    end do
-
-    do ityp= 1,4
-      irgn = 1
-      do k =1,max_nmxrgn-1
-          do i=1,size(cld,1)
-            do j=1,size(cld,2)
-              if (pmxrgn(i,j,irgn(i,j)) < ptypmin(ityp) .and. irgn(i,j) < nmxrgn(i,j)) then
-                  irgn(i,j) = irgn(i,j) + 1
-              end if
-            end do
-          end do
-      end do
-      !
-      ! Compute cloud amount by estimating clear-sky amounts
-      !
-      clrsky = 1.0
-      clrskymax = 1.0
-
-      do i=1,size(cld,1)
-        do j=1,size(cld,2)
-          do k=1,size(cld,3)
-            if (pmid(i,j,k) >= ptypmin(ityp) .and. pmid(i,j,k) <= ptypmax(ityp)) then
-                if (pmxrgn(i,j,irgn(i,j)) < pmid(i,j,k) .and. irgn(i,j) < nmxrgn(i,j)) then
-                  irgn(i,j) = irgn(i,j) + 1
-                  clrsky(i,j) = clrsky(i,j) * clrskymax(i,j)
-                  clrskymax(i,j) = 1.0
-                endif
-                clrskymax(i,j) = min(clrskymax(i,j), 1.0-cld(i,j,k))
-            endif
-          end do
-        end do
-      end do
-
-      if (ityp == 1) tca = 1.0 - (clrsky * clrskymax)
-      if (ityp == 2) low_ca = 1.0 - (clrsky * clrskymax)
-      if (ityp == 3) mid_ca = 1.0 - (clrsky * clrskymax)
-      if (ityp == 4) high_ca = 1.0 - (clrsky * clrskymax)
-    end do
-
-    if (do_test_overlap) then
-      if (id_tot_cld_amt_mxr > 0) then
-        used = send_data (id_tot_cld_amt_mxr, tca*1.0e2, Time)
-      endif
-      if (id_high_cld_amt_mxr > 0) then
-        used = send_data (id_high_cld_amt_mxr, high_ca*1.0e2, Time)
-      endif
-      if (id_mid_cld_amt_mxr > 0) then
-        used = send_data (id_mid_cld_amt_mxr, mid_ca*1.0e2, Time)
-      endif
-      if (id_low_cld_amt_mxr > 0) then
-        used = send_data (id_low_cld_amt_mxr, low_ca*1.0e2, Time)
-      endif
-    endif
-
-  end subroutine diag_cldamt_maxrnd_overlap
-
-  subroutine diag_cldamt_max_overlap(cf, p_full, Time, tca, high_ca, mid_ca, low_ca)
+  subroutine diag_cldamt_max_overlap(cf, p_full, Time)
     real, intent(in),  dimension(:,:,:) :: cf, p_full
     type(time_type),   intent(in)       :: Time
-    real, intent(out), dimension(:,:)   :: tca, high_ca, mid_ca, low_ca
+    real, dimension(size(cf,1), size(cf,2)) :: tot_ca, hgh_ca, mid_ca, low_ca
     integer :: i, j, ks, ke
     logical, dimension(size(cf,3)) :: ind_mid
-    real :: used
 
-    tca = 1.0
-    high_ca = 1.0
+    tot_ca = 1.0
+    hgh_ca = 1.0
     mid_ca = 1.0
     low_ca = 1.0
 
-    ! total cld amount
-    tca = maxval(cf, 3)
+    ! total cf amount
+    tot_ca = maxval(cf, 3)
 
-    do i=1,size(cf,1)
-      do j=1,size(cf,2)
+    do i = 1,size(cf,1)
+      do j = 1,size(cf,2)
         ! low cloud amount
-        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_btm)
-        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_btm)
+        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_cld_bottom)
+        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_cld_bottom)
         low_ca(i,j) = maxval(cf(i,j,ks:ke), 1)
 
         ! middle cloud amount
-        ind_mid = high_btm<=p_full(i,j,:) .and. p_full(i,j,:)<=mid_btm
+        ind_mid = high_cld_bottom<=p_full(i,j,:) .and. p_full(i,j,:)<=mid_cld_bottom
         ks = minloc(p_full(i,j,:), 1, mask=ind_mid)
         ke = maxloc(p_full(i,j,:), 1, mask=ind_mid)
         mid_ca(i,j) = maxval(cf(i,j,ks:ke), 1)
 
         ! high cloud amount
-        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
-        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
-        high_ca(i,j) = maxval(cf(i,j,ks:ke), 1)
+        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_cld_bottom)
+        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_cld_bottom)
+        hgh_ca(i,j) = maxval(cf(i,j,ks:ke), 1)
       enddo
     enddo
 
-    if (do_test_overlap) then
-      if (id_tot_cld_amt_max > 0) then
-        used = send_data (id_tot_cld_amt_max, tca*1.0e2, Time)
-      endif
-      if (id_high_cld_amt_max > 0) then
-        used = send_data (id_high_cld_amt_max, high_ca*1.0e2, Time)
-      endif
-      if (id_mid_cld_amt_max > 0) then
-        used = send_data (id_mid_cld_amt_max, mid_ca*1.0e2, Time)
-      endif
-      if (id_low_cld_amt_max > 0) then
-        used = send_data (id_low_cld_amt_max, low_ca*1.0e2, Time)
-      endif
-    endif
+    ! Diagnostics output
+    call output_cldamt(tot_ca, hgh_ca, mid_ca, low_ca, Time)
 
   end subroutine diag_cldamt_max_overlap
 
-  subroutine diag_cldamt_random_overlap(cf, p_full, Time, tca, high_ca, mid_ca, low_ca)
+  subroutine diag_cldamt_random_overlap(cf, p_full, Time)
     real, intent(in),  dimension(:,:,:) :: cf, p_full
     type(time_type),   intent(in)       :: Time
-    real, intent(out), dimension(:,:)   :: tca, high_ca, mid_ca, low_ca
+    real, dimension(size(cf,1), size(cf,2)) :: tot_ca, hgh_ca, mid_ca, low_ca
     integer :: i, j, ks, ke
     logical, dimension(size(cf,3)) :: ind_mid
-    real :: used
 
-    tca = 1.0
-    high_ca = 1.0
+    tot_ca = 1.0
+    hgh_ca = 1.0
     mid_ca = 1.0
     low_ca = 1.0
 
-    do i=1,size(cf,1)
-      do j=1,size(cf,2)
+    do i = 1,size(cf,1)
+      do j = 1,size(cf,2)
         ! low cloud amount
-        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_btm)
-        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_btm)
+        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_cld_bottom)
+        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_cld_bottom)
         call random_overlap_single_column(cf(i,j,ks:ke), low_ca(i,j))
 
         ! middle cloud amount
-        ind_mid = high_btm<=p_full(i,j,:) .and. p_full(i,j,:)<=mid_btm
+        ind_mid = high_cld_bottom<=p_full(i,j,:) .and. p_full(i,j,:)<=mid_cld_bottom
         ks = minloc(p_full(i,j,:), 1, mask=ind_mid)
         ke = maxloc(p_full(i,j,:), 1, mask=ind_mid)
         call random_overlap_single_column(cf(i,j,ks:ke), mid_ca(i,j))
 
         ! high cloud amount
-        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
-        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
-        call random_overlap_single_column(cf(i,j,ks:ke), high_ca(i,j))
+        ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_cld_bottom)
+        ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_cld_bottom)
+        call random_overlap_single_column(cf(i,j,ks:ke), hgh_ca(i,j))
       enddo
     enddo
-    tca = 1.0 - (1.0-high_ca)*(1.0-mid_ca)*(1.0-low_ca)
+    tot_ca = 1.0 - (1.0-hgh_ca)*(1.0-mid_ca)*(1.0-low_ca)
 
-    if (do_test_overlap) then
-      ! Diagnostics output
-      if (id_tot_cld_amt_rnd > 0) then
-        used = send_data (id_tot_cld_amt_rnd, tca*1.0e2, Time)
-      endif
-      if (id_high_cld_amt_rnd > 0) then
-        used = send_data (id_high_cld_amt_rnd, high_ca*1.0e2, Time)
-      endif
-      if (id_mid_cld_amt_rnd > 0) then
-        used = send_data (id_mid_cld_amt_rnd, mid_ca*1.0e2, Time)
-      endif
-      if (id_low_cld_amt_rnd > 0) then
-        used = send_data (id_low_cld_amt_rnd, low_ca*1.0e2, Time)
-      endif
-    endif
+    ! Diagnostics output
+    call output_cldamt(tot_ca, hgh_ca, mid_ca, low_ca, Time)
 
   end subroutine diag_cldamt_random_overlap
 
@@ -426,28 +343,29 @@ module cloud_cover_diags_mod
 
     ! Random overlap
     cldamt = 1.0
-    do k=1,size(cf,1)
+    do k = 1,size(cf,1)
       cldamt = cldamt * (1-cf(k))
     end do
     cldamt = 1.0 - cldamt
+
   end subroutine random_overlap_single_column
 
-  subroutine output_cldamt(tca, high_ca, mid_ca, low_ca, Time)
-    real, intent(in), dimension(:,:) :: tca, high_ca, mid_ca, low_ca
+  subroutine output_cldamt(tot_ca, hgh_ca, mid_ca, low_ca, Time)
+    real, intent(in), dimension(:,:) :: tot_ca, hgh_ca, mid_ca, low_ca
     type(time_type),  intent(in)     :: Time
     real :: used
 
-    if ( id_tot_cld_amt > 0 ) then
-      used = send_data ( id_tot_cld_amt, tca, Time)
+    if (id_tot_cld_amt > 0 ) then
+      used = send_data (id_tot_cld_amt, tot_ca, Time)
     endif
-    if ( id_high_cld_amt > 0 ) then
-      used = send_data ( id_high_cld_amt, high_ca, Time)
+    if (id_high_cld_amt > 0 ) then
+      used = send_data (id_high_cld_amt, hgh_ca, Time)
     endif
-    if ( id_mid_cld_amt > 0 ) then
-      used = send_data ( id_mid_cld_amt, mid_ca, Time)
+    if (id_mid_cld_amt > 0 ) then
+      used = send_data (id_mid_cld_amt, mid_ca, Time)
     endif
-    if ( id_low_cld_amt > 0 ) then
-      used = send_data ( id_low_cld_amt, low_ca, Time)
+    if (id_low_cld_amt > 0 ) then
+      used = send_data (id_low_cld_amt, low_ca, Time)
     endif
   end subroutine output_cldamt
 
