@@ -29,3 +29,6 @@ mima_pz.txt
 src/atmos_param/socrates/src/trunk*
 test/.cache
 test/results.xml
+tmp_*
+tmp*
+tmp.*

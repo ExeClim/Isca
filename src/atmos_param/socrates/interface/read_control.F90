@@ -11,7 +11,6 @@ CONTAINS
 !------------------------------------------------------------------------------
 SUBROUTINE read_control(control, spectrum, do_cloud_simple)
 
-
 USE rad_pcf
 USE def_control,  ONLY: StrCtrl, allocate_control
 USE def_spectrum, ONLY: StrSpecData
@@ -29,7 +28,6 @@ TYPE(StrCtrl),      INTENT(INOUT) :: control
 TYPE (StrSpecData), INTENT(IN)    :: spectrum
 
 LOGICAL, INTENT(IN), OPTIONAL     :: do_cloud_simple
-
 
 
 ! Local variables.

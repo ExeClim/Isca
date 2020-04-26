@@ -284,7 +284,7 @@ endif
 Time_next = Time + Time_step
 
 if(idealized_moist_model) then
-   call idealized_moist_phys(Time, p_half, p_full, z_half, z_full, ug, vg, tg, grid_tracers, &
+   call idealized_moist_phys(Time, p_half, p_full, z_half, z_full, ug, vg, psg, wg_full, tg, grid_tracers, &
                              previous, current, dt_ug, dt_vg, dt_tg, dt_tracers)
 else
    call hs_forcing(1, ie-is+1, 1, je-js+1, delta_t, Time_next, rad_lon_2d, rad_lat_2d, &

@@ -121,7 +121,7 @@ character(len=256) :: qflux_field_name = 'ocean_qflux' !Only used when using a n
 
 character(len=256) :: ice_file_name  = 'siconc_clim_amip'
 real    :: ice_albedo_value = 0.7
-real    :: ice_concentration_threshold = 0.5
+!real    :: ice_concentration_threshold = 0.5
 logical :: update_albedo_from_ice = .false.
 
 logical :: add_latent_heat_flux_anom = .false.
@@ -143,7 +143,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               load_qflux,qflux_file_name,time_varying_qflux, &
                               update_albedo_from_ice, ice_file_name,         &
                               ice_albedo_value, specify_sst_over_ocean_only, &
-                              ice_concentration_threshold,                   &
+                              !ice_concentration_threshold,                   &
                               add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
                               flux_lhe_anom_field_name, do_ape_sst, qflux_field_name
 
@@ -594,15 +594,15 @@ if(.not.module_is_initialized) then
   call error_mesg('mixed_layer','mixed_layer module is not initialized',FATAL)
 endif
 
-if(update_albedo_from_ice) then
-    call read_ice_conc(Time_next)
-    land_ice_mask=.false.
-    where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
-        land_ice_mask=.true.
-    end where
-else
+! if(update_albedo_from_ice) then
+! 	call read_ice_conc(Time_next)
+! 	land_ice_mask=.false.
+! 	where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
+! 		land_ice_mask=.true.
+! 	end where
+! else
     land_ice_mask=land_mask
-endif
+! endif
 
 call albedo_calc(albedo_out,Time_next)
 
@@ -757,9 +757,11 @@ albedo_inout=albedo_initial
 
 if(update_albedo_from_ice) then
 
-    where(ice_concentration.gt.ice_concentration_threshold) 
-        albedo_inout=ice_albedo_value
-    end where
+    !where(ice_concentration.gt.ice_concentration_threshold)
+    !	albedo_inout=ice_albedo_value
+    !end where
+
+    albedo_inout = albedo_inout*(1.0-ice_concentration) + ice_albedo_value*ice_concentration
 
     if ( id_ice_conc > 0 ) used = send_data ( id_ice_conc, ice_concentration, Time )
     if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo_inout, Time )
