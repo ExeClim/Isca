@@ -598,7 +598,7 @@ endif
 ! 	call read_ice_conc(Time_next)
 ! 	land_ice_mask=.false.
 ! 	where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
-! 		land_ice_mask=.true.
+!       land_ice_mask=.true.
 ! 	end where
 ! else
     land_ice_mask=land_mask

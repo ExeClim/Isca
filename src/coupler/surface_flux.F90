@@ -827,7 +827,7 @@ subroutine surface_flux_0d (                                                 &
   u_10m_0      = u_10m(1)       !mp586 for 10m winds and 2m temp
   v_10m_0      = v_10m(1)       !mp586 for 10m winds and 2m temp
   q_2m_0       = q_2m(1)        ! Add 2m q
-  rh_2m_0      = rh_2m(1)       ! Add 2m rh
+  rh_2m_0      = rh_2m(1)       ! Add 2m RH 
 
 end subroutine surface_flux_0d
 
