@@ -135,7 +135,7 @@ module cloud_cover_diags_mod
     call max_rnd_overlap(cf, p_full, p_half, nclds, ktop, kbot, cldamt)
     call compute_tca_random(nclds, cldamt, tca)
     !call expand_cloud(nclds, ktop, kbot, cldamt, cloud)
-    call compute_isccp_clds2(p_full, nclds, ktop, cldamt, high_ca, mid_ca, low_ca)
+    call compute_isccp_clds(p_full, nclds, ktop, cldamt, high_ca, mid_ca, low_ca)
 
     ! Diagnostics output
     call output_cldamt(tca, high_ca, mid_ca, low_ca, Time)
@@ -284,7 +284,7 @@ module cloud_cover_diags_mod
     tca = (1.0 - tca) * 1.0e2 ! unit percent
   end subroutine compute_tca_random
 
-  subroutine compute_isccp_clds2(pfull, nclds, ktop, cldamt, high_ca, mid_ca, low_ca)
+  subroutine compute_isccp_clds(pfull, nclds, ktop, cldamt, high_ca, mid_ca, low_ca)
     real,     dimension(:,:,:), intent(in)  :: pfull, cldamt
     integer,  dimension(:,:),   intent(in)  :: nclds
     integer,  dimension(:,:,:), intent(in)  :: ktop
@@ -316,7 +316,7 @@ module cloud_cover_diags_mod
     mid_ca  = (1.0 - mid_ca)  * 1.0e2
     high_ca = (1.0 - high_ca) * 1.0e2
 
-  end subroutine compute_isccp_clds2
+  end subroutine compute_isccp_clds
 
   subroutine cldovrlap(pint, cld, nmxrgn, pmxrgn)
     !subroutine cldovrlap(lchnk   ,ncol    ,pint    ,cld     ,nmxrgn  ,pmxrgn  )
@@ -375,7 +375,7 @@ module cloud_cover_diags_mod
         pnm(i,j,:) = pint(i,j,:) !* 10.0  ! why multiplied by 10?
         n = 1
         do k = 1, pver
-          if (cld_layer(k) .and.  .not. cld_found) then
+          if (cld_layer(k) .and. .not. cld_found) then
               cld_found = .true.
           else if ( .not. cld_layer(k) .and. cld_found) then
             cld_found = .false.
@@ -473,16 +473,16 @@ module cloud_cover_diags_mod
 
     ! Write the output diagnostics
     if ( id_tot_cld_amt_cam > 0 ) then
-      used = send_data ( id_tot_cld_amt_cam, cldtot*1e2, Time)
-    endif
-    if ( id_high_cld_amt_cam > 0 ) then
-      used = send_data ( id_high_cld_amt_cam, cldlow*1e2, Time)
-    endif
-    if ( id_mid_cld_amt_cam > 0 ) then
-      used = send_data ( id_mid_cld_amt_cam, cldmed*1e2, Time)
+      used = send_data (id_tot_cld_amt_cam, cldtot*1e2, Time)
     endif
     if ( id_low_cld_amt_cam > 0 ) then
-      used = send_data ( id_low_cld_amt_cam, cldhgh*1e2, Time)
+      used = send_data(id_low_cld_amt_cam, cldlow*1e2, Time)
+    endif
+    if ( id_mid_cld_amt_cam > 0 ) then
+      used = send_data (id_mid_cld_amt_cam, cldmed*1e2, Time)
+    endif
+    if ( id_high_cld_amt_cam > 0 ) then
+      used = send_data (id_high_cld_amt_cam, cldhgh*1e2, Time)
     endif
 
   end subroutine cloud_cover_diags_cam
@@ -491,7 +491,7 @@ module cloud_cover_diags_mod
     real, intent(in),  dimension(:,:,:) :: cf, p_full
     type(time_type),   intent(in)       :: Time
     real, dimension(size(cf,1), size(cf,2)) :: tca, high_ca, mid_ca, low_ca
-    integer :: i, j, ks, ke !, ks_mid, ke_mid
+    integer :: i, j, ks, ke
     logical, dimension(size(cf,3)) :: ind_mid
     real :: mid_btm = 7e4, high_btm = 4e4
 
@@ -502,26 +502,17 @@ module cloud_cover_diags_mod
 
     do i=1,size(cf,1)
       do j=1,size(cf,2)
-        ! total cloud amount
-        !ks = 1
-        !ke = size(cf,3)
-        !call max_rnd_overlap_single_lev(cf(i,j,ks:ke), p_full(i,j,ks:ke), tca(i,j))
-
         ! high cloud amount
         ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
         ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
         call max_rnd_overlap_single_lev(cf(i,j,ks:ke), p_full(i,j,ks:ke), high_ca(i,j))
-        !ks_mid = ke + 1
 
         ! low cloud amount
         ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_btm)
-        ke = size(cf,3) !maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)>mid_btm)
+        ke = size(cf,3)
         call max_rnd_overlap_single_lev(cf(i,j,ks:ke), p_full(i,j,ks:ke), low_ca(i,j))
-        !ke_mid = ks - 1
 
         ! middle cloud amount
-        !ks = ks_mid
-        !ke = ke_mid
         ind_mid = high_btm<=p_full(i,j,:) .and. p_full(i,j,:)<=mid_btm
         ks = minloc(p_full(i,j,:), 1, mask=ind_mid)
         ke = maxloc(p_full(i,j,:), 1, mask=ind_mid)
@@ -588,11 +579,6 @@ module cloud_cover_diags_mod
 
     do i=1,size(cf,1)
       do j=1,size(cf,2)
-        ! total cloud amount
-        !ks = 1
-        !ke = size(cf,3)
-        !call random_overlap_single_lev(cf(i,j,ks:ke), tca(i,j))
-
         ! high cloud amount
         ks = minloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)
         ke = maxloc(p_full(i,j,:), 1, mask=p_full(i,j,:)<high_btm)

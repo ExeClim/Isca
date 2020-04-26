@@ -104,7 +104,7 @@ module large_scale_cloud_mod
 
     else if(method_str == 'LINEAR') then
       cf_diag_formula = B_LINEAR
-      call error_mesg(mod_name, 'Using linear cloud fraction diagnostic formula (go through (1,1) point).', NOTE)
+      call error_mesg(mod_name, 'Using linear cloud fraction diagnostic formula.', NOTE)
 
     else if(method_str == 'SMITH') then
       cf_diag_formula = B_SMITH
