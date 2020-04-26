@@ -1,1 +1,0 @@
-../../realistic_continents/input/siconc_clim_amip.nc
