@@ -36,7 +36,7 @@ module cloud_cover_diags_mod
   integer :: id_tot_cld_amt_rnd, id_high_cld_amt_rnd, id_mid_cld_amt_rnd, id_low_cld_amt_rnd
 
   namelist /cloud_cover_diag_nml/ &
-            overlap_assumption, cf_min, mid_btm, high_btm, do_test_overlap
+               cf_min, mid_btm, high_btm, do_test_overlap
 
   contains
 
@@ -84,6 +84,7 @@ module cloud_cover_diags_mod
               'mid cloud amount (maximum-random assumption)', 'percent')
       id_low_cld_amt_mxr = register_diag_field (mod_name, 'low_cld_amt_mxr', axes(1:2), Time, &
               'low cloud amount (maximum-random assumption)', 'percent')
+
       ! Maximum overlap
       id_tot_cld_amt_max = register_diag_field (mod_name, 'tot_cld_amt_max', axes(1:2), Time, &
               'total cloud amount (maximum assumption)', 'percent')
@@ -93,6 +94,7 @@ module cloud_cover_diags_mod
               'mid cloud amount (maximum assumption)', 'percent')
       id_low_cld_amt_max = register_diag_field (mod_name, 'low_cld_amt_max', axes(1:2), Time, &
               'low cloud amount (maximum assumption)', 'percent')
+
       ! Random overlap
       id_tot_cld_amt_rnd = register_diag_field (mod_name, 'tot_cld_amt_rnd', axes(1:2), Time, &
               'total cloud amount (random assumption)', 'percent')
@@ -222,11 +224,13 @@ module cloud_cover_diags_mod
     integer :: ityp        ! Type counter
     real, dimension(size(cld,1), size(cld,2)) :: clrsky      ! Max-random clear sky fraction
     real, dimension(size(cld,1), size(cld,2)) :: clrskymax   ! Maximum overlap clear sky fraction
+    integer, dimension(size(cld,1), size(cld,2)) :: nmxrgn
+    real, dimension(size(pint,1), size(pint,2), size(pint,3)) :: pmxrgn
 
     !------------------------------Cloud Range Paramters-------------------------------
-    real :: plowmax=1.2e5, plowmin        ! Max/min prs for low cloud cover range
-    real :: pmedmax,       pmedmin        ! Max/min prs for mid cloud cover range
-    real :: phghmax,       phghmin=5.0e3  ! Max/min prs for hgh cloud cover range
+    real :: plowmax=1.2e5,  plowmin         ! Max/min prs for low cloud cover range
+    real :: pmedmax,        pmedmin         ! Max/min prs for mid cloud cover range
+    real :: phghmax,        phghmin=5.0e3   ! Max/min prs for hgh cloud cover range
 
     real, dimension(4) :: ptypmin
     real, dimension(4) :: ptypmax
@@ -236,11 +240,8 @@ module cloud_cover_diags_mod
     pmedmin = high_btm
     phghmax = high_btm
 
-    data ptypmin /phghmin, plowmin, pmedmin, phghmin/
-    data ptypmax /plowmax, plowmax, pmedmax, phghmax/
-
-    integer, dimension(size(cld,1), size(cld,2)) :: nmxrgn
-    real, dimension(size(pint,1), size(pint,2), size(pint,3)) :: pmxrgn
+    ptypmin = (/phghmin, plowmin, pmedmin, phghmin/)
+    ptypmax = (/plowmax, plowmax, pmedmax, phghmax/)
 
     ! call the overlap subroutine to obtain the nmxrgn and pmxrgn
     call cldovrlap(pint, cld, nmxrgn, pmxrgn)
