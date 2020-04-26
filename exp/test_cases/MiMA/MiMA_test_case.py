@@ -86,10 +86,7 @@ exp.namelist = namelist = Namelist({
         'rhcsfc': 0.95,
         'rhc700': 0.7,
         'rhc200': 0.3,
-        'rhmsfc': 0.95,
-        'rhm700': 0.7,
-        'rhm200': 0.3,
-    },
+        },
 
     'vert_turb_driver_nml': {
         'do_mellor_yamada': False,     # default: True

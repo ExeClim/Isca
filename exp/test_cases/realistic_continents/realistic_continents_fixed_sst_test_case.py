@@ -6,7 +6,7 @@ import f90nml
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 8 
+NCORES = 4
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -25,7 +25,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('realistic_continents_fixed_sst_test_experiment_rh2m', codebase=cb)
+exp = Experiment('realistic_continents_fixed_sst_test_experiment', codebase=cb)
 
 #Add any input files that are necessary for a particular experiment.
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
@@ -39,6 +39,7 @@ diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
+diag.add_field('dynamics', 'zsurf') #need at least ps, pk, bk and zsurf to do vertical interpolation onto plevels from sigma
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('dynamics', 'sphum', time_avg=True)
@@ -47,10 +48,6 @@ diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
-diag.add_field('atmosphere', 'temp_2m', time_avg=True)
-diag.add_field('atmosphere', 'q_2m', time_avg=True)
-diag.add_field('atmosphere', 'rh_2m', time_avg=True)
-diag.add_field('atmosphere', 'rh', time_avg=True)
 
 exp.diag_table = diag
 
@@ -70,12 +67,11 @@ exp.update_namelist({
         'do_sc_sst' : True, #Do specified ssts (need both to be true)
         'sst_file' : 'sst_clim_amip', #Set name of sst input file
         'specify_sst_over_ocean_only' : True, #Make sure sst only specified in regions of ocean.
-    },
-
+    }
 })
 
 #Lets do a run!
 if __name__=="__main__":
-    exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)
-    for i in range(2,25):
-        exp.run(i, num_cores=NCORES, overwrite_data=True)
+    exp.run(1, use_restart=False, num_cores=NCORES)
+    for i in range(2,121):
+        exp.run(i, num_cores=NCORES)
