@@ -168,6 +168,7 @@ integer ::                                                                    &
 real, allocatable, dimension(:,:)   ::                                        &
      ocean_qflux,           &   ! Q-flux
      ice_concentration,     &   ! ice_concentration
+     rad_lon_2d,            &   ! longitude in radians
      rad_lat_2d,            &   ! latitude in radians
      flux_lhe_anom, flux_q_total
 
@@ -255,6 +256,7 @@ do n = 1,num_tr
 enddo
 
 allocate(rad_lat_2d              (is:ie, js:je))
+allocate(rad_lon_2d              (is:ie, js:je))
 allocate(ocean_qflux             (is:ie, js:je))
 allocate(ice_concentration       (is:ie, js:je))
 allocate(flux_lhe_anom           (is:ie, js:je))
@@ -296,6 +298,9 @@ do j=js,je
 enddo
 !mj get lon for land_sea_heat_capacity
 call get_deg_lon(deg_lon)
+do i=is,ie ! Needed for gaussian warmpool fluxes, added by Nathanael Zhixin Wong in Jan 2019
+  rad_lon_2d(i,:) = deg_lon(i)*PI/180.
+enddo
 
 !s Adding MiMA options
    if(do_sc_sst) do_read_sst = .true.
@@ -398,12 +403,15 @@ endif
 
 !s Adding MiMA options for qfluxes.
 
-if ( do_qflux .or. do_warmpool) then
+if ( do_qflux .or. do_warmpool ) then
    call qflux_init
 !mj q-flux as in Merlis et al (2013) [Part II]
-   if ( do_qflux ) call qflux(rad_latb_2d(1,:),ocean_qflux)
+   if ( do_qflux ) call qflux(rad_lat_2d,ocean_qflux)  ! Changed by Nathanael Zhixin Wong to reflect changes in qflux.f90
 !mj q-flux to create a tropical temperature perturbation
-   if ( do_warmpool) call warmpool(rad_lonb_2d(:,1),rad_latb_2d(1,:),ocean_qflux)
+   if ( do_warmpool ) call warmpool(rad_lon_2d,rad_lat_2d,ocean_qflux)
+   if(trim(land_option) .eq. 'input') then
+      where(land) ocean_qflux = 0.  ! Changed by Nathanael Zhixin Wong such that wherever there is land, qflux = 0;
+   endif
 endif
 
 !s End MiMA options for qfluxes
