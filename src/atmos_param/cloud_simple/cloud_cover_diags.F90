@@ -356,16 +356,16 @@ module cloud_cover_diags_mod
     real :: used
 
     if (id_tot_cld_amt > 0) then
-      used = send_data (id_tot_cld_amt, tot_ca, Time)
+      used = send_data (id_tot_cld_amt, tot_ca*1.0e2, Time)
     endif
     if (id_high_cld_amt > 0) then
-      used = send_data (id_high_cld_amt, hgh_ca, Time)
+      used = send_data (id_high_cld_amt, hgh_ca*1.0e2, Time)
     endif
     if (id_mid_cld_amt > 0) then
-      used = send_data (id_mid_cld_amt, mid_ca, Time)
+      used = send_data (id_mid_cld_amt, mid_ca*1.0e2, Time)
     endif
     if (id_low_cld_amt > 0) then
-      used = send_data (id_low_cld_amt, low_ca, Time)
+      used = send_data (id_low_cld_amt, low_ca*1.0e2, Time)
     endif
   end subroutine output_cldamt
 
