@@ -2,10 +2,10 @@
 
 # Land Options:
 # 'square' (default) Square block of land with boundaries specified by boundaries keyword, a list of 4 floats in the form [S,N,W,E]
-# 'continents_old' Choose continents from the original continent set-up adapted from the Sauliere 2012 paper (Jan 16), including North and South America, Eurasia, and Africa. 
+# 'continents_old' Choose continents from the original continent set-up adapted from the Sauliere 2012 paper (Jan 16), including North and South America, Eurasia, and Africa.
 # 'continents' Choose continents from a newer continet set-up allowing addition of India, Australia, and South East Asia.
 #    If continents keyword is set to 'all' (default), then this will include all possibilities for the given set-up
-#    Alternatively, continents can be set to a list of strings containing options: 
+#    Alternatively, continents can be set to a list of strings containing options:
 #    NA - North America
 #    SA - South America
 #    EA - Eurasia
@@ -29,14 +29,14 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 import os
 
-def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['all'],topo_mode='none',mountains=['all'],topo_gauss=[40.,40.,20.,10.,3500.],waterworld=False):
+def write_land(resolution=42,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['all'],topo_mode='none',mountains=['all'],topo_gauss=[40.,40.,20.,10.,3500.],waterworld=False,fname='test'):
 
 # Common features of set-ups
     # specify resolution
-    t_res = 42
+    t_res = resolution
     #read in grid from approriate file
     GFDL_BASE = os.environ['GFDL_BASE']
-    resolution_file = Dataset(GFDL_BASE + 'src/extra/python/scripts/gfdl_grid_files/t'+str(t_res)+'.nc', 'r', format='NETCDF3_CLASSIC')
+    resolution_file = Dataset(GFDL_BASE + '/src/extra/python/scripts/gfdl_grid_files/t'+str(t_res)+'.nc', 'r', format='NETCDF3_CLASSIC')
     lons = resolution_file.variables['lon'][:]
     lats = resolution_file.variables['lat'][:]
     lonb = resolution_file.variables['lonb'][:]
@@ -49,16 +49,20 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
     #make 2d arrays of latitude and longitude
     lon_array, lat_array = np.meshgrid(lons,lats)
     lonb_array, latb_array = np.meshgrid(lonb,latb)
-    
+
     #create dictionary for continents
     cont_dic = {'NA':0, 'SA':1, 'EA':2, 'AF':3, 'OZ':4, 'IN':5, 'SEA':6}
 
-# Firstly determine the land set-up to be used    
+# Firstly determine the land set-up to be used
     # 1) Set-up in which a square of land is included
     if land_mode=='square':
-        idx = (boundaries[0] <= lat_array) & (lat_array < boundaries[1]) & (boundaries[2] < lon_array) & (boundaries[3] > lon_array)
+        idx = np.zeros((nlat,nlon), dtype=bool)
+        for bound in boundaries:
+            print("South:",str(bound[0]),"| North:",str(bound[1]),"| West:",str(bound[2]),"| East:",str(bound[3]))
+            idxland = (bound[0] <= lat_array) & (lat_array < bound[1]) & (bound[2] < lon_array) & (bound[3] > lon_array)
+            idx = idx + idxland
         land_array[idx] = 1.0
-    
+
     # 2) Set-up in which some or all of 'original' continents are included
     elif land_mode=='continents_old':  #Older configuration of continents: Addition of India and SE Asia required some restructuring. This may be removed once obsolete.
         idx_c = np.zeros((4,nlat,nlon), dtype=bool)
@@ -67,25 +71,25 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
         eurasia_pos = (17. <= lat_array) & (lat_array < 60.) & (-5. < lon_array) & ( 43./40.*lon_array -101.25 < lat_array)
         eurasia_neg =  (17. <= lat_array) & (lat_array < 60.) & (355. < lon_array)
         idx_c[2,:,:] = eurasia_pos + eurasia_neg    #Eurasia
-        africa_pos = (lat_array < 17.) & (-52./27.*lon_array + 7.37 < lat_array) & (52./38.*lon_array -65.1 < lat_array) 
+        africa_pos = (lat_array < 17.) & (-52./27.*lon_array + 7.37 < lat_array) & (52./38.*lon_array -65.1 < lat_array)
         africa_neg = (lat_array < 17.) & (-52./27.*(lon_array-360) + 7.37 < lat_array)
         idx_c[3,:,:] = africa_pos + africa_neg   #Africa
-        
+
         if 'all' in continents:
-            idx = idx_c[0,:,:] + idx_c[1,:,:] + idx_c[2,:,:] + idx_c[3,:,:] 
-            land_array[idx] = 1.            
+            idx = idx_c[0,:,:] + idx_c[1,:,:] + idx_c[2,:,:] + idx_c[3,:,:]
+            land_array[idx] = 1.
         else:
             idx = np.zeros((nlat,nlon), dtype=bool)
             for cont in continents:
                 idx = idx + idx_c[cont_dic[cont],:,:]
                 land_array[idx] = 1.0
-                
+
     # 2) Set-up in which some or all of 'new' continents are included
-    elif land_mode=='continents':  
+    elif land_mode=='continents':
         idx_c = np.zeros((7,nlat,nlon), dtype=bool)
         idx_c[0,:,:] = (103.-43./40.*(lon_array-180) < lat_array) & ((lon_array-180)*43./50. -51.8 < lat_array) &( lat_array < 60.)   #North America
         idx_c[1,:,:] = (737.-7.2*(lon_array-180) < lat_array) & ((lon_array-180)*10./7. + -212.1 < lat_array) &( lat_array < -22./45*(lon_array-180) +65.9)   #South America
-        eurasia_pos = (23. <= lat_array) & (lat_array < 60.) & (-8. < lon_array) & ( 43./40.*lon_array -101.25 < lat_array) 
+        eurasia_pos = (23. <= lat_array) & (lat_array < 60.) & (-8. < lon_array) & ( 43./40.*lon_array -101.25 < lat_array)
         eurasia_neg =  (23. <= lat_array) & (lat_array < 60.) & (352. < lon_array)
         idx_c[2,:,:] = eurasia_pos + eurasia_neg    #Eurasia
         africa_pos = (lat_array < 23.) & (-52./27.*lon_array + 7.59 < lat_array) & (52./38.*lon_array -65.1 < lat_array)
@@ -95,22 +99,22 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
         idx_c[5,:,:] = (lat_array < 23.) & (-15./8.*lon_array + 152 < lat_array) & (15./13.*lon_array - 81 < lat_array) #India
         idx_c[6,:,:] = (lat_array < 23.) & ( 43./40.*lon_array -101.25 < lat_array) & (-14./13.*lon_array +120 < lat_array)      #South East Asia
         if 'all' in continents:
-            idx = idx_c[0,:,:] + idx_c[1,:,:] + idx_c[2,:,:] + idx_c[3,:,:] + idx_c[4,:,:] + idx_c[5,:,:] + idx_c[6,:,:] 
+            idx = idx_c[0,:,:] + idx_c[1,:,:] + idx_c[2,:,:] + idx_c[3,:,:] + idx_c[4,:,:] + idx_c[5,:,:] + idx_c[6,:,:]
             land_array[idx] = 1.
         else:
             idx = np.zeros((nlat,nlon), dtype=bool)
             for cont in continents:
                 idx = idx + idx_c[cont_dic[cont],:,:]
                 land_array[idx] = 1.
-                
-    elif land_mode=='none':  
+
+    elif land_mode=='none':
         land_array = np.zeros((nlat,nlon))
-        
-    
+
+
 # Next produce a topography array
     if topo_mode == 'none':
         topo_array = np.zeros((nlat,nlon))
-        
+
     elif topo_mode == 'sauliere2012':
         # Rockys from Sauliere 2012
         h_0 = 2670.
@@ -123,7 +127,7 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
         delta_1 = ((lon_array - central_lon)*np.cos(np.radians(gamma_1)) + (lat_array - central_lat)*np.sin(np.radians(gamma_1)))/L_1
         delta_2 = (-(lon_array - central_lon)*np.sin(np.radians(gamma_2)) + (lat_array - central_lat)*np.cos(np.radians(gamma_2)))/L_2
         h_arr_rockys = h_0 * np.exp(-(delta_1**2. + delta_2**2.))
-        idx_rockys = (h_arr_rockys / h_0 > 0.05) #s make sure exponentials are cut at some point - use the value from p70 of Brayshaw's thesis. 
+        idx_rockys = (h_arr_rockys / h_0 > 0.05) #s make sure exponentials are cut at some point - use the value from p70 of Brayshaw's thesis.
 
         #Tibet from Sauliere 2012
         h_0 = 5700.
@@ -136,7 +140,7 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
         delta_1 = ((lon_array - central_lon)*np.cos(np.radians(gamma_1)) + (lat_array - central_lat)*np.sin(np.radians(gamma_1)))/L_1
         delta_2 = (-(lon_array - central_lon)*np.sin(np.radians(gamma_2)) + (lat_array - central_lat)*np.cos(np.radians(gamma_2)))/L_2
         h_arr_tibet_no_amp = np.exp(-(delta_1**2.))*(1./delta_2)*np.exp(-0.5*(np.log(delta_2))**2.)
-        maxval = np.nanmax(h_arr_tibet_no_amp) #For some reason my maximum value of h_arr_tibet_no_amp > 1. Renormalise so h_0 sets amplitude. 
+        maxval = np.nanmax(h_arr_tibet_no_amp) #For some reason my maximum value of h_arr_tibet_no_amp > 1. Renormalise so h_0 sets amplitude.
         h_arr_tibet = (h_arr_tibet_no_amp/maxval)*h_0
         idx_tibet = (h_arr_tibet / h_0 > 0.05)
 
@@ -150,7 +154,7 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
         else:
             print('No valid mountain options detected for Sauliere 2012 topography')
 
-            
+
     elif topo_mode == 'gaussian':
         #Options to define simple Gaussian Mountain
         central_lat = topo_gauss[0]
@@ -164,20 +168,20 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
         #ax_rat = 2. #axis ratio a**2/b**2
         #rsqd_array = np.sqrt((lon_array - central_lon + ax_rot*(lat_array - central_lat))**2.+ ax_rat*(lat_array - central_lat - ax_rot*(lon_array - central_lon))**2.)*np.cos(np.arctan(ax_rot))
         #divide by factor of cos(atan(m)) to account for change in coords
-        idx = (rsqd_array < radius_degrees) 
+        idx = (rsqd_array < radius_degrees)
         topo_array[idx] = height* np.exp(-(rsqd_array[idx]**2.)/(2.*std_dev**2.))
-        
+
     else:
         print('Invalid topography option given')
-        
+
 
     if waterworld != True:      #Leave flexibility to allow aquamountains!
         idx = (land_array == 0.) & (topo_array != 0.)
-        topo_array[idx] = 0. 
+        topo_array[idx] = 0.
 
 
     #Write land and topography arrays to file
-    topo_filename = GFDL_BASE + 'exp/' + exp + '/input/land.nc'
+    topo_filename = fname + '.nc'
     topo_file = Dataset(topo_filename, 'w', format='NETCDF3_CLASSIC')
     lat = topo_file.createDimension('lat', nlat)
     lon = topo_file.createDimension('lon', nlon)
@@ -206,11 +210,11 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
         cb = plt.colorbar(cs, shrink=0.5, extend='both')
     plt.xticks(np.linspace(0,360,13))
     plt.yticks(np.linspace(-90,90,7))
-    plt.show()
+    plt.savefig(fname + '.png')
+    plt.close('all')
 
 
 
 if __name__ == "__main__":
 
     write_land('test',land_mode='continents')
-
