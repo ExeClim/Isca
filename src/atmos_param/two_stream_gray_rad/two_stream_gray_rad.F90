@@ -75,7 +75,6 @@ real    :: del_sw          = 0.0
 real    :: ir_tau_eq       = 6.0
 real    :: ir_tau_pole     = 1.5
 real    :: atm_abs         = 0.0
-real    :: odp = 1.0  ! odp = optical depth parameter. Used to simulate GHG concentration, taken from Tapio FMS, added by Nathanael Wong
 real    :: sw_diff         = 0.0
 real    :: linear_tau      = 0.1
 real    :: wv_exponent     = 4.0
@@ -102,6 +101,11 @@ real    :: ir_tau_wv1      = 23.8
 real    :: ir_tau_wv2      = 254.0
 real    :: window          = 0.3732
 real    :: carbon_conc     = 360.0
+
+! Added optical depth parameter for FRIERSON and SCHNEIDER_LIU radiation scheme.
+! Used to simulate GHG concentration, taken from Tapio FMS and added by Nathanael
+! Zhixin Wong in May 2019.
+real    :: odp = 1.0  ! odp = optical depth parameter
 
 ! constants for SCHNEIDER_LIU radiation version
 real    :: single_albedo      = 0.8
@@ -574,7 +578,7 @@ case(B_BYRNE)
 case(B_FRIERSON)
   ! longwave optical thickness function of latitude and pressure
   lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
-  lw_tau_0 = lw_tau_0 * odp ! scale by optical depth parameter - default 1
+  lw_tau_0 = lw_tau_0 * odp
 
   ! compute optical depths for each model level
   do k = 1, n+1
