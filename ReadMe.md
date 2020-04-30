@@ -116,8 +116,10 @@ If you have made changes that you think will be useful to others, please feel fr
 These might include adding site specific configurations that could be useful to future users, basic bug fixes, or addition of new options or modules for modeling your planet of choice. 
 An Isca team member will then review your Pull Request and suggest any changes needed before merging it in. Things to consider:
 - Before submitting a Pull Request, double check that the branch to be merged contains only changes you wish to add to the master branch. This will save time in reviewing the code.
+- If you add a new feature to the Fortran, please make it off by default so that other user's results won't change if they update from the master. 
 - For any changes to model Fortran files, please run the trip-tests found in [/Isca/exp/test_cases/trip_test/]. These compile and perform brief runs of some standard configurations to help identify any accidental changes to the model your commits may have caused. Isca includes a broad range of options, so try to take into consideration whether the changes you make will effect other configurations while you implement them.
 - For substantial additions of code, for example an entirely new module, please also include a test case in [/Isca/exp/test_cases/] This helps in testing that the option works as expected, and provides support for future users in using the new configuration.
+- Please do not make changes to existing test cases, these are here for trip-testing as well as user guidance.
 - As well as our model work on Isca, we are all Isca users ourselves, so responding to Pull Requests may take time, but we will aim to respond to urgent queries as soon as we can.
 
 # License
