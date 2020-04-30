@@ -295,7 +295,7 @@ exp.namelist = Namelist({
         'valid_range_t': [100., 800.],
         'initial_sphum': [2.e-6],
         'vert_coord_option': 'uneven_sigma',
-        'surf_res': 0.1, # Parameter that sets the vertical distribution of sigma levels
+        'surf_res': 0.03, # Parameter that sets the vertical distribution of sigma levels
         'scale_heights': 11.0,
         'exponent': 7.0,
         'robert_coeff': 0.03,
