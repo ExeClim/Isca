@@ -767,9 +767,9 @@ if(turb) then
    id_diff_dt_vg = register_diag_field(mod_name, 'dt_vg_diffusion',        &
         axes(1:3), Time, 'meridional wind tendency from diffusion','m/s^2')
    id_diff_dt_tg = register_diag_field(mod_name, 'dt_tg_diffusion',        &
-        axes(1:3), Time, 'temperature diffusion tendency','T/s')
+        axes(1:3), Time, 'temperature diffusion tendency','K/s')
    id_diff_dt_qg = register_diag_field(mod_name, 'dt_qg_diffusion',        &
-        axes(1:3), Time, 'moisture diffusion tendency','T/s')
+        axes(1:3), Time, 'moisture diffusion tendency','kg/kg/s')
 endif
 
    id_rh = register_diag_field ( mod_name, 'rh', &
@@ -1205,6 +1205,8 @@ if(turb) then
    if(mixed_layer_bc) then	
    call mixed_layer(                                                       &
                               Time, Time+Time_step,                        &
+                              js,                                          & 
+                              je,                                          &
                               t_surf(:,:),                                 & ! t_surf is intent(inout)
                               flux_t(:,:),                                 &
                               flux_q(:,:),                                 &
