@@ -31,7 +31,7 @@ install:
   - if [[ "$CONDA_ENV" == "docs" ]]; then
       conda env create -n test_env --file docs/environment.yml;
     else
-      conda env create -n test_env --file ci/requirements_$CONDA_ENV.yml;
+      conda env create -n test_env --file ci/environment_$CONDA_ENV.yml;
     fi;
   - source $GFDL_ENV
   - source $HOME/miniconda/etc/profile.d/conda.sh
