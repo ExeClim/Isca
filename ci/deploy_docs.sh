@@ -4,7 +4,7 @@ set -e # exit with nonzero exit code if anything fails
 # Clone *this* git repo, but only the gh-pages branch.
 echo Cloning gh-pages...
 if [[ ! -d $GH_PAGES_DIR ]]; then
-    git clone -q -b gh-pages --single-branch https://$GUTHUB_API_KEY@github.com/${TRAVIS_REPO_SLUG}.git $GH_PAGES_DIR
+    git clone -q -b gh-pages --single-branch https://$GITHUB_API_KEY@github.com/${TRAVIS_REPO_SLUG}.git $GH_PAGES_DIR
 fi
 cd $GH_PAGES_DIR
 
