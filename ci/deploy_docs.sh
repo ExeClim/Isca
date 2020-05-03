@@ -27,9 +27,9 @@ mkdir -p ${VERSION}
 cp -R ${TRAVIS_BUILD_DIR}/docs/_build/html ${VERSION}/
 cp -R ${TRAVIS_BUILD_DIR}/docs/_build/doctrees ${VERSION}/
 touch .nojekyll
-if [[ "${VERSION}" != "dev" ]]; then
-    ln -snf ${VERSION} latest
-fi
+# if [[ "${VERSION}" != "dev" ]]; then
+ln -snf ${VERSION} latest
+# fi
 
 # Generate our json list of versions
 # echo Generating versions.json...
