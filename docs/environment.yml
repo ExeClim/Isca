@@ -9,6 +9,7 @@ dependencies:
 - jinja2
 - libgfortran
 - netcdf-fortran
+- nbsphinx
 - numpy
 - openmpi
 - pandas
