@@ -43,10 +43,14 @@ install:
 
 script:
   - if [[ "$CONDA_ENV" == "docs" ]]; then
-      echo "Here be future docs building command";
+      sphinx-build -n -b html -d docs/_build/doctrees docs/source docs/_build/html;
     else
       pytest -v;
     fi;
 
 after_success:
-  - echo "Success!"
+  - if [[ "$CONDA_ENV" == "docs" ]]; then
+      bash ci/deploy_docs.sh;
+    else
+      echo "Here be conda upload command";
+    fi;
