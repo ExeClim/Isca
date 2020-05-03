@@ -46,4 +46,4 @@ git commit --amend --reset-author --no-edit
 
 # Push up to gh-pages
 echo Pushing...
-git push --force -q https://$GITHUB_API_KEY@github.com/execlim/isca gh-pages
+git push --force -q https://$GITHUB_API_KEY@github.com/dennissergeev/isca gh-pages
