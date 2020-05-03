@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.com/dennissergeev/Isca.svg?branch=master)](https://travis-ci.com/dennissergeev/Isca)
+[![Documentation](https://img.shields.io/badge/docs-latest-green?logo=github)](https://execlim.github.io/isca)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg?logo=gnu)](LICENSE)
 
 # Isca
 
