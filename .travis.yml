@@ -9,10 +9,12 @@ env:
     - GFDL_WORK="$HOME/gfdl_work"
     - GFDL_DATA="$HOME/gfdl_data"
     - GFDL_PYDIR="$TRAVIS_BUILD_DIR/src/extra/python"
+    - GH_PAGES_DIR="$HOME/gh-pages"
 
 matrix:
   fast_finish: true
   include:
+    - env: CONDA_ENV=docs
     - env: CONDA_ENV=py37
 
 before_install:
@@ -26,8 +28,10 @@ before_install:
   - conda info -a
 
 install:
-  - if [[ "$CONDA_ENV" == "py37" ]]; then
-      conda env create -n test_env --file ci/environment_$CONDA_ENV.yml;
+  - if [[ "$CONDA_ENV" == "docs" ]]; then
+      conda env create -n test_env --file docs/environment.yml;
+    else
+      conda env create -n test_env --file ci/requirements_$CONDA_ENV.yml;
     fi;
   - source $GFDL_ENV
   - source $HOME/miniconda/etc/profile.d/conda.sh
