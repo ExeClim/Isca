@@ -1,0 +1,20 @@
+#Environment initialization to compile ISCA on NERSC's Cori computer. Argel Ramirez Reyes. March 2020
+#Next line changes the compilation to be specific for Cori's KNL nodes. Remove to compile for Haswel
+if [[  "$(module list -t 2>&1 | grep -i craype-haswell)" ]] ; then
+   module swap craype-haswell craype-mic-knl
+fi
+
+
+export GFDL_MKMF_TEMPLATE=cori.knl
+
+#Important, Intel compiler verision 19 fails for Isca
+module swap intel intel/18.0.1.163
+module load cray-netcdf
+module load git
+
+export FC=ftn
+export F90=ftn
+export CC=cc
+
+
+

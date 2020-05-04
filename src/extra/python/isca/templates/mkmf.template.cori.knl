@@ -1,0 +1,26 @@
+# template for the Intel fortran compiler at NERSC's Cori computer. Changes: remove unnecessary flags that are provided by the Cray wrappers
+# typical use with mkmf
+# mkmf -t template.ifc -c"-Duse_libMPI -Duse_netCDF" path_names /usr/local/include
+
+
+
+# FFLAGS:
+#  -fpp: Use the fortran preprocessor
+#  -stack_temps:  Put temporary runtime arrays on the stack, not heap.
+#  -safe_cray_ptr: Cray pointers don't alias other variables.
+#  -ftz: Denormal numbers are flushed to zero.
+#  -assume byterecl: Specifies the units for the OPEN statement as bytes.
+#  -shared-intel:  Load intel libraries dynamically
+#  -i4: 4 byte integers
+#  -r8: 8 byte reals
+#  -g: Generate symbolic debugging info in code
+#  -O2: Level 2 speed optimisations [This is the default in Cori]
+#  -diag-disable 6843:
+#       This suppresses the warning: `warning #6843: A dummy argument with an explicit INTENT(OUT) declaration is not given an explicit value.` of which
+#       there are a lot of instances in the GFDL codebase.
+FFLAGS = $(CPPFLAGS) -fpp -stack_temps -safe_cray_ptr -ftz -assume byterecl -shared-intel -i4 -r8 -g -diag-disable 6843 -mcmodel large
+
+FC = $(F90)
+LD = $(F90) 
+
+CFLAGS = -D__IFC
