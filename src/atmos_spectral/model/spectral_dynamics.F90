@@ -96,6 +96,7 @@ public :: spectral_dynamics_init, spectral_dynamics, spectral_dynamics_end, get_
 public :: get_use_virtual_temperature, get_reference_sea_level_press, get_surf_geopotential
 public :: get_pk_bk, complete_robert_filter, complete_update_of_future
 public :: get_axis_id, spectral_diagnostics, get_initial_fields
+public :: diffuse_surf_water
 
 !===============================================================================================
 
@@ -1930,5 +1931,44 @@ deallocate(id_tr)
 return
 end subroutine spectral_diagnostics_end
 !===================================================================================
+
+subroutine diffuse_surf_water(dt_bucket,bucket_depth,delta_t,damping_coeff_bucket,bucket_diffusion)
+  !This subroutine diffuses the surface water reservoir more the bigger damping_coeff_bucket is.
+  !dt_bucket is the tendency for the current timestep, and gets changed by this subroutine
+  !to reflect the diffusion that occurs over time delta_t.
+  ! Taken from srcmods section of Titan model in Tapio Schneider's Github - https://github.com/tapios/fms-idealized/blob/master/exp/titan/srcmods/spectral_dynamics.f90
+  
+  real,    intent(inout), dimension(is:ie, js:je) :: dt_bucket
+  real,    intent(in), dimension(is:ie, js:je) :: bucket_depth
+  real,    intent(inout), dimension(is:ie, js:je) :: bucket_diffusion
+  real,    intent(in) :: delta_t,damping_coeff_bucket
+  
+  complex, dimension(ms:me, ns:ne) :: dt_bucket_sph
+  complex, dimension(ms:me, ns:ne) :: bucket_depth_sph
+  complex, dimension(ms:me, ns:ne) :: bucket_diffusion_sph !for output only, not used in calculation
+  real,    dimension(size(bucket_depth_sph,1),size(bucket_depth_sph,2)) :: coeff
+  real :: damping_order_bucket = 1
+  real,    allocatable, dimension(:,:) :: bucket_damping, eigen
+  
+  allocate(bucket_damping  (0:num_fourier, 0:num_spherical))
+  allocate(eigen           (0:num_fourier,0:num_spherical))
+  
+  call get_eigen_laplacian(eigen)
+  
+  call trans_grid_to_spherical(dt_bucket,dt_bucket_sph)
+  call trans_grid_to_spherical(bucket_depth,bucket_depth_sph)
+  
+  bucket_damping(:,:)  = damping_coeff_bucket * (eigen(:,:)**damping_order_bucket)
+  coeff                = 1.0/(1.0 + bucket_damping(ms:me,ns:ne)*delta_t)
+  bucket_diffusion_sph = dt_bucket_sph
+  dt_bucket_sph        = coeff * (dt_bucket_sph - bucket_damping(ms:me,ns:ne)*bucket_depth_sph*delta_t)
+  bucket_diffusion_sph = bucket_diffusion_sph*(-1.) + dt_bucket_sph
+  
+  call trans_spherical_to_grid(bucket_diffusion_sph,bucket_diffusion)
+  call trans_spherical_to_grid(dt_bucket_sph,dt_bucket)
+  
+  end subroutine diffuse_surf_water
+  
+  ! ===================================================================================
 
 end module spectral_dynamics_mod
