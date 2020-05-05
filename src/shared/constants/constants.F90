@@ -94,6 +94,9 @@ real, public, parameter :: RHO_CP  = RHO0*CP_OCEAN
 !   Humidity factor. Controls the humidity content of the atmosphere through
 !   the Saturation Vapour Pressure expression when using DO_SIMPLE.
 ! </DATA>
+! <DATA NAME="TRIPLE_POINT_PRES" TYPE="real" DEFAULT="610.78">
+!   Prefactor in version of Clausius-Clapeyron when using DO_SIMPLE.
+! </DATA>
 ! <DATA NAME="RVGAS" UNITS="J/kg/deg" TYPE="real" DEFAULT="461.50">
 !   gas constant for water vapor
 ! </DATA>
@@ -117,13 +120,14 @@ real, public, parameter :: RHO_CP  = RHO0*CP_OCEAN
 ! </DATA>
 
 real, public, parameter :: ES0 = 1.0
-real, public, parameter :: RVGAS = 461.50
-real, public, parameter :: CP_VAPOR = 4.0*RVGAS
+real, public, parameter :: TRIPLE_POINT_PRES_WATER = 610.78
+real, public, parameter :: RVGAS_WATER = 461.50
+real, public, parameter :: CP_VAPOR_WATER = 4.0*RVGAS_WATER
 real, public, parameter :: DENS_H2O = 1000.
-real, public, parameter :: HLV = 2.500e6
-real, public, parameter :: HLF = 3.34e5
-real, public, parameter :: HLS = HLV + HLF
-real, public, parameter :: TFREEZE = 273.16
+real, public, parameter :: HLV_WATER = 2.500e6
+real, public, parameter :: HLF_WATER = 3.34e5
+real, public, parameter :: HLS_WATER = HLV_WATER + HLF_WATER
+real, public, parameter :: TFREEZE_WATER = 273.16
 
 !-------------- radiation constants -----------------
 
@@ -164,7 +168,7 @@ real, public, parameter :: TFREEZE = 273.16
 ! </DATA>
 
 real, public, parameter :: WTMAIR = 2.896440E+01
-real, public, parameter :: WTMH2O = WTMAIR*(EARTH_RDGAS/RVGAS) !pjp OK to change value because not used yet.
+real, public, parameter :: WTMH2O = WTMAIR*(EARTH_RDGAS/RVGAS_WATER) !pjp OK to change value because not used yet.
 !real, public, parameter :: WTMO3  = 47.99820E+01
 real, public, parameter :: WTMOZONE =  47.99820
 real, public, parameter :: WTMC     =  12.00000
@@ -263,11 +267,20 @@ real, public :: orbit_radius=1.0                  ! distance Earth-Sun [ AU ]
 real, public :: PSTD   = 1.013250E+06
 real, public :: PSTD_MKS    = PSTD_MKS_EARTH
 real, public :: RDGAS  = EARTH_RDGAS
+real, public :: RVGAS = RVGAS_WATER
+real, public :: CP_VAPOR = 4.0*RVGAS_WATER
+real, public :: DENS_VAPOR = DENS_H2O
+real, public :: HLV = HLV_WATER
+real, public :: HLF = HLF_WATER
+real, public :: HLS = HLV_WATER + HLF_WATER
+real, public :: TFREEZE = TFREEZE_WATER
+real, public :: TRIPLE_POINT_PRES = TRIPLE_POINT_PRES_WATER
 real, public :: KAPPA = EARTH_KAPPA
 real, public :: CP_AIR = EARTH_CP_AIR
 logical :: earthday_multiple = .false.
 
-namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa, solar_const, earthday_multiple, rotation_period
+namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa, solar_const, earthday_multiple, rotation_period, &
+                        rvgas, hlv, hlf, tfreeze, triple_point_pres, dens_vapor
 
 !-----------------------------------------------------------------------
 ! version and tagname published
@@ -322,6 +335,9 @@ subroutine constants_init
 	endif
 	
     CP_AIR = RDGAS/KAPPA
+
+    CP_VAPOR = 4.0*RVGAS
+    HLS = HLV + HLF
 
     constants_initialised = .true.
 
