@@ -200,7 +200,6 @@ module cloud_simple_mod
 
   subroutine cloud_simple_end()
 
-    ! If alloocated are added in init then deallocate them here.
     call large_scale_cloud_end()
     if (do_add_stratocumulus)  call marine_strat_cloud_end()
     if (do_cloud_cover_diags)  call cloud_cover_diags_end()
