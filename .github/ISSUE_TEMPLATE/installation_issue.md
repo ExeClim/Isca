@@ -1,8 +1,8 @@
 ---
-name: Science issue
-about: Use this template for submitting science-related issues.
+name: Installation issue
+about: Use this template if you have an issue related to installing Isca.
 title: "[YOUR QUESTION]"
-labels:
+labels: infrastructure
 assignees:
 ---
 
@@ -31,12 +31,30 @@ Fill out a concise description of your topic/question in this section.
 Feel free to post your code here using Markdown formatting
 -->
 
-### Screenshots
+-----
+**Screenshots**
 <!--
 If applicable, add screenshots to help explain your problem.
 -->
 
-## Minimal reproducible example
+-----
+**Isca version**
 <!--
-It greatly helps us address your question if you have example data or script for us to work with.
+Please provide here your recent commit ID and tell us if you are working off your own fork or just
+using the main Execlim verion.
 -->
+
+-----
+**System Information:**
+To help us help you, provide the details about the machine where you are trying to install Isca.
+
+To do this, please run the following code in Python:
+```py
+import platform
+print(platform.uname())
+```
+and paste the output below.
+```txt
+# Paste system info here
+
+```

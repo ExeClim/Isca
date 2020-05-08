@@ -1,11 +1,8 @@
 ---
-name: Science issue
-about: Use this template for submitting science-related issues.
-title: "[YOUR QUESTION]"
-labels:
-assignees:
+name: Feature Request
+about: Suggest an idea for something new to add
+labels: 
 ---
-
 <!--
 Thank you for taking the time to create an issue for your topic/question.
 This issue provides a permanent record for others with similar questions
@@ -20,23 +17,7 @@ Isca team members are all full-time research scientists, so while we are very ha
 some support, response times may vary. If you need in-depth support, then we may suggest that one
  of us becomes a co-author on your next paper by providing long-term support on the issue.
 -->
-
-<!--
-Please be sure to add an informative title to this issue
--->
-
 ## Description
 <!--
-Fill out a concise description of your topic/question in this section.
-Feel free to post your code here using Markdown formatting
--->
-
-### Screenshots
-<!--
-If applicable, add screenshots to help explain your problem.
--->
-
-## Minimal reproducible example
-<!--
-It greatly helps us address your question if you have example data or script for us to work with.
+Include a clear description and an example or even a scholarly source of information about the feature.
 -->
