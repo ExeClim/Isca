@@ -1,8 +1,7 @@
 .. _install:
 
-############
 Installation
-############
+============
 
 Supported language:
 
@@ -38,7 +37,7 @@ After the required packages are installed, Isca can be installed from source.
 
 
 Clone from Github
-=================
+-----------------
 
 You can obtain it directly from the `Github repo <https://github.com/execlim/isca>`_ ::
 
@@ -47,7 +46,7 @@ You can obtain it directly from the `Github repo <https://github.com/execlim/isc
   pip install -e .
 
 Verifying proper installation
-=============================
+-----------------------------
 
 Once installed via any of these methods, you can run isca's suite of
 tests using `py.test <http://doc.pytest.org/>`_.  From the top-level
@@ -61,7 +60,7 @@ something has gone wrong, and please refer to the Troubleshooting
 information below.
 
 Troubleshooting
-===============
+---------------
 
 Please search through the `Issues page`_ on Github if anybody else has had the same problem you're facing.
 If none do, then please send open a new Issue.

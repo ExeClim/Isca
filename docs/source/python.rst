@@ -1,4 +1,4 @@
-Isca's Python API
-=================
+Python API
+==========
 
 Coming soon...

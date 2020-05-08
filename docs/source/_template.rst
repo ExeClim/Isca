@@ -1,4 +1,4 @@
-.. DO NOT MODIFY THIS FILE UNLESS YOU ARE A CORE MAINTAINER OF ISCA!
+..  DO NOT MODIFY THIS FILE UNLESS YOU ARE A CORE MAINTAINER OF ISCA!
 
 ..
     This is a reStructuredText template file for creating
