@@ -25,7 +25,7 @@ We welcome contributions to improve the documentation of Isca.
 4. Once you are done, remove all the comments from your .rst file if you are using the template.
 5. Do not forget to add any relevant references to papers or textbooks.
    a. Create a new entry in :code:`docs/source/references.rst`, following the formatting style of the existing entries. For example,
-      ::
+   ::
       .. [VallisEtAl2018] Vallis, G. K. and Colyer, G. and Geen, R. and Gerber, E. and Jucker, M. and 
                  Maher, P. and Paterson, A. and Pietschnig, M. and Penn, J. and Thomson, S. I., 2018:
                  Isca, v1.0: a framework for the global modelling of the atmospheres of Earth and 
@@ -34,6 +34,6 @@ We welcome contributions to improve the documentation of Isca.
                  doi: `10.5194/gmd-11-843-2018 <https://doi.org/10.5194/gmd-11-843-2018>`_.
 
    b. Add the citation to your docs page by using the relevant citation key (note the underscore symbol at the end). For example:
-      ::
+   ::
       We use the Isca model ([VallisEtAl2018]_)
 6. Create a pull request and wait for the Isca team to review it.
