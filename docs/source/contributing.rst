@@ -8,9 +8,9 @@ Creating a Github fork
 1. Fork Isca on Github, so a copy of it appears in your Github profile and has a remote URL like `https://github.com/your_user_name/Isca <https://github.com/your_user_name/Isca>`_.
 2. Git-clone it to your computer using the new URL (or change the remote of your existing folder).
 3. It is better to create a new branch (e.g. :code:`git checkout -b your_new_branch`). If your contribution is relatively small, such as fixing one small bug or typo, you can skip this step.
-3. Make changes, commit them and push to *your* remote. (Which again, should have your URL. You can check it by typing :code:`git remote -v`).
-4. Run tests.
-5. Go to your Isca page on Github and create a pull request (a prompt for this should show up on top of the page).
+4. Make changes, commit them and push to *your* remote. (Which again, should have your URL. You can check it by typing :code:`git remote -v`).
+5. Run tests.
+6. Go to your Isca page on Github and create a pull request (a prompt for this should show up on top of the page).
 
 
 Contributing to the documentation
