@@ -182,7 +182,9 @@ namelist = Namelist({
 
     'two_stream_gray_rad_nml': {
         'rad_scheme': 'schneider_titan',            #Select radiation scheme to use, which in this case is Frierson
-        'do_seasonal': True,
+        'do_seasonal': False,
+        'del_sol':0.85,
+        'del_sw':0.,
         'atm_abs':5.,
         'sw_diff':0.0,
         'solar_exponent':0.42,
@@ -192,7 +194,8 @@ namelist = Namelist({
         'wv_exponent':2.,
         'equinox_day':0.0,
         'use_time_average_coszen':True,
-        'solar_constant':15.08, 
+        'solar_constant':15.08,
+        'dt_rad_avg': 1379678,
     },
 
 
@@ -252,7 +255,7 @@ if __name__=="__main__":
     for conv in conv_schemes:
         for depth_val in depths:
             for per_value in pers:
-                exp = Experiment('grey_titan_T21_daily_tapio_rad_with_sponge_mk12_tau_diag_60_levels_dry_conv_fixed', codebase=cb) #name of folder in which .nc files are output
+                exp = Experiment('grey_titan_T21_daily_tapio_rad_with_sponge_mk12_tau_diag_60_levels_dry_conv_fixed_no_diurnal_cycle_no_seasonal_cycle', codebase=cb) #name of folder in which .nc files are output
                 exp.clear_rundir()
 
                 exp.diag_table = diag
