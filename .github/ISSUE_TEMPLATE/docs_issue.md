@@ -1,8 +1,8 @@
 ---
-name: Science issue
-about: Use this template for submitting science-related issues.
-title: "[YOUR QUESTION]"
-labels:
+name: Documentation issue
+about: Use this template for submitting documentation-related issues.
+title: "[ISSUE TITLE]"
+labels: docs
 assignees:
 ---
 
@@ -31,12 +31,3 @@ Fill out a concise description of your topic/question in this section.
 Feel free to post your code here using Markdown formatting
 -->
 
-### Screenshots
-<!--
-If applicable, add screenshots to help explain your problem.
--->
-
-## Minimal reproducible example
-<!--
-It greatly helps us address your question if you have example data or script for us to work with.
--->

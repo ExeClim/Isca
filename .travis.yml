@@ -1,0 +1,56 @@
+language: minimal
+notifications:
+  email: false
+
+env:
+  global:
+    - GFDL_BASE=$TRAVIS_BUILD_DIR
+    - GFDL_ENV="$TRAVIS_BUILD_DIR/src/extra/env/ubuntu_conda"
+    - GFDL_WORK="$HOME/gfdl_work"
+    - GFDL_DATA="$HOME/gfdl_data"
+    - GFDL_PYDIR="$TRAVIS_BUILD_DIR/src/extra/python"
+    - GH_PAGES_DIR="$HOME/gh-pages"
+
+matrix:
+  fast_finish: true
+  include:
+    - env: CONDA_ENV=docs
+    - env: CONDA_ENV=py37
+
+before_install:
+  - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no --set show_channel_urls true
+  - conda config --add channels conda-forge
+  - conda update -q conda
+  - conda info -a
+
+install:
+  - if [[ "$CONDA_ENV" == "docs" ]]; then
+      conda env create -n test_env --file docs/environment.yml;
+    else
+      conda env create -n test_env --file ci/environment_$CONDA_ENV.yml;
+    fi;
+  - source $GFDL_ENV
+  - source $HOME/miniconda/etc/profile.d/conda.sh
+  - conda activate test_env
+  - conda list
+  - cd $GFDL_PYDIR 
+  - pip install -e .
+  - cd $GFDL_BASE
+
+script:
+  - if [[ "$CONDA_ENV" == "docs" ]]; then
+      sphinx-build -n -b html -d docs/_build/doctrees docs/source docs/_build/html;
+    else
+      pytest -v;
+    fi;
+
+after_success:
+  - if [[ "$CONDA_ENV" == "docs" ]]; then
+      bash ci/deploy_docs.sh;
+    else
+      echo "Here be conda upload command";
+    fi;
