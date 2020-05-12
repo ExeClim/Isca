@@ -96,11 +96,12 @@ module cloud_simple_mod
 
   ! ====================== Main Cloud Subroutine ====================== !
   subroutine cloud_simple(p_half, p_full, Time, temp, q_hum, z_full, &
-                          wg_full, psg, temp_2m, q_2m, rh_2m, klcls, &
+                          wg_full, psg, temp_2m, q_2m, rh_2m, klcls, ocean, &
                           cf, reff_rad, qcl_rad)  ! outs
     real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, wg_full
     real, intent(in),  dimension(:,:)   :: psg, temp_2m, q_2m, rh_2m
     integer, intent(in), dimension(:,:) :: klcls
+    logical, intent(in), dimension(:,:) :: ocean
     type(time_type),   intent(in)       :: Time
     real, intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: qs, frac_liq, rh_in_cf
@@ -121,7 +122,7 @@ module cloud_simple_mod
 
     if (do_add_stratocumulus) then
       call marine_strat_cloud_diag(temp, p_full, p_half, z_full, rh_in_cf, q_hum, &
-              temp_2m, q_2m, rh_2m, psg, wg_full, klcls, cf, Time)
+              temp_2m, q_2m, rh_2m, psg, wg_full, klcls, cf, Time, ocean)
     end if
 
     call calc_qcl_rad(p_full, temp, cf, qcl_rad)

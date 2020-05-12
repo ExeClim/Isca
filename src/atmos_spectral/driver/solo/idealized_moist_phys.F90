@@ -1002,6 +1002,7 @@ if(do_cloud_simple) then
                       q_2m(:,:),                           &
                       rh_2m(:,:),                          &
                       klcls(:,:),                          &
+                      .not. land(:,:),                     & ! ocean mask, True is for ocean
                       ! ----- outs -----
                       cf_rad(:,:,:),                       &
                       reff_rad(:,:,:),                     &

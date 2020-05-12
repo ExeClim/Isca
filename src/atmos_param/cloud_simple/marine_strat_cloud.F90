@@ -134,12 +134,13 @@ module marine_strat_cloud_mod
   end subroutine marine_strat_cloud_init
 
   subroutine marine_strat_cloud_diag(temp, p_full, p_half, z_full, rh, q_hum, temp_2m, &
-                                      q_2m, rh_2m, psg, wg_full, klcls, cf, Time)
+                                      q_2m, rh_2m, psg, wg_full, klcls, cf, Time, ocean)
     implicit none
     real, intent(in),  dimension(:,:,:) :: temp, q_hum, p_full, p_half, z_full, rh, wg_full
     type(time_type),   intent(in)       :: Time
     real, intent(in),  dimension(:,:)   :: temp_2m, q_2m, rh_2m, psg
     integer, intent(in), dimension(:,:) :: klcls
+    logical, intent(in), dimension(:,:) :: ocean
     real, intent(out), dimension(:,:,:) :: cf
     
     ! local variables
@@ -175,21 +176,22 @@ module marine_strat_cloud_mod
 
     do i=1, size(temp, 1)
       do j=1, size(temp, 2)
-        ! =========== Add off-coast marine stratiform clods =========== !
-        kk = kdthdp(i,j)
+        if (ocean(i,j)) then
+          ! =========== Add off-coast marine stratiform clouds =========== !
+          kk = kdthdp(i,j)
 
-        if (kk .ne. 0) then   
-          kb = min(kk+1, k_surf)
-          do k = kk, kb
-            if (wg_full(i,j,k)>omega_pos_threshold .and. &
-                dthdp(i,j,k)<dthdp_min_threshold .and. p_full(i,j,k)>8.0e4) then
-              call estimate_stratiform_cld(method_str, i, j, k, kb, p_full, &
-                                      cf, rh, theta, eis, dthdp, ectei, ELF)
-              marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
-            end if
-          end do
-        endif
-
+          if (kk .ne. 0) then
+            kb = min(kk+1, k_surf)
+            do k = kk, kb
+              if (wg_full(i,j,k)>omega_pos_threshold .and. &
+                  dthdp(i,j,k)<dthdp_min_threshold .and. p_full(i,j,k)>8.0e4) then
+                call estimate_stratiform_cld(method_str, i, j, k, kb, p_full, &
+                                        cf, rh, theta, eis, dthdp, ectei, ELF)
+                marine_strat(i,j,k) = min(1.0, max(0.0, cf(i,j,k)))
+              end if
+            end do
+          endif
+        end if
       end do
     end do
 
