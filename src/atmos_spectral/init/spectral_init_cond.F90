@@ -220,7 +220,7 @@ else if(trim(topography_option) == 'input') then
                      ' but '//trim('INPUT/'//topog_file_name)//' does not exist', FATAL)
    endif
    
-  if(smooth_input_land):
+  if(smooth_input_land) then
      ocean_mask = .true. ! If Broccoli smoothing is to be applied over 'input' land as well as ocean, set this as 'ocean' here
   else
      where(land_ones > 0.)
