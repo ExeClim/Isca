@@ -70,8 +70,9 @@ character(len=64) :: topography_option = 'flat'  ! realistic topography computed
 character(len=64) :: topog_file_name  = 'topography.data.nc'
 character(len=64) :: topog_field_name = 'zsurf'
 character(len=256) :: land_field_name = 'land_mask'
+logical :: smooth_land = .false.
 
-namelist / spectral_init_cond_nml / initial_temperature, topography_option, topog_file_name, topog_field_name, land_field_name
+namelist / spectral_init_cond_nml / initial_temperature, topography_option, topog_file_name, topog_field_name, land_field_name, smooth_input_land
 
 contains
 
@@ -218,12 +219,16 @@ else if(trim(topography_option) == 'input') then
      call error_mesg('get_topography','topography_option="'//trim(topography_option)//'"'// &
                      ' but '//trim('INPUT/'//topog_file_name)//' does not exist', FATAL)
    endif
-    
-   where(land_ones > 0.)
-     ocean_mask = .false.
-   elsewhere
-     ocean_mask = .true.
-   end where
+   
+  if(smooth_input_land==.true.):
+     ocean_mask = .true. ! If Broccoli smoothing is to be applied over 'input' land as well as ocean, set this as 'ocean' here
+  else
+     where(land_ones > 0.)
+       ocean_mask = .false.
+     elsewhere
+       ocean_mask = .true.
+     end where
+  endif
 
    surf_geopotential = grav*surf_height
 
