@@ -70,7 +70,7 @@ character(len=64) :: topography_option = 'flat'  ! realistic topography computed
 character(len=64) :: topog_file_name  = 'topography.data.nc'
 character(len=64) :: topog_field_name = 'zsurf'
 character(len=256) :: land_field_name = 'land_mask'
-logical :: smooth_land = .false.
+logical :: smooth_input_land = .false.
 
 namelist / spectral_init_cond_nml / initial_temperature, topography_option, topog_file_name, topog_field_name, land_field_name, smooth_input_land
 
