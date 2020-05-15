@@ -13,6 +13,9 @@ except Exception as e:
     log.error('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
     raise ValueError('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
 
+if not GFDL_BASE in _module_directory:
+    log.warning('Warning: Isca python module version used is located in "%s" but GFDL_BASE is "%s"' % (_module_directory, GFDL_BASE))
+
 # GFDL_ENV: The environment on which the model is being run.
 # Primarily, this determines which compilers and libraries are to be used
 # to compile the code.
