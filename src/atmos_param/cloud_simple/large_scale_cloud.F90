@@ -206,7 +206,7 @@ module large_scale_cloud_mod
     premib = 7.0e4 !Pa
 
     where (p_full>premib .and. omega_adj_threshold>wg_full .and. wg_full>0.0)
-     cf = min(1.0, wg_full/omega_adj_threshold) * cf
+     cf = min(1.0, (omega_adj_threshold-wg_full)/omega_adj_threshold) * cf
     end where
     where (p_full>premib .and. wg_full>=omega_adj_threshold)
       cf = 0.0
