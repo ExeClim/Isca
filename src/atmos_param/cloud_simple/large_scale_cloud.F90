@@ -200,8 +200,7 @@ module large_scale_cloud_mod
     real, intent(in),    dimension(:,:,:) :: p_full, wg_full, q_hum
     real, intent(in),    dimension(:,:)   :: psg
     real, intent(inout), dimension(:,:,:) :: cf
-    real :: premib, omega
-    integer :: k
+    real :: premib
 
     premib = 7.0e4 !Pa
 
