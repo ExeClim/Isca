@@ -1,16 +1,17 @@
 #!/bin/bash
-set -e # exit with nonzero exit code if anything fails
+# exit with nonzero exit code if anything fails
+set -e
 
 # Clone *this* git repo, but only the gh-pages branch.
 echo Cloning gh-pages...
 if [[ ! -d $GH_PAGES_DIR ]]; then
-    git clone -q -b gh-pages --single-branch https://$GITHUB_API_KEY@github.com/${TRAVIS_REPO_SLUG}.git $GH_PAGES_DIR
+    git clone -q -b gh-pages --single-branch https://${GITHUB_API_KEY}@github.com/${TRAVIS_REPO_SLUG}.git $GH_PAGES_DIR
 fi
 cd $GH_PAGES_DIR
 
-# inside this git repo we'll pretend to be a new user
-git config user.name "Travis CI"
-git config user.email "travis@nobody.org"
+# inside this git repo we pretend to be isca
+git config user.name "isca-model"
+git config user.email "iscagcm@gmail.com"
 
 # if [[ "${TRAVIS_TAG}" != "" ]]; then
 #     # export VERSION=${TRAVIS_TAG%.*}
@@ -46,4 +47,4 @@ git commit --amend --reset-author --no-edit
 
 # Push up to gh-pages
 echo Pushing...
-git push --force -q https://$GITHUB_API_KEY@github.com/execlim/isca gh-pages
+git push --force -q https://${GITHUB_API_KEY}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages

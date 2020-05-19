@@ -2,6 +2,10 @@ language: minimal
 notifications:
   email: false
 
+branches:
+  only: 
+    - master
+
 env:
   global:
     - GFDL_BASE=$TRAVIS_BUILD_DIR
