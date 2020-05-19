@@ -47,5 +47,4 @@ git commit --amend --reset-author --no-edit
 
 # Push up to gh-pages
 echo Pushing...
-echo "key=" $GITHUB_API_KEY
 git push --force -q https://${GITHUB_API_KEY}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
