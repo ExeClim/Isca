@@ -56,23 +56,11 @@ MODULE socrates_interface_mod
   INTEGER :: id_soc_tdt_sw, id_soc_tdt_lw, id_soc_tdt_rad
   INTEGER :: id_soc_surf_flux_lw, id_soc_surf_flux_sw 
   INTEGER :: id_soc_surf_flux_lw_down, id_soc_surf_flux_sw_down 
-
   INTEGER :: id_soc_surf_flux_lw_clear, id_soc_surf_flux_sw_clear 
-  INTEGER :: id_soc_surf_flux_lw_down_clear, id_soc_surf_flux_sw_down_clear 
-
-  INTEGER :: id_soc_flux_lw, id_soc_flux_sw
-
-  INTEGER :: id_soc_olr, id_soc_toa_sw
-  INTEGER :: id_soc_olr_clear, id_soc_toa_sw_clear
-
-  INTEGER :: id_soc_toa_sw_down
-  INTEGER :: id_soc_surf_flux_lw_clear, id_soc_surf_flux_sw_clear 
-  INTEGER :: id_soc_surf_flux_lw_down, id_soc_surf_flux_sw_down 
   INTEGER :: id_soc_surf_flux_lw_down_clear, id_soc_surf_flux_sw_down_clear 
   INTEGER :: id_soc_flux_lw, id_soc_flux_sw
   INTEGER :: id_soc_olr, id_soc_toa_sw, id_soc_olr_clear, id_soc_toa_sw_clear
   INTEGER :: id_soc_toa_sw_down, id_soc_toa_sw_down_clear
-
   INTEGER :: id_soc_ozone, id_soc_co2, id_soc_coszen
   INTEGER :: n_soc_bands_lw, n_soc_bands_sw
   INTEGER :: n_soc_bands_lw_hires, n_soc_bands_sw_hires
@@ -1177,7 +1165,6 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             mmr_cl_rad_soc = 0.
 
         endif
-
        n_profile = INT(size(temp_in,2)*size(temp_in,1), kind(i_def))
        n_layer   = INT(size(temp_in,3), kind(i_def))
        t_surf_for_soc = REAL(t_surf_in(:,:), kind(r_def))
