@@ -23,7 +23,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('mima_test_experiment_no_cloud', codebase=cb)
+exp = Experiment('mima_test_experiment_with_mcica', codebase=cb)
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -43,6 +43,10 @@ diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
+diag.add_field('cloud_simple', 'cf_rad', time_avg=True)
+diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
+diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
+diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
 diag.add_field('rrtm_radiation', 'olr', time_avg=True)
 
 exp.diag_table = diag
@@ -75,7 +79,7 @@ exp.namelist = namelist = Namelist({
         'roughness_mom':3.21e-05,
         'roughness_heat':3.21e-05,
         'roughness_moist':3.21e-05,
-        'do_cloud_simple': False,                
+        'do_cloud_simple': True,                
     },
     'cloud_simple_nml': {
         'simple_cca':0.0,
@@ -151,7 +155,8 @@ exp.namelist = namelist = Namelist({
         'solr_cnst': 1360,  #s set solar constant to 1360, rather than default of 1368.22
         'dt_rad': 7200, #Use long RRTM timestep
         'do_read_ozone':True,
-        'ozone_file':'ozone_1990'
+        'ozone_file':'ozone_1990',
+        'icld': 1 #cloud overlap method
     },
 
     # FMS Framework configuration
@@ -186,6 +191,6 @@ exp.namelist = namelist = Namelist({
 })
 #Lets do a run!
 if __name__=="__main__":
-    exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)
+    exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
     for i in range(2,25):
         exp.run(i, num_cores=NCORES, overwrite_data=True)

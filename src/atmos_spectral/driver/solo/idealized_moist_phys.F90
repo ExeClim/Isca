@@ -777,9 +777,9 @@ if(turb) then
    id_diff_dt_vg = register_diag_field(mod_name, 'dt_vg_diffusion',        &
         axes(1:3), Time, 'meridional wind tendency from diffusion','m/s^2')
    id_diff_dt_tg = register_diag_field(mod_name, 'dt_tg_diffusion',        &
-        axes(1:3), Time, 'temperature diffusion tendency','T/s')
+        axes(1:3), Time, 'temperature diffusion tendency','K/s')
    id_diff_dt_qg = register_diag_field(mod_name, 'dt_qg_diffusion',        &
-        axes(1:3), Time, 'moisture diffusion tendency','T/s')
+        axes(1:3), Time, 'moisture diffusion tendency','kg/kg/s')
 endif
 
    id_rh = register_diag_field ( mod_name, 'rh', &
@@ -801,7 +801,7 @@ real :: delta_t
 real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
 
 ! Simple cloud scheme variabilies to pass to radiation
-real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cf_rad, reff_rad, qcl_rad, cca_rad  
+real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cfa_rad, reff_rad, qcl_rad, cca_rad  
 
 real, intent(in) , dimension(:,:,:), optional :: mask
 integer, intent(in) , dimension(:,:),   optional :: kbot
@@ -985,7 +985,7 @@ if(do_cloud_simple) then
                       cf_rad(:,:,:), cca_rad(:,:,:),       &
                       reff_rad(:,:,:), qcl_rad(:,:,:)      & 
                       )
- 
+
 endif
 
 ! Begin the radiation calculation by computing downward fluxes.
@@ -1113,7 +1113,7 @@ if(do_rrtm_radiation) then
    call interp_temp(z_full(:,:,:,current),z_half(:,:,:,current),tg_interp, Time)
    call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),  &
                   albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),     &
-                  coszen,net_surf_sw_down(:,:),surf_lw_down(:,:), cf_rad(:,:,:), reff_rad(:,:,:),   &     
+                  coszen,net_surf_sw_down(:,:),surf_lw_down(:,:), cfa_rad(:,:,:), reff_rad(:,:,:),   &     
                   do_cloud_simple )
 endif
 #endif
@@ -1248,6 +1248,8 @@ if(turb) then
    if(mixed_layer_bc) then	
    call mixed_layer(                                                       &
                               Time, Time+Time_step,                        &
+                              js,                                          & 
+                              je,                                          &
                               t_surf(:,:),                                 & ! t_surf is intent(inout)
                               flux_t(:,:),                                 &
                               flux_q(:,:),                                 &

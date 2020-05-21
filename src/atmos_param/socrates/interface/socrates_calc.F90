@@ -183,7 +183,6 @@ call set_bound(control, dimen, spectrum, bound, n_profile,                     &
   t_rad_surf, cos_zenith_angle, solar_irrad, orog_corr,                        &
   l_planet_grey_surface, planet_albedo, planet_emissivity)
 
-! call set_cld(control, dimen, spectrum, cld, n_profile)
 
   zeros_cld = 0.
   ten_microns_cld = 1.

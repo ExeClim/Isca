@@ -98,7 +98,6 @@ module cloud_simple_mod
       'Specific humidity of cloud liquid', &
       'kg/kg')
 
-
    id_rh_in_cf = &
       register_diag_field ( mod_name_cld, 'rh_in_cf', axes(1:3), Time, &
       'RH as a percent', &
@@ -132,7 +131,6 @@ module cloud_simple_mod
     real       , intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad, cca
 
     real, dimension(size(temp,1), size(temp, 2), size(temp, 3)) :: qs, frac_liq, rh_in_cf, simple_rhcrit, rh_min, rh_max
-
 
     integer :: i, j, k, k_surf
 
@@ -269,12 +267,12 @@ module cloud_simple_mod
 
     if (spookie_protocol .eq. 1) then
         cf = (rh - simple_rhcrit ) / ( 1.0 - simple_rhcrit ) 
-        cf = MAX( 0.0, MIN( 1.0, cf))
 
     else
         cf = (rh - rh_min ) / ( rh_max - rh_min ) 
-        cf = MAX( 0.0, MIN( 1.0, cf))
     end if 
+
+    cf = MAX( 0.0, MIN( 1.0, cf))
 
     ! include simple convective cloud fraction where present (not currenly used)
     cca = 0.0 ! no convective cloud fraction is calculated

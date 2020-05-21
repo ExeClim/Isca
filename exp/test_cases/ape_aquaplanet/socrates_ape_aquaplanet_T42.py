@@ -1,11 +1,8 @@
 import os
-
 import numpy as np
-
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
-from isca.util import exp_progress
 
-NCORES = 16
+NCORES = 16  #32 is max for gv3
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -23,7 +20,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_test_aquaplanet_with_clouds_post_jm_suggestions', codebase=cb)
+exp = Experiment('ape_aqua_soc_low_res', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -31,62 +28,62 @@ inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 #Tell model how to write diagnostics
 diag = DiagTable()
 diag.add_file('atmos_monthly', 30, 'days', time_units='days')
+diag.add_file('atmos_daily',    1, 'days', time_units='days')
 
-#Tell model which diagnostics to write
-diag.add_field('dynamics', 'ps', time_avg=True)
-diag.add_field('dynamics', 'bk')
-diag.add_field('dynamics', 'pk')
-diag.add_field('atmosphere', 'precipitation', time_avg=True)
-diag.add_field('atmosphere', 'rh', time_avg=True)
-diag.add_field('mixed_layer', 't_surf', time_avg=True)
-diag.add_field('mixed_layer', 'flux_t', time_avg=True) #LH
-diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #SH
-diag.add_field('dynamics', 'sphum', time_avg=True)
-diag.add_field('dynamics', 'ucomp', time_avg=True)
-diag.add_field('dynamics', 'vcomp', time_avg=True)
-diag.add_field('dynamics', 'temp', time_avg=True)
-diag.add_field('dynamics', 'vor', time_avg=True)
-diag.add_field('dynamics', 'div', time_avg=True)
+#when not an aquaplanet, you need to interpolate vertically!
+diag.add_field('dynamics',    'ps', time_avg=True) #ps
+diag.add_field('dynamics',    'bk')
+diag.add_field('dynamics',    'pk')
+diag.add_field('dynamics',    'zsurf', time_avg=True) 
 
-#temperature tendency - units are K/s
-diag.add_field('socrates', 'soc_tdt_lw', time_avg=True) # net flux lw 3d (up - down)
-diag.add_field('socrates', 'soc_tdt_sw', time_avg=True)
-diag.add_field('socrates', 'soc_tdt_rad', time_avg=True) #sum of the sw and lw heating rates
+diag.add_field('mixed_layer', 't_surf',   files=['atmos_monthly'], time_avg=True) #ts
+diag.add_field('mixed_layer', 'flux_t',                            time_avg=True) #hfls
+diag.add_field('mixed_layer', 'flux_lhe',                          time_avg=True) #hfss - LH is evap if / L_v
+diag.add_field('mixed_layer', 'albedo',   files=['atmos_monthly'], time_avg=True) 
 
-#net (up) and down surface fluxes
-diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
-diag.add_field('socrates', 'soc_surf_flux_sw', time_avg=True)
-diag.add_field('socrates', 'soc_surf_flux_lw_down', time_avg=True)
-diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
-#net (up) TOA and downard fluxes
-diag.add_field('socrates', 'soc_olr', time_avg=True)
-diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
-diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True) 
+diag.add_field('atmosphere', 'precipitation',     time_avg=True) #pr
+diag.add_field('atmosphere', 'condensation_rain', time_avg=True) #pr-pc
+diag.add_field('atmosphere', 'rh',                files=['atmos_monthly'], time_avg=True) #hur
 
-#clear sky fluxes
-diag.add_field('socrates', 'soc_surf_flux_lw_clear', time_avg=True)
-diag.add_field('socrates', 'soc_surf_flux_sw_clear', time_avg=True)
-diag.add_field('socrates', 'soc_surf_flux_lw_down_clear', time_avg=True)
-diag.add_field('socrates', 'soc_surf_flux_sw_down_clear', time_avg=True)
-diag.add_field('socrates', 'soc_olr_clear', time_avg=True)
-diag.add_field('socrates', 'soc_toa_sw_clear', time_avg=True) 
-diag.add_field('socrates', 'soc_toa_sw_down_clear', time_avg=True) 
+#surface wind stress
+diag.add_field('atmosphere',   'flux_u', files=['atmos_monthly'], time_avg=True) #tauu - zonal component of stress
+diag.add_field('atmosphere',   'flux_v', files=['atmos_monthly'], time_avg=True) #tauv
 
-diag.add_field('cloud_simple', 'cf', time_avg=True)
-diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
-diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
-diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
-#diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
-diag.add_field('cloud_simple', 'rh_min', time_avg=True)
-diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
+#near surface properties
+diag.add_field('atmosphere',   'temp_2m',                        time_avg=True) 
+diag.add_field('atmosphere',   'sphum_2m',                       time_avg=True) 
+diag.add_field('atmosphere',   'u_10m', files=['atmos_monthly'], time_avg=True) 
+diag.add_field('atmosphere',   'v_10m', files=['atmos_monthly'], time_avg=True) 
 
-# additional output options commented out 
-#diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
-#diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
-#diag.add_field('socrates', 'soc_co2', time_avg=True)
-#diag.add_field('socrates', 'soc_ozone', time_avg=True) 
-#diag.add_field('socrates', 'soc_coszen', time_avg=True) 
-#diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
+#common variables
+diag.add_field('dynamics',    'sphum',  time_avg=True) #hus
+diag.add_field('dynamics',    'ucomp',  time_avg=True) #ua
+diag.add_field('dynamics',    'vcomp',  time_avg=True) #va
+diag.add_field('dynamics',    'omega',  time_avg=True) #wap
+diag.add_field('dynamics',    'temp',   time_avg=True) #ta
+diag.add_field('dynamics',    'height', time_avg=True) #zg
+
+#radiative fluxes
+diag.add_field('socrates', 'soc_surf_flux_lw',      files=['atmos_monthly'], time_avg=True) #net
+diag.add_field('socrates', 'soc_surf_flux_lw_down', files=['atmos_monthly'], time_avg=True) 
+
+diag.add_field('socrates', 'soc_olr',               files=['atmos_monthly'], time_avg=True)
+
+diag.add_field('socrates', 'soc_surf_flux_sw',      files=['atmos_monthly'], time_avg=True) #net
+diag.add_field('socrates', 'soc_surf_flux_sw_down', files=['atmos_monthly'], time_avg=True)
+
+diag.add_field('socrates', 'soc_toa_sw',            files=['atmos_monthly'], time_avg=True) #net
+diag.add_field('socrates', 'soc_toa_sw_down',       files=['atmos_monthly'], time_avg=True)
+
+#tendencies
+diag.add_field('socrates', 'soc_tdt_lw',            files=['atmos_monthly'], time_avg=True)
+diag.add_field('socrates', 'soc_tdt_sw',            files=['atmos_monthly'], time_avg=True)
+diag.add_field('socrates', 'soc_tdt_rad',           files=['atmos_monthly'], time_avg=True) 
+
+#needed for eddy flux terms
+diag.add_field('dynamics', 'ucomp_vcomp', files=['atmos_monthly'], time_avg=True)
+diag.add_field('dynamics', 'sphum_v',     files=['atmos_monthly'], time_avg=True)
+diag.add_field('dynamics', 'vcomp_temp',  files=['atmos_monthly'], time_avg=True)
 
 exp.diag_table = diag
 exp.inputfiles = inputfiles
@@ -98,24 +95,27 @@ exp.namelist = namelist = Namelist({
      'hours'  : 0,
      'minutes': 0,
      'seconds': 0,
-     'dt_atmos':600,
+     'dt_atmos':720,
      'current_date' : [1,1,1,0,0,0],
      'calendar' : 'thirty_day'
     },
+
     'socrates_rad_nml': {
-        'stellar_constant':1370.,
+        'stellar_constant':1365., #solar constant incoming
         'lw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7'),
         'sw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7'),
         'do_read_ozone': True,
         'ozone_file_name':'ozone_1990',
         'ozone_field_name':'ozone_1990',
-        'dt_rad':3600,
+        'dt_rad':4320.,
+        'solday':90., #turn off seasonal cycle - diurnal by default
+        'co2_ppmv':348.0,
         'store_intermediate_rad':True,
         'chunk_size': 16,
         'use_pressure_interp_for_half_levels':False,
-        'tidally_locked':False,
-        'solday':90
+        'tidally_locked':False
     }, 
+
     'idealized_moist_phys_nml': {
         'do_damping': True,
         'turb':True,
@@ -128,24 +128,17 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
-        'do_cloud_simple': True
     },
 
-    'cloud_simple_nml': {
-        'simple_cca':0.0,
-        'rhcsfc': 0.95,
-        'rhc700': 0.7,
-        'rhc200': 0.3
-    },
 
     'vert_turb_driver_nml': {
         'do_mellor_yamada': False,     # default: True
         'do_diffusivity': True,        # default: False
         'do_simple': True,             # default: False
         'constant_gust': 0.0,          # default: 1.0
-        'use_tau': False 
+        'use_tau': False
     },
-
+    
     'diffusivity_nml': {
         'do_entrain':False,
         'do_simple': True,
@@ -166,8 +159,9 @@ exp.namelist = namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':True,  
-        'depth': 2.5,                          #Depth of mixed layer used
-        'albedo_value': 0.2,                  #Albedo value used      
+        'depth': 10.0,                          #Depth of mixed layer used
+        'albedo_value': 0.38,                   #Albedo value used      
+        'do_ape_sst': True,
     },
 
     'qe_moist_convection_nml': {
@@ -227,9 +221,11 @@ exp.namelist = namelist = Namelist({
 if __name__=="__main__":
 
         cb.compile(debug=False)
+        exp.set_resolution('T42')
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
 
-        overwrite=False
+        #for i in range(2,385): #all runs should be 30 years + spin up
+        #    exp.run(i, num_cores=NCORES, overwrite_data=True)
 
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
-        for i in range(2,121):
-            exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
+
+

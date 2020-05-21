@@ -542,7 +542,7 @@
 !*****************************************************************************************
         subroutine run_rrtmg(is,js,Time,lat,lon,p_full,p_half,        &
                              albedo,q,t,t_surf_rad,tdt,               &
-                             coszen,flux_sw,flux_lw,cf_rad,reff_rad,  &
+                             coszen,flux_sw,flux_lw,cfa_rad,reff_rad, &
                              do_cloud_simple)
 !
 ! Driver for RRTMG radiation scheme.
@@ -589,7 +589,7 @@
           real(kind=rb),dimension(:,:),intent(out),optional :: flux_sw,flux_lw ! surface fluxes [W/m2]
                                                                                ! dimension (lat x lon)
                                                                                ! need to have both or none!
-          real(kind=rb), dimension(:,:,:), intent(in)       :: cf_rad,reff_rad !cloud properties
+          real(kind=rb), dimension(:,:,:), intent(in)       :: cfa_rad,reff_rad !cloud properties
 
           logical, intent(in)                               :: do_cloud_simple
 
@@ -603,7 +603,6 @@
 
           real(kind=rb),dimension(ncols_rrt,nlay_rrt) :: pfull,tfull,fracday&
                , hr,hrc, swhr, swhrc, cldfr, reliq, reice
-
 
           real(kind=rb),dimension(ngptsw,ncols_rrt,nlay_rrt) :: cldfr_pass_sw
           real(kind=rb),dimension(ngptlw,ncols_rrt,nlay_rrt) :: cldfr_pass_lw
@@ -679,7 +678,7 @@
 !!!!! mp586 addition for annual mean insolation !!!!!
 !!!! following https://github.com/sit23/Isca/blob/master/src/atmos_param/socrates/interface/socrates_interface.F90#L888 !!!!
 
-       	if (frierson_solar_rad .eq. .true.) then
+       	if (frierson_solar_rad) then
             p2     = (1. - 3.*sin(lat(:,:))**2)/4.
             coszen = 0.25 * (1.0 + del_sol * p2 + del_sw * sin(lat(:,:)))
             rrsun  = 1 ! needs to be set, set to 1 so that stellar_radiation is unchanged in socrates_interface
@@ -756,7 +755,7 @@
           !get ozone 
           if(do_read_ozone)then
              call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_file))
-             if (input_o3_file_is_mmr==.true.) then
+             if (input_o3_file_is_mmr) then
                  o3f = o3f * (1000. * gas_constant / rdgas ) / wtmozone !RRTM expects all abundances to be volume mixing ratio. So if input file is mass mixing ratio, it must be converted to volume mixing ratio using the molar masses of dry air and ozone. 
                  ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol from kg/mol by multiplying by 1000. This conversion is necessary because wtmozone is in g/mol.
              endif 
