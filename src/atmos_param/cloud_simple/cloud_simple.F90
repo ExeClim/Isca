@@ -136,7 +136,6 @@ module cloud_simple_mod
 
     logical :: es_over_liq_and_ice
 
-
     !check initiation has been done - ie read in parameters
     if (do_init) call error_mesg ('cloud_simple',  &
          'cloud_simple_init has not been called.', FATAL)
@@ -268,21 +267,12 @@ module cloud_simple_mod
 
     if (spookie_protocol .eq. 1) then
         cf = (rh - simple_rhcrit ) / ( 1.0 - simple_rhcrit ) 
-        cf = MAX( 0.0, MIN( 1.0, cf))
 
     else
         cf = (rh - rh_min ) / ( rh_max - rh_min ) 
-        cf = MAX( 0.0, MIN( 1.0, cf))
     end if 
 
-    if (spookie_protocol .eq. 1) then
-        cf = (rh - simple_rhcrit ) / ( 1.0 - simple_rhcrit ) 
-        cf = MAX( 0.0, MIN( 1.0, cf))
-
-    else
-        cf = (rh - rh_min ) / ( rh_max - rh_min ) 
-        cf = MAX( 0.0, MIN( 1.0, cf))
-    end if 
+    cf = MAX( 0.0, MIN( 1.0, cf))
 
     ! include simple convective cloud fraction where present (not currenly used)
     cca = 0.0 ! no convective cloud fraction is calculated
