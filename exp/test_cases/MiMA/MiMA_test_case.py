@@ -4,7 +4,7 @@ import numpy as np
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 16
+NCORES = 4
 
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -19,11 +19,11 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
-cb.compile()#debug=True)  # compile the source code to working directory $GFDL_WORK/codebase
+cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('mima_test_experiment_with_mcica', codebase=cb)
+exp = Experiment('mima_test_experiment', codebase=cb)
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -43,10 +43,6 @@ diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
-diag.add_field('cloud_simple', 'cf_rad', time_avg=True)
-diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
-diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
-diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
 diag.add_field('rrtm_radiation', 'olr', time_avg=True)
 
 exp.diag_table = diag
@@ -79,16 +75,7 @@ exp.namelist = namelist = Namelist({
         'roughness_mom':3.21e-05,
         'roughness_heat':3.21e-05,
         'roughness_moist':3.21e-05,
-        'do_cloud_simple': True,                
-    },
-    'cloud_simple_nml': {
-        'simple_cca':0.0,
-        'rhcsfc': 0.95,
-        'rhc700': 0.7,
-        'rhc200': 0.3,
-        'rhmsfc': 0.95,
-        'rhm700': 0.7,
-        'rhm200': 0.3,
+        'do_cloud_simple': False
     },
 
     'vert_turb_driver_nml': {
@@ -136,14 +123,13 @@ exp.namelist = namelist = Namelist({
     },
     
     'sat_vapor_pres_nml': {
-        'do_simple':True,
-        'construct_table_wrt_liq_and_ice':True
+        'do_simple':True
     },
     
     'damping_driver_nml': {
         'do_rayleigh': True,
         'trayfric': -0.5,              # neg. value: time in *days*
-        'sponge_pbottom':  150.,
+        'sponge_pbottom':  50.,
         'do_conserve_energy': True,         
     },
 
@@ -155,8 +141,7 @@ exp.namelist = namelist = Namelist({
         'solr_cnst': 1360,  #s set solar constant to 1360, rather than default of 1368.22
         'dt_rad': 7200, #Use long RRTM timestep
         'do_read_ozone':True,
-        'ozone_file':'ozone_1990',
-        'icld': 1 #cloud overlap method
+        'ozone_file':'ozone_1990'
     },
 
     # FMS Framework configuration
@@ -181,7 +166,7 @@ exp.namelist = namelist = Namelist({
         'valid_range_t':[100.,800.],
         'initial_sphum':[2.e-6],
         'vert_coord_option':'uneven_sigma',
-        'surf_res':0.2,
+        'surf_res':0.5,
         'scale_heights' : 11.0,
         'exponent':7.0,
         'robert_coeff':0.03
@@ -191,6 +176,6 @@ exp.namelist = namelist = Namelist({
 })
 #Lets do a run!
 if __name__=="__main__":
-    exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)#, run_idb=True)
-    for i in range(2,25):
-        exp.run(i, num_cores=NCORES, overwrite_data=True)
+    exp.run(1, use_restart=False, num_cores=NCORES)
+    for i in range(2,121):
+        exp.run(i, num_cores=NCORES)
