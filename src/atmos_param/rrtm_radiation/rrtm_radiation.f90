@@ -542,7 +542,7 @@
 !*****************************************************************************************
         subroutine run_rrtmg(is,js,Time,lat,lon,p_full,p_half,        &
                              albedo,q,t,t_surf_rad,tdt,               &
-                             coszen,flux_sw,flux_lw,cfa_rad,reff_rad, &
+                             coszen,flux_sw,flux_lw,cf_rad,reff_rad, &
                              do_cloud_simple)
 !
 ! Driver for RRTMG radiation scheme.
@@ -589,7 +589,7 @@
           real(kind=rb),dimension(:,:),intent(out),optional :: flux_sw,flux_lw ! surface fluxes [W/m2]
                                                                                ! dimension (lat x lon)
                                                                                ! need to have both or none!
-          real(kind=rb), dimension(:,:,:), intent(in)       :: cfa_rad,reff_rad !cloud properties
+          real(kind=rb), dimension(:,:,:), intent(in)       :: cf_rad,reff_rad !cloud properties
 
           logical, intent(in)                               :: do_cloud_simple
 

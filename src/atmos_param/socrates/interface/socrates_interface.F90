@@ -124,18 +124,6 @@ write(stdlog_unit, socrates_rad_nml)
     !Initialise astronomy
     call astronomy_init
 
-    if(do_cloud_simple.and..not.account_for_clouds_in_socrates) then
-
-        call error_mesg( 'run_socrates', &
-        'do_cloud_simple is True but account_for_clouds_in_socrates is False. Radiative effects of clouds NOT accounted for', WARNING)
-
-    elseif(.not.do_cloud_simple.and.account_for_clouds_in_socrates) then
-
-        call error_mesg( 'run_socrates', &
-        'do_cloud_simple is False but account_for_clouds_in_socrates is True. Radiative effects of clouds NOT accounted for', WARNING)
-
-    endif
-
     !Initialise variables related to radiation timestep
 
           call get_time(delta_t_atmos,time_step_seconds)
@@ -840,10 +828,18 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     integer(i_def) :: n_profile, n_layer
 
     real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: t_surf_for_soc, rad_lat_soc, rad_lon_soc, albedo_soc
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, co2_soc, p_full_soc, output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total, z_full_soc
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) ::  cld_conv_frac_soc
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: output_soc_flux_sw_down, output_soc_flux_sw_up, output_soc_flux_lw_down, output_soc_flux_lw_up, cld_frac_soc, reff_rad_soc, mmr_cl_rad_soc, qcl_rad_soc
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, co2_soc, p_full_soc 
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: output_heating_rate_sw, output_heating_rate_lw 
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: output_heating_rate_total, z_full_soc
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: cld_frac_soc, cld_conv_frac_soc 
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: reff_rad_soc, mmr_cl_rad_soc, qcl_rad_soc
+
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc, t_half_out, z_half_soc
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: output_soc_flux_sw_down, output_soc_flux_sw_up
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: output_soc_flux_lw_down, output_soc_flux_lw_up
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: output_soc_flux_lw_down_clear, output_soc_flux_lw_up_clear
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: output_soc_flux_sw_down_clear, output_soc_flux_sw_up_clear
+
 
     logical :: soc_lw_mode, used
     integer :: seconds, days, year_in_s
