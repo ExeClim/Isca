@@ -23,7 +23,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_test_aquaplanet_without_clouds', codebase=cb)
+exp = Experiment('soc_test_aquaplanet', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -59,11 +59,6 @@ diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
 diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
 diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
-
-diag.add_field('cloud_simple', 'cf_rad', time_avg=True)
-diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
-diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
-diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
 
 # additional output options commented out 
 #diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
@@ -161,7 +156,7 @@ exp.namelist = namelist = Namelist({
     },
     
     'sat_vapor_pres_nml': {
-           'do_simple':True,
+           'do_simple':True
        },
     
     'damping_driver_nml': {
