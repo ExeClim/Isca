@@ -552,9 +552,11 @@
 ! Modules
           use fms_mod, only:         error_mesg, FATAL
           use mpp_mod, only:         mpp_pe,mpp_root_pe
-          use rrtmg_lw_rad, only:    rrtmg_lw, mcica_subcol_lw
-          use rrtmg_sw_rad, only:    rrtmg_sw, mcica_subcol_sw
-          use astronomy_mod,         only: diurnal_solar
+          use rrtmg_lw_rad, only:    rrtmg_lw
+          use rrtmg_sw_rad, only:    rrtmg_sw
+          use mcica_subcol_gen_lw, only:   mcica_subcol_lw
+          use mcica_subcol_gen_sw, only:   mcica_subcol_sw
+          use astronomy_mod, only:   diurnal_solar
           use rrtm_vars
           use time_manager_mod,only: time_type,get_time,set_time, length_of_year, length_of_day
           use interpolator_mod,only: interpolator
