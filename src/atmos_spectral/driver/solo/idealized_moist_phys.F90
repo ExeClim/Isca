@@ -18,7 +18,7 @@ use           vert_diff_mod, only: vert_diff_init, gcm_vert_diff_down, gcm_vert_
 
 use two_stream_gray_rad_mod, only: two_stream_gray_rad_init, two_stream_gray_rad_down, two_stream_gray_rad_up, two_stream_gray_rad_end
 
-use        cloud_simple_mod, only: cloud_simple_init, cloud_simple_end, cloud_simple
+use        cloud_simple_mod, only: cloud_simple_init,  cloud_simple
 
 use         mixed_layer_mod, only: mixed_layer_init, mixed_layer, mixed_layer_end, albedo_calc
 
@@ -970,10 +970,12 @@ endif
 ! Using start of time step variables
 ! using soecific humidity NOT mixing ratios
 
- !Set to zero regarles of if clouds are used in radiation code
- cf_rad   = 0.
- reff_rad = 0.
- qcl_rad  = 0.
+! initialise outs to zero
+
+cf_rad(:,:,:)   = 0.
+reff_rad(:,:,:) = 0.
+qcl_rad(:,:,:)  = 0.
+cca_rad(:,:,:)  = 0.
 
 if(do_cloud_simple) then
 
@@ -982,7 +984,7 @@ if(do_cloud_simple) then
                       tg(:,:,:,previous),                  &
                       grid_tracers(:,:,:,previous,nsphum), &
                       ! outs - 
-                      cf_rad(:,:,:), cca_rad(:,:,:),       &
+                      cf_rad(:,:,:),                       &
                       reff_rad(:,:,:), qcl_rad(:,:,:)      & 
                       )
 

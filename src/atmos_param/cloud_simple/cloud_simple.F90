@@ -8,46 +8,49 @@ module cloud_simple_mod
 
   use            fms_mod, only: stdlog, FATAL, WARNING, error_mesg
   use   time_manager_mod, only: time_type
-  use sat_vapor_pres_mod, only:  compute_qs
+  use sat_vapor_pres_mod, only: compute_qs
+  use      constants_mod, only: KELVIN
 
   use diag_manager_mod, only: register_diag_field, send_data
 
   implicit none
 
-  logical ::   do_init = .true.  ! Check if init needs to be run
+  logical ::   do_init = .true. ! update to false after init has been run
 
-  real    ::   simple_cca =  0.0
+  real    ::   cca_lower_limit =  0.0 ! simple convective cloud fraction min
+                                      ! the default is zero. Not being used but 
+                                      ! could be adapted in future.
 
-  ! Critical RH (fraction) values - spookie protocol 1 only
-  real    ::   rhc_sfc     = 0.95
-  real    ::   rhc_base    = 0.7
-  real    ::   rhc_top     = 0.3
-  ! 
-  real    ::   rhmsfc     = 0.95
-  real    ::   rhm700     = 0.7
-  real    ::   rhm200     = 0.3
-
-  ! Critical RH (fraction) values - spookie protocol 2 only
-  real    ::   rh_min_top  = 0.9
-  real    ::   rh_min_sfc  = 1.0
-  real    ::   rh_min_base = 0.8
-  real    ::   rh_max_top  = 1.0
-  real    ::   rh_max_sfc  = 1.0
-  real    ::   rh_max_base = 1.0
-
-  ! Pressure (Pa.) at cloud bottom and top (very approx)
-  real    ::   p_base     = 70000.
-  real    ::   p_top      = 20000.
+  ! There were two testing schenarios developed for the sppookie-2 project.
+  ! The first was implemented but not tested very much. The second protocol is
+  ! what was used for that project and what has been more tested in Isca.
 
   integer ::  spookie_protocol = 2
 
-  namelist /cloud_simple_nml/  simple_cca, rhc_sfc, rhc_base, rhc_top, &
-                               rhmsfc, rhm700, rhm200,                 &
+  ! Critical RH (fraction) values - spookie-2 protocol version 1
+  real    ::   rhc_sfc     = 1.0
+  real    ::   rhc_base    = 0.7
+  real    ::   rhc_top     = 0.3
+
+  ! Critical RH (fraction) values - spookie-2 protocol version 2
+  ! initial values for RH. Updated in calc_rh_min_max
+  real    ::   rh_min_sfc  = 1.0
+  real    ::   rh_min_base = 0.8
+  real    ::   rh_min_top  = 0.9
+
+  real    ::   rh_max_sfc  = 1.0
+  real    ::   rh_max_base = 1.0
+  real    ::   rh_max_top  = 1.0
+
+  ! Pressure (Pa) at cloud bottom and top (very approx)
+  real    ::   p_base     = 70000.
+  real    ::   p_top      = 20000.
+
+  namelist /cloud_simple_nml/  cca_lower_limit, rhc_sfc, rhc_base, rhc_top, &
+
                                rh_min_top, rh_min_sfc, rh_min_base,    &
                                rh_max_top, rh_max_sfc, rh_max_base
       
-  real :: zerodegc = 273.15
-
   integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf, &
              id_simple_rhcrit, id_rh_min
  
@@ -63,7 +66,7 @@ module cloud_simple_mod
     type(time_type), intent(in)       :: Time
     integer, intent(in), dimension(4) :: axes
 
-    integer :: io ,stdlog_unit
+    integer :: io, stdlog_unit
 
 
 #ifdef INTERNAL_FILE_NML
@@ -98,6 +101,8 @@ module cloud_simple_mod
       'Specific humidity of cloud liquid', &
       'kg/kg')
 
+   ! rh_in_cf is an output diagnostic only for debugging  
+
    id_rh_in_cf = &
       register_diag_field ( mod_name_cld, 'rh_in_cf', axes(1:3), Time, &
       'RH as a percent', &
@@ -123,50 +128,57 @@ module cloud_simple_mod
   subroutine cloud_simple(p_half, p_full, Time,   &
                       temp, q_hum,                &
                       ! outs 
-                      cf, cca, reff_rad, qcl_rad) 
+                      cf, reff_rad, qcl_rad) 
 
     real       , intent(in), dimension(:,:,:)  :: temp, q_hum, p_full, p_half
     type(time_type) , intent(in)               :: Time
 
-    real       , intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad, cca
+    real       , intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
 
-    real, dimension(size(temp,1), size(temp, 2), size(temp, 3)) :: qs, frac_liq, rh_in_cf, simple_rhcrit, rh_min, rh_max
+    real, dimension(size(temp,1), size(temp, 2), size(temp, 3)) :: qs, frac_liq
+    real, dimension(size(temp,1), size(temp, 2), size(temp, 3)) :: rh_in_cf
+    real, dimension(size(temp,1), size(temp, 2), size(temp, 3)) :: simple_rhcrit
+    real, dimension(size(temp,1), size(temp, 2), size(temp, 3)) :: rh_min,rh_max
 
     integer :: i, j, k, k_surf
 
     logical :: es_over_liq_and_ice
 
-    !check initiation has been done - ie read in parameters
+    !check initiation has been done
     if (do_init) call error_mesg ('cloud_simple',  &
          'cloud_simple_init has not been called.', FATAL)
-    
-    ! Get the saturated specific humidity TOTAL (ie ice and vap) ***double check maths!
+
+    ! Get the saturated specific humidity with respect to water and ice
+    ! this is set by the namelist variable sat_vapor_pres_nml
     call compute_qs(temp, p_full, qs) 
 
-    k_surf = size(temp, 3)
+    k_surf = size(temp, 3) !set the location of the lowest model level
 
     do i=1, size(temp, 1)
       do j=1, size(temp, 2)
         do k=1, size(temp, 3)
 
-          ! caluclate the liquid fraction, effective radius, critical RH for
-          ! the simple cloud scheme and cloud fraction.
-          ! rh_in_cf is an output diagnostic only for debugging  
+          ! calculate the liquid fraction
           call calc_liq_frac(temp(i,j,k), frac_liq(i,j,k))
 
+          ! calculate the effective radius
           call calc_reff(frac_liq(i,j,k), reff_rad(i,j,k))
 
           if (spookie_protocol .eq. 1) then
+              ! calculate the critical RH 
               call calc_rhcrit(p_full(i,j,k), p_full(i,j,k_surf), simple_rhcrit(i,j,k))
           else
+              ! calculate the min and max RH 
               call calc_rh_min_max(p_full(i,j,k), p_full(i,j,k_surf),rh_min(i,j,k), rh_max(i,j,k))
           endif
 
+          ! calculate the cloud fraction
           call calc_cf(q_hum(i,j,k), qs(i,j,k), cf(i,j,k), cca(i,j,k), rh_in_cf(i,j,k), &
                        simple_rhcrit = simple_rhcrit(i,j,k),                &
                        rh_min = rh_min(i,j,k), rh_max = rh_max(i,j,k) )
 
-          call calc_qcl_rad(p_full(i,j,k), cf(i,j,k), temp(i,j,k), qcl_rad(i,j,k) )
+          ! calculate the specific humidity of cloud liquid
+          call calc_mixing_ratio(p_full(i,j,k), cf(i,j,k), temp(i,j,k), qcl_rad(i,j,k) )
         end do
       end do
     end do
@@ -177,19 +189,19 @@ module cloud_simple_mod
   end subroutine cloud_simple
 
   subroutine calc_liq_frac(temp, frac_liq)
-    ! All liquid if above zero and all ice below -40C
-    ! linearly interpolate between T=0 and -40C
 
     real, intent(in)    :: temp
     real, intent(out)   :: frac_liq
-   
 
-    if (temp > zerodegc) then
+    if (temp > KELVIN) then
+        ! All liquid if temp above zero
         frac_liq = 1.0
-    else if (temp < zerodegc-40.0) then
+    else if (temp < KELVIN-40.0) then
+        ! All ice if temp is below -40C
         frac_liq = 0.0
     else           
-        frac_liq = 1.0 - (zerodegc-temp) / 40.0
+        ! linearly interpolate between T=0 and -40C
+        frac_liq = 1.0 - (KELVIN-temp) / 40.0
     end if 
 
 
@@ -233,29 +245,37 @@ module cloud_simple_mod
     real, intent(in)  :: p_full, p_surf
     real, intent(out) :: rh_min, rh_max
 
+    real :: layer
 
-    if (p_full > p_base  ) then !surface up to base
+    ! calculate RH min and max as a function of pressure
 
-      rh_min = rh_min_sfc - ( rh_min_sfc - rh_min_base ) * ( p_surf - p_full  ) / ( p_surf - p_base )
-      rh_max = rh_max_sfc - ( rh_max_sfc - rh_max_base ) * ( p_surf - p_full  ) / ( p_surf - p_base )
+    if (p_full > p_base) then 
+      ! For the layer between the surface and cloud base (default is 700 hpa)
 
-    else if ( p_full > p_top ) then  ! base up to top
+      layer =  (p_surf - p_full) / (p_surf - p_base)
 
-      rh_min = rh_min_base - ( rh_min_base - rh_min_top ) * (p_base - p_full) / (p_base - p_top)
-      rh_max = rh_max_base - ( rh_max_base - rh_max_top ) * (p_base - p_full) / (p_base - p_top)
+      ! correction step to update initial values
+      rh_min = rh_min_sfc - (rh_min_sfc - rh_min_base) * layer
+      rh_max = rh_max_sfc - (rh_max_sfc - rh_max_base) * layer
+
+    else if ( p_full > p_top ) then  
+      ! For the layer where the cloud is (base up to top)
+
+      layer = (p_base - p_full) / (p_base - p_top)
+      rh_min = rh_min_base - ( rh_min_base - rh_min_top ) * layer
+      rh_max = rh_max_base - ( rh_max_base - rh_max_top ) * layer
           
-    else ! above top
-
+    else 
+      ! Above the cloud top above top
       rh_min = rh_min_top
       rh_max = rh_max_top
-
     endif
 
 
   end subroutine calc_rh_min_max
 
   subroutine calc_cf(q_hum, qsat, cf, cca, rh, simple_rhcrit, rh_min, rh_max)
-    ! Calculate LS (stratiform) cloud fraction 
+    ! Calculate large scale (stratiform) cloud fraction 
     ! as a simple linear function of RH
 
     real, intent(in)            :: q_hum, qsat
@@ -263,6 +283,7 @@ module cloud_simple_mod
 
     real, intent(out) :: cf, rh, cca
 
+    ! The environment RH
     rh = q_hum/qsat
 
     if (spookie_protocol .eq. 1) then
@@ -274,41 +295,46 @@ module cloud_simple_mod
 
     cf = MAX( 0.0, MIN( 1.0, cf))
 
-    ! include simple convective cloud fraction where present (not currenly used)
-    cca = 0.0 ! no convective cloud fraction is calculated
-             ! left in for future use
+    ! include simple convective cloud fraction where present
+    ! This is currently not being used and array are zeros as
+    ! no convective cloud fraction is calculated
+    ! left in for future use
 
-    !cca can not be used in simple clouds as in read_control  
-    ! control%i_cloud_representation = ip_cloud_ice_water
-
-    if (cca > 0.0) then
-       cf = MAX( simple_cca, cf )
-    end if
+    !if (cca > 0.0) then
+    !   cf = MAX( cca_lower_limit, cf )
+    !end if
 
 
   end subroutine calc_cf
 
-  subroutine calc_qcl_rad(p_full, cf, temp, qcl_rad)
+  subroutine calc_mixing_ratio(p_full, cf, temp, qcl_rad)
+
     ! calculate cloud water content
 
     real , intent(in)   :: p_full, cf, temp
-    real , intent(out)  :: qcl_rad
+    real , intent(out)  :: qcl_rad ! mixing ratio of cloud liquid
 
     real :: in_cloud_qcl 
  
     IF (spookie_protocol .eq. 1) THEN
         ! pressure dependent in_cloud_qcl
+        ! bounded between:
+        !     1 g/kg at 1000hpa
+        !  3e-4 g/kg at 200 hpa
         in_cloud_qcl = 3.0e-4 + (1.0-3.0e-4)*(p_full-p_top)/80000.0
-        in_cloud_qcl = MAX ( 0.0, in_cloud_qcl/1000.0 ) ! convert to kg/kg
-        qcl_rad = cf * in_cloud_qcl
+        in_cloud_qcl = MAX ( 0.0, in_cloud_qcl) ! in g/kg
     ELSE
-        ! temperatue dependent in_cloud_qcl
-        in_cloud_qcl = MIN(0.2, 0.2 * ( temp - 220. ) / ( 280. -220. ))
-        in_cloud_qcl = MAX (3.0e-4, in_cloud_qcl/1000.0 ) ! convert to kg/kg
-        qcl_rad = cf * in_cloud_qcl
+        ! temperatue dependent in_cloud_qcl 
+        ! bounded between: 
+        !     3e-4 g/kg at 220 K 
+        !      0.2 g/kg at 280K
+        in_cloud_qcl = MIN(0.2, 0.2 * ( temp - 220. ) / ( 280. - 220. ))
+        in_cloud_qcl = MAX (3.0e-4, in_cloud_qcl) ! in g/kg
     ENDIF
 
-  end subroutine calc_qcl_rad
+    qcl_rad = cf * in_cloud_qcl/1000. ! convert to kg/kg
+
+  end subroutine calc_mixing_ratio
 
   subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, simple_rhcrit, rh_min, Time)
 
@@ -348,13 +374,5 @@ module cloud_simple_mod
     endif
 
   end subroutine output_cloud_diags
-
-  subroutine cloud_simple_end ()
-
-  ! If alloocated are added in init then deallocate them here.
-
-  end subroutine cloud_simple_end
-
-  !-----------------------------------------------
 
 end module cloud_simple_mod

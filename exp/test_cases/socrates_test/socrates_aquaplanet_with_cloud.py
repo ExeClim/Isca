@@ -132,7 +132,7 @@ exp.namelist = namelist = Namelist({
     },
 
     'cloud_simple_nml': {
-        'simple_cca':0.0,
+        'cca_lower_limit':0.0,
         'rhcsfc': 0.95,
         'rhc700': 0.7,
         'rhc200': 0.3
