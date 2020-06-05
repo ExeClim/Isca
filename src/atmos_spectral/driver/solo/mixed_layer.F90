@@ -113,6 +113,9 @@ character(len=256) :: land_option = 'none'
 real,dimension(10) :: slandlon=0,slandlat=0,elandlon=-1,elandlat=-1
 !s End mj extra options
 
+logical :: specify_constant_sst = .false.
+real    :: sst_prescribed_constant = 273.
+
 character(len=256) :: qflux_file_name  = 'ocean_qflux'
 character(len=256) :: qflux_field_name = 'ocean_qflux' !Only used when using a non-time-varying q-flux. Otherwise code assumes field_name = file_name. 
 
@@ -142,7 +145,9 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               ice_albedo_value, specify_sst_over_ocean_only, &
                               ice_concentration_threshold,                   &
                               add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
-                              flux_lhe_anom_field_name
+                              flux_lhe_anom_field_name, specify_constant_sst,&
+                              sst_prescribed_constant
+
 
 !=================================================================================================================================
 
@@ -296,7 +301,7 @@ enddo
 call get_deg_lon(deg_lon)
 
 !s Adding MiMA options
-   if(do_sc_sst) do_read_sst = .true.
+   ! if(do_sc_sst) do_read_sst = .true.
    trop_capacity   = trop_depth*RHO_CP
    land_capacity   = land_depth*RHO_CP
    if(trop_capacity .le. 0.) trop_capacity = depth*RHO_CP
@@ -645,15 +650,19 @@ endif
 
 if(do_sc_sst) then !mj sst read from input file
          ! read at the new time, as that is what we are stepping to
+      if (specify_constant_sst) then
+         sst_new = sst_prescribed_constant
+      else
          call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
+      endif
 
          if(specify_sst_over_ocean_only) then
-	     where (.not.land_ice_mask) delta_t_surf = sst_new - t_surf
-             where (.not.land_ice_mask) t_surf = t_surf + delta_t_surf			 
-	 else
-	     delta_t_surf = sst_new - t_surf
-	     t_surf = t_surf + delta_t_surf
-	 endif
+            where (.not.land_ice_mask) delta_t_surf = sst_new - t_surf
+            where (.not.land_ice_mask) t_surf = t_surf + delta_t_surf			 
+         else
+            delta_t_surf = sst_new - t_surf
+            t_surf = t_surf + delta_t_surf
+         endif
 	     
 end if
 

@@ -234,7 +234,7 @@
 
         do i = 1, table_size
           tem(1) = tminl + dtres*real(i-1)
-          TABLE(i) = ES0*triple_point_pres*exp(-hlv/rvgas*(1./tem(1) - 1./tfreeze)) 
+          TABLE(i) = ES0*triple_point_pres*exp(-hlv/rvgas*(1./tem(1) - 1./tfreeze))
           DTABLE(i) = hlv*TABLE(i)/rvgas/tem(1)**2.
         enddo
 
