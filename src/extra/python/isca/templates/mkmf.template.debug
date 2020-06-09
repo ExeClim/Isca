@@ -2,26 +2,28 @@
 # typical use with mkmf
 # mkmf -t template.ifc -c"-Duse_libMPI -Duse_netCDF" path_names /usr/local/include
 CPPFLAGS = -I/usr/local/include
+NETCDF_LIBS = `nc-config --libs`
 
-# For use on Exeters gv machines in serial
-CFLAGS = -D__IFC 
-LDFLAGS = -lnetcdff -lnetcdf  -shared-intel
-
-#either ifort or mpif90 can be used to compile in debug mode.
-#CC = icc
-#FC = ifort
-#LD = ifort -L/usr/local/intel/lib
-
-CC = mpicc
-FC = mpif90
-LD = mpif90 -L/usr/local/intel/lib 
-
+# FFLAGS:
+#  -fpp: Use the fortran preprocessor
+#  -stack_temps:  Put temporary runtime arrays on the stack, not heap.
+#  -safe_cray_ptr: Cray pointers don't alias other variables.
+#  -ftz: Denormal numbers are flushed to zero.
+#  -assume byterecl: Specifies the units for the OPEN statement as bytes.
+#  -shared-intel:  Load intel libraries dynamically
+#  -i4: 4 byte integers
+#  -r8: 8 byte reals
+#  -g: Generate symbolic debugging info in code
+#  -O2: Level 2 speed optimisations
+#  -diag-disable 6843:
+#       This suppresses the warning: `warning #6843: A dummy argument with an explicit INTENT(OUT) declaration is not given an explicit value.` of which
+#       there are a lot of instances in the GFDL codebase.
 FFLAGS_DEBUG = -check -check noarg_temp_created -check nopointer -warn -warn noerrors -debug variable_locations -inline_debug_info -fpe0 -traceback -ftrapuv
-FFLAGS = $(CPPFLAGS) -fpp -stack_temps -safe-cray-ptr -ftz -i_dynamic -assume byterecl -g -i4 -r8  -O2 $(FFLAGS_DEBUG)
+FFLAGS = $(CPPFLAGS) -fpp -stack_temps -safe-cray-ptr -ftz -i_dynamic -assume byterecl -g -i4 -r8 -diag-disable 6843 -fpic $(FFLAGS_DEBUG)
+FC = $(F90)
+LD = $(F90) $(NETCDF_LIBS)
+#CC = mpicc
 
-
-
-
-
-
+LDFLAGS = -lnetcdff -lnetcdf -shared-intel
+CFLAGS = -D__IFC
 
