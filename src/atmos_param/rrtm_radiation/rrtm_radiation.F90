@@ -464,7 +464,7 @@
 
           if(do_scm_ozone)then 
              call error_mesg('run_rrtm', &
-             'Input o3 will be read in exactly as specified in input (i.e. no plevel interpolation will be performed). Ensure it is specified correctly in namelist.', &
+             'Input o3 will be read in exactly as specified in input (i.e. no plevel interpolation will be performed). Ensure it is specified correctly in namelist. ONLY FOR USE IN SINGLE COLUMN MODEL.', &
              WARNING)
           endif
 
