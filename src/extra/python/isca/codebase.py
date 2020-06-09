@@ -363,9 +363,15 @@ class ColumnCodeBase(CodeBase):
         self.compile_flags.append('-DCOLUMN_MODEL')
         self.log.info('USING SINGLE COLUMN MODEL')
 
+    def disable_soc(self):
+        # add no compile flag
+        self.compile_flags.append('-DSOC_NO_COMPILE')
+        self.log.info('SOCRATES compilations diabled.') 
+
     def __init__(self, *args, **kwargs):
         super(ColumnCodeBase, self).__init__(*args, **kwargs)
         self.column_model()
+        self.disable_soc()
 
 class DryCodeBase(GreyCodeBase):
     """The Held-Suarez model.
