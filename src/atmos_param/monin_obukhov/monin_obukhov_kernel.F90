@@ -606,6 +606,14 @@ _PURE subroutine monin_obukhov_profile_1d(vonkarm, &
 
   else
 
+     mo_length_inv = 0.0
+     zeta          = 0.0
+     zeta_0        = 0.0
+     zeta_t        = 0.0
+     zeta_q        = 0.0
+     zeta_ref      = 0.0
+     zeta_ref_t    = 0.0
+
      where(mask .and. u_star > 0.0) 
         mo_length_inv = - vonkarm * b_star/(u_star*u_star)
         zeta       = z     *mo_length_inv

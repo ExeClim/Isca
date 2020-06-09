@@ -37,7 +37,7 @@ use  field_manager_mod, only: MODEL_ATMOS
 
 use tracer_manager_mod, only: get_tracer_names, get_number_tracers
 
-use      constants_mod, only: HLV, PI, RHO_CP, CP_AIR
+use      constants_mod, only: HLV, PI, RHO_CP, CP_AIR, KELVIN
 
 use   diag_manager_mod, only: register_diag_field, register_static_field, send_data
 
@@ -106,8 +106,11 @@ integer :: albedo_choice    = 1 ! 1->constant or following 'where(land)', 2->NH 
 logical :: do_qflux         = .false. !mj
 logical :: do_warmpool      = .false. !mj
 logical :: do_read_sst      = .false. !mj
-logical :: do_sc_sst        = .false. !mj
+logical :: do_sc_sst        = .false. !mj use specified SSTs
+logical :: do_ape_sst       = .false. ! use the AquaPlanet Experiement (APE) sst profile.
 logical :: specify_sst_over_ocean_only = .false.
+logical :: do_calc_eff_heat_cap = .true. ! assumes specified SST are off the default.
+
 character(len=256) :: sst_file
 character(len=256) :: land_option = 'none'
 real,dimension(10) :: slandlon=0,slandlat=0,elandlon=-1,elandlat=-1
@@ -129,7 +132,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               delta_T, prescribe_initial_dist,albedo_value,  &
                               land_depth,trop_depth,                         &  !mj
                               trop_cap_limit, heat_cap_limit, np_cap_factor, &  !mj
-			                        do_qflux,do_warmpool,        &  !mj
+                              do_qflux,do_warmpool,                          &  !mj
                               albedo_choice,higher_albedo,albedo_exp,        &  !mj
                               albedo_cntr,albedo_wdth,lat_glacier,           &  !mj
                               do_read_sst,do_sc_sst,sst_file,                &  !mj
@@ -142,7 +145,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               ice_albedo_value, specify_sst_over_ocean_only, &
                               ice_concentration_threshold,                   &
                               add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
-                              flux_lhe_anom_field_name
+                              flux_lhe_anom_field_name, do_ape_sst, qflux_field_name
 
 !=================================================================================================================================
 
@@ -217,7 +220,6 @@ integer, intent(in) :: is, ie, js, je, num_levels
 
 logical, intent(in), dimension(:,:) :: land
 logical, intent(in)                 :: restart_file_bucket_depth
-
 
 integer :: j
 real    :: rad_qwidth
@@ -303,10 +305,10 @@ call get_deg_lon(deg_lon)
    if(land_capacity .le. 0.) land_capacity = depth*RHO_CP
 !s End MiMA options
 
-	!mj read fixed SSTs
-	if( do_read_sst ) then
-	   call interpolator_init( sst_interp, trim(sst_file)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
-	endif
+    !mj read fixed SSTs
+    if( do_read_sst ) then
+        call interpolator_init( sst_interp, trim(sst_file)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+    endif
 
 
 
@@ -355,12 +357,12 @@ id_heat_cap = register_static_field(mod_name, 'ml_heat_cap',        &
 id_delta_t_surf = register_diag_field(mod_name, 'delta_t_surf',        &
                                  axes(1:2), Time, 'change in sst','K')
 if (update_albedo_from_ice) then
-	id_albedo = register_diag_field(mod_name, 'albedo',    &
+    id_albedo = register_diag_field(mod_name, 'albedo',    &
                                  axes(1:2), Time, 'surface albedo', 'none')
-	id_ice_conc = register_diag_field(mod_name, 'ice_conc',    &
+    id_ice_conc = register_diag_field(mod_name, 'ice_conc',    &
                                  axes(1:2), Time, 'ice_concentration', 'none')
 else
-	id_albedo = register_static_field(mod_name, 'albedo',    &
+    id_albedo = register_static_field(mod_name, 'albedo',    &
                                  axes(1:2), 'surface albedo', 'none')
 endif
 
@@ -369,29 +371,29 @@ ocean_qflux = 0.
 ! load Q flux
 if (load_qflux) then
 
-	if (time_varying_qflux) then
-	   call interpolator_init( qflux_interp, trim(qflux_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
-	else
+    if (time_varying_qflux) then
+       call interpolator_init( qflux_interp, trim(qflux_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+    else
 
-	   if(file_exist(trim('INPUT/'//qflux_file_name//'.nc'))) then
-	     call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat)
-	     call field_size(trim('INPUT/'//qflux_file_name//'.nc'), trim(qflux_field_name), siz)
-	     if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
-	       call read_data(trim('INPUT/'//qflux_file_name//'.nc'), trim(qflux_field_name), ocean_qflux, grid_domain)
-	     else
-	       write(ctmp1(1: 4),'(i4)') siz(1)
-	       write(ctmp1(9:12),'(i4)') siz(2)
-	       write(ctmp2(1: 4),'(i4)') global_num_lon
-	       write(ctmp2(9:12),'(i4)') global_num_lat
-	       call error_mesg ('get_qflux','Qflux file contains data on a '// &
-	              ctmp1//' grid, but atmos model grid is '//ctmp2, FATAL)
-	     endif
-	   else
-	     call error_mesg('get_qflux','load_qflux="'//trim('True')//'"'// &
-	                     ' but '//trim(qflux_file_name)//' does not exist', FATAL)
-	   endif
+       if(file_exist(trim('INPUT/'//qflux_file_name//'.nc'))) then
+         call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat)
+         call field_size(trim('INPUT/'//qflux_file_name//'.nc'), trim(qflux_field_name), siz)
+         if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
+           call read_data(trim('INPUT/'//qflux_file_name//'.nc'), trim(qflux_field_name), ocean_qflux, grid_domain)
+         else
+           write(ctmp1(1: 4),'(i4)') siz(1)
+           write(ctmp1(9:12),'(i4)') siz(2)
+           write(ctmp2(1: 4),'(i4)') global_num_lon
+           write(ctmp2(9:12),'(i4)') global_num_lat
+           call error_mesg ('get_qflux','Qflux file contains data on a '// &
+                  ctmp1//' grid, but atmos model grid is '//ctmp2, FATAL)
+         endif
+       else
+         call error_mesg('get_qflux','load_qflux="'//trim('True')//'"'// &
+                         ' but '//trim(qflux_file_name)//' does not exist', FATAL)
+       endif
 
-	endif
+    endif
 endif
 
 !s Adding MiMA options for qfluxes.
@@ -407,7 +409,7 @@ endif
 !s End MiMA options for qfluxes
 
 if (add_latent_heat_flux_anom) then
-	   call interpolator_init( flux_lhe_anom_interp, trim(flux_lhe_anom_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+       call interpolator_init( flux_lhe_anom_interp, trim(flux_lhe_anom_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
 endif
 
 
@@ -455,13 +457,13 @@ select case (albedo_choice)
     enddo
   case (4) ! exponential increase with albedo_exp
      do j = 1, size(t_surf,2)
-	lat = abs(deg_lat(js+j-1))
-        albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*(lat/90.)**albedo_exp
+       lat = abs(deg_lat(js+j-1))
+       albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*(lat/90.)**albedo_exp
      enddo
   case (5) ! tanh increase around albedo_cntr with albedo_wdth
      do j = 1, size(t_surf,2)
-	lat = abs(deg_lat(js+j-1))
-        albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
+       lat = abs(deg_lat(js+j-1))
+       albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
              0.5*(1+tanh((lat-albedo_cntr)/albedo_wdth))
      enddo
 end select
@@ -469,20 +471,39 @@ end select
 albedo_initial=albedo
 
 if (update_albedo_from_ice) then
-	call interpolator_init( ice_interp, trim(ice_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
-        call read_ice_conc(Time)
-	call albedo_calc(albedo,Time)
+    call interpolator_init( ice_interp, trim(ice_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+    call read_ice_conc(Time)
+    call albedo_calc(albedo,Time)
 else
-	if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
+    if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
 endif
 
+! Note: do_calc_eff_heat_cap is true by default and control when the surface 
+! heat capacity is calculated (land and ocean). 
+if (do_sc_sst) then
+    ! if using specified sst then do not calc the heat capacity
+    if (specify_sst_over_ocean_only) then
+        ! unless the heat capacity over land is needed
+        do_calc_eff_heat_cap = .true.
+    else
+        do_calc_eff_heat_cap = .false.
+    endif
+else
+    if (do_ape_sst) then
+        ! if using specified sst without land, do not calc the heat capacity
+        do_calc_eff_heat_cap = .false.
+    end if
+endif
+
+
+
 !s begin surface heat capacity calculation
-   if(.not.do_sc_sst.or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
-         land_sea_heat_capacity = depth*RHO_CP
-	if(trim(land_option) .ne. 'input') then
+if (do_calc_eff_heat_cap) then
+    land_sea_heat_capacity = depth*RHO_CP
+    if(trim(land_option) .ne. 'input') then
          if ( trop_capacity .ne. depth*RHO_CP .or. np_cap_factor .ne. 1. ) then !s Lines above make trop_capacity=depth*RHO_CP if trop_capacity set to be < 0.
             do j=js,je
-	       lat = deg_lat(j)
+               lat = deg_lat(j)
                if ( lat .gt. 0. ) then
                   loc_cap = depth*RHO_CP*np_cap_factor
                else
@@ -505,7 +526,7 @@ endif
 ! mj land heat capacity given through ?landlon, ?landlat
          if(trim(land_option) .eq. 'lonlat')then
             do j=js,je
-	       lat = deg_lat(j)
+           lat = deg_lat(j)
                do i=is,ie
                   lon = deg_lon(i)
                   do k=1,size(slandlat)
@@ -517,10 +538,10 @@ endif
                enddo
             enddo
          endif
-	else  !trim(land_option) .eq. 'input'
-		where(land) land_sea_heat_capacity = land_h_capacity_prefactor*land_sea_heat_capacity
-	endif !end of if (trim(land_option) .ne. 'input')
-    endif !end of if(.not.do_sc_sst)
+    else  !trim(land_option) .eq. 'input'
+        where(land) land_sea_heat_capacity = land_h_capacity_prefactor*land_sea_heat_capacity
+    endif !end of if (trim(land_option) .ne. 'input')
+endif !end of if(.not.do_sc_sst)
 
 if ( id_heat_cap > 0 ) used = send_data ( id_heat_cap, land_sea_heat_capacity )
 !s end surface heat capacity calculation
@@ -535,6 +556,7 @@ end subroutine mixed_layer_init
 subroutine mixed_layer (                                               &
      Time,                                                             &
      Time_next,                                                        &
+     js, je,                                                           &
      t_surf,                                                           &
      flux_t,                                                           &
      flux_q,                                                           &
@@ -552,33 +574,34 @@ subroutine mixed_layer (                                               &
      albedo_out)
 
 ! ---- arguments -----------------------------------------------------------
-type(time_type), intent(in)       :: Time, Time_next
-real, intent(in),  dimension(:,:) :: &
-     net_surf_sw_down, surf_lw_down
-real, intent(in), dimension(:,:) :: &
-     flux_t,    flux_q,     flux_r
+type(time_type), intent(in)         :: Time, Time_next
+integer, intent(in)                 :: js, je
+real, intent(in), dimension(:,:)    :: net_surf_sw_down, surf_lw_down
+real, intent(in), dimension(:,:)    :: flux_t, flux_q, flux_r
 real, intent(inout), dimension(:,:) :: t_surf
-real, intent(in), dimension(:,:) :: &
-   dhdt_surf, dedt_surf, dedq_surf, &
-   drdt_surf, dhdt_atm, dedq_atm
-real, intent(in) :: dt
-real, intent(out), dimension(:,:) :: albedo_out
+real, intent(in), dimension(:,:)    :: dhdt_surf, dedt_surf, dedq_surf, &
+                                       drdt_surf, dhdt_atm, dedq_atm
+real, intent(in)                    :: dt
+real, intent(out), dimension(:,:)   :: albedo_out
 type(surf_diff_type), intent(inout) :: Tri_surf
 logical, dimension(size(land_mask,1),size(land_mask,2)) :: land_ice_mask
 
+!local variables
+
+integer :: j
 
 if(.not.module_is_initialized) then
   call error_mesg('mixed_layer','mixed_layer module is not initialized',FATAL)
 endif
 
 if(update_albedo_from_ice) then
-	call read_ice_conc(Time_next)
-	land_ice_mask=.false.
-	where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
-		land_ice_mask=.true.
-	end where
+    call read_ice_conc(Time_next)
+    land_ice_mask=.false.
+    where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
+        land_ice_mask=.true.
+    end where
 else
-	land_ice_mask=land_mask
+    land_ice_mask=land_mask
 endif
 
 call albedo_calc(albedo_out,Time_next)
@@ -624,9 +647,9 @@ beta_lw = drdt_surf
 if(load_qflux.and.time_varying_qflux) then
          call interpolator( qflux_interp, Time, ocean_qflux, trim(qflux_file_name) )
 
-	 if(update_albedo_from_ice) then
-	      where (land_ice_mask) ocean_qflux=0.
-	 endif
+     if(update_albedo_from_ice) then
+          where (land_ice_mask) ocean_qflux=0.
+     endif
 
 endif
 
@@ -644,37 +667,62 @@ endif
 !s Surface heat_capacity calculation based on that in MiMA by mj
 
 if(do_sc_sst) then !mj sst read from input file
-         ! read at the new time, as that is what we are stepping to
-         call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
+     ! read at the new time, as that is what we are stepping to
+     call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
 
-         if(specify_sst_over_ocean_only) then
-	     where (.not.land_ice_mask) delta_t_surf = sst_new - t_surf
-             where (.not.land_ice_mask) t_surf = t_surf + delta_t_surf			 
-	 else
-	     delta_t_surf = sst_new - t_surf
-	     t_surf = t_surf + delta_t_surf
-	 endif
-	     
+     if(specify_sst_over_ocean_only) then
+         where (.not.land_ice_mask) delta_t_surf = sst_new - t_surf
+         where (.not.land_ice_mask) t_surf = t_surf + delta_t_surf             
+     else
+         delta_t_surf = sst_new - t_surf
+         t_surf = t_surf + delta_t_surf
+     endif
 end if
 
-if ((.not.do_sc_sst).or.(do_sc_sst.and.specify_sst_over_ocean_only)) then
+if (do_ape_sst) then 
+    !
+    ! AquaPlanet Experiment protocol (APE) from 
+    ! Williams et al 2012 tech report: "The APE Atlas"
+    !
+    ! use analytic form for setting SST at each timestep.
+    ! see appendix equation 1 of Neale and Hoskins 2000
+    !     "A standard test for AGCMs including their 
+    !      physical parametrizations: I: the proposal"
+    ! using a constant longitude.
+    do j=js,je   
+        if ( (rad_lat_2d(1,j) .gt. -PI/3.) .and. (rad_lat_2d(1,j) .lt. PI/3.) ) then 
+            ! between 60N-60S
+            sst_new(:,j) = KELVIN+( 27.0*( 1. - (sin( 3./2. * rad_lat_2d(:,j) )**2 ) ))  
+            !write(6,*) 'SST profile', rad_lat_2d(1,j)*180/PI, ' j:', j, ' sst:', sst_new(1,j)
+        else
+            ! from 60N/S to pole
+            sst_new(:,j) = KELVIN
+            !write(6,*) 'SST is zero', rad_lat_2d(1,j)*180/PI, ' j:', j, ' sst:', sst_new(1,j)
+        endif
+    enddo
+    delta_t_surf = sst_new - t_surf
+    t_surf = sst_new
+endif
+
+
+if (do_calc_eff_heat_cap) then
   !s use the land_sea_heat_capacity calculated in mixed_layer_init
 
-	! Now update the mixed layer surface temperature using an implicit step
-	!
-	eff_heat_capacity = land_sea_heat_capacity + t_surf_dependence * dt !s need to investigate how this works
+    ! Now update the mixed layer surface temperature using an implicit step
+    !
+    eff_heat_capacity = land_sea_heat_capacity + t_surf_dependence * dt !s need to investigate how this works
 
-	if (any(eff_heat_capacity .eq. 0.0))  then
-	  write(*,*) 'mixed_layer: error', eff_heat_capacity
-	  call error_mesg('mixed_layer', 'Avoiding division by zero',fatal)
-	end if
+    if (any(eff_heat_capacity .eq. 0.0))  then
+      write(*,*) 'mixed_layer: error', eff_heat_capacity
+      call error_mesg('mixed_layer', 'Avoiding division by zero',fatal)
+    end if
 
     if(do_sc_sst.and.specify_sst_over_ocean_only) then
         where (land_ice_mask) delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-	where (land_ice_mask) t_surf = t_surf + delta_t_surf			 
+        where (land_ice_mask) t_surf = t_surf + delta_t_surf             
     else
         delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-	t_surf = t_surf + delta_t_surf
+        t_surf = t_surf + delta_t_surf
     endif
 
 endif !s end of if(do_sc_sst).
@@ -709,12 +757,12 @@ albedo_inout=albedo_initial
 
 if(update_albedo_from_ice) then
 
-	where(ice_concentration.gt.ice_concentration_threshold) 
-		albedo_inout=ice_albedo_value
-	end where
+    where(ice_concentration.gt.ice_concentration_threshold) 
+        albedo_inout=ice_albedo_value
+    end where
 
-	if ( id_ice_conc > 0 ) used = send_data ( id_ice_conc, ice_concentration, Time )
-	if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo_inout, Time )
+    if ( id_ice_conc > 0 ) used = send_data ( id_ice_conc, ice_concentration, Time )
+    if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo_inout, Time )
 
 endif
 

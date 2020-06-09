@@ -1,29 +1,112 @@
-exec.*/
+# Project-specific
 compilation*/
+docs/source/examples/index.rst
+exec.*/
+exp/st_test*
+exp/archived/*
+frierson_comparison_*old*
+*land_world_mountains.nc
+mima_pz.txt
+*output.txt
+old_exps
+opt_exps
+postprocessing/plevel_interpolation/scripts/*.nc
+postprocessing/plevel_interpolation/scripts/*.nml
+postprocessing/plevel_interpolation/scripts/archived/*
+spin_up_restart/
+src/extra/python/scripts/*.nc
+src/extra/python/scripts/archived/
+*.sh.*
+src/atmos_param/socrates/src/trunk*
+
+# Temporary files
 *.x
 *.o
 *~
 ~*
-spin_up_restart/
 nohup.out
 Makefile
-old_exps
-opt_exps
-frierson_comparison_*old*
-*.pyc
-exp/st_test*
-exp/archived/*
 *.DS_Store
-*.egg-info
 ._*
 *.mod
-postprocessing/plevel_interpolation/scripts/*.nc
-postprocessing/plevel_interpolation/scripts/*.nml
-postprocessing/plevel_interpolation/scripts/archived/*
-*land_world_mountains.nc
-*output.txt
-src/extra/python/scripts/*.nc
-src/extra/python/scripts/archived/
-mima_pz.txt
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-wheel-metadata/
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
 test/.cache
 test/results.xml
+
+# Translations
+*.mo
+*.pot
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter
+Untitled*.ipynb
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# dotenv
+.env
+
+# virtualenv
+.venv
+venv/
+ENV/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# mkdocs documentation
+/site

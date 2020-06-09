@@ -115,7 +115,7 @@ private
                               u_wind_file, v_wind_file, equilibrium_t_option,&
                               equilibrium_t_file, p_trop, alpha, peri_time, smaxis, albedo, &
                               lapse, h_a, tau_s, orbital_period,         &
-                              heat_capacity, ml_depth, spinup_time, stratosphere_t_option
+                              heat_capacity, ml_depth, spinup_time, stratosphere_t_option, P00
 
 !-----------------------------------------------------------------------
 
