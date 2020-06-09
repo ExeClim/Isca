@@ -40,6 +40,9 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   real :: co2_ppmv = 300. !Default CO2 concentration in PPMV
   logical ::  input_co2_mmr=.false. !Socrates wants input concentrations as mmr not vmr, so need to make sure input data supplied is converted if necessary
 
+  logical :: do_scm_ozone=.false. ! read single column ozone from namelist? note: ONLY when using SCM
+  real(r_def), dimension(100) :: scm_ozone = -1 ! input array for single column ozone. max number of levels = 100 
+
   logical :: use_pressure_interp_for_half_levels = .False. !By default (.False.) does linear interpolation in height for half-level temperatures. True does linear interp using pressure. 
       
   ! Incoming radiation options for namelist
@@ -127,6 +130,6 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
                              inc_h2o, inc_co2, inc_co, inc_o3, inc_n2o, inc_ch4, inc_o2, &
                              inc_so2, inc_cfc11, inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a, &
                              use_pressure_interp_for_half_levels,  &
-                             frierson_solar_rad, del_sol, del_sw
+                             frierson_solar_rad, del_sol, del_sw, do_scm_ozone, scm_ozone
 
 end module socrates_config_mod
