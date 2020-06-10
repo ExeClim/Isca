@@ -152,11 +152,13 @@ exp.namelist = namelist = Namelist({
         'stellar_constant':1370.,
         'lw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7'),
         'sw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7'),
-        'dt_rad':3600,
+        'dt_rad':7200,
         'store_intermediate_rad':True,
         'chunk_size': 1, # MUST BE 1 FOR COLUMN MODEL 
         'use_pressure_interp_for_half_levels':False,
-        'tidally_locked':False,
+        'tidally_locked':False,                                                                                                
+        'do_rad_time_avg':True,
+        'dt_rad_avg':86400,
         #'solday': 90
     }, 
 
