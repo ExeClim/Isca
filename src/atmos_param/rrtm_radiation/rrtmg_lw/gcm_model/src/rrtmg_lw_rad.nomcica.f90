@@ -768,14 +768,14 @@
          pz(l) = plev(iplon,l+1)
          tz(l) = tlev(iplon,l+1)
 ! For h2o input in vmr:
-!         wkl(1,l) = h2ovmr(iplon,l)
+         wkl(1,l) = h2ovmr(iplon,l) !st changed back to default expectation of vmr. Less hard-coded to earth atmospheric mass this way. 
 ! For h2o input in mmr:
 !         wkl(1,l) = h2ovmr(iplon,l)*amdw
 ! For h2o input in specific humidity;
-         wkl(1,l) = (h2ovmr(iplon,l)/(1._rb - h2ovmr(iplon,l)))*amdw
+!          wkl(1,l) = (h2ovmr(iplon,l)/(1._rb - h2ovmr(iplon,l)))*amdw
 !         wkl(1,l) =  h2ovmr(iplon,l)/(1._rb - h2ovmr(iplon,l))
          wkl(2,l) = co2vmr(iplon,l)      !mj co2 input is in ppmv*1e-6 = vmr 
-         wkl(3,l) = o3vmr(iplon,l)*amdo  !mj o3 input is in kg/kg, ie mmr
+         wkl(3,l) = o3vmr(iplon,l) !st changed back to default expectation of vmr. Less hard-coded to earth atmospheric mass this way. 
          wkl(4,l) = n2ovmr(iplon,l)
          wkl(6,l) = ch4vmr(iplon,l)
          wkl(7,l) = o2vmr(iplon,l)

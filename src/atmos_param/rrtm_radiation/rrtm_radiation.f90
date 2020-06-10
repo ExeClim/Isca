@@ -124,6 +124,7 @@
         logical            :: do_read_ozone=.false.           ! read ozone from an external file?
                                                               !  this is the only way to get ozone into the model
         character(len=256) :: ozone_file='ozone'              !  file name of ozone file to read
+        logical            :: input_o3_file_is_mmr=.true.     ! Does the ozone input file contain values as a mass mixing ratio (set to true) or a volume mixing ratio (set to false)?
         logical            :: do_read_h2o=.false.             ! read water vapor from an external file?
         character(len=256) :: h2o_file='h2o'                  !  file name of h2o file to read
         logical            :: do_read_co2=.false.             ! read co2 concentration from an external file?
@@ -132,9 +133,9 @@
 
 ! secondary gases (CH4,N2O,O2,CFC11,CFC12,CFC22,CCL4)
         logical            :: include_secondary_gases=.false. ! non-zero values for above listed secondary gases?
-        real(kind=rb)      :: ch4_val  = 0.                   !  if .true., value for CH4
-        real(kind=rb)      :: n2o_val  = 0.                   !                       N2O
-        real(kind=rb)      :: o2_val   = 0.                   !                       O2
+        real(kind=rb)      :: ch4_val  = 0.                   !  if .true., value for CH4 vmr
+        real(kind=rb)      :: n2o_val  = 0.                   !                       N2O vmr
+        real(kind=rb)      :: o2_val   = 0.                   !                       O2 vmr
         real(kind=rb)      :: cfc11_val= 0.                   !                       CFC11
         real(kind=rb)      :: cfc12_val= 0.                   !                       CFC12
         real(kind=rb)      :: cfc22_val= 0.                   !                       CFC22
@@ -150,7 +151,7 @@
         real(kind=rb)      :: fixed_water_pres = 100.e02      ! if so, above which pressure level? [hPa]
         real(kind=rb)      :: fixed_water_lat  = 90.          ! if so, equatorward of which latitude? [deg]
         logical            :: do_zm_tracers=.false.           ! Feed only the zonal mean of tracers to radiation
-            
+        logical            :: convert_sphum_to_vmr=.true.     ! Model is fed sphum, but RRTM wants vmr. Set to true to make this conversion. May want false if using do_read_h2o and input file is a vmr.             
 ! radiation time stepping and spatial sampling
         integer(kind=im)   :: dt_rad=0                        ! Radiation time step - every step if dt_rad<dt_atmos
         logical            :: store_intermediate_rad =.true.  ! Keep rad constant over entire dt_rad?
@@ -159,6 +160,15 @@
         integer(kind=im)   :: dt_rad_avg = -1                 ! If averaging, over what time? dt_rad_avg=dt_rad if dt_rad_avg<=0
         integer(kind=im)   :: lonstep=1                       ! Subsample fields along longitude
                                                               !  for faster radiation calculation
+
+!!!!!! mp586 added for annual mean insolation!!!!!
+
+		logical            :: frierson_solar_rad =.false.
+		real(kind=rb)	   :: del_sol = 0.95 ! frierson 2006 default = 1.4, but 0.95 gets the curve closer to the annual mean insolation 
+		real(kind=rb)	   :: del_sw = 0.0 !frierson 2006 default 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 ! some fancy radiation tweaks  
         real(kind=rb)      :: slowdown_rad = 1.0              ! factor do simulate slower seasonal cycle: >1 means faster, <1 slower
         logical            :: do_zm_rad=.false.               ! Only compute zonal mean radiation
@@ -182,21 +192,21 @@
 !
 !-------------------- diagnostics fields -------------------------------
 
-        integer :: id_tdt_rad, id_tdt_sw, id_tdt_lw, id_coszen, id_flux_sw, id_flux_lw, id_olr, id_toa_sw, id_albedo,id_ozone, id_co2, id_fracday
+        integer :: id_tdt_rad, id_tdt_sw, id_tdt_lw, id_coszen, id_flux_sw, id_flux_lw, id_olr, id_toa_sw, id_albedo,id_ozone, id_co2, id_fracday, id_half_level_temp, id_full_level_temp
         character(len=14), parameter :: mod_name_rad = 'rrtm_radiation' !s changed parameter name from mod_name to mod_name_rad as compiler objected, presumably because mod_name also defined in idealized_moist_physics.F90 after use rrtm_vars is included. 
         real :: missing_value = -999.
 
 !---------------------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------------------
 
-        namelist/rrtm_radiation_nml/ include_secondary_gases, do_read_ozone, ozone_file, &
-             &do_read_h2o, h2o_file, ch4_val, n2o_val, o2_val, cfc11_val, cfc12_val, cfc22_val, ccl4_val, &
+        namelist/rrtm_radiation_nml/ include_secondary_gases, do_read_ozone, ozone_file, input_o3_file_is_mmr, &
+             &do_read_h2o, h2o_file, convert_sphum_to_vmr, ch4_val, n2o_val, o2_val, cfc11_val, cfc12_val, cfc22_val, ccl4_val, &
              &do_read_radiation, radiation_file, rad_missing_value, &
              &do_read_sw_flux, sw_flux_file, do_read_lw_flux, lw_flux_file,&
              &h2o_lower_limit,temp_lower_limit,temp_upper_limit,co2ppmv, &
              &do_fixed_water,fixed_water,fixed_water_pres,fixed_water_lat, &
              &slowdown_rad, &
-             &store_intermediate_rad, do_rad_time_avg, dt_rad, dt_rad_avg, &
+             &store_intermediate_rad, do_rad_time_avg, frierson_solar_rad, del_sol, del_sw, dt_rad, dt_rad_avg, & !mp586 added frierson_solar_rad, del_sol, del_sw for annual mean insolation
              &lonstep, do_zm_tracers, do_zm_rad, &
              &do_precip_albedo, precip_albedo_mode, precip_albedo, precip_lat,&
              &do_read_co2, co2_file, co2_variable_name, use_dyofyr, solrad, &
@@ -207,7 +217,7 @@
 !*****************************************************************************************
       module rrtm_radiation
         use parkind, only : im => kind_im, rb => kind_rb
-        use constants_mod,         only: pi
+        use constants_mod,         only: pi, wtmozone, wtmh2o, gas_constant, rdgas
         implicit none
     
       contains
@@ -311,6 +321,14 @@
                register_diag_field ( mod_name_rad, 'fracday', axes(1:2), Time, &
                  'fracday', &
                  'none', missing_value=missing_value               )
+          id_half_level_temp = &
+               register_diag_field ( mod_name_rad, 't_half_rrtm',(/axes(1),axes(2),axes(4)/) , Time, &
+                 'Half level temperatures used by RRTM', &
+                 'K', missing_value=missing_value               )                 
+          id_full_level_temp = &
+               register_diag_field ( mod_name_rad, 't_full_rrtm',axes(1:3) , Time, &
+                 'Full level temperatures used by RRTM', &
+                 'K', missing_value=missing_value               )                     
 ! 
 !------------ make sure namelist choices are consistent -------
 ! this does not work at the moment, as dt_atmos from coupler_mod induces a circular dependency at compilation
@@ -577,8 +595,9 @@
           real(kind=rb) :: dlon,dlat,dj,di 
           type(time_type) :: Time_loc
           real(kind=rb),dimension(size(q,1),size(q,2)) :: albedo_loc
-          real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: q_tmp
+          real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: q_tmp, h2o_vmr
           real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
+          real(kind=rb),dimension(size(q,1),size(q,2)) :: p2 !mp586 addition for annual mean insolation
 
 	  integer :: year_in_s
           real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
@@ -626,6 +645,17 @@
              Time_loc = Time
           endif
 
+!!!!! mp586 addition for annual mean insolation !!!!!
+!!!! following https://github.com/sit23/Isca/blob/master/src/atmos_param/socrates/interface/socrates_interface.F90#L888 !!!!
+
+       	if (frierson_solar_rad) then
+            p2     = (1. - 3.*sin(lat(:,:))**2)/4.
+            coszen = 0.25 * (1.0 + del_sol * p2 + del_sw * sin(lat(:,:)))
+            rrsun  = 1 ! needs to be set, set to 1 so that stellar_radiation is unchanged in socrates_interface
+       else
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 !
 ! compute zenith angle
 !  this is also an output, so need to compute even if we read radiation from file
@@ -656,6 +686,8 @@
 	     ! Seasonal Cycle: Use astronomical parameters to calculate insolation
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
           end if
+
+   		end if !mp586 addition for annual mean insolation
 
 ! input files: only deal with case where we don't need to call radiation at all
           if(do_read_radiation .and. do_read_sw_flux .and. do_read_lw_flux) then
@@ -693,6 +725,10 @@
           !get ozone 
           if(do_read_ozone)then
              call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_file))
+             if (input_o3_file_is_mmr) then
+                 o3f = o3f * (1000. * gas_constant / rdgas ) / wtmozone !RRTM expects all abundances to be volume mixing ratio. So if input file is mass mixing ratio, it must be converted to volume mixing ratio using the molar masses of dry air and ozone. 
+                 ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol from kg/mol by multiplying by 1000. This conversion is necessary because wtmozone is in g/mol.
+             endif 
           endif
 
           !get co2
@@ -742,6 +778,17 @@
                 enddo
              enddo
           endif
+
+
+          if(convert_sphum_to_vmr) then
+              h2o_vmr = (q_tmp/(1.-q_tmp))*(1000. * gas_constant / rdgas)/wtmh2o
+                 ! Convert sphum to vmr using q/1-q to get mmr, then divide by molar mass ratio.
+                 ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol from kg/mol by multiplying by 1000. This conversion is necessary because wtmh2o is in g/mol.              
+          else
+              h2o_vmr = q_tmp
+          endif
+
+
 !---------------------------------------------------------------------------------------------------------------
           !RRTM's first pressure level is at the surface - need to inverse order
           !also, RRTM's pressures are in hPa
@@ -753,7 +800,7 @@
                &phalf(:,sk+1) = pfull(:,sk)*0.5
           tfull = reshape(t     (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
           thalf = reshape(t_half(1:si:lonstep,:,sk+1:1:-1),(/ si*sj/lonstep,sk+1 /))
-          h2o   = reshape(q_tmp (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
+          h2o   = reshape(h2o_vmr (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
           if(do_read_ozone)o3 = reshape(o3f(1:si:lonstep,:,sk :1:-1),(/ si*sj/lonstep,sk  /))
           if(do_read_co2)co2 = reshape(co2f(1:si:lonstep,:,sk :1:-1),(/ si*sj/lonstep,sk  /))
 
@@ -966,23 +1013,23 @@
           ! check if we want surface albedo as a function of precipitation
           !  call diagnostics accordingly
           if(do_precip_albedo)then
-             call write_diag_rrtm(Time,is,js,o3f,co2f,fracsun,albedo_loc)
+             call write_diag_rrtm(Time,is,js,o3f,co2f,fracsun,albedo_loc, t_full=t)
           else
-             call write_diag_rrtm(Time,is,js,o3f,co2f,fracsun)
+             call write_diag_rrtm(Time,is,js,o3f,co2f,fracsun, t_full=t)
           endif
         end subroutine run_rrtmg
 
 !*****************************************************************************************
 !*****************************************************************************************
-        subroutine write_diag_rrtm(Time,is,js,ozone,cotwo,fracday,albedo_loc)
+        subroutine write_diag_rrtm(Time,is,js,ozone,cotwo,fracday,albedo_loc, t_full)
 ! 
 ! write out diagnostics fields
 !
 ! Modules
-          use rrtm_vars,only:         sw_flux,lw_flux,zencos,tdt_rad,tdt_sw_rad,tdt_lw_rad,&
+          use rrtm_vars,only:         sw_flux,lw_flux,zencos,tdt_rad,tdt_sw_rad,tdt_lw_rad,t_half,&
                                       &id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,&
                                       &id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_fracday,&
-									  &id_olr,id_toa_sw,olr,toa_sw
+									  &id_olr,id_toa_sw,olr,toa_sw, id_half_level_temp, id_full_level_temp
           use diag_manager_mod, only: register_diag_field, send_data
           use time_manager_mod,only:  time_type
 
@@ -993,6 +1040,7 @@
           real(kind=rb),dimension(:,:,:),intent(in),optional :: ozone
           real(kind=rb),dimension(:,:,:),intent(in),optional :: cotwo
           real(kind=rb),dimension(:,:  ),intent(in),optional :: albedo_loc,fracday
+          real(kind=rb),dimension(:,:,:),intent(in),optional :: t_full          
 ! Local variables
           logical :: used
 
@@ -1052,6 +1100,14 @@
           if ( present(fracday) .and. id_fracday > 0 ) then
              used = send_data ( id_fracday, fracday, Time)
           endif
+!------- Half-level temperatures                   ------------
+          if ( id_half_level_temp > 0 ) then
+             used = send_data ( id_half_level_temp, t_half , Time)
+          endif          
+!------- Full-level temperatures                   ------------
+          if (present(t_full) .and. id_full_level_temp > 0 ) then
+             used = send_data ( id_full_level_temp, t_full , Time)
+          endif          
 
         end subroutine write_diag_rrtm
 !*****************************************************************************************
@@ -1072,3 +1128,4 @@
 
 
         
+
