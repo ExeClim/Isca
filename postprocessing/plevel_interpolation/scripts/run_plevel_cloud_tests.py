@@ -7,16 +7,16 @@ import pdb
 import subprocess
 
 start_time=time.time()
-base_dir='/scratch/sit204/data_isca/'
-exp_name_list = ['soc_test_aquaplanet_with_clouds_post_jm_suggestions_amip_ssts_land_low_albedo']
+base_dir='/scratch/pm366/OutputIsca/'
+exp_name_list = ['soc_test_aquaplanet_with_clouds']
 avg_or_daily_list=['monthly']
-start_file=96
+start_file=1
 end_file=120
 nfiles=(end_file-start_file)+1
 
 do_extra_averaging=False #If true, then 6hourly data is averaged into daily data using cdo
 group_months_into_one_file=False # If true then monthly data files and daily data files are merged into one big netcdf file each.
-level_set='standard' #Default is the standard levels used previously. ssw_diagnostics are the ones blanca requested for MiMa validation
+level_set='era_int' #Default is the standard levels used previously. ssw_diagnostics are the ones blanca requested for MiMa validation
 mask_below_surface_set=' ' #Default is to mask values that lie below the surface pressure when interpolated. For some applications, e.g. Tom Clemo's / Mark Baldwin's stratosphere index, you want to have values interpolated below ground, i.e. as if the ground wasn't there. To use this option, this value should be set to '-x '. 
 
 
@@ -46,17 +46,21 @@ if level_set=='standard':
     var_names['daily']='ucomp slp height vor t_surf vcomp omega temp'
     file_suffix='_interp_new_height_temp'
 
+elif level_set=='era_int':
+
+    plevs['monthly']=' -p "10000 15000 20000 25000 30000 35000 40000 45000 50000 55000 60000 65000 70000 75000 80000 85000  90000  95000  97500 100000"'
+    plevs['daily']  =' -p "10000 15000 20000 25000 30000 35000 40000 45000 50000 55000 60000 65000 70000 75000 80000 85000  90000  95000  97500 100000"'
+
+    var_names['monthly']='-a height'
+    var_names['daily']='-a height'
+
+    file_suffix='_interp_all'
+
 elif level_set=='ssw_diagnostics':
     plevs['6hourly']=' -p "1000 10000"'
     var_names['monthly']='ucomp temp height'
     var_names['6hourly']='ucomp vcomp temp'
     file_suffix='_bl'
-    
-elif level_set=='tom_diagnostics':
-    var_names['daily']='height temp'
-    plevs['daily']=' -p "10 30 100 300 500 700 1000 3000 5000 7000 10000 15000 20000 25000 30000 40000 50000 60000 70000 75000 80000 85000 90000 95000 100000"'
-    mask_below_surface_set='-x '
-    file_suffix='_tom_mk2'
 
 
 for exp_name in exp_name_list:

@@ -983,8 +983,8 @@ if(do_cloud_simple) then
                       Time,                                &
                       tg(:,:,:,previous),                  &
                       grid_tracers(:,:,:,previous,nsphum), &
-                      ! outs - 
-                      cf_rad(:,:,:),                       &
+                      ! inouts - 
+                      cf_rad(:,:,:), cca_rad(:,:,:),       &
                       reff_rad(:,:,:), qcl_rad(:,:,:)      & 
                       )
 

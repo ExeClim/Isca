@@ -1330,14 +1330,26 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
         if(id_soc_surf_flux_lw > 0) then
             used = send_data ( id_soc_surf_flux_lw, surf_lw_net, Time_diag)
         endif
+        if(id_soc_surf_flux_lw_clear > 0) then
+            used = send_data ( id_soc_surf_flux_lw_clear, surf_lw_net_clear, Time_diag)
+        endif
         if(id_soc_surf_flux_lw_down > 0) then
             used = send_data ( id_soc_surf_flux_lw_down, surf_lw_down, Time_diag)
+        endif
+        if(id_soc_surf_flux_lw_down_clear > 0) then
+            used = send_data ( id_soc_surf_flux_lw_down_clear, surf_lw_down_clear, Time_diag)
         endif
         if(id_soc_surf_flux_sw > 0) then
             used = send_data ( id_soc_surf_flux_sw, net_surf_sw_down, Time_diag)
         endif
+        if(id_soc_surf_flux_sw_clear > 0) then
+            used = send_data ( id_soc_surf_flux_sw_clear, net_surf_sw_down_clear, Time_diag)
+        endif
         if(id_soc_surf_flux_sw_down > 0) then
             used = send_data ( id_soc_surf_flux_sw_down, surf_sw_down, Time_diag)
+        endif
+        if(id_soc_surf_flux_sw_down_clear > 0) then
+            used = send_data ( id_soc_surf_flux_sw_down_clear, surf_sw_down_clear, Time_diag)
         endif
         if(id_soc_olr > 0) then
             used = send_data ( id_soc_olr, olr, Time_diag)
@@ -1348,14 +1360,23 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
         if(id_soc_toa_sw > 0) then
             used = send_data ( id_soc_toa_sw, toa_sw, Time_diag)
         endif
+        if(id_soc_toa_sw_clear > 0) then
+            used = send_data ( id_soc_toa_sw_clear, toa_sw_clear, Time_diag)
+        endif
         if(id_soc_toa_sw_down > 0) then
             used = send_data ( id_soc_toa_sw_down, toa_sw_down, Time_diag)
+        endif
+        if(id_soc_toa_sw_down_clear > 0) then
+            used = send_data ( id_soc_toa_sw_down_clear, toa_sw_down_clear, Time_diag)
         endif
         if(id_soc_flux_lw > 0) then
             used = send_data ( id_soc_flux_lw, thd_lw_flux_net, Time_diag)
         endif
         if(id_soc_surf_flux_lw_down > 0) then
             used = send_data ( id_soc_surf_flux_lw_down, surf_lw_down, Time_diag)
+        endif
+        if(id_soc_surf_flux_lw_down_clear > 0) then
+            used = send_data ( id_soc_surf_flux_lw_down_clear, surf_lw_down_clear, Time_diag)
         endif
         if(id_soc_flux_sw > 0) then
             used = send_data ( id_soc_flux_sw, thd_sw_flux_net, Time_diag)

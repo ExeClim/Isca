@@ -47,7 +47,6 @@ module cloud_simple_mod
   real    ::   p_top      = 20000.
 
   namelist /cloud_simple_nml/  cca_lower_limit, rhc_sfc, rhc_base, rhc_top, &
-
                                rh_min_top, rh_min_sfc, rh_min_base,    &
                                rh_max_top, rh_max_sfc, rh_max_base
       
@@ -128,12 +127,12 @@ module cloud_simple_mod
   subroutine cloud_simple(p_half, p_full, Time,   &
                       temp, q_hum,                &
                       ! outs 
-                      cf, reff_rad, qcl_rad) 
+                      cf, cca, reff_rad, qcl_rad) 
 
     real       , intent(in), dimension(:,:,:)  :: temp, q_hum, p_full, p_half
     type(time_type) , intent(in)               :: Time
 
-    real       , intent(out), dimension(:,:,:) :: cf, reff_rad, qcl_rad
+    real       , intent(inout), dimension(:,:,:) :: cf, cca, reff_rad, qcl_rad
 
     real, dimension(size(temp,1), size(temp, 2), size(temp, 3)) :: qs, frac_liq
     real, dimension(size(temp,1), size(temp, 2), size(temp, 3)) :: rh_in_cf
@@ -213,13 +212,14 @@ module cloud_simple_mod
     real, intent(in) :: frac_liq
     real, intent(out) :: reff_rad
 
-    reff_rad =  10.0 * frac_liq + 20.0 * (1.0 - frac_liq)  !units in microns
+    reff_rad =  10.0 * frac_liq + 20.0 * (1.0 - frac_liq)  
+    ! units in microns this will be updated before passing into soc
 
   end subroutine calc_reff
 
-  subroutine calc_rhcrit(p_full, p_surf, simple_rhcrit)   !need to check p_full - > p_layer_centres
-    !  get the RH needed as a threshold for the cloud fraction calc.
-    ! This is only requires for spookie_protocol=1
+  subroutine calc_rhcrit(p_full, p_surf, simple_rhcrit)  
+    ! Get the RH needed as a threshold for the cloud fraction calc.
+    ! This is only requires for spookmie_protocol=1
     real, intent(in)  :: p_full, p_surf
     real, intent(out) :: simple_rhcrit
 
