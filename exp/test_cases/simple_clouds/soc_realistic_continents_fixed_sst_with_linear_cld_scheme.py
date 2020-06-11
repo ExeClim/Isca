@@ -79,7 +79,7 @@ diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
 diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
 diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
 diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
-diag.add_field('ls_cloud', 'rhcrit', time_avg=True)
+#diag.add_field('ls_cloud', 'rhcrit', time_avg=True)
 
 diag.add_field('cloud_cover', 'tot_cld_amt', time_avg=True)
 diag.add_field('cloud_cover', 'high_cld_amt', time_avg=True)
@@ -111,7 +111,7 @@ exp.diag_table = diag
 exp.clear_rundir()
 
 exp.inputfiles = [os.path.join(GFDL_BASE, 'input/rrtm_input_files/ozone_1990.nc'),
-                  os.path.join(GFDL_BASE, 'input/land_masks/era_land_t42_filtered.nc'),
+                  os.path.join(base_dir,  'input/era_land_t42_filtered.nc'),
                   os.path.join(base_dir,  'input/sst_clim_amip.nc'),
                   os.path.join(base_dir,  'input/siconc_clim_amip.nc')]
 
