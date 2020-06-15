@@ -38,6 +38,7 @@ module surface_flux_mod
 use             fms_mod, only: FATAL, close_file, mpp_pe, mpp_root_pe, write_version_number, error_mesg, FATAL
 use             fms_mod, only: file_exist, check_nml_error, open_namelist_file, stdlog
 use   monin_obukhov_mod, only: mo_drag, mo_profile
+use   frierson_monin_obukhov_mod, only: frierson_mo_drag
 use  sat_vapor_pres_mod, only: escomp, descomp
 use       constants_mod, only: cp_air, hlv, stefan, rdgas, rvgas, grav, vonkarm, dens_vapor
 use             mpp_mod, only: input_nml_file
@@ -266,6 +267,7 @@ real    :: land_evap_prefactor  =  1.0    !s Default is that land makes no diffe
 
 logical :: use_actual_surface_temperatures = .true. !Always true, apart from when running a dry model, where you can set this to false so that escomp is called with temperatures of 200k always, preventing bad temperature errors.
 
+logical :: use_frierson_mo_drag = .false. !Isca by default uses the full monin-obukhov formulae. When true we switch to using the simplified formulae from 10.1175/JAS3753.1 eq 12-14.
 
 real    :: flux_heat_gp  =  5.7    !s Default value for Jupiter of 5.7 Wm^-2
 real    :: diabatic_acce =  1.0    !s Diabatic acceleration??
@@ -285,7 +287,8 @@ namelist /surface_flux_nml/ no_neg_q,             &
                             land_humidity_prefactor, & !s Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
                             land_evap_prefactor, & !s Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
                             flux_heat_gp,         &    !s prescribed lower boundary heat flux on a giant planet
-                         diabatic_acce, use_actual_surface_temperatures
+                            diabatic_acce, use_actual_surface_temperatures, &
+                            use_frierson_mo_drag
 
 
 contains
@@ -513,9 +516,17 @@ endif
   endif
 
   !  monin-obukhov similarity theory
-  call mo_drag (thv_atm, thv_surf, z_atm,                  &
-       rough_mom, rough_heat, rough_moist, w_atm,          &
-       cd_m, cd_t, cd_q, u_star, b_star, avail             )
+  if (use_frierson_mo_drag) then
+
+   call frierson_mo_drag (thv_atm, thv_surf, z_atm,                  &
+         rough_mom, rough_heat, rough_moist, w_atm,          &
+         cd_m, cd_t, cd_q, u_star, b_star, avail             )
+  else
+
+   call mo_drag (thv_atm, thv_surf, z_atm,                  &
+         rough_mom, rough_heat, rough_moist, w_atm,          &
+         cd_m, cd_t, cd_q, u_star, b_star, avail             )
+  endif
 
   ! override with ocean fluxes from NCAR calculation
   if (ncar_ocean_flux .or. ncar_ocean_flux_orig) then

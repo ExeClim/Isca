@@ -1155,18 +1155,27 @@ do ntr = 1, num_tracers
     call trans_spherical_to_grid  (spec_tracers(:,:,:,future,ntr), grid_tracers(:,:,:,future,ntr))
   else if(trim(tracer_attributes(ntr)%numerical_representation) == 'grid') then
     tr_future = grid_tracers(:,:,:,previous,ntr) + delta_t*dt_tr(:,:,:,ntr)
+
     dt_tr(:,:,:,ntr) = 0.0
     call a_grid_horiz_advection (ug(:,:,:,current), vg(:,:,:,current), tr_future, delta_t, dt_tr(:,:,:,ntr))
     tr_future = tr_future + delta_t*dt_tr(:,:,:,ntr)
+
     dp = p_half(:,:,2:num_levels+1) - p_half(:,:,1:num_levels)
     call vert_advection(delta_t, wg, dp, tr_future, dt_tmp, scheme=tracer_vert_advect_scheme(ntr), form=ADVECTIVE_FORM)
     tr_future = tr_future + delta_t*dt_tmp
+
+
+
+
+
     if(step_number == num_steps) then
       part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)
 
       grid_tracers(:,:,:,current,ntr) = grid_tracers(:,:,:,current,ntr) + &
       tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr))*raw_filter_coeff
       robert_complete_for_tracers = .false.
+      grid_tracers(:,:,:,future,ntr) = tr_future !Moved because if false then future value is updated. But default is num_steps=1, so shouldn't change existing functionality.
+      
     else
       part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)+tr_future
 
@@ -1178,7 +1187,6 @@ do ntr = 1, num_tracers
 
       robert_complete_for_tracers = .true.
     endif
-    grid_tracers(:,:,:,future,ntr) = tr_future
   else
     call error_mesg('update_tracers',trim(tracer_attributes(ntr)%numerical_representation)// &
            ' is an invalid numerical_representation', FATAL)

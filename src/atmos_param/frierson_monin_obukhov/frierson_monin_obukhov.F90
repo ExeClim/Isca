@@ -1,5 +1,5 @@
 
-module monin_obukhov_mod
+module frierson_monin_obukhov_mod
 
     !======================================================================
     !
@@ -24,7 +24,7 @@ module monin_obukhov_mod
     
     ! public interfaces
     !=======================================================================
-     public mo_drag
+     public frierson_mo_drag
      public mo_profile
      public mo_diff
      public stable_mix
@@ -242,7 +242,7 @@ module monin_obukhov_mod
     !
     !=======================================================================
     
-    interface mo_drag
+    interface frierson_mo_drag
         module procedure  mo_drag_1d, mo_drag_2d
     end interface
     
@@ -263,7 +263,7 @@ module monin_obukhov_mod
     
     !--------------------- version number ---------------------------------
     
-    character(len=128) :: version = '$Id: monin_obukhov.f90,v 1.5.4.1 2005/05/13 18:16:40 pjp Exp $'
+    character(len=128) :: version = '$Id: frierson_monin_obukhov.f90,v 1.5.4.1 2005/05/13 18:16:40 pjp Exp $'
     character(len=128) :: tagname = '$Name:  $'
     
     !=======================================================================
@@ -277,7 +277,7 @@ module monin_obukhov_mod
     integer :: stable_option  = 1
     real    :: zeta_trans     = 0.5
     
-    namelist /monin_obukhov_nml/ rich_crit, neutral, drag_min, relax_time, &
+    namelist /frierson_monin_obukhov_nml/ rich_crit, neutral, drag_min, relax_time, &
                                  stable_option, zeta_trans
     
     !=======================================================================
@@ -302,8 +302,8 @@ module monin_obukhov_mod
           if (file_exist('input.nml')) then
              unit = open_namelist_file ( )
              ierr=1; do while (ierr /= 0)
-                read  (unit, nml=monin_obukhov_nml, iostat=io, end=10)
-                ierr = check_nml_error(io,'monin_obukhov_nml')
+                read  (unit, nml=frierson_monin_obukhov_nml, iostat=io, end=10)
+                ierr = check_nml_error(io,'frierson_monin_obukhov_nml')
              enddo
       10     call close_file (unit)
           endif
@@ -312,7 +312,7 @@ module monin_obukhov_mod
     
           call write_version_number ( version, tagname )
           if ( mpp_pe() == mpp_root_pe() ) then
-               write (stdlog(), nml=monin_obukhov_nml)
+               write (stdlog(), nml=frierson_monin_obukhov_nml)
           endif
     
     if(rich_crit.le.0.25)  call error_mesg( &
@@ -1402,5 +1402,5 @@ module monin_obukhov_mod
     end subroutine stable_mix_0d
     !=======================================================================
     
-    end module monin_obukhov_mod
+    end module frierson_monin_obukhov_mod
     
