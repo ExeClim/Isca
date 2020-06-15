@@ -836,7 +836,7 @@
                &phalf(:,sk+1) = pfull(:,sk)*0.5
           tfull = reshape(t     (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
           thalf = reshape(t_half(1:si:lonstep,:,sk+1:1:-1),(/ si*sj/lonstep,sk+1 /))
-          h2o   = reshape(q_tmp (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
+          h2o   = reshape(h2o_vmr(1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
           if((do_read_ozone).or.(do_scm_ozone))o3 = reshape(o3f(1:si:lonstep,:,sk :1:-1),(/ si*sj/lonstep,sk  /))
           if(do_read_co2)co2 = reshape(co2f(1:si:lonstep,:,sk :1:-1),(/ si*sj/lonstep,sk  /))
 
