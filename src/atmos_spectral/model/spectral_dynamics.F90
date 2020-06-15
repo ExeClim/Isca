@@ -157,7 +157,8 @@ logical :: do_mass_correction     = .true. , &
            use_implicit           = .true.,  &
            triang_trunc           = .true.,  &
            graceful_shutdown      = .false., &
-		   make_symmetric         = .false. !GC/RG Add namelist option to run model as zonally symmetric
+           make_symmetric         = .false., & !GC/RG Add namelist option to run model as zonally symmetric
+           do_spec_tracer_filter  = .false.
 
 
 integer :: damping_order       = 2, &
@@ -222,7 +223,8 @@ namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option, cutoff
                                  raw_filter_coeff,                                                   & !st
                                  graceful_shutdown, json_logging,                                    &
                                  graceful_shutdown,                                                  &
-								 make_symmetric                                                       !GC/RG add make_symmetric option
+                                 make_symmetric,                                                     & !GC/RG add make_symmetric option
+                                 do_spec_tracer_filter
 
 contains
 
@@ -1156,15 +1158,26 @@ do ntr = 1, num_tracers
   else if(trim(tracer_attributes(ntr)%numerical_representation) == 'grid') then
     tr_future = grid_tracers(:,:,:,previous,ntr) + delta_t*dt_tr(:,:,:,ntr)
 
-    dt_tr(:,:,:,ntr) = 0.0
-    call a_grid_horiz_advection (ug(:,:,:,current), vg(:,:,:,current), tr_future, delta_t, dt_tr(:,:,:,ntr))
-    tr_future = tr_future + delta_t*dt_tr(:,:,:,ntr)
+    dt_tmp = 0.0
+    call a_grid_horiz_advection (ug(:,:,:,current), vg(:,:,:,current), tr_future, delta_t, dt_tmp)
+    dt_tr(:,:,:,ntr) = dt_tr(:,:,:,ntr) + dt_tmp
+    tr_future = tr_future + delta_t*dt_tmp
 
     dp = p_half(:,:,2:num_levels+1) - p_half(:,:,1:num_levels)
     call vert_advection(delta_t, wg, dp, tr_future, dt_tmp, scheme=tracer_vert_advect_scheme(ntr), form=ADVECTIVE_FORM)
-    tr_future = tr_future + delta_t*dt_tmp
+    dt_tr(:,:,:,ntr) = dt_tr(:,:,:,ntr) + dt_tmp
 
+    ! [TS/LJJ mod:] added spectral damping of grid tracer
+    if(do_spec_tracer_filter) then !added rwills - spec_tracer_filter only needed for titan, causes water conservation problems in def run
+      call trans_grid_to_spherical  (dt_tr(:,:,:,ntr), dt_trs(:,:,:))
+      call trans_grid_to_spherical (grid_tracers(:,:,:,previous,ntr), spec_tracers(:,:,:,previous,ntr))
+      call compute_spectral_damping (spec_tracers(:,:,:,previous,ntr), dt_trs(:,:,:), delta_t)
+      call trans_spherical_to_grid  (dt_trs(:,:,:), dt_tr(:,:,:,ntr))    
+   endif
+   tr_future = grid_tracers(:,:,:,previous, ntr) + delta_t * dt_tr(:,:,:,ntr)
+   !  End spectral damping modifications   !!!!
 
+   !End result of this modified version shouild be exacty as before. a_grid now updates dt_tmp, which is used to increment tr_future. tr_future is fed into vert_advection, which updates dt_tr. Then we have the option of sending the whole dt_tr through the spectral filter. But either way, we end up with a total dt_tr that is used to increment tr_future, and write over the temporary modifications made to tr_future after a_grid.
 
 
 
@@ -1175,7 +1188,7 @@ do ntr = 1, num_tracers
       tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr))*raw_filter_coeff
       robert_complete_for_tracers = .false.
       grid_tracers(:,:,:,future,ntr) = tr_future !Moved because if false then future value is updated. But default is num_steps=1, so shouldn't change existing functionality.
-      
+
     else
       part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)+tr_future
 
