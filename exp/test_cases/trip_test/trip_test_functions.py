@@ -43,10 +43,10 @@ def get_nml_diag(test_case_name):
         nml_out = exp_temp.namelist
         
         #Make giant planet test case a lower resolution so that it runs in a finite time!
-        nml_out['spectral_dynamics_nml']['num_fourier']=85
-        nml_out['spectral_dynamics_nml']['num_spherical']=86
-        nml_out['spectral_dynamics_nml']['lon_max']=256
-        nml_out['spectral_dynamics_nml']['lat_max']=128
+        nml_out['spectral_dynamics_nml']['num_fourier']=42
+        nml_out['spectral_dynamics_nml']['num_spherical']=43
+        nml_out['spectral_dynamics_nml']['lon_max']=128
+        nml_out['spectral_dynamics_nml']['lat_max']=64
         nml_out['spectral_dynamics_nml']['cutoff_wn']=15
 
     if 'held_suarez' in test_case_name:
