@@ -1,0 +1,17 @@
+echo loadmodules for oxford machines
+
+
+export GFDL_MKMF_TEMPLATE=ox
+module purge
+module load otheros/generic-oxphys
+module load otheros/ubuntu_bionic
+module load otheros/ubuntu_trusty
+module load intel-compilers/2018upd4
+module load openmpi/4.0.1-intel
+module load netcdf/netcdf-c-4.7.3
+module load netcdf/netcdf-fortran-4.5.2
+module list 
+
+export F90=mpifort
+export CC=mpicc
+
