@@ -3,6 +3,7 @@ atmos_param/edt/edt.F90
 atmos_param/entrain/entrain.F90
 atmos_param/hs_forcing/hs_forcing.F90
 atmos_param/lscale_cond/lscale_cond.F90
+atmos_param/lscale_cond_lh/lscale_cond_lh.F90
 atmos_param/monin_obukhov/monin_obukhov.F90
 atmos_param/monin_obukhov/monin_obukhov_interfaces.h
 atmos_param/monin_obukhov/monin_obukhov_kernel.F90
