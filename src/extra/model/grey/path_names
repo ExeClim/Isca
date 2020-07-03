@@ -3,6 +3,7 @@ atmos_param/edt/edt.F90
 atmos_param/entrain/entrain.F90
 atmos_param/hs_forcing/hs_forcing.F90
 atmos_param/lscale_cond/lscale_cond.F90
+atmos_param/lscale_cond_lh/lscale_cond_lh.F90
 atmos_param/my25_turb/my25_turb.F90
 atmos_param/qe_moist_convection/qe_moist_convection.F90
 atmos_param/betts_miller/betts_miller.f90
