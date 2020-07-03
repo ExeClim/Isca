@@ -19,7 +19,7 @@
 !!                                                                   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module lscale_cond_mod
+module lscale_cond_lh_mod
 
 !-----------------------------------------------------------------------
 use            mpp_mod, only:  input_nml_file
@@ -34,12 +34,12 @@ private
 !-----------------------------------------------------------------------
 !  ---- public interfaces ----
 
-   public  lscale_cond, lscale_cond_init, lscale_cond_end
+   public  lscale_cond_lh, lscale_cond_lh_init, lscale_cond_lh_end
 
 !-----------------------------------------------------------------------
 !   ---- version number ----
 
- character(len=128) :: version = '$Id: lscale_cond.F90,v 19.0 2012/01/06 20:10:05 fms Exp $'
+ character(len=128) :: version = '$Id: lscale_cond_lh.F90,v 19.0 2012/01/06 20:10:05 fms Exp $'
  character(len=128) :: tagname = '$Name:  $'
  logical            :: module_is_initialized=.false.
 
@@ -57,7 +57,7 @@ real    :: hc=1.00
 logical :: do_evap=.false.
 logical :: do_simple =.false.
 
-namelist /lscale_cond_nml/  hc, do_evap, do_simple
+namelist /lscale_cond_lh_nml/  hc, do_evap, do_simple
 
 
 !-----------------------------------------------------------------------
@@ -76,7 +76,7 @@ contains
 
 !#######################################################################
 
-   subroutine lscale_cond (tin, qin, pfull, phalf, coldT, &
+   subroutine lscale_cond_lh (tin, qin, pfull, phalf, coldT, &
                            rain, snow, tdel, qdel, mask, conv)
 
 !-----------------------------------------------------------------------
@@ -124,8 +124,8 @@ integer  k, kx
 !     computation of precipitation by condensation processes
 !-----------------------------------------------------------------------
 
-      if (.not. module_is_initialized) call error_mesg ('lscale_cond',  &
-                         'lscale_cond_init has not been called.', FATAL)
+      if (.not. module_is_initialized) call error_mesg ('lscale_cond_lh',  &
+                         'lscale_cond_lh_init has not been called.', FATAL)
 
       kx=size(tin,3)
 
@@ -209,7 +209,7 @@ integer  k, kx
 
 !-----------------------------------------------------------------------
 
-   end subroutine lscale_cond
+   end subroutine lscale_cond_lh
 
 !#######################################################################
 
@@ -256,7 +256,7 @@ subroutine precip_evap (pmass, tin, qin, qsat, dqsat, hlcp, &
 
 !#######################################################################
 
-   subroutine lscale_cond_init ()
+   subroutine lscale_cond_lh_init ()
 
 !-----------------------------------------------------------------------
 !
@@ -269,14 +269,14 @@ subroutine precip_evap (pmass, tin, qin, qsat, dqsat, hlcp, &
 !----------- read namelist ---------------------------------------------
 
 #ifdef INTERNAL_FILE_NML
-      read (input_nml_file, nml=lscale_cond_nml, iostat=io)
-      ierr = check_nml_error(io,"lscale_cond_nml")
+      read (input_nml_file, nml=lscale_cond_lh_nml, iostat=io)
+      ierr = check_nml_error(io,"lscale_cond_lh_nml")
 #else
       if (file_exist('input.nml')) then
          unit = open_namelist_file ()
          ierr=1; do while (ierr /= 0)
-            read  (unit, nml=lscale_cond_nml, iostat=io, end=10)
-            ierr = check_nml_error (io,'lscale_cond_nml')
+            read  (unit, nml=lscale_cond_lh_nml, iostat=io, end=10)
+            ierr = check_nml_error (io,'lscale_cond_lh_nml')
          enddo
   10     call close_file (unit)
       endif
@@ -287,7 +287,7 @@ subroutine precip_evap (pmass, tin, qin, qsat, dqsat, hlcp, &
       if ( mpp_pe() == mpp_root_pe() ) then
            call write_version_number(version, tagname)
            logunit = stdlog()
-           write (logunit,nml=lscale_cond_nml)
+           write (logunit,nml=lscale_cond_lh_nml)
       endif
 
    !s initialise here as rdgas no longer a parameter
@@ -296,18 +296,18 @@ subroutine precip_evap (pmass, tin, qin, qsat, dqsat, hlcp, &
 
       module_is_initialized=.true.
 
-   end subroutine lscale_cond_init
+   end subroutine lscale_cond_lh_init
 
 !#######################################################################
-   subroutine lscale_cond_end
+   subroutine lscale_cond_lh_end
 
       module_is_initialized=.false.
 
 !---------------------------------------------------------------------
 
-   end subroutine lscale_cond_end
+   end subroutine lscale_cond_lh_end
 
 !#######################################################################
 
-end module lscale_cond_mod
+end module lscale_cond_lh_mod
 
