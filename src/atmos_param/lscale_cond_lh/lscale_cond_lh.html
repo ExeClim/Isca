@@ -1,5 +1,5 @@
 <HTML>
-<TITLE>module lscale_cond</TITLE>
+<TITLE>module lscale_cond_lh</TITLE>
 <BODY BGCOLOR="#AABBCC" TEXT="#332211" >
 
 <DIV ALIGN="CENTER"> <FONT SIZE=1>
@@ -14,13 +14,13 @@
 <BR><BR></DIV><HR>
 
 
-<H2>module lscale_cond</H2>
+<H2>module lscale_cond_lh</H2>
 <A NAME="HEADER">
 <PRE>
      <B>Contact:</B> 
      <B>Reviewers:</B>
 
-     <B><A HREF=".doc.log#lscale_cond.f90">Tags/Status</A></B>
+     <B><A HREF=".doc.log#lscale_cond_lh.f90">Tags/Status</A></B>
 </PRE>
 </A><!-- END HEADER -->
 <!--------------------------------------------------------------------->
@@ -71,12 +71,12 @@
 <!-- BEGIN INTERFACE -->
 <PRE>
 
-use lscale_cond_mod [, only: lscale_cond_init, lscale_cond ]
+use lscale_cond_lh_mod [, only: lscale_cond_lh_init, lscale_cond_lh ]
 
-   lscale_cond_init:  Must be called before lscale_cond to initialize
+   lscale_cond_lh_init:  Must be called before lscale_cond_lh to initialize
                       the module, namelist, and constants.
 
-   lscale_cond:  Computes the large-scale condensation adjustments for
+   lscale_cond_lh:  Computes the large-scale condensation adjustments for
                  temperature and specific humidity, and returns the
                  mass of rain and snow that reach the ground (in an
                  energetically consistent way).
@@ -90,13 +90,13 @@ use lscale_cond_mod [, only: lscale_cond_init, lscale_cond ]
 <!-- BEGIN ROUTINES -->
 <PRE>
 
-<b>call lscale_cond_init</b> ( )
+<b>call lscale_cond_lh_init</b> ( )
 
    There are no arguments.
 
 ----------------------------------------------------
 
-<b>call lscale_cond</b> ( tin, qin, pfull, phalf, coldt,
+<b>call lscale_cond_lh</b> ( tin, qin, pfull, phalf, coldt,
                    rain, snow, tdel, qdel, mask, conv )
 
   Input
@@ -149,7 +149,7 @@ use lscale_cond_mod [, only: lscale_cond_init, lscale_cond ]
 <!-- BEGIN NAMELIST -->
 <PRE>
 
-<b>&lscale_cond_nml</b>
+<b>&lscale_cond_lh_nml</b>
 
    hc         relative humidity at which large scale condensation
               occurs, where 0 <= hc <= 1
@@ -168,7 +168,7 @@ use lscale_cond_mod [, only: lscale_cond_init, lscale_cond ]
 <H4>CHANGE HISTORY</H4>
 <!-- BEGIN CHANGES -->
 <PRE>
-<B><A HREF=".doc.log#lscale_cond.f90">Revision history</A></B>
+<B><A HREF=".doc.log#lscale_cond_lh.f90">Revision history</A></B>
 
 <b>Prior changes</b>
 
@@ -195,11 +195,11 @@ use lscale_cond_mod [, only: lscale_cond_init, lscale_cond ]
 <!-- BEGIN ERRORS -->
 <PRE>
 
-<b>Fatal Error in lscale_cond</b>
+<b>Fatal Error in lscale_cond_lh</b>
 
-    <b>lscale_cond_init has not been called</b>
+    <b>lscale_cond_init_lh has not been called</b>
         The initialization for this module must be called before
-        calling routine lscale_cond.
+        calling routine lscale_cond_lh.
 
 </PRE>
 </A><!-- END ERRORS -->
@@ -243,8 +243,8 @@ use lscale_cond_mod [, only: lscale_cond_init, lscale_cond ]
 <!-- BEGIN PLANS -->
 <PRE>
 
-     Routine lscale_cond_init could be called automatically by the
-     main routine lscale_cond. This would remove the current fatal error
+     Routine lscale_cond_lh_init could be called automatically by the
+     main routine lscale_cond_lh. This would remove the current fatal error
      that would occur.
 
 </PRE>
