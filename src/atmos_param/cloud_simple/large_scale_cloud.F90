@@ -26,7 +26,7 @@ module large_scale_cloud_mod
   logical :: do_fitted_rhcrit = .false.
   logical :: do_adjust_low_cld = .false.
   logical :: do_poly_rhcrit = .false.
-  logical :: do_adjust_polar_cld = .false.
+  logical :: do_freezedry = .false.
 
   real :: rhcsfc = 0.95
   real :: rhc700 = 0.7
@@ -39,7 +39,7 @@ module large_scale_cloud_mod
 
   ! Parameters for the freeze-dry problem in polar region
   real :: qv_polar_val    = 0.003  ! kg/kg
-  real :: adj_polar_power = 2.5
+  real :: freezedry_power = 2.5
 
   ! Parameters to control linear coefficient profile
   real :: linear_a_surf = 42
@@ -64,7 +64,7 @@ module large_scale_cloud_mod
             linear_a_surf, linear_a_top, linear_power, &
             slingo_rhc_low, slingo_rhc_mid, slingo_rhc_high, &
             do_adjust_low_cld, omega_adj_threshold, &
-            do_adjust_polar_cld, qv_polar_val, adj_polar_power
+            do_freezedry, qv_polar_val, freezedry_power
 
   contains
 
@@ -155,8 +155,8 @@ module large_scale_cloud_mod
       call adjust_low_cld(pfull, ps, wg_full, cf, q_hum)
     end if
 
-    if(do_adjust_polar_cld) then
-      call adjust_polar_cld(pfull, ps, cf, q_hum)
+    if(do_freezedry) then
+      call freezedry_adjustment(pfull, ps, cf, q_hum)
     end if
 
     if (id_rhcrit > 0) then
@@ -213,7 +213,7 @@ module large_scale_cloud_mod
 
   end subroutine adjust_low_cld
 
-  subroutine adjust_polar_cld(p_full, psg, cf, q_hum)
+  subroutine freezedry_adjustment(p_full, psg, cf, q_hum)
     real, intent(in),    dimension(:,:,:) :: p_full, q_hum
     real, intent(in),    dimension(:,:)   :: psg
     real, intent(inout), dimension(:,:,:) :: cf
@@ -228,11 +228,11 @@ module large_scale_cloud_mod
     ! surface but through all the levels of atmosphere
   
     do k=1,size(p_full,3)
-        qv_k = (p_full(:,:,k) / psg)**adj_polar_power * qv_polar_val
+        qv_k = (p_full(:,:,k) / psg)**freezedry_power * qv_polar_val
         cf(:,:,k) = cf(:,:,k) * MAX(0.15, MIN(1.0, q_hum(:,:,k) / qv_k))
     end do
 
-  end subroutine adjust_polar_cld
+  end subroutine freezedry_adjustment
 
   subroutine calc_large_scale_cld_frac(pfull, ps, rh, q_hum, qsat, rhcrit, qcl_rad, cf)
     ! Calculate large scale (stratiform) cloud fraction
