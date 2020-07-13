@@ -24,7 +24,7 @@ module large_scale_cloud_mod
 
   logical :: do_simple_rhcrit = .false.
   logical :: do_fitted_rhcrit = .false.
-  logical :: do_adjust_low_cld = .false.
+  logical :: do_adjust_cld_by_omega = .false.
   logical :: do_poly_rhcrit = .false.
   logical :: do_freezedry = .false.
 
@@ -51,8 +51,9 @@ module large_scale_cloud_mod
   real :: slingo_rhc_mid  = 0.65
   real :: slingo_rhc_high = 0.8
 
-  ! For low cloud adjustment
+  ! For cloud adjustment by omega
   real :: omega_adj_threshold = 0.1 !Pa/s
+  real :: adj_pres_threshold = 7.0e4 !Pa
 
   integer :: id_rhcrit
 
@@ -63,7 +64,7 @@ module large_scale_cloud_mod
             cf_diag_formula_name, &
             linear_a_surf, linear_a_top, linear_power, &
             slingo_rhc_low, slingo_rhc_mid, slingo_rhc_high, &
-            do_adjust_low_cld, omega_adj_threshold, &
+            do_adjust_cld_by_omega, omega_adj_threshold, adj_pres_threshold, &
             do_freezedry, qv_polar_val, freezedry_power
 
   contains
@@ -151,8 +152,8 @@ module large_scale_cloud_mod
 
     call calc_large_scale_cld_frac(pfull, ps, rh, q_hum, qsat, rhcrit, qcl_rad, cf)
 
-    if(do_adjust_low_cld) then
-      call adjust_low_cld(pfull, ps, wg_full, cf, q_hum)
+    if(do_adjust_cld_by_omega) then
+      call adjust_cld_by_omega(pfull, wg_full, cf)
     end if
 
     if(do_freezedry) then
@@ -196,22 +197,19 @@ module large_scale_cloud_mod
 
   end subroutine calc_rhcrit
 
-  subroutine adjust_low_cld(p_full, psg, wg_full, cf, q_hum)
-    real, intent(in),    dimension(:,:,:) :: p_full, wg_full, q_hum
-    real, intent(in),    dimension(:,:)   :: psg
+  subroutine adjust_cld_by_omega(p_full, wg_full, cf)
+    real, intent(in),    dimension(:,:,:) :: p_full, wg_full
     real, intent(inout), dimension(:,:,:) :: cf
-    real :: premib
 
-    premib = 7.0e4 !Pa
-
-    where (p_full>premib .and. omega_adj_threshold>wg_full .and. wg_full>0.0)
+    where (p_full>adj_pres_threshold .and. omega_adj_threshold>wg_full .and. wg_full>0.0)
      cf = min(1.0, (omega_adj_threshold-wg_full)/omega_adj_threshold) * cf
     end where
-    where (p_full>premib .and. wg_full>=omega_adj_threshold)
+
+    where (p_full>adj_pres_threshold .and. wg_full>=omega_adj_threshold)
       cf = 0.0
     end where
 
-  end subroutine adjust_low_cld
+  end subroutine adjust_cld_by_omega
 
   subroutine freezedry_adjustment(p_full, psg, cf, q_hum)
     real, intent(in),    dimension(:,:,:) :: p_full, q_hum

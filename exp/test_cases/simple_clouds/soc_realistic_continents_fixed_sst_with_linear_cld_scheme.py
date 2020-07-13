@@ -177,7 +177,7 @@ exp.namelist = Namelist({
 
     'large_scale_cloud_nml': {
         'cf_diag_formula_name': 'linear',
-        'do_adjust_low_cld': True,
+        'do_adjust_cld_by_omega': False,
         'do_freezedry': True,
         'qv_polar_val': 0.006,  # Units: kg/kg
         'freezedry_power': 2.5,
