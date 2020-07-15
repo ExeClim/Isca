@@ -46,8 +46,8 @@ Now from a terminal window on your **local machine**, you can try logging in to 
 You should not be able to log in simply by typing ``$ ssh hostalias``. Congratulations! 
 
 
-Edit remote files in a local text editor
-----------------------------------------
+Edit remote files in a local text editor using ``rmate``
+--------------------------------------------------------
 As an alternative to remote-based text editors such as ``vi`` and ``emacs``, we can
 use port-fowarding to set up a `local-based text editor like Atom <https://atom.io>`_ which includes features such as syntax highlighting and code completion. For instructions to install ``rmate`` on your **local machine**, `click here <https://github.com/textmate/rmate>`_. Then to specifically use Atom to edit remote files, `click here <https://atom.io/packages/remote-atom>`_. You will need to add the following line to your ``~/.ssh/config`` file: ``RemoteForward 52698 localhost:52698``.
 
