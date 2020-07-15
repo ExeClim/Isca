@@ -21,18 +21,18 @@ Summary
 
 ``idealised_moist_phys.F90`` calls the various modules associated with Isca's moist physics configurations. The specific parameterisations to be used can be selected via namelist input to this module. This is where the radiation, convection, turbulence and land options are set. In addition, timestepping for the bucket hydrology option is managed locally here.
 
-These options allow users to configure a wide range of planets, including notable configurations from the literature (Frierson et al. 2006, Byrne and O'Gorman, Schneider and Liu, Jucker et al. and others). However, users should bear in mind that the full parameter space is vast and not all options may be compatible with one another. 
+These options allow users to configure a wide range of planets, including notable configurations from the literature (Frierson et al. 2006, Byrne and O'Gorman, Schneider and Liu, Jucker et al. and others). Users should bear in mind that the full parameter space is vast and not all options may be compatible with one another. 
 
 The fortran file is found in ``Isca/src/atmos_spectral/driver/solo/idealized_moist_phys.F90``
 
 
 Namelist options
 ----------------
-This module controls a large number of switches for different options. Defaults are generally set to ``False`` to avoid accidental use of modules. However this is unlikely to be a configuration one would want to use! For examples of how parameters are set to achieve different model configurations, see the test cases in ``Isca/exp/test_cases/``.
+This module controls a large number of switches for different options. Defaults are generally set to ``False`` to avoid accidental use of modules, but this is unlikely to be a useful configuration! For examples of how parameters are set to achieve different model configurations, see the test cases in ``Isca/exp/test_cases/``.
 
 Humidity, Condensation and Convection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Four convection schemes, and the option of no convection, are currently avaiable in Isca. The defaults are set so the user should actively select a scheme to use via one of the methods below. Large-scale condensation will be called following the convection scheme in all cases, unless ``DRY_CONV`` is selected.
+Four convection schemes, and the option of no convection, are currently available in Isca. The defaults are set so the user should actively select a scheme to use via one of the methods below. Large-scale condensation will be called following the convection scheme in all cases, unless ``DRY_CONV`` is selected.
 
 Method 1 (preferred)
 """"""""""""""""""""
