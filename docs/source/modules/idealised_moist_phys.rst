@@ -196,7 +196,7 @@ Diagnostics
 -----------
 .. What diagnostics are available for this part of the code.
 
-Diagnostics from this module are output under ``mod_name = 'atmosphere'``. Some diagnostics may only be output when certain namelist options are set, for example diagnostics associated with the bucket, or ``diss_heat_ray``, which is associated with the Schneider and Liu (2009) lower-boundary heat flux scheme. Requesting unsaved diagnostics in your diagnostic list will result in those diagnostics not being output, but will not cause a fatal error or affect other diagnostics.
+Diagnostics from this module are output under ``mod_name = 'atmosphere'``. Some diagnostics may only be output when certain namelist options are set, e.g. those associated with the bucket hydrology. Requesting unsaved diagnostics in your diagnostic list will result in those diagnostics not being output, but will not cause a fatal error or affect other diagnostics.
 
 
 +----------------------+-----------------------------------------------------+------------------------------------+
