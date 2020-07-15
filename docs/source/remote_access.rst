@@ -20,7 +20,7 @@ As an example without any fancy tricks, let's set up an SSH tunnel that maps ``l
 Set up an SSH config file
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 In the home directory of your **local machine**, create a new directory called ``.ssh`` if it does not already exist. Navigate to this directory            and create file called ``config``.
-Put in the following contents (making sure to replace the text surrounded by ``**double astericks**`` with your own information)::
+Put in the following contents (making sure to replace the text surrounded by ``**double asterisks**`` with your own information)::
 
    Host **hostalias**
       Hostname **hostname**
@@ -59,7 +59,7 @@ your figures inline with your code. To open your first Jupyter notebook, log in 
 
 Recap
 -----
-Your final ``~/.ssh/config`` file should look like this::
+Your final ``~/.ssh/config`` file should look like this (making sure to replace the text surrounded by ``**double asterisks**`` with your own information)::
 
    Host **hostalias**
       Hostname **hostname**
