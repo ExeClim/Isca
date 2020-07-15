@@ -9,8 +9,8 @@ Summary
 SOCRATES (Suite Of Community RAdiative Transfer codes based on Edwards and Slingo) is the radiation scheme used by UK Met Office for Earth and planetary science [MannersEtAl2015]_, which has many significant advantages over RRTM, notably its flexibility in terms of atmospheric composition and the spectral properties of the radiation scheme (e.g. number of bands, etc).
 
 * The code used to integrate Socrates into Isca is contained within the folder ``src/atmos_params/socrates/interface``.
-* The Socrates source code itself is **NOT** packed within this Isca repository, and **NEW** users will need to download it from the `Met Office Science Repository <https://code.metoffice.gov.uk/trac/socrates>`_, and put it under ``src/atmos_params/socrates/src/trunk``. Detailed instructions on how to do this are included in the `README.md <https://github.com/ExeClim/Isca/blob/master/exp/test_cases/socrates_test/README.md>`_ for the Socrates test-case.
-* The basis of ``socrates_interface`` was coded by Mark Hammond (Univ. of Oxford) and James Manners (Met Office) and modified by Stephen Thomson (Univ. of Exeter) [Thomson_and_Vallis2019]_. Features added include seasonality in the radiation based on Isca's ``astronomy`` package, and the ability to use a radiation timestep != atmospheric timestep.
+* The Socrates source code itself is **NOT** packed within this Isca repository, and **NEW** users will need to download it from the `Met Office Science Repository <https://code.metoffice.gov.uk/trac/socrates>`_, and put it under ``src/atmos_params/socrates/src/trunk``. Detailed instructions on how to do this are included in the `README.md <https://github.com/ExeClim/Isca/blob/master/exp/test_cases/socrates_test/README.md>`_ for the Socrates test-case: ``exp/test_cases/socrates_test/README.md``.
+* The basis of ``socrates_interface`` was coded by Mark Hammond (Univ. of Oxford) and James Manners (Met Office) and modified by Stephen Thomson (Univ. of Exeter) [Thomson_and_Vallis2019]_. Features added include seasonality in the radiation based on Isca's ``astronomy`` package, and the ability to use a ``radiation timestep != atmospheric timestep``.
 * Socrates radiation scheme requires ``mass-mixing`` ratios (mmr) for all quantities (e.g. CO2, water vapour etc). This contrasts with RRTM, which wants ``volume-mixing`` ratios (vmr).
 
 
@@ -22,8 +22,10 @@ The Socrates namelist ``socrates_rad_nml`` can be found at ``src/atmos_param/soc
 Radiation options
 ^^^^^^^^^^^^^^^^^
 
+Here are some options to set incoming radiation:
+
 +----------------------------+---------------+-----------------------------------------------------------------------------------------+
-| Name                       | Default value | Description                                                                             |
+| Name                       | Default       | Description                                                                             |
 +============================+===============+=========================================================================================+
 |``solday``                  | 0             | If >0, do perpetual run corresponding to day of the year = solday in [0, days per year] |
 +----------------------------+---------------+-----------------------------------------------------------------------------------------+
@@ -47,7 +49,7 @@ Radiation options
 The following namelist variables set radiation time stepping and spatial sampling:
 
 +----------------------------+---------------+--------------------------------------------------------------------------+
-| Name                       | Default value | Description                                                              |
+| Name                       | Default       | Description                                                              |
 +============================+===============+==========================================================================+
 | ``dt_rad``                 | 0             | Radiation timestep - every step if ``dt_rad<dt_atmos``                   |
 +----------------------------+---------------+--------------------------------------------------------------------------+
@@ -62,8 +64,13 @@ The following namelist variables set radiation time stepping and spatial samplin
 Spectral files
 ^^^^^^^^^^^^^^
 
+Socrates reads external input files that tell it the number of spectral bands to use, with one file setting the shortwave options, and another file setting the longwave options. Some spectral files have lots of bands, which will make the model run slowly. The default files used in the Met Office's Unified Model-GA7, and also in Isca, can be found here (after you put the Socrates source code in proper place):
+::
+    src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7 for the longwave
+    src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7 for the shortwave
+
 +--------------------------------+---------------+-----------------------------------------------------+
-| Name                           | Default value | Description                                         |
+| Name                           | Default       | Description                                         |
 +================================+===============+=====================================================+
 | ``socrates_hires_mode``        | False         | If false then run in 'GCM mode', and                |
 |                                |               | if true then usehigh-res spectral file              |
@@ -81,11 +88,25 @@ Spectral files
 |                                |               | ``data/spectra/ga7/sp_sw_ga7``) or self-generated   |
 +--------------------------------+---------------+-----------------------------------------------------+
 
-CO2 and ozone
-^^^^^^^^^^^^^
+CO2, ozone and other gases
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+To include radiative effects of water vapor, CO2 and ozone, the following switches should be ``True``:
+
++-------------+---------------+-----------------------------------------------------+
+| Name        | Default       | Description                                         |
++=============+===============+=====================================================+
+| ``inc_h2o`` | True          | To include radiative effects of water vapor         |
++-------------+---------------+-----------------------------------------------------+
+| ``inc_co2`` | True          | To include radiative effects of CO2                 |
++-------------+---------------+-----------------------------------------------------+
+| ``inc_o3``  | True          | To include radiative effects of ozone               |
++-------------+---------------+-----------------------------------------------------+
+
+
+In addition, you can specify their concentrations by specifing them directly or reading from the external files (needs to pay attention to the concentration units):
 
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
-| Name                              | Default value | Description                                                                 |
+| Name                              | Default       | Description                                                                 |
 +===================================+===============+=============================================================================+
 | ``account_for_effect_of_water``   | True          | - False: radiation is fed water mixing ratios = 0                           |
 |                                   |               | - True:  radiation is fed mixing ratios based on model specific humidity.   |
@@ -116,9 +137,48 @@ CO2 and ozone
 |                                   |               | - ``False`` if the input file contain values as ``volume mixing ratio``     |
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
 
+To include the radiative effects of other gases, such as CO, CH4, O2, SO2, CFC, etc, first you need to turn on the switches starting with ``inc_`` (default ``False``), then specify the corresponding concentrations through variables ending with ``_mix_ratio`` in namelist.
+
 Diagnostics
 -----------
-.. What diagnostics are available for this part of the code.
+
+Diagnostics from Socrates are under module name ``socrates``. Major outputs include the temperature tendencies due to LW/SW radiation, and LW/SW radiation fluxes at each level, or at surface and the top of the atmosphere (TOA).
+
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+| Name                     | Description                                         | Units               | Dimension (not including time) |
++==========================+=====================================================+=====================+================================+
+|``soc_tdt_lw``            | Socrates temperature tendency due to LW radiation   | Ks :math:`^{-1}`    | (pfull, lat, lon)              |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_tdt_sw``            | Socrates temperature tendency due to SW radiation   | Ks :math:`^{-1}`    | (pfull, lat, lon)              |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_tdt_rad``           | Socrates temperature tendency due to radiation      | Ks :math:`^{-1}`    | (pfull, lat, lon)              |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_flux_lw``           | Socrates net LW flux (positive up)                  | Wm :math:`^{-2}`    | (phalf, lat, lon)              |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_flux_sw``           | Socrates net SW flux (positive up)                  | Wm :math:`^{-2}`    | (phalf, lat, lon)              |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_surf_flux_lw``      | Socrates net LW surface flux (positive up)          | Wm :math:`^{-2}`    | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_surf_flux_lw_down`` | Socrates LW surface flux down                       | Wm :math:`^{-2}`    | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_surf_flux_sw``      | Socrates net SW surface flux (positive down)        | Wm :math:`^{-2}`    | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_surf_flux_sw_down`` | Socrates SW surface flux down                       | Wm :math:`^{-2}`    | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_olr``               | Socrates TOA LW flux (positive up)                  | Wm :math:`^{-2}`    | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_toa_sw``            | Socrates net TOA SW flux (positive down)            | Wm :math:`^{-2}`    | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_toa_sw_down``       | Socrates net TOA SW flux down                       | Wm :math:`^{-2}`    | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_coszen``            | Socrates cosine (zenith_angle)                      | None                | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_co2``               | Socrates CO2 concentration (mass mixing ratio)      | kg kg :math:`^{-1}` | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_ozone``             | Socrates ozone concentration (mass mixing ratio)    | kg kg :math:`^{-1}` | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``soc_spectral_olr``      | Socrates substellar OLR spectrum                    | Wm :math:`^{-2}`    | (socrates_lw_bins, lat, lon)   |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
 
 
 Relevant modules and subroutines
