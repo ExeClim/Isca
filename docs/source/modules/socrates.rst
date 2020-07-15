@@ -24,27 +24,27 @@ Radiation options
 
 Here are some options to set incoming radiation:
 
-+----------------------------+---------------+-----------------------------------------------------------------------------------------+
-| Name                       | Default       | Description                                                                             |
-+============================+===============+=========================================================================================+
-|``solday``                  | 0             | If >0, do perpetual run corresponding to day of the year = solday in [0, days per year] |
-+----------------------------+---------------+-----------------------------------------------------------------------------------------+
-|``do_rad_time_avg``         | True          | Average ``coszen`` for shortwave radiation over ``dt_rad``                              |
-+----------------------------+---------------+-----------------------------------------------------------------------------------------+
-|``equinox_day``             | 0.75          | fraction of the year defining NH autumn equinox in [0, 1]                               |
-+----------------------------+---------------+-----------------------------------------------------------------------------------------+
-|``stellar_constant``        | 1368.22       | :math:`Wm^{-2}`, solar constant, consistent with RRTM default                           |
-+----------------------------+---------------+-----------------------------------------------------------------------------------------+
-|``tidally_locked``          | False         | Tidally locked or not                                                                   |
-+----------------------------+---------------+-----------------------------------------------------------------------------------------+
-|``frierson_solar_rad``      | False         | Options for annual-mean incoming solar, as prescribed in Frierson's grey scheme         |
-+----------------------------+---------------+-----------------------------------------------------------------------------------------+
-|``del_sol``                 | 1.4           |                                                                                         |
-+----------------------------+---------------+-----------------------------------------------------------------------------------------+
-|``del_sw``                  | 0             |                                                                                         |
-+----------------------------+---------------+-----------------------------------------------------------------------------------------+
-|``input_planet_emissivity`` | 1.0           | Emissivity of surface. Defined as constant all over surface.                            |
-+----------------------------+---------------+-----------------------------------------------------------------------------------------+
++----------------------------+----------+-----------------------------------------------------------------------------------------+
+| Name                       | Default  | Description                                                                             |
++============================+==========+=========================================================================================+
+|``solday``                  | 0        | If >0, do perpetual run corresponding to day of the year = solday in [0, days per year] |
++----------------------------+----------+-----------------------------------------------------------------------------------------+
+|``do_rad_time_avg``         | True     | Average ``coszen`` for shortwave radiation over ``dt_rad``                              |
++----------------------------+----------+-----------------------------------------------------------------------------------------+
+|``equinox_day``             | 0.75     | fraction of the year defining NH autumn equinox in [0, 1]                               |
++----------------------------+----------+-----------------------------------------------------------------------------------------+
+|``stellar_constant``        | 1368.22  | :math:`Wm^{-2}`, solar constant, consistent with RRTM default                           |
++----------------------------+----------+-----------------------------------------------------------------------------------------+
+|``tidally_locked``          | False    | Tidally locked or not                                                                   |
++----------------------------+----------+-----------------------------------------------------------------------------------------+
+|``frierson_solar_rad``      | False    | Options for annual-mean incoming solar, as prescribed in Frierson's grey scheme         |
++----------------------------+----------+-----------------------------------------------------------------------------------------+
+|``del_sol``                 | 1.4      | Latitudinal variation of shortwave radiation, as prescribed in Frierson's grey scheme   |
++----------------------------+----------+-----------------------------------------------------------------------------------------+
+|``del_sw``                  | 0        |                                                                                         |
++----------------------------+----------+-----------------------------------------------------------------------------------------+
+|``input_planet_emissivity`` | 1.0      | Emissivity of surface. Defined as constant all over surface.                            |
++----------------------------+----------+-----------------------------------------------------------------------------------------+
 
 The following namelist variables set radiation time stepping and spatial sampling:
 
@@ -65,8 +65,8 @@ Spectral files
 
 Socrates reads external input files that tell it the number of spectral bands to use, with one file setting the shortwave options, and another file setting the longwave options. Some spectral files have lots of bands, which will make the model run slowly. The default files used in the Met Office's Unified Model-GA7, and also in Isca, can be found here (after you put the Socrates source code in proper place):
 ::
-    src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7 for the longwave
-    src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7 for the shortwave
+  src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7 for the longwave
+  src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7 for the shortwave
 
 +--------------------------------+---------------+-----------------------------------------------------+
 | Name                           | Default       | Description                                         |
@@ -102,7 +102,7 @@ To include radiative effects of water vapor, CO2 and ozone, the following switch
 +-------------+---------------+-----------------------------------------------------+
 
 
-In addition, you need to specify their concentrations by specifing them directly or reading from the external files (needs to pay attention to the concentration units):
+In addition, you need to set their concentrations by specifing them directly or reading from the external files (needs to pay attention to the concentration units):
 
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
 | Name                              | Default       | Description                                                                 |
@@ -136,13 +136,13 @@ In addition, you need to specify their concentrations by specifing them directly
 |                                   |               | - ``False`` if the input file contain values as ``volume mixing ratio``     |
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
 
-To include the radiative effects of other gases, such as CO, CH4, O2, SO2, CFC, etc, first you need to turn on the switches starting with ``inc_`` (default ``False``), then specify the corresponding concentrations through variables ending with ``_mix_ratio`` in namelist.
+To include the radiative effects of other gases, such as CO, CH4, O2, SO2, CFC, etc, first you need to turn on the switches starting with ``inc_`` (default ``False``), then specify the corresponding concentrations through variables ending with ``_mix_ratio`` in the namelist.
 
 
 Diagnostics
 -----------
 
-Diagnostics from Socrates are under module name ``socrates``. Major outputs include the temperature tendencies due to LW/SW radiation, and LW/SW radiation fluxes at each level, or at surface and the top of the atmosphere (TOA).
+Diagnostics from Socrates are under module name ``socrates``. The outputs include the temperature tendencies due to LW/SW radiation, LW/SW radiation fluxes at each level, and the fluxes at surface and the top of the atmosphere (TOA).
 
 +--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
 | Name                     | Description                                         | Units               | Dimension (not including time) |

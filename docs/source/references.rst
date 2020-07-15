@@ -13,9 +13,9 @@ References
            doi: `10.5194/gmd-11-843-2018 <https://doi.org/10.5194/gmd-11-843-2018>`_.
 
 .. [MannersEtAl2015] Manners, J. and Edwards, J. M. and Hill, P. and Thelen, J.-C., 2015:
-             **SOCRATES (Suite Of Community RAdiative Transfer codes based on Edwards and Slingo) Technical Guide**.
+             SOCRATES (Suite Of Community RAdiative Transfer codes based on Edwards and Slingo) Technical Guide.
              Met Office, UK. Aavailable at: https://code.metoffice.gov.uk/trac/socrates.
 
 .. [Thomson_and_Vallis2019] Thomson, S. I. and Vallis, G. K., 2019. Hierarchical Modeling of Solar System
-            Planets with Isca. *Atmosphere*, **10(12)**, 803,
-            doi: `10.3390/atmos10120803 <https://doi.org/10.3390/atmos10120803>`_
+            Planets with Isca. *Atmosphere*, **10 (12)**, 803,
+            doi: `10.3390/atmos10120803 <https://doi.org/10.3390/atmos10120803>`_.
