@@ -46,13 +46,31 @@ You should not be able to log in simply by typing ``$ ssh hostalias``. Congratul
 Edit Remote Files Locally
 -------------------------
 As an alternative to remote-based text editors such as ``vi`` and ``emacs``, we can
-use port-fowarding to set up a `local-based text editor like Atom <https://atom.io>`_ which includes features such as syntax highlighting and code completion. For additional instruction go to the ``rmate`` `homepage on Github <https://github.com/textmate/rmate>`_. To specifically use Atom to edit remote files, `click here <https://atom.io/packages/remote-atom>`_.
+use port-fowarding to set up a `local-based text editor like Atom <https://atom.io>`_ which includes features such as syntax highlighting and code completion. For instructions to install ``rmate`` on your **local machine**, `click here <https://github.com/textmate/rmate>`_. Then to specifically use Atom to edit remote files, `click here <https://atom.io/packages/remote-atom>`_. You will need to add the following line to your ``~/.ssh/config`` file: ``RemoteForward 52698 localhost:52698``.
 
 
 Edit Remote python Files in a ``jupyter`` Environment
 -----------------------------------------------------
 The ``jupyter`` environment is a great environent for data exploration and integrating
 your figures inline with your code. To open your first Jupyter notebook, log in to your **remote machine** and type: ``$ jupyter lab --no-browser --port=3039``. This should function because of all the work we put in during the port forwarding section. To shorten this command, add an alias to your ``~/.bashrc`` file on your **remote machine**. I personally use the alias ``rjlab``
+
+Recap
+-----
+Your final ``~/.ssh/config`` file should look like this::
+
+   Host **hostalias**
+      Hostname **hostname**
+      User **username**
+
+   Hostname **hostname**
+      User **username**
+      LocalForward 3039 localhost:3039
+      RemoteForward 52698 localhost:52698
+      IdentityFile **~/.ssh/id_rsa_hostname**
+      UseKeychain yes
+      AddKeysToAgent Yes
+
+**One final note:** Remember the port numbers chosen are arbitary. If you choose the same number as someone else on your network, their files may open up on your computer and vice versa!
 
 Authors
 ----------
