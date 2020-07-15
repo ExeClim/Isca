@@ -10,3 +10,4 @@ Components of Isca
    dynamics
    physics
    output
+   idealised_moist_phys

@@ -27,43 +27,46 @@ These options allow users to configure a wide range of planets, including notabl
 Namelist options
 ----------------
 
-+----------+-------------------------------+-------------+
-| Name     | Purpose                       | Default     |
-+----------+-------------------------------+-------------+
-| turb     |selects whether the vertical   | False       |
-|          |turbulence modules are called. |             |
-+----------+-------------------------------+-------------+
-
-
-turb: selects whether the vertical turbulence modules are called. default: False
-
 Convection
 ^^^^^^^^^^
-Four convection schemes are currently avaiable in Isca. Only one may be selected. The model can also be run with no convection scheme.
+Four convection schemes, and the option of no convection, are currently avaiable in Isca. The defaults are set so the user should actively select a scheme to use via one of the methods below. 
 
-The scheme to be used can be selected using the *convection_scheme* namelist parameter, which may be set to:
-1. 'SIMPLE_BETTS_CONV'
-2. 'FULL_BETTS_MILLER_CONV'
-3. 'DRY_CONV'
-4. 'RAS_CONV'
-5. 'NO_CONV'
+**Method 1 (preferred)**
 
-Three namelist parameters exist as switches to provide these four options:
-1. lwet_convection: If true, use Frierson Quasi-Equilibrium convection scheme (Frierson et al., 2007). default: False
-2. do_bm: If true, use the Betts-Miller convection scheme (Betts and Miller,). default: False
-3. do_ras: If true, use the relaxed Arakawa Schubert convection scheme (Arakawa and Schubert, ). default: False
-4. If the above are all false, the model will use a dry convection scheme.
+The scheme to be used can be selected using the ``convection_scheme`` namelist parameter, which may be set to:
+
+#. ``SIMPLE_BETTS_CONV`` - use Frierson Quasi-Equilibrium convection scheme (Frierson et al., 2007).
+#. ``FULL_BETTS_MILLER_CONV`` - use the Betts-Miller convection scheme (Betts and Miller,).
+#. ``RAS_CONV`` - use the relaxed Arakawa Schubert convection scheme (Arakawa and Schubert, ).
+#. ``DRY_CONV`` - use the dry convection scheme (CITATION NEEDED?).
+#. ``NO_CONV`` - use no convection scheme.
+#. ``UNSET`` - This is the **default**. If ``convection_scheme`` is unset, the model will look through flags for each scheme, see Method 2. 
+
+Using the ``convection_scheme`` option will ensure that flags are set consistently for the selected convection scheme, minimising user error.
+
+**Method 2 (legacy)**
+
+Three namelist parameters exist as switches to select the convection options:
+
+#. ``lwet_convection`` - If true, use Frierson Quasi-Equilibrium convection scheme (Frierson et al., 2007). Default: False
+#. ``do_bm`` - If true, use the Betts-Miller convection scheme (Betts and Miller,). Default: False
+#. ``do_ras`` - If true, use the relaxed Arakawa Schubert convection scheme (Arakawa and Schubert, ). Default: False
+
+If multiple flags are set as True, or all are False, an error will be raised. This method exists for compatability with configurations pre-dating method 1. Method 1 is preferred for new model configurations.
 
 
 Radiation
 ^^^^^^^^^
-two_stream_gray: if true, then the two stream radiation module will be called. default: True
-do_rrtm_radiation: if true, then the RRTM radiation module will be called. default: False
-do_socrates_radiation: if true, then the SOCRATES radiation module will be called. default: False
+Two more comprehensive radiation codes are currently included in Isca: RRTM () and Socrates (). In addition, a number of simple radiation parameterisations for the atmospheres of Earth and other planets can be found in ``two_stream_gray_rad.F90``. The radiation scheme is set through the following flags:
+
+#. ``two_stream_gray`` - if true, then the two stream radiation module will be called. Default: True
+#. ``do_rrtm_radiation`` - if true, then the RRTM radiation module will be called. Default: False
+#. ``do_socrates_radiation`` - if true, then the SOCRATES radiation module will be called. Default: False
 
 
 Drag and Turbulence
 ^^^^^^^^^^^^^^^^^^^
+turb: selects whether the vertical turbulence modules are called. default: False
 do_damping: default: false
 mixed_layer_bc: default: false
 gp_surface: If true, use the Schneider & Liu (2009) prescription of lower-boundary heat flux. default: false
@@ -92,13 +95,74 @@ Diagnostics
 -----------
 .. What diagnostics are available for this part of the code.
 
+Diagnostics from this module are output under ``mod_name = 'atmosphere'``.
 
+
++----------------------+-----------------------------------------------------+------------------------------------+
+| Name                 | Description                                         | Units                              |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``dt_ug_diffusion``   | Zonal wind tendency from vertical diffusion         | ms :math:`^{-2}`                   |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``dt_vg_diffusion``   | Meridional wind tendency from vertical diffusion    | ms :math:`^{-2}`                   |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``dt_tg_diffusion``   | Temperature tendency from vertical diffusion        | Ks :math:`^{-1}`                   |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``dt_qg_diffusion``   | Specific humidity tendency from vertical diffusion  | kg kg :math:`^{-1}` s :math:`^{-1}`|
++----------------------+-----------------------------------------------------+------------------------------------+
+|``convection_rain``   | Rain from convection                                | kg m :math:`^{-2}` s :math:`^{-1}` |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``condensation_rain`` | Rain from large-scale condensation                  | kg m :math:`^{-2}` s :math:`^{-1}` |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``precipitation``     | Precipitation from resolved, parameterised and snow | kg m :math:`^{-2}` s :math:`^{-1}` |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``dt_tg_convection``  | Temperature tendency from convection                | Ks :math:`^{-1}`                   |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``dt_qg_convection``  | Specific humidity tendency from convection          | kg kg :math:`^{-1}` s :math:`^{-1}`|
++----------------------+-----------------------------------------------------+------------------------------------+
+|``dt_tg_condensation``| Temperature tendency from convection                | Ks :math:`^{-1}`                   |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``dt_qg_condensation``| Specific humidity tendency from convection          | kg kg :math:`^{-1}` s :math:`^{-1}`|
++----------------------+-----------------------------------------------------+------------------------------------+
+|``dt_qg_condensation``| Specific humidity tendency from convection          | kg kg :math:`^{-1}` s :math:`^{-1}`|
++----------------------+-----------------------------------------------------+------------------------------------+
+|``rh``                | Relative humidity                                   | %                                  |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``diss_heat_ray``     | Heat dissipated by Rayleigh drag                    | Ks :math:`^{-1}`                   |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``cape``              | Convective Avaliable Potential Energy               | J kg :math:`^{-1}`                 |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``cin``               | Convective Inhibition                               | J kg :math:`^{-1}`                 |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``flux_u``            | Surface zonal wind stress                           | N m :math:`^{-2}`                  |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``flux_v``            | Surface meridional wind stress                      | N m :math:`^{-2}`                  |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``temp_2m``           | Air temperature 2m above surface                    | K                                  |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``sphum_2m``          | Specific humidity 2m above surface                  | kg kg :math:`^{-1}`                |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``rh_2m``             | Relative humidity 2m above surface                  | %                                  |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``u_10m``             | Zonal wind 10m above surface                        | ms :math:`^{-1}`                   |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``v_10m``             | Meridional wind 10m above surface                   | ms :math:`^{-1}`                   |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``v_10m``             | Meridional wind 10m above surface                   | ms :math:`^{-1}`                   |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``bucket_depth``      | Depth of surface reservoir                          | m                                  |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``bucket_depth_conv`` | Tendency of bucket depth due to convection          | ms :math:`^{-1}`                   |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``bucket_depth_cond`` | Tendency of bucket depth due to condensation        | ms :math:`^{-1}`                   |
++----------------------+-----------------------------------------------------+------------------------------------+
+|``bucket_depth_lh``   | Tendency of bucket depth due to evaporation         | ms :math:`^{-1}`                   |
++----------------------+-----------------------------------------------------+------------------------------------+
+
+	 
 Relevant modules and subroutines
 --------------------------------
 .. List the names of relevant modules, subroutines, functions, etc.
 .. You can add also code snippets, using Sphinx code formatting
-
-In brief, the module calls, in the following order:
 
 
 References
