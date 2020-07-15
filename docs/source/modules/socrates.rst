@@ -60,7 +60,6 @@ The following namelist variables set radiation time stepping and spatial samplin
 | ``chunk_size``             | 16            | Number of gridpoints to pass to socrates at a time                       |
 +----------------------------+---------------+--------------------------------------------------------------------------+
 
-
 Spectral files
 ^^^^^^^^^^^^^^
 
@@ -103,7 +102,7 @@ To include radiative effects of water vapor, CO2 and ozone, the following switch
 +-------------+---------------+-----------------------------------------------------+
 
 
-In addition, you can specify their concentrations by specifing them directly or reading from the external files (needs to pay attention to the concentration units):
+In addition, you need to specify their concentrations by specifing them directly or reading from the external files (needs to pay attention to the concentration units):
 
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
 | Name                              | Default       | Description                                                                 |
@@ -139,6 +138,7 @@ In addition, you can specify their concentrations by specifing them directly or 
 
 To include the radiative effects of other gases, such as CO, CH4, O2, SO2, CFC, etc, first you need to turn on the switches starting with ``inc_`` (default ``False``), then specify the corresponding concentrations through variables ending with ``_mix_ratio`` in namelist.
 
+
 Diagnostics
 -----------
 
@@ -173,9 +173,9 @@ Diagnostics from Socrates are under module name ``socrates``. Major outputs incl
 +--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
 |``soc_coszen``            | Socrates cosine (zenith_angle)                      | None                | (lat, lon)                     |
 +--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
-|``soc_co2``               | Socrates CO2 concentration (mass mixing ratio)      | kg kg :math:`^{-1}` | (pfull, lat,lon)               |
+|``soc_co2``               | Socrates CO2 concentration (mass mixing ratio)      | kg kg :math:`^{-1}` | (pfull, lat, lon)              |
 +--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
-|``soc_ozone``             | Socrates ozone concentration (mass mixing ratio)    | kg kg :math:`^{-1}` | (pfull, lat,lon)               |
+|``soc_ozone``             | Socrates ozone concentration (mass mixing ratio)    | kg kg :math:`^{-1}` | (pfull, lat, lon)              |
 +--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
 |``soc_spectral_olr``      | Socrates substellar OLR spectrum                    | Wm :math:`^{-2}`    | (socrates_lw_bins, lat, lon)   |
 +--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
@@ -183,9 +183,21 @@ Diagnostics from Socrates are under module name ``socrates``. Major outputs incl
 
 Relevant modules and subroutines
 --------------------------------
-.. List the names of relevant modules, subroutines, functions, etc.
-.. You can add also code snippets, using Sphinx code formatting
 
+The Socrates radiation scheme is initiatized and called by ``src/atmos_spectral/driver/solo/idealized_moist_phys.F90``.
+
+The major modules/files under ``src/atmos_param/socrates/interface/`` are:
+
+* ``socrates_interface.F90`` and ``socrates_calc.F90``: The Socrates interface, which initializes/finalizes the Socrates, call subroutines to get inputs, set options for radiation and run core radiaiton code, and output the diagnostics.
+* ``socrates_config_mod.f90``: module to set the namelist, including the solar radiation options, time-step, and concentrations of CO2, ozone and other well-mixed gases
+* ``read_control.F90`` and ``set_control.F90``: The Socrates use the ``StrCtrl`` structure to control the switches for core radiaiton code. For example, if you want to include the effects of CO2, you not only need to provide the value of CO2 concentration, but also need to turn on the switch to tell Socrates to calculate its effect: set ``control%l_co2 = .true.``, where ``control`` is a ``StrCtrl`` structure. Basically, all the logical switches are set in these two files.
+* ``set_bound.F90`` and ``set_dimen.F90``: modules to set the boundary fields and dimensions for the radiation code
+* ``set_atm.F90``, ``set_aer.F90``, and ``set_cld.F90``: set the input atmospheric profiles, aerosol fields and clouds fields for the core radiation code (currently the aerosol and clouds are not activated)
+
+Other radiation schemes employed in Isca can be found at:
+
+* RRTM: see ``src/atmos_param/rrtm_radiation``
+* Two-stream gray radiation: see ``src/atmos_param/two_stream_gray_rad``
 
 References
 ----------
@@ -194,4 +206,4 @@ References
 
 Authors
 -------
-This documentation was written by Qun Liu, peer reviewed by X, and quality controlled by X.
+This documentation was written by Qun Liu (thanks to Stephen's P/R of Socrates), peer reviewed by Stephen Thomson, and quality controlled by Ruth Geen.
