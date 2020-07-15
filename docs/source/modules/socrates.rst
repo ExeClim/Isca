@@ -173,9 +173,9 @@ Diagnostics from Socrates are under module name ``socrates``. Major outputs incl
 +--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
 |``soc_coszen``            | Socrates cosine (zenith_angle)                      | None                | (lat, lon)                     |
 +--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
-|``soc_co2``               | Socrates CO2 concentration (mass mixing ratio)      | kg kg :math:`^{-1}` | (lat, lon)                     |
+|``soc_co2``               | Socrates CO2 concentration (mass mixing ratio)      | kg kg :math:`^{-1}` | (pfull, lat,lon)               |
 +--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
-|``soc_ozone``             | Socrates ozone concentration (mass mixing ratio)    | kg kg :math:`^{-1}` | (lat, lon)                     |
+|``soc_ozone``             | Socrates ozone concentration (mass mixing ratio)    | kg kg :math:`^{-1}` | (pfull, lat,lon)               |
 +--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
 |``soc_spectral_olr``      | Socrates substellar OLR spectrum                    | Wm :math:`^{-2}`    | (socrates_lw_bins, lat, lon)   |
 +--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
