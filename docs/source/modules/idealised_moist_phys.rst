@@ -28,7 +28,7 @@ The fortran file is found in ``Isca/src/atmos_spectral/driver/solo/idealized_moi
 
 Namelist options
 ----------------
-This module controls a large number of switches for different options. Defaults are generally set to ``False`` to avoid accidental use of modules, but this is unlikely to be a useful configuration! For examples of how parameters are set to achieve different model configurations, see the test cases in ``Isca/exp/test_cases/``.
+This module controls a large number of switches for different options. Defaults are generally set to ``False`` to avoid accidental use of modules, but this is unlikely to be a useful configuration! For examples of how parameters are set to achieve different model configurations, see the test cases in ``Isca/exp/test_cases/``. Information on what each module does can be found under their documentation.
 
 Humidity, Condensation and Convection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
