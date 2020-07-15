@@ -15,9 +15,9 @@ Simplifying Logins and Port Fowarding
 If you use a Unix-based operating system on your personal computer, you can make use
 of an SSH config file to create shortcuts to your frequently used remote computers. We will take this one step further to simplify port-fowarding, a method which allows a user to redirect data from a specified remote host and port, through a secure tunnel, to a specified local port. Port-fowarding is helfpul because it will enable us to edit remote files locally.
 
-As an example without any fancy tricks, let's set up an SSH tunnel that maps ``localhost`` port 3039 on my local machine to 8450 on my remote machine (the number is arbitrary as long as its between 1024 and 49150): ``$ ssh -l localhost:3039:host:8450 user@host``. You will then be required to enter in your password. This is cumbersome to repeat everytime we log in. Our goal will be to shorten the command to : ``$ ssh hostalias`` and without having to enter in your password. We give some instructions below:
+As an example without any fancy tricks, let's set up an SSH tunnel that maps ``localhost`` port 3039 on my local machine to 3039 on my remote machine (the number is arbitrary as long as its between 1024 and 49150): ``$ ssh -l localhost:3039:host:3039 user@host``. You will then be required to enter in your password. This is cumbersome to repeat everytime we log in. Our goal will be to shorten the command to : ``$ ssh hostalias`` and without having to enter in your password. We give some instructions below:
 
-**1.** In the home directory of your **local machine**, create a new directory called ``.ssh`` if it does not already exist. Navigate to this directory and create file called ``config``.
+**1.**   In the home directory of your **local machine**, create a new directory called ``.ssh`` if it does not already exist. Navigate to this directory            and create file called ``config``.
 Put in the following contents (making sure to replace the text surrounded by ``**double astericks**`` with your own information)::
 
    Host **hostalias**
@@ -35,31 +35,25 @@ key strictly on your local machine. You need to copy your public key to the remo
 
    Hostname **hostname**
       User **username**
-      LocalForward 8450 localhost:3039
+      LocalForward 3039 localhost:3039
       IdentityFile **~/.ssh/id_rsa_hostname**
       UseKeychain yes
       AddKeysToAgent Yes
 
-Congratulations!
+You should not be able to log in simply by typing ``$ ssh hostalias``. Congratulations! 
 
 
 Edit Remote Files Locally
 -------------------------
 As an alternative to remote-based text editors such as ``vi`` and ``emacs``, we can
-use port-fowarding to set up a local-based text editor like ``Atom`` which includes
-features such as syntax highlighting and code completion.
+use port-fowarding to set up a `local-based text editor like Atom <https://atom.io>`_ which includes features such as syntax highlighting and code completion. For additional instruction go to the ``rmate`` `homepage on Github <https://github.com/textmate/rmate>`_. To specifically use Atom to edit remote files, `click here <https://atom.io/packages/remote-atom>`_.
+
 
 Edit Remote python Files in a ``jupyter`` Environment
 -----------------------------------------------------
 The ``jupyter`` environment is a great environent for data exploration and integrating
-your figures inline with your code.
+your figures inline with your code. To open your first Jupyter notebook, log in to your **remote machine** and type: ``$ jupyter lab --no-browser --port=3039``. This should function because of all the work we put in during the port forwarding section. To shorten this command, add an alias to your ``~/.bashrc`` file on your **remote machine**. I personally use the alias ``rjlab``
 
-
-References
+Authors
 ----------
-..
-   Add relevant references. This is done in 2 steps:
-   1. Add the reference itself to docs/source/references.rst
-   2. Insert the citation key here, e.g. [Vallis2017]_
-   
-   See the Contributing guide for more info.
+This documentation was written by Brett McKim, peer reviewed by Dennis Sergeev, and quality controlled by Ross Castle.
