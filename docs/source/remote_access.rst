@@ -1,7 +1,7 @@
 Remote Access
 ==============
 
-Summary
+Overview
 -------
 This is a guide for how to edit remote files on a local text editor via port-
 fowarding. By the end you should know: 
