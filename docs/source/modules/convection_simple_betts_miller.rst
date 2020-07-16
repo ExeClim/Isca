@@ -12,7 +12,7 @@ Logic of the routine
 
 1. Perform a particle ascent to calculate the environmental vertical profiles of moisture and temperature, and convective available potential energy (CAPE) within a grid cell.
 
-2. Test if the convection scheme should trigger. The convection scheme will trigger when :math:`CAPE>0`. This means that if the grid point, as positive CAPE, then the convention scheme will try and rain. If the CAPE is negative, then a parcel will not be buoyant and so convection will not occur. The code will then move onto the next grid point.
+2. Test if the convection scheme should trigger. The convection scheme will trigger when :math:`CAPE>0`. This means that if the grid point has positive CAPE, then the convention scheme will try to generate rain. If the CAPE is negative, then a parcel will not be buoyant and convection can not occur. 
 
 3. Calculate the temperature (:math:`T_{ref}`) and moisture reference profiles (:math:`q_{ref}`). Think of these profiles as the desirable parcel properties for the atmosphere to be stable (with respect to convection).
 
