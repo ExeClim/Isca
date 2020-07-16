@@ -4,7 +4,7 @@ Convection scheme: Simple Betts-Miller
 
 Summary
 -------
-The simplified Betts-Miller (SBM) scheme is a moist adjustment convection scheme developed by [Frierson2007]_ and the modifications described in [OGormanSchneider2008]_. The simpleBetts-Miller is a widely-used convection scheme in Isca. The key purpose of the routine is to output a moisture tendency ``deltaq``, a temperature tendency ``deltaT``, and a convective rainfall amount ``rain``. The scheme has both deep convection and non-precipitating shallow convection.
+The simplified Betts-Miller (SBM) scheme is a moist adjustment convection scheme developed by [Frierson2007]_ and the modifications described in [OGormanSchneider2008]_. The simple Betts-Miller scheme is a widely-used convection scheme in Isca. The key purpose of the routine is to output a moisture tendency ``deltaq``, a temperature tendency ``deltaT``, and a convective rainfall amount ``rain``. The scheme has both deep convection and non-precipitating shallow convection.
 
 
 Logic of the routine
