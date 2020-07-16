@@ -395,6 +395,7 @@ Relevant modules and subroutines
 --------------------------------
 
 Modules relevant to this one include: 
+
 :astronomy_mod: Module that performs astronomical calcuations used for insolation. 
 :mixed_layer_mod: Surface albedo is set here. This is also where the surface temperature is updated. 
 :surface_flux_mod: An internal heat flux for giant planets can be set here. 
@@ -402,6 +403,7 @@ Modules relevant to this one include:
 
 
 Other radiative transfer schemes are included in the following modules:
+
 :rrtm_radiation: Correlated-:math:`k` scheme tuned for Earth-like applications. 
 :socrates_interface_mod: Interface for flexible Met-Office correlated-:math:`k` scheme used for Earth-like and exoplanetary atmospheres. 
 
