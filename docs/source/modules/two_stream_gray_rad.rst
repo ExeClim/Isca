@@ -376,7 +376,7 @@ These are the diagnostics associated with the ``two_stream_gray_rad`` module.
 | fracsun           | Daylight fraction of time           | none                               |
 |                   | interval.                           |                                    |
 +-------------------+-------------------------------------+------------------------------------+
-| co2               | Carbon dioxide concentration.       | :math:`\text{ppmv`                 |
+| co2               | Carbon dioxide concentration.       | :math:`\text{ppmv}`                |
 +-------------------+-------------------------------------+------------------------------------+
 | lw_dtrans         | Longwave (non-window)               | none                               |
 |                   | transmission.                       |                                    |
