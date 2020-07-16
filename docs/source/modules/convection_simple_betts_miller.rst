@@ -12,7 +12,7 @@ Logic of the routine
 
 1. Perform a particle ascent to calculate the environmental vertical profiles of moisture and temperature, and convective available potential energy (CAPE) within a grid cell.
 
-2. Test if the convection scheme should trigger. The trigger is: :math:`CAPE>0`.
+2. Test if the convection scheme should trigger. The convection scheme will trigger when :math:`CAPE>0`. This means that if the grid point, as positive CAPE, then the convention scheme will try and rain. If the CAPE is negative, then a parcel will not be buoyant and so convection will not occur. The code will then move onto the next grid point.
 
 3. Calculate the temperature (:math:`T_{ref}`) and moisture reference profiles (:math:`q_{ref}`). Think of these profiles as the desirable parcel properties for the atmosphere to be stable (with respect to convection).
 
@@ -28,7 +28,7 @@ These profiles are called *first guess* profiles as they will later be corrected
 
 6. If deep or shallow convection occurs, test if the vertical integral of enthalpy (:math:`H`) is conserved (it usually is not) and adjust the rainfall and tendencies to conserve enthalpy. Note that :math:`\partial H = -\partial T + \frac{L}{cp}\partial q`.
 
-7. The final rainfall amount is given by the enthaly corrected vertical integral of the moisture tendency. The updated tendencies (no longer called *first-guess*) and rainfall are then passed back to ``idealized_moist_phys.F90`` along with other diagnostics.
+7. The final rainfall amount is given by the enthalpy corrected vertical integral of the moisture tendency. The updated tendencies (no longer called *first-guess*) and rainfall are then passed back to ``idealized_moist_phys.F90`` along with other diagnostics.
 
 
 Namelist options
@@ -71,7 +71,7 @@ The diagnostics are not sent out within the call to convection but are sent out 
 Relevant modules and subroutines
 --------------------------------
 
-The convection scheme is located in: ``src/atmos_param/qe_moist_convection/qe_moist_convection.F90``. The files name reflects this style of a quasi-equilibirum (qe) convection scheme (for more information on convective quasi-equilibirum see [YanoPlant2016]_).
+The convection scheme is located in: ``src/atmos_param/qe_moist_convection/qe_moist_convection.F90``. The files name reflects this style of a quasi-equilibrium (qe) convection scheme (for more information on convective quasi-equilibrium see [YanoPlant2016]_).
 
 The simple Betts-Miller scheme is initialised and called by: ``/src/atmos_spectral/driver/solo/idealized_moist_phys.F90``.
 
@@ -83,13 +83,9 @@ Relevant routines which are called by the convection scheme are:
 References
 ----------
 
-[Frierson2007]_
-[Betts1986]_
-[BettsMiller1986]_
-[YanoPlant2016]_
-[OGormanSchneider2008]_
+The reference list within this docs page are: [Frierson2007]_, [Betts1986]_, [BettsMiller1986]_, [YanoPlant2016]_, and [OGormanSchneider2008]_.
 
 Authors
 ----------
 
-This documentation was written by Penelope Maher, peer reviewed by Denis Sergeev , and quality controlled by Ross Castle.
+This documentation was written by Penelope Maher, peer reviewed by Denis Sergeev, and quality controlled by Ross Castle.
