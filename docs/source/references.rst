@@ -1,13 +1,37 @@
 References
 ==========
 
+.. [Betts1986] Betts, A. K., 1986:
+           A new convective adjustment scheme. Part I: Observational and theoretical basis.
+           *Quarterly Journal of the Royal Meteorological Society*,
+           **112(473)**, 677--691,
+           doi: `10.1002/qj.49711247307 <http://dx.doi.org/10.1002/qj.49711247307>`_.
+
+.. [BettsMiller1986] Betts, A. K. and Miller, M. J., 1986:
+           A new convective adjustment scheme. Part II: Single column tests using GATE wave, BOMEX, ATEX and arctic air-mass data sets.
+           *Quarterly Journal of the Royal Meteorological Society*,
+           **112(473)**, 693--709,
+           doi: `10.1002/qj.49711247308 <http://dx.doi.org/10.1002/qj.49711247308>`_.
+           
 .. [Byrne2013] Byrne, M. P. and O’Gorman, P. A., 2013: Land–ocean warming contrast over a wide range of climates: Convective quasi-equilibrium the- ory and idealized simulations, *J. Climate*, **26**, doi.
 
 .. [Frierson2006a] Frierson, D. M. W., Held, I. M., and Zurita-Gotor, P., 2006: A Gray Radi- ation Aquaplanet Moist GCM, Part
                 1: Static Stability and Eddy Scales, *J. Atmos. Sci.*, **63**, 2548–2566, doi.
 
+.. [Frierson2007] Frierson, D, 2007:
+           The Dynamics of Idealized Convection Schemes and Their Effect on the Zonally Averaged Tropical Circulation.
+           *Journal of the Atmospheric Sciences*,
+           **64(6)**, 1959--1976,
+           doi: `10.1175/JAS3935.1 <https://journals.ametsoc.org/jas/article/64/6/1959/103620/The-Dynamics-of-Idealized-Convection-Schemes-and>`_.
+
 .. [Geen2016] Geen, R., Czaja, A., and Haigh, J. D., 2016: The effects of increasing humidity on heat transport by 
               extratropical waves, *Geophys. Res. Lett.*, **43**, 8314–8321, doi.
+
+.. [OGormanSchneider2008] O'Gorman, P. and Schneider, T., 2008:
+           The Hydrological Cycle over a Wide Range of Climates Simulated with an Idealized GCM.
+           *Journal of Climate*,
+           **21(15)**, 3815--3832,
+           doi: `10.1175/2007JCLI2065.1 <http://dx.doi.org/10.1175/2007JCLI2065.1>`_.
 
 .. [Ricchiazzi1998] Ricchiazzi, P., Yang, S., Gautier, C., and Sowle, D., 1998: SBDART: A research and teaching 
                 software tool for plane-parallel radiative transfer in the Earth’s atmosphere, 
@@ -24,4 +48,13 @@ References
            Maher, P. and Paterson, A. and Pietschnig, M. and Penn, J. and Thomson, S. I., 2018:
            Isca, v1.0: a framework for the global modelling of the atmospheres of Earth and 
            other planets at varying levels of complexity. *Geoscientific Model Development*,
-           **11(3)**, 843-859, doi: `10.5194/gmd-11-843-2018 <https://doi.org/10.5194/gmd-11-843-2018>`_.
+           **11(3)**, 843-859,
+           doi: `10.5194/gmd-11-843-2018 <https://doi.org/10.5194/gmd-11-843-2018>`_.
+
+.. [YanoPlant2016] Yano, J. and Plant, R., 2016:
+           Generalized convective quasi-equilibrium principle.
+           *Dynamics of Atmospheres and Oceans*,
+           **73**, 10--33,
+           doi: `10.1016/j.dynatmoce.2015.11.001 <https://doi.org/10.1016/j.dynatmoce.2015.11.001>`_.
+
+
