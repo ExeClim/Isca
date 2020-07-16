@@ -1,10 +1,10 @@
-Convection scheme: Simple Betts--Miller
+Convection scheme: Simple Betts-Miller
 =================================
 
 
 Summary
 -------
-The simplified Betts--Miller (SBM) scheme is a moist adjustment convection scheme developed by [Frierson2007]_ and the modifications described in [OGormanSchneider2008]_. The SBM scheme is Isca's default convection scheme. The key purpose of the routine is to output a moisture tendency ``deltaq``, a temperature tendency ``deltaT``, and a convective raincall amount ``rain``. The scheme has both deep convection and non-precipitating shallow convection.
+The simplified Betts-Miller (SBM) scheme is a moist adjustment convection scheme developed by [Frierson2007]_ and the modifications described in [OGormanSchneider2008]_. The SBM scheme is Isca's default convection scheme. The key purpose of the routine is to output a moisture tendency ``deltaq``, a temperature tendency ``deltaT``, and a convective rainfall amount ``rain``. The scheme has both deep convection and non-precipitating shallow convection.
 
 
 Logic of the routine
@@ -50,7 +50,7 @@ The final three are used to construct the look up table for calculating the lift
 
 Diagnostics
 -----------
-The diagnostics are not sent out within the call to convection but are sent out from ``idealized_moist_phys.F90`` with the module name ``atmosphere``. The diagnostics relevant to the simple Betts--Miller scheme are in the table below.
+The diagnostics are not sent out within the call to convection but are sent out from ``idealized_moist_phys.F90`` with the module name ``atmosphere``. The diagnostics relevant to the simple Betts-Miller scheme are in the table below.
 
 +-------------------+----------------------------+------------------------------------+
 | Name              | Description                | Units                              |
@@ -73,7 +73,7 @@ Relevant modules and subroutines
 
 The convection scheme is located in: ``src/atmos_param/qe_moist_convection/qe_moist_convection.F90``. The files name reflects this style of a quasi-equilibirum (qe) convection scheme (for more information on convective quasi-equilibirum see [YanoPlant2016]_).
 
-The simple Betts--Miller scheme is initialised and called by: ``/src/atmos_spectral/driver/solo/idealized_moist_phys.F90``.
+The simple Betts-Miller scheme is initialised and called by: ``/src/atmos_spectral/driver/solo/idealized_moist_phys.F90``.
 
 Relevant routines which are called by the convection scheme are:
 ``src/shared/sat_vapor_pres/sat_vapor_pres.F90``.
