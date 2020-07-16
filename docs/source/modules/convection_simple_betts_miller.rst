@@ -10,7 +10,7 @@ The simplified Betts-Miller (SBM) scheme is a moist adjustment convection scheme
 Logic of the routine
 -------
 
-1. Perform a particle ascent to calculating the environmental vertical profiles of moisture and temperature, and convective available potential energy (CAPE) within a grid cell.
+1. Perform a particle ascent to calculate the environmental vertical profiles of moisture and temperature, and convective available potential energy (CAPE) within a grid cell.
 
 2. Test if the convection scheme should trigger. The trigger is: :math:`CAPE>0`.
 
@@ -55,16 +55,16 @@ The diagnostics are not sent out within the call to convection but are sent out 
 +-------------------+----------------------------+------------------------------------+
 | Name              | Description                | Units                              |
 +===================+============================+====================================+
-| dt_qg_convection  | Moisture tendency          |:math:`kgkg^{-1}s^{-1}`             |
+| dt_qg_convection  | Moisture tendency          |:math:`kg~kg^{-1}~s^{-1}`           |
 +-------------------+----------------------------+------------------------------------+
-| dt_qg_convection  | Temperature tendency       |:math:`Ks^{-1}`                     |
+| dt_qg_convection  | Temperature tendency       |:math:`K~s^{-1}`                    |
 +-------------------+----------------------------+------------------------------------+
-| convection_rain   | Convective precipitation   |:math:`kgm^{-2}s^{-1}`              |
+| convection_rain   | Convective precipitation   |:math:`kg~m^{-2}~s^{-1}`            |
 +-------------------+----------------------------+------------------------------------+
-| cape              | Convective available       |:math:`Jkg^{-1}`                    |
+| cape              | Convective available       |:math:`J~kg^{-1}`                   |
 |                   | potential energy           |                                    |
 +-------------------+----------------------------+------------------------------------+
-| cin               | Convective inhibition      |:math:`Jkg^{-1}`                    |
+| cin               | Convective inhibition      |:math:`J~kg^{-1}`                   |
 +-------------------+----------------------------+------------------------------------+
 
 
