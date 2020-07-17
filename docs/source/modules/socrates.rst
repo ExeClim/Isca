@@ -4,14 +4,14 @@ SOCRATES Radiation Scheme Interface
 
 Summary
 -------
-.. This summary is modified from Stephen Thomson's P/R for Socrates: <https://github.com/ExeClim/Isca/pull/61>
+.. This summary is modified from Stephen Thomson's PR for Socrates: <https://github.com/ExeClim/Isca/pull/61>
 
 SOCRATES (Suite Of Community RAdiative Transfer codes based on Edwards and Slingo) is the radiation scheme used by UK Met Office for Earth and planetary science [MannersEtAl2015]_, which has many significant advantages over RRTM, notably its flexibility in terms of atmospheric composition and the spectral properties of the radiation scheme (e.g. number of bands, etc).
 
 * The code used to integrate Socrates into Isca is contained within the folder ``src/atmos_params/socrates/interface``.
 * The Socrates source code itself is **NOT** packed within this Isca repository, and **NEW** users will need to download it from the `Met Office Science Repository <https://code.metoffice.gov.uk/trac/socrates>`_. Users can then either choose to put the Socrates code within the directory ``src/atmos_params/socrates/src/trunk``, or can set the bash environment variable ``GFDL_SOC`` equal to the location of the source code for Socrates. Detailed instructions on how to do this are included in the `README.md <https://github.com/ExeClim/Isca/blob/master/exp/test_cases/socrates_test/README.md>`_ for the Socrates test-case: ``exp/test_cases/socrates_test/README.md``.
 * The basis of ``socrates_interface`` was coded by Mark Hammond (Univ. of Oxford) and James Manners (Met Office) and modified by Stephen Thomson (Univ. of Exeter) [Thomson_and_Vallis2019]_. Features added include seasonality in the radiation based on Isca's ``astronomy`` package, and the ability to use a ``radiation timestep != atmospheric timestep``.
-* Socrates radiation scheme requires ``mass-mixing`` ratios (mmr) for all quantities (e.g. CO2, water vapour etc). This contrasts with RRTM, which wants ``volume-mixing`` ratios (vmr).
+* Socrates radiation scheme requires ``mass mixing ratios`` for all quantities (e.g. CO2, water vapor etc). This contrasts with RRTM, which wants ``volume mixing ratios``.
 
 
 Namelist options
@@ -27,13 +27,14 @@ Here are some options to set incoming radiation:
 +----------------------------+----------+-----------------------------------------------------------------------------------------+
 | Name                       | Default  | Description                                                                             |
 +============================+==========+=========================================================================================+
-|``solday``                  | 0        | If >0, do perpetual run corresponding to day of the year = solday in [0, days per year] |
+|``solday``                  | 0        | If ``solday>0``, do perpetual run corresponding to day of the year = solday in          |
+|                            |          | [0, days per year]                                                                      |
 +----------------------------+----------+-----------------------------------------------------------------------------------------+
 |``do_rad_time_avg``         | True     | Average ``coszen`` for shortwave radiation over ``dt_rad``                              |
 +----------------------------+----------+-----------------------------------------------------------------------------------------+
-|``equinox_day``             | 0.75     | Fraction of the year defining NH autumn equinox in [0, 1]                               |
+|``equinox_day``             | 0.75     | Fraction of the year defining NH autumn equinox in ``[0, 1]``                           |
 +----------------------------+----------+-----------------------------------------------------------------------------------------+
-|``stellar_constant``        | 1368.22  | :math:`Wm^{-2}`, solar constant, consistent with RRTM default                           |
+|``stellar_constant``        | 1368.22  | solar constant (units: Wm :math:`^{-2}`), consistent with RRTM default                  |
 +----------------------------+----------+-----------------------------------------------------------------------------------------+
 |``tidally_locked``          | False    | Tidally locked or not                                                                   |
 +----------------------------+----------+-----------------------------------------------------------------------------------------+
@@ -53,7 +54,7 @@ The following namelist variables set radiation time stepping and spatial samplin
 +============================+==========+=========================================================================================================+
 | ``dt_rad``                 | 0        | Radiation timestep - every step if ``dt_rad<dt_atmos``                                                  |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``store_intermediate_rad`` | True     | Keep rad constant over entire dt_rad? (recommended)                                                     |
+| ``store_intermediate_rad`` | True     | Keep rad constant over entire ``dt_rad``? (recommended)                                                 |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 | ``dt_rad_avg``             | -1       | If averaging, over what time? ``dt_rad_avg=dt_rad`` if ``dt_rad_avg<=0``                                |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
@@ -74,24 +75,23 @@ or here if you have set ``GFDL_SOC`` as an environment variable:
   $GFDL_SOC/data/spectra/ga7/sp_lw_ga7 for the longwave
   $GFDL_SOC/data/spectra/ga7/sp_sw_ga7 for the shortwave
 
-+--------------------------------+---------------+-----------------------------------------------------+
-| Name                           | Default       | Description                                         |
-+================================+===============+=====================================================+
-| ``socrates_hires_mode``        | False         | If false then run in 'GCM mode', and                |
-|                                |               | if true then usehigh-res spectral file              |
-+--------------------------------+---------------+-----------------------------------------------------+
-| ``lw_hires_spectral_filename`` | 'unset'       |                                                     |
-+--------------------------------+---------------+-----------------------------------------------------+
-| ``sw_hires_spectral_filename`` | 'unset'       |                                                     |
-+--------------------------------+---------------+-----------------------------------------------------+
-| ``lw_spectral_filename``       | 'unset'       | Longwave spectral file, which can be found at       |
-|                                |               | Socrates source code ``data`` directory (e.g.       |
-|                                |               | ``data/spectra/ga7/sp_lw_ga7``) or self-generated   |
-+--------------------------------+---------------+-----------------------------------------------------+
-| ``sw_spectral_filename``       | 'unset'       | Shortwave spectral file, which can be found at      |
-|                                |               | Socrates source code ``data`` directory (e.g.       |
-|                                |               | ``data/spectra/ga7/sp_sw_ga7``) or self-generated   |
-+--------------------------------+---------------+-----------------------------------------------------+
++--------------------------------+----------+----------------------------------------------------------------------------+
+| Name                           | Default  | Description                                                                |
++================================+==========+============================================================================+
+| ``socrates_hires_mode``        | False    | If ``False`` then run in 'GCM mode', and                                   |
+|                                |          | if ``True`` then use high-res spectral file                                |
++--------------------------------+----------+----------------------------------------------------------------------------+
+| ``lw_spectral_filename``       | 'unset'  | Longwave spectral file, which can be found at Socrates source code         |
+|                                |          | ``data`` directory (e.g. ``data/spectra/ga7/sp_lw_ga7``) or self-generated |
++--------------------------------+----------+----------------------------------------------------------------------------+
+| ``sw_spectral_filename``       | 'unset'  | Shortwave spectral file, which can be found at Socrates source code        |
+|                                |          | ``data`` directory (e.g. ``data/spectra/ga7/sp_sw_ga7``) or self-generated |
++--------------------------------+----------+----------------------------------------------------------------------------+
+| ``lw_hires_spectral_filename`` | 'unset'  | High-res longwave spectral file if ``socrates_hires_mode`` is ``True``     |
++--------------------------------+----------+----------------------------------------------------------------------------+
+| ``sw_hires_spectral_filename`` | 'unset'  | High-res shortwave spectral file if ``socrates_hires_mode`` is ``True``    |
++--------------------------------+----------+----------------------------------------------------------------------------+
+
 
 CO2, ozone and other gases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -113,30 +113,30 @@ In addition, you need to set their concentrations by specifing them directly or 
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
 | Name                              | Default       | Description                                                                 |
 +===================================+===============+=============================================================================+
-| ``account_for_effect_of_water``   | True          | - False: radiation is fed water mixing ratios = 0                           |
-|                                   |               | - True:  radiation is fed mixing ratios based on model specific humidity.   |
+| ``account_for_effect_of_water``   | True          | - ``False``: radiation is fed water mixing ratios = 0                       |
+|                                   |               | - ``True``: radiation is fed mixing ratios based on model specific humidity |
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
-| ``account_for_effect_of_ozone``   | True          | - False: radiation is fed ozone mixing ratios = 0                           |
-|                                   |               | - True:  radiation is fed mixing ratios based on model ozone field          |
+| ``account_for_effect_of_ozone``   | True          | - ``False``: radiation is fed ozone mixing ratios = 0                       |
+|                                   |               | - ``True``: radiation is fed mixing ratios based on model ozone field       |
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
 | ``do_read_co2``                   | False         | - Read CO2 from an external file?                                           |
-|                                   |               | - If true, needs to specify CO2 file and variable names                     |
+|                                   |               | - If ``True``, needs to specify CO2 file and variable names                 |
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
-| ``co2_file_name``                 | 'co2'         | Name of file containing CO2 field - n.b. don't need to include '.nc'        |
+| ``co2_file_name``                 | 'co2'         | Name of file containing CO2 field - n.b. don't need to include ``'.nc'``    |
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
-| ``co2_field_name``                | 'co2'         | Name of CO2 variable in CO2 file                                            |
+| ``co2_field_name``                | 'co2'         | Name of CO2 variable in CO2 file (specified by ``co2_file_name``)           |
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
-| ``input_co2_mmr``                 | False         | - True if the input file contain values as ``mass mixing ratio``            |
-|                                   |               | - False if the input file contain values as ``volume mixing ratio``         |
+| ``input_co2_mmr``                 | False         | - ``True`` if the input file contain values as ``mass mixing ratio``        |
+|                                   |               | - ``False`` if the input file contain values as ``volume mixing ratio``     |
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
 | ``co2_ppmv``                      | 300           | Default CO2 concentration in ``ppmv``                                       |
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
 | ``do_read_ozone``                 | False         | - Read ozone from an external file?                                         |
-|                                   |               | - If true, needs to specify ozone file and variable names                   |
+|                                   |               | - If ``True``, needs to specify ozone file and variable names               |
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
-| ``ozone_file_name``               | 'ozone'       | Name of file containing ozone field - n.b. don't need to include '.nc'      |
+| ``ozone_file_name``               | 'ozone'       | Name of file containing ozone field - n.b. don't need to include ``'.nc'``  |
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
-| ``ozone_field_name``              | 'ozone'       | Name of ozone variable in ozone file                                        |
+| ``ozone_field_name``              | 'ozone'       | Name of ozone variable in ozone file (specified by ``ozone_file_name``)     |
 +-----------------------------------+---------------+-----------------------------------------------------------------------------+
 | ``input_o3_file_is_mmr``          | True          | - ``True`` if the input file contain values as ``mass mixing ratio``        |
 |                                   |               | - ``False`` if the input file contain values as ``volume mixing ratio``     |
@@ -194,7 +194,7 @@ The Socrates radiation scheme is initiatized and called by ``src/atmos_spectral/
 
 The major modules/files under ``src/atmos_param/socrates/interface/`` are:
 
-* ``socrates_interface.F90`` and ``socrates_calc.F90``: The Socrates interface, which initializes/finalizes the Socrates, call subroutines to get inputs, set options for radiation and run core radiaiton code, and output the diagnostics.
+* ``socrates_interface.F90`` and ``socrates_calc.F90``: The Socrates interfaces that initialize/finalize the Socrates, call subroutines to get inputs, set options for radiation and run core radiaiton code, and output the diagnostics.
 * ``socrates_config_mod.f90``: module to set the namelist, including the solar radiation options, time-step, and concentrations of CO2, ozone and other well-mixed gases
 * ``read_control.F90`` and ``set_control.F90``: The Socrates use the ``StrCtrl`` structure to control the switches for core radiaiton code. For example, if you want to include the effects of CO2, you not only need to provide the value of CO2 concentration, but also need to turn on the switch to tell Socrates to calculate its effect: set ``control%l_co2 = .true.``, where ``control`` is a ``StrCtrl`` structure. Basically, all the logical switches are set in these two files.
 * ``set_bound.F90`` and ``set_dimen.F90``: modules to set the boundary fields and dimensions for the radiation code
@@ -212,4 +212,4 @@ References
 
 Authors
 -------
-This documentation was written by Qun Liu (thanks to Stephen's P/R of Socrates), peer reviewed by Stephen Thomson, and quality controlled by Ruth Geen.
+This documentation was written by Qun Liu (thanks to Stephen's PR of Socrates), peer reviewed by Stephen Thomson, and quality controlled by Ruth Geen.
