@@ -14,7 +14,7 @@ There is another module references called ``topo_drag`` however this is not avai
 
 Namelist options
 ----------------
-``trayfric`` - (for Rayleigh friction) damping time in seconds for rayleigh damping momentum in the top model layers, the number of which is specified by ``nlev_rayfric`` (non namelist parameter, automatically determined in code). If ``trayfric`` < 0 then time in days. Default 0.
+``trayfric`` - (for Rayleigh friction) damping time in seconds for Rayleigh damping momentum in the top model layers, the number of which is specified by ``nlev_rayfric`` (non namelist parameter, automatically determined in code). If ``trayfric`` < 0 then time in days. Default 0.
 
 ``do_rayleigh`` - On/Off switch for doing Rayleigh friction. Default False
 
@@ -34,7 +34,7 @@ Namelist options
 
 ``const_drag_off`` - (for constant drag) Parameter for adjusting drag (Offset?). Default 0.
 
-For a typical idealized Earth set up there is no parameterised gravity wave drag and rayleigh damping is only needed to keep the model stable. The namelist would then look like: 
+For a typical idealized Earth set up there is no parameterised gravity wave drag and Rayleigh damping is only needed to keep the model stable. The namelist would then look like: 
 ``'do_rayleigh': True,
 'trayfric': -0.25,
 'sponge_pbottom':  5000.,
@@ -119,13 +119,13 @@ The code is split into 4 subroutines; ``damping_driver``, ``damping_driver_init`
 
 **Rayleigh Drag**
 
-Located in the ``rayleigh`` subroutine. This code damps the momentum tomward zero in the upper model levels specified. The zonal/meridional tendency for each grid is calculated my multiplying the zonal/meridional velocity by a factor determined by the pressure and rayleigh parameters. The higher the wind velocity, the more the damping.
+Located in the ``rayleigh`` subroutine. This code damps the momentum toward zero in the upper model levels specified. The zonal/meridional tendency for each grid is calculated my multiplying the zonal/meridional velocity by a factor determined by the pressure and Rayleigh parameters. The higher the wind velocity, the more the damping.
 
 The temperature tendency is calculated using the wind velocities, wind tendencies and the heat capacity of air.
 
 **Constant Drag**
 
-Located in the ``damping_driver`` subroutine. This is modeled on Alexander-Dunkerton winter average, it uses a 3rd order polynomial and the constant drag parameters to caclulate a time invariant drag. Earth use only recommended. 
+Located in the ``damping_driver`` subroutine. This is modelled on Alexander-Dunkerton winter average, it uses a 3rd order polynomial and the constant drag parameters to calculate a time invariant drag. Earth use only recommended. 
 
 
 References
@@ -136,4 +136,4 @@ Orographic Gravity Wave Drag (mg_drag) [Alexander1999]_
    
 Authors
 -------
-This documentation was written by Ross Castle, peer reviewed by Stephen Thompson, and quality controlled by Matthew Henry.
+This documentation was written by Ross Castle, peer reviewed by Stephen Thomson, and quality controlled by Matthew Henry.
