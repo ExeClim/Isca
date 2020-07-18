@@ -1,16 +1,18 @@
-damping_driver.f90
+Damping Driver
 ======================
 
 Summary
 -------
-The ``damping driver`` module is called by the ``idealized_moist_phys`` module by setting ``do_damping`` to true. It controls the upper level momentum damping in Isca. It controls 4 functions:
+The ``damping_driver`` module is called by the ``idealized_moist_phys`` module by setting ``do_damping`` to true. It controls the upper level momentum damping in Isca. It controls 4 optional functions:
 
-1. **Rayleigh friction** which acts at levels ``1 to kbot``. This function is located in ``damping_driver`` itself.
-2. A (orographic) **mountain gravity wave drag** module may be called. This is the ``mg_drag`` module.
-3. A (non orographic) **convective gravity wave drag** module may be called. This is the ``cg_drag`` module.
+1. **Rayleigh friction** which acts at levels ``1`` to ``kbot``. This function is located in ``damping_driver`` itself.
+2. A (orographic) **mountain gravity wave drag** module (``mg_drag``) may be called.
+3. A (non orographic) **convective gravity wave drag** module (``cg_drag``) may be called.
 4. A **time independent drag** may be called. This function is located in ``damping_driver`` itself.
 
-There is another module references called ``topo_drag`` however this is not available in Isca at present. 
+Another module (``topo_drag``) is referenced in the code, but is not available in Isca at present.
+
+It is located at: ``Isca/src/atmos_param/damping_driver/damping_driver.f90``
 
 Namelist options
 ----------------
@@ -20,7 +22,7 @@ Namelist options
 
 ``sponge_pbottom`` - (for Rayleigh friction) used to calculate ``nlev_rayfric``, it specifies the bottom level where the Rayleigh friction starts. Default 50Pa.
 
-``do_cg_drag`` - On/Off switch for doing mountain gravity wave drag. Default False
+``do_cg_drag`` - On/Off switch for doing mountain gravity wave drag. Default False.
 
 ``do_topo_drag`` - On/Off switch for doing the topo_drag module which is currently unavailable. Default False. 
 
@@ -30,15 +32,15 @@ Namelist options
 
 ``do_const_drag`` - On/Off switch for doing the constant drag. Default False.
 
-``const_drag_amp`` - (for constant drag) Parameter for adjusting drag (Amplitude?). Default 3.e-04.
+``const_drag_amp`` - (for constant drag) Parameter for adjusting drag. Default 3.e-04.
 
-``const_drag_off`` - (for constant drag) Parameter for adjusting drag (Offset?). Default 0.
+``const_drag_off`` - (for constant drag) Parameter for adjusting drag. Default 0.
 
 For a typical idealized Earth set up there is no parameterised gravity wave drag and Rayleigh damping is only needed to keep the model stable. The namelist would then look like: 
-``'do_rayleigh': True,
-'trayfric': -0.25,
-'sponge_pbottom':  5000.,
-'do_conserve_energy': True``
+    ``'do_rayleigh': True,
+    'trayfric': -0.25,
+    'sponge_pbottom':  5000.,
+    'do_conserve_energy': True``
 
 Diagnostics
 -----------
@@ -115,17 +117,17 @@ Note: These are not currently available
 
 Relevant modules and subroutines
 --------------------------------
-The code is split into 4 subroutines; ``damping_driver``, ``damping_driver_init``, ``damping_driver_end`` and ``rayleigh``. The ``_init`` and ``_end`` subroutines are for initializing and closing the module. The majority of the ``damping driver`` code is just a switchboard with the exeption of the Rayleigh and constant drag calculations. The calculations for the other drag schemes are given in their own documentation.
+The code is split into 4 subroutines; ``damping_driver``, ``damping_driver_init``, ``damping_driver_end`` and ``rayleigh``. The ``_init`` and ``_end`` subroutines are for initializing and closing the module. The majority of the ``damping driver`` code is just a switchboard with the exception of the Rayleigh and constant drag calculations. The calculations for the other drag schemes are given in their own documentation.
 
 **Rayleigh Drag**
 
-Located in the ``rayleigh`` subroutine. This code damps the momentum toward zero in the upper model levels specified. The zonal/meridional tendency for each grid is calculated my multiplying the zonal/meridional velocity by a factor determined by the pressure and Rayleigh parameters. The higher the wind velocity, the more the damping.
+Located in the ``rayleigh`` subroutine. This code damps the momentum toward zero in the specified upper model levels. The zonal/meridional tendency for each grid cell is calculated my multiplying the zonal/meridional velocity by a factor determined by the pressure and Rayleigh parameters. The damping is therefor proportional to the wind velocity.
 
-The temperature tendency is calculated using the wind velocities, wind tendencies and the heat capacity of air.
+The temperature tendency is calculated using the wind velocities, wind tendencies, and the heat capacity of air.
 
 **Constant Drag**
 
-Located in the ``damping_driver`` subroutine. This is modelled on Alexander-Dunkerton winter average, it uses a 3rd order polynomial and the constant drag parameters to calculate a time invariant drag. Earth use only recommended. 
+Located in the ``damping_driver`` subroutine. This is modelled on Alexander-Dunkerton winter average, it uses a 3rd order polynomial and the constant drag parameters to calculate a time invariant drag. This set up is modelled on Earth's atmosphere and therefore not recommended for other planets. 
 
 
 References
