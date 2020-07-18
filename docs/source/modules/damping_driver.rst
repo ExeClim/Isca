@@ -5,7 +5,7 @@ Summary
 -------
 The ``damping_driver`` module is called by the ``idealized_moist_phys`` module by setting ``do_damping`` to true. It controls the upper level momentum damping in Isca. It controls 4 optional functions:
 
-1. **Rayleigh friction** which acts at levels ``1`` to ``kbot``. This function is located in ``damping_driver`` itself.
+1. **Rayleigh friction** which acts on levels ``1`` to ``kbot``. This function is located in ``damping_driver`` itself.
 2. A (orographic) **mountain gravity wave drag** module (``mg_drag``) may be called.
 3. A (non orographic) **convective gravity wave drag** module (``cg_drag``) may be called.
 4. A **time independent drag** may be called. This function is located in ``damping_driver`` itself.
