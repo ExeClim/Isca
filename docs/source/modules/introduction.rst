@@ -1,10 +1,11 @@
-Introduction to running your own Isca experiment.
+Experiment configuration scripts
 ==============
 
 Summary
 -------
-Once you have managed to run a test case (see ReadMe), you may want to run your own experiment.
-Find the test case in ``Isca/exp/test_cases`` that most resembles your experiment, copy and modify it. We describe the important lines below.
+Once you have managed to run a test case, you may want to run your own experiment. The model configuration, diagnostics, and simulation parameters
+of your experiment can be configured with a python-based run script.
+Find the test case in ``Isca/exp/test_cases`` that most resembles your experiment, copy and modify it. The important lines are described below.
 
 Setup
 -------
@@ -12,7 +13,7 @@ Setup
 
     from isca import DryCodeBase
 imports the Isca python module that should have been installed. 
-``DryCodeBase`` refers to the part of the code needed to run the dry model. This can be replaced by ``IscaCodeBase`` or ``SocratesCodeBase``.
+``DryCodeBase`` refers to the part of the code needed to run the dry model. This can be replaced by ``IscaCodeBase`` or ``SocratesCodeBase`` (provided you setup Socrates, see Socrates documentation).
 
 ::
 
@@ -22,7 +23,9 @@ specifies how many cores should be used when running the model.
 ::
 
     RESOLUTION = T42, 25
-specifies the horizontal (in this case, spectral T42) and vertical (25 pressure levels) resolution. Runs at T42 by default. If the horizontal resolution is changed, make sure the input files (such as land masks) are changed too.
+specifies the horizontal (in this case, spectral T42) and vertical (25 pressure levels) 
+resolution. Runs at T42 by default. If the horizontal resolution is not T42, make sure the 
+input files (such as land masks) are changed and add ``exp.set_resolution(*RESOLUTION)`` after exp is defined.
 
 ::
 
@@ -89,13 +92,13 @@ Output
 -------
 
 Output from the experiment can be found at ``$GFDL_DATA/EXP_NAME``. The atmospheric output is provided on 
-sigma levels where sigma is the pressure normalized by the surface pressure. On an aquaplanet, this makes very little
-difference. If there is topography present (such as in the ``realistic_continents`` test case), you need to interpolate the 
+sigma levels where sigma is the pressure normalized by the surface pressure. For a planet with no topography, sigma and pressure levels are quite similar. 
+If there is topography present (such as in the ``realistic_continents`` test case), you need to interpolate the 
 data onto pressure levels before analyzing it. Top of atmosphere and surface values are not affected, but in-atmosphere values are.
 
 The details and code for interpolation to pressure levels can be found at https://github.com/ExeClim/Isca/tree/master/postprocessing/plevel_interpolation
 
-In the python code, there is a convenient function to calls the interpolation code: https://github.com/ExeClim/Isca/blob/master/src/extra/python/isca/util.py  (line 134).
+In the python code, there is a convenient function which can be used to call the interpolation code: https://github.com/ExeClim/Isca/blob/master/src/extra/python/isca/util.py  (line 134).
 
 For example::
 
@@ -113,4 +116,4 @@ For example::
 Authors
 -------
 
-This documentation was written by Matthew Henry (heavily inspired from document written by Neil Lewis), peer reviewed by X, and quality controlled by X.
+This documentation was written by Matthew Henry (heavily inspired from document written by Neil Lewis), peer reviewed by Will Seviour, and quality controlled by X.
