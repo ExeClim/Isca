@@ -13,7 +13,7 @@ Setup
 
     from isca import DryCodeBase
 imports the Isca python module that should have been installed. 
-``DryCodeBase`` refers to the part of the code needed to run the dry model. This can be replaced by ``IscaCodeBase`` or ``SocratesCodeBase`` (provided you setup Socrates, see Socrates documentation).
+``DryCodeBase`` refers to the part of the code needed to run the dry model. The codebase object is defined in ``Isca/src/extra/python/isca/codebase.py``. The different default codebases are designed to avoid the model compiling un-needed parts of the code, which speeds up compilation. ``DryCodeBase`` can be replaced by ``IscaCodeBase``, ``GreyCodeBase``, or ``SocratesCodeBase`` (provided you setup Socrates, see Socrates documentation).
 
 ::
 
