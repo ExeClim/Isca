@@ -35,7 +35,7 @@ The optional arguments and their defaults are
 ::
     -e 'all' - Runs all test experiments
     -n 4     - Uses 4 cores to run Isca
-    -r 'git@github.com:execlim/Isca' - Uses the online Isca repo to checkout commits from
+    -r 'git@github.com:ExeClim/Isca' - Uses the online Isca repo to checkout commits from
 
 To specify a subset of the test cases, use the ``-e`` option
 ::
@@ -47,7 +47,7 @@ To change the number of cores Isca is run on, use the ``-n`` option.
 ::
     ./trip_test_command_line 155661f ec29bf3 -e 'axisymmetric' 'bucket_model' 'frierson' -n 4
 
-To specify the github repo used for the tests (e.g. your fork rather than ``Execlim/Isca``), use the ``-r`` option
+To specify the github repo used for the tests (e.g. your fork rather than ``ExeClim/Isca``), use the ``-r`` option
 ::
     ./trip_test_command_line 155661f ec29bf3 -e 'axisymmetric' 'bucket_model' 'frierson' -r git@github.com:YOUR_GITHUB_USERNAME/Isca
 
@@ -89,14 +89,14 @@ Produces the following summary output
     giant_planet : pass
     Nightmare, some tests have failed
 
-The bucket test is the only one that fails in this instance. This is because the bucket model formulation was changed between these two commits, and so it is expected that the results with the two commits will differ. However, we note that the other tests have their results unchanged, meaning this is a safe modification to the code, and the PR is likely to be approved. Any unexpected failures should be investigated before submitting a pull-request.
+The bucket test is the only one that fails in this instance. This is because the bucket model formulation was changed between these two commits, and so it is expected that the results with the two commits will differ. However, we note that the other tests have their results unchanged, meaning this is a safe modification to the code, and the pull request is likely to be approved. Any unexpected failures should be investigated before submitting a pull-request.
 
 .. _FAQs:
 
 FAQs
 ----
 
-* **What happens if the trip tests fail for my modifications?** If some of the trip tests fail, please investigate why you think this might be. If the tests fail on an isolated test case that you haven't used before, please post the results in your PR and we can discuss what is best to do. We will accept some PRs that fail the trip tests, but we will need to understand why first.
+* **What happens if the trip tests fail for my modifications?** If some of the trip tests fail, please investigate why you think this might be. If the tests fail on an isolated test case that you haven't used before, please post the results in your pull request and we can discuss what is best to do. We will accept some pull requests that fail the trip tests, but we will need to understand why first.
 
 * **When I submit a pull request, which two commit IDs should I use?** Please use the commit ID of the current HEAD of Isca's master branch as one, and the HEAD of your pull-requested branch as the other. *Please note that in order for this to work, you will have to use the* `-r` *option to select your own fork, as described above.*
 
