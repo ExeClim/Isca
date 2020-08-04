@@ -90,7 +90,7 @@ real, public, parameter :: RHO0R   = 1.0/RHO0
 real, public, parameter :: RHO_CP  = RHO0*CP_OCEAN
 
 !------------ water vapor constants ---------------
-! <DATA NAME="ES0" TYPE="real" DEFAULT="1.0">
+! <DATA NAME="DEF_ES0" TYPE="real" DEFAULT="1.0">
 !   Humidity factor. Controls the humidity content of the atmosphere through
 !   the Saturation Vapour Pressure expression when using DO_SIMPLE.
 ! </DATA>
@@ -119,7 +119,7 @@ real, public, parameter :: RHO_CP  = RHO0*CP_OCEAN
 !   temp where fresh water freezes
 ! </DATA>
 
-real, public, parameter :: ES0 = 1.0
+real, public, parameter :: DEF_ES0 = 1.0
 real, public, parameter :: TRIPLE_POINT_PRES_WATER = 610.78
 real, public, parameter :: RVGAS_WATER = 461.50
 real, public, parameter :: CP_VAPOR_WATER = 4.0*RVGAS_WATER
@@ -277,10 +277,12 @@ real, public :: TFREEZE = TFREEZE_WATER
 real, public :: TRIPLE_POINT_PRES = TRIPLE_POINT_PRES_WATER
 real, public :: KAPPA = EARTH_KAPPA
 real, public :: CP_AIR = EARTH_CP_AIR
+real, public :: es0 = DEF_ES0
 logical :: earthday_multiple = .false.
 
-namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa, solar_const, earthday_multiple, rotation_period, &
+namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa, solar_const, earthday_multiple, es0, &
                         rvgas, hlv, hlf, tfreeze, triple_point_pres, dens_vapor
+
 
 !-----------------------------------------------------------------------
 ! version and tagname published
@@ -333,7 +335,7 @@ subroutine constants_init
 	else
 	    seconds_per_sol = abs(2*pi / (orbital_rate - omega))
 	endif
-	
+
     CP_AIR = RDGAS/KAPPA
 
     CP_VAPOR = 4.0*RVGAS
@@ -377,4 +379,3 @@ end module constants_mod
 !   </NOTE>
 
 ! </INFO>
-

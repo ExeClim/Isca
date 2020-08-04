@@ -160,6 +160,15 @@
         integer(kind=im)   :: dt_rad_avg = -1                 ! If averaging, over what time? dt_rad_avg=dt_rad if dt_rad_avg<=0
         integer(kind=im)   :: lonstep=1                       ! Subsample fields along longitude
                                                               !  for faster radiation calculation
+
+!!!!!! mp586 added for annual mean insolation!!!!!
+
+		logical            :: frierson_solar_rad =.false.
+		real(kind=rb)	   :: del_sol = 0.95 ! frierson 2006 default = 1.4, but 0.95 gets the curve closer to the annual mean insolation 
+		real(kind=rb)	   :: del_sw = 0.0 !frierson 2006 default 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 ! some fancy radiation tweaks  
         real(kind=rb)      :: slowdown_rad = 1.0              ! factor do simulate slower seasonal cycle: >1 means faster, <1 slower
         logical            :: do_zm_rad=.false.               ! Only compute zonal mean radiation
@@ -197,7 +206,7 @@
              &h2o_lower_limit,temp_lower_limit,temp_upper_limit,co2ppmv, &
              &do_fixed_water,fixed_water,fixed_water_pres,fixed_water_lat, &
              &slowdown_rad, &
-             &store_intermediate_rad, do_rad_time_avg, dt_rad, dt_rad_avg, &
+             &store_intermediate_rad, do_rad_time_avg, frierson_solar_rad, del_sol, del_sw, dt_rad, dt_rad_avg, & !mp586 added frierson_solar_rad, del_sol, del_sw for annual mean insolation
              &lonstep, do_zm_tracers, do_zm_rad, &
              &do_precip_albedo, precip_albedo_mode, precip_albedo, precip_lat,&
              &do_read_co2, co2_file, co2_variable_name, use_dyofyr, solrad, &
@@ -588,6 +597,7 @@
           real(kind=rb),dimension(size(q,1),size(q,2)) :: albedo_loc
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: q_tmp, h2o_vmr
           real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
+          real(kind=rb),dimension(size(q,1),size(q,2)) :: p2 !mp586 addition for annual mean insolation
 
 	  integer :: year_in_s
           real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
@@ -635,6 +645,17 @@
              Time_loc = Time
           endif
 
+!!!!! mp586 addition for annual mean insolation !!!!!
+!!!! following https://github.com/sit23/Isca/blob/master/src/atmos_param/socrates/interface/socrates_interface.F90#L888 !!!!
+
+       	if (frierson_solar_rad) then
+            p2     = (1. - 3.*sin(lat(:,:))**2)/4.
+            coszen = 0.25 * (1.0 + del_sol * p2 + del_sw * sin(lat(:,:)))
+            rrsun  = 1 ! needs to be set, set to 1 so that stellar_radiation is unchanged in socrates_interface
+       else
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 !
 ! compute zenith angle
 !  this is also an output, so need to compute even if we read radiation from file
@@ -665,6 +686,8 @@
 	     ! Seasonal Cycle: Use astronomical parameters to calculate insolation
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
           end if
+
+   		end if !mp586 addition for annual mean insolation
 
 ! input files: only deal with case where we don't need to call radiation at all
           if(do_read_radiation .and. do_read_sw_flux .and. do_read_lw_flux) then
@@ -702,7 +725,7 @@
           !get ozone 
           if(do_read_ozone)then
              call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_file))
-             if (input_o3_file_is_mmr==.true.) then
+             if (input_o3_file_is_mmr) then
                  o3f = o3f * (1000. * gas_constant / rdgas ) / wtmozone !RRTM expects all abundances to be volume mixing ratio. So if input file is mass mixing ratio, it must be converted to volume mixing ratio using the molar masses of dry air and ozone. 
                  ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol from kg/mol by multiplying by 1000. This conversion is necessary because wtmozone is in g/mol.
              endif 
