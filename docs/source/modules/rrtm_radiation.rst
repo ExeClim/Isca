@@ -34,6 +34,7 @@ Radiation options
 ^^^^^^^^^^^^^^^^^
 
 Here are some options to set incoming radiation:
+
 +----------------------------+----------+-----------------------------------------------------------------------------------------+
 | Name                       | Default  | Description                                                                             |
 +============================+==========+=========================================================================================+
@@ -56,13 +57,14 @@ Here are some options to set incoming radiation:
 |                            |          | be achieved by using the ``orbital_period`` option in ``constants_nml``                 |
 +----------------------------+----------+-----------------------------------------------------------------------------------------+
 |``use_dyofyr``              | False    | Option to use day of the year to compute the Earth-Sun distance. NB. This is done       |
-|                            |          | within RRTM, and assumes 365days/year!  ______________________________________   ______ |
+|                            |          | within RRTM, and assumes 365 days per year!                                             |
 +----------------------------+----------+-----------------------------------------------------------------------------------------+
-|``solrad``                  | 1.       | Sets Earth-Sun distance if ``use_dyofyr`` is false.                                     |
+|``solrad``                  | 1        | Sets Earth-Sun distance if ``use_dyofyr`` is false.                                     |
 +----------------------------+----------+-----------------------------------------------------------------------------------------+
 
 
 The following namelist variables set radiation time stepping and spatial sampling:
+
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 | Name                       | Default  | Description                                                                                             |
 +============================+==========+=========================================================================================================+
@@ -81,6 +83,7 @@ The following namelist variables set radiation time stepping and spatial samplin
 
 
 The following options allow components of the radiative fluxes to be prescribed from input files:
+
 +----------------------------+-------------+---------------------------------------------------------------------------------------------------------+
 | Name                       | Default     | Description                                                                                             |
 +============================+=============+=========================================================================================================+
@@ -88,8 +91,8 @@ The following options allow components of the radiative fluxes to be prescribed 
 +----------------------------+-------------+---------------------------------------------------------------------------------------------------------+
 | ``radiation_file``         | 'radiation' | File name to read radiation from                                                                        |
 +----------------------------+-------------+---------------------------------------------------------------------------------------------------------+
-| ``rad_missing_value``      | -1.e19.     | Missing value in input files: if <0, replace everything below this value with 0                         |
-|                            |             |if >0, replace everything above this value with 0                                                        |
+| ``rad_missing_value``      | -1.e19      | Missing value in input files: if <0, replace everything below this value with 0                         |
+|                            |             | if >0, replace everything above this value with 0                                                       |
 +----------------------------+-------------+---------------------------------------------------------------------------------------------------------+
 | ``do_read_sw_flux``        | False       | Read SW surface fluxes from external file?                                                              |
 +----------------------------+-------------+---------------------------------------------------------------------------------------------------------+
@@ -102,6 +105,7 @@ The following options allow components of the radiative fluxes to be prescribed 
 
 
 While clouds are not currently incorporated into RRTM within Isca, the following options allow the albedo to be modified based on where precipitation is falling:
+
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 | Name                       | Default  | Description                                                                                             |
 +============================+==========+=========================================================================================================+
@@ -110,21 +114,22 @@ While clouds are not currently incorporated into RRTM within Isca, the following
 | ``precip_albedo_mode``     | 'full'   | Select whether to use precipitation from only large scale condensation ('lscale'),                      |
 |                            |          | only convection ('conv') or both ('full')                                                               |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``precip_albedo``          | 0.35     | Set cloud albedo if do_``precip_albedo`` is True                                                        |
+| ``precip_albedo``          | 0.35     | Set cloud albedo if ``do_precip_albedo`` is True                                                        |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``precip_lat``             | 0.0      | Apply precip_albdeo poleward of this latitude                                                           |
+| ``precip_lat``             | 0.0      | Apply ``precip_albedo`` poleward of this latitude                                                       |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 
 
 Some safety boundaries:
+
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 | Name                       | Default  | Description                                                                                             |
 +============================+==========+=========================================================================================================+
 | ``h2o_lower_limit``        | 2.e-7    | Set lower limit on water vapor to be seen by RRTM, input values below this are replaced by this value   | 
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``temp_lower_limit``       | 100.     | Set lower limit on temperature to be seen by RRTM, input values below this are replaced by this value   |
+| ``temp_lower_limit``       | 100      | Set lower limit on temperature to be seen by RRTM, input values below this are replaced by this value   |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+			 
-| ``temp_upper_limit``       | 370.     | Set upper limit on temperature to be seen by RRTM, input values above this are replaced by this value   |
+| ``temp_upper_limit``       | 370      | Set upper limit on temperature to be seen by RRTM, input values above this are replaced by this value   |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 
 
@@ -132,6 +137,7 @@ CO2, ozone and other gases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Isca does not include advection or chemistry of ozone and carbon dioxide. Values of these can be prescribed using the following options:
+
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 | Name                       | Default  | Description                                                                                             |
 +============================+==========+=========================================================================================================+
@@ -141,7 +147,7 @@ Isca does not include advection or chemistry of ozone and carbon dioxide. Values
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 | ``input_o3_file_is_mmr``   | True     | Does the ozone input file contain values as a mass mixing ratio (True) or volume mixing ratio (False)?  |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``co2ppmv``                | 300.     | CO2 concentration in ppmv                                                                               |
+| ``co2ppmv``                | 300      | CO2 concentration in ppmv                                                                               |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 | ``do_read_co2``            | False    | Read CO2 concentraton from a NetCDF file?                                                               |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
@@ -152,10 +158,11 @@ Isca does not include advection or chemistry of ozone and carbon dioxide. Values
 
 
 As a default, RRTM will use the atmospheric specific humidity to calculate radiative fluxes, and it needs to convert this to a volume mixing ratio. Water vapor can also be prescribed from a file or with a constant value: 
+
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 | Name                       | Default  | Description                                                                                             |
 +============================+==========+=========================================================================================================+
-| ``convert_sphum_to_vmr``   | True     | Convert specific humidity to volume mixing ratio
+| ``convert_sphum_to_vmr``   | True     | Convert specific humidity to volume mixing ratio                                                        |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 | ``do_read_h2o``            | False    | Read water vapor from an NetCDF file?                                                                   |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
@@ -165,31 +172,32 @@ As a default, RRTM will use the atmospheric specific humidity to calculate radia
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 | ``fixed_water``            | 2.e-6    | Fixed value to use if ``do_fixed_water`` is True                                                        |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``fixed_water_pres``       | 10000.   | Apply this fixed value above which pressure level?                                                      |
+| ``fixed_water_pres``       | 10000    | Apply this fixed value above which pressure level? (hPa)                                                |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``fixed_water_lat``        | 90.      | Apply this fixed value equatorward of which latitude?                                                   |
+| ``fixed_water_lat``        | 90       | Apply this fixed value equatorward of which latitude?                                                   |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 
 
 Values of secondary gases can also be prescribed:
+
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 | Name                       | Default  | Description                                                                                             |
 +============================+==========+=========================================================================================================+
 | ``include_secondary_gases``| False    | Use non-zero values for the following secondary gases                                                   |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``ch4_val``                | 0.       | CH4 (Methane)                                                                                           |
+| ``ch4_val``                | 0        | CH4 (Methane)                                                                                           |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``n2o_val``                | 0.       | N2O (Nitrous Oxide)                                                                                     |
+| ``n2o_val``                | 0        | N2O (Nitrous Oxide)                                                                                     |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``o2_val``                 | 0.       | O2 (Oxygen)                                                                                             |
+| ``o2_val``                 | 0        | O2 (Oxygen)                                                                                             |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``cfc11_val``              | 0.       | CFC11 (Trichlorofluoromethane)                                                                          |
+| ``cfc11_val``              | 0        | CFC11 (Trichlorofluoromethane)                                                                          |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``cfc12_val``              | 0.       | CFC12 (Dichlorodifluoromethane)                                                                         |
+| ``cfc12_val``              | 0        | CFC12 (Dichlorodifluoromethane)                                                                         |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``cfc22_val``              | 0.       | CFC22 (Chlorodifluoromethane)                                                                           |
+| ``cfc22_val``              | 0        | CFC22 (Chlorodifluoromethane)                                                                           |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
-| ``ccl4_val``               | 0.       | CCl4 (Carbon tetrachloride)                                                                             |
+| ``ccl4_val``               | 0        | CCl4 (Carbon tetrachloride)                                                                             |
 +----------------------------+----------+---------------------------------------------------------------------------------------------------------+
 
 

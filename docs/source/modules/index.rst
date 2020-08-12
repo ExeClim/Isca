@@ -13,3 +13,4 @@ Components of Isca
    idealised_moist_phys
    convection_simple_betts_miller
    socrates 
+   rrtm_radiation
