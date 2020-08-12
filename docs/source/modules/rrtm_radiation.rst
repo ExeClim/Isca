@@ -206,8 +206,39 @@ Diagnostics
 -----------
 .. What diagnostics are available for this part of the code.
 
-Diagnostics from RRTM are under module name ``rrtm_radiation``. The outputs include the temperature tendencies due to LW/SW radiation, LW/SW radiation fluxes at each level, and the fluxes at surface and the top of the atmosphere (TOA).
+Diagnostics from RRTM are under module name ``rrtm_radiation``. The outputs include the temperature tendencies due to LW/SW radiation, LW/SW radiation fluxes at the surface and the top of the atmosphere (TOA).
 
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+| Name                     | Description                                         | Units               | Dimension (not including time) |
++==========================+=====================================================+=====================+================================+
+|``tdt_lw``                | RRTM temperature tendency due to LW radiation       | Ks :math:`^{-1}`    | (pfull, lat, lon)              |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``tdt_sw``                | RRTM temperature tendency due to SW radiation       | Ks :math:`^{-1}`    | (pfull, lat, lon)              |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``tdt_rad``               | RRTM temperature tendency due to radiation          | Ks :math:`^{-1}`    | (pfull, lat, lon)              |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``flux_lw``               | RRTM net LW surface flux (positive up)              | Wm :math:`^{-2}`    | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``flux_sw``               | RRTM net SW surface flux (positive up)              | Wm :math:`^{-2}`    | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``olr``                   | RRTM TOA LW flux (positive up)                      | Wm :math:`^{-2}`    | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``toa_sw``                | RRTM net TOA SW flux (positive down)                | Wm :math:`^{-2}`    | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``coszen``                | RRTM cosine (zenith_angle)                          | None                | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``co2``                   | RRTM CO2 concentration (mass mixing ratio)          | kg kg :math:`^{-1}` | (pfull, lat, lon)              |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``ozone``                 | RRTM ozone concentration (mass mixing ratio)        | kg kg :math:`^{-1}` | (pfull, lat, lon)              |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``rrtm_albedo``           | RRTM ozone concentration (mass mixing ratio)        | None                | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``fracday``               | Daylight fraction of time interval                  | None                | (lat, lon)                     |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``t_half_rrtm``           | Half level temperatures used by RRTM                | K                   | (phalf, lat, lon)              |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
+|``t_full_rrtm``           | Full level temperatures used by RRTM                | K                   | (pfull, lat, lon)              |
++--------------------------+-----------------------------------------------------+---------------------+--------------------------------+
 
 
 	 
@@ -216,6 +247,12 @@ Relevant modules and subroutines
 .. List the names of relevant modules, subroutines, functions, etc.
 .. You can add also code snippets, using Sphinx code formatting
 
+The RRTM radiation scheme is initiatized and called by ``src/atmos_spectral/driver/solo/idealized_moist_phys.F90``.
+
+Other radiation schemes employed in Isca can be found at:
+
+* RRTM: see ``src/atmos_param/socrates``
+* Two-stream gray radiation: see ``src/atmos_param/two_stream_gray_rad``
 
 
 References
