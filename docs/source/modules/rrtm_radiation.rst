@@ -247,7 +247,7 @@ Relevant modules and subroutines
 .. List the names of relevant modules, subroutines, functions, etc.
 .. You can add also code snippets, using Sphinx code formatting
 
-The RRTM radiation scheme is initiatized and called by ``src/atmos_spectral/driver/solo/idealized_moist_phys.F90``.
+The RRTM radiation scheme is initialized and called by ``src/atmos_spectral/driver/solo/idealized_moist_phys.F90``.
 
 Other radiation schemes employed in Isca can be found at:
 
