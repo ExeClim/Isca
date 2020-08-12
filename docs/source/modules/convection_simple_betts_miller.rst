@@ -57,7 +57,7 @@ The diagnostics are not sent out within the call to convection but are sent out 
 +===================+============================+====================================+
 | dt_qg_convection  | Moisture tendency          |:math:`kg~kg^{-1}~s^{-1}`           |
 +-------------------+----------------------------+------------------------------------+
-| dt_qg_convection  | Temperature tendency       |:math:`K~s^{-1}`                    |
+| dt_tg_convection  | Temperature tendency       |:math:`K~s^{-1}`                    |
 +-------------------+----------------------------+------------------------------------+
 | convection_rain   | Convective precipitation   |:math:`kg~m^{-2}~s^{-1}`            |
 +-------------------+----------------------------+------------------------------------+
