@@ -12,3 +12,4 @@ Components of Isca
    output
    convection_simple_betts_miller
    socrates 
+   rrtm_radiation

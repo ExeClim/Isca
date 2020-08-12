@@ -30,6 +30,12 @@ References
            **112(473)**, 693--709,
            doi: `10.1002/qj.49711247308 <http://dx.doi.org/10.1002/qj.49711247308>`_.
 
+.. [CloughEtAl2005] Clough, S. and Shephard, M. and Mlawer, E. and Delamere, J. and Iacono, M. and Cady-Pereira, K. and Boukabara, S. and and Brown, P., 2005:
+		   Atmospheric radiative transfer modeling: a summary of the AER codes. 
+		   *Journal of Quantitative Spectroscopy and Radiative Transfer*,
+		   **91**, 233--244,
+		   doi: `0.1016/j.jqsrt.2004.05.058 <https://doi.org/10.1016/j.jqsrt.2004.05.058>`_.
+
 .. [YanoPlant2016] Yano, J. and Plant, R., 2016:
            Generalized convective quasi-equilibrium principle.
            *Dynamics of Atmospheres and Oceans*,
@@ -47,6 +53,13 @@ References
              SOCRATES (Suite Of Community RAdiative Transfer codes based on Edwards and Slingo) Technical Guide.
              Met Office, UK. Aavailable at: https://code.metoffice.gov.uk/trac/socrates.
 
+.. [MlawerEtAl1997] Mlawer, E. J. and Taubman, S. J. and Brown, P. D. and Iacono, M. J. and & Clough, S. A., 1997:
+            Radiative transfer for inhomogeneous atmospheres: RRTM, a validated correlated-k model for the longwave.
+            *Journal of Geophysical Research*,
+            **102(D14)** 16663--16682,
+            doi: `10.1029/97JD00237 <https://doi.org/10.1029/97JD00237>`_.
+
 .. [Thomson_and_Vallis2019] Thomson, S. I. and Vallis, G. K., 2019. Hierarchical Modeling of Solar System
             Planets with Isca. *Atmosphere*, **10 (12)**, 803,
             doi: `10.3390/atmos10120803 <https://doi.org/10.3390/atmos10120803>`_.
+
