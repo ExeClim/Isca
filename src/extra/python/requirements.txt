@@ -5,3 +5,4 @@ numpy
 pandas
 xarray
 tqdm
+netcdf4
