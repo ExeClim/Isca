@@ -76,7 +76,7 @@ contains
 
 !#######################################################################
 
-   subroutine lscale_cond_lh (tin, qin, pfull, phalf, coldT, &
+   subroutine lscale_cond_lh (tin, qin, dt_tg, pfull, phalf, coldT, &
                            rain, snow, tdel, qdel, mask, conv)
 
 !-----------------------------------------------------------------------
@@ -106,7 +106,7 @@ contains
 !-----------------------------------------------------------------------
 !--------------------- interface arguments -----------------------------
 
-   real   , intent(in) , dimension(:,:,:) :: tin, qin, pfull, phalf
+   real   , intent(in) , dimension(:,:,:) :: tin, qin, pfull, phalf, dt_tg
    logical   , intent(in) , dimension(:,:):: coldT
    real   , intent(out), dimension(:,:)   :: rain,snow
    real   , intent(out), dimension(:,:,:) :: tdel, qdel
@@ -117,7 +117,7 @@ contains
 
 logical,dimension(size(tin,1),size(tin,2),size(tin,3)) :: do_adjust
    real,dimension(size(tin,1),size(tin,2),size(tin,3)) ::  &
-                             qsat, dqsat, pmass
+                             qsat, dqsat, pmass, tcond
    real,dimension(size(tin,1),size(tin,2))             :: hlcp, precip
 integer  k, kx
 !-----------------------------------------------------------------------
@@ -128,31 +128,17 @@ integer  k, kx
                          'lscale_cond_lh_init has not been called.', FATAL)
 
       kx=size(tin,3)
+      
+      tcond(:,:,:) = 149.2+6.48*LOG(0.00135*pfull(:,:,:))         ! CO2 condensation temperature, Way 2017
 
-!----- compute proper latent heat --------------------------------------
-      if(do_simple) then
-             hlcp = HLv/Cp_Air
-      else
-        WHERE (coldT)
-             hlcp = HLs/Cp_Air
-        ELSEWHERE
-             hlcp = HLv/Cp_Air
-        END WHERE
-      endif
-
-!--- saturation specific humidity (qsat) and deriv wrt temp (dqsat) ---
-
-     call compute_qs (tin, pfull,qsat, hc = hc, dqsdT=dqsat) 
 
 !--------- do adjustment where greater than saturated value ------------
 
    if (present(conv)) then
-!!!!  do_adjust(:,:,:)=(.not.conv(:,:,:) .and. qin(:,:,:) > qsat(:,:,:))
       do_adjust(:,:,:)=(.not.conv(:,:,:) .and.   &
-                         (qin(:,:,:) - qsat(:,:,:))*qsat(:,:,:) > 0.0)
+                         (tin(:,:,:) - tcond(:,:,:) - dt_tg(:,:,:)) > 0.0)
    else
-!!!!  do_adjust(:,:,:)=(qin(:,:,:) > qsat(:,:,:))
-      do_adjust(:,:,:)=( (qin(:,:,:) - qsat(:,:,:))*qsat(:,:,:) > 0.0)
+      do_adjust(:,:,:)=( (tin(:,:,:) - tcond(:,:,:) - dt_tg(:,:,:)) > 0.0)
    endif
 
    if (present(mask)) then
@@ -162,10 +148,8 @@ integer  k, kx
 !----------- compute adjustments to temp and spec humidity -------------
    do k = 1,kx
    where (do_adjust(:,:,k))
-      qdel(:,:,k)=(qsat(:,:,k)-qin(:,:,k))/(1.0+hlcp(:,:)*dqsat(:,:,k))
-      tdel(:,:,k)=-hlcp(:,:)*qdel(:,:,k)
+      tdel(:,:,k)=tcond(:,:,k)-tin(:,:,k)-dt_tg(:,:,k)
    elsewhere
-      qdel(:,:,k)=0.0
       tdel(:,:,k)=0.0
    endwhere
    end do
