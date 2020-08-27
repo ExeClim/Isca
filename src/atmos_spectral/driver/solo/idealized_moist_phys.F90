@@ -559,6 +559,8 @@ allocate(conv_dt_tg  (is:ie, js:je, num_levels))
 allocate(conv_dt_qg  (is:ie, js:je, num_levels))
 allocate(cond_dt_tg  (is:ie, js:je, num_levels))
 allocate(cond_dt_qg  (is:ie, js:je, num_levels))
+allocate(cond_lh_dt_tg  (is:ie, js:je, num_levels))
+allocate(cond_lh_dt_qg  (is:ie, js:je, num_levels))
 
 allocate(coldT        (is:ie, js:je)); coldT = .false.
 allocate(klzbs        (is:ie, js:je)); klzbs = 0
@@ -695,6 +697,10 @@ axes = get_axis_id()
 id_cond_dt_qg = register_diag_field(mod_name, 'dt_qg_condensation',        &
      axes(1:3), Time, 'Moisture tendency from condensation','kg/kg/s')
 id_cond_dt_tg = register_diag_field(mod_name, 'dt_tg_condensation',        &
+     axes(1:3), Time, 'Temperature tendency from condensation','K/s')
+id_cond_lh_dt_qg = register_diag_field(mod_name, 'dt_qg_lh_condensation',        &
+     axes(1:3), Time, 'Moisture tendency from condensation','kg/kg/s')
+id_cond_lh_dt_tg = register_diag_field(mod_name, 'dt_tg_lh_condensation',        &
      axes(1:3), Time, 'Temperature tendency from condensation','K/s')
 id_cond_rain = register_diag_field(mod_name, 'condensation_rain',          &
      axes(1:2), Time, 'Rain from condensation','kg/m/m/s')
@@ -1074,24 +1080,24 @@ if ( do_lscale_cond_lh .eqv. .true.) then
   ! Large scale convection is a function of humidity only.  This is
   ! inconsistent with the dry convection scheme, don't run it!
   rain = 0.0; snow = 0.0
-  call lscale_cond_lh (      tg_tmp,                          qg_tmp,        &
+  call lscale_cond_lh (      tg_tmp,          qg_tmp,          dt_tg,        &
              p_full(:,:,:,previous),          p_half(:,:,:,previous),        &
                               coldT,                            rain,        &
-                               snow,                      cond_dt_tg,        &
-                         cond_dt_qg )
+                               snow,                   cond_lh_dt_tg,        &
+                     cond_lh_dt_qg )
 
-  cond_dt_tg = cond_dt_tg/delta_t
-  cond_dt_qg = cond_dt_qg/delta_t
+  cond_lh_dt_tg = cond_lh_dt_tg/delta_t
+  cond_lh_dt_qg = cond_lh_dt_qg/delta_t
   depth_change_cond = rain/dens_vapor
   rain       = rain/delta_t
   snow       = snow/delta_t
   precip     = precip + rain + snow
 
-  dt_tg = dt_tg + cond_dt_tg
-  dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + cond_dt_qg
+  dt_tg = dt_tg + cond_lh_dt_tg
+  dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + cond_lh_dt_qg
 
-  if(id_cond_dt_qg > 0) used = send_data(id_cond_dt_qg, cond_dt_qg, Time)
-  if(id_cond_dt_tg > 0) used = send_data(id_cond_dt_tg, cond_dt_tg, Time)
+  if(id_cond_lh_dt_qg > 0) used = send_data(id_cond_lh_dt_qg, cond_lh_dt_qg, Time)
+  if(id_cond_lh_dt_tg > 0) used = send_data(id_cond_lh_dt_tg, cond_lh_dt_tg, Time)
   if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
   if(id_precip     > 0) used = send_data(id_precip, precip, Time)
 
