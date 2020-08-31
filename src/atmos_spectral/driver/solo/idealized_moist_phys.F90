@@ -28,7 +28,7 @@ use         mixed_layer_mod, only: mixed_layer_init, mixed_layer, mixed_layer_en
 
 use         lscale_cond_mod, only: lscale_cond_init, lscale_cond, lscale_cond_end
 
-use      lscale_cond_mod_lh, only: lscale_cond_lh_init, lscale_cond_lh, lscale_cond_lh_end
+use      lscale_cond_lh_mod, only: lscale_cond_lh_init, lscale_cond_lh, lscale_cond_lh_end
 
 use qe_moist_convection_mod, only: qe_moist_convection_init, qe_moist_convection, qe_moist_convection_end
 
@@ -121,6 +121,7 @@ logical :: do_bm = .false.
 logical :: do_ras = .false.
 
 logical :: do_lscale_cond = .true.
+logical :: do_lscale_cond_lh = .false.
 ! Cloud options
 logical :: do_cloud_simple = .false. ! SimCloud cloud scheme
 logical :: do_cloud_spookie = .false. ! SPOOKIE protocol cloud scheme
@@ -247,8 +248,9 @@ real, allocatable, dimension(:,:,:) ::                                        &
      conv_dt_tg,           &   ! temperature tendency from convection
      conv_dt_qg,           &   ! moisture tendency from convection
      cond_dt_tg,           &   ! temperature tendency from condensation
-     cond_dt_qg                ! moisture tendency from condensation
-
+     cond_dt_qg,           &   ! moisture tendency from condensation
+     cond_lh_dt_tg,        &
+     cond_lh_dt_qg
 
 logical, allocatable, dimension(:,:) ::                                       &
      avail,                &   ! generate surf. flux (all true)
@@ -295,11 +297,13 @@ integer ::           &
      id_conv_dt_qg,  &   ! temperature tendency from convection
      id_cond_dt_tg,  &   ! temperature tendency from condensation
      id_cond_dt_qg,  &   ! temperature tendency from condensation
+     id_cond_lh_dt_tg,     &
+     id_cond_lh_dt_qg,     &
      id_bucket_depth,      &   ! bucket depth variable for output
      id_bucket_depth_conv, &   ! bucket depth variation induced by convection
      id_bucket_depth_cond, &   ! bucket depth variation induced by condensation
      id_bucket_depth_lh,   &   ! bucket depth variation induced by LH
-     id_bucket_diffusion,  &   ! diffused surface water depth 
+     id_bucket_diffusion,  &   ! diffused surface water depth
      id_rh,           & ! Relative humidity
      id_diss_heat_ray,&  ! Heat dissipated by rayleigh bottom drag if gp_surface=.True.
      id_z_tg,        &   ! Relative humidity

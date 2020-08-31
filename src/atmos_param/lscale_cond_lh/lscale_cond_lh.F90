@@ -136,9 +136,9 @@ integer  k, kx
 
    if (present(conv)) then
       do_adjust(:,:,:)=(.not.conv(:,:,:) .and.   &
-                         (tin(:,:,:) - tcond(:,:,:) - dt_tg(:,:,:)) > 0.0)
+                         (tcond(:,:,:) - tin(:,:,:) - dt_tg(:,:,:)) > 0.0)
    else
-      do_adjust(:,:,:)=( (tin(:,:,:) - tcond(:,:,:) - dt_tg(:,:,:)) > 0.0)
+      do_adjust(:,:,:)=( (tcond(:,:,:) - tin(:,:,:) - dt_tg(:,:,:)) > 0.0)
    endif
 
    if (present(mask)) then
