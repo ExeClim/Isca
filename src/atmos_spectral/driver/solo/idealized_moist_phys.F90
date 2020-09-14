@@ -1117,34 +1117,6 @@ if ( do_lscale_cond .eqv. .true.) then
 
 endif
 
-! Perform large scale convection with latent heating
-if ( do_lscale_cond_lh .eqv. .true.) then
-  ! Large scale convection is a function of humidity only.  This is
-  ! inconsistent with the dry convection scheme, don't run it!
-  rain = 0.0; snow = 0.0
-  call lscale_cond_lh (      tg_tmp,          qg_tmp,          dt_tg,        &
-             p_full(:,:,:,previous),          p_half(:,:,:,previous),        &
-                              coldT,                            rain,        &
-                               snow,                   cond_lh_dt_tg,        &
-                     cond_lh_dt_qg )
-
-  cond_lh_dt_tg = cond_lh_dt_tg/delta_t
-  cond_lh_dt_qg = cond_lh_dt_qg/delta_t
-  depth_change_cond = rain/dens_vapor
-  rain       = rain/delta_t
-  snow       = snow/delta_t
-  precip     = precip + rain + snow
-
-  dt_tg = dt_tg + cond_lh_dt_tg
-  dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + cond_lh_dt_qg
-
-  if(id_cond_lh_dt_qg > 0) used = send_data(id_cond_lh_dt_qg, cond_lh_dt_qg, Time)
-  if(id_cond_lh_dt_tg > 0) used = send_data(id_cond_lh_dt_tg, cond_lh_dt_tg, Time)
-  if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
-  if(id_precip     > 0) used = send_data(id_precip, precip, Time)
-
-endif
-
 ! Call the simple cloud scheme in line with SPOOKIE-2 requirements
 ! Using start of time step variables
 ! using specific humidity NOT mixing ratios
