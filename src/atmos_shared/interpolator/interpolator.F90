@@ -78,6 +78,7 @@ use time_manager_mod,  only : time_type,   &
                               get_calendar_type, &
                               JULIAN, NOLEAP, &
                               THIRTY_DAY_MONTHS, & !mj
+			      NO_CALENDAR, &
                               get_date_julian, set_date_no_leap, &
                               set_date_julian, get_date_no_leap, &
                               print_date, &
@@ -147,6 +148,7 @@ integer                  :: is,ie,js,je
 integer                  :: vertical_indices ! direction of vertical 
                                               ! data axis
 logical                  :: climatological_year ! Is data for year = 0000?
+logical			 :: mars
 
 !Field specific data  for nfields
 type(fieldtype),   pointer :: field_type(:) =>NULL()   ! NetCDF field type
@@ -261,6 +263,7 @@ type(interpolate_type), intent(inout) :: Out
      Out%je = In%je
      Out%vertical_indices = In%vertical_indices
      Out%climatological_year = In%climatological_year
+     Out%mars = In%mars
      Out%field_type => In%field_type
      if (associated(In%field_name   )) Out%field_name    =>  In%field_name
      if (associated(In%time_init    )) Out%time_init     =>  In%time_init 
@@ -542,8 +545,10 @@ do i = 1, ndim
           call mpp_error(FATAL,'Interpolator_init : Time units not recognised in file '//file_name)
       end select
 
-       clim_type%climatological_year = (fileyr == 0)
-      if (.not. clim_type%climatological_year) then
+       clim_type%climatological_year = (fileyr == 0 .and. model_calendar/=NO_CALENDAR)
+       clim_type%mars = (fileyr == 0 .and. model_calendar==NO_CALENDAR)
+
+      if (.not. clim_type%climatological_year .and. .not. clim_type%mars) then
 
 !----------------------------------------------------------------------
 !    if file date has a non-zero year in the base time, determine that
@@ -637,7 +642,10 @@ do i = 1, ndim
 !! year, not the displacement from a base_time.
             clim_type%time_slice(n) = &
                 set_time(INT( ( time_in(n) - INT(time_in(n)) ) * 86400 ),INT(time_in(n)))
-          else
+          else if (clim_type%mars) then
+	      clim_type%time_slice(n) = &
+                set_time(INT( ( time_in(n) - INT(time_in(n)) ) * 88440 ),INT(time_in(n)))
+	  else
 
 !--------------------------------------------------------------------
 !    if fileyr /= 0 (i.e., climatological_year=F),
