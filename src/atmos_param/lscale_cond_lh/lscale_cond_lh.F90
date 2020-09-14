@@ -57,6 +57,11 @@ real    :: hc=1.00
 logical :: do_evap=.false.
 logical :: do_simple =.false.
 
+real    :: L_c0 = 5.902e05
+real    :: c_pg = 770.2
+real    :: c_pc = 1070.7
+real    :: c_p  = 735.9
+
 namelist /lscale_cond_lh_nml/  hc, do_evap, do_simple
 
 
@@ -76,8 +81,8 @@ contains
 
 !#######################################################################
 
-   subroutine lscale_cond_lh (tin, qin, dt_tg, pfull, phalf, coldT, &
-                           rain, snow, tdel, qdel, mask, conv)
+   subroutine lscale_cond_lh (tin, qin, pfull, phalf, lh_rel, coldT, &
+                            rain, snow, tdel, qdel, mask, conv)
 
 !-----------------------------------------------------------------------
 !
@@ -106,10 +111,11 @@ contains
 !-----------------------------------------------------------------------
 !--------------------- interface arguments -----------------------------
 
-   real   , intent(in) , dimension(:,:,:) :: tin, qin, pfull, phalf, dt_tg
+   real   , intent(in) , dimension(:,:,:) :: qin, pfull, phalf
+   real   , intent(inout), dimension(:,:,:) :: tin
    logical   , intent(in) , dimension(:,:):: coldT
    real   , intent(out), dimension(:,:)   :: rain,snow
-   real   , intent(out), dimension(:,:,:) :: tdel, qdel
+   real   , intent(out), dimension(:,:,:) :: tdel, qdel, lh_rel
    real   , intent(in) , dimension(:,:,:), optional :: mask
    logical, intent(in) , dimension(:,:,:), optional :: conv
 !-----------------------------------------------------------------------
@@ -117,9 +123,9 @@ contains
 
 logical,dimension(size(tin,1),size(tin,2),size(tin,3)) :: do_adjust
    real,dimension(size(tin,1),size(tin,2),size(tin,3)) ::  &
-                             qsat, dqsat, pmass, tcond
+                             qsat, dqsat, pmass, tcond, mdel
    real,dimension(size(tin,1),size(tin,2))             :: hlcp, precip
-integer  k, kx
+integer  k, kx, j, jx, i, ix 
 !-----------------------------------------------------------------------
 !     computation of precipitation by condensation processes
 !-----------------------------------------------------------------------
@@ -128,37 +134,71 @@ integer  k, kx
                          'lscale_cond_lh_init has not been called.', FATAL)
 
       kx=size(tin,3)
-      
+      jx=size(tin,2)
+      ix=size(tin,1)
+
       tcond(:,:,:) = 149.2+6.48*LOG(0.00135*pfull(:,:,:))         ! CO2 condensation temperature, Way 2017
 
-
+   do i=1,ix
+      do j=1,jx
+         do k=1,kx
+         if (tin(i,j,k) < tcond(i,j,k)) then
+            tdel(i,j,k) = tcond(i,j,k)-tin(i,j,k)
+            lh_rel(i,j,k) = L_c0 + c_pg*(tin(i,j,k)-150.) &
+                          - c_pc*(tcond(i,j,k)-150.)
+         else
+            tdel(i,j,k)=0.0
+            lh_rel(i,j,k)=0.0
+         endif
+         print*, 153
+         tin(i,j,k) = max(tin(i,j,k),tcond(i,j,k))
+         print*, 155
+         enddo
+      enddo
+   enddo
 !--------- do adjustment where greater than saturated value ------------
 
-   if (present(conv)) then
-      do_adjust(:,:,:)=(.not.conv(:,:,:) .and.   &
-                         (tcond(:,:,:) - tin(:,:,:) - dt_tg(:,:,:)) > 0.0)
-   else
-      do_adjust(:,:,:)=( (tcond(:,:,:) - tin(:,:,:) - dt_tg(:,:,:)) > 0.0)
-   endif
+!   if (present(conv)) then
+!      do_adjust(:,:,:)=(.not.conv(:,:,:) .and.   &
+!                         (tcond(:,:,:) - tin(:,:,:)) > 0.0) ! adjust where temp falls below condensation point
+!   else
+!      do_adjust(:,:,:)=( (tcond(:,:,:) - tin(:,:,:)) > 0.0)
+!   endif
 
-   if (present(mask)) then
-      do_adjust(:,:,:)=do_adjust(:,:,:) .and. (mask(:,:,:) > 0.5)
-   end if
+!   if (present(mask)) then
+!      do_adjust(:,:,:)=do_adjust(:,:,:) .and. (mask(:,:,:) > 0.5)
+!   end if
 
 !----------- compute adjustments to temp and spec humidity -------------
-   do k = 1,kx
-   where (do_adjust(:,:,k))
-      tdel(:,:,k)=tcond(:,:,k)-tin(:,:,k)-dt_tg(:,:,k)
-   elsewhere
-      tdel(:,:,k)=0.0
-   endwhere
-   end do
+
+!   do k = 1,kx
+!       where (do_adjust(:,:,k))
+!         tdel(:,:,k)   = tcond(:,:,k) - tin(:,:,k)                      ! temp below condensation point
+!         lh_rel(:,:,k) = L_c0 + c_pg*(tin(:,:,k)-150.) &
+!                          - c_pc*(tcond(:,:,k)-150.)                    ! Way et al. 2017
+!         tin(:,:,k)    = MAX(tin(:,:,k),tcond(:,:,k))
+!       elsewhere
+!         tdel(:,:,k) = 0.0
+!         lh_rel(:,:,k)= 0.0
+!       endwhere
+!   enddo
 !------------ pressure mass of each layer ------------------------------
 
    do k=1,kx
       pmass(:,:,k)=(phalf(:,:,k+1)-phalf(:,:,k))/Grav
+      do j=1,jx
+         do i=1,ix
+            mdel(i,j,k)=c_p*pmass(i,j,k)/L_c0 * tdel(i,j,k)
+            lh_rel(i,j,k) = lh_rel(i,j,k)*mdel(i,j,k)
+         enddo
+      enddo
+!       where (do_adjust(:,:,k))
+!       mdel(:,:,k) = c_p*pmass(:,:,k)/L_c0 * tdel(:,:,k)
+!       lh_rel(:,:,k) = lh_rel(:,:,k)*mdel(:,:,k) ! Way et al. 2017
+!       elsewhere
+!       mdel(:,:,k) = 0.0
+!       endwhere
    enddo
-
 !------------ re-evaporation of precipitation in dry layer below -------
 
    if (do_evap) then
@@ -294,4 +334,3 @@ subroutine precip_evap (pmass, tin, qin, qsat, dqsat, hlcp, &
 !#######################################################################
 
 end module lscale_cond_lh_mod
-
