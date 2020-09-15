@@ -137,7 +137,7 @@ integer  k, kx, j, jx, i, ix
       jx=size(tin,2)
       ix=size(tin,1)
 
-      tcond(:,:,:) = 149.2+6.48*LOG(0.00135*pfull(:,:,:))         ! CO2 condensation temperature, Way 2017
+      tcond(:,:,:) = 154.2+6.48*LOG(0.00135*pfull(:,:,:))         ! CO2 condensation temperature, Way 2017
 
    do i=1,ix
       do j=1,jx
@@ -150,9 +150,7 @@ integer  k, kx, j, jx, i, ix
             tdel(i,j,k)=0.0
             lh_rel(i,j,k)=0.0
          endif
-         print*, 153
          tin(i,j,k) = max(tin(i,j,k),tcond(i,j,k))
-         print*, 155
          enddo
       enddo
    enddo

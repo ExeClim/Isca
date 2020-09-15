@@ -204,7 +204,7 @@ namelist = Namelist({
         'n2_mix_ratio': 0.026*(28.0134)/(1000.*8.314/192.0),
 	'do_read_cdod':True,
 	'cdod_field_name':'cdod',
-	'account_for_effect_of_dust':True
+	'account_for_effect_of_dust':False
     }, 
 
 #     configure the relaxation profile
@@ -259,12 +259,12 @@ if __name__=="__main__":
 
     scale = 1.
 
-    dust_clim = 'cdod_cold'
+    dust_clim = 'cdod_clim'
 
     for conv in conv_schemes:
         for depth_val in depths:
             for per_value in pers:
-                exp = Experiment('soc_mars_mk36_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val)+'_'+dust_clim+'_lh_rel', codebase=cb)
+                exp = Experiment('soc_mars_mk36_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val)+'_lh_rel_med', codebase=cb)
                 exp.clear_rundir()
 
                 exp.diag_table = diag
