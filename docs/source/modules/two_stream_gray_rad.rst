@@ -32,9 +32,9 @@ This module includes different simple configurations for solving the two stream 
 +------------------+-------------------------------+----------------------------------------------------+----------------------+
 
 
-For each of these schemes diurnally-and-seasonally averaged, and time-dependent options for the incoming solar radiation are avaialable. 
+For each of these schemes diurnally-and-seasonally averaged, and time-dependent options for the incoming solar radiation are available. 
 
-In the next few sections we will describe the main options avaiable to the user for solving the radiative transfer equations, and prescribing the insolation. Namelist options and their defaults, and available output diagnostics are summarised at the end of the documentation. 
+In the next few sections we will describe the main options available to the user for solving the radiative transfer equations, and prescribing the insolation. Namelist options and their defaults, and available output diagnostics are summarised at the end of the documentation. 
 
 Frierson/Byrne schemes 
 ----------------------
@@ -64,12 +64,12 @@ where :math:`\tau^{\ast}` is the shortwave optical depth, and :math:`S` is the i
 .. math:: 
     \tau = \tau_{0}\left[f_{l}\left(\frac{p}{p_0}\right)+(1-f_{l})\left(\frac{p}{p_0}\right)^{k}\right]
 
-where :math:`p_0=10^{5}\,\text{Pa}` is a reference pressure, :math:`f_{l}` sets how large the linear term is relative to the :math:`^{k}` term. :math:`k` is a constant exponent (default 4) which determines the pressure dependence of optical depth. The linear term is included to reduce relaxation times in the stratosphere. The surface longwave optical depth :math:`\tau_{0}` is given by 
+where :math:`p_0=10^{5}\,\text{Pa}` is a reference pressure, :math:`f_{l}` sets how large the linear term is relative to the :math:`p^{k}` term. :math:`k` is a constant exponent (default 4) which determines the pressure dependence of optical depth. The linear term is included to reduce relaxation times in the stratosphere. The surface longwave optical depth :math:`\tau_{0}` is given by 
 
 .. math:: 
     \tau_{0} = \kappa[\tau_{0e} + (\tau_{0p}-\tau_{0e})\sin^{2}\theta]
 
-:math:`\tau_{0e}` is the value of the surface optical depth at the equation, and :math:`\tau_{0p}` is the value at the pole.  :math:`\kappa` is a parameter that can be used to scale the optical depth (defualt 1). 
+:math:`\tau_{0e}` is the value of the surface optical depth at the equation, and :math:`\tau_{0p}` is the value at the pole.  :math:`\kappa` is a parameter that can be used to scale the optical depth (default 1). 
 
 When ``rad_scheme`` is set to ``'BYRNE'``, the longwave optical depth is calculated as a function of specific humidity :math:`q`, :math:`\text{CO}_{2}` mixing ratio, and pressure
 
@@ -147,7 +147,7 @@ where :math:`\tau^{\ast}_{0,\text{gp}}=3.0` is the shortwave optical depth at pr
 Geen scheme
 -----------
 
-The Geen scheme provides an intermediate option between gray radiation and more complete descriptions of radiative transfer (e.g., the correlated-:math:`k` schemes SOCRATES and RRTM). It has two infrared bands and one solar band. The shortwave band (:math:`<4\,\mu\,\text{m}`) treats all solar radiation. Two long-wave bands treat absorption: one in the infrared region of the spectrul (:math:`8-14\,mu\,\text{m}`), and the other in all other longwave wavelengths (:math:`<4\,\mu\,\text{m}`, non-window).  
+The Geen scheme provides an intermediate option between gray radiation and more complete descriptions of radiative transfer (e.g., the correlated-:math:`k` schemes SOCRATES and RRTM). It has two infrared bands and one solar band. The shortwave band (:math:`<4\,\mu\,\text{m}`) treats all solar radiation. Two long-wave bands treat absorption: one in the infrared region of the spectral (:math:`8-14\,\mu\,\text{m}`), and the other in all other longwave wavelengths (:math:`<4\,\mu\,\text{m}`, non-window).  
 
 | **Longwave**
 | Longwave radiative transfer is described by the following set of equations. In the non-window region:
@@ -204,7 +204,7 @@ For each of the radiative transfer schemes, diurnally-and-seasonally averaged, a
 | **Diurnally-and-seasonally averaged insolation** 
 | Diurnally-and-seasonally averaged insolation is selected by setting ``do_seasonal = False``. 
 
-For the Frierson, Byrne, and Geen schemes, setting ``do_seasonal = False`` imposes a :math:`P_{2}` (second legendre polynomial) insolation profile, which is designed to approximate the Earth's seasonally averaged insolation distrubution. When this option is selected, there is no diurnal cycle (i.e. the forcing is fully time-independent). The incomimg solar radiation then takes the following form: 
+For the Frierson, Byrne, and Geen schemes, setting ``do_seasonal = False`` imposes a :math:`P_{2}` (second legendre polynomial) insolation profile, which is designed to approximate the Earth's seasonally averaged insolation distribution. When this option is selected, there is no diurnal cycle (i.e. the forcing is fully time-independent). The incoming solar radiation then takes the following form: 
 
 .. math:: 
     S &= \frac{S_{0}}{4}[1+\Delta_{S}P_{2}(\theta)+\Delta_{\text{sw}}\sin\theta] \\ 
@@ -217,7 +217,7 @@ For the Schneider giant planet scheme, setting ``do_seasonal = False`` imposes a
 .. math:: 
     S = \frac{S_{0}}{\pi}\cos\theta 
 
-which corresponds to the latitudinal distribution of radiation recieved by a planet with no obliquity (perpetual equinox). As with the simple :math:`P_{2}` insolation for the Frierson, Byrne, and Geen schemes, there is no dirunal cycle. 
+which corresponds to the latitudinal distribution of radiation received by a planet with no obliquity (perpetual equinox). As with the simple :math:`P_{2}` insolation for the Frierson, Byrne, and Geen schemes, there is no diurnal cycle. 
 
 | **Time-dependent insolation** 
 | All of the radiation schemes contained in this module can be run with time-dependent insolation, selected by setting ``do_seasonal = True``. In this case, ``astronomy_mod`` is used to calculate the zenith angle and planet-star distance at each location and time. This information is then used by the ``two_stream_gray_rad`` module to calculate the top of atmosphere insolation as a function of time. 
@@ -253,7 +253,7 @@ The namelist options for **two_stream_gray_rad_nml** are listed below.
 :ir_tau_eq: Surface longwave optical depth at equator. Default :math:`6.0`. 
 :ir_tau_pole: Surface longwave optical depth at pole. Default :math:`1.5`. 
 :odp: Frierson optical depth scaling parameter :math:`\kappa`. Default :math:`1.0`. 
-:linear_tau: :math:`f_l`. Determines partitioning between linear term and :math:`^{k}` term in Frierson longwave optical depth. Default :math:`0.1`. 
+:linear_tau: :math:`f_l`. Determines partitioning between linear term and :math:`p^{k}` term in Frierson longwave optical depth. Default :math:`0.1`. 
 :wv_exponent: Pressure exponent, :math:`k` in definition of optical depth. Default :math:`4.0`. 
 
 **Namelist options for Byrne scheme longwave optical depth** 
@@ -288,17 +288,17 @@ The namelist options for **two_stream_gray_rad_nml** are listed below.
 
 **Namelist options for incoming solar radiation**
 
-:do_seasonal: Sets whether insolation is diurnally-and-seasonally averaged, or time dependent. ``TRUE`` or ``FALSE``. Default ``FALSE``. 
+:do_seasonal: Sets whether insolation is diurnally-and-seasonally averaged (``TRUE``), or time dependent (``FALSE``). Default ``FALSE``. 
 :solar_constant: The solar constant :math:`S_{0}`. Default value: :math:`1360.0\,\text{W}\,\text{m}^{-2}`. 
 
 The following namelist options are used when ``rad_scheme`` is set to ``'FRIERSON'``, ``'BYRNE'`` or ``'GEEN'`` and ``do_seasonal=FALSE``:
 
-:del_sol:  Parameter :math:`\Delta_{S}` determing :math:`P_{2}` insolation amplitude. Default value: :math:`1.4`.  
+:del_sol:  Parameter :math:`\Delta_{S}` determining :math:`P_{2}` insolation amplitude. Default value: :math:`1.4`.  
 :del_sw: Parameter :math:`\Delta_{\text{sw}}` defining magnitude of :math:`\sin\theta` modification to :math:`P_{2}` insolation profile. Default value: :math:`0.0`. 
 
 The following namelist options are used when ``do_seasonal=TRUE``: 
 
-:use_time_average_coszen: ``TRUE`` or ``FALSE``. If ``TRUE``, average :math:`\cos\zeta` (:math:`\zeta` is zenith angle) over the period ``dt_rad_avg``. For example, for the Earth's diurnal period, ``use_time_average_coszen=TRUE`` and ``dt_rad_avg=86400.`` would achieved diurnally averaged insolation. 
+:use_time_average_coszen: ``TRUE`` or ``FALSE``. If ``TRUE``, average :math:`\cos\zeta` (:math:`\zeta` is zenith angle) over the period ``dt_rad_avg``. For example, for the Earth's diurnal period, ``use_time_average_coszen=TRUE`` and ``dt_rad_avg=86400.`` would achieve diurnally averaged insolation. 
 :dt_rad_avg: Averaging period (units: seconds) for time-dependent insolation :math:`\Delta t_{\text{avg}}`. Default=-1 sets averaging period to model timestep. 
 :solday: Day of year to run time-dependent insolation perpetually. If negative, the option to run perpetually on a specific day is not used. Default -10. 
 :equinox_day: Fraction of year [0,1] where Northern Hemisphere autumn equinox occurs. Default = 0.75 (e.g. end of September for 360 day year). 
@@ -320,13 +320,13 @@ The following namelist options are used when ``do_seasonal=TRUE``:
 
 :flux_heat_gp: A prescribed heat flux through the lower boundary can be added for the giant planet case. This is set in ``surface_flux_nml``. Default value is :math:`5.7\,\text{W}\,\text{m}^{-2}`. 
 
-The following astronomical parameters are set in ``astronomy_mod_nml``. The are used if ``do_seasonal=True``. 
+The following astronomical parameters are set in ``astronomy_mod_nml``. They are used if ``do_seasonal=True``. 
 
 :ecc: Orbital eccentricity. Default :math:`0.0`. 
 :obliq: Obliquity. Default :math:`23.439` degrees.
 :per: Longitude of perihelion (point in orbit when planet is closest to star) with respect to autumnal equinox in Northern Hemisphere. Default :math:`102.932` degrees. 
 
-The following astronomical parameters are set in ``constant_nml``. They will be used to calcualte the diurnal period if ``do_seasonal=True``. 
+The following astronomical parameters are set in ``constant_nml``. They will be used to calculate the diurnal period if ``do_seasonal=True``. 
 
 :orbital_period: Orbital period in seconds. Default is :math:`365.25\times86400.0\,\text{s}`. Only used if ``calendar`` is set to ``'no_calendar'`` in ``main_nml``. 
 :omega: Planetary rotation rate in :math:`s^{-1}`. Default value is :math:`7.29\times10^{-5}\,\text{s}^{-1}` 
@@ -399,7 +399,7 @@ Modules relevant to this one include:
 :astronomy_mod: Module that performs astronomical calcuations used for insolation. 
 :mixed_layer_mod: Surface albedo is set here. This is also where the surface temperature is updated. 
 :surface_flux_mod: An internal heat flux for giant planets can be set here. 
-:constants_mod: Planetary rotation rate and orbital period are set here. These are used in the caluclations made by ``astronomy_mod``. 
+:constants_mod: Planetary rotation rate and orbital period are set here. These are used in the calculations made by ``astronomy_mod``. 
 
 
 Other radiative transfer schemes are included in the following modules:
