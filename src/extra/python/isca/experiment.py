@@ -144,6 +144,11 @@ class Experiment(Logger, EventEmitter):
     def write_namelist(self, outdir):
         namelist_file = P(outdir, 'input.nml')
         self.log.info('Writing namelist to %r' % namelist_file)
+        # A fixed column width is added to be a fixed number as most string namelist variables are
+        # width 256 in Isca, so that width plus some indentation and the namelist parameters own 
+        # name should not exceed 350 characters. Default f90nml value is 72, which is regularly 
+        # too short for some namelist variables where directories are pointed to.
+        self.namelist.column_width = 350
         self.namelist.write(namelist_file)
 
     def write_diag_table(self, outdir):

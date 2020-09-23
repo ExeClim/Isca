@@ -11,3 +11,5 @@ Components of Isca
    physics
    output
    idealised_moist_phys
+   convection_simple_betts_miller
+   socrates 
