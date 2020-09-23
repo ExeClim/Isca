@@ -33,12 +33,20 @@ References
            **21(15)**, 3815--3832,
            doi: `10.1175/2007JCLI2065.1 <http://dx.doi.org/10.1175/2007JCLI2065.1>`_.
 
+.. [MannersEtAl2015] Manners, J. and Edwards, J. M. and Hill, P. and Thelen, J.-C., 2015:
+             SOCRATES (Suite Of Community RAdiative Transfer codes based on Edwards and Slingo) Technical Guide.
+             Met Office, UK. Aavailable at: https://code.metoffice.gov.uk/trac/socrates.
+
 .. [Ricchiazzi1998] Ricchiazzi, P., Yang, S., Gautier, C., and Sowle, D., 1998: SBDART: A research and teaching 
                 software tool for plane-parallel radiative transfer in the Earth’s atmosphere, 
                 *B. Am. Meteorol. Soc.*, **79**, 2101–2114, doi.
 
 .. [Schneider2009] Schneider, T. and Liu, J., 2009: Formation of jets and equatorial superrotation on Jupiter, 
                 *J. Atmos. Sci.*, **66**, 579–601, doi.
+                
+.. [Thomson_and_Vallis2019] Thomson, S. I. and Vallis, G. K., 2019. Hierarchical Modeling of Solar System
+            Planets with Isca. *Atmosphere*, **10 (12)**, 803,
+            doi: `10.3390/atmos10120803 <https://doi.org/10.3390/atmos10120803>`_.
 
 .. [Vallis2017] Vallis, G. K., 2017: **Atmospheric and Oceanic Fluid Dynamics. Fundamentals and 
            Large-Scale Circulation**. 2nd ed. Cambridge University Press.
@@ -56,5 +64,8 @@ References
            *Dynamics of Atmospheres and Oceans*,
            **73**, 10--33,
            doi: `10.1016/j.dynatmoce.2015.11.001 <https://doi.org/10.1016/j.dynatmoce.2015.11.001>`_.
+
+
+
 
 
