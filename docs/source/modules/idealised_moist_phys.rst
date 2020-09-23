@@ -13,11 +13,9 @@
 
 Moist physics driver: idealized_moist_phys.F90
 ==============================================
-.. Don't forget to add a concise and informative title.
 
 Summary
 -------
-.. Add a short abstract on what the relevant part of code does.
 
 ``idealized_moist_phys.F90`` calls the various modules associated with Isca's moist physics configurations. The specific parameterisations to be used can be selected via namelist input to this module. This is where the radiation, convection, turbulence and land options are set. In addition, timestepping for the bucket hydrology option is managed locally here.
 
@@ -72,7 +70,7 @@ Three namelist parameters exist as switches to select the convection options:
 |``do_ras``         |If true, use the relaxed Arakawa Schubert convection scheme.|``False``|
 +-------------------+------------------------------------------------------------+---------+
 
-If multiple flags are set as True, or all are False, an error will be raised. This method exists for compatability with configurations pre-dating method 1. Method 1 is preferred for new model configurations.
+If multiple flags are set as True, or all are False, an error will be raised. This method exists for compatibility with configurations pre-dating method 1. Method 1 is preferred for new model configurations.
 
 Humidity calculation options
 """"""""""""""""""""""""""""
@@ -107,7 +105,7 @@ Near the surface, different processes will be appropriate for terrestrial vs. ga
 
 Isca will evaluate surface heat exchange provided a gaseous option is not specified (see below). Vertical diffusion may be enabled via ``turb = True``; default is ``False``. This enables calls to ``vert_turb_driver_mod``, ``vert_diff_mod`` and ``mixed_layer_mod``.
 
-Additonal namelist parameters further specify the processes called and parameters used:
+Additional namelist parameters further specify the processes called and parameters used:
 
 +----------------------------+-----------------------------------------------------------------------------+---------+
 | Option                     | Summary                                                                     |Default  |
@@ -170,7 +168,7 @@ Land and hydrology processes are predominantly dealt with in ``surface_flux_mod`
 +----------------------------+----------------------------------------------------------------------+-------------------+
 |``init_bucket_depth_land``  |Value at which to initialise bucket water depth over land.            |``20.``            |
 +----------------------------+----------------------------------------------------------------------+-------------------+
-|``max_bucket_depth_land``   |Maximum depth of water in bucket over land following intialisation.   |``0.15``           |
+|``max_bucket_depth_land``   |Maximum depth of water in bucket over land following initialisation.  |``0.15``           |
 +----------------------------+----------------------------------------------------------------------+-------------------+
 |``robert_bucket``           |Robert coefficient for RAW filter on bucket leapfrog timestepping.    |``0.04``           |
 +----------------------------+----------------------------------------------------------------------+-------------------+
@@ -194,7 +192,6 @@ Land and hydrology processes are predominantly dealt with in ``surface_flux_mod`
 									  
 Diagnostics
 -----------
-.. What diagnostics are available for this part of the code.
 
 Diagnostics from this module are output under ``mod_name = 'atmosphere'``. Some diagnostics may only be output when certain namelist options are set, e.g. those associated with the bucket hydrology. Requesting unsaved diagnostics in your diagnostic list will result in those diagnostics not being output, but will not cause a fatal error or affect other diagnostics.
 
@@ -228,7 +225,7 @@ Diagnostics from this module are output under ``mod_name = 'atmosphere'``. Some 
 +----------------------+-----------------------------------------------------+------------------------------------+
 |``rh``                | Relative humidity                                   | %                                  |
 +----------------------+-----------------------------------------------------+------------------------------------+
-|``cape``              | Convective Avaliable Potential Energy               | J kg :math:`^{-1}`                 |
+|``cape``              | Convective Available Potential Energy               | J kg :math:`^{-1}`                 |
 +----------------------+-----------------------------------------------------+------------------------------------+
 |``cin``               | Convective Inhibition                               | J kg :math:`^{-1}`                 |
 +----------------------+-----------------------------------------------------+------------------------------------+
@@ -262,8 +259,6 @@ Diagnostics from this module are output under ``mod_name = 'atmosphere'``. Some 
 	 
 Relevant modules and subroutines
 --------------------------------
-.. List the names of relevant modules, subroutines, functions, etc.
-.. You can add also code snippets, using Sphinx code formatting
 
 Key physics modules managed from this module include:
 
