@@ -7,8 +7,7 @@ Components of Isca
 .. toctree::
    :maxdepth: 1
 
+   introduction
    dynamics
    physics
    output
-   convection_simple_betts_miller
-   socrates 
