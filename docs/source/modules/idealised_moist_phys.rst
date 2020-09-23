@@ -19,7 +19,7 @@ Summary
 
 ``idealized_moist_phys.F90`` calls the various modules associated with Isca's moist physics configurations. The specific parameterisations to be used can be selected via namelist input to this module. This is where the radiation, convection, turbulence and land options are set. In addition, timestepping for the bucket hydrology option is managed locally here.
 
-These options allow users to configure a wide range of planets, including notable configurations from the literature (Frierson et al. 2006, Byrne and O'Gorman, Schneider and Liu, Jucker et al. and others). Users should bear in mind that the full parameter space is vast and not all options may be compatible with one another. 
+These options allow users to configure a wide range of planets, including notable configurations from the literature [Frierson2006a]_, [Byrne2013]_, [Schneider2009]_, [Jucker2017]_. Users should bear in mind that the full parameter space is vast and not all options may be compatible with one another. 
 
 The fortran file is found in ``Isca/src/atmos_spectral/driver/solo/idealized_moist_phys.F90``
 
@@ -41,13 +41,13 @@ The scheme to be used can be selected using the ``convection_scheme`` namelist p
 +--------------------------+---------------------------------------------------------------------------+
 |Value                     |Effect                                                                     |
 +==========================+===========================================================================+
-|``SIMPLE_BETTS_CONV``     |Use Frierson Quasi-Equilibrium convection scheme [Frierson2007]_ .         |
+|``SIMPLE_BETTS_CONV``     |Use Frierson Quasi-Equilibrium convection scheme [Frierson2007]_.          |
 +--------------------------+---------------------------------------------------------------------------+
-|``FULL_BETTS_MILLER_CONV``|Use the Betts-Miller convection scheme (Betts and Miller,).                |
+|``FULL_BETTS_MILLER_CONV``|Use the Betts-Miller convection scheme [Betts1986]_, [BettsMiller1986]_.   |
 +--------------------------+---------------------------------------------------------------------------+
-|``RAS_CONV``              |Use the relaxed Arakawa Schubert convection scheme ().                     |
+|``RAS_CONV``              |Use the relaxed Arakawa Schubert convection scheme [Moorthi1992]_.         |
 +--------------------------+---------------------------------------------------------------------------+
-|``DRY_CONV``              |Use the dry convection scheme (CITATION NEEDED?).                          |
+|``DRY_CONV``              |Use the dry convection scheme [Schneider2006]_.                            |
 +--------------------------+---------------------------------------------------------------------------+
 |``NO_CONV``               |Use no convection scheme.                                                  |
 +--------------------------+---------------------------------------------------------------------------+
@@ -82,7 +82,7 @@ Humidity calculation options
 
 Radiation
 ^^^^^^^^^
-Two more comprehensive radiation codes are currently included in Isca: RRTM () and Socrates (). In addition, a number of simple radiation parameterisations for the atmospheres of Earth and other planets can be found in ``two_stream_gray_rad.F90``. The radiation scheme is set through the following flags:
+Two more comprehensive radiation codes are currently included in Isca: RRTM [MlawerEtAl1997]_ and Socrates [MannersEtAl2015]_. In addition, a number of simple radiation parameterisations for the atmospheres of Earth and other planets can be found in ``two_stream_gray_rad.F90``. The radiation scheme is set through the following flags:
 
 +-------------------------+-----------------------------------------------+---------+
 | Option                  | Summary                                       |Default  |
@@ -151,7 +151,7 @@ NB: ``damping_driver_mod`` is currently being configured to allow gravity wave d
 Land and hydrology
 ^^^^^^^^^^^^^^^^^^
 
-Land and hydrology processes are predominantly dealt with in ``surface_flux_mod`` and ``mixed_layer_mod``, but land and bucket hydrology options are initialised with the following namelist parameters. We acknowledge that the bucket hydrology is adapted from code by (TS github), and follows (citation). Land and hydrology options in this module are:
+Land and hydrology processes are predominantly dealt with in ``surface_flux_mod`` and ``mixed_layer_mod``, but land and bucket hydrology options are initialised with the following namelist parameters. We acknowledge that the bucket hydrology is adapted from code from https://github.com/tapios and follows [Manabe1969]_. Land and hydrology options in this module are:
 
 +----------------------------+---------------------------------------------------------------------------------+-------------------+
 | Option                     | Summary                                                                         |Default            |
@@ -277,12 +277,17 @@ Key physics modules managed from this module include:
 
 References
 ----------
-..
-   Add relevant references. This is done in 2 steps:
-   1. Add the reference itself to docs/source/references.rst
-   2. Insert the citation key here, e.g. [Vallis2017]_
-   
-   See the Contributing guide for more info.
 
-[Schneider2009]_
+[Betts1986]_
+[BettsMiller1986]_
+[Byrne2013]_
+[Frierson2006a]_ 
 [Frierson2007]_
+[Jucker2017]_
+[Manabe1969]_
+[MannersEtAl2015]_
+[MlawerEtAl1997]_
+[Moorthi1992]_
+[Schneider2006]_
+[Schneider2009]_
+[Williams2011]_
