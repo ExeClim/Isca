@@ -427,5 +427,5 @@ References
 
 Authors
 ----------
-This documentation was written by Neil Lewis, peer reviewed by X, and quality controlled by X.
+This documentation was written by Neil Lewis, peer reviewed by Ruth Geen, and quality controlled by Matthew Henry.
 
