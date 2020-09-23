@@ -24,12 +24,17 @@ This module includes different simple configurations for solving the two stream 
 |                  | | region (:math:`8-14\,\mu\,\text{m}`) and the second corresponds to all other     |                      |
 |                  | | infrared wavelengths (:math:`>4\,\mu\,\text{m}`). Longwave and shortwave optical |                      |
 |                  | | depths depend on water vapour content and :math:`\text{CO}_{2}` concentration.   |                      |
+|                  | |                                                                                  |                      |
+|                  | | Note: the Geen scheme is currently only stable when run in a fixed SST           |                      |
+|                  | | configuration. A version stable with a slab ocean is expected by 30/9/2020.      |                      |
 +------------------+-------------------------------+----------------------------------------------------+----------------------+
 | ``'SCHNEIDER'``  | | Semi-gray scheme for use in **giant planet** simulations. Longwave               | [Schneider2009]_     |
 |                  | | and shortwave optical depths are prescribed. Does not require a                  |                      |
 |                  | | surface temperature as input, and allows specification of an                     |                      |
 |                  | | interior heat flux.                                                              |                      |
 +------------------+-------------------------------+----------------------------------------------------+----------------------+
+
+
 
 
 For each of these schemes diurnally-and-seasonally averaged, and time-dependent options for the incoming solar radiation are available. 
@@ -148,6 +153,8 @@ Geen scheme
 -----------
 
 The Geen scheme provides an intermediate option between gray radiation and more complete descriptions of radiative transfer (e.g., the correlated-:math:`k` schemes SOCRATES and RRTM). It has two infrared bands and one solar band. The shortwave band (:math:`<4\,\mu\,\text{m}`) treats all solar radiation. Two long-wave bands treat absorption: one in the infrared region of the spectral (:math:`8-14\,\mu\,\text{m}`), and the other in all other longwave wavelengths (:math:`<4\,\mu\,\text{m}`, non-window).  
+
+Note: the Geen scheme is currently only stable when run in a fixed SST configuration. A version stable with a slab ocean is expected by 30/9/2020. 
 
 | **Longwave**
 | Longwave radiative transfer is described by the following set of equations. In the non-window region:
