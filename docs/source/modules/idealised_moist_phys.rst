@@ -11,7 +11,7 @@
     Here is a guide on reST formatting:
     https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
 
-Moist physics driver: idealised_moist_phys.F90
+Moist physics driver: idealized_moist_phys.F90
 ==============================================
 .. Don't forget to add a concise and informative title.
 
@@ -19,7 +19,7 @@ Summary
 -------
 .. Add a short abstract on what the relevant part of code does.
 
-``idealised_moist_phys.F90`` calls the various modules associated with Isca's moist physics configurations. The specific parameterisations to be used can be selected via namelist input to this module. This is where the radiation, convection, turbulence and land options are set. In addition, timestepping for the bucket hydrology option is managed locally here.
+``idealized_moist_phys.F90`` calls the various modules associated with Isca's moist physics configurations. The specific parameterisations to be used can be selected via namelist input to this module. This is where the radiation, convection, turbulence and land options are set. In addition, timestepping for the bucket hydrology option is managed locally here.
 
 These options allow users to configure a wide range of planets, including notable configurations from the literature (Frierson et al. 2006, Byrne and O'Gorman, Schneider and Liu, Jucker et al. and others). Users should bear in mind that the full parameter space is vast and not all options may be compatible with one another. 
 
@@ -101,7 +101,7 @@ Drag and Turbulence
 
 Lower Boundary Heat, Momentum & Humidity Exchange
 """""""""""""""""""""""""""""""""""""""""""""""""
-Near the surface, different processes will be appropriate for terrestrial vs. gaseous planets, and for different experimental designs. These are determined by namelist parameters in ``idealised_moist_phys`` as follows.
+Near the surface, different processes will be appropriate for terrestrial vs. gaseous planets, and for different experimental designs. These are determined by namelist parameters in ``idealized_moist_phys`` as follows.
 
 **Terrestrial Planets**
 
