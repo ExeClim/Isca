@@ -170,10 +170,12 @@ Land and hydrology processes are predominantly dealt with in ``surface_flux_mod`
 +----------------------------+----------------------------------------------------------------------+-------------------+
 |``max_bucket_depth_land``   |Maximum depth of water in bucket over land following initialisation.  |``0.15``           |
 +----------------------------+----------------------------------------------------------------------+-------------------+
-|``robert_bucket``           |Robert coefficient for RAW filter on bucket leapfrog timestepping.    |``0.04``           |
+|``robert_bucket``           |Robert coefficient for RAW filter* on bucket leapfrog timestepping.   |``0.04``           |
 +----------------------------+----------------------------------------------------------------------+-------------------+
-|``raw_bucket``              |RAW coefficient for RAW filter on bucket leapfrog timestepping.       |``0.53``           |
+|``raw_bucket``              |RAW coefficient for RAW filter* on bucket leapfrog timestepping.      |``0.53``           |
 +----------------------------+----------------------------------------------------------------------+-------------------+
+
+`*` Roberts-Asselin-Williams filter, [Williams2011]_
 
 ``land_option`` may be set to:
 
