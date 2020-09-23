@@ -15,8 +15,8 @@ This module includes different simple configurations for solving the two stream 
 | ``'FRIERSON'``   | | Semi-gray scheme with prescribed longwave and shortwave                          | [Frierson2006a]_     |
 |                  | | optical depths.                                                                  |                      |
 +------------------+-------------------------------+----------------------------------------------------+----------------------+
-| ``'BYRNE'``      | | Semi-gray scheme with longwave optical depth dependent on                        | [Byrne2013]_         |
-|                  | | water vapour content and :math:`\text{CO}_{2}` concentration. Shortwave          |                      |
+| ``'BYRNE'``      | | Semi-gray scheme with longwave optical depth dependent on                        | | [Byrne2013]_       |
+|                  | | water vapour content and :math:`\text{CO}_{2}` concentration. Shortwave          | | [VallisEtAl2018]_  |
 |                  | | optical depth is prescribed.                                                     |                      |
 +------------------+-------------------------------+----------------------------------------------------+----------------------+
 | ``'GEEN'``       | | Multi-band scheme with two longwave bands and one shortwave                      | | [Geen2016]_        |
