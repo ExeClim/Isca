@@ -1,7 +1,7 @@
-Held--Suarez Forcing  
+Dry dynamical core (Held--Suarez) Forcing  
 =======================================================================================
 
-Documentation for ``held_suarez_mod``. 
+Documentation for ``hs_forcing_mod``. 
 
 
 Summary
