@@ -11,8 +11,8 @@
     Here is a guide on reST formatting:
     https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
 
-idealised_moist_phys.F90
-========================
+Moist physics driver: idealised_moist_phys.F90
+==============================================
 .. Don't forget to add a concise and informative title.
 
 Summary
