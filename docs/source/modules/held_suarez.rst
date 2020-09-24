@@ -101,6 +101,8 @@ There are four main options for :math:`T_{\text{eq}}`, which are set with the na
 | ``'from_file'``                | | Equilibrium temperature specified by input file.                                 |                      |
 +--------------------------------+-------------------------------+----------------------------------------------------+----------------------+
 
+A further ``equilibrium_t_option``, ``'top_down'`` is available, which constructs :math:`T_{\text{eq}}` from astronomical solar input and an approximate analytic solution to radiative-convective equations with a specified optical depth, lapse rate, radiative relaxation time, and surface mixed-layer depth. In this scenario, the subroutine ``top_down_newtonian_damping`` is used in place of ``newtonian_damping``. This option will be described in the section **Top down Newtonian damping**. 
+
 | **Held and Suarez**
 | The ``'Held_Suarez'`` equilibrium temperature profile is designed to mimic the temperature sturcutre of the Earth in radiative-conevective equilibrium. 
 
@@ -171,7 +173,76 @@ The name of the netcdf file is specified with the namelist option ``equilibrium_
 
 Top-down Newtonian damping 
 ----------------------------
-Some text here \dots 
+
+The subroutine ``top_down_newtonian_damping`` is used when ``equilibrium_t_option`` is set to ``'top_down'``. In this scenario, :math:`T_{\text{eq}}` is constructed using astronomical solar input and an approximate analytic solution to radiative-convective equations with a specified optical depth, lapse rate, radiative relaxation time, and surface mixed-layer depth, following [VallisEtAl2018]_. 
+
+:math:`T_{\text{eq}}` is computed as follows. It is assumed that the atmosphere consists of a troposphere, with a given lapse rate, and a stratosphere that has a small optical depth and is in radiative equilibrium. Then, the a radiative-convective tropopause height is obtained by solving [VallisEtAl2015]_ 
+
+.. math:: 
+   H_{\text{T}}=\frac{1}{16\Gamma}\left(CT_{\text{T}}+\sqrt{C^{2}T_{\text{T}}^{2}+32\Gamma\tau_{\text{s}}H_{\text{a}}T_{\text{T}}}\right) 
+
+where :math:`\Gamma` is the lapse rate, :math:`\tau_{\text{s}}`, and :math:`H_{\text{a}}` is the scale height of the main infrared absorber. Each of these are parameters that may be specified by the user in the namelist. :math:`C=\log4` is a constant. 
+
+:math:`T_{\text{T}}` is the temperature at the tropopause, which, given the assumptions decsribed above [VallisEtAl2015]_, is defined in terms of the insolation via 
+
+.. math:: 
+   T_{\text{T}} &= 2^{-\frac{1}{4}}T_{\text{e}} \\ 
+   T_{\text{e}} &= \left[\frac{(1-\alpha)S}{\sigma}\right]^{\frac{1}{4}}
+
+where :math:`S` is the insolation, which varies in time and space, and depends on astronomical parameters such as the solar constant, orbital radius, obliquity, eccentricity, and rotation rate. :math:`\alpha` is the surface albedo. 
+
+Once the height of the tropopause has been calculated, a surface temperature is calculated using 
+
+.. math:: 
+    T_{\text{s}} = T_{\text{T}} + H_{\text{T}}\Gamma 
+
+This surface temperature is then used to force the actual ground temperature via 
+
+.. math:: 
+   C_{\text{g}}\frac{\text{d}T_{\text{g}}}{\text{d}t}=\sigma T_{\text{s}}^{4} - \sigma T_{\text{g}}^{4}
+
+where :math:`C_{\text{g}}` is the surface heat capacity. 
+
+Once the ground temperature has been updated, the relaxation temperature profile :math:`T_{\text{eq}}` can be calculated. In the troposphere 
+
+.. math:: T_{\text{trop}} = T_{\text{g}}-\Gamma z 
+
+There then various options available to determine the stratospheric temperature structure. Each of these are selected by setting the namelist parameter ``stratosphere_t_option``. 
+
+**The default option is** obtained with ``stratosphere_t_option='extend_tp'``. In this scenario, :math:`T_{\text{eq}}` is given by  
+
+.. math:: 
+   T_{\text{eq}} = \begin{cases} T_{\text{trop}} &\text{if}\  z\leq H_{\text{T}} \\ T_{\text{T}} &\text{if}\  z > H_{\text{T}} \end{cases}
+
+where :math:`T_{\text{T}}` is the tropopause temperature given above. 
+
+Other **experimental options** are as follows:
+
+If ``stratosphere_t_option='c_above_tp'`` then 
+
+.. math:: 
+   T_{\text{eq}} = \begin{cases} T_{\text{trop}} &\text{if}\  z\leq H_{\text{T}} \\ T_{\text{str}} &\text{if}\  z > H_{\text{T}} \end{cases}
+
+where :math:`T_{\text{str}} = T_{\text{strat}} - \epsilon\sin\theta` (as in the Newtonian damping configurations above). This option may lead to a temperature discontinuity at the tropopause.
+
+If ``stratosphere_t_option='hs_like'`` then 
+
+.. math:: 
+   T_{\text{eq}} = \max\left(T_{\text{trop}}, T_{\text{str}}\right) 
+
+This choice is very similar to that in the Held-Suarez framework, but where the tropospheric radiative-convective equilibrium profile prescribed by Held and Suarez is replaced with :math:`T_{\text{trop}}`. 
+
+Finally, if ``stratosphere_t_option=''`` (or, in fact, is set to anything other than the three preceding options), then it is assumed that the atmosphere is all troposphere, i.e., 
+
+.. math:: 
+   T_{\text{eq}} = \max\left(T_{\text{trop}}, 0\right) 
+
+
+
+|
+|
+**For all of the above options**, once :math:`T_{\text{eq}}` has been obtained, the model temperature is relaxed towards the equilibrium temperature in an indentical manner to that in the regular ``newtonian_damping`` subroutine (see above). 
+
 
 
 
@@ -188,29 +259,18 @@ Namelist options
 The namelist options for **hs_forcing_nml** are listed below. 
 
 
-**Namelist option to choose scheme**
-
-:rad_scheme: String choosing the radiation scheme. Options are ``'FRIERSON'``, ``'BYRNE'``, ``'GEEN'``, ``'SCHNEIDER'``. Default option is ``'FRIERSON'``. 
-
-**Namelist options for Frierson scheme longwave optical depth** 
-
-:ir_tau_eq: Surface longwave optical depth at equator. Default :math:`6.0`. 
-:ir_tau_pole: Surface longwave optical depth at pole. Default :math:`1.5`. 
-:odp: Frierson optical depth scaling parameter :math:`\kappa`. Default :math:`1.0`. 
-:linear_tau: :math:`f_l`. Determines partitioning between linear term and :math:`p^{k}` term in Frierson longwave optical depth. Default :math:`0.1`. 
-:wv_exponent: Pressure exponent, :math:`k` in definition of optical depth. Default :math:`4.0`. 
-
 
 Diagnostics 
 ----------------
 
-Some diagnostics are listed below\dots 
+The diagnostics available from **hs_forcing_mod** are listed below. 
 
 References
 ----------
 
 | [Held1994]_ 
 | [Penn2018]_
+| [VallisEtAl2015]_
 | [VallisEtAl2018]_
 
 Authors
