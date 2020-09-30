@@ -291,3 +291,7 @@ References
 [Schneider2006]_
 [Schneider2009]_
 [Williams2011]_
+
+Authors
+-------
+This documentation was written by Ruth Geen, peer reviewed by Marianne Pietschnig, and quality controlled by Ross Castle.
