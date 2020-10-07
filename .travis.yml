@@ -49,7 +49,7 @@ script:
   - if [[ "$CONDA_ENV" == "docs" ]]; then
       sphinx-build -n -b html -d docs/_build/doctrees docs/source docs/_build/html;
     else
-      pytest -v;
+      travis_wait 30 pytest -v;
     fi;
 
 after_success:

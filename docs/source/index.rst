@@ -15,6 +15,7 @@ Contents
    python
    changelog
    contributing
+   testing/index.rst
    references
 
 
