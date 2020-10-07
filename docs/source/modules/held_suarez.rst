@@ -36,7 +36,7 @@ The main parametrisations included in this module are summarised in the table be
 |                                | | fields computed by either ``newtonian_damping`` or ``top_down_newtonian_damping``|                      |
 +--------------------------------+-------------------------------+----------------------------------------------------+----------------------+
 
-In the next few sections we will describe each of the main options above in detail. A list of namelist parameters for ``hs_forcing_mod``, and their effect and default values, is included at the end of this documentation page in **Namelist options**. 
+In the next few sections we will describe each of the main options above in detail. A list of namelist parameters for ``hs_forcing_mod``, and their effect and default values, is included at the end of this documentation page in **Namelist options**. Diagnostics that can be output by this module are alos described at the end of the documentation. 
 
 
 Rayleigh damping 
@@ -58,14 +58,14 @@ following [Held1994]_. :math:`\mathbf{u}=(u,v)` is the horizontal wind, and :mat
 where :math:`k_{f}` is the damping rate, and :math:`\sigma_{b}` specifies the boundary layer depth (for :math:`\sigma<\sigma_{b}`, no relaxation is applied). By default, :math:`k_{f}=1\,\text{days}^{-1}` and :math:`\sigma_{b}=0.7`. Both of these options can be changed in the namelist.
 
 | **Relaxation to a specified wind**
-| If ``relax_to_specified_wind=.TRUE.``, then the ``rayleigh_damping`` subroutine instead relaxes the wind to an equilibrium profile supplied as a netcdf file (with dimensions: pressure, latitude, longitude). In this scenario, the drag takes the form 
+| If ``relax_to_specified_wind=.TRUE.``, then the ``rayleigh_damping`` subroutine instead relaxes the wind to an equilibrium profile supplied as a netCDF file (with possible dimensions: time, pressure, latitude, longitude, where time is optional). In this scenario, the drag takes the form 
 
 .. math::
    \frac{\partial\mathbf{u}}{\partial t} = -k_{f}(\overline{\mathbf{u}}-\overline{\mathbf{u}}_{r})
 
 where :math:`\mathbf{u}_{r}` is the specified relaxation wind profile, and the overline denotes a zonal average. :math:`k_{f}` is the same as above. Note that in this instance, the relaxation is applied at all model levels, not just in the boundary layer. 
 
-The name of the netcdf files are specified with the namelist options ``u_wind_file`` and ``v_wind_file``, and should exclude the ``.nc`` suffix. Note: in the netcdf file, the :math:`u` and :math:`v` variables must be the same name as their respective file names, i.e., ``u_wind_file`` and ``v_wind_file``. The path to the file should be configured in the model's python run script (see the test cases for examples of how to do this). 
+The name of the netCDF files are specified with the namelist options ``u_wind_file`` and ``v_wind_file``, and should exclude the ``.nc`` suffix. Note: in the netCDF file, the :math:`u` and :math:`v` variables must be the same name as their respective file names, i.e., ``u_wind_file`` and ``v_wind_file``. The path to the file should be configured in the model's python run script (see the test cases for examples of how to do this). 
 
 
 Newtonian damping 
@@ -74,7 +74,7 @@ Newtonian damping
 The subroutine ``newtonian_damping`` contains options to apply a linear relexation to the model temperature field, towards a specified 'equilibrium' temperature field :math:`T_{\text{eq}}` 
 
 .. math::
-   \frac{\partial T}{\partial t} = -k_{T}(\theta,\sigma)[T-T_{\text{eq}}(\lambda,\theta,p)]
+   \frac{\partial T}{\partial t} = \dots -k_{T}(\theta,\sigma)[T-T_{\text{eq}}(\lambda,\theta,p)]
 
 where :math:`T` is the model temperature field, and :math:`k_{T}` is the thermal damping coefficient, defined as 
 
@@ -162,11 +162,11 @@ By default, :math:`T_{\text{strat}}=200\,\text{K}` (as above), :math:`p_{\text{t
 
 
 | **Equilibrium temperature profile from file**
-| When the ``'from_file'`` option is specified, then :math:`T_{\text{eq}}` is computed from a specified input file. The file should be a netcdf file, and temperature can be defined as a function of pressure, latitude, and longtiude. 
+| When the ``'from_file'`` option is specified, then :math:`T_{\text{eq}}` is computed from a specified input file. The file should be a netCDF file, and temperature can be defined as a function of time, pressure, latitude, and longtiude (with time optional). 
 
 The zonal mean of :math:`T_{\text{eq}}` provided in the file is taken, and this is used as the relaxation temperature field for the Newtonian damping. 
 
-The name of the netcdf file is specified with the namelist option ``equilibrium_t_file``, and should exclude the ``.nc`` suffix. Note: in the netcdf file, the :math:`T_{\text{eq}}` variable must be the same name as the name of the file, i.e., ``equilibrium_t_file``. The path to the file should be configured in the model's python run script (see the test cases for examples of how to do this). 
+The name of the netCDF file is specified with the namelist option ``equilibrium_t_file``, and should exclude the ``.nc`` suffix. Note: in the netCDF file, the :math:`T_{\text{eq}}` variable must be the same name as the name of the file, i.e., ``equilibrium_t_file``. The path to the file should be configured in the model's python run script (see the test cases for examples of how to do this). 
 
 
 
@@ -241,6 +241,7 @@ Finally, if ``stratosphere_t_option=''`` (or, in fact, is set to anything other 
 
 |
 |
+
 **For all of the above options**, once :math:`T_{\text{eq}}` has been obtained, the model temperature is relaxed towards the equilibrium temperature in an indentical manner to that in the regular ``newtonian_damping`` subroutine (see above). 
 
 
@@ -248,22 +249,145 @@ Finally, if ``stratosphere_t_option=''`` (or, in fact, is set to anything other 
 
 Local heating 
 ----------------------------
-Some text here \dots 
 
+A local heating may be included in addition to the zonal mean heating options described above. The local heating is administered by the subroutine ``local_heating``, and is activated if ``local_heating_option != ''`` (where ``local_heating_option`` is a string). Valid options for the ``local_heating_option`` are ``'from_file'`` and ``'Isidoro'``. 
+
+If local heating is included, then the thermodynamic equation is modified so that   
+
+.. math::
+   \frac{\partial T}{\partial t} = \dots -k_{T}(\theta,\sigma)[T-T_{\text{eq}}(\lambda,\theta,p)] + Q_{\text{local}} 
+
+where the first term describes the heating/cooling due to Newtonian damping (see above), and :math:`Q_{\text{local}}` is the local heating rate. 
+   
+| **Isidoro**
+| When ``local_heating_option = 'Isidoro'`` then the local heating takes the following form,  
+
+.. math:: 
+   Q_{\text{local}} = A \exp\left[\frac{1}{2}\left(\frac{\lambda-\lambda_{0}}{\Delta\lambda}\right)^{2}\right]\exp\left[\frac{1}{2}\left(\frac{\theta-\theta_{0}}{\Delta\theta}\right)^{2}\right]\exp\left(\frac{p-p_{\text{s}}}{\Delta p}\right)
+
+The heating is maximal at the surface and decays with pressure. :math:`\lambda_{0}` and :math:`\theta_{0}` specify the central longitude and latitude of the heating, respectively, :math:`\Delta\lambda` and :math:`\Delta\theta` specify the width of the heating, and :math:`\Delta p` determines how quickly the heating decays away from the surface. :math:`A` is the amplitude of the forcing at :math:`p=p_{\text{s}}`, :math:`\lambda=\lambda_{0}`, :math:`\theta=\theta_{0}`. Each of these parameters may be specified in the namelist. 
+
+| **From file** 
+| When ``local_heating_option = 'from_file'``, :math:`Q_{\text{local}}` is obtained from an input netCDF file (with possible dimensions: time, pressure, latitude, longitude, where time is optional). 
+
+The name of the netCDF file is specified with the namelist option ``local_heating_file``, and should exclude the ``.nc`` suffix. Note: in the netCDF file, the ``tdt`` temperature tendency variable must be the same name as the file name, i.e., ``local_heating_file``. The path to the file should be configured in the model's python run script (see the test cases for examples of how to do this). 
+
+   
 
 
 Namelist options
 ----------------
 
+``hs_forcing_mod`` is used when ``idealised_moist_model`` in ``atmosphere_nml`` is set to ``FALSE``. 
 
 The namelist options for **hs_forcing_nml** are listed below. 
+no_forcing -- other, if true then hs_focring_mod will not update tendencies 
 
 
+**Namelist options for Rayleigh damping** 
+
+
+
+:sigma_b: Top-of-boundary layer pressure :math:`\sigma_{\text{b}}`. Default :math:`0.7`. 
+:kf: Surface friction coefficient :math:`k_{f}`. If positive, :math:`k_{f}` has units :math:`\text{days}^{-1}`, and if negative, :math:`k_{f}` has units :math:`\text{days}` and is inverted. Default :math:`1\,\text{days}^{-1}`. 
+:relax_to_specified_wind: ``TRUE`` or ``FALSE``. If ``FALSE``, Rayleigh damping near surface follows [Held1994]_, if ``TRUE``, near surface wind is relaxed towards that specified in the input files ``u_wind_file`` and ``v_wind_file``. Default ``FALSE``. 
+:u_wind_file: Name of input netCDF file for :math:`u` wind used in Rayleigh damping if ``relax_to_specified_wind = TRUE``. File name should exclude ``.nc`` suffix. 
+:v_wind_file: Name of input netCDF file for :math:`v` wind used in Rayleigh damping if ``relax_to_specified_wind = TRUE``. File name should exclude ``.nc`` suffix. 
+:do_conserve_energy: ``TRUE`` or ``FALSE``. If true then the Rayleigh damping includes a temperature tendency that balances energy dissipation due to friction. Default ``TRUE``.
+
+
+
+**Namelist options for Newtonian damping**
+
+:equilibrium_t_option: String indicating how the relaxation temperature field should be constructed. Valid options are ``'Held_Suarez'``, ``'EXOPLANET'``, ``'EXOPLANET2'``, and ``'from_file'`` (see documentation above for a description of each). 
+:equilibrium_t_file: Name of input netCDF file for :math:`T_{\text{eq}}` wind used in Newtonian damping if ``equilibrium_t_option = 'from_file'``. File name should exclude ``.nc`` suffix. 
+:sigma_b: Top-of-boundary layer pressure, as for the Rayleigh damping. The same namelist variable is used for each of the ``rayleigh_damping``, ``newtonian_damping`` and ``top_down_newtonian_damping`` subroutines. 
+:t_zero: Surface temperature at the equator, :math:`T_{0}`. Default :math:`315\,\text{K}`. 
+:t_strat: Isothermal stratosphere temperature, :math:`T_{\text{strat}}`. Defualt :math:`200\,\text{K}`. 
+:delh: Equator-to-pole surface temperature difference :math:`(\Delta T)_{y}`. Default :math:`60\,\text{K}`. 
+:delv: Vertical potential temperature gradient :math:`(\Delta\theta)_{z}`. Default :math:`10\,\text{K}`.
+:eps: Amplitude of (additional) sinusoidal modulation to :math:`T_{\text{eq}}`, :math:`\epsilon`. Default :math:`0`. 
+:ka: Damping coefficient in the free atmosphere :math:`k_{a}`. If positive, :math:`k_{a}` has units :math:`\text{days}^{-1}`, and if negative, :math:`k_{a}` has units :math:`\text{days}` and is inverted. Default :math:`1/40\,\text{days}^{-1}`. 
+:ks: Surface damping coefficient :math:`k_{s}`. If positive, :math:`k_{s}` has units :math:`\text{days}^{-1}`, and if negative, :math:`k_{s}` has units :math:`\text{days}` and is inverted. Default :math:`1/4\,\text{days}^{-1}`. 
+:P00: Reference pressure for ``'Held_Suarez'`` and ``'EXOPLANET'`` equilibrium temperature fields. Default :math:`10^{5}\,\text{Pa}`. 
+:p_trop: Reference (tropopause) pressure for ``'EXOPLANET2'`` equilibrium temperature field. Default :math:`10^{4}\,\text{Pa}`. 
+:alpha: Pressure exponent for ``'EXOPLANET2'`` equilibrium temperature field. Default :math:`\alpha=2/7` yields a neutrally stratified atmosphere. 
+
+
+**Top down** 
+
+:sigma_b: Top-of-boundary layer pressure, as for the Rayleigh damping. The same namelist variable is used for each of the ``rayleigh_damping``, ``newtonian_damping`` and ``top_down_newtonian_damping`` subroutines. 
+:lapse: Lapse rate :math:`\Gamma`. Units are :math:`\text{K}\,\text{km}^{-1}`. Default :math:`6\,\text{K}\,text{km}^{-1}`. 
+:h_a: Absorber scale height :math:`H_{\text{a}}`. Units are :math:`\text{km}`. Default :math:`2\,\text{km}`. 
+:tau_s: Surface optical depth :math:`\tau_{\text{s}}`. Default :math:`5`. 
+:albedo: Albedo :math:`\alpha` used to calculate radiating temperature :math:`T_{\text{e}}`. Default :math:`0.3`. 
+:peri_time: Fraction of orbit when perihelion occurs. Default :math:`0.25`. 
+:smaxis: Semi-major axis of planet's orbit. Default :math:`1.5\times10^{6}\,\text{m}`. **Note**, this value seems to low. Upon further inspection of the code, it seems it is not used anywhere. It should be used to compute a seasonal cycle due to eccentricity, however this functionality does not seem to be implemented at the moment. 
+:orbital_period: Period of planet's orbit. Seems to override ``orbital_period`` set in ``constants_nml``. Default :math:`360\,\text{days}`. 
+:heat_capacity: Normalised surface heat capacity :math:`C_{\text{g}}/d` (equivalent to mixed layer depth of :math:`1\,\text{m}`). Default :math:`4.2\times10^{6}\,\text{J}\,\text{K}^{-1}\,\text{m}^{-2}\,\text{m}^{-1}`.
+:ml_depth: Mixed layer depth :math:`d` (see above). Default :math:`1\,\text{m}`. 
+:spinup_time: Days to spin up surface temperature (decoupled from atmosphere) during initialisation. Default :math:`10800\,\text{days}`. Note: must be a multiple of orbital period. 
+:stratosphere_t_option: String determining temperature structure in the stratosphere. Possible options include ``'c_above_tp'``, ``'hs_like'``, ``'extend_tp'`` (see above for description). If any other option is specified, then the atmosphere is 'all troposphere', and the temperature will decrease with decreasing pressure until it reaches zero. 
+:t_strat: Isothermal stratosphere temperature, :math:`T_{\text{strat}}`. Defualt :math:`200\,\text{K}`. Used when ``stratosphere_t_option`` is ``'c_above_tp'`` or ``'hs_like'``. This namelist variable is the same as that used by the regular Newtonian damping. 
+
+**Local heating**
+
+:local_heating_option: String indicating the option used for local heating. Valid options are ``'from_file'`` and ``'Isidoro'`` (see documentation for meaning), otherwise local heating is not performed. Default ``''``. 
+
+:local_heating_file: Name of input netCDF file for :math:`Q_{\text{local}}` wind used if ``local_heating_option = 'from_file'``. File name should exclude ``.nc`` suffix. 
+
+The following options are used if ``local_heating_option = 'Isidoro'``
+
+:local_heating_srfamp: Surface amplitude of local heating :math:`A`. Default :math:`0.0\,\text{K}\,\text{day}^{-1}`. 
+:local_heating_xwidth: Longitudinal width of local heating :math:`\Delta\lambda`. Default :math:`10^{\circ}`. 
+:local_heating_ywidth: Latitudinal width of local heating :math:`\Delta\theta`. Default :math:`10^{\circ}`. 
+:local_heating_xcenter: Longitudinal center of heating :math:`\lambda_{0}`. Default :math:`180^{\circ}`. 
+:local_heating_ycenter: Longitudinal center of heating :math:`\lambda_{0}`. Default :math:`45^{\circ}`. 
+:local_heating_vert_decay: Vertical decay of local heating in pressure :math:`\Delta p`. Default :math:`10^{4}\,\text{Pa}`.  
+
+
+
+**Other**
+
+There are also optins for a tracer source and sink, ``trflux`` and ``trsink``. These are currently undocumented, however, as Isca only uses the ``hs_forcing`` when the model is dry and there are no tracers. 
+
+
+
+
+ 
 
 Diagnostics 
 ----------------
 
 The diagnostics available from **hs_forcing_mod** are listed below. 
+
+id_teq, id_h_trop, id_tdt, id_udt, id_vdt, id_tdt_diss, id_diss_heat, id_local_heating, id_newtonian_damping
+
++-------------------+--------------------------------------+------------------------------------+
+| Name              | Description                          | Units                              |
++===================+======================================+====================================+
+| teq               | Relaxation temperature field         | :math:`\text{K}`                   |
++-------------------+--------------------------------------+------------------------------------+
+| tdt               | Total Newtonian + local heating      | :math:`\text{K}\,\text{s}^{-1}`    |
+|                   | + heating due to energy conservation |                                    | 
++-------------------+--------------------------------------+------------------------------------+
+| udt               | :math:`u` wind tendency              | :math:`\text{m}\,\text{s}^{-2}`    |
++-------------------+--------------------------------------+------------------------------------+
+| vdt               | :math:`v` wind tendency              | :math:`\text{m}\,\text{s}^{-2}`    |
++-------------------+--------------------------------------+------------------------------------+
+| tdt_diss          | Heating due to energy conservation   | :math:`\text{K}\,\text{s}^{-1}`    |
++-------------------+--------------------------------------+------------------------------------+
+| diss_heat         | Vertically integrated heating due to | :math:`\text{W}\,\text{m}^{-2}`    |
+|                   | kinetic energy dissipation           |                                    |
++-------------------+--------------------------------------+------------------------------------+
+| local_heating     | Local heating                        | :math:`\text{K}\,\text{s}^{-1}`    |
++-------------------+--------------------------------------+------------------------------------+
+| newtonian_damping | Heating due to Newtonian damping     | :math:`\text{K}\,\text{s}^{-1}`    |
++-------------------+--------------------------------------+------------------------------------+
+| h_trop            | Tropopause height in ``top_down``    | :math:`\text{W}\,\text{m}^{-2}`    |
+|                   | model                                |                                    |
++-------------------+--------------------------------------+------------------------------------+
+
 
 References
 ----------
