@@ -295,7 +295,7 @@ The namelist options for **two_stream_gray_rad_nml** are listed below.
 
 **Namelist options for incoming solar radiation**
 
-:do_seasonal: Sets whether insolation is diurnally-and-seasonally averaged (``TRUE``), or time dependent (``FALSE``). Default ``FALSE``. 
+:do_seasonal: Sets whether insolation is diurnally-and-seasonally averaged (``FALSE``), or time dependent (``TRUE``). Default ``FALSE``. 
 :solar_constant: The solar constant :math:`S_{0}`. Default value: :math:`1360.0\,\text{W}\,\text{m}^{-2}`. 
 
 The following namelist options are used when ``rad_scheme`` is set to ``'FRIERSON'``, ``'BYRNE'`` or ``'GEEN'`` and ``do_seasonal=FALSE``:
