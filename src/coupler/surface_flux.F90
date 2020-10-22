@@ -199,7 +199,7 @@ character(len=*), parameter :: tagname = '$Name:  $'
 
 logical :: do_init = .true.
 
-!jp As grav is no longer a `parameter`, initialisation of these variables
+! As grav is no longer a `parameter`, initialisation of these variables
 !   now happens in surface_flux_init
 real :: d622, d378, hlars, gcp, kappa, d608
 
@@ -263,7 +263,7 @@ logical :: do_simple             = .false.
 
 real    :: land_humidity_prefactor  =  1.0    ! Default is that land makes no difference to evaporative fluxes
 real    :: land_evap_prefactor  =  1.0    ! Default is that land makes no difference to evaporative fluxes
-real    :: veg_evap_prefactor = 1.0 ! Default prefactor for vegetation - no difference to evaporative fluxes 
+real    :: veg_evap_prefactor = 1.0 ! Default prefactor for vegetation = 1. - no difference to evaporative fluxes. Setting veg_evap_prefactor to a value between 0 and <1 (e.g. 0.5) for a doubling of CO2 mimicks the effect of stomatal closure on land-surface evaporation. 
 
 real    :: flux_heat_gp  =  5.7    ! Default value for Jupiter of 5.7 Wm^-2
 real    :: diabatic_acce =  1.0    ! Diabatic acceleration??
@@ -349,7 +349,7 @@ subroutine surface_flux_1d (                                           &
      w_atm,     u_star,     b_star,     q_star,                        &
      dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &
      dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &
-     potential_evap,                                                   & !mp586 add potential evaporation
+     potential_evap,                                                   & ! add potential evaporation, here defined as the evaporation that would occur if the bucket were full
      ex_del_m, ex_del_h, ex_del_q,                                     & !for 10m winds and 2m temp
      temp_2m, u_10m, v_10m, 				      	       & !for 10m winds and 2m temp
      q_2m, rh_2m,                                                      & !Add 2m q and RH
@@ -435,7 +435,7 @@ subroutine surface_flux_1d (                                           &
   ! initilaize surface air humidity according to surface type
   where (land)
 !     q_surf0 = q_surf ! land calculates it
-     q_surf0 = q_sat !s our simplified land evaporation model does not calculate q_surf, so we specify it as q_sat.
+     q_surf0 = q_sat ! our simplified land evaporation model does not calculate q_surf, so we specify it as q_sat.
   elsewhere
      q_surf0 = q_sat  ! everything else assumes saturated sfc humidity
   endwhere
@@ -600,10 +600,10 @@ subroutine surface_flux_1d (                                           &
 			elsewhere	
                 flux_q    =  veg_evap_prefactor * bucket_depth/(max_bucket_depth_land*0.75) * rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
 			end where
-			potential_evap = veg_evap_prefactor * rho_drag * (q_surf0 - q_atm) !mp586 added calculation of potential evaporation 
+			potential_evap = veg_evap_prefactor * rho_drag * (q_surf0 - q_atm) ! added calculation of potential evaporation 
 		elsewhere
 	        flux_q    =  rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
-	        potential_evap = flux_q !mp586 added calculation of potential evaporation
+	        potential_evap = flux_q ! added calculation of potential evaporation
 		end where
 		
 	    depth_change_lh_1d  = flux_q * dt/dens_h2o 
@@ -718,7 +718,7 @@ subroutine surface_flux_0d (                                                 &
      w_atm_0,     u_star_0,     b_star_0,     q_star_0,                      &
      dhdt_surf_0, dedt_surf_0,  dedq_surf_0,  drdt_surf_0,                   &
      dhdt_atm_0,  dedq_atm_0,   dtaudu_atm_0, dtaudv_atm_0,                  &
-     potential_evap_0,												   		 & !mp586 add potential evaporation
+     potential_evap_0,												   		 & ! add potential evaporation
      ex_del_m_0, ex_del_h_0, ex_del_q_0,                                     & ! for 10m winds and 2m temp
      temp_2m_0, u_10m_0, v_10m_0, 				      	     & ! for 10m winds and 2m temp
      q_2m_0, rh_2m_0,                                                        & !2m q and RH
@@ -736,7 +736,7 @@ subroutine surface_flux_0d (                                                 &
        dhdt_surf_0, dedt_surf_0,  dedq_surf_0, drdt_surf_0,            &
        dhdt_atm_0,  dedq_atm_0,   dtaudu_atm_0,dtaudv_atm_0,           &
        w_atm_0,     u_star_0,     b_star_0,    q_star_0,               &
-       potential_evap_0,												   & !mp586 add potential evaporation
+       potential_evap_0,												   & ! add potential evaporation
        cd_m_0,      cd_t_0,       cd_q_0,      			       &
        ex_del_m_0, ex_del_h_0, ex_del_q_0,                        	       & ! for 10m winds and 2m temp
        temp_2m_0, u_10m_0, v_10m_0,                                    & ! for 10m winds and 2m temp
@@ -758,7 +758,7 @@ subroutine surface_flux_0d (                                                 &
        dhdt_surf, dedt_surf,  dedq_surf, drdt_surf,          &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
-       potential_evap,										 & !mp586 add potential evaporation
+       potential_evap,										 & ! add potential evaporation
        cd_m,      cd_t,       cd_q,	 		     & 
        ex_del_m, ex_del_h, ex_del_q,                         & ! for 10m winds and 2m temp
        temp_2m, u_10m, v_10m,                                & ! for 10m winds and 2m temp
@@ -806,7 +806,7 @@ subroutine surface_flux_0d (                                                 &
        w_atm,     u_star,     b_star,     q_star,                        &
        dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &
        dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &
-       potential_evap,												     & !mp586 add potential evaporation
+       potential_evap,												     & ! add potential evaporation
        ex_del_m, ex_del_h, ex_del_q,                                     & ! for 10m winds and 2m temp
        temp_2m, u_10m, v_10m,                                            & ! for 10m winds and 2m temp
        q_2m, rh_2m,                                                      & !Add 2m q and RH
@@ -857,7 +857,7 @@ subroutine surface_flux_2d (                                           &
      w_atm,     u_star,     b_star,     q_star,                        &
      dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &
      dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &
-     potential_evap,												   & !mp586 add potential evaporation
+     potential_evap,												   & ! add potential evaporation
      ex_del_m, ex_del_h, ex_del_q,                                     & ! for 10m winds and 2m temp
      temp_2m, u_10m, v_10m,                                            & ! for 10m winds and 2m temp
      q_2m, rh_2m,                                                      & !Add 2m q and RH
@@ -875,7 +875,7 @@ subroutine surface_flux_2d (                                           &
        dhdt_surf, dedt_surf,  dedq_surf, drdt_surf,          &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
-       potential_evap,										 & !mp586 add potential evaporation
+       potential_evap,										 & ! add potential evaporation
        cd_m,      cd_t,       cd_q,                          &
        ex_del_m, ex_del_h, ex_del_q,                         & ! for 10m winds and 2m temp
        temp_2m, u_10m, v_10m,                                & ! for 10m winds and 2m temp
@@ -883,9 +883,9 @@ subroutine surface_flux_2d (                                           &
 
   real, intent(inout), dimension(:,:) :: q_surf
   logical, intent(in) :: bucket ! Add bucket
-  real, intent(inout), dimension(:,:) :: bucket_depth ! RG Add bucket
-  real, intent(inout), dimension(:,:) :: depth_change_lh ! RG Add bucket
-  real, intent(in), dimension(:,:)    :: depth_change_conv, depth_change_cond ! RG Add bucket
+  real, intent(inout), dimension(:,:) :: bucket_depth !  Add bucket
+  real, intent(inout), dimension(:,:) :: depth_change_lh !  Add bucket
+  real, intent(in), dimension(:,:)    :: depth_change_conv, depth_change_cond !  Add bucket
   real, intent(in) :: max_bucket_depth_land  ! RG Add bucket
   real, intent(in) :: dt
 
@@ -905,7 +905,7 @@ subroutine surface_flux_2d (                                           &
           w_atm(:,j),     u_star(:,j),     b_star(:,j),     q_star(:,j),                                  &
           dhdt_surf(:,j), dedt_surf(:,j),  dedq_surf(:,j),  drdt_surf(:,j),                               &
           dhdt_atm(:,j),  dedq_atm(:,j),   dtaudu_atm(:,j), dtaudv_atm(:,j),                              &
-          potential_evap(:,j),												   							  & !mp586 add potential evaporation
+          potential_evap(:,j),												   							  & ! add potential evaporation
      	  ex_del_m(:,j), ex_del_h(:,j), ex_del_q(:,j),                                                    & ! for 10m winds and 2m temp
           temp_2m(:,j), u_10m(:,j), v_10m(:,j),                                                           & ! for 10m winds and 2m temp
           q_2m(:,j), rh_2m(:,j),                                                                          &
