@@ -1405,7 +1405,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     !get dust optical depth / mass mixing ratio reference value
     if(do_read_cdod)then
         call interpolator( cdod_interp, Time_diag, cdod_in, trim(cdod_field_name) )
-        dust_mmr_ref = 2.6e-4*cdod_in / (16.4 - 2.6e-4*cdod_in) ! Converts dust optical depth at 610Pa to dust mass mixing ratio at 610Pa.
+        dust_mmr_ref = dust_scale*cdod_in / (16.4 - dust_scale*cdod_in) ! Converts dust optical depth at 610Pa to dust mass mixing ratio at 610Pa.
     else
         dust_mmr_ref = dust_mix_ratio
     endif
