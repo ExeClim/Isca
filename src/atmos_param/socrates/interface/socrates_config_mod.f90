@@ -48,8 +48,8 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   logical :: do_scm_ozone=.false. ! read single column ozone from namelist? note: ONLY when using SCM
   real(r_def), dimension(100) :: scm_ozone = -1 ! input array for single column ozone. max number of levels = 100 
 
-  logical :: use_pressure_interp_for_half_levels = .False. !By default (.False.) does linear interpolation in height for half-level temperatures. True does linear interp using pressure. 
-
+  logical :: use_pressure_interp_for_half_levels = .False. !By default (.False.) does linear interpolation in height for half-level temperatures. True does linear interp using pressure.
+  real(r_def) :: dust_scale = 2.6e-4
   ! Incoming radiation options for namelist
   
   integer   :: solday=0  ! if >0, do perpetual run corresponding to day of the year = solday \in [0,days per year]
@@ -144,6 +144,6 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
                              inc_so2, inc_cfc11, inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a, &
                              use_pressure_interp_for_half_levels,  &
                              frierson_solar_rad, del_sol, del_sw, do_scm_ozone, scm_ozone, &
-                             dust_mix_ratio, nu_dust
+                             dust_mix_ratio, nu_dust, dust_scale
 
 end module socrates_config_mod
