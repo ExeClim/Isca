@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.com/execlim/Isca.svg?branch=master)](https://travis-ci.com/execlim/Isca)
+[![Documentation](https://img.shields.io/badge/docs-latest-green?logo=github)](https://execlim.github.io/Isca)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg?logo=gnu)](LICENSE)
+
 # Isca
 
 Isca is a framework for the idealized modelling of the global circulation of
@@ -25,11 +29,11 @@ Python scripts are also used to run the model on different architectures, to
 archive the output, and for diagnostics, graphics, and post-processing. All of
 these features are publicly available on a Git-based repository.
 
-# Getting Started
+## Getting Started
 
 A python module `isca` (note lowercase) is provided alongside the Fortran source code that should help to do a lot of the heavy-lifting of compiling, configuring and running the model for you.  Isca can be compiled, run and configured without using python, but using the python wrapper is recommended.
 
-## Installing the `isca` python module
+### Installing the `isca` python module
 
 To begin you'll need a copy of the source code. Either fork the Isca repository to your own github username, or clone directly from the ExeClim group.
 
@@ -58,7 +62,7 @@ Now install the `isca` python module in "development mode".  This will allow you
 Successfully installed Isca
 ```
 
-## Compiling for the first time
+### Compiling for the first time
 
 At Exeter University, Isca is compiled using:
 
@@ -111,14 +115,41 @@ Once you've got an environment file that works for your machine saved in `src/ex
 
 There are some site-specific guides to running Isca on your local system located in the directory [exp/site_specific/](https://github.com/ExeClim/Isca/tree/master/exp/site_specific).
 
-# License
+## Contributing to Isca
 
-Isca is distributed under a GNU GPLv3 license. See the `LICENSE` file for details. 
+If you have made changes that you think will be useful to others, please feel free to suggest these as a Github pull request.
+These might include adding site specific configurations that could be useful to future users, basic bug fixes, or addition of new options or modules for modeling your planet of choice. 
+An Isca team member will then review your Pull Request and suggest any changes needed before merging it in. Things to consider:
+- Before submitting a pull request, double check that the branch to be merged contains only changes you wish to add to the master branch. This will save time in reviewing the code.
+- If you add a new feature to the Fortran code, please make it off by default so that other users' results won't change if they update from the master. 
+- For any changes to model Fortran files, please run the trip-tests found in [/Isca/exp/test_cases/trip_test/](https://github.com/ExeClim/Isca/tree/master/exp/test_cases/trip_test). These compile and perform brief runs of some standard configurations to help identify any accidental changes to the model your commits may have caused. Isca includes a broad range of options, so try to take into consideration whether the changes you make will affect other configurations while you implement them.
+- For substantial additions of code, for example an entirely new module, please also include a test case in [/Isca/exp/test_cases/](https://github.com/ExeClim/Isca/tree/master/exp/test_cases/). This helps in testing that the option works as expected, and provides support for future users in using the new configuration.
+- Please do not make changes to existing test cases, these are here for trip-testing as well as user guidance.
+- As well as our model work on Isca, we are all Isca users ourselves, so responding to Pull Requests may take time, but we will aim to respond to urgent queries as soon as we can.
+
+For more information, please read the [contributing guide](https://github.com/execlim/Isca/blob/master/docs/source/contributing.rst).
+
+## License
+
+Isca is distributed under a GNU GPLv3 license. See the [`LICENSE`](LICENSE) file for details. 
 
 RRTM/RRTMG: Copyright © 2002-2010, Atmospheric and Environmental Research, Inc. (AER, Inc.). 
 This software may be used, copied, or redistributed as long as it is not sold and this 
 copyright notice is reproduced on each copy made. This model is provided as is without 
 any express or implied warranties.
+
+Some of the code provided in the `src/atmos_params/socrates/interface` folder were provided by the UK Met Office,
+and are therefore covered by British Crown Copyright. The copyright statement at the top of the 
+relevant code is provided below. For the `copyright.txt` refered to in this statement, please see the
+Socrates source code itself, which is downloadable from the Met Office, and is not packaged with Isca.
+
+```
+! *****************************COPYRIGHT*******************************
+! (C) Crown copyright Met Office. All rights reserved.
+! For further details please refer to the file COPYRIGHT.txt
+! which you should have received as part of this distribution.
+! *****************************COPYRIGHT*******************************
+```
 
 The `check_disk_space.py` script, which is used as part of the email-alerts functionality
 of the `gfdl` module, was written by Giampaolo Rodola and is released under the MIT license.

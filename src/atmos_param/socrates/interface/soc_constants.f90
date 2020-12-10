@@ -1,0 +1,8 @@
+MODULE soc_constants_mod
+
+  IMPLICIT NONE
+
+  INTEGER, PARAMETER :: r_def=SELECTED_REAL_KIND(15, 307)
+  INTEGER, PARAMETER :: i_def=SELECTED_INT_KIND(10)
+
+END MODULE soc_constants_mod

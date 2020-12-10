@@ -1734,7 +1734,7 @@ if(id_div > 0)    used = send_data(id_div, divg, Time)
 if(id_omega > 0)  used = send_data(id_omega, wg_full, Time)
 
 if(id_zfull > 0 .or. id_zhalf > 0) then
-  call compute_pressures_and_heights(t_grid, p_surf, surf_geopotential, z_full, z_half, p_full, p_half)
+  call compute_pressures_and_heights(t_grid, p_surf, surf_geopotential, z_full, z_half, p_full, p_half, tr_grid(:,:,:,time_level,nhum))
 else if(id_pres_half > 0 .or. id_pres_full > 0 .or. id_slp > 0) then
   call pressure_variables(p_half, ln_p_half, p_full, ln_p_full, p_surf)
 endif

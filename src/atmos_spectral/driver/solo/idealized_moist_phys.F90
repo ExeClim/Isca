@@ -66,6 +66,12 @@ use rayleigh_bottom_drag_mod, only: rayleigh_bottom_drag_init, compute_rayleigh_
     use rrtm_vars
 #endif
 
+#ifdef SOC_NO_COMPILE
+    ! Socrates not included
+#else
+use socrates_interface_mod
+use soc_constants_mod
+#endif
 
 implicit none
 private
@@ -104,6 +110,7 @@ logical :: do_ras = .false.
 !s Radiation options
 logical :: two_stream_gray = .true.
 logical :: do_rrtm_radiation = .false.
+logical :: do_socrates_radiation = .false.
 
 !s MiMA uses damping
 logical :: do_damping = .false.
@@ -142,7 +149,8 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roug
                                       land_roughness_prefactor,               &
                                       gp_surface, convection_scheme,          &
                                       bucket, init_bucket_depth, init_bucket_depth_land, & !RG Add bucket 
-                                      max_bucket_depth_land, robert_bucket, raw_bucket
+                                      max_bucket_depth_land, robert_bucket, raw_bucket, &
+                                      do_socrates_radiation
 
 
 integer, parameter :: num_time_levels = 2 !RG Add bucket - number of time levels added to allow timestepping in this module
@@ -187,7 +195,15 @@ real, allocatable, dimension(:,:)   ::                                        &
      rough,                &   ! roughness for vert_turb_driver
      albedo,               &   !s albedo now defined in mixed_layer_init
      coszen,               &   !s make sure this is ready for assignment in run_rrtmg
-     pbltop                    !s Used as an input to damping_driver, outputted from vert_turb_driver
+     pbltop,               &   !s Used as an input to damping_driver, outputted from vert_turb_driver
+     ex_del_m, 		   &   !mp586 for 10m winds and 2m temp
+     ex_del_h,		   &   !mp586 for 10m winds and 2m temp
+     ex_del_q,		   &   !mp586 for 10m winds and 2m temp
+     temp_2m,		   &   !mp586 for 10m winds and 2m temp
+     u_10m,		   &   !mp586 for 10m winds and 2m temp
+     v_10m,		   &   !mp586 for 10m winds and 2m temp
+     q_2m,                 &   ! Add 2m specific humidity
+     rh_2m                     ! Add 2m relative humidity
 
 real, allocatable, dimension(:,:,:) ::                                        &
      diff_m,               &   ! momentum diffusion coeff.
@@ -252,7 +268,14 @@ integer ::           &
      id_diss_heat_ray,&  ! Heat dissipated by rayleigh bottom drag if gp_surface=.True.
      id_z_tg,        &   ! Relative humidity
      id_cape,        &
-     id_cin
+     id_cin,	     & 	     
+     id_flux_u,      & ! surface flux of zonal mom.
+     id_flux_v,      & ! surface flux of meridional mom.
+     id_temp_2m,      & !mp586 for 10m winds and 2m temp
+     id_u_10m, 	     & !mp586 for 10m winds and 2m temp
+     id_v_10m,       & !mp586 for 10m winds and 2m temp
+     id_q_2m,        & ! Add 2m specific humidity
+     id_rh_2m          ! Add 2m relative humidity
 
 integer, allocatable, dimension(:,:) :: convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
@@ -434,6 +457,14 @@ allocate(dhdt_atm    (is:ie, js:je))
 allocate(dedq_atm    (is:ie, js:je))
 allocate(dtaudv_atm  (is:ie, js:je))
 allocate(dtaudu_atm  (is:ie, js:je))
+allocate(ex_del_m    (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
+allocate(ex_del_h    (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
+allocate(ex_del_q    (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
+allocate(temp_2m     (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
+allocate(u_10m       (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
+allocate(v_10m       (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
+allocate(q_2m        (is:ie, js:je)) ! Add 2m specific humidity
+allocate(rh_2m       (is:ie, js:je)) ! Add 2m relative humidity
 allocate(land        (is:ie, js:je)); land = .false.
 allocate(land_ones   (is:ie, js:je)); land_ones = 0.0
 allocate(avail       (is:ie, js:je)); avail = .true.
@@ -598,6 +629,10 @@ id_cape = register_diag_field(mod_name, 'cape',          &
      axes(1:2), Time, 'Convective Available Potential Energy','J/kg')
 id_cin = register_diag_field(mod_name, 'cin',          &
      axes(1:2), Time, 'Convective Inhibition','J/kg')
+id_flux_u = register_diag_field(mod_name, 'flux_u', &
+     axes(1:2), Time, 'Zonal momentum flux', 'Pa')
+id_flux_v = register_diag_field(mod_name, 'flux_v', &
+     axes(1:2), Time, 'Meridional momentum flux', 'Pa')
 
 if(bucket) then
   id_bucket_depth = register_diag_field(mod_name, 'bucket_depth',            &         ! RG Add bucket
@@ -609,6 +644,24 @@ if(bucket) then
   id_bucket_depth_lh = register_diag_field(mod_name, 'bucket_depth_lh',      &         ! RG Add bucket
        axes(1:2), Time, 'Tendency of bucket depth induced by LH', 'm/s')
 endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
+
+id_temp_2m = register_diag_field(mod_name, 'temp_2m',            &         !mp586 add 2m temp
+     axes(1:2), Time, 'Air temperature 2m above surface', 'K')
+id_u_10m = register_diag_field(mod_name, 'u_10m',                &         !mp586 add 10m wind (u)
+     axes(1:2), Time, 'Zonal wind 10m above surface', 'm/s')
+id_v_10m = register_diag_field(mod_name, 'v_10m',                &         !mp586 add 10m wind (v)
+     axes(1:2), Time, 'Meridional wind 10m above surface', 'm/s')
+
+!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+id_q_2m = register_diag_field(mod_name, 'sphum_2m',                  &
+     axes(1:2), Time, 'Specific humidity 2m above surface', 'kg/kg')       !Add 2m specific humidity
+id_rh_2m = register_diag_field(mod_name, 'rh_2m',                &
+     axes(1:2), Time, 'Relative humidity 2m above surface', 'percent')     !Add 2m relative humidity
 
 select case(r_conv_scheme)
 
@@ -694,6 +747,16 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
     endif
 #endif
 
+#ifdef SOC_NO_COMPILE
+    if (do_socrates_radiation) then
+        call error_mesg('idealized_moist_phys','do_socrates_radiation is .true. but compiler flag -D SOC_NO_COMPILE used. Stopping.', FATAL)
+    endif
+#else
+if (do_socrates_radiation) then
+    call socrates_init(is, ie, js, je, num_levels, axes, Time, rad_lat, rad_lonb_2d, rad_latb_2d, Time_step_in)
+endif
+#endif
+
 if(turb) then
    call vert_turb_driver_init (rad_lonb_2d, rad_latb_2d, ie-is+1,je-js+1, &
                  num_levels,get_axis_id(),Time, doing_edt, doing_entrain)
@@ -704,9 +767,9 @@ if(turb) then
    id_diff_dt_vg = register_diag_field(mod_name, 'dt_vg_diffusion',        &
         axes(1:3), Time, 'meridional wind tendency from diffusion','m/s^2')
    id_diff_dt_tg = register_diag_field(mod_name, 'dt_tg_diffusion',        &
-        axes(1:3), Time, 'temperature diffusion tendency','T/s')
+        axes(1:3), Time, 'temperature diffusion tendency','K/s')
    id_diff_dt_qg = register_diag_field(mod_name, 'dt_qg_diffusion',        &
-        axes(1:3), Time, 'moisture diffusion tendency','T/s')
+        axes(1:3), Time, 'moisture diffusion tendency','kg/kg/s')
 endif
 
    id_rh = register_diag_field ( mod_name, 'rh', &
@@ -726,7 +789,6 @@ real, dimension(:,:,:,:),   intent(inout) :: dt_tracers
 
 real :: delta_t
 real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
-
 
 real, intent(in) , dimension(:,:,:), optional :: mask
 integer, intent(in) , dimension(:,:),   optional :: kbot
@@ -916,8 +978,9 @@ if(.not.mixed_layer_bc) then
 !!$  t_surf = surface_temperature(tg(:,:,:,previous), p_full(:,:,:,current), p_half(:,:,:,current))
 end if
 
+
 if(.not.gp_surface) then 
-call surface_flux(                                                          &
+  call surface_flux(                                                        &
                   tg(:,:,num_levels,previous),                              &
  grid_tracers(:,:,num_levels,previous,nsphum),                              &
                   ug(:,:,num_levels,previous),                              &
@@ -961,10 +1024,36 @@ call surface_flux(                                                          &
                                 dedq_atm(:,:),                              & ! is intent(out)
                               dtaudu_atm(:,:),                              & ! is intent(out)
                               dtaudv_atm(:,:),                              & ! is intent(out)
-                                      delta_t,                              &
+			        ex_del_m(:,:),				    & ! mp586 for 10m winds and 2m temp
+			        ex_del_h(:,:),				    & ! mp586 for 10m winds and 2m temp
+			        ex_del_q(:,:),				    & ! mp586 for 10m winds and 2m temp
+			         temp_2m(:,:),				    & ! mp586 for 10m winds and 2m temp
+			           u_10m(:,:),				    & ! mp586 for 10m winds and 2m temp	
+			           v_10m(:,:),				    & ! mp586 for 10m winds and 2m temp
+                                    q_2m(:,:),                              & ! Add 2m specific humidity
+                                   rh_2m(:,:),                              & ! Add 2m relative humidity
+                 	              delta_t,                              &
                                     land(:,:),                              &
                                .not.land(:,:),                              &
                                    avail(:,:)  )
+
+  if(id_flux_u > 0) used = send_data(id_flux_u, flux_u, Time)
+  if(id_flux_v > 0) used = send_data(id_flux_v, flux_v, Time)
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
+
+  if(id_temp_2m > 0) used = send_data(id_temp_2m, temp_2m, Time)    ! mp586 add 2m temp
+  if(id_u_10m > 0) used = send_data(id_u_10m, u_10m, Time)          ! mp586 add 10m wind (u)
+  if(id_v_10m > 0) used = send_data(id_v_10m, v_10m, Time)          ! mp586 add 10m wind (v)
+
+
+  !!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  if(id_q_2m > 0) used = send_data(id_q_2m, q_2m, Time)           ! Add 2m specific humidity
+  if(id_rh_2m > 0) used = send_data(id_rh_2m, rh_2m*1e2, Time)    ! Add 2m relative humidity
+
 endif
 
 ! Now complete the radiation calculation by computing the upward and net fluxes.
@@ -991,7 +1080,19 @@ if(do_rrtm_radiation) then
 endif
 #endif
 
+#ifdef SOC_NO_COMPILE
+    if (do_socrates_radiation) then
+        call error_mesg('idealized_moist_phys','do_socrates_radiation is .true. but compiler flag -D SOC_NO_COMPILE used. Stopping.', FATAL)
+    endif
+#else
+if (do_socrates_radiation) then
+       ! Socrates interface
+       
+    call run_socrates(Time, Time+Time_step, rad_lat, rad_lon, tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum), t_surf(:,:), p_full(:,:,:,current), &
+                      p_half(:,:,:,current),z_full(:,:,:,current),z_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t)
 
+endif
+#endif
 
 if(gp_surface) then
 
@@ -1000,7 +1101,7 @@ if(gp_surface) then
     call compute_rayleigh_bottom_drag( 1,                     ie-is+1, &
                                        1,                     je-js+1, &
                                      Time,                    delta_t, &
-                   rad_lat(:,:),         dt_ug(:,:,:      ), &
+                   		     rad_lat(:,:),         dt_ug(:,:,:      ), &
                         dt_vg(:,:,:     ),                             &
                        ug(:,:,:,previous),         vg(:,:,:,previous), &
                      p_half(:,:,:,previous),     p_full(:,:,:,previous), &
@@ -1104,6 +1205,8 @@ if(turb) then
    if(mixed_layer_bc) then	
    call mixed_layer(                                                       &
                               Time, Time+Time_step,                        &
+                              js,                                          & 
+                              je,                                          &
                               t_surf(:,:),                                 & ! t_surf is intent(inout)
                               flux_t(:,:),                                 &
                               flux_q(:,:),                                 &
@@ -1206,6 +1309,12 @@ endif
 call lscale_cond_end
 if(mixed_layer_bc)  call mixed_layer_end(t_surf, bucket_depth, bucket)
 if(do_damping) call damping_driver_end
+
+#ifdef SOC_NO_COMPILE
+ !No need to end socrates
+#else
+if(do_socrates_radiation) call run_socrates_end
+#endif
 
 end subroutine idealized_moist_phys_end
 !=================================================================================================================================
