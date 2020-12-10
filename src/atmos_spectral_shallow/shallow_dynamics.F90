@@ -140,6 +140,18 @@ real    :: u_upper_mag_init    = 0.
 logical :: spec_tracer      = .true.
 logical :: grid_tracer      = .true.
 
+!Options for injecting an initial vortex pair
+real    :: lon_centre_init_cyc = 0.
+real    :: lat_centre_init_cyc = 60.
+real    :: lon_centre_init_acyc = 180.
+real    :: lat_centre_init_acyc = 60.
+real    :: init_vortex_radius_deg = 5.
+real    :: init_vortex_vor_f = 0.5
+real    :: init_vortex_h_h_0 = 0.1
+logical :: add_initial_vortex_pair = .false.
+logical :: add_initial_vortex_as_height = .true.
+
+
 real, dimension(2) :: valid_range_v = (/-1.e3,1.e3/)
 
 namelist /shallow_dynamics_nml/ check_fourier_imag,          &
@@ -153,7 +165,17 @@ namelist /shallow_dynamics_nml/ check_fourier_imag,          &
                           valid_range_v, cutoff_wn,          &
                           raw_filter_coeff,                  &
                           u_deep_mag, n_merid_deep_flow,     &
-                          u_upper_mag_init
+                          u_upper_mag_init,                  &
+                          lon_centre_init_cyc,               &
+                          lat_centre_init_cyc,               &
+                          lon_centre_init_acyc,              &
+                          lat_centre_init_acyc,              &                          
+                          init_vortex_radius_deg,            &
+                          init_vortex_vor_f,                 &
+                          init_vortex_h_h_0,                 &
+                          add_initial_vortex_pair,           &
+                          add_initial_vortex_as_height                 
+
 
 contains
 
@@ -168,7 +190,7 @@ real               , intent(in)     :: dt_real
 integer :: i, j
 
 real,    allocatable, dimension(:)   :: glon_bnd, glat_bnd
-real :: xx, yy, dd, deep_geopot_global_mean
+real :: xx, yy, dd, deep_geopot_global_mean, radius_loc_cyc, radius_loc_acyc
 
 integer  :: ierr, io, unit, id_lon, id_lat, id_lonb, id_latb
 logical  :: root
@@ -266,12 +288,45 @@ Dyn%grid%deep_geopot(:,:) = Dyn%grid%deep_geopot(:,:)-deep_geopot_global_mean
 
 if(Time == Time_init) then
 
+    Dyn%Grid%div(:,:,1) = 0.0
+    Dyn%Grid%h  (:,:,1) = h_0 - Dyn%grid%deep_geopot(:,:)
+
   do i = is, ie   
     Dyn%Grid%vor(i,js:je,1) = -((u_upper_mag_init * n_merid_deep_flow)/radius) * sin(DEG_to_RAD * deg_lat(js:je))
-  enddo
 
-  Dyn%Grid%div(:,:,1) = 0.0
-  Dyn%Grid%h  (:,:,1) = h_0 - Dyn%grid%deep_geopot(:,:)
+    if (add_initial_vortex_pair) then
+
+        do j=js, je
+
+            radius_loc_cyc = ((min((deg_lon(i)-lon_centre_init_cyc)**2., (deg_lon(i)-lon_centre_init_cyc-360.)**2.)+(deg_lat(j)-lat_centre_init_cyc)**2.)**0.5)/init_vortex_radius_deg
+            radius_loc_acyc = ((min((deg_lon(i)-lon_centre_init_acyc)**2., (deg_lon(i)-lon_centre_init_acyc-360.)**2.)+(deg_lat(j)-lat_centre_init_acyc)**2.)**0.5)/init_vortex_radius_deg            
+
+
+            if(radius_loc_cyc.le.1.0 .and. radius_loc_acyc.le.1.0) then
+                call error_mesg('shallow_dynamics','Cannot initialise cyclone and anticyclone in same grid box ', FATAL)
+            endif
+
+            if(add_initial_vortex_as_height) then
+                if (radius_loc_cyc.le.2.0) then
+                    Dyn%Grid%h(i,j,1) = Dyn%Grid%h(i,j,1) + init_vortex_h_h_0 * -h_0 * exp(-radius_loc_cyc**2.)
+                elseif (radius_loc_acyc.le.2.0) then 
+                    Dyn%Grid%h(i,j,1) = Dyn%Grid%h(i,j,1) + init_vortex_h_h_0 * h_0 * exp(-radius_loc_acyc**2.)
+                endif
+            else
+                if (radius_loc_cyc.le.1.0) then
+                    Dyn%Grid%vor(i,j,1) = init_vortex_vor_f * 2.*omega
+                elseif (radius_loc_acyc.le.1.0) then 
+                    Dyn%Grid%vor(i,j,1) = init_vortex_vor_f * -2.*omega
+                endif
+
+            endif
+
+        enddo
+        
+
+    endif
+
+  enddo
     
   call trans_grid_to_spherical(Dyn%Grid%vor(:,:,1), Dyn%Spec%vor(:,:,1))
   call trans_grid_to_spherical(Dyn%Grid%div(:,:,1), Dyn%Spec%div(:,:,1))
