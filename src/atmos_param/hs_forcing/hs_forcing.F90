@@ -108,6 +108,8 @@ private
    real :: equinox_day = 0. !N.b. the definition of declination is different here to what's in astronomy.F90 (the astronomy.F90 version has a minus sign. So to get equivalent behaviour to two-stream-grey/rrtm/socrates, the equinox_day here ought to be different by 0.5. I.e. here it should be 0.25 to get Earth-like calendar, rather than 0.75 elsewhere.)
 
 
+   real :: vtx_edge = 50.0, vtx_width = 10.0, vtx_gamma = 2.0  ! Polar vortex parameters for when equilibrium_t_option='Polvani_Kushner'
+   logical :: strat_vtx = .true.
 !-----------------------------------------------------------------------
 
    namelist /hs_forcing_nml/  no_forcing, t_zero, t_strat, delh, delv, eps,  &
@@ -504,6 +506,67 @@ contains
 
 !#######################################################################
 
+
+ subroutine tstd_summer ( t_tp, z_off, z_km, teq )
+
+   !----------------------------------------------------------------------------!
+   ! US standard atmosphere directly from lapse rate formula
+   ! Add minor change, with 2.8K/km warming
+   !----------------------------------------------------------------------------!
+
+   real, intent(in)                  :: t_tp
+   real, intent(in), dimension(:,:)  :: z_off, z_km
+   real, intent(out), dimension(:,:) :: teq
+   real, dimension(size(z_km,1),size(z_km,2)) :: z_coord
+   real :: t_1, t_sp, t_2
+   real :: z_extra
+
+   z_coord = z_km - z_off ! want to add offset to RHS of below comparisons, same as subtracting from LHS!
+   z_extra = (216.65 - t_tp) / 2.8 ! if t_tp is colder than US std, offset height in equation down
+
+   ! See: https://en.wikipedia.org/wiki/Barometric_formula#Source_code
+   ! We truncate the lowest and highest legs -- no tropospheric lapse rate, and no
+   ! secondary mesospheric lapse rate (because never need to model that high)
+   t_1 = t_tp + 1.0 * (32.0 - 20.0)           ! beginning of +2.8K lapse rate
+   t_sp = t_1 + 2.8 * (47.0 - 32.0 + z_extra) ! stratopause temperature
+   t_2 = t_sp - 2.8 * (71.0 - 51.0)           ! end of -2.8K lapse rate
+   where (z_coord <= 20) ! maybe has to be array here? try it out
+     teq = t_tp
+   elsewhere (z_coord <= 32) ! lapse rate 1K for 12km
+     teq = t_tp + 1.0 * (z_coord - 20)
+   elsewhere (z_coord <= 47 + z_extra)
+     teq = t_1 + 2.8 * (z_coord - 32)
+   elsewhere (z_coord <= 51 + z_extra)
+     teq = t_sp
+   elsewhere (z_coord <= 71 + z_extra)
+     teq = t_sp - 2.8 * (z_coord - 51 - z_extra)
+   elsewhere
+     teq = t_2 - 2.0 * (z_coord - 71 - z_extra)
+   endwhere
+
+ end subroutine tstd_summer
+
+ subroutine tstd_winter ( t_tp, vtx_gamma, z_vortex, z_km, teq )
+
+   !----------------------------------------------------------------------------!
+   ! Polar vortex adaptation
+   ! Will preserve the original stratopause temperature by extending a 2.8K
+   ! lapse rate region far enough to reach this temperature
+   !----------------------------------------------------------------------------!
+
+   real, intent(in)                  :: t_tp, vtx_gamma
+   real, intent(in), dimension(:,:)  :: z_km, z_vortex
+   real, intent(out), dimension(:,:) :: teq
+
+   ! New version with simple vortex lapse rate
+   where (z_km <= z_vortex)
+     teq = t_tp
+   elsewhere
+     teq = t_tp - vtx_gamma * (z_km - z_vortex)
+   endwhere
+
+ end subroutine tstd_winter
+ 
  subroutine newtonian_damping ( Time, lat, lon, ps, p_full, p_half, t, tdt, teq, mask )
 
 !-----------------------------------------------------------------------
@@ -523,12 +586,13 @@ real, intent(in),  dimension(:,:,:), optional :: mask
 
           real, dimension(size(t,1),size(t,2)) :: &
      sin_lat, cos_lat, sin_lat_2, cos_lat_2, t_star, cos_lat_4, &
-     tstr, sigma, the, tfactr, rps, p_norm, sin_sublon_2, coszen, fracday
+     tstr, sigma, the, tfactr, rps, p_norm, sin_sublon_2, coszen, fracday &
+     w_vtx
 
        real, dimension(size(t,1),size(t,2),size(t,3)) :: tdamp
        real, dimension(size(t,2),size(t,3)) :: tz
        real :: rrsun
-
+       real :: vtx_edge_r, vtx_width_r
        integer :: k, i, j
        real    :: tcoeff, pref
 
@@ -543,6 +607,16 @@ real, intent(in),  dimension(:,:,:), optional :: mask
 
       t_star(:,:) = t_zero - delh*sin_lat_2(:,:) - eps*sin_lat(:,:)
       tstr  (:,:) = t_strat - eps*sin_lat(:,:)
+
+      vtx_width_r   = vtx_width * pi / 180.0 
+      vtx_edge_r    = vtx_edge * pi / 180.0
+
+!-----------------------------------------------------------------------
+!     Vortex weighting for Polvani_Kushner
+      w_vtx = 0.0 ! standard atmosphere everywhere
+      if (strat_vtx) then
+         w_vtx = 0.5 * (1.0 + tanh((lat - abs(vtx_edge_r)) / vtx_width_r)) ! vortex in northern hemisphere
+      endif
 
 !-----------------------------------------------------------------------
       if(trim(equilibrium_t_option) == 'from_file') then
@@ -567,6 +641,15 @@ real, intent(in),  dimension(:,:,:), optional :: mask
          the   (:,:) = t_star(:,:) - delv*cos_lat_2(:,:)*log(p_norm(:,:))
          teq(:,:,k) = the(:,:)*(p_norm(:,:))**KAPPA
          teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
+      else if(trim(equilibrium_t_option) == 'Polvani_Kushner') then
+         call tstd_summer( t_strat, z_offset, z_norm, t_summer )
+         call tstd_winter( t_strat, vtx_gamma, z_vortex, z_norm, t_winter )
+         t_pk = (1.0 - w_vtx) * t_summer + w_vtx * t_winter
+         where (z_norm >= z_vortex)
+            teq(:,:,k) = max( t_pk, t_min )
+         elsewhere
+            teq(:,:,k) = max( t_hs, t_strat )
+         endwhere
       else if(uppercase(trim(equilibrium_t_option)) == 'EXOPLANET') then
          call diurnal_exoplanet(lat, lon, Time, coszen, fracday, rrsun)
          t_star(:,:) = t_zero - delh*(1 - coszen(:,:)) - eps*sin_lat(:,:)
