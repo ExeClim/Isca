@@ -108,7 +108,8 @@ private
    real :: equinox_day = 0. !N.b. the definition of declination is different here to what's in astronomy.F90 (the astronomy.F90 version has a minus sign. So to get equivalent behaviour to two-stream-grey/rrtm/socrates, the equinox_day here ought to be different by 0.5. I.e. here it should be 0.25 to get Earth-like calendar, rather than 0.75 elsewhere.)
 
 
-   real :: vtx_edge = 50.0, vtx_width = 10.0, vtx_gamma = 2.0  ! Polar vortex parameters for when equilibrium_t_option='Polvani_Kushner'
+   real :: vtx_edge = 50.0, vtx_width = 10.0, vtx_gamma = 2.0, t_min = 100.0 ! Polar vortex parameters for when equilibrium_t_option='Polvani_Kushner'
+   real :: z_ozone = 20.0
    logical :: strat_vtx = .true.
 !-----------------------------------------------------------------------
 
@@ -122,8 +123,9 @@ private
                               u_wind_file, v_wind_file, equilibrium_t_option,&
                               equilibrium_t_file, p_trop, alpha, peri_time, smaxis, albedo, &
                               lapse, h_a, tau_s, orbital_period,         &
-                              heat_capacity, ml_depth, spinup_time, stratosphere_t_option, & 
-                              equinox_day, P00
+                              heat_capacity, ml_depth, spinup_time, stratosphere_t_option, &
+                              equinox_day, P00, &
+                              vtx_edge, vtx_width, vtx_gamma, t_min, z_ozone, strat_vtx
 !-----------------------------------------------------------------------
 
    character(len=128) :: version='$Id: hs_forcing.F90,v 19.0 2012/01/06 20:10:01 fms Exp $'
@@ -227,7 +229,7 @@ contains
       if (trim(equilibrium_t_option) == 'top_down') then
          call top_down_newtonian_damping(Time, lat, ps, p_full, p_half, t, ttnd, teq, dt, h_trop, zfull, mask )
       else
-         call newtonian_damping ( Time, lat, lon, ps, p_full, p_half, t, ttnd, teq, mask )
+         call newtonian_damping ( Time, lat, lon, ps, p_full, p_half, t, ttnd, teq, zfull, mask )
       endif
       tdt = tdt + ttnd
 !      if (id_newtonian_damping > 0) used = send_data(id_newtonian_damping, ttnd, Time, is, js)
@@ -507,7 +509,7 @@ contains
 !#######################################################################
 
 
- subroutine tstd_summer ( t_tp, z_off, z_km, teq )
+ subroutine tstd_summer ( t_tp, z_off, z_km, teq_summer )
 
    !----------------------------------------------------------------------------!
    ! US standard atmosphere directly from lapse rate formula
@@ -516,7 +518,7 @@ contains
 
    real, intent(in)                  :: t_tp
    real, intent(in), dimension(:,:)  :: z_off, z_km
-   real, intent(out), dimension(:,:) :: teq
+   real, intent(out), dimension(:,:) :: teq_summer
    real, dimension(size(z_km,1),size(z_km,2)) :: z_coord
    real :: t_1, t_sp, t_2
    real :: z_extra
@@ -531,22 +533,22 @@ contains
    t_sp = t_1 + 2.8 * (47.0 - 32.0 + z_extra) ! stratopause temperature
    t_2 = t_sp - 2.8 * (71.0 - 51.0)           ! end of -2.8K lapse rate
    where (z_coord <= 20) ! maybe has to be array here? try it out
-     teq = t_tp
+     teq_summer = t_tp
    elsewhere (z_coord <= 32) ! lapse rate 1K for 12km
-     teq = t_tp + 1.0 * (z_coord - 20)
+     teq_summer = t_tp + 1.0 * (z_coord - 20)
    elsewhere (z_coord <= 47 + z_extra)
-     teq = t_1 + 2.8 * (z_coord - 32)
+     teq_summer = t_1 + 2.8 * (z_coord - 32)
    elsewhere (z_coord <= 51 + z_extra)
-     teq = t_sp
+     teq_summer = t_sp
    elsewhere (z_coord <= 71 + z_extra)
-     teq = t_sp - 2.8 * (z_coord - 51 - z_extra)
+     teq_summer = t_sp - 2.8 * (z_coord - 51 - z_extra)
    elsewhere
-     teq = t_2 - 2.0 * (z_coord - 71 - z_extra)
+     teq_summer = t_2 - 2.0 * (z_coord - 71 - z_extra)
    endwhere
 
  end subroutine tstd_summer
 
- subroutine tstd_winter ( t_tp, vtx_gamma, z_vortex, z_km, teq )
+ subroutine tstd_winter ( t_tp, vtx_gamma, z_vortex, z_km, teq_winter )
 
    !----------------------------------------------------------------------------!
    ! Polar vortex adaptation
@@ -556,18 +558,18 @@ contains
 
    real, intent(in)                  :: t_tp, vtx_gamma
    real, intent(in), dimension(:,:)  :: z_km, z_vortex
-   real, intent(out), dimension(:,:) :: teq
+   real, intent(out), dimension(:,:) :: teq_winter
 
    ! New version with simple vortex lapse rate
    where (z_km <= z_vortex)
-     teq = t_tp
+     teq_winter = t_tp
    elsewhere
-     teq = t_tp - vtx_gamma * (z_km - z_vortex)
+     teq_winter = t_tp - vtx_gamma * (z_km - z_vortex)
    endwhere
 
  end subroutine tstd_winter
  
- subroutine newtonian_damping ( Time, lat, lon, ps, p_full, p_half, t, tdt, teq, mask )
+ subroutine newtonian_damping ( Time, lat, lon, ps, p_full, p_half, t, tdt, teq, zfull, mask )
 
 !-----------------------------------------------------------------------
 !
@@ -578,7 +580,7 @@ contains
 
 type(time_type), intent(in)         :: Time
 real, intent(in),  dimension(:,:)   :: lat, ps, lon
-real, intent(in),  dimension(:,:,:) :: p_full, t, p_half
+real, intent(in),  dimension(:,:,:) :: p_full, t, p_half, zfull
 real, intent(out), dimension(:,:,:) :: tdt, teq
 real, intent(in),  dimension(:,:,:), optional :: mask
 
@@ -586,8 +588,8 @@ real, intent(in),  dimension(:,:,:), optional :: mask
 
           real, dimension(size(t,1),size(t,2)) :: &
      sin_lat, cos_lat, sin_lat_2, cos_lat_2, t_star, cos_lat_4, &
-     tstr, sigma, the, tfactr, rps, p_norm, sin_sublon_2, coszen, fracday &
-     w_vtx
+     tstr, sigma, the, tfactr, rps, p_norm, sin_sublon_2, coszen, fracday, &
+     w_vtx, t_hs, z_vortex, z_offset, z_norm, t_pk, t_summer, t_winter
 
        real, dimension(size(t,1),size(t,2),size(t,3)) :: tdamp
        real, dimension(size(t,2),size(t,3)) :: tz
@@ -618,6 +620,14 @@ real, intent(in),  dimension(:,:,:), optional :: mask
          w_vtx = 0.5 * (1.0 + tanh((lat - abs(vtx_edge_r)) / vtx_width_r)) ! vortex in northern hemisphere
       endif
 
+
+      if (trim(equilibrium_t_option) .eq. 'Polvani_Kushner') then
+         ! In PK atmosphere, polar vortex and stratospheric warming both begin at
+         ! an arbitrary input height. NOTE: This is slightly different! Stratospheric
+         ! warming starts at same level as polar vortex cooling!
+         z_vortex = z_ozone
+         z_offset = (z_ozone - 20.0)
+      endif
 !-----------------------------------------------------------------------
       if(trim(equilibrium_t_option) == 'from_file') then
          call get_zonal_mean_temp(Time, p_half, tz)
@@ -642,6 +652,10 @@ real, intent(in),  dimension(:,:,:), optional :: mask
          teq(:,:,k) = the(:,:)*(p_norm(:,:))**KAPPA
          teq(:,:,k) = max( teq(:,:,k), tstr(:,:) )
       else if(trim(equilibrium_t_option) == 'Polvani_Kushner') then
+         p_norm(:,:) = p_full(:,:,k)/pref
+         the   (:,:) = t_star(:,:) - delv*cos_lat_2(:,:)*log(p_norm(:,:))
+         t_hs(:,:) = the(:,:)*(p_norm(:,:))**KAPPA
+         z_norm = zfull(:,:,k) / 1000. ! from m to km
          call tstd_summer( t_strat, z_offset, z_norm, t_summer )
          call tstd_winter( t_strat, vtx_gamma, z_vortex, z_norm, t_winter )
          t_pk = (1.0 - w_vtx) * t_summer + w_vtx * t_winter
