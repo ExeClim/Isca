@@ -23,7 +23,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp_name = 'polvani_kushner_test24'
+exp_name = 'polvani_kushner_polar3'
 exp = Experiment(exp_name, codebase=cb)
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')]
@@ -44,6 +44,8 @@ diag.add_field('dynamics', 'div', time_avg=True)
 diag.add_field('dynamics', 'height', time_avg=True)
 
 diag.add_field('hs_forcing', 'teq', time_avg=True)
+diag.add_field('hs_forcing', 'local_heating', time_avg=True)
+
 exp.diag_table = diag
 
 # define namelist values as python dictionary
@@ -71,7 +73,6 @@ namelist = Namelist({
         'scale_heights': 11.0,
         'exponent': 3.0,
         'surf_res': 0.5,
-        'sponge_flag': True       # Turn on simple damping in upper levels
     },
 
     # configure the relaxation profile
@@ -89,6 +90,13 @@ namelist = Namelist({
         'kf':   -1.,       # BL momentum frictional timescale (default 1 days)
         'z_ozone': 15.,     # Height (in km) of stratospheric warming start
         'do_conserve_energy':   True,  # convert dissipated momentum into heat (default True)
+        'sponge_flag': True,       # Turn on simple damping in upper levels
+        'polar_heating_srfamp': 2.,
+        'polar_heating_latwidth': 20*np.pi/180.,
+        'polar_heating_latcenter': 90*np.pi/180.,
+        'polar_heating_sigwidth': 0.1,
+        'polar_heating_sigcenter': 1.,
+        'local_heating_option': 'Polar'
     },
     
     # 'damping_driver_nml': {
@@ -98,10 +106,10 @@ namelist = Namelist({
     #     'do_conserve_energy': True,    
     # },
 
-    # 'spectral_init_cond_nml':{
-    #     'topog_file_name': 'era_land_t42.nc', #Name of land input file, which will also contain topography if generated using Isca's `land_file_generator_fn.py' routine.
-    #     'topography_option': 'input' #!Tell model to get topography from input file
-    # },
+    'spectral_init_cond_nml':{
+         'topog_file_name': 'era_land_t42.nc', #Name of land input file, which will also contain topography if generated using Isca's `land_file_generator_fn.py' routine.
+         'topography_option': 'input' #!Tell model to get topography from input file
+    },
     
     'diag_manager_nml': {
         'mix_snapshot_average_fields': False
