@@ -111,6 +111,10 @@ private
    real :: vtx_edge = 50.0, vtx_width = 10.0, vtx_gamma = 2.0, t_min = 100.0 ! Polar vortex parameters for when equilibrium_t_option='Polvani_Kushner'
    real :: z_ozone = 20.0
    logical :: strat_vtx = .true.
+
+   logical :: sponge_flag = .false. !flag for sponge at top of model
+   real :: sponge_pbottom = 5.e1    !bottom of sponge layer, where damping is zero (Pa)
+   real :: sponge_tau_days  = 0.5   !damping time scale for the sponge (days)
 !-----------------------------------------------------------------------
 
    namelist /hs_forcing_nml/  no_forcing, t_zero, t_strat, delh, delv, eps,  &
@@ -125,7 +129,8 @@ private
                               lapse, h_a, tau_s, orbital_period,         &
                               heat_capacity, ml_depth, spinup_time, stratosphere_t_option, &
                               equinox_day, P00, &
-                              vtx_edge, vtx_width, vtx_gamma, t_min, z_ozone, strat_vtx
+                              vtx_edge, vtx_width, vtx_gamma, t_min, z_ozone, strat_vtx, &
+                              sponge_flag,sponge_pbottom,sponge_tau_days
 !-----------------------------------------------------------------------
 
    character(len=128) :: version='$Id: hs_forcing.F90,v 19.0 2012/01/06 20:10:01 fms Exp $'
@@ -730,7 +735,7 @@ integer :: i,j,k
 real    :: vcoeff
 real, dimension(size(u,2),size(u,3)) :: uz, vz
 real :: umean, vmean
-
+real    :: sponge_coeff !used if sponge_flag
 !-----------------------------------------------------------------------
 !----------------compute damping----------------------------------------
 
@@ -762,6 +767,15 @@ real :: umean, vmean
             vdt(:,:,k) = 0.0
          endwhere
 
+         if (sponge_flag) then   ! t.r.
+            sponge_coeff = 1./sponge_tau_days/86400.
+            where (p_full(:,:,k) < sponge_pbottom)
+               vfactr(:,:) = -sponge_coeff*(sponge_pbottom-p_full(:,:,k))**2/(sponge_pbottom)**2
+               udt(:,:,k) = udt(:,:,k) + vfactr(:,:)*u(:,:,k)
+               vdt(:,:,k) = vdt(:,:,k) + vfactr(:,:)*v(:,:,k)
+            endwhere
+         endif
+         
       endif
       enddo
 

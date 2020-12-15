@@ -23,7 +23,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp_name = 'polvani_kushner_test21'
+exp_name = 'polvani_kushner_test24'
 exp = Experiment(exp_name, codebase=cb)
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')]
@@ -68,9 +68,10 @@ namelist = Namelist({
         'valid_range_t'           : [50., 800.],           # default: (100, 500)
         'initial_sphum'           : 0.0,                  # default: 0
         'vert_coord_option'       : 'uneven_sigma',         # default: 'even_sigma'
-        'scale_heights': 7.0,
-        'exponent': 5.0,
-        'surf_res': 0.5
+        'scale_heights': 11.0,
+        'exponent': 3.0,
+        'surf_res': 0.5,
+        'sponge_flag': True       # Turn on simple damping in upper levels
     },
 
     # configure the relaxation profile
@@ -79,28 +80,28 @@ namelist = Namelist({
         't_strat': 200.,   # stratosphere temperature (default 200K)
         'delh': 60.,       # equator-pole temp gradient (default 60K)
         'delv': 10.,       # lapse rate (default 10K)
-        'eps': 0.,         # stratospheric latitudinal variation (default 0K)
+        'eps': 10.,         # stratospheric latitudinal variation (default 0K)
         'sigma_b': 0.7,    # boundary layer friction height (default p/ps = sigma = 0.7)
         'equilibrium_t_option': 'Polvani_Kushner',
         # negative sign is a flag indicating that the units are days
         'ka':   -40.,      # Constant Newtonian cooling timescale (default 40 days)
         'ks':    -4.,      # Boundary layer dependent cooling timescale (default 4 days)
         'kf':   -1.,       # BL momentum frictional timescale (default 1 days)
-        'z_ozone': 20.,     # Height (in km) of stratospheric warming start
+        'z_ozone': 15.,     # Height (in km) of stratospheric warming start
         'do_conserve_energy':   True,  # convert dissipated momentum into heat (default True)
     },
     
-    'damping_driver_nml': {
-        'do_rayleigh': True,
-        'trayfric': -0.05,              # neg. value: time in *days*
-        'sponge_pbottom':  1000., #Bottom of the model's sponge down to 0.5hPa
-        'do_conserve_energy': True,    
-    },
+    # 'damping_driver_nml': {
+    #     'do_rayleigh': True,
+    #     'trayfric': -0.5,              # neg. value: time in *days*
+    #     'sponge_pbottom':  50., #Bottom of the model's sponge down to 0.5hPa
+    #     'do_conserve_energy': True,    
+    # },
 
-    'spectral_init_cond_nml':{
-        'topog_file_name': 'era_land_t42.nc', #Name of land input file, which will also contain topography if generated using Isca's `land_file_generator_fn.py' routine.
-        'topography_option': 'input' #!Tell model to get topography from input file
-    },
+    # 'spectral_init_cond_nml':{
+    #     'topog_file_name': 'era_land_t42.nc', #Name of land input file, which will also contain topography if generated using Isca's `land_file_generator_fn.py' routine.
+    #     'topography_option': 'input' #!Tell model to get topography from input file
+    # },
     
     'diag_manager_nml': {
         'mix_snapshot_average_fields': False
