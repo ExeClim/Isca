@@ -23,7 +23,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp_name = 'polvani_kushner_polar3'
+exp_name = 'polvani_kushner_qbo3'
 exp = Experiment(exp_name, codebase=cb)
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')]
@@ -44,7 +44,8 @@ diag.add_field('dynamics', 'div', time_avg=True)
 diag.add_field('dynamics', 'height', time_avg=True)
 
 diag.add_field('hs_forcing', 'teq', time_avg=True)
-diag.add_field('hs_forcing', 'local_heating', time_avg=True)
+#diag.add_field('hs_forcing', 'local_heating', time_avg=True)
+diag.add_field('hs_forcing', 'udt_rdamp', time_avg=True)
 
 exp.diag_table = diag
 
@@ -91,12 +92,14 @@ namelist = Namelist({
         'z_ozone': 15.,     # Height (in km) of stratospheric warming start
         'do_conserve_energy':   True,  # convert dissipated momentum into heat (default True)
         'sponge_flag': True,       # Turn on simple damping in upper levels
-        'polar_heating_srfamp': 2.,
-        'polar_heating_latwidth': 20*np.pi/180.,
-        'polar_heating_latcenter': 90*np.pi/180.,
-        'polar_heating_sigwidth': 0.1,
-        'polar_heating_sigcenter': 1.,
-        'local_heating_option': 'Polar'
+        # 'polar_heating_srfamp': 2.,
+        # 'polar_heating_latwidth': 20*np.pi/180.,
+        # 'polar_heating_latcenter': 90*np.pi/180.,
+        # 'polar_heating_sigwidth': 0.1,
+        # 'polar_heating_sigcenter': 1.,
+        # 'local_heating_option': 'Polar'
+        'relax_to_qbo': True,
+        'qbo_amp': -20.
     },
     
     # 'damping_driver_nml': {

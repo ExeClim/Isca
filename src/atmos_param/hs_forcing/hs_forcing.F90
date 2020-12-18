@@ -121,6 +121,13 @@ private
    logical :: sponge_flag = .false. !flag for sponge at top of model
    real :: sponge_pbottom = 5.e1    !bottom of sponge layer, where damping is zero (Pa)
    real :: sponge_tau_days  = 0.5   !damping time scale for the sponge (days)
+
+   logical :: relax_to_qbo = .false. ! flag for including relaxation to analytical QBO-like equatorial zonal winds
+   real :: qbo_z_min = 17.0 ! minimum altitude of QBO relaxation (in km)
+   real :: qbo_z_max = 50.0 ! maximum altitude of QBO relaxation (in km)
+   real :: qbo_amp = 20.0 ! amplitude of QBO winds (positive for QBO-W, negative for QBO-E)
+   real :: qbo_lat_width = 0.35 ! latitudinal width of QBO winds (in radians)
+   
 !-----------------------------------------------------------------------
 
    namelist /hs_forcing_nml/  no_forcing, t_zero, t_strat, delh, delv, eps,  &
@@ -139,7 +146,9 @@ private
                               sponge_flag,sponge_pbottom,sponge_tau_days, &
                               polar_heating_srfamp,    & 
                               polar_heating_sigcenter,polar_heating_latwidth,& 
-                              polar_heating_latcenter,polar_heating_sigwidth 
+                              polar_heating_latcenter,polar_heating_sigwidth,&
+                              relax_to_qbo, qbo_z_min, qbo_z_max, qbo_amp, qbo_lat_width
+   
 !-----------------------------------------------------------------------
 
    character(len=128) :: version='$Id: hs_forcing.F90,v 19.0 2012/01/06 20:10:01 fms Exp $'
@@ -212,7 +221,7 @@ contains
 !-----------------------------------------------------------------------
 !     rayleigh damping of wind components near the surface
 
-      call rayleigh_damping ( Time, ps, p_full, p_half, u, v, utnd, vtnd, mask=mask )
+      call rayleigh_damping ( Time, ps, p_full, p_half, u, v, utnd, vtnd, zfull, lat, mask=mask )
 
       if (do_conserve_energy) then
          ttnd = -((um+.5*utnd*dt)*utnd + (vm+.5*vtnd*dt)*vtnd)/CP_AIR
@@ -723,7 +732,7 @@ real, intent(in),  dimension(:,:,:), optional :: mask
 
 !#######################################################################
 
- subroutine rayleigh_damping ( Time, ps, p_full, p_half, u, v, udt, vdt, mask )
+ subroutine rayleigh_damping ( Time, ps, p_full, p_half, u, v, udt, vdt, zfull, lat, mask )
 
 !-----------------------------------------------------------------------
 !
@@ -732,8 +741,8 @@ real, intent(in),  dimension(:,:,:), optional :: mask
 !-----------------------------------------------------------------------
 
 type(time_type), intent(in)         :: Time
-real, intent(in),  dimension(:,:)   :: ps
-real, intent(in),  dimension(:,:,:) :: p_full, p_half, u, v
+real, intent(in),  dimension(:,:)   :: ps, lat
+real, intent(in),  dimension(:,:,:) :: p_full, p_half, u, v, zfull
 real, intent(out), dimension(:,:,:) :: udt, vdt
 real, intent(in),  dimension(:,:,:), optional :: mask
 
@@ -744,7 +753,7 @@ real, dimension(size(u,1),size(u,2)) :: sigma, vfactr, rps
 integer :: i,j,k
 real    :: vcoeff
 real, dimension(size(u,2),size(u,3)) :: uz, vz
-real :: umean, vmean
+real :: umean, vmean, zkm, qbofactr
 real    :: sponge_coeff !used if sponge_flag
 !-----------------------------------------------------------------------
 !----------------compute damping----------------------------------------
@@ -764,6 +773,7 @@ real    :: sponge_coeff !used if sponge_flag
             udt(:,j,k) = (uz(j,k)-umean)*vkf
             vdt(:,j,k) = (vz(j,k)-vmean)*vkf
          enddo
+       
       else
 
          sigma(:,:) = p_full(:,:,k)*rps(:,:)
@@ -785,6 +795,21 @@ real    :: sponge_coeff !used if sponge_flag
                vdt(:,:,k) = vdt(:,:,k) + vfactr(:,:)*v(:,:,k)
             endwhere
          endif
+
+         if (relax_to_qbo)  then
+         do j=1, size(u,2)
+            umean=sum(u(:,j,k))/size(u,1)
+            vmean=sum(v(:,j,k))/size(v,1)
+            do i=1, size(u,1)
+               zkm = zfull(i,j,k)/1000.0
+               if (zkm <= qbo_z_max .and. zkm >= qbo_z_min) then
+               qbofactr = qbo_amp*exp(-(lat(i,j)/qbo_lat_width)**2)*sin(((zkm-qbo_z_min)*2*pi)/(qbo_z_max-qbo_z_min))
+               udt(i,j,k) = (qbofactr - umean)*vkf*exp(-(lat(i,j)/qbo_lat_width)**2)
+               endif
+            enddo
+         enddo
+         endif
+         
          
       endif
       enddo
