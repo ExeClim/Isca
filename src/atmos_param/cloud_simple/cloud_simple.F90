@@ -219,7 +219,7 @@ module cloud_simple_mod
 
   subroutine calc_rhcrit(p_full, p_surf, simple_rhcrit)  
     ! Get the RH needed as a threshold for the cloud fraction calc.
-    ! This is only requires for spookmie_protocol=1
+    ! This is only requires for spookie_protocol=1
     real, intent(in)  :: p_full, p_surf
     real, intent(out) :: simple_rhcrit
 
