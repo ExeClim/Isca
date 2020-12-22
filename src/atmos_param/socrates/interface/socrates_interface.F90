@@ -1080,15 +1080,16 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
        !Set tide-locked flux if tidally-locked = .true. Else use diurnal-solar
        !to calculate insolation from orbit!
-       if (tidally_locked.eq..true.) then
+       if (tidally_locked) then
             coszen = COS(rad_lat(:,:))*COS(rad_lon(:,:))
             WHERE (coszen < 0.0) coszen = 0.0
-            rrsun = 1 ! needs to be set, set to 1 so that stellar_radiation is unchanged in socrates_interface
+            rrsun = 1 
+            ! needs to be set to 1 so that stellar_radiation is unchanged in socrates_interface
 
-       elseif (frierson_solar_rad .eq. .true.) then
+       elseif (frierson_solar_rad) then
             p2     = (1. - 3.*sin(rad_lat(:,:))**2)/4.
             coszen = 0.25 * (1.0 + del_sol * p2 + del_sw * sin(rad_lat(:,:)))
-            rrsun  = 1 ! needs to be set, set to 1 so that stellar_radiation is unchanged in socrates_interface
+            rrsun  = 1 ! needs to be set to 1 so that stellar_radiation is unchanged in socrates_interface
 
        else
        
