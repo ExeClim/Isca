@@ -173,9 +173,9 @@ real, allocatable, dimension(:,:)   ::                                        &
      rough_mom,            &   ! momentum roughness length for surface_flux
      rough_heat,           &   ! heat roughness length for surface_flux
      rough_moist,          &   ! moisture roughness length for surface_flux
-     depth_change_lh,      &   ! tendency in bucket depth due to latent heat transfer     ! RG Add bucket
-     depth_change_cond,    &   ! tendency in bucket depth due to condensation rain        ! RG Add bucket
-     depth_change_conv,    &   ! tendency in bucket depth due to convection rain          ! RG Add bucket
+     depth_change_lh,      &   ! tendency in bucket depth due to latent heat transfer
+     depth_change_cond,    &   ! tendency in bucket depth due to condensation rain
+     depth_change_conv,    &   ! tendency in bucket depth due to convection rain
      gust,                 &   ! gustiness constant
      z_pbl,                &   ! gustiness constant
      flux_t,               &   ! surface sensible heat flux
@@ -216,7 +216,7 @@ real, allocatable, dimension(:,:,:) ::                                        &
      diff_m,               &   ! momentum diffusion coeff.
      diff_t,               &   ! temperature diffusion coeff.
      tdtlw,                &   ! place holder. appears in calling arguments of 
-                               !vert_turb_driver but not used unless do_edt=.true.
+                               ! vert_turb_driver but not used unless do_edt=.true.
      diss_heat,            &   ! heat dissipated by vertical diffusion
      diss_heat_ray,        &   ! heat dissipated by rayleigh bottom drag (used when gp_surface=.True.)
      non_diff_dt_ug,       &   ! zonal wind tendency except from vertical diffusion
@@ -269,10 +269,10 @@ integer ::           &
      id_conv_dt_qg,  &   ! temperature tendency from convection
      id_cond_dt_tg,  &   ! temperature tendency from condensation
      id_cond_dt_qg,  &   ! temperature tendency from condensation
-     id_bucket_depth,      &   ! bucket depth variable for output  - RG Add bucket
-     id_bucket_depth_conv, &   ! bucket depth variation induced by convection  - RG Add bucket
-     id_bucket_depth_cond, &   ! bucket depth variation induced by condensation  - RG Add bucket
-     id_bucket_depth_lh,   &   ! bucket depth variation induced by LH  - RG Add bucket
+     id_bucket_depth,      &   ! bucket depth variable for output
+     id_bucket_depth_conv, &   ! bucket depth variation induced by convection
+     id_bucket_depth_cond, &   ! bucket depth variation induced by condensation
+     id_bucket_depth_lh,   &   ! bucket depth variation induced by LH
      id_rh,          & 	 ! Relative humidity
      id_diss_heat_ray,&  ! Heat dissipated by rayleigh bottom drag if gp_surface=.True.
      id_z_tg,        &   ! Relative humidity
@@ -798,7 +798,6 @@ integer, intent(in) , dimension(:,:),   optional :: kbot
 real, dimension(1,1,1):: tracer, tracertnd
 integer :: nql, nqi, nqa   ! tracer indices for stratiform clouds
 
-
 if(current == previous) then
    delta_t = dt_real
 else
@@ -1050,12 +1049,12 @@ if(.not.gp_surface) then
                                 dedq_atm(:,:),                              &
                               dtaudu_atm(:,:),                              &
                               dtaudv_atm(:,:),                              &
-			        ex_del_m(:,:),				                            &
-			        ex_del_h(:,:),				                            &
-			        ex_del_q(:,:),				                            &
-			         temp_2m(:,:),				                            &
-			           u_10m(:,:),				                            &	
-			           v_10m(:,:),				                            &
+			                    ex_del_m(:,:),				                &
+			                    ex_del_h(:,:),				                &
+			                    ex_del_q(:,:),				                &
+			                     temp_2m(:,:),				                &
+			                       u_10m(:,:),				                &
+			                       v_10m(:,:),				                &
                                     q_2m(:,:),                              &
                                    rh_2m(:,:),                              &
                  	              delta_t,                                  &
@@ -1095,7 +1094,7 @@ if(do_rrtm_radiation) then
    call interp_temp(z_full(:,:,:,current),z_half(:,:,:,current),tg_interp, Time)
    call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),  &
                   albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),     &
-                  coszen,net_surf_sw_down(:,:),surf_lw_down(:,:), cf_rad(:,:,:), reff_rad(:,:,:),   &     
+                  coszen,net_surf_sw_down(:,:),surf_lw_down(:,:), cf_rad(:,:,:), reff_rad(:,:,:),    &
                   do_cloud_simple )
 endif
 #endif
