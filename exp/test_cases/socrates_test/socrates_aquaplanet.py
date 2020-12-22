@@ -40,7 +40,10 @@ diag.add_field('dynamics', 'zsurf', time_avg=True)
 
 #Tell model which diagnostics to write
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
+diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
+diag.add_field('mixed_layer', 'flux_t', time_avg=True) #LH
+diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #SH
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
@@ -48,10 +51,10 @@ diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
 
-#radiative tendencies
-diag.add_field('socrates', 'soc_tdt_lw', time_avg=True)
+#temperature tendency - units are K/s
+diag.add_field('socrates', 'soc_tdt_lw', time_avg=True) # net flux lw 3d (up - down)
 diag.add_field('socrates', 'soc_tdt_sw', time_avg=True)
-diag.add_field('socrates', 'soc_tdt_rad', time_avg=True)
+diag.add_field('socrates', 'soc_tdt_rad', time_avg=True) #sum of the sw and lw heating rates
 
 #net (up) and down surface fluxes
 diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
@@ -62,11 +65,6 @@ diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
 diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
 diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
-
-diag.add_field('cloud_simple', 'cf_rad', time_avg=True)
-diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
-diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
-diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
 
 # additional output options commented out 
 #diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
@@ -102,7 +100,7 @@ exp.namelist = namelist = Namelist({
         'chunk_size': 16,
         'use_pressure_interp_for_half_levels':False,
         'tidally_locked':False,
-        #'solday': 90
+        'solday':90
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -164,7 +162,8 @@ exp.namelist = namelist = Namelist({
     },
     
     'sat_vapor_pres_nml': {
-           'do_simple':True
+           'do_simple':True,
+           'construct_table_wrt_liq_and_ice':True
        },
     
     'damping_driver_nml': {
@@ -212,6 +211,8 @@ if __name__=="__main__":
         #This will be the name of the folder that the data will appear in.
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
 
+        overwrite=False
 
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
         for i in range(2,121):
-            exp.run(i, num_cores=NCORES)
+            exp.run(i, num_cores=NCORES, overwrite_data=overwrite)

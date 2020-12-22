@@ -32,10 +32,13 @@ inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 diag = DiagTable()
 diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 
-#Tell model which diagnostics to write
+#Write out diagnostics need for vertical interpolation post-processing
 diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
+diag.add_field('dynamics', 'zsurf', time_avg=True)
+
+#Tell model which diagnostics to write
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
@@ -61,7 +64,7 @@ diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
 #net (up) TOA and downard fluxes
 diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
-diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True) 
+diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
 
 #clear sky fluxes
 diag.add_field('socrates', 'soc_surf_flux_lw_clear', time_avg=True)
@@ -227,6 +230,9 @@ exp.namelist = namelist = Namelist({
 if __name__=="__main__":
 
         cb.compile(debug=False)
+        #Set up the experiment object, with the first argument being the experiment name.
+        #This will be the name of the folder that the data will appear in.
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
 
         overwrite=False
 
