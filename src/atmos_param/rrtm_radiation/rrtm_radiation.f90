@@ -57,7 +57,7 @@
         real(kind=rb),allocatable,dimension(:,:,:) :: zeros                ! place holder for any species set
                                                                            !  to zero
         real(kind=rb),allocatable,dimension(:,:,:) :: ones                 ! place holder for any species set
-                                                                           !  to zero
+                                                                           !  to one
         ! the following species are only set if use_secondary_gases=.true.
         real(kind=rb),allocatable,dimension(:,:)   :: ch4                  ! CH4 [vmr]
                                                                            ! dimension (ncols_rrt x nlay_rrt)
@@ -631,7 +631,6 @@
           real(kind=rb),dimension(ngptlw, ncols_rrt,nlay_rrt) :: cldfmcl_lw, ciwpmcl_lw, clwpmcl_lw, taucmcl_lw
 
 ! debug
-          real :: tmp1, tmp2 !remove tmp1 and tmp2 after debugging
 
           integer :: indx2(2),indx(3),ii,ji,ki, pt1,pt2
           logical :: used
@@ -889,6 +888,7 @@
            endif
 
 
+          !TODO PM: the below code changes compared to the master need to be discussed with ST in detail.
           if(include_secondary_gases)then
              call rrtmg_sw &
                   (ncols_rrt, nlay_rrt , icld     , iaer         , &
