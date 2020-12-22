@@ -82,14 +82,8 @@ diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
 #diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
 diag.add_field('cloud_simple', 'rh_min', time_avg=True)
 diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
+diag.add_field('mixed_layer', 'albedo', time_avg=True)
 
-# additional output options commented out 
-#diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
-#diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
-#diag.add_field('socrates', 'soc_co2', time_avg=True)
-#diag.add_field('socrates', 'soc_ozone', time_avg=True) 
-#diag.add_field('socrates', 'soc_coszen', time_avg=True) 
-#diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
 exp.diag_table = diag
 exp.inputfiles = inputfiles

@@ -66,14 +66,6 @@ diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
 diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
 
-# additional output options commented out 
-#diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
-#diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
-#diag.add_field('socrates', 'soc_co2', time_avg=True)
-#diag.add_field('socrates', 'soc_ozone', time_avg=True) 
-#diag.add_field('socrates', 'soc_coszen', time_avg=True) 
-#diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
-
 exp.diag_table = diag
 exp.inputfiles = inputfiles
 
@@ -163,7 +155,6 @@ exp.namelist = namelist = Namelist({
     
     'sat_vapor_pres_nml': {
            'do_simple':True,
-           'construct_table_wrt_liq_and_ice':True
        },
     
     'damping_driver_nml': {
