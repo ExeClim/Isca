@@ -8,7 +8,8 @@ module idealized_moist_phys_mod
 
 use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, FATAL, read_data, field_size, uppercase, mpp_pe
 
-use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS, dens_h2o !mj cp_air needed for rrtmg !s pstd_mks needed for pref calculation
+! cp_air needed for rrtmg and pstd_mks needed for pref calculation
+use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS, dens_h2o 
 
 use        time_manager_mod, only: time_type, get_time, operator( + )
 
@@ -40,13 +41,13 @@ use   spectral_dynamics_mod, only: get_axis_id, get_num_levels, get_surf_geopote
 
 use        surface_flux_mod, only: surface_flux, gp_surface_flux
 
-use      sat_vapor_pres_mod, only: lookup_es !s Have added this to allow relative humdity to be calculated in a consistent way.
+use      sat_vapor_pres_mod, only: lookup_es ! needed for relative humdity to be calculated in a consistent way.
 
-use      damping_driver_mod, only: damping_driver, damping_driver_init, damping_driver_end !s MiMA uses damping
+use      damping_driver_mod, only: damping_driver, damping_driver_init, damping_driver_end ! MiMA uses damping
 
 use    press_and_geopot_mod, only: pressure_variables
 
-use         mpp_domains_mod, only: mpp_get_global_domain !s added to enable land reading
+use         mpp_domains_mod, only: mpp_get_global_domain ! needed for reading in land
 
 use          transforms_mod, only: grid_domain
 
@@ -199,22 +200,23 @@ real, allocatable, dimension(:,:)   ::                                        &
      dtaudu_atm,           &   ! d(stress component)/d(atmos wind)
      fracland,             &   ! fraction of land in gridbox
      rough,                &   ! roughness for vert_turb_driver
-     albedo,               &   !s albedo now defined in mixed_layer_init
-     coszen,               &   !s make sure this is ready for assignment in run_rrtmg
-     pbltop,               &   !s Used as an input to damping_driver, outputted from vert_turb_driver
-     ex_del_m, 		   &   !mp586 for 10m winds and 2m temp
-     ex_del_h,		   &   !mp586 for 10m winds and 2m temp
-     ex_del_q,		   &   !mp586 for 10m winds and 2m temp
-     temp_2m,		   &   !mp586 for 10m winds and 2m temp
-     u_10m,		   &   !mp586 for 10m winds and 2m temp
-     v_10m,		   &   !mp586 for 10m winds and 2m temp
-     q_2m,                 &   ! Add 2m specific humidity
-     rh_2m                     ! Add 2m relative humidity
+     albedo,               &   ! albedo now defined in mixed_layer_init
+     coszen,               &   ! make sure this is ready for assignment in run_rrtmg
+     pbltop,               &   ! used as an input to damping_driver, outputted from vert_turb_driver
+     ex_del_m, 		       &   ! used for 10m winds and 2m temp
+     ex_del_h,		       &   ! used for 10m winds and 2m temp
+     ex_del_q,		       &   ! used for 10m winds and 2m temp
+     temp_2m,		       &   ! used for 10m winds and 2m temp
+     u_10m,		           &   ! used for 10m winds and 2m temp
+     v_10m,		           &   ! used for 10m winds and 2m temp
+     q_2m,                 &   ! used for 2m specific humidity
+     rh_2m                     ! used for 2m relative humidity
 
 real, allocatable, dimension(:,:,:) ::                                        &
      diff_m,               &   ! momentum diffusion coeff.
      diff_t,               &   ! temperature diffusion coeff.
-     tdtlw,                &   ! place holder. appears in calling arguments of vert_turb_driver but not used unless do_edt=.true. -- pjp
+     tdtlw,                &   ! place holder. appears in calling arguments of 
+                               !vert_turb_driver but not used unless do_edt=.true.
      diss_heat,            &   ! heat dissipated by vertical diffusion
      diss_heat_ray,        &   ! heat dissipated by rayleigh bottom drag (used when gp_surface=.True.)
      non_diff_dt_ug,       &   ! zonal wind tendency except from vertical diffusion
@@ -231,7 +233,8 @@ logical, allocatable, dimension(:,:) ::                                       &
      avail,                &   ! generate surf. flux (all true)
      land,                 &   ! land points (all false)
      coldT,                &   ! should precipitation be snow at this point
-     convect                   ! place holder. appears in calling arguments of vert_turb_driver but not used unless do_entrain=.true. -- pjp
+     convect                   ! place holder. appears in calling arguments of 
+                               ! vert_turb_driver but not used unless do_entrain=.true.
 
 real, allocatable, dimension(:,:) ::                                          &
      land_ones                 ! land points (all zeros)
@@ -277,11 +280,11 @@ integer ::           &
      id_cin,	     & 	     
      id_flux_u,      & ! surface flux of zonal mom.
      id_flux_v,      & ! surface flux of meridional mom.
-     id_temp_2m,      & !mp586 for 10m winds and 2m temp
-     id_u_10m, 	     & !mp586 for 10m winds and 2m temp
-     id_v_10m,       & !mp586 for 10m winds and 2m temp
-     id_q_2m,        & ! Add 2m specific humidity
-     id_rh_2m          ! Add 2m relative humidity
+     id_temp_2m,     & ! used for 10m winds and 2m temp
+     id_u_10m, 	     & ! used for 10m winds and 2m temp
+     id_v_10m,       & ! used for 10m winds and 2m temp
+     id_q_2m,        & ! used for 2m specific humidity
+     id_rh_2m          ! used for 2m relative humidity
 
 integer, allocatable, dimension(:,:) :: convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
@@ -310,7 +313,7 @@ integer, intent(in) :: nhum
 real, intent(in), dimension(:,:) :: rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init
 
 integer :: io, nml_unit, stdlog_unit, seconds, days, id, jd, kd
-real, dimension (size(rad_lonb_2d,1)-1, size(rad_latb_2d,2)-1) :: sgsmtn !s added for damping_driver
+real, dimension (size(rad_lonb_2d,1)-1, size(rad_latb_2d,2)-1) :: sgsmtn ! needed for damping_driver
 
 !s added for land reading
 integer, dimension(4) :: siz
@@ -369,7 +372,6 @@ else if(uppercase(trim(convection_scheme)) == 'SIMPLE_BETTS_MILLER') then
   do_bm           = .false.
   do_ras          = .false.
   
-
 else if(uppercase(trim(convection_scheme)) == 'FULL_BETTS_MILLER') then
   r_conv_scheme = FULL_BETTS_MILLER_CONV
   call error_mesg('idealized_moist_phys','Using Betts-Miller convection scheme.', NOTE)
@@ -377,7 +379,6 @@ else if(uppercase(trim(convection_scheme)) == 'FULL_BETTS_MILLER') then
   lwet_convection = .false.
   do_ras          = .false.
   
-
 else if(uppercase(trim(convection_scheme)) == 'RAS') then
   r_conv_scheme = RAS_CONV
   call error_mesg('idealized_moist_phys','Using relaxed Arakawa Schubert convection scheme.', NOTE)
@@ -431,12 +432,12 @@ call get_num_levels(num_levels)
 
 allocate(rad_lat     (is:ie, js:je)); rad_lat = rad_lat_2d
 allocate(rad_lon     (is:ie, js:je)); rad_lon = rad_lon_2d
-allocate (dt_bucket  (is:ie, js:je)); dt_bucket = 0.0         ! RG Add bucket
-allocate (filt       (is:ie, js:je)); filt = 0.0              ! RG Add bucket
-allocate(bucket_depth (is:ie, js:je, num_time_levels)); bucket_depth = init_bucket_depth        ! RG Add bucket
-allocate(depth_change_lh(is:ie, js:je))                       ! RG Add bucket
-allocate(depth_change_cond(is:ie, js:je))                     ! RG Add bucket
-allocate(depth_change_conv(is:ie, js:je))                     ! RG Add bucket
+allocate (dt_bucket  (is:ie, js:je)); dt_bucket = 0.0
+allocate (filt       (is:ie, js:je)); filt = 0.0
+allocate(bucket_depth (is:ie, js:je, num_time_levels)); bucket_depth = init_bucket_depth 
+allocate(depth_change_lh(is:ie, js:je))
+allocate(depth_change_cond(is:ie, js:je))
+allocate(depth_change_conv(is:ie, js:je))
 allocate(z_surf      (is:ie, js:je))
 allocate(t_surf      (is:ie, js:je))
 allocate(q_surf      (is:ie, js:je)); q_surf = 0.0
@@ -467,14 +468,13 @@ allocate(dhdt_atm    (is:ie, js:je))
 allocate(dedq_atm    (is:ie, js:je))
 allocate(dtaudv_atm  (is:ie, js:je))
 allocate(dtaudu_atm  (is:ie, js:je))
-allocate(ex_del_m    (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
-allocate(ex_del_h    (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
-allocate(ex_del_q    (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
-allocate(temp_2m     (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
-allocate(u_10m       (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
-allocate(v_10m       (is:ie, js:je)) !mp586 added for 10m wind and 2m temp
-allocate(q_2m        (is:ie, js:je)) ! Add 2m specific humidity
-allocate(rh_2m       (is:ie, js:je)) ! Add 2m relative humidity
+allocate(ex_del_m    (is:ie, js:je))
+allocate(ex_del_h    (is:ie, js:je))
+allocate(ex_del_q    (is:ie, js:je))
+allocate(temp_2m     (is:ie, js:je))
+allocate(u_10m       (is:ie, js:je))
+allocate(q_2m        (is:ie, js:je))
+allocate(rh_2m       (is:ie, js:je))
 allocate(land        (is:ie, js:je)); land = .false.
 allocate(land_ones   (is:ie, js:je)); land_ones = 0.0
 allocate(avail       (is:ie, js:je)); avail = .true.
@@ -557,9 +557,7 @@ elseif(trim(land_option) .eq. 'zsurf')then
 	where ( z_surf > 10. ) land = .true.
 endif
 
-
-!s Add option to alter surface roughness length over land
-
+!option to alter surface roughness length over land
 if(trim(land_option) .eq. 'input') then
 
 	where(land)
@@ -570,17 +568,12 @@ if(trim(land_option) .eq. 'input') then
 
 endif
 
-!RG Add bucket - initialise bucket depth
 if(bucket) then
 where(land)
   bucket_depth(:,:,1)  = init_bucket_depth_land
   bucket_depth(:,:,2)  = init_bucket_depth_land
 end where
 endif
-!RG end Add bucket
-
-!s end option to alter surface roughness length over land
-
 
 if (gp_surface) then
 call rayleigh_bottom_drag_init(get_axis_id(), Time)
@@ -594,7 +587,9 @@ endif
       if(do_damping) then
          call pressure_variables(p_half_1d,ln_p_half_1d,pref(1:num_levels),ln_p_full_1d,PSTD_MKS)
 	 pref(num_levels+1) = PSTD_MKS
-         call damping_driver_init (rad_lonb_2d(:,1),rad_latb_2d(1,:), pref(:), get_axis_id(), Time, & !s note that in the original this is pref(:,1), which is the full model pressure levels and the surface pressure at the bottom. There is pref(:2) in this version with 81060 as surface pressure??
+         call damping_driver_init (rad_lonb_2d(:,1),rad_latb_2d(1,:), pref(:), get_axis_id(), Time, & 
+!note that in the original this is pref(:,1), which is the full model pressure levels and 
+!the surface pressure at the bottom. There is pref(:2) in this version with 81060 as surface pressure??
                                 sgsmtn)
 
       endif
@@ -645,33 +640,27 @@ id_flux_v = register_diag_field(mod_name, 'flux_v', &
      axes(1:2), Time, 'Meridional momentum flux', 'Pa')
 
 if(bucket) then
-  id_bucket_depth = register_diag_field(mod_name, 'bucket_depth',            &         ! RG Add bucket
+  id_bucket_depth = register_diag_field(mod_name, 'bucket_depth',            &
        axes(1:2), Time, 'Depth of surface reservoir', 'm')
-  id_bucket_depth_conv = register_diag_field(mod_name, 'bucket_depth_conv',  &         ! RG Add bucket
+  id_bucket_depth_conv = register_diag_field(mod_name, 'bucket_depth_conv',  &
        axes(1:2), Time, 'Tendency of bucket depth induced by Convection', 'm/s')
-  id_bucket_depth_cond = register_diag_field(mod_name, 'bucket_depth_cond',  &         ! RG Add bucket
+  id_bucket_depth_cond = register_diag_field(mod_name, 'bucket_depth_cond',  &
        axes(1:2), Time, 'Tendency of bucket depth induced by Condensation', 'm/s')
-  id_bucket_depth_lh = register_diag_field(mod_name, 'bucket_depth_lh',      &         ! RG Add bucket
+  id_bucket_depth_lh = register_diag_field(mod_name, 'bucket_depth_lh',      &
        axes(1:2), Time, 'Tendency of bucket depth induced by LH', 'm/s')
 endif
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
-
-id_temp_2m = register_diag_field(mod_name, 'temp_2m',            &         !mp586 add 2m temp
+id_temp_2m = register_diag_field(mod_name, 'temp_2m',            &
      axes(1:2), Time, 'Air temperature 2m above surface', 'K')
-id_u_10m = register_diag_field(mod_name, 'u_10m',                &         !mp586 add 10m wind (u)
+id_u_10m = register_diag_field(mod_name, 'u_10m',                &
      axes(1:2), Time, 'Zonal wind 10m above surface', 'm/s')
-id_v_10m = register_diag_field(mod_name, 'v_10m',                &         !mp586 add 10m wind (v)
+id_v_10m = register_diag_field(mod_name, 'v_10m',                &
      axes(1:2), Time, 'Meridional wind 10m above surface', 'm/s')
 
-!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 id_q_2m = register_diag_field(mod_name, 'sphum_2m',                  &
-     axes(1:2), Time, 'Specific humidity 2m above surface', 'kg/kg')       !Add 2m specific humidity
+     axes(1:2), Time, 'Specific humidity 2m above surface', 'kg/kg') 
 id_rh_2m = register_diag_field(mod_name, 'rh_2m',                &
-     axes(1:2), Time, 'Relative humidity 2m above surface', 'percent')     !Add 2m relative humidity
+     axes(1:2), Time, 'Relative humidity 2m above surface', 'percent')
 
 select case(r_conv_scheme)
 
@@ -1027,69 +1016,60 @@ if(.not.gp_surface) then
              p_half(:,:,num_levels+1,current),                              &
                                   t_surf(:,:),                              &
                                   t_surf(:,:),                              &
-                                  q_surf(:,:),                              & ! is intent(inout)
-                                       bucket,                              &     ! RG Add bucket
-                    bucket_depth(:,:,current),                              &     ! RG Add bucket
-                        max_bucket_depth_land,                              &     ! RG Add bucket
-                         depth_change_lh(:,:),                              &     ! RG Add bucket
-                       depth_change_conv(:,:),                              &     ! RG Add bucket
-                       depth_change_cond(:,:),                              &     ! RG Add bucket
+                                  q_surf(:,:),                              &
+                                       bucket,                              & 
+                    bucket_depth(:,:,current),                              &
+                        max_bucket_depth_land,                              &
+                         depth_change_lh(:,:),                              &
+                       depth_change_conv(:,:),                              &
+                       depth_change_cond(:,:),                              &
                                   u_surf(:,:),                              &
                                   v_surf(:,:),                              &
                                rough_mom(:,:),                              &
                               rough_heat(:,:),                              &
                              rough_moist(:,:),                              &
-                               rough_mom(:,:),                              & ! using rough_mom in place of rough_scale -- pjp
+                               rough_mom(:,:),                              &
                                     gust(:,:),                              &
-                                  flux_t(:,:),                              & ! is intent(out)
-                                  flux_q(:,:),                              & ! is intent(out)
-                                  flux_r(:,:),                              & ! is intent(out)
-                                  flux_u(:,:),                              & ! is intent(out)
-                                  flux_v(:,:),                              & ! is intent(out)
-                                  drag_m(:,:),                              & ! is intent(out)
-                                  drag_t(:,:),                              & ! is intent(out)
-                                  drag_q(:,:),                              & ! is intent(out)
-                                   w_atm(:,:),                              & ! is intent(out)
-                                   ustar(:,:),                              & ! is intent(out)
-                                   bstar(:,:),                              & ! is intent(out)
-                                   qstar(:,:),                              & ! is intent(out)
-                               dhdt_surf(:,:),                              & ! is intent(out)
-                               dedt_surf(:,:),                              & ! is intent(out)
-                               dedq_surf(:,:),                              & ! is intent(out)
-                               drdt_surf(:,:),                              & ! is intent(out)
-                                dhdt_atm(:,:),                              & ! is intent(out)
-                                dedq_atm(:,:),                              & ! is intent(out)
-                              dtaudu_atm(:,:),                              & ! is intent(out)
-                              dtaudv_atm(:,:),                              & ! is intent(out)
-			        ex_del_m(:,:),				    & ! mp586 for 10m winds and 2m temp
-			        ex_del_h(:,:),				    & ! mp586 for 10m winds and 2m temp
-			        ex_del_q(:,:),				    & ! mp586 for 10m winds and 2m temp
-			         temp_2m(:,:),				    & ! mp586 for 10m winds and 2m temp
-			           u_10m(:,:),				    & ! mp586 for 10m winds and 2m temp	
-			           v_10m(:,:),				    & ! mp586 for 10m winds and 2m temp
-                                    q_2m(:,:),                              & ! Add 2m specific humidity
-                                   rh_2m(:,:),                              & ! Add 2m relative humidity
-                 	              delta_t,                              &
+                                  flux_t(:,:),                              &
+                                  flux_q(:,:),                              &
+                                  flux_r(:,:),                              &
+                                  flux_u(:,:),                              &
+                                  flux_v(:,:),                              &
+                                  drag_m(:,:),                              &
+                                  drag_t(:,:),                              &
+                                  drag_q(:,:),                              &
+                                   w_atm(:,:),                              &
+                                   ustar(:,:),                              &
+                                   bstar(:,:),                              &
+                                   qstar(:,:),                              &
+                               dhdt_surf(:,:),                              &
+                               dedt_surf(:,:),                              &
+                               dedq_surf(:,:),                              &
+                               drdt_surf(:,:),                              &
+                                dhdt_atm(:,:),                              &
+                                dedq_atm(:,:),                              &
+                              dtaudu_atm(:,:),                              &
+                              dtaudv_atm(:,:),                              &
+			        ex_del_m(:,:),				                            &
+			        ex_del_h(:,:),				                            &
+			        ex_del_q(:,:),				                            &
+			         temp_2m(:,:),				                            &
+			           u_10m(:,:),				                            &	
+			           v_10m(:,:),				                            &
+                                    q_2m(:,:),                              &
+                                   rh_2m(:,:),                              &
+                 	              delta_t,                                  &
                                     land(:,:),                              &
                                .not.land(:,:),                              &
                                    avail(:,:)  )
 
   if(id_flux_u > 0) used = send_data(id_flux_u, flux_u, Time)
   if(id_flux_v > 0) used = send_data(id_flux_v, flux_v, Time)
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
-
-  if(id_temp_2m > 0) used = send_data(id_temp_2m, temp_2m, Time)    ! mp586 add 2m temp
-  if(id_u_10m > 0) used = send_data(id_u_10m, u_10m, Time)          ! mp586 add 10m wind (u)
-  if(id_v_10m > 0) used = send_data(id_v_10m, v_10m, Time)          ! mp586 add 10m wind (v)
-
-
-  !!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  if(id_q_2m > 0) used = send_data(id_q_2m, q_2m, Time)           ! Add 2m specific humidity
-  if(id_rh_2m > 0) used = send_data(id_rh_2m, rh_2m*1e2, Time)    ! Add 2m relative humidity
+  if(id_temp_2m > 0) used = send_data(id_temp_2m, temp_2m, Time)
+  if(id_u_10m > 0) used = send_data(id_u_10m, u_10m, Time)
+  if(id_v_10m > 0) used = send_data(id_v_10m, v_10m, Time)
+  if(id_q_2m > 0) used = send_data(id_q_2m, q_2m, Time)
+  if(id_rh_2m > 0) used = send_data(id_rh_2m, rh_2m*1e2, Time)
 
 endif
 
@@ -1165,7 +1145,7 @@ endif
 !----------------------------------------------------------------------
 z_pbl(:,:) = pbltop(is:ie,js:je)
 if(do_damping) then
-     call damping_driver (is, js, rad_lat, Time+Time_step, delta_t,                               &
+     call damping_driver (is, js, rad_lat, Time+Time_step, delta_t,                     &
                              p_full(:,:,:,current), p_half(:,:,:,current),              &
                              z_full(:,:,:,current), z_half(:,:,:,current),              &
                              ug(:,:,:,previous), vg(:,:,:,previous),                    &
