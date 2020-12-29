@@ -23,7 +23,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_test_aquaplanet_with_clouds_post_jm_suggestions_amip_ssts_land_low_albedo_with_land', codebase=cb)
+exp = Experiment('validate_clouds_soc/soc_test_aquaplanet_with_clouds_post_jm_suggestions_amip_ssts_land_low_albedo_with_land', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
@@ -245,10 +245,9 @@ if __name__=="__main__":
         cb.compile(debug=False)
         #Set up the experiment object, with the first argument being the experiment name.
         #This will be the name of the folder that the data will appear in.
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
 
         overwrite=False
 
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
-        for i in range(2,241):
+        for i in range(2,121):
             exp.run(i, num_cores=NCORES, overwrite_data=overwrite)

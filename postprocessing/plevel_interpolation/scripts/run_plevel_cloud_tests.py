@@ -7,8 +7,8 @@ import pdb
 import subprocess
 
 start_time=time.time()
-base_dir='/scratch/pm366/OutputIsca/'
-exp_name_list = ['soc_test_aquaplanet_with_clouds']
+base_dir='/scratch/pm366/OutputIsca/validate_clouds_soc'
+exp_name_list = ['soc_test_aquaplanet_without_clouds']
 avg_or_daily_list=['monthly']
 start_file=1
 end_file=120

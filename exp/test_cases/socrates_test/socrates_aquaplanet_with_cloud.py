@@ -5,7 +5,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 16
+NCORES = 8
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -23,7 +23,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_test_aquaplanet_with_clouds_post_jm_suggestions', codebase=cb) # need to update after testing is complete.
+exp = Experiment('validate_clouds_soc/soc_test_aquaplanet_with_clouds_post_jm_suggestions', codebase=cb) # need to update after testing is complete.
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -36,7 +36,7 @@ diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
-diag.add_field('dynamics', 'zsurf', time_avg=True)
+diag.add_field('dynamics', 'zsurf')
 
 #Tell model which diagnostics to write
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
@@ -82,7 +82,7 @@ diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
 #diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
 diag.add_field('cloud_simple', 'rh_min', time_avg=True)
 diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
-diag.add_field('mixed_layer', 'albedo', time_avg=True)
+diag.add_field('mixed_layer', 'albedo')
 
 
 exp.diag_table = diag
@@ -226,10 +226,10 @@ if __name__=="__main__":
         cb.compile(debug=False)
         #Set up the experiment object, with the first argument being the experiment name.
         #This will be the name of the folder that the data will appear in.
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
 
         overwrite=False
 
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
-        #for i in range(2,121):
-        #    exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)
+
+        for i in range(2,121):
+            exp.run(i, num_cores=NCORES, overwrite_data=overwrite)

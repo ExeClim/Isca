@@ -23,7 +23,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_test_aquaplanet_without_clouds', codebase=cb)
+exp = Experiment('validate_clouds_soc/soc_test_aquaplanet_without_clouds', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -36,7 +36,7 @@ diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
-diag.add_field('dynamics', 'zsurf', time_avg=True)
+diag.add_field('dynamics', 'zsurf')
 
 #Tell model which diagnostics to write
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
@@ -200,7 +200,6 @@ if __name__=="__main__":
         cb.compile(debug=False)
         #Set up the experiment object, with the first argument being the experiment name.
         #This will be the name of the folder that the data will appear in.
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
 
         overwrite=False
 
