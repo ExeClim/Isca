@@ -1,0 +1,492 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=EUC-JP">
+<title>Module diag_table_mod</title>
+<link type="text/css" href="http://data1.gfdl.noaa.gov/~fms/style/docbook.css" rel="stylesheet">
+<STYLE TYPE="text/css">
+          .fixed {
+            font-size:medium;
+            font-family:monospace;
+            border-style:none;
+            border-width:0.1em;
+            padding:0.1em;
+            color:#663366;
+          }
+        </STYLE>
+</head>
+<body>
+<a name="TOP"></a><font class="header" size="1"><a href="#PUBLIC INTERFACE">PUBLIC INTERFACE </a>
+
+          ~ <a href="#PUBLIC ROUTINES">PUBLIC ROUTINES </a>
+	    ~ <a href="#ERROR MESSAGES">ERROR MESSAGES </a></font>
+<hr>
+<h2>Module diag_table_mod</h2>
+<a name="HEADER"></a>
+<!-- BEGIN HEADER -->
+<div>
+<b>Contact:&nbsp;</b><a href="mailto:seth.underwood@noaa.gov">   Seth Underwood </a>
+<br>
+<b>Reviewers:&nbsp;</b>
+<br>
+<b>Change History:&nbsp;</b><a href="http://cobweb.gfdl.noaa.gov/fms-cgi-bin/viewcvs/FMS/shared/diag_manager">WebCVS Log</a>
+<br>
+<br>
+</div>
+<!-- END HEADER -->
+<a name="OVERVIEW"></a>
+<hr>
+<h4>OVERVIEW</h4>
+<!-- BEGIN OVERVIEW -->
+<p class="text"> 
+<tt>diag_table_mod</tt>   is a set of subroutines use to parse out the data from a <tt>diag_table</tt>.  This module
+   will also setup the arrays required to store the information by counting the number of input fields, output files, and
+   files. </p>
+<!-- END OVERVIEW -->
+<a name="DESCRIPTION"></a>
+<!-- BEGIN DESCRIPTION -->
+<div> 
+<tt>diag_table_mod</tt>   parses the <tt>diag_table</tt>   file, and sets up the required arrays to hold the information
+   needed for the <tt>diag_manager_mod</tt>   to correctly write out the model history files.
+   <br>
+<br>
+   The <i>diagnostics table</i>   allows users to specify sampling rates and the choice of fields at run time.  The <tt>diag_table</tt>   file consists of comma-separated ASCII values.  The <tt>diag_table</tt>   essentially has three sections: <b>Global</b>, <b>File</b>, and <b>Field</b>   sections.  The <b>Global</b>   section must be the first two lines of the file,
+   whereas the <b>File</b>   and <b>Field</b>   sections can be inter mixed to allow the file to be organized as desired.
+   Comments can be added to the <tt>diag_table</tt>   file by using the hash symbol (#) as the first character in the line.
+   <br>
+<br>
+   All errors in the <tt>diag_table</tt>   will throw a <tt>FATAL</tt>   error.  A simple utility <tt>diag_table_chk</tt>has been
+   added to the FRE tools suite to check a <tt>diag_table</tt>   for errors.  A brief usage statement can be obtained by running <tt>diag_table_chk --help</tt>, and a man page like description can views by running <tt>perldoc diag_table_chk</tt>.
+   <br>
+<br>
+   Below is a description of the three sections. <ol> 
+<li> 
+<b>Global Section:</b>   The first two lines of the <tt>diag_table</tt>   must contain the <i>title</i>   and the <i>base
+   date</i>   of the experiment respectively.  The <i>title</i>   must be a Fortran CHARACTER string.  The <i>base date</i>   is the reference time used for the time units, and must be greater than or equal to the model start time.
+   The <i>base date</i>   consists of six space-separated integer in the following format.<br> 
+<tt><nobr>year month day hour minute second</nobr></tt>
+<br> 
+</li> 
+<li> 
+<b>File Section:</b>   File lines contain 6 required and 5 optional fields (optional fields are surrounded with
+   square brackets ([]).  File lines can be intermixed with the field lines, but the file must be defined before any
+   fields that are to be written to the file.  File lines have the following format:<br> 
+<nobr><code>   "file_name", output_freq, "output_freq_units", file_format, "time_axis_units", "time_axis_name"
+   [, new_file_freq, "new_file_freq_units"[, "start_time"[, file_duration, "file_duration_units"]]] </code></nobr> 
+<br>   with the following descriptions. <dl> 
+<dt>
+<tt>CHARACTER(len=128) :: file_name</tt>
+</dt> 
+<dd>   Output file name without the trailing "<tt>.nc</tt>".
+   <br>
+<br>
+   A single file description can produce multiple files using special time string suffix keywords.  This time string
+   will append the time strings to the base file name each time a new file is opened.  They syntax for the time string
+   suffix keywords are <tt>%#tt</tt>   Where <tt>#</tt>   is a mandatory single digit number specifying the width of the
+   field, and <tt>tt</tt>   can be as follows: <ol style="list-style-type: none;"> 
+<li>
+<tt>yr</tt> 
+    &#150;
+     Years</li> 
+<li>
+<tt>mo</tt> 
+    &#150;
+     Months</li> 
+<li>
+<tt>dy</tt> 
+    &#150;
+     Days</li> 
+<li>
+<tt>hr</tt> 
+    &#150;
+     Hours</li> 
+<li>
+<tt>mi</tt> 
+    &#150;
+     Minutes</li> 
+<li>
+<tt>sc</tt> 
+    &#150;
+     Seconds</li> 
+</ol>   Thus, a file name of <tt>file2_yr_dy%1yr%3dy</tt>   will have a base file name of <tt>file2_yr_dy_1_001</tt>   if the
+   file is created on year 1 day 1 of the model run. <b><i>NOTE:</i></b>   The time suffix keywords must be used if the
+   optional fields <tt>new_file_freq</tt>   and <tt>new_file_freq_units</tt>   are used, otherwise a <tt>FATAL</tt>   error
+   will occur. </dd> 
+<dt>
+<tt>INTEGER :: output_freq</tt>
+</dt> 
+<dd>How often to write fields to file. <ol style="list-style-type: none;"> 
+<li>
+<tt>&gt; 0</tt> 
+    &#150;
+     Output frequency in <tt>output_freq_units</tt>.</li> 
+<li>
+<tt>= 0</tt> 
+    &#150;
+     Output frequency every time set. (<tt>output_freq_units</tt>   is ignored.)</li> 
+<li>
+<tt>=-1</tt> 
+    &#150;
+     Output at end of run only. (<tt>output_freq_units</tt>   is ignored.)</li> 
+</ol> 
+</dd> 
+<dt>
+<tt>CHARACTER(len=10) :: output_freq_units</tt>
+</dt> 
+<dd>   Time units for output.  Can be either <tt>years</tt>, <tt>months</tt>, <tt>days</tt>, <tt>minutes</tt>, <tt>hours</tt>, or <tt>seconds</tt>. </dd> 
+<dt>
+<tt>INTEGER :: file_format</tt>
+</dt> 
+<dd>   Output file format.  Currently only the <i>netCDF</i>   file format is supported. <ol style="list-style-type: none;"> 
+<li>
+<tt>= 1</tt> 
+    &#150;
+     netCDF</li> 
+</ol> 
+</dd> 
+<dt>
+<tt>CHARACTER(len=10) :: time_axis_units</tt>
+</dt> 
+<dd>   Time units for the output file time axis.  Can be either <tt>years</tt>, <tt>months</tt>, <tt>days</tt>, <tt>minutes</tt>, <tt>hours</tt>, or <tt>seconds</tt>. </dd> 
+<dt>
+<tt>CHARACTER(len=128) :: time_axis_name</tt>
+</dt> 
+<dd>   Axis name for the output file time axis.  The character sting must contain the string 'time'. (mixed upper and
+   lowercase allowed.) </dd> 
+<dt>
+<tt>INTEGER, OPTIONAL :: new_file_freq</tt>
+</dt> 
+<dd>   Frequency for closing the existing file, and creating a new file in <tt>new_file_freq_units</tt>. </dd> 
+<dt>
+<tt>CHARACTER(len=10), OPTIONAL :: new_file_freq_units</tt>
+</dt> 
+<dd>   Time units for creating a new file.  Can be either <tt>years</tt>, <tt>months</tt>, <tt>days</tt>, <tt>minutes</tt>, <tt>hours</tt>, or <tt>seconds</tt>. <b><i>NOTE:</i></b>   If the <tt>new_file_freq</tt>   field is
+   present, then this field must also be present. </dd> 
+<dt>
+<tt>CHARACTER(len=25), OPTIONAL :: start_time</tt>
+</dt> 
+<dd>   Time to start the file for the first time.  The format of this string is the same as the <i>global date</i>. <b><i>   NOTE:</i></b>   The <tt>new_file_freq</tt>   and the <tt>new_file_freq_units</tt>   fields must be present to use this field. </dd> 
+<dt>
+<tt>INTEGER, OPTIONAL :: file_duration</tt>
+</dt> 
+<dd>   How long file should receive data after start time in <tt>file_duration_units</tt>.  This optional field can only
+   be used if the <tt>start_time</tt>   field is present.  If this field is absent, then the file duration will be equal
+   to the frequency for creating new files. <b><i>NOTE:</i></b>   The <tt>file_duration_units</tt>   field must also be
+   present if this field is present. </dd> 
+<dt>
+<tt>CHARACTER(len=10), OPTIONAL :: file_duration_units</tt>
+</dt> 
+<dd>   File duration units. Can be either <tt>years</tt>, <tt>months</tt>, <tt>days</tt>, <tt>minutes</tt>, <tt>hours</tt>, or <tt>seconds</tt>. <b><i>NOTE:</i></b>   If the <tt>file_duration</tt>   field is
+   present, then this field must also be present. </dd> 
+</dl> 
+</li> 
+<li> 
+<b>Field Section:</b>   Field lines contain 8 fields.  Field lines can be intermixed with file lines, but the file must
+   be defined before any fields that are to be written to the file.  Fields line can contain fields that are not written
+   to any files.  The file name for these fields is <tt>null</tt>.
+   <br>
+<br>
+   Field lines have the following format:<br> 
+<pre> "module_name", "field_name", "output_name", "file_name", "time_sampling", "reduction_method", "regional_section", packing</pre>   with the following descriptions. <dl> 
+<dt>
+<tt>CHARACTER(len=128) :: module_name</tt>
+</dt> 
+<dd>Module that contains the <tt>field_name</tt>   variable.  (e.g. <tt>atmos_mod</tt>, <tt>land_mod</tt>)</dd> 
+<dt>
+<tt>CHARACTER(len=128) :: field_name</tt>
+</dt> 
+<dd>Module variable name that has data to be written to file.</dd> 
+<dt>
+<tt>CHARACTER(len=128) :: output_name</tt>
+</dt> 
+<dd>Name of the field as written in <tt>file_name</tt>.</dd> 
+<dt>
+<tt>CHARACTER(len=128) :: file_name</tt>
+</dt> 
+<dd>   Name of the file where the field is to be written. <b><i>NOTE:</i></b>   The file <tt>file_name</tt>   must be
+   defined first. </dd> 
+<dt>
+<tt>CHARACTER(len=50) :: time_sampling</tt>
+</dt> 
+<dd>Currently not used.  Please use the string "all".</dd> 
+<dt>
+<tt>CHARACTER(len=50) :: reduction_method</tt>
+</dt> 
+<dd>   The data reduction method to perform prior to writing data to disk.  Valid options are (redundant names are
+   separated with commas): <dl> 
+<dt>
+<tt>.TRUE.</tt>, average</dt> 
+<dd>Average from the last time written to the current time.</dd> 
+<dt>
+<tt>.FALSE.</tt>, none</dt> 
+<dd>No reduction performed.  Write current time step value only.</dd> 
+<dt>min</dt> 
+<dd>Minimum value from last write to current time.</dd> 
+<dt>max</dt> 
+<dd>Maximum value from last write to current time.</dd> 
+<dt>diurnal##</dt> 
+<dd>## diurnal averages</dd> 
+</dl> 
+</dd> 
+<dt>
+<tt>CHARACTER(len=50) :: regional_section</tt>
+</dt> 
+<dd>   Bounds of the regional section to capture.  A value of <tt>none</tt>   indicates a global region.  The regional
+   section has the following format:<br> 
+<tt>lat_min, lat_max, lon_min, lon_max, vert_min, vert_max</tt>
+<br>   Use <tt>vert_min = -1</tt>   and <tt>vert_max = -1</tt>   to get the entire vertical axis. <b><i>NOTE:</i></b>   Currently, the defined region <i>MUST</i>   be confined to a single tile. </dd> 
+<dt>
+<tt>INTEGER :: packing</tt>
+</dt> 
+<dd>   Fortran number <tt>KIND</tt>   of the data written.  Valid values: <ol style="list-style-type: none;"> 
+<li>
+<tt>= 1</tt> 
+    &#150;
+     double precision</li> 
+<li>
+<tt>= 2</tt> 
+    &#150;
+     float</li> 
+<li>
+<tt>= 4</tt> 
+    &#150;
+     packed 16-bit integers</li> 
+<li>
+<tt>= 8</tt> 
+    &#150;
+     packed 1-byte (not tested).</li> 
+</ol> 
+</dd> 
+</dl> 
+</li> 
+</ol> 
+<h4>
+<b>Sample <tt>diag_table</tt></b>
+</h4> 
+<ol style="list-style-type: none;"> 
+<li> 
+<pre> "diag manager test"
+ 1999 1 1 0 0 0
+
+ #output files
+ 10_days,               10, "days", 1, "hours", "Time"
+ "file1_hr%hr3",         5, "days", 1, "hours", "Time", 15, "days"
+ "file2_yr_dy%yr1%dy3",  5, "days", 1, "hours", "Time", 10, "days", "1 1 7 0 0 0"
+ "file3_yr_dy%yr1%dy3",  5, "days", 1, "hours", "Time", 20, "days", "1 1 7 0 0 0", 5, "years"
+
+ #output variables
+ "ice_mod", "ice", "ice", "10_days", "all", .false., "none", 2
+
+ # temp_local file and fields.
+ temp_local, 1, "days", 1, "hours", "Time"
+ "ocean_mod", "temp", "temp", "temp_local", "all", .FALSE., "5 259.5 -59.5 59.5 1 1", 2</pre> 
+</li> 
+</ol> 
+<h4>Useful Additional Utility</h4>   A simple utility has been created to help discover </div>
+<br>
+<!-- END DESCRIPTION -->
+<a name="OTHER MODULES USED"></a>
+<hr>
+<h4>OTHER MODULES USED</h4>
+<!-- BEGIN OTHER MODULES USED -->
+<div>
+<pre>      mpp_io_mod<br>         fms_mod<br>time_manager_mod<br>   constants_mod<br>   diag_data_mod<br>   diag_util_mod</pre>
+</div>
+<!-- END OTHER MODULES USED -->
+<!-- BEGIN PUBLIC INTERFACE -->
+<a name="PUBLIC INTERFACE"></a>
+<hr>
+<h4>PUBLIC INTERFACE</h4>
+<div>
+<dl>
+<dt>
+<a href="#parse_diag_table">parse_diag_table</a>:</dt>
+<dd>   Parse the <tt>diag_table</tt>   in preparation for diagnostic output. </dd>
+</dl>
+</div>
+<br>
+<!-- END PUBLIC INTERFACE -->
+<a name="PUBLIC ROUTINES"></a>
+<hr>
+<h4>PUBLIC ROUTINES</h4>
+<!-- BEGIN PUBLIC ROUTINES -->
+<ol type="a">
+<li>
+<a name="parse_diag_table"></a>
+<h4>parse_diag_table</h4>
+<pre>SUBROUTINE <b>parse_diag_table</b> (diag_subset, istat, err_msg)</pre>
+<dl>
+<dt>
+<b>DESCRIPTION</b>
+</dt>
+<dd> 
+<tt>parse_diag_table</tt>   is the public interface to parse the diag_table, and setup the arrays needed to store the
+   requested diagnostics from the <tt>diag_table</tt>. <tt>parse_diag_table</tt>   will return a non-zero <tt>istat</tt>   if
+   a problem parsing the <tt>diag_table</tt>.
+   <br>
+<br>
+   NOT YET IMPLEMENTED: <tt>parse_diag_table</tt>   will parse through the <tt>diag_table</tt>   twice.  The first pass, will be
+   to get a good "guess" of array sizes.  These arrays, that will hold the requested diagnostic fields and files, will then be
+   allocated to the size of the "guess" plus a slight increase. </dd>
+<br>
+<br>
+<dt>
+<b>INPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>diag_subset&nbsp;&nbsp;&nbsp;</tt></td><td>   Diagnostic sampling subset. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+<dt>
+<b>OUTPUT</b>
+</dt>
+<dd>
+<table border="0">
+<tr>
+<td valign="top" align="left"><tt>iunit&nbsp;&nbsp;&nbsp;</tt></td><td>   Status of parsing the <tt>diag_table</tt>.  A non-zero status indicates a problem parsing the table. <br>&nbsp;&nbsp;&nbsp;<span class="type">[INTEGER, OPTIONAL]</span></td>
+</tr>
+<tr>
+<td valign="top" align="left"><tt>err_msg&nbsp;&nbsp;&nbsp;</tt></td><td>   Error message corresponding to the <tt>istat</tt>   return value. <br>&nbsp;&nbsp;&nbsp;<span class="type">[CHARACTER(len=*), OPTIONAL]</span></td>
+</tr>
+</table>
+</dd>
+<br>
+</dl>
+</li>
+</ol>
+<!-- END PUBLIC ROUTINES -->
+<a name="PUBLIC TYPES"></a>
+<!-- BEGIN PUBLIC TYPES -->
+<!-- END PUBLIC TYPES --><a name="PUBLIC CODE"></a>
+<!-- BEGIN PUBLIC CODE -->
+<!-- END PUBLIC CODE --><a name="ERROR MESSAGES"></a>
+<hr>
+<h4>ERROR MESSAGES</h4>
+<!-- BEGIN ERROR MESSAGES -->
+<div>
+<dl>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   diag_table file does not exist. </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Error reading the global descriptor from the diagnostic table. </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Error reading the base date from the diagnostic table. </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   The base_year/month/day can not equal zero </dd>
+<dt>
+<b>WARNING in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Problem reading diag_table, line numbers in errors may be incorrect. </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Problem reading the diag_table (line: &lt;line_number&gt;) </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Incorrect file description FORMAT in diag_table. (line: &lt;line_number&gt;) </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Invalid file FORMAT for file description in the diag_table. (line: &lt;line_number&gt;) </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Invalid time axis units in diag_table. (line: &lt;line_number&gt;) </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Invalid output frequency units in diag_table. (line: &lt;line_number&gt;) </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Invalid NEW file frequency units in diag_table. (line: &lt;line_number&gt;) </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Invalid file duration units in diag_table. (line: &lt;line_number&gt;) </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Invalid start time in the file description in diag_table. (line: &lt;line_number&gt;) </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Field description FORMAT is incorrect in diag_table. (line: &lt;line_number&gt;) </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Packing is out of range for the field description in diag_table. (line: &lt;line_number&gt;) </dd>
+<dt>
+<b>FATAL in parse_diag_table</b>
+</dt>
+<dd>
+<span class="errmsg"></span>
+</dd>
+<dd>   Error in regional output description for field description in diag_table. (line: &lt;line_number&gt;) </dd>
+</dl>
+<br>
+</div>
+<!-- END ERROR MESSAGES -->
+<hr>
+<div align="right">
+<font size="-1"><a href="#TOP">top</a></font>
+</div>
+</body>
+</html>
