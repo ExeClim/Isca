@@ -42,11 +42,12 @@ diag.add_field('dynamics', 'zsurf')
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
-diag.add_field('mixed_layer', 'flux_t', time_avg=True) #LH
-diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #SH
+diag.add_field('mixed_layer', 'flux_t', time_avg=True) #SH
+diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #LH
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
+diag.add_field('dynamics', 'omega', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
@@ -117,7 +118,7 @@ exp.namelist = namelist = Namelist({
         'constant_gust': 0.0,          # default: 1.0
         'use_tau': False
     },
-    
+
     'diffusivity_nml': {
         'do_entrain':False,
         'do_simple': True,
