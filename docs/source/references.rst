@@ -78,7 +78,19 @@ References
 .. [Thomson_and_Vallis2019] Thomson, S. I. and Vallis, G. K., 2019. Hierarchical Modeling of Solar System
             Planets with Isca. *Atmosphere*, **10 (12)**, 803,
             doi: `10.3390/atmos10120803 <https://doi.org/10.3390/atmos10120803>`_.
+            
+.. [NealeHoskins2004] Neale, R. B. and Hoskins, B. K., 2000. A standard test for AGCMs including their physical parametrizations: I: the proposal
+            *Atmospheric Science Letters*,
+            **1(2)**, 101-107
 
+.. [MerlisEtAl2013] Merlis, Timothy M., et al. 2013. Hadley circulation response to orbital precession. Part I: Aquaplanets. 
+            *Journal of Climate*,
+            **26(3)**, 740-753
+
+.. [RusselEtAl1985] Russell, Gary L., James R. Miller, and Lie-Ching Tsang. 1985. Seasonal oceanic heat transports computed from an atmospheric model.
+            *Dynamics of atmospheres and Oceans*
+            **9(3)**, 253-271.
+            
 .. [Vallis2017] Vallis, G. K., 2017: **Atmospheric and Oceanic Fluid Dynamics. Fundamentals and 
            Large-Scale Circulation**. 2nd ed. Cambridge University Press.
            doi: `10.1017/9781107588417 <https://doi.org/10.1017/9781107588417>`_.
@@ -101,8 +113,3 @@ References
            *Dynamics of Atmospheres and Oceans*,
            **73**, 10--33,
            doi: `10.1016/j.dynatmoce.2015.11.001 <https://doi.org/10.1016/j.dynatmoce.2015.11.001>`_.
-
-
-
-
-
