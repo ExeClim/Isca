@@ -3,7 +3,7 @@ Mixed layer module
 
 Summary
 ----------------------
-This module updates the sea surface temperature (SST, :math:`T_s`). 
+This module updates the sea surface temperature (SST) noted as :math:`T_s` below. 
 
 SST boundary condition options
 -----------------------
@@ -35,7 +35,7 @@ This form of :math:`T_{surf}` is similar to a 2nd legendre polynomial, it is a p
 
 APE aquaplanet (analytic form)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The prescribed SST for the APE aquaplanet protocol is given by::
+The prescribed SST for the APE aquaplanet protocol is given by:
 
 .. math::
     T_s = 27 \left( 1 - \sin^2\left( \frac{3}{2} \lambda \right) \right),
@@ -45,6 +45,7 @@ between 60N-60S, equation 1 of Neele and Hoskins 2004 [NealeHoskins2004]_, and 0
 
 Implicit timestep
 ^^^^^^^^^^^^^^^^^^^^
+The mixed layer module calculates the evolution of surface temperature using an implicit timestep.
 Whereas an explicit method uses the current state of the system to calculate the state of the system 
 at the next timestep, an implicit method uses the inferred state of the system at the next timestep.
 
@@ -67,19 +68,19 @@ This is simplified by defining ``eff_heat_capacity`` as ``land_sea_heat_capacity
 
     eff_heat_capacity * dTs/dt = - corrected_flux
 
-Optional Q-flux
+Optional q-flux
 ^^^^^^^^^^^^^^^^^^^^
 The slab ocean model only communicates between grid-boxes in the vertical (i.e. air-sea exchange) but does not represent any horizontal transport (i.e. no north-south or east-west communications between grid cells). 
 An idealised horizontal transport can be included using an ocean heat flux (q-flux). Atmospheric heat transport is more realistic with an ocean heat transport.
 
-To create a qflux file, run a prescribed run (i.e. a control) using either observations, AMIP or similar. The prescribed SST field and the surface fluxes (from this control run)
-are then used to compute the Q-flux by running the offline python script: ``src/extra/python/scripts/calculate_qflux/calculate_qflux.py``. This script produces a .nc file which is then passed into the model 
+To create a q-flux file, run a prescribed run (i.e. a control) using either observations, AMIP or similar. The prescribed SST field and the surface fluxes (from this control run)
+are then used to compute the q-flux by running the offline python script: ``src/extra/python/scripts/calculate_qflux/calculate_qflux.py``. This script produces a .nc file which is then passed into the model 
 (``qflux_file_name``).
 
-See Q-flux options below for namelist options. Note that the q-flux is only relevant for slab ocean experiments (not fixed or prescribed SST runs). Also note that if the MiMA radiation code is used then the 
-Q-flux is implemented following Merlis et al 2013 [MerlisEtAl2013]_
+See q-flux options below for namelist options. Note that the q-flux is only relevant for slab ocean experiments (not fixed or prescribed SST runs). Also note that if the MiMA radiation code is used then the 
+q-flux is implemented following Merlis et al 2013 [MerlisEtAl2013]_
 
-More information on the method for Q-flux can be found in Russel et al 1985 [RusselEtAl1985]_
+More information on the method for q-flux can be found in Russel et al 1985 [RusselEtAl1985]_
 
 
 Namelist options
@@ -100,7 +101,6 @@ If ``do_qflux`` is True, use ``qflux_amp`` and ``qflux_width`` to calculate a ti
 +-------------------+----------------------------------------------------------------+---------+
 | Option            | Summary                                                        |Default  |
 +===================+================================================================+=========+
-+-------------------+----------------------------------------------------------------+---------+
 |``do_qflux``       | Switch to calculate time-independent q-flux.                   |``False``|
 +-------------------+----------------------------------------------------------------+---------+
 |``qflux_amp``      | Amplitude of time-independent q-flux if ``do_qflux`` is True.  | ``0.0`` |
@@ -110,18 +110,17 @@ If ``do_qflux`` is True, use ``qflux_amp`` and ``qflux_width`` to calculate a ti
 
 If ``load_qflux`` is True, use input file to load in a time-independent or time-dependent q-flux.
 
-+----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
-| Option               | Summary                                                                                                                                                                    |Default          |
-+======================+============================================================================================================================================================================+=================+
-+----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
-|``load_qflux``        | Switch to use input file to get q_flux.                                                                                                                                    | ``False``       |
-+----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
-|``qflux_file_name``   | Name of file among input files, from which to get qflux.                                                                                                                   | ``ocean_qflux`` |
-+----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
-|``qflux_field_name``  | Name of field name in qflux file name, from which to get qflux. This is only used when ``time_varying_qflux`` is False. Otherwise the code assumes field_name = file_name. | ``ocean_qflux`` |
-+----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
-|``time_varying_qflux``| Flag that determines whether input qflux file is time dependent.                                                                                                           | ``False``       |
-+----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
++----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
+| Option               | Summary                                                                                                                                                                     |Default          |
++======================+=============================================================================================================================================================================+=================+
+|``load_qflux``        | Switch to use input file to get q-flux.                                                                                                                                     | ``False``       |
++----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
+|``qflux_file_name``   | Name of file among input files, from which to get q-flux.                                                                                                                   | ``ocean_qflux`` |
++----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
+|``qflux_field_name``  | Name of field name in q-flux file name, from which to get q-flux. This is only used when ``time_varying_qflux`` is False. Otherwise the code assumes field_name = file_name.| ``ocean_qflux`` |
++----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
+|``time_varying_qflux``| Flag that determines whether input q-flux file is time dependent.                                                                                                           | ``False``       |
++----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
 
 Initialize surface temperature
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -129,7 +128,6 @@ Initialize surface temperature
 +-------------------------------+----------------------------------------------------------------------------------+-----------+
 | Option                        | Summary                                                                          |Default    |
 +===============================+==================================================================================+===========+
-+-------------------------------+----------------------------------------------------------------------------------+-----------+
 |``prescribe_initial_dist``     | Switch to turn on setting the initial surface temperature distribution.          | ``305.0`` |
 +-------------------------------+----------------------------------------------------------------------------------+-----------+
 |``tconst``                     | Initial surface temperature following formula in ``Slab ocean`` section.         | ``305.0`` |
@@ -166,7 +164,6 @@ There are 5 options for setting the surface albedo, determined by the value of `
 +-------------------+-----------------------------------------------------------------------------+---------+
 | Option            | Summary                                                                     |Default  |
 +===================+=============================================================================+=========+
-+-------------------+-----------------------------------------------------------------------------+---------+
 |``albedo_choice``  | Switch to choose surface albedo option described above.                     | ``1``   |
 +-------------------+-----------------------------------------------------------------------------+---------+
 |``albedo_value``   | Parameter that sets surface albedo depending on albedo choice.              | ``0.06``|
@@ -194,7 +191,6 @@ There are 4 options for setting up the land, determined by the value of ``land_o
 +------------------------------+---------------------------------------------------------------------------------------------------------+----------+
 | Option                       | Summary                                                                                                 | Default  |
 +==============================+=========================================================================================================+==========+
-+------------------------------+---------------------------------------------------------------------------------------------------------+----------+
 |``land_option``               | Switch to choose land option as described above.                                                        | ``none`` |
 +------------------------------+---------------------------------------------------------------------------------------------------------+----------+
 |``land_depth``                | Value of land mixed layer depth.                                                                        | ``-1``   |
@@ -263,7 +259,7 @@ The mixed layer ocean is initialised and called by:  ``src/atmos_spectral/driver
 
 Relevant routines which are called by the mixed layer ocean:
     - The SST input file is read in using the interpolator module found here: ``src/atmos_shared/interpolator/interpolator.F90``.
-    - The qflux and warmpool components use the qflux module: ``src/atmos_param/qflux/qflux.f90``.
+    - The q-flux and warmpool components use the q-flux module: ``src/atmos_param/qflux/qflux.f90``.
 
 References
 ----------
@@ -281,4 +277,4 @@ References
 Authors
 ----------
 ..
-This documentation was written by Matthew Henry and Penelope Maher, peer reviewed by Stephen Thomson and quality controlled by Ruth Geen.
+This documentation was written by Matthew Henry and Penelope Maher, peer reviewed by Stephen Thomson, and quality controlled by Ruth Geen.
