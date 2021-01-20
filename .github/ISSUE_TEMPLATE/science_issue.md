@@ -1,8 +1,8 @@
 ---
 name: Science issue
 about: Use this template for submitting science-related issues.
-title: "[SCI]: [YOUR QUESTION]"
-labels: question
+title: "[YOUR QUESTION]"
+labels:
 assignees:
 ---
 
