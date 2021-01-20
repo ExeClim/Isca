@@ -45,6 +45,7 @@ diag.add_field('dynamics', 'div', time_avg=True)
 
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
+diag.add_field('mixed_layer', 'ice_conc', time_avg=True)
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True)
 diag.add_field('mixed_layer', 'flux_t', time_avg=True)
 
@@ -172,7 +173,7 @@ exp.namelist = Namelist({
         'do_add_stratocumulus': True,
         'reff_liq': 14, # Units: micron
         'reff_ice': 25, # Units: micron
-        'qcl_val': 0.2, # Units: g/kg, not kg/kg
+        'qcl_val': 0.18, # Units: g/kg, not kg/kg
     },
 
     'large_scale_cloud_nml': {
@@ -191,7 +192,7 @@ exp.namelist = Namelist({
         'sc_diag_method': 'Park_ELF',
         'intermediate_outputs_diags': False,
         'dthdp_min_threshold': -0.08,
-        'park_a': 1.5,
+        'park_a': 1.3,
         'park_b': -0.1,
     },
 
@@ -295,7 +296,7 @@ exp.namelist = Namelist({
         'valid_range_t': [100., 800.],
         'initial_sphum': [2.e-6],
         'vert_coord_option': 'uneven_sigma',
-        'surf_res': 0.03, # Parameter that sets the vertical distribution of sigma levels
+        'surf_res': 0.03, # 0.2, # Parameter that sets the vertical distribution of sigma levels
         'scale_heights': 11.0,
         'exponent': 7.0,
         'robert_coeff': 0.03,
