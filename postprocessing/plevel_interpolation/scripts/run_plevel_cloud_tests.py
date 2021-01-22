@@ -8,10 +8,10 @@ import subprocess
 
 start_time=time.time()
 base_dir='/scratch/pm366/OutputIsca/validate_clouds_soc'
-exp_name_list = ['soc_test_aquaplanet_without_clouds']
+exp_name_list = ['soc_test_aquaplanet_amip_ssts_land_low_albedo_gibbs_fix']
 avg_or_daily_list=['monthly']
 start_file=1
-end_file=120
+end_file=60
 nfiles=(end_file-start_file)+1
 
 do_extra_averaging=False #If true, then 6hourly data is averaged into daily data using cdo
@@ -62,6 +62,7 @@ elif level_set=='ssw_diagnostics':
     var_names['6hourly']='ucomp vcomp temp'
     file_suffix='_bl'
 
+overwrite_data = True
 
 for exp_name in exp_name_list:
     for n in range(nfiles):
@@ -80,7 +81,7 @@ for exp_name in exp_name_list:
             nc_file_in = base_dir+'/'+exp_name+'/run'+number_prefix+str(n+start_file)+'/atmos_'+avg_or_daily+'.nc'
             nc_file_out = out_dir+'/'+exp_name+'/run'+number_prefix+str(n+start_file)+'/atmos_'+avg_or_daily+file_suffix+'.nc'
 
-            if not os.path.isfile(nc_file_out):
+            if (not os.path.isfile(nc_file_out)) or overwrite_data:
                 plevel_call(nc_file_in,nc_file_out, var_names = var_names[avg_or_daily], p_levels = plevs[avg_or_daily], mask_below_surface_option=mask_below_surface_set)
             if do_extra_averaging and avg_or_daily=='6hourly':
                 nc_file_out_daily = base_dir+'/'+exp_name+'/run'+str(n+start_file)+'/atmos_daily'+file_suffix+'.nc'
@@ -94,7 +95,6 @@ for exp_name in exp_name_list:
 
 if group_months_into_one_file:
     avg_or_daily_list_together=['daily']
-
 
     for exp_name in exp_name_list:
         for avg_or_daily in avg_or_daily_list_together:
