@@ -94,36 +94,41 @@ real, public, parameter :: RHO_CP  = RHO0*CP_OCEAN
 !   Humidity factor. Controls the humidity content of the atmosphere through
 !   the Saturation Vapour Pressure expression when using DO_SIMPLE.
 ! </DATA>
-! <DATA NAME="RVGAS" UNITS="J/kg/deg" TYPE="real" DEFAULT="461.50">
+! <DATA NAME="RVGAS_H20" UNITS="J/kg/deg" TYPE="real" DEFAULT="461.50">
 !   gas constant for water vapor
 ! </DATA>
-! <DATA NAME="CP_VAPOR" UNITS="J/kg/deg" TYPE="real" DEFAULT="4.0*RVGAS">
+! <DATA NAME="CP_VAPOR_H20" UNITS="J/kg/deg" TYPE="real" DEFAULT="4.0*RVGAS">
 !   specific heat capacity of water vapor at constant pressure
 ! </DATA>
 ! <DATA NAME="DENS_H2O" UNITS="kg/m^3" TYPE="real" DEFAULT="1000.">
 !   density of liquid water
 ! </DATA>
-! <DATA NAME="HLV" UNITS="J/kg" TYPE="real" DEFAULT="2.500e6">
-!   latent heat of evaporation
+! <DATA NAME="HLV_H20" UNITS="J/kg" TYPE="real" DEFAULT="2.500e6">
+!   latent heat of evaporation for water
 ! </DATA>
-! <DATA NAME="HLF" UNITS="J/kg" TYPE="real" DEFAULT="3.34e5">
-!   latent heat of fusion
+! <DATA NAME="HLF_H20" UNITS="J/kg" TYPE="real" DEFAULT="3.34e5">
+!   latent heat of fusion for water
 ! </DATA>
-! <DATA NAME="HLS" UNITS="J/kg" TYPE="real" DEFAULT="2.834e6">
-!   latent heat of sublimation
+! <DATA NAME="HLS_H20" UNITS="J/kg" TYPE="real" DEFAULT="2.834e6">
+!   latent heat of sublimation for water
 ! </DATA>
-! <DATA NAME="TFREEZE" UNITS="degK" TYPE="real" DEFAULT="273.16">
+! <DATA NAME="TFREEZE_H20" UNITS="degK" TYPE="real" DEFAULT="273.16">
 !   temp where fresh water freezes
+! </DATA>
+! <DATA NAME="TPPRESS_H20" TYPE="real" DEFAULT="610.78">
+!   Pressure of Triple Point: prefactor in version of 
+!   Clausius-Clapeyron when using DO_SIMPLE.
 ! </DATA>
 
 real, public, parameter :: DEF_ES0 = 1.0
-real, public, parameter :: RVGAS = 461.50
-real, public, parameter :: CP_VAPOR = 4.0*RVGAS
+real, public, parameter :: RVGAS_H20 = 461.50
+real, public, parameter :: CP_VAPOR_H20 = 4.0*RVGAS_H20
 real, public, parameter :: DENS_H2O = 1000.
-real, public, parameter :: HLV = 2.500e6
-real, public, parameter :: HLF = 3.34e5
-real, public, parameter :: HLS = HLV + HLF
-real, public, parameter :: TFREEZE = 273.16
+real, public, parameter :: HLV_H20 = 2.500e6
+real, public, parameter :: HLF_H20 = 3.34e5
+real, public, parameter :: HLS_H20 = HLV_H20 + HLF_H20
+real, public, parameter :: TFREEZE_H20 = 273.16
+real, public, parameter :: TPPRESS_H20 = 610.78
 
 !-------------- radiation constants -----------------
 
@@ -164,7 +169,7 @@ real, public, parameter :: TFREEZE = 273.16
 ! </DATA>
 
 real, public, parameter :: WTMAIR = 2.896440E+01
-real, public, parameter :: WTMH2O = WTMAIR*(EARTH_RDGAS/RVGAS) !pjp OK to change value because not used yet.
+real, public, parameter :: WTMH2O = WTMAIR*(EARTH_RDGAS/RVGAS_H20) !pjp OK to change value because not used yet.
 !real, public, parameter :: WTMO3  = 47.99820E+01
 real, public, parameter :: WTMOZONE =  47.99820
 real, public, parameter :: WTMC     =  12.00000
@@ -254,6 +259,7 @@ real, public, parameter :: PSTD_MKS_EARTH = 101325.0
 real, public :: RADIUS = 6376.0e3
 real, public :: GRAV   = EARTH_GRAV
 real, public :: OMEGA  = EARTH_OMEGA                         ! planetary rotation rate in s^-1
+real, public :: ROTATION_PERIOD = -1.0
 real, public :: ORBITAL_PERIOD = EARTH_ORBITAL_PERIOD        ! orbital period (periapse -> periapse) in s
 real, public :: SECONDS_PER_SOL = SECONDS_PER_DAY
 real, public :: orbital_rate  ! this is calculated from 2pi/orbital_period
@@ -262,12 +268,20 @@ real, public :: orbit_radius=1.0                  ! distance Earth-Sun [ AU ]
 real, public :: PSTD   = 1.013250E+06
 real, public :: PSTD_MKS    = PSTD_MKS_EARTH
 real, public :: RDGAS  = EARTH_RDGAS
+real, public :: RVGAS = RVGAS_H20
+real, public :: CP_VAPOR = 4.0*RVGAS_H20
+real, public :: DENS_VAPOR = DENS_H2O
 real, public :: KAPPA = EARTH_KAPPA
 real, public :: CP_AIR = EARTH_CP_AIR
+real, public :: HLV = HLV_H20
+real, public :: HLF = HLF_H20
+real, public :: HLS = HLS_H20
+real, public :: TFREEZE = TFREEZE_H20
+real, public :: TPPRESS = TPPRESS_H20
 real, public :: es0 = DEF_ES0
 logical :: earthday_multiple = .false.
 
-namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa, solar_const, earthday_multiple, es0
+namelist/constants_nml/ radius, grav, omega, orbital_period, orbital_rate, rotation_period, pstd, pstd_mks, rdgas, rvgas, kappa, hlv, hlf, tfreeze, tppress, dens_vapor, solar_const, earthday_multiple, es0
 
 !-----------------------------------------------------------------------
 ! version and tagname published
@@ -298,6 +312,13 @@ subroutine constants_init
     10 call close_file (unit)
 
     if (mpp_pe() == mpp_root_pe()) write (stdlog(),nml=constants_nml)
+    
+    if (rotation_period.gt.0) then
+        omega = 2.*pi/rotation_period
+
+       call error_mesg( 'constants_init','rotation_period has been specified, so omega calculated from rotation_period', NOTE)
+
+    endif
 
     !> SECONDS_PER_SOL is the exoplanet equivalent of seconds_per_day.
     !! It is the number of seconds between sucessive solar zeniths at longitude 0.
@@ -314,6 +335,8 @@ subroutine constants_init
 	endif
 
     CP_AIR = RDGAS/KAPPA
+    CP_VAPOR = 4.0*RVGAS
+    HLS = HLV + HLF
 
     constants_initialised = .true.
 
