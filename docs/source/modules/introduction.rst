@@ -26,6 +26,7 @@ specifies how many cores should be used when running the model.
 specifies the horizontal (in this case, spectral T42) and vertical (25 pressure levels) 
 resolution. Runs at T42 by default. If the horizontal resolution is not T42, make sure the 
 input files (such as land masks) are changed and add ``exp.set_resolution(*RESOLUTION)`` after exp is defined.
+Other common spectral resolutions are T21 and T85.
 
 ::
 
@@ -54,7 +55,7 @@ creates a DiagTable object which we can configure to tell Isca which variables t
 ::
 
     diag.add_file('atmos_monthly', 30, 'days', time_units='days')
-creates an ``atmos_monthly.nc`` file which contains output from the model run every 30 days. The output files can be found at ``$GFDL_DATA/EXPERIMENT_NAME/run####/*``.
+creates an ``atmos_monthly.nc`` file every 30 days, which is an average of the output over the previous 30 days. The output files can be found at ``$GFDL_DATA/EXPERIMENT_NAME/run####/*``.
 
 ::
 
@@ -111,4 +112,4 @@ For example::
 Authors
 -------
 
-This documentation was written by Matthew Henry (heavily inspired from document written by Neil Lewis), peer reviewed by Will Seviour, and quality controlled by X.
+This documentation was written by Matthew Henry (heavily inspired from document written by Neil Lewis), peer reviewed by Will Seviour, and quality controlled by Brett McKim.
