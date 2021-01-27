@@ -1,8 +1,8 @@
 Remote Access
-==============
+=============
 
 Overview
--------
+--------
 This is a guide for how to edit remote files on a local text editor via port-
 fowarding. By the end you should know: 
 
@@ -32,7 +32,7 @@ Set up an SSH key pair
 ^^^^^^^^^^^^^^^^^^^^^^
 If your local machine is a Mac, you can eliminate the need to enter a password every time you want to log in by using an SSH key pair. To do this, on your **local machine** navigate to your ``~/.ssh`` directory and enter the following command to generate a set of RSA keys: ``$ ssh-keygen -t rsa``. You will then be prompted to supply a filename and a password. For the file name I recommend ``id_rsa_hostalias`` and for the password I recommend it to be the same as your remote machine's password. If you use a Mac, the operating system can use its internal keychain to remember your password, meaning you won't need to type it in every time you log in!
 
-This command will generate 2 files:the one with the ``.pub`` extension is the "public key", the one without the ``.pub`` extension is the "private key". You keep your private key strictly on your local machine. You need to copy your public key to the remote machine you would like to use the key pair to log in to. First create the ``~/.ssh`` on your **remote machine**. Then from your **local machine** enter: ``$ scp ~/.ssh/id_rsa_hostalias.pub hostalias:~/.ssh/``. After copying the public key over to ``hostalias``, you need to create an ``authorized_keys`` file in your ``~/.ssh/`` on your **remote machine**.
+This command will generate 2 files:the one with the ``.pub`` extension is the "public key", the one without the ``.pub`` extension is the "private key". You keep your private key strictly on your local machine. It is a good idea to change the permissions of the private key file. You need to copy your public key to the remote machine you would like to use the key pair to log in to. First create the ``~/.ssh`` on your **remote machine**. Then from your **local machine** enter: ``$ scp ~/.ssh/id_rsa_hostalias.pub hostalias:~/.ssh/``. After copying the public key over to ``hostalias``, you need to create an ``authorized_keys`` file in your ``~/.ssh/`` on your **remote machine**.
 
 Now from a terminal window on your **local machine**, you can try logging in to ``hostalias`` with the following command: ``$ ssh -i ~/.ssh/id_rsa_hostalias hostalias``. This will prompt you for the password you specified upon creating your key pair using ``ssh-keygen``. To always make use of your private key when logging in to ``hostalias``, add the following to your ``config`` file on your **local machine**::
 
@@ -43,7 +43,9 @@ Now from a terminal window on your **local machine**, you can try logging in to 
       UseKeychain yes
       AddKeysToAgent Yes
 
-You should not be able to log in simply by typing ``$ ssh hostalias``. Congratulations! 
+You should not be able to log in simply by typing ``$ ssh hostalias``. Congratulations!
+
+
 
 
 Edit remote files in a local text editor using ``rmate``
@@ -55,7 +57,9 @@ use port-fowarding to set up a `local-based text editor like Atom <https://atom.
 Edit remote python files in a ``jupyter`` environment
 -----------------------------------------------------
 The ``jupyter`` environment is a great environent for data exploration and integrating
-your figures inline with your code. To open your first Jupyter notebook, log in to your **remote machine** and type: ``$ jupyter lab --no-browser --port=3039``. This should function because of all the work we put in during the port forwarding section. To shorten this command, add an alias to your ``~/.bashrc`` file on your **remote machine**. I personally use the alias ``rjlab``
+your figures inline with your code. To open your first Jupyter notebook, log in to your **remote machine** and type: ``$ jupyter lab --no-browser --port=3039``. 
+
+To make it even quicker, you can type the following on your **local machine**: ``$ssh remotehost "jupyter lab --no-browser --port=3039``. This should function because of all the work we put in during the port forwarding section. To shorten this command, add an alias to your ``~/.bashrc`` file on your **local machine**. I personally use the alias ``rjlab``.
 
 Recap
 -----
@@ -73,8 +77,12 @@ Your final ``~/.ssh/config`` file should look like this (making sure to replace 
       UseKeychain yes
       AddKeysToAgent Yes
 
-**One final note:** Remember the port numbers chosen are arbitary. If you choose the same number as someone else on your network, their files may open up on your computer and vice versa!
+**Final Notes:** 
+
+* Do not use this with VPN, use ithome aka hashbang as proxy. If the connection is interrupted you can still reconnect, assuming the jupyter process is still running. But make sure not to leave zombie jupyter processes with open ports on remote hosts!
+
+* Remember the port numbers chosen are arbitary. If you choose the same number as someone else on your network, their files may open up on your computer and vice versa!
 
 Authors
 -------
-This documentation was written by Brett McKim, peer reviewed by Dennis Sergeev, and quality controlled by Ross Castle.
+This documentation was written by Brett McKim, peer reviewed by Denis Sergeev, and quality controlled by Ross Castle.
