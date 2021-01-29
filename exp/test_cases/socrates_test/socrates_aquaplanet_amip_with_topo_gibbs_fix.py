@@ -24,6 +24,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # and output diagnostics
 
 exp = Experiment('validate_clouds_soc/soc_test_aquaplanet_amip_ssts_land_low_albedo_gibbs_fix', codebase=cb)
+
 exp.clear_rundir()
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
@@ -144,11 +145,9 @@ exp.namelist = namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':True,  
-        'depth': 20.0,                          #Depth of mixed layer used
-        'albedo_value': 0.2,                  #Albedo value used      
         'land_option': 'input',              #Tell mixed layer to get land mask from input file
         'land_h_capacity_prefactor': 0.1,    #What factor to multiply mixed-layer depth by over land. 
-        'albedo_value': 0.25,                #Ocean albedo value
+        'albedo_value': 0.25,                #albedo value
         'land_albedo_prefactor': 1.3,        #What factor to multiply ocean albedo by over land     
         'do_qflux' : False, #Don't use the prescribed analytical formula for q-fluxes
         'do_read_sst' : True, #Read in sst values from input file
