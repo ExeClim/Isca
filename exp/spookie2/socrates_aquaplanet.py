@@ -42,15 +42,13 @@ diag.add_field('dynamics', 'zsurf')
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
-diag.add_field('mixed_layer', 'flux_t', time_avg=True) #LH
-diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #SH
+diag.add_field('mixed_layer', 'flux_t', time_avg=True) #SH
+diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #LH
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'omega', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
-diag.add_field('dynamics', 'vor', time_avg=True)
-diag.add_field('dynamics', 'div', time_avg=True)
 
 #temperature tendency - units are K/s
 diag.add_field('socrates', 'soc_tdt_lw', time_avg=True) # net flux lw 3d (up - down)
@@ -140,7 +138,7 @@ exp.namelist = namelist = Namelist({
         'prescribe_initial_dist':True,
         'evaporation':True,  
         'depth': 2.5,                          #Depth of mixed layer used
-        'albedo_value': 0.38,                  #Albedo value used      
+        'albedo_value': 0.25,                  #Albedo value used      
     },
 
     'qe_moist_convection_nml': {
@@ -156,6 +154,7 @@ exp.namelist = namelist = Namelist({
     
     'sat_vapor_pres_nml': {
            'do_simple':True,
+           'construct_table_wrt_liq_and_ice':True
        },
     
     'damping_driver_nml': {
@@ -205,5 +204,5 @@ if __name__=="__main__":
         overwrite=False
 
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
-        for i in range(2,121):
+        for i in range(2,61):
             exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
