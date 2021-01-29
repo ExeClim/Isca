@@ -48,6 +48,7 @@ diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('mixed_layer', 'flux_t', time_avg=True) #SH
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #LH
+diag.add_field('mixed_layer', 'albedo')
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)

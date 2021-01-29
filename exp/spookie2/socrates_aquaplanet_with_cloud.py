@@ -23,7 +23,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_test_aquaplanet_with_clouds', codebase=cb)
+exp = Experiment('validate_clouds_soc/soc_aqua_cloud/soc_aquaplanet_with_clouds', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -42,15 +42,13 @@ diag.add_field('dynamics', 'zsurf')
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
-diag.add_field('mixed_layer', 'flux_t', time_avg=True) #LH
-diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #SH
+diag.add_field('mixed_layer', 'flux_t', time_avg=True) #SH
+diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #LH
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'omega', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
-diag.add_field('dynamics', 'vor', time_avg=True)
-diag.add_field('dynamics', 'div', time_avg=True)
 
 #temperature tendency - units are K/s
 diag.add_field('socrates', 'soc_tdt_lw', time_avg=True) # net flux lw 3d (up - down)
@@ -141,7 +139,7 @@ exp.namelist = namelist = Namelist({
         'do_diffusivity': True,        # default: False
         'do_simple': True,             # default: False
         'constant_gust': 0.0,          # default: 1.0
-        'use_tau': False 
+        'use_tau': False
     },
 
     'diffusivity_nml': {
@@ -165,7 +163,7 @@ exp.namelist = namelist = Namelist({
         'prescribe_initial_dist':True,
         'evaporation':True,  
         'depth': 2.5,                          #Depth of mixed layer used
-        'albedo_value': 0.2,                  #Albedo value used      
+        'albedo_value': 0.2,                   #Albedo value used      
     },
 
     'qe_moist_convection_nml': {
@@ -232,5 +230,5 @@ if __name__=="__main__":
 
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)
 
-        for i in range(2,121):
+        for i in range(2,61):
             exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
