@@ -23,11 +23,13 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('validate_clouds_soc/soc_test_aquaplanet_with_clouds_post_jm_suggestions_amip_ssts_land_low_albedo_with_land', codebase=cb)
+exp = Experiment('validate_clouds_soc/soc_test_aquaplanet_with_clouds_post_jm_suggestions_amip_ssts_land_low_albedo_with_land_gibbs_fix', codebase=cb)
 exp.clear_rundir()
 
-inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
-                      os.path.join(base_dir,'input/sst_clim_amip.nc'), os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')]
+exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
+                  os.path.join(GFDL_BASE,'exp/test_cases/realistic_continents/input/era-spectral7_T42_64x128.out.nc'),
+                  os.path.join(GFDL_BASE,'exp/test_cases/realistic_continents/input/sst_clim_amip.nc'), 
+                  os.path.join(GFDL_BASE,'exp/test_cases/realistic_continents/input/siconc_clim_amip.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -37,14 +39,14 @@ diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
-diag.add_field('dynamics', 'zsurf', time_avg=True)
+diag.add_field('dynamics', 'zsurf')
 
 #Tell model which diagnostics to write
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
-diag.add_field('mixed_layer', 'flux_t', time_avg=True) #LH
-diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #SH
+diag.add_field('mixed_layer', 'flux_t', time_avg=True) #SH
+diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #LH
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
@@ -128,7 +130,7 @@ exp.namelist = namelist = Namelist({
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
         'do_cloud_simple': True, 
         'land_option' : 'input',
-        'land_file_name' : 'INPUT/era_land_t42.nc',
+        'land_file_name' : 'INPUT/era-spectral7_T42_64x128.out.nc',
         'land_roughness_prefactor' :10.0, 
     },
 
@@ -155,7 +157,8 @@ exp.namelist = namelist = Namelist({
     'surface_flux_nml': {
         'use_virtual_temp': False,
         'do_simple': True,
-        'old_dtaudv': True    
+        'old_dtaudv': True,
+	    'land_humidity_prefactor': 0.7,
     },
 
     'atmosphere_nml': {
@@ -167,11 +170,9 @@ exp.namelist = namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':True,  
-        'depth': 20.0,                          #Depth of mixed layer used
-        'albedo_value': 0.2,                  #Albedo value used      
         'land_option': 'input',              #Tell mixed layer to get land mask from input file
         'land_h_capacity_prefactor': 0.1,    #What factor to multiply mixed-layer depth by over land. 
-        'albedo_value': 0.1,                #Ocean albedo value
+        'albedo_value': 0.25,                #albedo value
         'land_albedo_prefactor': 1.3,        #What factor to multiply ocean albedo by over land     
         'do_qflux' : False, #Don't use the prescribed analytical formula for q-fluxes
         'do_read_sst' : True, #Read in sst values from input file
@@ -229,11 +230,11 @@ exp.namelist = namelist = Namelist({
         'scale_heights' : 11.0,
         'exponent':7.0,
         'robert_coeff':0.03,
-        'ocean_topog_smoothing': 0.8
+        'ocean_topog_smoothing': 0.0
     },
 
     'spectral_init_cond_nml':{
-        'topog_file_name': 'era_land_t42.nc',
+        'topog_file_name': 'era-spectral7_T42_64x128.out.nc',
         'topography_option': 'input'
     },
 
@@ -249,5 +250,5 @@ if __name__=="__main__":
         overwrite=False
 
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
-        for i in range(2,121):
+        for i in range(2,61):
             exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
