@@ -124,6 +124,7 @@ Contents
 
    install
    examples/index.rst
+   isca_structure
    modules/index.rst
    python
    changelog
