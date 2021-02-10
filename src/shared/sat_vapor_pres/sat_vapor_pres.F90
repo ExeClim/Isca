@@ -132,7 +132,7 @@ module sat_vapor_pres_mod
 !   Description summarizing public interface.
 ! </PUBLIC>
 
- use         constants_mod, only:  TFREEZE, RDGAS, RVGAS, HLV, ES0
+ use         constants_mod, only:  TFREEZE, TFREEZE_H20, RDGAS, RVGAS, HLV, ES0, TPPRESS
  use        fms_mod, only:  write_version_number, stdout, stdlog, mpp_pe, mpp_root_pe, &
                             mpp_error, FATAL, fms_error_handler, open_namelist_file,   &
                             error_mesg, &
@@ -2309,8 +2309,8 @@ real,  intent(in),              optional :: hc
   endif
   nsize = (tcmax-tcmin)*esres+1
   nlim  = nsize-1
-  call sat_vapor_pres_init_k(nsize, real(tcmin), real(tcmax), TFREEZE, HLV, &
-                             RVGAS, ES0, err_msg_local, use_exact_qs, do_simple, &
+  call sat_vapor_pres_init_k(nsize, real(tcmin), real(tcmax), TFREEZE, TFREEZE_H20, HLV, &
+                             RVGAS, ES0, TPPRESS, err_msg_local, use_exact_qs, do_simple, &
                              construct_table_wrt_liq, &
                              construct_table_wrt_liq_and_ice, &
                              teps, tmin, dtinv)
