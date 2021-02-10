@@ -424,9 +424,9 @@ allocate(rad_lon     (is:ie, js:je)); rad_lon = rad_lon_2d
 allocate (dt_bucket  (is:ie, js:je)); dt_bucket = 0.0         ! RG Add bucket
 allocate (filt       (is:ie, js:je)); filt = 0.0              ! RG Add bucket
 allocate(bucket_depth (is:ie, js:je, num_time_levels)); bucket_depth = init_bucket_depth        ! RG Add bucket
-allocate(depth_change_lh(is:ie, js:je))                       ! RG Add bucket
-allocate(depth_change_cond(is:ie, js:je))                     ! RG Add bucket
-allocate(depth_change_conv(is:ie, js:je))                     ! RG Add bucket
+allocate(depth_change_lh(is:ie, js:je))    ; depth_change_lh = 0.0                       ! RG Add bucket
+allocate(depth_change_cond(is:ie, js:je))  ; depth_change_cond = 0.0                     ! RG Add bucket
+allocate(depth_change_conv(is:ie, js:je))  ; depth_change_conv = 0.0                     ! RG Add bucket
 allocate(z_surf      (is:ie, js:je))
 allocate(t_surf      (is:ie, js:je))
 allocate(q_surf      (is:ie, js:je)); q_surf = 0.0
