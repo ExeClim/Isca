@@ -79,7 +79,9 @@ With the addition of moist physics, a number of additional namelist parameters c
 |``tppress``   | 610.78            | Pa / Nm :math:`^{-2}`            | Triple point pressure of condensate       |
 +--------------+-------------------+----------------------------------+-------------------------------------------+
 
-
+Relevant Modules
+----------------
+Since this module provides the definition of a number of physical constants, it is used by most other modules that exist within the Isca framework.
 
 Authors
 -------
