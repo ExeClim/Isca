@@ -418,16 +418,17 @@ if (do_seasonal) then
   ! Seasonal Cycle: Use astronomical parameters to calculate insolation
   call get_time(Time_diag, seconds, days)
   call get_time(length_of_year(), year_in_s)
-  r_seconds = real(seconds)
   day_in_s = length_of_day()
-  frac_of_day = r_seconds / day_in_s
+  r_seconds = real(seconds)
+  r_days=real(days)
+  r_total_seconds=r_seconds+(r_days*86400.)
+
+  frac_of_day = r_total_seconds / day_in_s
 
   if(solday .ge. 0) then
       r_solday=real(solday)
       frac_of_year = (r_solday*day_in_s) / year_in_s
   else
-      r_days=real(days)
-      r_total_seconds=r_seconds+(r_days*day_in_s)
       frac_of_year = r_total_seconds / year_in_s
   endif
 

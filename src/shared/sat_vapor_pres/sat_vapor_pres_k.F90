@@ -158,7 +158,7 @@
 
  contains
 
- subroutine sat_vapor_pres_init_k(table_size, tcmin, tcmax, TFREEZE, HLV, RVGAS, ES0, err_msg, &
+ subroutine sat_vapor_pres_init_k(table_size, tcmin, tcmax, TFREEZE, TFREEZE_H20, HLV, RVGAS, ES0, TPPRESS, err_msg, &
                                   use_exact_qs_input, do_simple,  &
                                   construct_table_wrt_liq, &
                                   construct_table_wrt_liq_and_ice, &
@@ -169,7 +169,7 @@
  integer, intent(in) :: table_size
  real, intent(in) :: tcmin ! TABLE(1)          = sat vapor pressure at temperature tcmin (deg C)
  real, intent(in) :: tcmax ! TABLE(table_size) = sat vapor pressure at temperature tcmax (deg C)
- real, intent(in) :: TFREEZE, HLV, RVGAS, ES0
+ real, intent(in) :: TFREEZE, TFREEZE_H20, HLV, RVGAS, ES0, TPPRESS
  logical, intent(in)  :: use_exact_qs_input, do_simple
  logical, intent(in)  :: construct_table_wrt_liq
  logical, intent(in)  :: construct_table_wrt_liq_and_ice
@@ -212,7 +212,7 @@
 
       table_siz = table_size
       dtres = (tcmax - tcmin)/(table_size-1)
-      tminl = real(tcmin)+TFREEZE  ! minimum valid temp in table
+      tminl = real(tcmin)+TFREEZE_H20  ! minimum valid temp in table. Always use TFREEZE_WATER here, as this is just converting tcmin from celcius to kelvin.
       dtinvl = 1./dtres
       tepsl = .5*dtres
       tinrc = .1*dtres
@@ -234,7 +234,7 @@
 
         do i = 1, table_size
           tem(1) = tminl + dtres*real(i-1)
-          TABLE(i) = ES0*610.78*exp(-hlv/rvgas*(1./tem(1) - 1./tfreeze)) 
+          TABLE(i) = ES0*tppress*exp(-hlv/rvgas*(1./tem(1) - 1./tfreeze)) 
           DTABLE(i) = hlv*TABLE(i)/rvgas/tem(1)**2.
         enddo
 
