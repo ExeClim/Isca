@@ -8,7 +8,7 @@ import subprocess
 
 start_time=time.time()
 base_dir='/scratch/pm366/OutputIsca/validate_clouds_soc'
-exp_name_list = ['soc_test_aquaplanet_amip_ssts_land_low_albedo_gibbs_fix']
+exp_name_list = ['/soc_amip_cloud/soc_amip_ice_topo_low_albedo_clouds_original_era']
 avg_or_daily_list=['monthly']
 start_file=1
 end_file=60
@@ -62,7 +62,7 @@ elif level_set=='ssw_diagnostics':
     var_names['6hourly']='ucomp vcomp temp'
     file_suffix='_bl'
 
-overwrite_data = True
+overwrite_data = False
 
 for exp_name in exp_name_list:
     for n in range(nfiles):

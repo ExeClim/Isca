@@ -5,7 +5,7 @@ import numpy as np
 from isca import SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
 
-NCORES = 16
+NCORES = 8
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -23,7 +23,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('validate_clouds_soc/soc_test_aquaplanet_with_clouds_post_jm_suggestions_amip_ssts_land_low_albedo_with_land_gibbs_fix', codebase=cb)
+exp = Experiment('validate_clouds_soc/soc_amip_cloud/soc_amip_ice_topo_low_albedo_clouds', codebase=cb)
 exp.clear_rundir()
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
@@ -88,7 +88,6 @@ diag.add_field('mixed_layer', 'albedo')
 
 
 exp.diag_table = diag
-exp.inputfiles = inputfiles
 
 #Define values for the 'core' namelist
 exp.namelist = namelist = Namelist({

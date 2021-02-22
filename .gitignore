@@ -110,3 +110,8 @@ ENV/
 
 # mkdocs documentation
 /site
+
+# personal
+exp/test_cases/socrates_test/stephen_topo_clouds.py
+exp/test_cases/socrates_test/stephen_topo_flat_clouds.py
+
