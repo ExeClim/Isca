@@ -68,19 +68,25 @@ This is simplified by defining ``eff_heat_capacity`` as ``land_sea_heat_capacity
 
     eff_heat_capacity * dTs/dt = - corrected_flux
 
-Optional q-flux
+Optional Q-flux
 ^^^^^^^^^^^^^^^^^^^^
 The slab ocean model only communicates between grid-boxes in the vertical (i.e. air-sea exchange) but does not represent any horizontal transport (i.e. no north-south or east-west communications between grid cells). 
-An idealised horizontal transport can be included using an ocean heat flux (q-flux). Atmospheric heat transport is more realistic with an ocean heat transport.
+An idealised horizontal transport can be included using an ocean heat flux (Q-flux). Atmospheric heat transport is more realistic with an ocean heat transport.
 
-To create a q-flux file, run a prescribed run (i.e. a control) using either observations, AMIP or similar. The prescribed SST field and the surface fluxes (from this control run)
-are then used to compute the q-flux by running the offline python script: ``src/extra/python/scripts/calculate_qflux/calculate_qflux.py``. This script produces a .nc file which is then passed into the model 
-(``qflux_file_name``).
+Adding a Q-Flux to Isca is a three step process. It involves running a control experiment, creating a NetCDF Q-flux file offline and then passing this file to the model via the python interface run script. 
 
-See q-flux options below for namelist options. Note that the q-flux is only relevant for slab ocean experiments (not fixed or prescribed SST runs). Also note that if the MiMA radiation code is used then the 
-q-flux is implemented following Merlis et al 2013 [MerlisEtAl2013]_
 
-More information on the method for q-flux can be found in Russel et al 1985 [RusselEtAl1985]_
+
+1. Run a prescribed experiment (i.e. a control) using either observations, AMIP or similar.
+
+2. Using the prescribed SST field and the surface fluxes from step 1 create the Q-flux file. This is an offline script that is run independently of the model. An example script is shown in: ``src/extra/python/scripts/calculate_qflux/calculate_qflux.py`` but you can create your own script to do this depending on your application.
+
+3. Add the Q-Flux file to the ``inputfiles`` in the python run script (same as you would for ozone, land etc). Then in the ``mixed_layer_nml`` namelist in the python run script set ``load_qflux`` to True, ``qflux_file_name`` to the name of the input file (don't include the .nc extension) and ``qflux_field_name`` is the Q-flux variable name in the file.
+
+
+See Q-flux options below for namelist options. Note that the Q-flux is only relevant for slab ocean experiments (not fixed or prescribed SST runs). Also note that if the MiMA radiation code is used then the Q-flux is implemented following Merlis et al 2013 [MerlisEtAl2013]_
+
+More information on the method for Q-flux can be found in Russel et al 1985 [RusselEtAl1985]_
 
 
 Namelist options
@@ -96,30 +102,30 @@ Namelist options
 
 Q-flux options
 ^^^^^^^^^^^^^^^^^^^^
-If ``do_qflux`` is True, use ``qflux_amp`` and ``qflux_width`` to calculate a time-independent surface q-flux.
+If ``do_qflux`` is True, use ``qflux_amp`` and ``qflux_width`` to calculate a time-independent surface Q-flux.
 
 +-------------------+----------------------------------------------------------------+---------+
 | Option            | Summary                                                        |Default  |
 +===================+================================================================+=========+
-|``do_qflux``       | Switch to calculate time-independent q-flux.                   |``False``|
+|``do_qflux``       | Switch to calculate time-independent Q-flux.                   |``False``|
 +-------------------+----------------------------------------------------------------+---------+
-|``qflux_amp``      | Amplitude of time-independent q-flux if ``do_qflux`` is True.  | ``0.0`` |
+|``qflux_amp``      | Amplitude of time-independent Q-flux if ``do_qflux`` is True.  | ``0.0`` |
 +-------------------+----------------------------------------------------------------+---------+
-|``qflux_width``    | Width of time-independent q-flux if ``do_qflux`` is True.      | ``16.0``|
+|``qflux_width``    | Width of time-independent Q-flux if ``do_qflux`` is True.      | ``16.0``|
 +-------------------+----------------------------------------------------------------+---------+
 
-If ``load_qflux`` is True, use input file to load in a time-independent or time-dependent q-flux.
+If ``load_qflux`` is True, use input file to load in a time-independent or time-dependent Q-flux.
 
 +----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
 | Option               | Summary                                                                                                                                                                     |Default          |
 +======================+=============================================================================================================================================================================+=================+
-|``load_qflux``        | Switch to use input file to get q-flux.                                                                                                                                     | ``False``       |
+|``load_qflux``        | Switch to use input file to get Q-flux.                                                                                                                                     | ``False``       |
 +----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
-|``qflux_file_name``   | Name of file among input files, from which to get q-flux.                                                                                                                   | ``ocean_qflux`` |
+|``qflux_file_name``   | Name of file among input files, from which to get Q-flux.                                                                                                                   | ``ocean_qflux`` |
 +----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
-|``qflux_field_name``  | Name of field name in q-flux file name, from which to get q-flux. This is only used when ``time_varying_qflux`` is False. Otherwise the code assumes field_name = file_name.| ``ocean_qflux`` |
+|``qflux_field_name``  | Name of field name in Q-flux file name, from which to get Q-flux. This is only used when ``time_varying_qflux`` is False. Otherwise the code assumes field_name = file_name.| ``ocean_qflux`` |
 +----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
-|``time_varying_qflux``| Flag that determines whether input q-flux file is time dependent.                                                                                                           | ``False``       |
+|``time_varying_qflux``| Flag that determines whether input Q-flux file is time dependent.                                                                                                           | ``False``       |
 +----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+
 
 Initialize surface temperature
@@ -259,7 +265,7 @@ The mixed layer ocean is initialised and called by:  ``src/atmos_spectral/driver
 
 Relevant routines which are called by the mixed layer ocean:
     - The SST input file is read in using the interpolator module found here: ``src/atmos_shared/interpolator/interpolator.F90``.
-    - The q-flux and warmpool components use the q-flux module: ``src/atmos_param/qflux/qflux.f90``.
+    - The Q-flux and warmpool components use the Q-flux module: ``src/atmos_param/qflux/qflux.f90``.
 
 References
 ----------
