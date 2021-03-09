@@ -7,7 +7,7 @@
 #!/bin/bash
 #SBATCH --export=ALL # export all environment variables to the batch job
 #SBATCH -D . # set working directory to .
-#SBATCH -p ptq # submit to the parallel queue
+#SBATCH -p pq # submit to the parallel queue
 #SBATCH --time=03:00:00 # maximum walltime for the job
 #SBATCH -A Research_Project-PROJECTNUMBER # research project to submit under
 #SBATCH --nodes=1 # specify number of nodes
