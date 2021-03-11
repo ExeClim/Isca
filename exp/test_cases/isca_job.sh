@@ -2,7 +2,7 @@
 # in Exeter.  USER and PROJECTNUMBER in the metadata above need to be
 # updated to appropriate values for your experiment.
 # For more information about running on the Exeter cluster, see the wiki
-# here: http://login.isca.ex.ac.uk:8080/wiki/Isca+Guide.pdf
+# here: https://universityofexeteruk.sharepoint.com/sites/ExeterARC
 
 #!/bin/bash
 #SBATCH --export=ALL # export all environment variables to the batch job
