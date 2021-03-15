@@ -270,7 +270,7 @@ real, public :: PSTD_MKS    = PSTD_MKS_EARTH
 real, public :: RDGAS  = EARTH_RDGAS
 real, public :: RVGAS = RVGAS_H20
 real, public :: CP_VAPOR = 4.0*RVGAS_H20
-real, public :: DENS_VAPOR = DENS_H2O
+real, public :: DENS_LIQUID = DENS_H2O
 real, public :: KAPPA = EARTH_KAPPA
 real, public :: CP_AIR = EARTH_CP_AIR
 real, public :: HLV = HLV_H20
@@ -281,7 +281,7 @@ real, public :: TPPRESS = TPPRESS_H20
 real, public :: es0 = DEF_ES0
 logical :: earthday_multiple = .false.
 
-namelist/constants_nml/ radius, grav, omega, orbital_period, orbital_rate, rotation_period, pstd, pstd_mks, rdgas, rvgas, kappa, hlv, hlf, tfreeze, tppress, dens_vapor, solar_const, earthday_multiple, es0
+namelist/constants_nml/ radius, grav, omega, orbital_period, orbital_rate, rotation_period, pstd, pstd_mks, rdgas, rvgas, kappa, hlv, hlf, tfreeze, tppress, dens_liquid, solar_const, earthday_multiple, es0
 
 !-----------------------------------------------------------------------
 ! version and tagname published
