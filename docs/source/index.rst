@@ -123,6 +123,7 @@ Contents
    :glob:
 
    install
+   begginers_guide
    examples/index.rst
    modules/index.rst
    python
