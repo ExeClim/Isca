@@ -164,7 +164,9 @@ Useful Links
 
 - `How to install isca <https://github.com/ExeClim/Isca/blob/master/ReadMe.md>`_
 - Will Seviour's Scripts - useful code designed for `setting up Isca at Bristol university <https://github.com/wseviour/Bristol_Climate_Dynamics/blob/master/Isca_SOCRATES.md>`_ and `analysing data using a python notebook <https://github.com/wseviour/Bristol_Climate_Dynamics/blob/master/Anthropocene_Isca_analysis.ipynb>`_
-- `ICPT workshop repo <https://github.com/ExeClim/ictp-isca-workshop-2018/tree/master/analysis>`_ (some lecture slides and analysis scripts). 
+- `ICPT workshop repo <https://github.com/ExeClim/ictp-isca-workshop-2018/tree/master/analysis>`_ (some lecture slides and analysis scripts).
+- The 2018 `paper on Isca's release <https://gmd.copernicus.org/articles/11/843/2018/>`_
+- The `Isca Website <https://execlim.github.io/IscaWebsite/index.html>`_
 
 Authors
 -------
