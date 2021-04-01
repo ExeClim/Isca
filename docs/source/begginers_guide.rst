@@ -5,6 +5,8 @@ Below is a list of reading and activites that will help you get comfortable usin
 
 This document is essentially a suggestion of signposts. With this kind of work, self-study and initiative is very important. It is up to you to go and research the topics until you feel comfortable.
 
+Note: users who are more familiar with scientific computing may find this document a little longwinded and may be better off looking at the `ReadMe <https://github.com/ExeClim/Isca#readme>`_ or this `guide on how to run Isca experiments <https://github.com/ExeClim/ictp-isca-workshop-2018/blob/master/experiments/isca_help_ictp.pdf>`_.
+
 Essentials
 -------------
 
