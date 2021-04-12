@@ -228,7 +228,7 @@ exp.namelist = namelist = Namelist({
         'scale_heights' : 11.0,
         'exponent':7.0,
         'robert_coeff':0.03,
-        'ocean_topog_smoothing': 0.0
+        'ocean_topog_smoothing': 0.8
     },
 
     'spectral_init_cond_nml':{
