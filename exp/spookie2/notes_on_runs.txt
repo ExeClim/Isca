@@ -1,0 +1,41 @@
+1.  The following script
+        socrates_amip_with_topo.py
+    created the data that is in 
+        validate_clouds_soc/soc_amip_no_cloud/soc_amip_ice_topo_low_albedo
+    the purpose was: an amip run to get a baseline without clouds
+
+2.  The following script
+        socrates_amip_with_topo_with_cloud.py
+    created the data that is in 
+        validate_clouds_soc/soc_amip_cloud/soc_amip_ice_topo_low_albedo_clouds
+    the purpose was: an amip run testing the cloud scheme (no ripples)
+
+3.  The following script
+        socrates_amip_with_topo_with_cloud_original_era.py
+    created the data in 
+      validate_clouds_soc/soc_amip_cloud/soc_amip_ice_topo_low_albedo_clouds_original_era
+    the purpose was: an amip run with clouds and gibbs ripples
+
+4.  The following script
+        socrates_aquaplanet.py
+    created the data in 
+        validate_clouds_soc/soc_aqua_no_cloud/soc_aquaplanet
+    the purpose was: slab ocean baseline
+
+5.  The following script
+        socrates_aquaplanet_with_cloud.py
+    created the data in 
+        validate_clouds_soc/soc_aqua_cloud/soc_aquaplanet_with_clouds
+    the purpose was: slab ocean with clouds.
+
+Notes:
+
+Exp 3 is no longer needed as the gibbs ripples fix is working.
+
+Exp1-2 are for validating the cloud scheme in the context of the spookie simulations
+
+Exp 4-5 are for validating the scheme for it to be merged onto the master
+
+
+
+
