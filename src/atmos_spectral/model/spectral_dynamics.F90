@@ -1668,7 +1668,7 @@ id_zfull   = register_diag_field(mod_name, &
       'height',  axes_3d_full,       Time, 'geopotential height at full model levels','m')
 
 id_uz = register_diag_field(mod_name, &
-	  'ucomp_height',axes_3d_full,     Time, 'zonal wind * geopotential height at full model levels', 'm**2sec')
+	  'ucomp_height',axes_3d_full,     Time, 'zonal wind * geopotential height at full model levels', 'm**2/sec')
 
 id_vz = register_diag_field(mod_name, &
       'vcomp_height',axes_3d_full,     Time, 'meridional wind * geopotential height at full model levels', 'm**2/sec')

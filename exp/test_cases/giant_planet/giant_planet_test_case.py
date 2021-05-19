@@ -4,7 +4,7 @@ import numpy as np
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 4
+NCORES = 8
 
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -140,7 +140,7 @@ exp.namelist = namelist = Namelist({
     },
 
     'fms_nml': {
-        'domains_stack_size': 620000 #Setting size of stack available to model, which needs to be higher than the default when running at high spatial resolution
+        'domains_stack_size': 6200000 #Setting size of stack available to model, this can be decreased when not running at a high resolution. 
     },
 
     'fms_io_nml': {
