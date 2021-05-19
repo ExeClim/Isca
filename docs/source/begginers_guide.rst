@@ -1,4 +1,4 @@
-Isca Beginners Guide
+Isca Beginner's Guide
 ====================
 
 Below is a list of reading and activites that will help you get comfortable using Isca. Be assured that your supervisor/tutor will not expect you to be fluent with this when you start using Isca, but it will help to have an idea of what to expect when you start running the model.
