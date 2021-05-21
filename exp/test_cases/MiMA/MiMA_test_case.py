@@ -73,8 +73,7 @@ exp.namelist = namelist = Namelist({
         'do_simple': True,
         'roughness_mom':3.21e-05,
         'roughness_heat':3.21e-05,
-        'roughness_moist':3.21e-05,
-        'do_cloud_simple': False
+        'roughness_moist':3.21e-05,                
     },
 
     'vert_turb_driver_nml': {
