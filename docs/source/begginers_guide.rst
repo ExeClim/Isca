@@ -110,7 +110,7 @@ Transferring Files (SFTP/SCP)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Now you have made plots – or indeed any file you want to transfer between the computer you have SSH’d into and your own – you will need a way of transferring them. There are several ways of doing this.
 
-*SFTP (SSH File Transfer Protocol)* is one, it will work on all operating systems and is the easiest for windows. One way of using SFTP is with an *SFTP client*, many are available. One of them is `Cyberduck <https://cyberduck.io>`_. It will require setting up but it is fairly straight forward. These clients tend to have a GUI so you can just drag and drop the files you want to transfer. 
+*SFTP (SSH File Transfer Protocol)* is one, it will work on all operating systems and is the easiest for windows. One way of using SFTP is with an *SFTP client*, many are available. One of them is `Cyberduck <https://cyberduck.io>`_. It will require setting up but it is fairly straight forward. These clients tend to have a GUI so you can just drag and drop the files you want to transfer. It is also possible to view and transfer files using the native file browser if you're using Linux or macOS, using their built-in functions to connect via SFTP.
 
 Other option is to use a command line function, for example ``scp``. This is a secure file copy protol, which uses SSH. The usage is simple, for example on the computer you want to transfer the file to, type:
 
