@@ -36,19 +36,19 @@ If you are an apple/linux user, you can just open the terminal app on your lapto
 
 Python (namelists)
 ^^^^^^^^^^^^^^^^^^
-Isca is configured using *python* scripts, although the actual model is coded in *FORTRAN* (see 'Advanced'). `Python <https://www.python.org>`_ is a powerful high-level programming language, similar to Matlab – but far better.
+Isca is configured using *python* scripts, although the actual model is coded in *FORTRAN* (see :ref:`FORTRAN` in Advanced). `Python <https://www.python.org>`_ is a powerful high-level programming language, similar to Matlab – but far better.
 
 At this stage you don’t need to be able to code in python, as Isca has prewritten scripts called *test cases* which you can just edit in order to change the model set up. Editing will require changing one or more *namelists*. The namelists are actually part of the FORTRAN code but we use *python packages* to pass these variables between the python script and the FORTRAN model. 
 
 For example say that in the model the value for the CO2 concentration was 300, and you wanted to make it 600, all you would need to do is change:
 
-``'co2_conc' : 300.`` to ``'co2_conc' : 600.`` in your text editor (see below).
+``'co2_conc' : 300.`` to ``'co2_conc' : 600.`` in your text editor (see :ref:`below<Text Editors>`).
 
-If you haven’t used python before and want to become more familiar, there are hundreds of tutorials (e.g. `here <https://docs.python.org/3/tutorial/>`_) and videos. To practise you can use a *python notebook* on something like `Colab <https://colab.research.google.com>`_, or download software like `Anaconda <https://anaconda.org>`_. Python is comprised of the basic python *packages* and then additional *libraries* you have to install and *import*. In the future it may be useful to have python *environments* (see 'Conda' in 'Intermediate'). 
+If you haven’t used python before and want to become more familiar, there are hundreds of tutorials (e.g. `here <https://docs.python.org/3/tutorial/>`_) and videos. To practise you can use a *python notebook* on something like `Colab <https://colab.research.google.com>`_, or download software like `Anaconda <https://anaconda.org>`_. Python is comprised of the basic python *packages* and then additional *libraries* you have to install and *import*. In the future it may be useful to have python *environments* (see :ref:`Conda` in Intermediate). 
 
 Text Editors
 ^^^^^^^^^^^^
-You will need to be able to edit text based files, this includes code files like python and other scripts relevant to scientific computing (see 'shell'/'bash' in 'Advanced').
+You will need to be able to edit text based files, this includes code files like python and other scripts relevant to scientific computing (see :ref:`shell/bash<Shell Scripts>` in Advanced).
 Every unix server will have *vim*, which is a powerful text editor, but it does take some getting used to. For example, unlike in 'MS Word' or editors with *GUIs*, you cannot click to place your cursor in vim.
 
 You can try out this `tutorial <https://www.openvim.com>`_. Note: I have found that you can usually also use the `up/down/left/right` keys to navigate the text, not just `h/j/k/l` as is stated here. You can practise freely using terminal (Mac/Linux) or the unix `emulator <https://cocalc.com/projects?session=default>`_.
@@ -63,7 +63,7 @@ This opens a new text file in vim. You can edit an existing file in exactly the 
 
 vim is not the only option! *emacs* is a similar editor which is guaranteed to be installed. emacs is opened in the same way as vim.
 
-Perhaps a better option is *gedit*. This is a simple text editor with a GUI which is usually installed on servers (it is on the GV machines). **This is what I would recommend using as a beginner, if available**. It’s a little clunky but more intuitive to use then the previous options. It is opened exactly the same as vim/emacs. In some cases you may need to set up *X11 forwarding* (see 'Intermediate').
+Perhaps a better option is *gedit*. This is a simple text editor with a GUI which is usually installed on servers (it is on the GV machines). **This is what I would recommend using as a beginner, if available**. It’s a little clunky but more intuitive to use then the previous options. It is opened exactly the same as vim/emacs. In some cases you may need to set up *X11 forwarding* (see :ref:`X11 forwarding` in Intermediate).
 
 As you get more comfortable with this scientific computing, you will likely find that you prefer a different text editor with a GUI which is far more user friendly. However, it will require a bit of setting up. Talk to your supervisor/research group about what they use and how they got it to work.
 
@@ -137,7 +137,7 @@ Supercomputers
 ^^^^^^^^^^^^^^
 You may be able to run Isca on a supercomputer, for example at Exeter we have *ISCA HPC (High Performance Computer)* - the same name get’s confusing. Your supervisor will help get you set up on this as they are a little more complicated, although usually faster. 
 
-When you login to a supercomputer you are in fact logging in to a small *login node* which is not designed to run code. It is designed to allow you to submit your job to a *queue* which will then be run on the main computer (see 'Slurm' below). Here is some `documentation for ISCA HPC <https://universityofexeteruk.sharepoint.com/sites/ExeterARC>`_, see the ISCA User Guide. 
+When you login to a supercomputer you are in fact logging in to a small *login node* which is not designed to run code. It is designed to allow you to submit your job to a *queue* which will then be run on the main computer (see :ref:`Slurm` below). Here is some `documentation for ISCA HPC <https://universityofexeteruk.sharepoint.com/sites/ExeterARC>`_, see the ISCA User Guide. 
 
 Slurm
 ^^^^^
@@ -147,11 +147,11 @@ FORTRAN
 ^^^^^^^
 The actual Isca model is written in a coding language called *FORTRAN.90*. Therefor if you intend on modifying the source code, you’ll need to know a little FORTRAN. It is incredibly fast, but it has to be *compiled* before use (it is a *low level* language) and is slightly different from *high level* code. For example, you have to define variables before you can use them. There are plenty of FORTRAN tutorials around, e.g. `here <https://www.fortrantutorial.com>`_, however you will probably learn as you go by modifying the Isca code.
 
-Shell scripts
+Shell Scripts
 ^^^^^^^^^^^^^
 A *shell script* (``scriptname.sh``) is a useful tool if you have a series of command lines you have to write, especially if you do it often. For example, I have a shell script that transfers data from one server to another. The `example file <https://github.com/ExeClim/Isca/blob/master/exp/test_cases/isca_job.sh>`_ to submit a job to ISCA HPC is also a shell script. See `here <https://www.shellscript.sh>`_ for more details or google.
 
-.bashrc script (aliases)
+.bashrc Script (aliases)
 ^^^^^^^^^^^^^^^^^^^^^^^^
 One particular shell script is your ``.bashrc`` script, see `here <https://www.journaldev.com/41479/bashrc-file-in-linux>`_. Your supervisor will set this up for you, as some Isca file locations need to be included in it. One very useful thing that you can set up in this script is *aliases*. This is where a text string is assigned to a command.
 
