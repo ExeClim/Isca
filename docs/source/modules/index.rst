@@ -10,6 +10,7 @@ Components of Isca
    introduction
    dynamics
    physics
+   held_suarez
    output
    idealised_moist_phys
    two_stream_gray_rad
