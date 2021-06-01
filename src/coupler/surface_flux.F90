@@ -39,7 +39,7 @@ use             fms_mod, only: FATAL, close_file, mpp_pe, mpp_root_pe, write_ver
 use             fms_mod, only: file_exist, check_nml_error, open_namelist_file, stdlog
 use   monin_obukhov_mod, only: mo_drag, mo_profile
 use  sat_vapor_pres_mod, only: escomp, descomp
-use       constants_mod, only: cp_air, hlv, stefan, rdgas, rvgas, grav, vonkarm, dens_h2o
+use       constants_mod, only: cp_air, hlv, stefan, rdgas, rvgas, grav, vonkarm, dens_liquid
 use             mpp_mod, only: input_nml_file
 
 implicit none
@@ -601,10 +601,10 @@ subroutine surface_flux_1d (                                           &
 	        flux_q    =  rho_drag * (q_surf0 - q_atm) ! flux of water vapor  (Kg/(m**2 s))
 		end where
 		
-	    depth_change_lh_1d  = flux_q * dt/dens_h2o 
+	    depth_change_lh_1d  = flux_q * dt/dens_liquid 
 	    where (flux_q > 0.0 .and. bucket_depth < depth_change_lh_1d) ! where more evaporation than what's in bucket, empty bucket
-	        flux_q = bucket_depth * dens_h2o / dt
-	        depth_change_lh_1d = flux_q * dt / dens_h2o
+	        flux_q = bucket_depth * dens_liquid / dt
+	        depth_change_lh_1d = flux_q * dt / dens_liquid
 	    end where 
     
 	    where (bucket_depth <= 0.0)
