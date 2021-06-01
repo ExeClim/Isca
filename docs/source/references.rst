@@ -16,6 +16,12 @@ References
            
 .. [Byrne2013] Byrne, M. P. and O’Gorman, P. A., 2013: Land–ocean warming contrast over a wide range of climates: Convective quasi-equilibrium the- ory and idealized simulations, *J. Climate*, **26**, doi.
 
+.. [CloughEtAl2005] Clough, S. and Shephard, M. and Mlawer, E. and Delamere, J. and Iacono, M. and Cady-Pereira, K. and Boukabara, S. and and Brown, P., 2005:
+		   Atmospheric radiative transfer modeling: a summary of the AER codes. 
+		   *Journal of Quantitative Spectroscopy and Radiative Transfer*,
+		   **91**, 233--244,
+		   doi: `0.1016/j.jqsrt.2004.05.058 <https://doi.org/10.1016/j.jqsrt.2004.05.058>`_.
+
 .. [Frierson2006a] Frierson, D. M. W., Held, I. M., and Zurita-Gotor, P., 2006: A Gray Radiation Aquaplanet Moist GCM, Part
                 1: Static Stability and Eddy Scales, *J. Atmos. Sci.*, **63**, 2548–2566, doi.
 
@@ -101,8 +107,3 @@ References
            *Dynamics of Atmospheres and Oceans*,
            **73**, 10--33,
            doi: `10.1016/j.dynatmoce.2015.11.001 <https://doi.org/10.1016/j.dynatmoce.2015.11.001>`_.
-
-
-
-
-
