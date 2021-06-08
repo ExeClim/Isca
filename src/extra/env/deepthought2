@@ -1,0 +1,13 @@
+echo loadmodules for Deepthought2
+
+module load intel/2015.0.3.032
+module load openmpi/1.8.6
+module load netcdf/4.3.3.1
+module load netcdf-fortran
+
+export NETCDF=$NETCDF_FORTRAN_ROOT
+export GFDL_MKMF_TEMPLATE=dt2
+export LD_LIBRARY_PATH=$NETCDF_LIBDIR:$NETCDF_FORTRAN_LIBDIR:$LD_LIBRARY_PATH
+export MPI_LIB=
+export F90=mpifort
+export CC=mpicc

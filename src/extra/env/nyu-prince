@@ -1,0 +1,10 @@
+#!/bin/bash
+
+echo load modules for Isca on NYU HPC prince system
+
+export F90=mpif90
+export CC=mpicc
+
+module purge
+module load openmpi/intel/2.0.1
+module load netcdf/intel/4.7.2

@@ -107,7 +107,7 @@ def create_time_arr(num_years,is_climatology,time_spacing):
     return time_arr,day_number,ntime,time_units,time_bounds
 
 
-def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,variable_name,number_dict, time_bounds=None):
+def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,variable_name,number_dict, time_bounds=None, on_half_levels=False):
 
     output_file = Dataset(file_name, 'w', format='NETCDF3_CLASSIC')
 
@@ -137,7 +137,8 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
         pfull = output_file.createDimension('pfull', number_dict['npfull'])
         phalf = output_file.createDimension('phalf', number_dict['nphalf'])
 
-    time = output_file.createDimension('time', 0) #s Key point is to have the length of the time axis 0, or 'unlimited'. This seems necessary to get the code to run properly. 
+    if time_arr is not None:
+        time = output_file.createDimension('time', 0) #s Key point is to have the length of the time axis 0, or 'unlimited'. This seems necessary to get the code to run properly. 
 
     latitudes = output_file.createVariable('lat','d',('lat',))
     longitudes = output_file.createVariable('lon','d',('lon',))
@@ -146,7 +147,8 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
         pfulls = output_file.createVariable('pfull','d',('pfull',))
         phalfs = output_file.createVariable('phalf','d',('phalf',))
 
-    times = output_file.createVariable('time','d',('time',))
+    if time_arr is not None:
+        times = output_file.createVariable('time','d',('time',))
 
     latitudes.units = 'degrees_N'.encode('utf-8')
     latitudes.cartesian_axis = 'Y'
@@ -179,11 +181,11 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
         phalfs.positive = 'down'
         phalfs.long_name = 'half pressure level'
 
-
-    times.units = time_units
-    times.calendar = 'THIRTY_DAY_MONTHS'
-    times.calendar_type = 'THIRTY_DAY_MONTHS'
-    times.cartesian_axis = 'T'
+    if time_arr is not None:
+        times.units = time_units
+        times.calendar = 'THIRTY_DAY_MONTHS'
+        times.calendar_type = 'THIRTY_DAY_MONTHS'
+        times.cartesian_axis = 'T'
 
     if time_bounds is not None:
 
@@ -200,9 +202,19 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
 
 
     if is_thd:
-        output_array_netcdf = output_file.createVariable(variable_name,'f4',('time','pfull', 'lat','lon',))
+        if on_half_levels:
+            dims_list = ['time','phalf', 'lat','lon',]
+        else:
+            dims_list = ['time','pfull', 'lat','lon',]
     else:
-        output_array_netcdf = output_file.createVariable(variable_name,'f4',('time','lat','lon',))
+        dims_list = ['time','lat','lon',]
+
+    if time_arr is None:
+        dims_list.remove('time')
+
+    # pdb.set_trace()
+    output_array_netcdf = output_file.createVariable(variable_name,'f4', tuple(dims_list))
+
 
     latitudes[:] = lats
     longitudes[:] = lons
@@ -216,10 +228,11 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
         pfulls[:]     = p_full
         phalfs[:]     = p_half
 
-    if type(time_arr[0])!=np.float64 and type(time_arr[0])!=np.int64 :
-        times[:]     = date2num(time_arr,units='days since 0001-01-01 00:00:00.0',calendar='360_day')
-    else:
-        times[:]     = time_arr
+    if time_arr is not None:
+        if type(time_arr[0])!=np.float64 and type(time_arr[0])!=np.int64 :
+            times[:]     = date2num(time_arr,units='days since 0001-01-01 00:00:00.0',calendar='360_day')
+        else:
+            times[:]     = time_arr
 
     output_array_netcdf[:] = data
 

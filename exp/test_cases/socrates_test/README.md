@@ -79,5 +79,17 @@ and run the test-case `socrates_aquaplanet.py`. This will compile and run Isca w
 	* `$GFDL_BASE/src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7` for the short-wave
 * Other options are available within this folder, and a useful set of other spectral files are provided via this [webpage](https://simplex.giss.nasa.gov/gcm/ROCKE-3D/).
 
+### 6. If you find Socrates doesn't compile
+
+* Isca's Python front-end uses a static list of file names to be compiled for the Socrates version of Isca. This list of files is here: `$GFDL_BASE/src/extra/model/socrates/path_names`. This list was compiled from a version of Socrates that we first used with Isca, which is close to v17.
+
+* When you download the Socrates code, please download the latest version, as this will include the latest updates etc. By doing this, however, you might find that the compilation of Isca fails because of files that are in `path_names` but no longer exist within Socrates, or new files that have been added to Socrates that are not in the `path_names` file, but are required.
+
+* In the future, we will look to generate `path_names` dynamically. However, in the meantime, please begin by updating your `path_names` file to include **every** fortran file in the directory `src/radiance_core/` directory of Socrates. All the files in this folder are likely to be essential for compiling the version of Socrates you are using.
+
+* You may also find errors of the type `multiple definition of MAIN`. This happens because various pieces of code within Socrates are designed to be run offline, meaning they have MAIN sections. These MAIN sections cause conflicts with Isca's MAIN section, and so the relevant Socrates files cannot be part of Isca's compiled version. To get around this error, remove from `path_names` any Socrates files that cause this error (i.e. remove the relevant files from `path_names` that start with `atmos_param/socrates/src` not Isca's MAIN program, which is `atmos_solo/atmos_model.F90`).
+
+* If you still can't get Isca to compile with Socrates, then check your compiler options against ours in `$GFDL_BASE/src/extra/python/isca/templates/mkmf.template.ia64`.
+
 
 	

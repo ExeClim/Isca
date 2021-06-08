@@ -83,6 +83,11 @@ def join_files(files_in, file_name_out):
 
     subprocess.call('cdo mergetime '+files_in+' '+file_name_out, shell=True)
     
+def join_files_base_dir(base_dir, files_in, file_name_out):
+    
+    os.chdir(base_dir)
+    subprocess.call('cdo mergetime '+files_in+' '+file_name_out, shell=True)
+
 def climatology(file_in, file_name_out):
     subprocess.call('cdo mergetime '+files_in+' '+file_name_out, shell=True)
 

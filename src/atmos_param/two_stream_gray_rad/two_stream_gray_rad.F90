@@ -144,6 +144,12 @@ type(interpolate_type),save         :: co2_interp           ! use external file 
 character(len=256)                  :: co2_file='co2'       !  file name of co2 file to read
 character(len=256)                  :: co2_variable_name='co2'       !  file name of co2 file to read
 
+!extras for reading in huygens probe sw for Titan
+logical                             :: overwrite_net_sw_flux_with_huygens_data=.false.
+type(interpolate_type),save         :: huygens_sw_interp           ! use external file for huygens sw data
+character(len=256)                  :: huygens_sw_file='frac_sw_huygens'       !  file name of huygens sw file to read
+character(len=256)                  :: huygens_sw_variable_name='frac_sw'       !  file name of huygens sw file to read
+real, dimension(61) :: huygens_sw_profile_values
 
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            ir_tau_eq, ir_tau_pole, odp, atm_abs, sw_diff, &
@@ -151,12 +157,14 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
            ir_tau_co2, ir_tau_wv1, ir_tau_wv2, &
-		   window, carbon_conc, rad_scheme, &
+		     window, carbon_conc, rad_scheme, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
            use_time_average_coszen, dt_rad_avg,&
            diabatic_acce, & !Schneider Liu values
            titan_asymmetry_factor, titan_single_albedo, &
-           titan_albedo_surface
+           titan_albedo_surface, &
+           overwrite_net_sw_flux_with_huygens_data, huygens_sw_file, &
+           huygens_sw_variable_name, huygens_sw_profile_values
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -269,6 +277,12 @@ endif
 
 if ((lw_scheme == B_BYRNE).or.(lw_scheme == B_GEEN)) then
     if (pstd_mks/=pstd_mks_earth) call error_mesg('two_stream_gray_rad','Pstd_mks and pstd_mks_earth are not the same in the this run, but lw scheme will use pstd_mks_earth because abs coeffs in Byrne and Geen schemes are non-dimensionalized by Earth surface pressure.', NOTE)
+endif
+
+if(sw_scheme == B_SCHNEIDER_TITAN) then
+   if (overwrite_net_sw_flux_with_huygens_data) then
+      call interpolator_init (huygens_sw_interp, trim(huygens_sw_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+   endif
 endif
 
 
@@ -751,7 +765,7 @@ real, intent(in) , dimension(:,:,:) :: t, p_half
 real, intent(inout), dimension(:,:,:) :: tdt
 
 
-integer :: i, j, k, n
+integer :: i, j, k, n, num_lat, num_lon
 
 logical :: used
 
@@ -806,7 +820,32 @@ end select
 
 ! net fluxes (positive up)
 lw_flux  = lw_up - lw_down
-sw_flux  = sw_up - sw_down
+
+select case(sw_scheme)
+   case(B_SCHNEIDER_TITAN)
+      if (overwrite_net_sw_flux_with_huygens_data) then
+         ! write(6,*) 'shape phalf', shape(p_half)
+         ! write(6,*) 'shape swflux', size(sw_flux, 1)
+         ! call interpolator( huygens_sw_interp, p_half, sw_flux, trim(huygens_sw_variable_name))
+
+         num_lat = size(sw_flux,2)
+         num_lon = size(sw_flux,1)
+
+         do i = 1, num_lon
+            do j = 1, num_lat
+               do k = 1, n+1
+                  sw_flux(i,j, k) = -1.*huygens_sw_profile_values(k) * sw_down(i, j, 1) ! Huygens data is net sw flux as a fraction of TOA incoming SW
+               end do
+            end do
+         end do
+      else
+         sw_flux  = sw_up - sw_down      
+      endif
+   case default
+      sw_flux  = sw_up - sw_down
+end select
+
+
 rad_flux = lw_flux + sw_flux
 
 do k = 1, n
@@ -898,6 +937,10 @@ if (lw_scheme.eq.B_BYRNE) then
 endif
 if(lw_scheme.eq.B_SCHNEIDER_LIU) then
 	deallocate (b_surf_gp)
+endif
+
+if(sw_scheme.eq.B_SCHNEIDER_TITAN .and. overwrite_net_sw_flux_with_huygens_data) then
+	call interpolator_end(huygens_sw_interp)
 endif
 
 if(do_read_co2)call interpolator_end(co2_interp)
