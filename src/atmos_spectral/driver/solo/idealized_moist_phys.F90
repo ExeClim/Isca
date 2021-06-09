@@ -291,7 +291,7 @@ integer ::           &
      id_drag_t,      &
      id_drag_q,      &
      id_rho_drag,    &
-     id_q_surf0, id_flux_q_surf_part, id_flux_q_atm_part, id_flux_u, id_flux_v, id_flux_t_surf_part, id_flux_t_atm_part, id_e_sat
+     id_q_surf0, id_flux_q_surf_part, id_flux_q_atm_part, id_flux_t_surf_part, id_flux_t_atm_part, id_e_sat
 
 integer, allocatable, dimension(:,:) :: convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon

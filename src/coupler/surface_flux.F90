@@ -373,7 +373,7 @@ subroutine surface_flux_1d (                                           &
        dhdt_surf, dedt_surf,  dedq_surf, drdt_surf,          &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
-       cd_m,      cd_t,       cd_q, q_surf_out               &
+       cd_m,      cd_t,       cd_q, q_surf_out,              &
        ex_del_m, ex_del_h, ex_del_q,                         & !mp586 for 10m winds and 2m temp
        temp_2m, u_10m, v_10m,                                & !mp586 for 10m winds and 2m temp
        q_2m, rh_2m                                             ! Add 2m q and RH

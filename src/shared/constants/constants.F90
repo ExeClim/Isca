@@ -280,7 +280,7 @@ real, public :: CP_AIR = EARTH_CP_AIR
 real, public :: es0 = DEF_ES0
 logical :: earthday_multiple = .false.
 
-namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa, solar_const, earthday_multiple, es0, &
+namelist/constants_nml/ radius, grav, omega, orbital_period, pstd, pstd_mks, rdgas, kappa, solar_const, earthday_multiple, rotation_period, es0, &
                         rvgas, hlv, hlf, tfreeze, triple_point_pres, dens_vapor
 
 
