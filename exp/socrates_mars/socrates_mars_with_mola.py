@@ -2,10 +2,10 @@ import numpy as np
 
 from isca import IscaCodeBase, SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
-#from ntfy import notify
+from ntfy import notify
 import os
 
-NCORES = 16
+NCORES = 32
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
 # a CodeBase can be a directory on the computer,
@@ -24,7 +24,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 
 cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
-inputfiles = [os.path.join(base_dir,'input/sp_lw_17_dsa_mars'), os.path.join(base_dir,'input/sp_sw_42_dsa_mars_sun'), os.path.join(base_dir,'input/sp_lw_17_dsa_mars_k'), os.path.join(base_dir,'input/sp_sw_42_dsa_mars_sun_k'),]
+inputfiles = [os.path.join(base_dir,'input/sp_lw_17_dsa_mars'), os.path.join(base_dir,'input/sp_sw_42_dsa_mars_sun'), os.path.join(base_dir,'input/sp_lw_17_dsa_mars_k'), os.path.join(base_dir,'input/sp_sw_42_dsa_mars_sun_k'), os.path.join(base_dir,'input/t42_mola_mars.nc')]
 
 # create a diagnostics output file for daily snapshots
 diag = DiagTable()
@@ -62,11 +62,6 @@ diag.add_field('socrates', 'time_since_ae', time_avg=True)
 diag.add_field('socrates', 'true_anomaly', time_avg=True)
 diag.add_field('socrates', 'dec', time_avg=True)
 diag.add_field('socrates', 'ang', time_avg=True)
-diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
-diag.add_field('socrates', 'soc_surf_flux_sw', time_avg=True)
-diag.add_field('socrates', 'soc_surf_flux_lw_down', time_avg=True)
-diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
-
 
 # define namelist values as python dictionary
 namelist = Namelist({
@@ -240,10 +235,10 @@ namelist = Namelist({
         'rotation_period':88308,
     },
 
-#    'spectral_init_cond_nml': {
-#        'topog_file_name': 't42_mola_mars.nc',
-#        'topography_option': 'input',
-#    },
+    'spectral_init_cond_nml': {
+        'topog_file_name': 't42_mola_mars.nc',
+        'topography_option': 'input',
+    },
 
 })
 
@@ -260,7 +255,7 @@ if __name__=="__main__":
     for conv in conv_schemes:
         for depth_val in depths:
             for per_value in pers:
-                exp = Experiment('soc_mars_mk36_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val)+'_extra_soc_outputs', codebase=cb)
+                exp = Experiment('soc_mars_mk36_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val)+'_with_mola_topo', codebase=cb)
                 exp.clear_rundir()
 
                 exp.diag_table = diag
@@ -276,7 +271,7 @@ if __name__=="__main__":
 
 #            with exp_progress(exp, description='o%.0f d{day}' % scale):
                 exp.run(1, use_restart=False, num_cores=NCORES)
-                for i in range(2, 4):
+                for i in range(2, 241):
 #                with exp_progress(exp, description='o%.0f d{day}' % scale):
                     exp.run(i, num_cores=NCORES)
- #               notify('top down with conv scheme = '+conv+' has completed', 'isca')
+                notify('top down with conv scheme = '+conv+' has completed', 'isca')
