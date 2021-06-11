@@ -53,7 +53,6 @@ diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'omega', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
-diag.add_field('mixed_layer', 't_surf', time_avg=True)
 
 #temperature tendency - units are K/s
 diag.add_field('socrates', 'soc_tdt_lw', time_avg=True) # net flux lw 3d (up - down)

@@ -27,7 +27,7 @@ exp = Experiment('validate_clouds_soc/soc_test_aquaplanet_amip_ssts_land_low_alb
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
-              os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')
+              os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc'),
               os.path.join(GFDL_BASE,'exp/test_cases/realistic_continents/input/sst_clim_amip.nc'),
               os.path.join(GFDL_BASE,'exp/test_cases/realistic_continents/input/siconc_clim_amip.nc'),
              ]
@@ -53,7 +53,6 @@ diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'omega', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
-diag.add_field('mixed_layer', 't_surf', time_avg=True)
 
 #temperature tendency - units are K/s
 diag.add_field('socrates', 'soc_tdt_lw', time_avg=True) # net flux lw 3d (up - down)
@@ -225,7 +224,7 @@ if __name__=="__main__":
         #Set up the experiment object, with the first argument being the experiment name.
         #This will be the name of the folder that the data will appear in.
 
-        overwrite=True
+        overwrite=False
 
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
         for i in range(2,61):

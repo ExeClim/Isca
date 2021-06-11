@@ -1,7 +1,7 @@
 module cloud_simple_mod
 
   use            fms_mod, only: stdlog, FATAL, WARNING, error_mesg,  &
-                                open_namelist_file, close_file, close_file, &
+                                open_namelist_file, close_file, open_file, &
                                 check_nml_error, mpp_pe
   use   time_manager_mod, only: time_type
   use sat_vapor_pres_mod, only: compute_qs
@@ -34,7 +34,9 @@ module cloud_simple_mod
   ! Critical RH (fraction) values - SPOOKIE-2 protocol version 1
   real    ::   rhc_sfc     = 1.0
   real    ::   rhc_base    = 0.7
-  real    ::   rhc_top     = 0.3
+  real    ::   rhc_top     = 0.2 ! In the protocol this was 20 % and in 
+                                 ! implementation it was 30%. To check in 
+                                 ! next round of validation.
 
   ! Critical RH (fraction) values - SPOOKIE-2 protocol version 2
   ! initial values for RH. Updated in calc_rh_min_max
@@ -72,7 +74,7 @@ module cloud_simple_mod
 
     integer :: io, ierr, unit
 
-    unit = open_file ('input.nml', action='read')
+    unit = open_file (file='input.nml', action='read')
     ierr=1
     do while (ierr /= 0)
         read  (unit, nml=cloud_simple_nml, iostat=io, end=10)
@@ -181,12 +183,12 @@ module cloud_simple_mod
           endif
 
           ! calculate the cloud fraction
-          call calc_cf(q_hum(i,j,k), qs(i,j,k), cf(i,j,k), cca(i,j,k), 
+          call calc_cf(q_hum(i,j,k), qs(i,j,k), cf(i,j,k), cca(i,j,k),         &
                        rh_in_cf(i,j,k), simple_rhcrit = simple_rhcrit(i,j,k),  &
                        rh_min = rh_min(i,j,k), rh_max = rh_max(i,j,k) )
 
           ! calculate the specific humidity of cloud liquid
-          call calc_mixing_ratio(p_full(i,j,k), cf(i,j,k), temp(i,j,k), 
+          call calc_mixing_ratio(p_full(i,j,k), cf(i,j,k), temp(i,j,k),        &
                                  qcl_rad(i,j,k) )
         end do
       end do

@@ -111,7 +111,7 @@ logical :: do_bm = .false.
 logical :: do_ras = .false.
 
 ! Cloud options
-logical :: do_cloud_simple = .false.
+logical :: do_cloud_simple = .false. ! by default the cloud scheme is off.
 
 !s Radiation options
 logical :: two_stream_gray = .true.

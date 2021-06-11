@@ -49,7 +49,6 @@ diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'omega', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
-diag.add_field('mixed_layer', 't_surf', time_avg=True)
 
 #temperature tendency - units are K/s
 diag.add_field('socrates', 'soc_tdt_lw', time_avg=True) # net flux lw 3d (up - down)
@@ -125,14 +124,11 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
-        'do_cloud_simple': True
+        'do_cloud_simple': True # this is where the clouds scheme is turned on
     },
 
-    'cloud_simple_nml': {
-        'cca_lower_limit':0.0,
-        'rhcsfc': 0.95,
-        'rhc700': 0.7,
-        'rhc200': 0.3
+    'cloud_simple_nml': { #use all existing defaults as in code
+        'spookie_protocol':2
     },
 
     'vert_turb_driver_nml': {
