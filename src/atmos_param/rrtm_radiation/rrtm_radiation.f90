@@ -859,7 +859,7 @@
             liqflglw = 1 !Sets liquid water radii to be used rather than being inactive (zero is inactive)
             cldfr = reshape( cf_rad  (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
             reliq = reshape(reff_rad  (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /)) !already in microns
-            reice = 10*ones(pt1,:,:) !Ice particle radii not used as iceflglw=0 meaning it is inactive. Setting to fill value of zeros
+            reice = zeros(pt1,:,:) !Ice particle radii not used as iceflglw=0 meaning it is inactive. Setting to fill value of zeros
           else
             pt1 = 1
             pt2 = 1

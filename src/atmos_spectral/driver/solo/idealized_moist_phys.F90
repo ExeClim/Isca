@@ -203,12 +203,12 @@ real, allocatable, dimension(:,:)   ::                                        &
      albedo,               &   ! albedo now defined in mixed_layer_init
      coszen,               &   ! make sure this is ready for assignment in run_rrtmg
      pbltop,               &   ! used as an input to damping_driver, outputted from vert_turb_driver
-     ex_del_m, 		       &   ! used for 10m winds and 2m temp
-     ex_del_h,		       &   ! used for 10m winds and 2m temp
-     ex_del_q,		       &   ! used for 10m winds and 2m temp
-     temp_2m,		       &   ! used for 10m winds and 2m temp
-     u_10m,		           &   ! used for 10m winds and 2m temp
-     v_10m,		           &   ! used for 10m winds and 2m temp
+     ex_del_m,             &   ! used for 10m winds and 2m temp
+     ex_del_h,             &   ! used for 10m winds and 2m temp
+     ex_del_q,             &   ! used for 10m winds and 2m temp
+     temp_2m,              &   ! used for 10m winds and 2m temp
+     u_10m,                &   ! used for 10m winds and 2m temp
+     v_10m,                &   ! used for 10m winds and 2m temp
      q_2m,                 &   ! used for 2m specific humidity
      rh_2m                     ! used for 2m relative humidity
 
@@ -273,15 +273,15 @@ integer ::           &
      id_bucket_depth_conv, &   ! bucket depth variation induced by convection
      id_bucket_depth_cond, &   ! bucket depth variation induced by condensation
      id_bucket_depth_lh,   &   ! bucket depth variation induced by LH
-     id_rh,          & 	 ! Relative humidity
+     id_rh,           & ! Relative humidity
      id_diss_heat_ray,&  ! Heat dissipated by rayleigh bottom drag if gp_surface=.True.
      id_z_tg,        &   ! Relative humidity
      id_cape,        &
-     id_cin,	     & 	     
+     id_cin,         &      
      id_flux_u,      & ! surface flux of zonal mom.
      id_flux_v,      & ! surface flux of meridional mom.
      id_temp_2m,     & ! used for 10m winds and 2m temp
-     id_u_10m, 	     & ! used for 10m winds and 2m temp
+     id_u_10m,       & ! used for 10m winds and 2m temp
      id_v_10m,       & ! used for 10m winds and 2m temp
      id_q_2m,        & ! used for 2m specific humidity
      id_rh_2m          ! used for 2m relative humidity
@@ -292,11 +292,11 @@ real,    allocatable, dimension(:) :: pref, p_half_1d, ln_p_half_1d, p_full_1d,l
 real,    allocatable, dimension(:,:) :: capeflag !s Added for Betts Miller scheme (rather than the simplified Betts Miller scheme).
 
 type(surf_diff_type) :: Tri_surf ! used by gcm_vert_diff
-	
-!s initialise constants ready to be used in rh_calc	
+
+!s initialise constants ready to be used in rh_calc
 real :: d622 = 0.
 real :: d378 = 0.
-	
+
 logical :: used, doing_edt, doing_entrain, do_strat
 integer, dimension(4) :: axes
 integer :: is, ie, js, je, num_levels, nsphum, dt_integer
@@ -432,8 +432,8 @@ call get_num_levels(num_levels)
 
 allocate(rad_lat     (is:ie, js:je)); rad_lat = rad_lat_2d
 allocate(rad_lon     (is:ie, js:je)); rad_lon = rad_lon_2d
-allocate (dt_bucket  (is:ie, js:je)); dt_bucket = 0.0
-allocate (filt       (is:ie, js:je)); filt = 0.0
+allocate(dt_bucket   (is:ie, js:je)); dt_bucket = 0.0
+allocate(filt        (is:ie, js:je)); filt = 0.0
 allocate(bucket_depth (is:ie, js:je, num_time_levels)); bucket_depth = init_bucket_depth 
 allocate(depth_change_lh(is:ie, js:je))
 allocate(depth_change_cond(is:ie, js:je))
@@ -530,41 +530,41 @@ if(trim(land_option) .eq. 'input')then
 !s read in land nc file
 !s adapted from spectral_init_cond.F90
 
-	   if(file_exist(trim(land_file_name))) then
-	     call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat)
-	     call field_size(trim(land_file_name), trim(land_field_name), siz)
-	     if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
-	       call read_data(trim(land_file_name), trim(land_field_name), land_ones, grid_domain)
-	       !s write something to screen to let the user know what's happening.
-	     else
-	       write(ctmp1(1: 4),'(i4)') siz(1)
-	       write(ctmp1(9:12),'(i4)') siz(2)
-	       write(ctmp2(1: 4),'(i4)') global_num_lon
-	       write(ctmp2(9:12),'(i4)') global_num_lat
-	       call error_mesg ('idealized_moist_phys','Land file contains data on a '// &
-	              ctmp1//' grid, but atmos model grid is '//ctmp2, FATAL)
-	     endif
-	   else
-	     call error_mesg('idealized_moist_phys','land_option="'//trim(land_option)//'"'// &
-	                     ' but '//trim(land_file_name)//' does not exist', FATAL)
-	   endif
+       if(file_exist(trim(land_file_name))) then
+         call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat)
+         call field_size(trim(land_file_name), trim(land_field_name), siz)
+         if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
+           call read_data(trim(land_file_name), trim(land_field_name), land_ones, grid_domain)
+           !s write something to screen to let the user know what's happening.
+         else
+           write(ctmp1(1: 4),'(i4)') siz(1)
+           write(ctmp1(9:12),'(i4)') siz(2)
+           write(ctmp2(1: 4),'(i4)') global_num_lon
+           write(ctmp2(9:12),'(i4)') global_num_lat
+           call error_mesg ('idealized_moist_phys','Land file contains data on a '// &
+                  ctmp1//' grid, but atmos model grid is '//ctmp2, FATAL)
+         endif
+       else
+         call error_mesg('idealized_moist_phys','land_option="'//trim(land_option)//'"'// &
+                         ' but '//trim(land_file_name)//' does not exist', FATAL)
+       endif
 
-	!s convert data in land nc file to land logical array
-	where(land_ones > 0.) land = .true.
+    !s convert data in land nc file to land logical array
+    where(land_ones > 0.) land = .true.
 
 elseif(trim(land_option) .eq. 'zsurf')then
-	!s wherever zsurf is greater than some threshold height then make land = .true.
-	where ( z_surf > 10. ) land = .true.
+    !s wherever zsurf is greater than some threshold height then make land = .true.
+    where ( z_surf > 10. ) land = .true.
 endif
 
 !option to alter surface roughness length over land
 if(trim(land_option) .eq. 'input') then
 
-	where(land)
-	rough_mom   = land_roughness_prefactor * rough_mom
-	rough_heat  = land_roughness_prefactor * rough_heat
-	rough_moist = land_roughness_prefactor * rough_moist
-	end where
+    where(land)
+    rough_mom   = land_roughness_prefactor * rough_mom
+    rough_heat  = land_roughness_prefactor * rough_heat
+    rough_moist = land_roughness_prefactor * rough_moist
+    end where
 
 endif
 
@@ -586,11 +586,12 @@ endif
 !    initialize damping_driver_mod.
       if(do_damping) then
          call pressure_variables(p_half_1d,ln_p_half_1d,pref(1:num_levels),ln_p_full_1d,PSTD_MKS)
-	 pref(num_levels+1) = PSTD_MKS
-         call damping_driver_init (rad_lonb_2d(:,1),rad_latb_2d(1,:), pref(:), get_axis_id(), Time, & 
-!note that in the original this is pref(:,1), which is the full model pressure levels and 
-!the surface pressure at the bottom. There is pref(:2) in this version with 81060 as surface pressure??
-                                sgsmtn)
+     pref(num_levels+1) = PSTD_MKS
+         call damping_driver_init(rad_lonb_2d(:,1),rad_latb_2d(1,:), pref(:), get_axis_id(), Time, & 
+                                  sgsmtn)
+         !note that in the original this is pref(:,1), which is the full model pressure levels and 
+         !the surface pressure at the bottom. There is pref(:2) in this version with 81060 as 
+         !surface pressure??
 
       endif
 
@@ -772,7 +773,7 @@ if(turb) then
 endif
 
    id_rh = register_diag_field ( mod_name, 'rh', &
-	axes(1:3), Time, 'relative humidity', 'percent')
+   axes(1:3), Time, 'relative humidity', 'percent')
 
 end subroutine idealized_moist_phys_init
 !=================================================================================================================================
@@ -956,7 +957,7 @@ endif
 
 ! Call the simple cloud scheme in line with SPOOKIE-2 requirements
 ! Using start of time step variables
-! using soecific humidity NOT mixing ratios
+! using specific humidity NOT mixing ratios
 
 ! initialise outs to zero
 
@@ -1049,15 +1050,15 @@ if(.not.gp_surface) then
                                 dedq_atm(:,:),                              &
                               dtaudu_atm(:,:),                              &
                               dtaudv_atm(:,:),                              &
-			                    ex_del_m(:,:),				                &
-			                    ex_del_h(:,:),				                &
-			                    ex_del_q(:,:),				                &
-			                     temp_2m(:,:),				                &
-			                       u_10m(:,:),				                &
-			                       v_10m(:,:),				                &
+                                ex_del_m(:,:),                              &
+                                ex_del_h(:,:),                              &
+                                ex_del_q(:,:),                              &
+                                 temp_2m(:,:),                              &
+                                   u_10m(:,:),                              &
+                                   v_10m(:,:),                              &
                                     q_2m(:,:),                              &
                                    rh_2m(:,:),                              &
-                 	              delta_t,                                  &
+                                      delta_t,                              &
                                     land(:,:),                              &
                                .not.land(:,:),                              &
                                    avail(:,:)  )
@@ -1090,7 +1091,7 @@ end if
 #else
 if(do_rrtm_radiation) then
    !need t at half grid
-	tg_interp=tg(:,:,:,previous)
+   tg_interp=tg(:,:,:,previous)
    call interp_temp(z_full(:,:,:,current),z_half(:,:,:,current),tg_interp, Time)
    call run_rrtmg(is,js,Time,rad_lat(:,:),rad_lon(:,:),p_full(:,:,:,current),p_half(:,:,:,current),  &
                   albedo,grid_tracers(:,:,:,previous,nsphum),tg_interp,t_surf(:,:),dt_tg(:,:,:),     &
@@ -1108,30 +1109,37 @@ if (do_socrates_radiation) then
        ! Socrates interface
   
     if(do_cloud_simple) then
-       reff_rad = 1.e-6 * reff_rad ! Simple cloud scheme outputs radii in microns. Socrates expects it in metres.
+       ! Simple cloud scheme outputs radii in microns, but Socrates expects 
+       ! it in metres so convert it.
+       reff_rad = 1.e-6 * reff_rad 
     endif
   
-    call run_socrates(Time, Time+Time_step, rad_lat, rad_lon, tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum), t_surf(:,:), p_full(:,:,:,current), &
-                      p_half(:,:,:,current),z_full(:,:,:,current),z_half(:,:,:,current), albedo, dt_tg(:,:,:), net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t, do_cloud_simple, cf_rad(:,:,:), cca_rad(:,:,:), reff_rad(:,:,:),      &
-                      qcl_rad(:,:,:)   )
+    call run_socrates(Time, Time+Time_step, rad_lat, rad_lon,                  &
+                      tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum), &
+                      t_surf(:,:), p_full(:,:,:,current),                      &
+                      p_half(:,:,:,current), z_full(:,:,:,current),            &
+                      z_half(:,:,:,current), albedo, dt_tg(:,:,:),             &
+                      net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t,       &
+                      do_cloud_simple, cf_rad(:,:,:), cca_rad(:,:,:),          &
+                      reff_rad(:,:,:), qcl_rad(:,:,:)   )
 
 endif
 #endif
 
 if(gp_surface) then
 
-	call gp_surface_flux (dt_tg(:,:,:), p_half(:,:,:,current), num_levels)
-	
+    call gp_surface_flux (dt_tg(:,:,:), p_half(:,:,:,current), num_levels)
+
     call compute_rayleigh_bottom_drag( 1,                     ie-is+1, &
                                        1,                     je-js+1, &
                                      Time,                    delta_t, &
-                   		     rad_lat(:,:),         dt_ug(:,:,:      ), &
+                             rad_lat(:,:),         dt_ug(:,:,:      ), &
                         dt_vg(:,:,:     ),                             &
                        ug(:,:,:,previous),         vg(:,:,:,previous), &
                      p_half(:,:,:,previous),     p_full(:,:,:,previous), &
                      dt_tg, diss_heat_ray )
 
-	if(id_diss_heat_ray > 0) used = send_data(id_diss_heat_ray, diss_heat_ray, Time)
+    if(id_diss_heat_ray > 0) used = send_data(id_diss_heat_ray, diss_heat_ray, Time)
 endif
 
 
@@ -1226,7 +1234,7 @@ if(turb) then
 !
 ! update surface temperature
 !
-   if(mixed_layer_bc) then	
+   if(mixed_layer_bc) then
    call mixed_layer(                                                       &
                               Time, Time+Time_step,                        &
                               js,                                          & 
@@ -1370,7 +1378,7 @@ subroutine rh_calc(pfull,T,qv,RH) !s subroutine copied from 2006 FMS MoistModel 
 
         !calculate water saturated vapor pressure from table
         !and store temporarily in the variable esat
-        CALL LOOKUP_ES(T,esat)						!same as escomp
+        CALL LOOKUP_ES(T,esat)  !same as escomp
 
         !calculate denominator in qsat formula
         if(do_simple) then
