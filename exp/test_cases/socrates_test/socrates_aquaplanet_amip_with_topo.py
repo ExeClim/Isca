@@ -23,14 +23,13 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('validate_clouds_soc/soc_test_aquaplanet_amip_ssts_land_low_albedo', codebase=cb)
+exp = Experiment('soc_aquaplanet_amip', codebase=cb)
 exp.clear_rundir()
 
-inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
-              os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc'),
-              os.path.join(GFDL_BASE,'exp/test_cases/realistic_continents/input/sst_clim_amip.nc'),
-              os.path.join(GFDL_BASE,'exp/test_cases/realistic_continents/input/siconc_clim_amip.nc'),
-             ]
+exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
+                  os.path.join(GFDL_BASE,'exp/test_cases/realistic_continents/input/era-spectral7_T42_64x128.out.nc'),
+                  os.path.join(GFDL_BASE,'exp/test_cases/realistic_continents/input/sst_clim_amip.nc'), 
+                  os.path.join(GFDL_BASE,'exp/test_cases/realistic_continents/input/siconc_clim_amip.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -70,7 +69,6 @@ diag.add_field('socrates', 'soc_toa_sw', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
 
 exp.diag_table = diag
-exp.inputfiles = inputfiles
 
 #Define values for the 'core' namelist
 exp.namelist = namelist = Namelist({
@@ -111,7 +109,7 @@ exp.namelist = namelist = Namelist({
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
         'do_cloud_simple': False, 
         'land_option' : 'input',
-        'land_file_name' : 'INPUT/era_land_t42.nc',
+        'land_file_name' : 'INPUT/era-spectral7_T42_64x128.out.nc',
         'land_roughness_prefactor' :10.0, 
     },
 
@@ -145,11 +143,9 @@ exp.namelist = namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':True,  
-        'depth': 20.0,                          #Depth of mixed layer used
-        'albedo_value': 0.2,                  #Albedo value used      
         'land_option': 'input',              #Tell mixed layer to get land mask from input file
         'land_h_capacity_prefactor': 0.1,    #What factor to multiply mixed-layer depth by over land. 
-        'albedo_value': 0.25,                #Ocean albedo value
+        'albedo_value': 0.25,                #albedo value
         'land_albedo_prefactor': 1.3,        #What factor to multiply ocean albedo by over land     
         'do_qflux' : False, #Don't use the prescribed analytical formula for q-fluxes
         'do_read_sst' : True, #Read in sst values from input file
@@ -207,11 +203,11 @@ exp.namelist = namelist = Namelist({
         'scale_heights' : 11.0,
         'exponent':7.0,
         'robert_coeff':0.03,
-        'ocean_topog_smoothing': 0.8
+        'ocean_topog_smoothing': 0.0
     },
 
     'spectral_init_cond_nml':{
-        'topog_file_name': 'era_land_t42.nc',
+        'topog_file_name': 'era-spectral7_T42_64x128.out.nc',
         'topography_option': 'input'
     },
 

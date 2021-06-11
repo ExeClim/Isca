@@ -23,8 +23,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('validate_clouds_soc/soc_test_aquaplanet_amip_ssts_land_low_albedo_gibbs_fix', codebase=cb)
-
+exp = Experiment('soc_aquaplanet_amip_clouds', codebase=cb)
 exp.clear_rundir()
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
@@ -69,6 +68,24 @@ diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
 diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
 
+#clear sky fluxes
+diag.add_field('socrates', 'soc_surf_flux_lw_clear', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_sw_clear', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_lw_down_clear', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_sw_down_clear', time_avg=True)
+diag.add_field('socrates', 'soc_olr_clear', time_avg=True)
+diag.add_field('socrates', 'soc_toa_sw_clear', time_avg=True) 
+diag.add_field('socrates', 'soc_toa_sw_down_clear', time_avg=True) 
+
+diag.add_field('cloud_simple', 'cf', time_avg=True)
+diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
+diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
+diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
+#diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
+diag.add_field('cloud_simple', 'rh_min', time_avg=True)
+diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
+diag.add_field('mixed_layer', 'albedo', time_avg=True)
+
 exp.diag_table = diag
 
 #Define values for the 'core' namelist
@@ -108,12 +125,15 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
-        'do_cloud_simple': False, 
+        'do_cloud_simple': True,  # this is where the clouds scheme is turned on
         'land_option' : 'input',
         'land_file_name' : 'INPUT/era-spectral7_T42_64x128.out.nc',
         'land_roughness_prefactor' :10.0, 
     },
 
+    'cloud_simple_nml': { #use all existing defaults as in code
+        'spookie_protocol':2
+    },
 
     'vert_turb_driver_nml': {
         'do_mellor_yamada': False,     # default: True
@@ -221,7 +241,7 @@ if __name__=="__main__":
         #Set up the experiment object, with the first argument being the experiment name.
         #This will be the name of the folder that the data will appear in.
 
-        overwrite=True
+        overwrite=False
 
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
         for i in range(2,61):
