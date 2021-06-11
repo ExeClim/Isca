@@ -5,7 +5,7 @@ rundir={{ rundir }}  # change this if you're rerunning from the output directory
 
 source {{ env_source }}
 
-ulimit -s unlimited
+#ulimit -s unlimited
 
 debug={{ run_idb }}                                     # logical to identify if running in debug mode or not
 
