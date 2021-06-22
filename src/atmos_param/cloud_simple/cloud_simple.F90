@@ -213,7 +213,7 @@ module cloud_simple_mod
         frac_liq = 0.0
     else           
         ! linearly interpolate between T=0 and -40C
-        frac_liq = 1.0 - (KELVIN-temp) / 40.0
+        frac_liq = 1.0 - (KELVIN - temp) / 40.0
     end if 
 
   end subroutine calc_liq_frac
@@ -303,7 +303,7 @@ module cloud_simple_mod
         cf = (rh - rh_min) / (rh_max - rh_min) 
     end if 
 
-    cf = MAX(0.0, MIN( 1.0, cf))
+    cf = MAX(0.0, MIN(1.0, cf))
 
     ! include simple convective cloud fraction where present
     ! This is currently not being used and array are zeros as

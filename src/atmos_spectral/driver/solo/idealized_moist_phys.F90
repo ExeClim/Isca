@@ -586,7 +586,7 @@ endif
 !    initialize damping_driver_mod.
       if(do_damping) then
          call pressure_variables(p_half_1d,ln_p_half_1d,pref(1:num_levels),ln_p_full_1d,PSTD_MKS)
-     pref(num_levels+1) = PSTD_MKS
+         pref(num_levels+1) = PSTD_MKS
          call damping_driver_init(rad_lonb_2d(:,1),rad_latb_2d(1,:), pref(:), get_axis_id(), Time, & 
                                   sgsmtn)
          !note that in the original this is pref(:,1), which is the full model pressure levels and 
@@ -658,7 +658,7 @@ id_u_10m = register_diag_field(mod_name, 'u_10m',                &
 id_v_10m = register_diag_field(mod_name, 'v_10m',                &
      axes(1:2), Time, 'Meridional wind 10m above surface', 'm/s')
 
-id_q_2m = register_diag_field(mod_name, 'sphum_2m',                  &
+id_q_2m = register_diag_field(mod_name, 'sphum_2m',              &
      axes(1:2), Time, 'Specific humidity 2m above surface', 'kg/kg') 
 id_rh_2m = register_diag_field(mod_name, 'rh_2m',                &
      axes(1:2), Time, 'Relative humidity 2m above surface', 'percent')
@@ -772,8 +772,8 @@ if(turb) then
         axes(1:3), Time, 'moisture diffusion tendency','kg/kg/s')
 endif
 
-   id_rh = register_diag_field ( mod_name, 'rh', &
-   axes(1:3), Time, 'relative humidity', 'percent')
+   id_rh = register_diag_field ( mod_name, 'rh',                           &
+        axes(1:3), Time, 'relative humidity', 'percent')
 
 end subroutine idealized_moist_phys_init
 !=================================================================================================================================
