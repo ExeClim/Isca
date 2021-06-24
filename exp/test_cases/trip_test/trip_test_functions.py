@@ -79,6 +79,13 @@ def get_nml_diag(test_case_name):
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist       
 
+    if 'socrates_aquaplanet_with_clouds' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_test/'))
+        from socrates_aquaplanet_cloud import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist       
+
+
     if 'top_down_test' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/top_down_test/'))
         from top_down_test import namelist as nml_out
@@ -107,7 +114,20 @@ def get_nml_diag(test_case_name):
 def list_all_test_cases_implemented_in_trip_test():
 
     #List of test cases to check
-    exps_implemented = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'socrates_aquaplanet', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm', 'ape_aquaplanet']
+    exps_implemented = ['axisymmetric', 
+                        'bucket_model', 
+                        'frierson', 
+                        'giant_planet', 
+                        'held_suarez', 
+                        'MiMA', 
+                        'realistic_continents_fixed_sst', 
+                        'realistic_continents_variable_qflux', 
+                        'socrates_aquaplanet', 
+                        'socrates_aquaplanet_with_clouds', 
+                        'top_down_test', 
+                        'variable_co2_grey', 
+                        'variable_co2_rrtm', 
+                        'ape_aquaplanet']
 
     return exps_implemented
 
