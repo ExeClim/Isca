@@ -853,6 +853,16 @@
 !          where(cosz_rr < 1.e-2)cosz_rr=0.
           
           if (do_cloud_simple) then
+           !Important - please read:
+           !    When the simple cloud scheme was implemented into Isca, it was
+           !    implemented into Socrates first. This was easier to do.
+           !    We (Stephen Tomson and Penelope Maher) tried to get the cloud
+           !    scheme running for RRTM too, but did not get to the point of 
+           !    getting it working before needing to move onto other projects.
+           !    The code skeleton is in place on the master so that if someone 
+           !    wants to pick up this problem they can without this initial 
+           !    outlay of work.
+
             pt1 = 1
             pt2 = ngptsw
             inflglw  = 2 !RRTM responsible for calculating optical properties of clouds
@@ -898,9 +908,9 @@
                   cosz_rr   , solrad   , dyofyr   , solr_cnst, &
                   inflglw   , iceflglw , liqflglw ,            &
                   ! cloud parameters
-                  cldfr_pass_sw(pt1:pt2,:,:),     &
+                  cldfr_pass_sw(pt1,:,:),     &
                   taucld_sw    , sw_zro   , sw_zro   , sw_zro  , &
-                  zeros(pt1:pt2,:,:) , zeros(pt1:pt2,:,:)  , reice    , reliq   , & 
+                  zeros(pt1,:,:) , zeros(pt1,:,:)  , reice    , reliq   , & 
                   tauaer_sw    , zro_sw   , zro_sw   , zro_sw  , &
                   ! output
                   swuflx    , swdflx   , swhr     , swuflxc , swdflxc, swhrc)
@@ -913,9 +923,9 @@
                   cosz_rr   , solrad   , dyofyr   , solr_cnst, &
                   inflglw   , iceflglw , liqflglw ,            &
                   ! cloud parameters
-                  cldfr_pass_sw(pt1:pt2,:,:),     &
+                  cldfr_pass_sw(pt1,:,:),     &
                   taucld_sw   , sw_zro   , sw_zro   , sw_zro ,    &
-                  zeros(pt1:pt2,:,:)     , zeros(pt1:pt2,:,:)    , reice   , reliq  ,    &
+                  zeros(pt1,:,:)     , zeros(pt1,:,:)    , reice   , reliq  ,    &
                   tauaer_sw    , zro_sw   , zro_sw   , zro_sw   , &
                   ! output
                   swuflx    , swdflx   , swhr     , swuflxc  , swdflxc, swhrc)
@@ -961,7 +971,7 @@
                   ! emissivity and cloud composition
                   emis           , inflglw        , iceflglw       , liqflglw      ,  &
                   ! cloud parameters
-                  cldfr_pass_lw(pt1:pt2,:,:)          , taucld_lw         , zeros(pt1:pt2,:,:)          , zeros(pt1:pt2,:,:)         , reice, reliq, &
+                  cldfr_pass_lw(pt1,:,:)          , taucld_lw         , zeros(pt1,:,:)          , zeros(pt1,:,:)         , reice, reliq, &
                   tauaer_lw         , &
                   ! output
                   uflx           , dflx           , hr             , uflxc         , dflxc  , hrc)
@@ -974,7 +984,7 @@
                   ! emissivity and cloud composition
                   emis      , inflglw , iceflglw, liqflglw, &
                   ! cloud parameters
-                  cldfr_pass_lw(pt1:pt2,:,:)     , taucld_lw  , zeros(pt1:pt2,:,:)   , zeros(pt1:pt2,:,:), reice, reliq, &
+                  cldfr_pass_lw(pt1,:,:)     , taucld_lw  , zeros(pt1,:,:)   , zeros(pt1,:,:), reice, reliq, &
                   tauaer_lw    , &
                   ! output
                   uflx      , dflx    , hr      , uflxc, dflxc  , hrc)
