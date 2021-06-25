@@ -32,7 +32,7 @@ for file_name in fortran_file_dict.keys():
             if 'namelist /' in line and not namelist_in_file:
                 namelist_in_file=True
             # does it contain the check_nml_error command? 
-            if 'check_nml_error(' in line and not check_namelist_in_file:
+            if 'check_nml_error' in line and not check_namelist_in_file:
                 check_namelist_in_file=True
 
     #make a list of those files that do have a namelist but don't do checking            
@@ -43,3 +43,8 @@ for file_name in fortran_file_dict.keys():
     includes_namelist_dict[file_name]=namelist_in_file
     #keep a record of the files that do and don't do namelist checking
     includes_check_namelist_dict[file_name]=check_namelist_in_file
+
+list_of_filepaths_to_check = [str(fortran_file_dict[path]) for path in namelists_to_flag]
+
+print(namelists_to_flag)
+print(list_of_filepaths_to_check)
