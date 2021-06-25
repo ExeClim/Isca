@@ -79,12 +79,11 @@ def get_nml_diag(test_case_name):
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist       
 
-    if 'socrates_aquaplanet_with_clouds' in test_case_name:
+    if 'socrates_aquaplanet_cloud' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_test/'))
         from socrates_aquaplanet_cloud import exp as exp_temp
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist       
-
 
     if 'top_down_test' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/top_down_test/'))
@@ -123,7 +122,7 @@ def list_all_test_cases_implemented_in_trip_test():
                         'realistic_continents_fixed_sst', 
                         'realistic_continents_variable_qflux', 
                         'socrates_aquaplanet', 
-                        'socrates_aquaplanet_with_clouds', 
+                        'socrates_aquaplanet_cloud', 
                         'top_down_test', 
                         'variable_co2_grey', 
                         'variable_co2_rrtm', 
@@ -196,6 +195,7 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
         'days': 3,
         }})
 
+
         try:
             # run with a progress bar
             with exp_progress(exp, description=s) as pbar:
@@ -205,6 +205,8 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             run_complete = False
             test_pass = False
             continue
+
+
 
         data_dir_dict[s] = exp.datadir
     if run_complete:
