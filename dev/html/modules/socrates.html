@@ -1,0 +1,674 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>SOCRATES Radiation Scheme Interface &mdash; isca dev documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "document", "processHtmlClass": "math|output_area"}}</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Python API" href="../python.html" />
+    <link rel="prev" title="Convection scheme: Simple Betts-Miller" href="convection_simple_betts_miller.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> isca
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Components of Isca</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Experiment configuration scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamics.html">Isca’s dynamical core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physics.html">Isca’s physical parameterisations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Changing Isca output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idealised_moist_phys.html">Moist physics driver: idealized_moist_phys.F90</a></li>
+<li class="toctree-l2"><a class="reference internal" href="two_stream_gray_rad.html">Radiative transfer: Simple gray and multi-band radiation schemes.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="convection_simple_betts_miller.html">Convection scheme: Simple Betts-Miller</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">SOCRATES Radiation Scheme Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#namelist-options">Namelist options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#radiation-options">Radiation options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#spectral-files">Spectral files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#co2-ozone-and-other-gases">CO2, ozone and other gases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#relevant-modules-and-subroutines">Relevant modules and subroutines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#references">References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isca</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Components of Isca</a> &raquo;</li>
+        
+      <li>SOCRATES Radiation Scheme Interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/socrates.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="socrates-radiation-scheme-interface">
+<h1>SOCRATES Radiation Scheme Interface<a class="headerlink" href="#socrates-radiation-scheme-interface" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>SOCRATES (Suite Of Community RAdiative Transfer codes based on Edwards and Slingo) is the radiation scheme used by UK Met Office for Earth and planetary science <a class="reference internal" href="../references.html#mannersetal2015" id="id1"><span>[MannersEtAl2015]</span></a>, which has many significant advantages over RRTM, notably its flexibility in terms of atmospheric composition and the spectral properties of the radiation scheme (e.g. number of bands, etc).</p>
+<ul class="simple">
+<li><p>The code used to integrate Socrates into Isca is contained within the folder <code class="docutils literal notranslate"><span class="pre">src/atmos_params/socrates/interface</span></code>.</p></li>
+<li><p>The Socrates source code itself is <strong>NOT</strong> packed within this Isca repository, and <strong>NEW</strong> users will need to download it from the <a class="reference external" href="https://code.metoffice.gov.uk/trac/socrates">Met Office Science Repository</a>. Users can then either choose to put the Socrates code within the directory <code class="docutils literal notranslate"><span class="pre">src/atmos_params/socrates/src/trunk</span></code>, or can set the bash environment variable <code class="docutils literal notranslate"><span class="pre">GFDL_SOC</span></code> equal to the location of the source code for Socrates. Detailed instructions on how to do this are included in the <a class="reference external" href="https://github.com/ExeClim/Isca/blob/master/exp/test_cases/socrates_test/README.md">README.md</a> for the Socrates test-case: <code class="docutils literal notranslate"><span class="pre">exp/test_cases/socrates_test/README.md</span></code>.</p></li>
+<li><p>The basis of <code class="docutils literal notranslate"><span class="pre">socrates_interface</span></code> was coded by Mark Hammond (Univ. of Oxford) and James Manners (Met Office) and modified by Stephen Thomson (Univ. of Exeter) <a class="reference internal" href="../references.html#thomson-and-vallis2019" id="id2"><span>[Thomson_and_Vallis2019]</span></a>. Features added include seasonality in the radiation based on Isca’s <code class="docutils literal notranslate"><span class="pre">astronomy</span></code> package, and the ability to use a <code class="docutils literal notranslate"><span class="pre">radiation</span> <span class="pre">timestep</span> <span class="pre">!=</span> <span class="pre">atmospheric</span> <span class="pre">timestep</span></code>.</p></li>
+<li><p>Socrates radiation scheme requires <code class="docutils literal notranslate"><span class="pre">mass</span> <span class="pre">mixing</span> <span class="pre">ratios</span></code> for all quantities (e.g. CO2, water vapor etc). This contrasts with RRTM, which wants <code class="docutils literal notranslate"><span class="pre">volume</span> <span class="pre">mixing</span> <span class="pre">ratios</span></code>.</p></li>
+</ul>
+</div>
+<div class="section" id="namelist-options">
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline">¶</a></h2>
+<p>The Socrates namelist <code class="docutils literal notranslate"><span class="pre">socrates_rad_nml</span></code> can be found at <code class="docutils literal notranslate"><span class="pre">src/atmos_param/socrates/interface/socrates_config_mod.f90</span></code>.</p>
+<div class="section" id="radiation-options">
+<h3>Radiation options<a class="headerlink" href="#radiation-options" title="Permalink to this headline">¶</a></h3>
+<p>Here are some options to set incoming radiation:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 8%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">solday</span></code></p></td>
+<td><p>0</p></td>
+<td><p>If <code class="docutils literal notranslate"><span class="pre">solday&gt;0</span></code>, do perpetual run corresponding to day of the year = solday in
+[0, days per year]</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">do_rad_time_avg</span></code></p></td>
+<td><p>True</p></td>
+<td><p>Average <code class="docutils literal notranslate"><span class="pre">coszen</span></code> for shortwave radiation over <code class="docutils literal notranslate"><span class="pre">dt_rad</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">equinox_day</span></code></p></td>
+<td><p>0.75</p></td>
+<td><p>Fraction of the year defining NH autumn equinox in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">stellar_constant</span></code></p></td>
+<td><p>1368.22</p></td>
+<td><p>solar constant (units: Wm <span class="math notranslate nohighlight">\(^{-2}\)</span>), consistent with RRTM default</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tidally_locked</span></code></p></td>
+<td><p>False</p></td>
+<td><p>Tidally locked or not</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">frierson_solar_rad</span></code></p></td>
+<td><p>False</p></td>
+<td><p>Options for annual-mean incoming solar, as prescribed in Frierson’s grey scheme</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">del_sol</span></code></p></td>
+<td><p>1.4</p></td>
+<td><p>Latitudinal variation of shortwave radiation, as prescribed in Frierson’s grey scheme</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">del_sw</span></code></p></td>
+<td><p>0</p></td>
+<td><p>Latitudinal variation of shortwave radiation, as prescribed in Frierson’s grey scheme</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">input_planet_emissivity</span></code></p></td>
+<td><p>1.0</p></td>
+<td><p>Emissivity of surface. Defined as constant all over surface.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following namelist variables set radiation time stepping and spatial sampling:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 7%" />
+<col style="width: 73%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dt_rad</span></code></p></td>
+<td><p>0</p></td>
+<td><p>Radiation timestep - every step if <code class="docutils literal notranslate"><span class="pre">dt_rad&lt;dt_atmos</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">store_intermediate_rad</span></code></p></td>
+<td><p>True</p></td>
+<td><p>Keep rad constant over entire <code class="docutils literal notranslate"><span class="pre">dt_rad</span></code>? (recommended)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dt_rad_avg</span></code></p></td>
+<td><p>-1</p></td>
+<td><p>If averaging, over what time? <code class="docutils literal notranslate"><span class="pre">dt_rad_avg=dt_rad</span></code> if <code class="docutils literal notranslate"><span class="pre">dt_rad_avg&lt;=0</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">chunk_size</span></code></p></td>
+<td><p>16</p></td>
+<td><p>Number of gridpoints to pass to Socrates at a time
+(see <a class="reference external" href="https://github.com/ExeClim/Isca/blob/master/exp/test_cases/socrates_test/README.md">README.md</a>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="spectral-files">
+<h3>Spectral files<a class="headerlink" href="#spectral-files" title="Permalink to this headline">¶</a></h3>
+<p>Socrates reads external input spectral files that tell it the number of spectral bands to use, with one file setting the shortwave options, and another file setting the longwave options. Some spectral files have lots of bands, which will make the model run slowly. The default files used in the Met Office’s Unified Model-GA7, and also in Isca, can be found within the <code class="docutils literal notranslate"><span class="pre">data/spectra</span></code> directory of Socrates source code. For example, it can be here if you put the Socrates source code within the <code class="docutils literal notranslate"><span class="pre">trunk</span></code> directory:</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">src</span><span class="o">/</span><span class="n">atmos_param</span><span class="o">/</span><span class="n">socrates</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">trunk</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">spectra</span><span class="o">/</span><span class="n">ga7</span><span class="o">/</span><span class="n">sp_lw_ga7</span> <span class="k">for</span> <span class="n">the</span> <span class="n">longwave</span>
+<span class="n">src</span><span class="o">/</span><span class="n">atmos_param</span><span class="o">/</span><span class="n">socrates</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">trunk</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">spectra</span><span class="o">/</span><span class="n">ga7</span><span class="o">/</span><span class="n">sp_sw_ga7</span> <span class="k">for</span> <span class="n">the</span> <span class="n">shortwave</span>
+</pre></div>
+</div>
+<p>or here if you have set <code class="docutils literal notranslate"><span class="pre">GFDL_SOC</span></code> as an environment variable:</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span>$GFDL_SOC/data/spectra/ga7/sp_lw_ga7 for the longwave
+$GFDL_SOC/data/spectra/ga7/sp_sw_ga7 for the shortwave
+</pre></div>
+</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 8%" />
+<col style="width: 64%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">socrates_hires_mode</span></code></p></td>
+<td><p>False</p></td>
+<td><p>If <code class="docutils literal notranslate"><span class="pre">False</span></code> then run in ‘GCM mode’, and
+if <code class="docutils literal notranslate"><span class="pre">True</span></code> then use high-res spectral file</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">lw_spectral_filename</span></code></p></td>
+<td><p>‘unset’</p></td>
+<td><p>Longwave spectral file, which can be found at Socrates source code
+<code class="docutils literal notranslate"><span class="pre">data</span></code> directory (e.g. <code class="docutils literal notranslate"><span class="pre">data/spectra/ga7/sp_lw_ga7</span></code>) or self-generated</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sw_spectral_filename</span></code></p></td>
+<td><p>‘unset’</p></td>
+<td><p>Shortwave spectral file, which can be found at Socrates source code
+<code class="docutils literal notranslate"><span class="pre">data</span></code> directory (e.g. <code class="docutils literal notranslate"><span class="pre">data/spectra/ga7/sp_sw_ga7</span></code>) or self-generated</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">lw_hires_spectral_filename</span></code></p></td>
+<td><p>‘unset’</p></td>
+<td><p>High-res longwave spectral file if <code class="docutils literal notranslate"><span class="pre">socrates_hires_mode</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sw_hires_spectral_filename</span></code></p></td>
+<td><p>‘unset’</p></td>
+<td><p>High-res shortwave spectral file if <code class="docutils literal notranslate"><span class="pre">socrates_hires_mode</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="co2-ozone-and-other-gases">
+<h3>CO2, ozone and other gases<a class="headerlink" href="#co2-ozone-and-other-gases" title="Permalink to this headline">¶</a></h3>
+<p>To include radiative effects of water vapor, CO2 and ozone, the following switches should be <code class="docutils literal notranslate"><span class="pre">True</span></code>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 19%" />
+<col style="width: 65%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">inc_h2o</span></code></p></td>
+<td><p>True</p></td>
+<td><p>To include radiative effects of water vapor</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">inc_co2</span></code></p></td>
+<td><p>True</p></td>
+<td><p>To include radiative effects of CO2</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">inc_o3</span></code></p></td>
+<td><p>True</p></td>
+<td><p>To include radiative effects of ozone</p></td>
+</tr>
+</tbody>
+</table>
+<p>In addition, you need to set their concentrations by specifing them directly or reading from the external files (close attention should be paid to the concentration units):</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 12%" />
+<col style="width: 61%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">account_for_effect_of_water</span></code></p></td>
+<td><p>True</p></td>
+<td><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">False</span></code>: radiation is fed water mixing ratios = 0</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">True</span></code>: radiation is fed mixing ratios based on model specific humidity</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">account_for_effect_of_ozone</span></code></p></td>
+<td><p>True</p></td>
+<td><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">False</span></code>: radiation is fed ozone mixing ratios = 0</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">True</span></code>: radiation is fed mixing ratios based on model ozone field</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">do_read_co2</span></code></p></td>
+<td><p>False</p></td>
+<td><ul class="simple">
+<li><p>Read CO2 from an external file?</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, needs to specify CO2 file and variable names</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">co2_file_name</span></code></p></td>
+<td><p>‘co2’</p></td>
+<td><p>Name of file containing CO2 field - n.b. don’t need to include <code class="docutils literal notranslate"><span class="pre">'.nc'</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">co2_field_name</span></code></p></td>
+<td><p>‘co2’</p></td>
+<td><p>Name of CO2 variable in CO2 file (specified by <code class="docutils literal notranslate"><span class="pre">co2_file_name</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">input_co2_mmr</span></code></p></td>
+<td><p>False</p></td>
+<td><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if the input file contain values as <code class="docutils literal notranslate"><span class="pre">mass</span> <span class="pre">mixing</span> <span class="pre">ratio</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">False</span></code> if the input file contain values as <code class="docutils literal notranslate"><span class="pre">volume</span> <span class="pre">mixing</span> <span class="pre">ratio</span></code></p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">co2_ppmv</span></code></p></td>
+<td><p>300</p></td>
+<td><p>Default CO2 concentration in <code class="docutils literal notranslate"><span class="pre">ppmv</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">do_read_ozone</span></code></p></td>
+<td><p>False</p></td>
+<td><ul class="simple">
+<li><p>Read ozone from an external file?</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, needs to specify ozone file and variable names</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ozone_file_name</span></code></p></td>
+<td><p>‘ozone’</p></td>
+<td><p>Name of file containing ozone field - n.b. don’t need to include <code class="docutils literal notranslate"><span class="pre">'.nc'</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ozone_field_name</span></code></p></td>
+<td><p>‘ozone’</p></td>
+<td><p>Name of ozone variable in ozone file (specified by <code class="docutils literal notranslate"><span class="pre">ozone_file_name</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">input_o3_file_is_mmr</span></code></p></td>
+<td><p>True</p></td>
+<td><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if the input file contain values as <code class="docutils literal notranslate"><span class="pre">mass</span> <span class="pre">mixing</span> <span class="pre">ratio</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">False</span></code> if the input file contain values as <code class="docutils literal notranslate"><span class="pre">volume</span> <span class="pre">mixing</span> <span class="pre">ratio</span></code></p></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>To include the radiative effects of other gases, such as CO, CH4, O2, SO2, CFC, etc, first you need to turn on the switches starting with <code class="docutils literal notranslate"><span class="pre">inc_</span></code> (default <code class="docutils literal notranslate"><span class="pre">False</span></code>), then specify the corresponding concentrations through variables ending with <code class="docutils literal notranslate"><span class="pre">_mix_ratio</span></code> in the namelist.</p>
+</div>
+</div>
+<div class="section" id="diagnostics">
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline">¶</a></h2>
+<p>Diagnostics from Socrates are under module name <code class="docutils literal notranslate"><span class="pre">socrates</span></code>. The outputs include the temperature tendencies due to LW/SW radiation, LW/SW radiation fluxes at each level, and the fluxes at surface and the top of the atmosphere (TOA).</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 40%" />
+<col style="width: 16%" />
+<col style="width: 24%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Units</p></th>
+<th class="head"><p>Dimension (not including time)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">soc_tdt_lw</span></code></p></td>
+<td><p>Socrates temperature tendency due to LW radiation</p></td>
+<td><p>Ks <span class="math notranslate nohighlight">\(^{-1}\)</span></p></td>
+<td><p>(pfull, lat, lon)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">soc_tdt_sw</span></code></p></td>
+<td><p>Socrates temperature tendency due to SW radiation</p></td>
+<td><p>Ks <span class="math notranslate nohighlight">\(^{-1}\)</span></p></td>
+<td><p>(pfull, lat, lon)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">soc_tdt_rad</span></code></p></td>
+<td><p>Socrates temperature tendency due to radiation</p></td>
+<td><p>Ks <span class="math notranslate nohighlight">\(^{-1}\)</span></p></td>
+<td><p>(pfull, lat, lon)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">soc_flux_lw</span></code></p></td>
+<td><p>Socrates net LW flux (positive up)</p></td>
+<td><p>Wm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>(phalf, lat, lon)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">soc_flux_sw</span></code></p></td>
+<td><p>Socrates net SW flux (positive up)</p></td>
+<td><p>Wm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>(phalf, lat, lon)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">soc_surf_flux_lw</span></code></p></td>
+<td><p>Socrates net LW surface flux (positive up)</p></td>
+<td><p>Wm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>(lat, lon)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">soc_surf_flux_lw_down</span></code></p></td>
+<td><p>Socrates LW surface flux down</p></td>
+<td><p>Wm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>(lat, lon)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">soc_surf_flux_sw</span></code></p></td>
+<td><p>Socrates net SW surface flux (positive down)</p></td>
+<td><p>Wm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>(lat, lon)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">soc_surf_flux_sw_down</span></code></p></td>
+<td><p>Socrates SW surface flux down</p></td>
+<td><p>Wm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>(lat, lon)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">soc_olr</span></code></p></td>
+<td><p>Socrates TOA LW flux (positive up)</p></td>
+<td><p>Wm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>(lat, lon)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">soc_toa_sw</span></code></p></td>
+<td><p>Socrates net TOA SW flux (positive down)</p></td>
+<td><p>Wm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>(lat, lon)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">soc_toa_sw_down</span></code></p></td>
+<td><p>Socrates net TOA SW flux down</p></td>
+<td><p>Wm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>(lat, lon)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">soc_coszen</span></code></p></td>
+<td><p>Socrates cosine (zenith_angle)</p></td>
+<td><p>None</p></td>
+<td><p>(lat, lon)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">soc_co2</span></code></p></td>
+<td><p>Socrates CO2 concentration (mass mixing ratio)</p></td>
+<td><p>kg kg <span class="math notranslate nohighlight">\(^{-1}\)</span></p></td>
+<td><p>(pfull, lat, lon)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">soc_ozone</span></code></p></td>
+<td><p>Socrates ozone concentration (mass mixing ratio)</p></td>
+<td><p>kg kg <span class="math notranslate nohighlight">\(^{-1}\)</span></p></td>
+<td><p>(pfull, lat, lon)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">soc_spectral_olr</span></code></p></td>
+<td><p>Socrates substellar OLR spectrum</p></td>
+<td><p>Wm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>(socrates_lw_bins, lat, lon)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="relevant-modules-and-subroutines">
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline">¶</a></h2>
+<p>The Socrates radiation scheme is initiatized and called by <code class="docutils literal notranslate"><span class="pre">src/atmos_spectral/driver/solo/idealized_moist_phys.F90</span></code>.</p>
+<p>The major modules/files under <code class="docutils literal notranslate"><span class="pre">src/atmos_param/socrates/interface/</span></code> are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">socrates_interface.F90</span></code> and <code class="docutils literal notranslate"><span class="pre">socrates_calc.F90</span></code>: The Socrates interfaces that initialize/finalize the Socrates, call subroutines to get inputs, set options for radiation and run core radiaiton code, and output the diagnostics.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">socrates_config_mod.f90</span></code>: module to set the namelist, including the solar radiation options, time-step, and concentrations of CO2, ozone and other well-mixed gases</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">read_control.F90</span></code> and <code class="docutils literal notranslate"><span class="pre">set_control.F90</span></code>: The Socrates use the <code class="docutils literal notranslate"><span class="pre">StrCtrl</span></code> structure to control the switches for core radiaiton code. For example, if you want to include the effects of CO2, you not only need to provide the value of CO2 concentration, but also need to turn on the switch to tell Socrates to calculate its effect: set <code class="docutils literal notranslate"><span class="pre">control%l_co2</span> <span class="pre">=</span> <span class="pre">.true.</span></code>, where <code class="docutils literal notranslate"><span class="pre">control</span></code> is a <code class="docutils literal notranslate"><span class="pre">StrCtrl</span></code> structure. Basically, all the logical switches are set in these two files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set_bound.F90</span></code> and <code class="docutils literal notranslate"><span class="pre">set_dimen.F90</span></code>: modules to set the boundary fields and dimensions for the radiation code</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set_atm.F90</span></code>, <code class="docutils literal notranslate"><span class="pre">set_aer.F90</span></code>, and <code class="docutils literal notranslate"><span class="pre">set_cld.F90</span></code>: set the input atmospheric profiles, aerosol fields and clouds fields for the core radiation code (currently the aerosol and clouds are not activated)</p></li>
+</ul>
+<p>Other radiation schemes employed in Isca can be found at:</p>
+<ul class="simple">
+<li><p>RRTM: see <code class="docutils literal notranslate"><span class="pre">src/atmos_param/rrtm_radiation</span></code></p></li>
+<li><p>Two-stream gray radiation: see <code class="docutils literal notranslate"><span class="pre">src/atmos_param/two_stream_gray_rad</span></code></p></li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="../references.html#mannersetal2015" id="id4"><span>[MannersEtAl2015]</span></a>
+<a class="reference internal" href="../references.html#thomson-and-vallis2019" id="id5"><span>[Thomson_and_Vallis2019]</span></a></p>
+</div>
+<div class="section" id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h2>
+<p>This documentation was written by Qun Liu (thanks to Stephen’s PR of Socrates), peer reviewed by Stephen Thomson, and quality controlled by Ruth Geen.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../python.html" class="btn btn-neutral float-right" title="Python API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="convection_simple_betts_miller.html" class="btn btn-neutral float-left" title="Convection scheme: Simple Betts-Miller" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, the Isca development team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

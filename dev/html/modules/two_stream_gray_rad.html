@@ -1,0 +1,814 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Radiative transfer: Simple gray and multi-band radiation schemes. &mdash; isca dev documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "document", "processHtmlClass": "math|output_area"}}</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Convection scheme: Simple Betts-Miller" href="convection_simple_betts_miller.html" />
+    <link rel="prev" title="Moist physics driver: idealized_moist_phys.F90" href="idealised_moist_phys.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> isca
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Components of Isca</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Experiment configuration scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamics.html">Isca’s dynamical core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physics.html">Isca’s physical parameterisations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Changing Isca output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idealised_moist_phys.html">Moist physics driver: idealized_moist_phys.F90</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Radiative transfer: Simple gray and multi-band radiation schemes.</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#frierson-byrne-schemes">Frierson/Byrne schemes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#schneider-giant-planet-scheme">Schneider giant planet scheme</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#geen-scheme">Geen scheme</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#incoming-solar-radiation">Incoming solar radiation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#namelist-options">Namelist options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#relevant-modules-and-subroutines">Relevant modules and subroutines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#references">References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="convection_simple_betts_miller.html">Convection scheme: Simple Betts-Miller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socrates.html">SOCRATES Radiation Scheme Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isca</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Components of Isca</a> &raquo;</li>
+        
+      <li>Radiative transfer: Simple gray and multi-band radiation schemes.</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/two_stream_gray_rad.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="radiative-transfer-simple-gray-and-multi-band-radiation-schemes">
+<h1>Radiative transfer: Simple gray and multi-band radiation schemes.<a class="headerlink" href="#radiative-transfer-simple-gray-and-multi-band-radiation-schemes" title="Permalink to this headline">¶</a></h1>
+<p>Documentation for <code class="docutils literal notranslate"><span class="pre">two_stream_gray_rad_mod</span></code>.</p>
+<div class="section" id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>This module includes different simple configurations for solving the two stream radiative transfer equations. There are three semi-gray configurations available (gray in shortwave and longwave), and one intermediate multi-band configuration (gray in shortwave, multi-band in longwave). These configurations are selected by setting the <code class="docutils literal notranslate"><span class="pre">rad_scheme</span></code> namelist option.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 25%" />
+<col style="width: 42%" />
+<col style="width: 18%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rad_scheme</span></code></p></td>
+<td colspan="2"><p>Short description</p></td>
+<td><p>Reference</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">'FRIERSON'</span></code></p></td>
+<td colspan="2"><div class="line-block">
+<div class="line">Semi-gray scheme with prescribed longwave and shortwave</div>
+<div class="line">optical depths.</div>
+</div>
+</td>
+<td><p><a class="reference internal" href="../references.html#frierson2006a" id="id1"><span>[Frierson2006a]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">'BYRNE'</span></code></p></td>
+<td colspan="2"><div class="line-block">
+<div class="line">Semi-gray scheme with longwave optical depth dependent on</div>
+<div class="line">water vapour content and <span class="math notranslate nohighlight">\(\text{CO}_{2}\)</span> concentration. Shortwave</div>
+<div class="line">optical depth is prescribed.</div>
+</div>
+</td>
+<td><div class="line-block">
+<div class="line"><a class="reference internal" href="../references.html#byrne2013" id="id2"><span>[Byrne2013]</span></a></div>
+<div class="line"><a class="reference internal" href="../references.html#vallisetal2018" id="id3"><span>[VallisEtAl2018]</span></a></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">'GEEN'</span></code></p></td>
+<td colspan="2"><div class="line-block">
+<div class="line">Multi-band scheme with two longwave bands and one shortwave</div>
+<div class="line">band. One longwave band corresponds to an infrared window</div>
+<div class="line">region (<span class="math notranslate nohighlight">\(8-14\,\mu\,\text{m}\)</span>) and the second corresponds to all other</div>
+<div class="line">infrared wavelengths (<span class="math notranslate nohighlight">\(&gt;4\,\mu\,\text{m}\)</span>). Longwave and shortwave optical</div>
+<div class="line">depths depend on water vapour content and <span class="math notranslate nohighlight">\(\text{CO}_{2}\)</span> concentration.</div>
+<div class="line"><br /></div>
+<div class="line">Note: the Geen scheme is currently only stable when run in a fixed SST</div>
+<div class="line">configuration. A version stable with a slab ocean is expected by 30/11/2020.</div>
+</div>
+</td>
+<td><div class="line-block">
+<div class="line"><a class="reference internal" href="../references.html#geen2016" id="id4"><span>[Geen2016]</span></a></div>
+<div class="line"><a class="reference internal" href="../references.html#vallisetal2018" id="id5"><span>[VallisEtAl2018]</span></a></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">'SCHNEIDER'</span></code></p></td>
+<td colspan="2"><div class="line-block">
+<div class="line">Semi-gray scheme for use in <strong>giant planet</strong> simulations. Longwave</div>
+<div class="line">and shortwave optical depths are prescribed. Does not require a</div>
+<div class="line">surface temperature as input, and allows specification of an</div>
+<div class="line">interior heat flux.</div>
+</div>
+</td>
+<td><p><a class="reference internal" href="../references.html#schneider2009" id="id6"><span>[Schneider2009]</span></a></p></td>
+</tr>
+</tbody>
+</table>
+<p>For each of these schemes diurnally-and-seasonally averaged, and time-dependent options for the incoming solar radiation are available.</p>
+<p>In the next few sections we will describe the main options available to the user for solving the radiative transfer equations, and prescribing the insolation. Namelist options and their defaults, and available output diagnostics are summarised at the end of the documentation.</p>
+</div>
+<div class="section" id="frierson-byrne-schemes">
+<h2>Frierson/Byrne schemes<a class="headerlink" href="#frierson-byrne-schemes" title="Permalink to this headline">¶</a></h2>
+<p>Each of these schemes solve the same equations to compute the longwave and shortwave fluxes. The difference between them lies in the definition of the longwave optical depths.</p>
+<div class="line-block">
+<div class="line"><strong>Longwave</strong></div>
+<div class="line">Longwave radiative transfer is described by the following two equations:</div>
+</div>
+<div class="math notranslate nohighlight">
+\[\begin{split}\frac{\text{d}I_{+}}{\text{d}\tau}=I_{+}-\sigma T^{4} \\
+\frac{\text{d}I_{-}}{\text{d}\tau}=\sigma T^{4} - I_{-}\end{split}\]</div>
+<p><span class="math notranslate nohighlight">\(I_{+}\)</span> and <span class="math notranslate nohighlight">\(I_{-}\)</span> are the upward and downward longwave fluxes, and <span class="math notranslate nohighlight">\(\tau\)</span> is the longwave optical depth. At the surface, <span class="math notranslate nohighlight">\(I_{+}(p=p_{s}) = \sigma T_{s}^{4}\)</span>, and at the top of atmosphere <span class="math notranslate nohighlight">\(I_{-}(p=0) = 0\)</span>.</p>
+<div class="line-block">
+<div class="line"><strong>Shortwave</strong></div>
+<div class="line">The downward shortwave flux <span class="math notranslate nohighlight">\(I_{-}^{\ast}\)</span> is given by</div>
+</div>
+<div class="math notranslate nohighlight">
+\[I_{-}^{\ast} = S\exp(-\tau^{\ast})\]</div>
+<p>where <span class="math notranslate nohighlight">\(\tau^{\ast}\)</span> is the shortwave optical depth, and <span class="math notranslate nohighlight">\(S\)</span> is the incoming solar radiation. The implementation of the shortwave band in the Frierson and Byrne schemes assumes that there is no scattering within the atmosphere, and shortwave radiation is only absorbed from the downward stream. All reflection occurs at the surface. The upward flux of shortwave <span class="math notranslate nohighlight">\(I_{+}^{\ast}\)</span> is not absorbed and escapes through the top of atmosphere, i.e. <span class="math notranslate nohighlight">\(I_{+}^{\ast}=\alpha I_{-}^{\ast}(p=p_s)\)</span>, where <span class="math notranslate nohighlight">\(\alpha\)</span> is the surface albedo. Note that the surface albedo is set by <code class="docutils literal notranslate"><span class="pre">mixed_layer_mod</span></code>.</p>
+<div class="line-block">
+<div class="line"><strong>Longwave optical depth</strong></div>
+<div class="line">With <code class="docutils literal notranslate"><span class="pre">rad_scheme</span></code> set to <code class="docutils literal notranslate"><span class="pre">'FRIERSON'</span></code>, the longwave optical depth is specified as a function of pressure</div>
+</div>
+<div class="math notranslate nohighlight">
+\[\tau = \tau_{0}\left[f_{l}\left(\frac{p}{p_0}\right)+(1-f_{l})\left(\frac{p}{p_0}\right)^{k}\right]\]</div>
+<p>where <span class="math notranslate nohighlight">\(p_0=10^{5}\,\text{Pa}\)</span> is a reference pressure, <span class="math notranslate nohighlight">\(f_{l}\)</span> sets how large the linear term is relative to the <span class="math notranslate nohighlight">\(p^{k}\)</span> term. <span class="math notranslate nohighlight">\(k\)</span> is a constant exponent (default 4) which determines the pressure dependence of optical depth. The linear term is included to reduce relaxation times in the stratosphere. The surface longwave optical depth <span class="math notranslate nohighlight">\(\tau_{0}\)</span> is given by</p>
+<div class="math notranslate nohighlight">
+\[\tau_{0} = \kappa[\tau_{0e} + (\tau_{0p}-\tau_{0e})\sin^{2}\theta]\]</div>
+<p><span class="math notranslate nohighlight">\(\tau_{0e}\)</span> is the value of the surface optical depth at the equation, and <span class="math notranslate nohighlight">\(\tau_{0p}\)</span> is the value at the pole.  <span class="math notranslate nohighlight">\(\kappa\)</span> is a parameter that can be used to scale the optical depth (default 1).</p>
+<p>When <code class="docutils literal notranslate"><span class="pre">rad_scheme</span></code> is set to <code class="docutils literal notranslate"><span class="pre">'BYRNE'</span></code>, the longwave optical depth is calculated as a function of specific humidity <span class="math notranslate nohighlight">\(q\)</span>, <span class="math notranslate nohighlight">\(\text{CO}_{2}\)</span> mixing ratio, and pressure</p>
+<div class="math notranslate nohighlight">
+\[\frac{\text{d}\tau}{\text{d}(p/p_{0})} = a\mu+bq+0.17\log(\text{CO}_{2}/360)\]</div>
+<p>In the equation above, <span class="math notranslate nohighlight">\(a\)</span> and <span class="math notranslate nohighlight">\(b\)</span> are constant absorption coefficients, and <span class="math notranslate nohighlight">\(\mu\)</span> is a scaling parameter intended to represent absorption by well-mixed gases (default value 1).</p>
+<div class="line-block">
+<div class="line"><strong>Shortwave optical depth</strong></div>
+<div class="line">Both the Frierson and Byrne schemes define the shortwave optical depth as</div>
+</div>
+<div class="math notranslate nohighlight">
+\[\tau^{\ast}= \tau^{\ast}_0\left(\frac{p}{p_0}\right)^{k^{\ast}}\]</div>
+<p>where <span class="math notranslate nohighlight">\(k^{\ast}\)</span> is a constant exponent that sets the pressure dependence of <span class="math notranslate nohighlight">\(\tau^{\ast}\)</span>. <span class="math notranslate nohighlight">\(\tau_{0}^{\ast}\)</span> is the shortwave optical depth at the surface, given by</p>
+<div class="math notranslate nohighlight">
+\[\tau^{\ast}_{0}=(1-\Delta\tau^{\ast}\sin^{2}\theta)*\tau_{0e}^{\ast}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\tau_{0e}^{\ast}\)</span> is the surface optical depth at the equator, and <span class="math notranslate nohighlight">\(\Delta\tau^{\ast}\)</span> determines the variation of shortwave optical depth with latitude.</p>
+</div>
+<div class="section" id="schneider-giant-planet-scheme">
+<h2>Schneider giant planet scheme<a class="headerlink" href="#schneider-giant-planet-scheme" title="Permalink to this headline">¶</a></h2>
+<p>This scheme is suitable to use for giant planet experiments where there is no solid surface at the bottom of the model atmosphere. It is selected by setting <code class="docutils literal notranslate"><span class="pre">rad_scheme</span></code> to <code class="docutils literal notranslate"><span class="pre">'SCHNEIDER'</span></code>.</p>
+<div class="line-block">
+<div class="line"><strong>Longwave</strong></div>
+<div class="line">The Schneider scheme solves the same equations for longwave radiative transfer as the Frierson/Byrne schemes. The only difference is in the lower boundary condition, where energy balance is enforced and the upward thermal radiative flux is set equal to the sum of the downward solar and thermal radiative fluxes, <span class="math notranslate nohighlight">\(I_{+}(p=p_{s}) = I_{-}(p=p_{s}) + I_{-}^{\ast}(p=p_{\text{s}})\)</span>. An intrinsic heat flux from the planet’s deep interior can also be specified, this is done in <code class="docutils literal notranslate"><span class="pre">surface_flux_mod</span></code>.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>Shortwave</strong></div>
+<div class="line">The downward shortwave flux <span class="math notranslate nohighlight">\(I_{-}^{\ast}\)</span> is given by</div>
+</div>
+<div class="math notranslate nohighlight">
+\[I_{-}^{\ast} = S(1-\alpha_{\text{b}})\exp(-\Gamma\tau^{\ast})\]</div>
+<p>where</p>
+<div class="math notranslate nohighlight">
+\[\Gamma = 2\sqrt{1-\tilde{\omega}}\sqrt{1-\tilde{\omega}\gamma}\]</div>
+<p>and</p>
+<div class="math notranslate nohighlight">
+\[\alpha_{\text{b}}=\frac{\sqrt{1-\tilde{\omega}\gamma}-\sqrt{1-\tilde{\omega}}}{\sqrt{1-\tilde{\omega}\gamma}+\sqrt{1-\tilde{\omega}}}\]</div>
+<p>is the Bond albedo. Here, <span class="math notranslate nohighlight">\(\tilde{\omega}=0.8\)</span> is the single-scattering albedo, and <span class="math notranslate nohighlight">\(\gamma=1-2f_{b}\)</span> is the asymmetry factor, where <span class="math notranslate nohighlight">\(f_{b}=0.398\)</span> is the fraction of radiation back scattered.</p>
+<p>The only reflection of shortwave radiation occurs at the top of atmosphere where a fraction <span class="math notranslate nohighlight">\((1-\alpha_{\text{b}})\)</span> is removed from the incoming solar radiation.</p>
+<p>There is no modelled upward flux of shortwave radiation in the atmosphere <span class="math notranslate nohighlight">\(I_{+}^{\ast}=0\)</span>. Instead any shortwave radiation that reaches the bottom of the atmosphere is re-added to the upward longwave beam as a flux through the lower boundary.</p>
+<div class="line-block">
+<div class="line"><strong>Longwave optical depth</strong></div>
+<div class="line">For the Schneider scheme, longwave optical depth is a simple function of pressure</div>
+</div>
+<div class="math notranslate nohighlight">
+\[\tau = \tau_{0,\text{gp}}\left(\frac{p}{p_{0}}\right)^{k_{\text{gp}}}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\tau_{0,\text{gp}}=80.0\)</span> is the longwave optical depth at pressure <span class="math notranslate nohighlight">\(p_{0}\)</span> and <span class="math notranslate nohighlight">\(k_{\text{gp}}=2.0\)</span> is a constant exponent that sets the pressure dependence of <span class="math notranslate nohighlight">\(\tau\)</span>.</p>
+<div class="line-block">
+<div class="line"><strong>Shortwave optical depth</strong></div>
+<div class="line">The shortwave optical depth takes a similar functional form to the longwave optical depth</div>
+</div>
+<div class="math notranslate nohighlight">
+\[\tau^{\ast} = \tau^{\ast}_{0,\text{gp}}\left(\frac{p}{p_{0}}\right)^{k^{\ast}_{\text{gp}}}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\tau^{\ast}_{0,\text{gp}}=3.0\)</span> is the shortwave optical depth at pressure <span class="math notranslate nohighlight">\(p_{0}\)</span> and <span class="math notranslate nohighlight">\(k^{\ast}_{\text{gp}}=1.0\)</span> is a constant exponent that sets the pressure dependence of <span class="math notranslate nohighlight">\(\tau^{\ast}\)</span>.</p>
+<div class="line-block">
+<div class="line"><strong>Note on input parameters for this scheme</strong></div>
+<div class="line">At present, each of the input parameters <span class="math notranslate nohighlight">\(\tilde{\omega}\)</span>, <span class="math notranslate nohighlight">\(f_{b}\)</span>, <span class="math notranslate nohighlight">\(\tau_{0,\text{gp}}\)</span>, <span class="math notranslate nohighlight">\(k_{\text{gp}}\)</span>, <span class="math notranslate nohighlight">\(\tau^{\ast}_{0,\text{gp}}\)</span>, and  <span class="math notranslate nohighlight">\(k^{\ast}_{\text{gp}}\)</span> are hardcoded and are not available as namelist options. There default values are given in the description of the scheme above. The code could be easily modified if a user wished to vary these parameters from the namelist.</div>
+</div>
+</div>
+<div class="section" id="geen-scheme">
+<h2>Geen scheme<a class="headerlink" href="#geen-scheme" title="Permalink to this headline">¶</a></h2>
+<p>The Geen scheme provides an intermediate option between gray radiation and more complete descriptions of radiative transfer (e.g., the correlated-<span class="math notranslate nohighlight">\(k\)</span> schemes SOCRATES and RRTM). It has two infrared bands and one solar band. The shortwave band (<span class="math notranslate nohighlight">\(&lt;4\,\mu\,\text{m}\)</span>) treats all solar radiation. Two long-wave bands treat absorption: one in the infrared region of the spectral (<span class="math notranslate nohighlight">\(8-14\,\mu\,\text{m}\)</span>), and the other in all other longwave wavelengths (<span class="math notranslate nohighlight">\(&lt;4\,\mu\,\text{m}\)</span>, non-window).</p>
+<p>Note: the Geen scheme is currently only stable when run in a fixed SST configuration. A version stable with a slab ocean is expected by 30/11/2020.</p>
+<div class="line-block">
+<div class="line"><strong>Longwave</strong></div>
+<div class="line">Longwave radiative transfer is described by the following set of equations. In the non-window region:</div>
+</div>
+<div class="math notranslate nohighlight">
+\[\begin{split}\frac{\text{d}I_{+}^{\text{nw}}}{\text{d}\tau^{\text{nw}}}=I_{+}^{\text{nw}}-R^{\text{nw}}\sigma T^{4} \\
+\frac{\text{d}I_{-}^{\text{nw}}}{\text{d}\tau^{\text{nw}}}=R^{\text{nw}}\sigma T^{4} - I_{-}^{\text{nw}}\end{split}\]</div>
+<p>and in the window region:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\frac{\text{d}I_{+}^{\text{win}}}{\text{d}\tau^{\text{win}}}=I_{+}^{\text{win}}-R^{\text{win}}\sigma T^{4} \\
+\frac{\text{d}I_{-}^{\text{win}}}{\text{d}\tau^{\text{win}}}=R^{\text{win}}\sigma T^{4} - I_{-}^{\text{win}}\end{split}\]</div>
+<p>The superscripts <span class="math notranslate nohighlight">\(^{\text{nw}}\)</span> and <span class="math notranslate nohighlight">\(^{\text{win}}\)</span> refer to the non-window and window regions, respectively. <span class="math notranslate nohighlight">\(R^{\text{win}}\)</span> and <span class="math notranslate nohighlight">\(R^{\text{nw}}=1-R^{\text{win}}\)</span> are the fraction irradiances in the non-window and window regions.</p>
+<div class="line-block">
+<div class="line"><strong>Shortwave</strong></div>
+<div class="line">The Geen scheme solves the same equations for shortwave radiative transfer as the Frierson/Byrne schemes. The only difference is in the specification of the shortwave optical depth (see below).</div>
+</div>
+<p>As with the Frierson and Byrne schemes, the implementation of the shortwave band assumes that there is no scattering within the atmosphere, and shortwave radiation is only absorbed from the downward stream. All reflection occurs at the surface. The upward flux of shortwave <span class="math notranslate nohighlight">\(I_{+}^{\ast}\)</span> is not absorbed and escapes through the top of atmosphere.</p>
+<div class="line-block">
+<div class="line"><strong>Longwave optical depth</strong></div>
+<div class="line">The longwave optical depth in the Geen scheme is defined seperately for the non-window and window regions. In the window region</div>
+</div>
+<div class="math notranslate nohighlight">
+\[\frac{\text{d}\tau^{\text{win}}}{\text{d}(p/p_{0})} = a_{\text{win}}+b_{\text{win}}q+c_{\text{win}}q^{2}+0.0954\log(\text{CO}_{2}/360)\]</div>
+<p>and in the non-window region</p>
+<div class="math notranslate nohighlight">
+\[\frac{\text{d}\tau^{\text{nw}}}{\text{d}(p/p_{0})} = a_{\text{nw}}+b_{\text{nw}}\log(c_{\text{nw}}q+1)+0.2023\log(\text{CO}_{2}/360)\]</div>
+<p>where the <span class="math notranslate nohighlight">\(a\)</span>, <span class="math notranslate nohighlight">\(b\)</span>, and <span class="math notranslate nohighlight">\(c\)</span>’s are constant absorption coefficients that may be specified in the namelist. The default values for these coefficients were fitted to output from <cite>Santa Barbara DISORT Atmospheric Radiative Tranfer 60</cite> (SBDART) <a class="reference internal" href="../references.html#ricchiazzi1998" id="id7"><span>[Ricchiazzi1998]</span></a>.</p>
+<div class="line-block">
+<div class="line"><strong>Shortwave optical depth</strong></div>
+<div class="line">In the shortwave, the optical depth in the Geen scheme is specified as</div>
+</div>
+<div class="math notranslate nohighlight">
+\[\frac{\text{d}\tau^{\ast}}{\text{d}(p/p_{0})} = a_{\text{sw}}+b_{\text{sw}}(\tau^{\ast})q+c_{\text{sw}}\log(\text{CO}_{2}/360)\]</div>
+<p>where</p>
+<div class="math notranslate nohighlight">
+\[\log[b_{\text{sw}}(\tau^{\ast})]=\frac{0.01887}{\tau^{\ast}+0.009522}+\frac{1.603}{(\tau^{\ast}+0.5194)^{2}}.\]</div>
+<p><span class="math notranslate nohighlight">\(a_{\text{sw}}=0.0596\)</span> and <span class="math notranslate nohighlight">\(c_{\text{sw}}=0.0029\)</span>. As it stands, <span class="math notranslate nohighlight">\(a_{\text{sw}}\)</span>, <span class="math notranslate nohighlight">\(b_{\text{sw}}\)</span>, and <span class="math notranslate nohighlight">\(c_{\text{sw}}\)</span> are hardcoded and not modifiable via the namelist. As with the longwave absorption coefficients, the default values for the absorption coefficients were fitted to SBDART output.</p>
+</div>
+<div class="section" id="incoming-solar-radiation">
+<h2>Incoming solar radiation<a class="headerlink" href="#incoming-solar-radiation" title="Permalink to this headline">¶</a></h2>
+<p>For each of the radiative transfer schemes, diurnally-and-seasonally averaged, and time-dependent options for the incoming solar radiation are avaialable. The user selects whether diurnally-and-seasonally averaged or time-dependent solar forcing is used by setting the namelist option <code class="docutils literal notranslate"><span class="pre">do_seasonal</span></code>.</p>
+<div class="line-block">
+<div class="line"><strong>Diurnally-and-seasonally averaged insolation</strong></div>
+<div class="line">Diurnally-and-seasonally averaged insolation is selected by setting <code class="docutils literal notranslate"><span class="pre">do_seasonal</span> <span class="pre">=</span> <span class="pre">False</span></code>.</div>
+</div>
+<p>For the Frierson, Byrne, and Geen schemes, setting <code class="docutils literal notranslate"><span class="pre">do_seasonal</span> <span class="pre">=</span> <span class="pre">False</span></code> imposes a <span class="math notranslate nohighlight">\(P_{2}\)</span> (second legendre polynomial) insolation profile, which is designed to approximate the Earth’s seasonally averaged insolation distribution. When this option is selected, there is no diurnal cycle (i.e. the forcing is fully time-independent). The incoming solar radiation then takes the following form:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}S &amp;= \frac{S_{0}}{4}[1+\Delta_{S}P_{2}(\theta)+\Delta_{\text{sw}}\sin\theta] \\
+P_{2} &amp;= (1 - 3\sin^{2}\theta)/4\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(S_{0}\)</span> is the solar constant. <span class="math notranslate nohighlight">\(\Delta_{S}\)</span> is used to set the amplitude of the <span class="math notranslate nohighlight">\(P_{2}\)</span> insolation profile between the equator and pole, and <span class="math notranslate nohighlight">\(\Delta_{\text{sw}}\)</span> (default 0) can be used to further modify this with a <span class="math notranslate nohighlight">\(\sin\theta\)</span> profile. When <span class="math notranslate nohighlight">\(\Delta_{\text{sw}}=0\)</span>, the insolation difference between the equator and pole is <span class="math notranslate nohighlight">\(\Delta S= 3\Delta_{S}/4\times S_{0}/4\)</span>.</p>
+<p>For the Schneider giant planet scheme, setting <code class="docutils literal notranslate"><span class="pre">do_seasonal</span> <span class="pre">=</span> <span class="pre">False</span></code> imposes an insolation profile that varies with <span class="math notranslate nohighlight">\(\cos\theta\)</span>,</p>
+<div class="math notranslate nohighlight">
+\[S = \frac{S_{0}}{\pi}\cos\theta\]</div>
+<p>which corresponds to the latitudinal distribution of radiation received by a planet with no obliquity (perpetual equinox). As with the simple <span class="math notranslate nohighlight">\(P_{2}\)</span> insolation for the Frierson, Byrne, and Geen schemes, there is no diurnal cycle.</p>
+<div class="line-block">
+<div class="line"><strong>Time-dependent insolation</strong></div>
+<div class="line">All of the radiation schemes contained in this module can be run with time-dependent insolation, selected by setting <code class="docutils literal notranslate"><span class="pre">do_seasonal</span> <span class="pre">=</span> <span class="pre">True</span></code>. In this case, <code class="docutils literal notranslate"><span class="pre">astronomy_mod</span></code> is used to calculate the zenith angle and planet-star distance at each location and time. This information is then used by the <code class="docutils literal notranslate"><span class="pre">two_stream_gray_rad</span></code> module to calculate the top of atmosphere insolation as a function of time.</div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">astronomy_mod</span></code> calculates the zenith angle and planet-star distance as a function of the following orbital and planetary parameters: obliquity, eccentricity, semi-major axis, longitude of perihelion (w.r.t NH autumn equinox), orbital period, and rotation rate. These options must be specified to <code class="docutils literal notranslate"><span class="pre">astronomy_mod_nml</span></code>. An input parameter in <code class="docutils literal notranslate"><span class="pre">two_stream_gray_rad</span></code>, <code class="docutils literal notranslate"><span class="pre">equinox_day</span></code> determines the time of year when NH autumn equinox occurs.</p>
+<p><code class="docutils literal notranslate"><span class="pre">two_stream_gray_rad</span></code> then calculates the insolation as</p>
+<div class="math notranslate nohighlight">
+\[S = S_{0}\cos\zeta\left(\frac{a}{r}\right)^{2}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\zeta\)</span> is the zenith angle, <span class="math notranslate nohighlight">\(a\)</span> is the semi-major axis of the orbital ellipse, and <span class="math notranslate nohighlight">\(r\)</span> is the time-varying planet-star distance. NB: <span class="math notranslate nohighlight">\((a/r)^{2}\)</span> is called <code class="docutils literal notranslate"><span class="pre">rrsun</span></code> in the code.</p>
+<p>If the user wishes, they may average incoming solar radiation over a period <span class="math notranslate nohighlight">\(\Delta t_{\text{avg}}\)</span> (units <span class="math notranslate nohighlight">\(\text{s}\)</span>). This allows the user to have seasonally varying forcing without a diurnal cycle, for example. To achieve diurnally averaged insolation for a planet with the Earth’s length of day one would set <span class="math notranslate nohighlight">\(\Delta t_{\text{avg}}=86400.0\,\text{s}\)</span>.</p>
+<p>There is also an option to run perpetually on one day by setting the namelist variable <code class="docutils literal notranslate"><span class="pre">solday</span></code>. For example if Northern Hemisphere autumn equinox was set to occur on day <span class="math notranslate nohighlight">\(270\)</span> of a <span class="math notranslate nohighlight">\(360\)</span> day year, then one could run a perpetual solstice simulation by setting <code class="docutils literal notranslate"><span class="pre">solday=180</span></code>. This can be used in conjunction with an appropriate choice for <span class="math notranslate nohighlight">\(\text{d}t_{\text{avg}}\)</span> to remove the diurnal cycle in such an experiment.</p>
+</div>
+<div class="section" id="namelist-options">
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline">¶</a></h2>
+<p>The namelist options for <strong>two_stream_gray_rad_nml</strong> are listed below.</p>
+<p><strong>Namelist option to choose scheme</strong></p>
+<dl class="field-list simple">
+<dt class="field-odd">rad_scheme</dt>
+<dd class="field-odd"><p>String choosing the radiation scheme. Options are <code class="docutils literal notranslate"><span class="pre">'FRIERSON'</span></code>, <code class="docutils literal notranslate"><span class="pre">'BYRNE'</span></code>, <code class="docutils literal notranslate"><span class="pre">'GEEN'</span></code>, <code class="docutils literal notranslate"><span class="pre">'SCHNEIDER'</span></code>. Default option is <code class="docutils literal notranslate"><span class="pre">'FRIERSON'</span></code>.</p>
+</dd>
+</dl>
+<p><strong>Namelist options for Frierson scheme longwave optical depth</strong></p>
+<dl class="field-list simple">
+<dt class="field-odd">ir_tau_eq</dt>
+<dd class="field-odd"><p>Surface longwave optical depth at equator. Default <span class="math notranslate nohighlight">\(6.0\)</span>.</p>
+</dd>
+<dt class="field-even">ir_tau_pole</dt>
+<dd class="field-even"><p>Surface longwave optical depth at pole. Default <span class="math notranslate nohighlight">\(1.5\)</span>.</p>
+</dd>
+<dt class="field-odd">odp</dt>
+<dd class="field-odd"><p>Frierson optical depth scaling parameter <span class="math notranslate nohighlight">\(\kappa\)</span>. Default <span class="math notranslate nohighlight">\(1.0\)</span>.</p>
+</dd>
+<dt class="field-even">linear_tau</dt>
+<dd class="field-even"><p><span class="math notranslate nohighlight">\(f_l\)</span>. Determines partitioning between linear term and <span class="math notranslate nohighlight">\(p^{k}\)</span> term in Frierson longwave optical depth. Default <span class="math notranslate nohighlight">\(0.1\)</span>.</p>
+</dd>
+<dt class="field-odd">wv_exponent</dt>
+<dd class="field-odd"><p>Pressure exponent, <span class="math notranslate nohighlight">\(k\)</span> in definition of optical depth. Default <span class="math notranslate nohighlight">\(4.0\)</span>.</p>
+</dd>
+</dl>
+<p><strong>Namelist options for Byrne scheme longwave optical depth</strong></p>
+<dl class="field-list simple">
+<dt class="field-odd">bog_a</dt>
+<dd class="field-odd"><p>Absorption coefficient <span class="math notranslate nohighlight">\(a\)</span> in Byrne longwave optical depth. Default <span class="math notranslate nohighlight">\(0.8678\)</span>.</p>
+</dd>
+<dt class="field-even">bog_b</dt>
+<dd class="field-even"><p>Absorption coefficient <span class="math notranslate nohighlight">\(b\)</span> in Byrne longwave optical depth. Default 1997.9.</p>
+</dd>
+<dt class="field-odd">bog_mu</dt>
+<dd class="field-odd"><p>Scaling parameter <span class="math notranslate nohighlight">\(\mu\)</span> in Byrne longwave optical depth. Default 1.0.</p>
+</dd>
+</dl>
+<p><strong>Namelist options for Frierson/Byrne scheme shortwave optical depth</strong></p>
+<dl class="field-list simple">
+<dt class="field-odd">atm_abs</dt>
+<dd class="field-odd"><p>Shortwave optical depth at the equator <span class="math notranslate nohighlight">\(\tau_{0e}^{\ast}\)</span>. Default <span class="math notranslate nohighlight">\(0.0\)</span>.</p>
+</dd>
+<dt class="field-even">sw_diff</dt>
+<dd class="field-even"><p>Amplitude of latitudinal optical depth variation <span class="math notranslate nohighlight">\(\Delta\tau^{\ast}\)</span>.  Default <span class="math notranslate nohighlight">\(0.0\)</span>.</p>
+</dd>
+<dt class="field-odd">solar_exponent</dt>
+<dd class="field-odd"><p>Pressure exponent <span class="math notranslate nohighlight">\(k^{\ast}\)</span>. Default value is <span class="math notranslate nohighlight">\(4.0\)</span>.</p>
+</dd>
+</dl>
+<div class="line-block">
+<div class="line"><strong>Namelist options for Geen multi-band scheme</strong></div>
+<div class="line">Note: for the Geen scheme, the input parameters determining the shortwave optical depth are hardcoded and cannot be set from the namelist (see scheme description above for their default values). Thus, only parameters determining the longwave optical depth are listed here.</div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">window</dt>
+<dd class="field-odd"><p>Window fraction <span class="math notranslate nohighlight">\(R^{\text{win}}\)</span> for longwave radiative transfer. Default value <span class="math notranslate nohighlight">\(0.3732\)</span>.</p>
+</dd>
+<dt class="field-even">ir_tau_co2_win</dt>
+<dd class="field-even"><p>Absorption coefficient <span class="math notranslate nohighlight">\(a_{\text{win}}\)</span> in longwave optical depth. Default value <span class="math notranslate nohighlight">\(0.2150\)</span>.</p>
+</dd>
+<dt class="field-odd">ir_tau_wv_win1</dt>
+<dd class="field-odd"><p>Absorption coefficient <span class="math notranslate nohighlight">\(b_{\text{win}}\)</span> in longwave optical depth. Default value <span class="math notranslate nohighlight">\(147.11\)</span>.</p>
+</dd>
+<dt class="field-even">ir_tau_wv_win2</dt>
+<dd class="field-even"><p>Absorption coefficient <span class="math notranslate nohighlight">\(c_{\text{win}}\)</span> in longwave optical depth. Default value <span class="math notranslate nohighlight">\(1.0814\times10^{4}\)</span>.</p>
+</dd>
+<dt class="field-odd">ir_tau_co2</dt>
+<dd class="field-odd"><p>Absorption coefficient <span class="math notranslate nohighlight">\(a_{\text{nw}}\)</span> in longwave optical depth. Default value <span class="math notranslate nohighlight">\(0.1\)</span>.</p>
+</dd>
+<dt class="field-even">ir_tau_wv1</dt>
+<dd class="field-even"><p>Absorption coefficient <span class="math notranslate nohighlight">\(b_{\text{nw}}\)</span> in longwave optical depth. Default value <span class="math notranslate nohighlight">\(23.8\)</span>.</p>
+</dd>
+<dt class="field-odd">ir_tau_wv2</dt>
+<dd class="field-odd"><p>Absorption coefficient <span class="math notranslate nohighlight">\(c_{\text{nw}}\)</span> in longwave optical depth. Default value <span class="math notranslate nohighlight">\(254.0\)</span>.</p>
+</dd>
+</dl>
+<div class="line-block">
+<div class="line"><strong>Namelist options for Schneider giant planet scheme</strong></div>
+<div class="line">Note: for the Schneider scheme, the input parameters determining shortwave and longwave optical depth are currently hardcoded and cannot be set from the namelist (see scheme description above for their default values). Thus, these parameters are not listed here.</div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">diabatic_acce</dt>
+<dd class="field-odd"><p>Multiplicative scaling factor for temperature tendency due to radiation in Schneider scheme. This can be used to speed up model spin-up. It will speed up the model spin-up if greater than 1. Default value is 1.</p>
+</dd>
+</dl>
+<p><strong>Namelist options for incoming solar radiation</strong></p>
+<dl class="field-list simple">
+<dt class="field-odd">do_seasonal</dt>
+<dd class="field-odd"><p>Sets whether insolation is diurnally-and-seasonally averaged (<code class="docutils literal notranslate"><span class="pre">FALSE</span></code>), or time dependent (<code class="docutils literal notranslate"><span class="pre">TRUE</span></code>). Default <code class="docutils literal notranslate"><span class="pre">FALSE</span></code>.</p>
+</dd>
+<dt class="field-even">solar_constant</dt>
+<dd class="field-even"><p>The solar constant <span class="math notranslate nohighlight">\(S_{0}\)</span>. Default value: <span class="math notranslate nohighlight">\(1360.0\,\text{W}\,\text{m}^{-2}\)</span>.</p>
+</dd>
+</dl>
+<p>The following namelist options are used when <code class="docutils literal notranslate"><span class="pre">rad_scheme</span></code> is set to <code class="docutils literal notranslate"><span class="pre">'FRIERSON'</span></code>, <code class="docutils literal notranslate"><span class="pre">'BYRNE'</span></code> or <code class="docutils literal notranslate"><span class="pre">'GEEN'</span></code> and <code class="docutils literal notranslate"><span class="pre">do_seasonal=FALSE</span></code>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">del_sol</dt>
+<dd class="field-odd"><p>Parameter <span class="math notranslate nohighlight">\(\Delta_{S}\)</span> determining <span class="math notranslate nohighlight">\(P_{2}\)</span> insolation amplitude. Default value: <span class="math notranslate nohighlight">\(1.4\)</span>.</p>
+</dd>
+<dt class="field-even">del_sw</dt>
+<dd class="field-even"><p>Parameter <span class="math notranslate nohighlight">\(\Delta_{\text{sw}}\)</span> defining magnitude of <span class="math notranslate nohighlight">\(\sin\theta\)</span> modification to <span class="math notranslate nohighlight">\(P_{2}\)</span> insolation profile. Default value: <span class="math notranslate nohighlight">\(0.0\)</span>.</p>
+</dd>
+</dl>
+<p>The following namelist options are used when <code class="docutils literal notranslate"><span class="pre">do_seasonal=TRUE</span></code>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">use_time_average_coszen</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">TRUE</span></code> or <code class="docutils literal notranslate"><span class="pre">FALSE</span></code>. If <code class="docutils literal notranslate"><span class="pre">TRUE</span></code>, average <span class="math notranslate nohighlight">\(\cos\zeta\)</span> (<span class="math notranslate nohighlight">\(\zeta\)</span> is zenith angle) over the period <code class="docutils literal notranslate"><span class="pre">dt_rad_avg</span></code>. For example, for the Earth’s diurnal period, <code class="docutils literal notranslate"><span class="pre">use_time_average_coszen=TRUE</span></code> and <code class="docutils literal notranslate"><span class="pre">dt_rad_avg=86400.</span></code> would achieve diurnally averaged insolation.</p>
+</dd>
+<dt class="field-even">dt_rad_avg</dt>
+<dd class="field-even"><p>Averaging period (units: seconds) for time-dependent insolation <span class="math notranslate nohighlight">\(\Delta t_{\text{avg}}\)</span>. Default=-1 sets averaging period to model timestep.</p>
+</dd>
+<dt class="field-odd">solday</dt>
+<dd class="field-odd"><p>Day of year to run time-dependent insolation perpetually. If negative, the option to run perpetually on a specific day is not used. Default -10.</p>
+</dd>
+<dt class="field-even">equinox_day</dt>
+<dd class="field-even"><p>Fraction of year [0,1] where Northern Hemisphere autumn equinox occurs. Default = 0.75 (e.g. end of September for 360 day year).</p>
+</dd>
+</dl>
+<p><strong>Namelist options for setting carbon dioxide concentration</strong></p>
+<dl class="field-list simple">
+<dt class="field-odd">do_read_co2</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">TRUE</span></code> or <code class="docutils literal notranslate"><span class="pre">FALSE</span></code>. If <code class="docutils literal notranslate"><span class="pre">TRUE</span></code>, reads time-varying <span class="math notranslate nohighlight">\(\text{CO}_{2}\)</span> concentration from an input file [needs to be 4D (3 spatial dimensions and time), but no spatial variation should be defined (the code only reads in maximum value at a given time)]. Default <code class="docutils literal notranslate"><span class="pre">FALSE</span></code>.</p>
+</dd>
+<dt class="field-even">carbon_conc</dt>
+<dd class="field-even"><p>Prescribed <span class="math notranslate nohighlight">\(\text{CO}_{2}\)</span> (units: ppmv). Used if <code class="docutils literal notranslate"><span class="pre">do_read_co2=FALSE</span></code>. Default value <span class="math notranslate nohighlight">\(360.0\,\text{ppmv}\)</span>.</p>
+</dd>
+<dt class="field-odd">co2_file</dt>
+<dd class="field-odd"><p>Name of <span class="math notranslate nohighlight">\(\text{CO}_{2}\)</span> file to read (note, should be specified without .nc appendix). Default <code class="docutils literal notranslate"><span class="pre">'co2'</span></code>.</p>
+</dd>
+<dt class="field-even">co2_variable_name</dt>
+<dd class="field-even"><p>Name of <span class="math notranslate nohighlight">\(\text{CO}_{2}\)</span> variable in <span class="math notranslate nohighlight">\(\text{CO}_{2}\)</span> file. Default <code class="docutils literal notranslate"><span class="pre">'co2'</span></code>.</p>
+</dd>
+</dl>
+<p><strong>Important parameters not set in two_stream_gray_rad_nml</strong></p>
+<dl class="field-list simple">
+<dt class="field-odd">pstd_mks</dt>
+<dd class="field-odd"><p>This is used as the reference pressure <span class="math notranslate nohighlight">\(P_{0}\)</span> in the Frierson/Byrne/Schneider shortwave optical depth, and the Frierson/Schneider longwave optical depth. It is set in <code class="docutils literal notranslate"><span class="pre">constants_mod_nml</span></code>. Default value is <span class="math notranslate nohighlight">\(10^{5}\,\text{Pa}\)</span>. Note: this should be changed to <span class="math notranslate nohighlight">\(3\times10^{5}\,\text{Pa}\)</span> for the giant planet configuration.</p>
+</dd>
+<dt class="field-even">albedo_value</dt>
+<dd class="field-even"><p>The surface albedo <span class="math notranslate nohighlight">\(\alpha\)</span> used by the Frierson/Byrne/Geen schemes at the lower boundary is set in <code class="docutils literal notranslate"><span class="pre">mixed_layer_nml</span></code>. Default value is <span class="math notranslate nohighlight">\(0.06\)</span> for a simple homogeneous slab ocean surface. The albedo can vary spatially if land or ice is introduced. For more details, see the documentation for <code class="docutils literal notranslate"><span class="pre">mixed_layer_mod</span></code>.</p>
+</dd>
+<dt class="field-odd">flux_heat_gp</dt>
+<dd class="field-odd"><p>A prescribed heat flux through the lower boundary can be added for the giant planet case. This is set in <code class="docutils literal notranslate"><span class="pre">surface_flux_nml</span></code>. Default value is <span class="math notranslate nohighlight">\(5.7\,\text{W}\,\text{m}^{-2}\)</span>.</p>
+</dd>
+</dl>
+<p>The following astronomical parameters are set in <code class="docutils literal notranslate"><span class="pre">astronomy_mod_nml</span></code>. They are used if <code class="docutils literal notranslate"><span class="pre">do_seasonal=True</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">ecc</dt>
+<dd class="field-odd"><p>Orbital eccentricity. Default <span class="math notranslate nohighlight">\(0.0\)</span>.</p>
+</dd>
+<dt class="field-even">obliq</dt>
+<dd class="field-even"><p>Obliquity. Default <span class="math notranslate nohighlight">\(23.439\)</span> degrees.</p>
+</dd>
+<dt class="field-odd">per</dt>
+<dd class="field-odd"><p>Longitude of perihelion (point in orbit when planet is closest to star) with respect to autumnal equinox in Northern Hemisphere. Default <span class="math notranslate nohighlight">\(102.932\)</span> degrees.</p>
+</dd>
+</dl>
+<p>The following astronomical parameters are set in <code class="docutils literal notranslate"><span class="pre">constant_nml</span></code>. They will be used to calculate the diurnal period if <code class="docutils literal notranslate"><span class="pre">do_seasonal=True</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">orbital_period</dt>
+<dd class="field-odd"><p>Orbital period in seconds. Default is <span class="math notranslate nohighlight">\(365.25\times86400.0\,\text{s}\)</span>. Only used if <code class="docutils literal notranslate"><span class="pre">calendar</span></code> is set to <code class="docutils literal notranslate"><span class="pre">'no_calendar'</span></code> in <code class="docutils literal notranslate"><span class="pre">main_nml</span></code>.</p>
+</dd>
+<dt class="field-even">omega</dt>
+<dd class="field-even"><p>Planetary rotation rate in <span class="math notranslate nohighlight">\(s^{-1}\)</span>. Default value is <span class="math notranslate nohighlight">\(7.29\times10^{-5}\,\text{s}^{-1}\)</span></p>
+</dd>
+</dl>
+</div>
+<div class="section" id="diagnostics">
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline">¶</a></h2>
+<p>These are the diagnostics associated with the <code class="docutils literal notranslate"><span class="pre">two_stream_gray_rad</span></code> module.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 40%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Units</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>olr</p></td>
+<td><p>Outgoing longwave radiation.</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{W}\,\text{m}^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>swdn_sfc</p></td>
+<td><p>Absorbed shortwave at surface.</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{W}\,\text{m}^{-2}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p>swdn_toa</p></td>
+<td><p>Shortwave flux down at top of
+atmosphere.</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{W}\,\text{m}^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>net_lw_surf</p></td>
+<td><p>Net upward longwave flux at
+surface.</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{W}\,\text{m}^{-2}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p>lwdn_sfc</p></td>
+<td><p>Longwave flux down at surface.</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{W}\,\text{m}^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>lwup_sfc</p></td>
+<td><p>Longwave flux up at surface.</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{W}\,\text{m}^{-2}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p>tdt_rad</p></td>
+<td><p>Temperature tendency due to
+radiation.</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{K}\,\text{s}^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>tdt_solar</p></td>
+<td><p>Temperature tendency due to
+solar radiation.</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{K}\,\text{s}^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p>flux_rad</p></td>
+<td><p>Total radiative flux (positive
+up).</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{W}\,\text{m}^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>flux_lw</p></td>
+<td><p>Net longwave radiative flux
+(positive up).</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{W}\,\text{m}^{-2}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p>flux_sw</p></td>
+<td><p>Net shortwave radiative flux
+(positive up).</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{W}\,\text{m}^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>coszen</p></td>
+<td><p>Cosine of zenith angle.</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td><p>fracsun</p></td>
+<td><p>Daylight fraction of time
+interval.</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td><p>co2</p></td>
+<td><p>Carbon dioxide concentration.</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{ppmv}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p>lw_dtrans</p></td>
+<td><p>Longwave (non-window)
+transmission.</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td><p>lw_dtrans_win</p></td>
+<td><div class="line-block">
+<div class="line">Longwave window transmission.</div>
+<div class="line">Note: only for <code class="docutils literal notranslate"><span class="pre">'GEEN'</span></code> scheme.</div>
+</div>
+</td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td><p>sw_dtrans</p></td>
+<td><div class="line-block">
+<div class="line">Shortwave transmission.</div>
+<div class="line">Note: only for <code class="docutils literal notranslate"><span class="pre">'GEEN'</span></code> scheme.</div>
+</div>
+</td>
+<td><p>none</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="relevant-modules-and-subroutines">
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline">¶</a></h2>
+<p>Modules relevant to this one include:</p>
+<dl class="field-list simple">
+<dt class="field-odd">astronomy_mod</dt>
+<dd class="field-odd"><p>Module that performs astronomical calcuations used for insolation.</p>
+</dd>
+<dt class="field-even">mixed_layer_mod</dt>
+<dd class="field-even"><p>Surface albedo is set here. This is also where the surface temperature is updated.</p>
+</dd>
+<dt class="field-odd">surface_flux_mod</dt>
+<dd class="field-odd"><p>An internal heat flux for giant planets can be set here.</p>
+</dd>
+<dt class="field-even">constants_mod</dt>
+<dd class="field-even"><p>Planetary rotation rate and orbital period are set here. These are used in the calculations made by <code class="docutils literal notranslate"><span class="pre">astronomy_mod</span></code>.</p>
+</dd>
+</dl>
+<p>Other radiative transfer schemes are included in the following modules:</p>
+<dl class="field-list simple">
+<dt class="field-odd">rrtm_radiation</dt>
+<dd class="field-odd"><p>Correlated-<span class="math notranslate nohighlight">\(k\)</span> scheme tuned for Earth-like applications.</p>
+</dd>
+<dt class="field-even">socrates_interface_mod</dt>
+<dd class="field-even"><p>Interface for flexible Met-Office correlated-<span class="math notranslate nohighlight">\(k\)</span> scheme used for Earth-like and exoplanetary atmospheres.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<div class="line-block">
+<div class="line"><a class="reference internal" href="../references.html#byrne2013" id="id8"><span>[Byrne2013]</span></a></div>
+<div class="line"><a class="reference internal" href="../references.html#frierson2006a" id="id9"><span>[Frierson2006a]</span></a></div>
+<div class="line"><a class="reference internal" href="../references.html#geen2016" id="id10"><span>[Geen2016]</span></a></div>
+<div class="line"><a class="reference internal" href="../references.html#schneider2009" id="id11"><span>[Schneider2009]</span></a></div>
+<div class="line"><a class="reference internal" href="../references.html#vallisetal2018" id="id12"><span>[VallisEtAl2018]</span></a></div>
+</div>
+</div>
+<div class="section" id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h2>
+<p>This documentation was written by Neil Lewis, peer reviewed by Ruth Geen, and quality controlled by Matthew Henry.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="convection_simple_betts_miller.html" class="btn btn-neutral float-right" title="Convection scheme: Simple Betts-Miller" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="idealised_moist_phys.html" class="btn btn-neutral float-left" title="Moist physics driver: idealized_moist_phys.F90" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, the Isca development team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

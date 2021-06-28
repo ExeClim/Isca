@@ -1,0 +1,323 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Remote Access &mdash; isca dev documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> isca
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/index.html">Components of Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">isca</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Remote Access</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/remote_access.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="remote-access">
+<h1>Remote Access<a class="headerlink" href="#remote-access" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>This is a guide for how to edit remote files on a local text editor via port-
+fowarding. By the end you should know:</p>
+<ul class="simple">
+<li><p>how to quickly login to your remote server using an SSH config file</p></li>
+<li><p>how to edit remote files in a local text editor through <code class="docutils literal notranslate"><span class="pre">rmate</span></code></p></li>
+<li><p>how to edit remote python files in a local <code class="docutils literal notranslate"><span class="pre">jupyter</span></code> environment</p></li>
+</ul>
+</div>
+<div class="section" id="simplifying-logins-and-port-fowarding">
+<h2>Simplifying logins and port-fowarding<a class="headerlink" href="#simplifying-logins-and-port-fowarding" title="Permalink to this headline">¶</a></h2>
+<p>If you use a Unix-based operating system on your personal computer, you can make use
+of an SSH config file to create shortcuts to your frequently used remote computers. We will take this one step further to simplify port-fowarding, a method which allows a user to redirect data from a specified remote host and port, through a secure tunnel, to a specified local port. Port-fowarding is helfpul because it will enable us to edit remote files locally.</p>
+<p>As an example without any fancy tricks, let’s set up an SSH tunnel that maps <code class="docutils literal notranslate"><span class="pre">localhost</span></code> port 3039 on my local machine to 3039 on my remote machine (the number is arbitrary as long as its between 1024 and 49150): <code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">ssh</span> <span class="pre">-l</span> <span class="pre">localhost:3039:host:3039</span> <span class="pre">user&#64;host</span></code>. You will then be required to enter in your password. This is cumbersome to repeat everytime we log in. Our goal will be to shorten the command to : <code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">ssh</span> <span class="pre">hostalias</span></code> and without having to enter in your password. We give some instructions below:</p>
+<div class="section" id="set-up-an-ssh-config-file">
+<h3>Set up an SSH config file<a class="headerlink" href="#set-up-an-ssh-config-file" title="Permalink to this headline">¶</a></h3>
+<p>In the home directory of your <strong>local machine</strong>, create a new directory called <code class="docutils literal notranslate"><span class="pre">.ssh</span></code> if it does not already exist. Navigate to this directory            and create file called <code class="docutils literal notranslate"><span class="pre">config</span></code>.
+Put in the following contents (making sure to replace the text surrounded by <code class="docutils literal notranslate"><span class="pre">**double</span> <span class="pre">asterisks**</span></code> with your own information):</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">Host</span> <span class="o">**</span><span class="n">hostalias</span><span class="o">**</span>
+   <span class="n">Hostname</span> <span class="o">**</span><span class="n">hostname</span><span class="o">**</span>
+   <span class="n">User</span> <span class="o">**</span><span class="n">username</span><span class="o">**</span>
+</pre></div>
+</div>
+<p>By using an SSH config file, secure methods for copying (e.g. <code class="docutils literal notranslate"><span class="pre">scp</span></code> or <code class="docutils literal notranslate"><span class="pre">sftp</span></code>) can now use the same host aliases. Let’s say I want to copy a file from my local machine to my remove machine. This is now as simple as: <code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">scp</span> <span class="pre">localfile.txt</span> <span class="pre">hostalias:/path/to/directory</span></code>.</p>
+</div>
+<div class="section" id="set-up-an-ssh-key-pair">
+<h3>Set up an SSH key pair<a class="headerlink" href="#set-up-an-ssh-key-pair" title="Permalink to this headline">¶</a></h3>
+<p>If your local machine is a Mac, you can eliminate the need to enter a password every time you want to log in by using an SSH key pair. To do this, on your <strong>local machine</strong> navigate to your <code class="docutils literal notranslate"><span class="pre">~/.ssh</span></code> directory and enter the following command to generate a set of RSA keys: <code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">ssh-keygen</span> <span class="pre">-t</span> <span class="pre">rsa</span></code>. You will then be prompted to supply a filename and a password. For the file name I recommend <code class="docutils literal notranslate"><span class="pre">id_rsa_hostalias</span></code> and for the password I recommend it to be the same as your remote machine’s password. If you use a Mac, the operating system can use its internal keychain to remember your password, meaning you won’t need to type it in every time you log in!</p>
+<p>This command will generate 2 files:the one with the <code class="docutils literal notranslate"><span class="pre">.pub</span></code> extension is the “public key”, the one without the <code class="docutils literal notranslate"><span class="pre">.pub</span></code> extension is the “private key”. You keep your private key strictly on your local machine. It is a good idea to change the permissions of the private key file. You need to copy your public key to the remote machine you would like to use the key pair to log in to. First create the <code class="docutils literal notranslate"><span class="pre">~/.ssh</span></code> on your <strong>remote machine</strong>. Then from your <strong>local machine</strong> enter: <code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">scp</span> <span class="pre">~/.ssh/id_rsa_hostalias.pub</span> <span class="pre">hostalias:~/.ssh/</span></code>. After copying the public key over to <code class="docutils literal notranslate"><span class="pre">hostalias</span></code>, you need to create an <code class="docutils literal notranslate"><span class="pre">authorized_keys</span></code> file in your <code class="docutils literal notranslate"><span class="pre">~/.ssh/</span></code> on your <strong>remote machine</strong>.</p>
+<p>Now from a terminal window on your <strong>local machine</strong>, you can try logging in to <code class="docutils literal notranslate"><span class="pre">hostalias</span></code> with the following command: <code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">ssh</span> <span class="pre">-i</span> <span class="pre">~/.ssh/id_rsa_hostalias</span> <span class="pre">hostalias</span></code>. This will prompt you for the password you specified upon creating your key pair using <code class="docutils literal notranslate"><span class="pre">ssh-keygen</span></code>. To always make use of your private key when logging in to <code class="docutils literal notranslate"><span class="pre">hostalias</span></code>, add the following to your <code class="docutils literal notranslate"><span class="pre">config</span></code> file on your <strong>local machine</strong>:</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">Hostname</span> <span class="o">**</span><span class="n">hostname</span><span class="o">**</span>
+   <span class="n">User</span> <span class="o">**</span><span class="n">username</span><span class="o">**</span>
+   <span class="n">LocalForward</span> <span class="mi">3039</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">3039</span>
+   <span class="n">IdentityFile</span> <span class="o">**~/.</span><span class="n">ssh</span><span class="o">/</span><span class="n">id_rsa_hostname</span><span class="o">**</span>
+   <span class="n">UseKeychain</span> <span class="n">yes</span>
+   <span class="n">AddKeysToAgent</span> <span class="n">Yes</span>
+</pre></div>
+</div>
+<p>You should not be able to log in simply by typing <code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">ssh</span> <span class="pre">hostalias</span></code>. Congratulations!</p>
+</div>
+</div>
+<div class="section" id="edit-remote-files-in-a-local-text-editor-using-rmate">
+<h2>Edit remote files in a local text editor using <code class="docutils literal notranslate"><span class="pre">rmate</span></code><a class="headerlink" href="#edit-remote-files-in-a-local-text-editor-using-rmate" title="Permalink to this headline">¶</a></h2>
+<p>As an alternative to remote-based text editors such as <code class="docutils literal notranslate"><span class="pre">vi</span></code> and <code class="docutils literal notranslate"><span class="pre">emacs</span></code>, we can
+use port-fowarding to set up a <a class="reference external" href="https://atom.io">local-based text editor like Atom</a> which includes features such as syntax highlighting and code completion. For instructions to install <code class="docutils literal notranslate"><span class="pre">rmate</span></code> on your <strong>local machine</strong>, <a class="reference external" href="https://github.com/textmate/rmate">click here</a>. Then to specifically use Atom to edit remote files, <a class="reference external" href="https://atom.io/packages/remote-atom">click here</a>. You will need to add the following line to your <code class="docutils literal notranslate"><span class="pre">~/.ssh/config</span></code> file: <code class="docutils literal notranslate"><span class="pre">RemoteForward</span> <span class="pre">52698</span> <span class="pre">localhost:52698</span></code>.</p>
+</div>
+<div class="section" id="edit-remote-python-files-in-a-jupyter-environment">
+<h2>Edit remote python files in a <code class="docutils literal notranslate"><span class="pre">jupyter</span></code> environment<a class="headerlink" href="#edit-remote-python-files-in-a-jupyter-environment" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">jupyter</span></code> environment is a great environent for data exploration and integrating
+your figures inline with your code. To open your first Jupyter notebook, log in to your <strong>remote machine</strong> and type: <code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">jupyter</span> <span class="pre">lab</span> <span class="pre">--no-browser</span> <span class="pre">--port=3039</span></code>.</p>
+<p>To make it even quicker, you can type the following on your <strong>local machine</strong>: <code class="docutils literal notranslate"><span class="pre">$ssh</span> <span class="pre">remotehost</span> <span class="pre">&quot;jupyter</span> <span class="pre">lab</span> <span class="pre">--no-browser</span> <span class="pre">--port=3039</span></code>. This should function because of all the work we put in during the port forwarding section. To shorten this command, add an alias to your <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code> file on your <strong>local machine</strong>. I personally use the alias <code class="docutils literal notranslate"><span class="pre">rjlab</span></code>.</p>
+</div>
+<div class="section" id="recap">
+<h2>Recap<a class="headerlink" href="#recap" title="Permalink to this headline">¶</a></h2>
+<p>Your final <code class="docutils literal notranslate"><span class="pre">~/.ssh/config</span></code> file should look like this (making sure to replace the text surrounded by <code class="docutils literal notranslate"><span class="pre">**double</span> <span class="pre">asterisks**</span></code> with your own information):</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">Host</span> <span class="o">**</span><span class="n">hostalias</span><span class="o">**</span>
+   <span class="n">Hostname</span> <span class="o">**</span><span class="n">hostname</span><span class="o">**</span>
+   <span class="n">User</span> <span class="o">**</span><span class="n">username</span><span class="o">**</span>
+
+<span class="n">Hostname</span> <span class="o">**</span><span class="n">hostname</span><span class="o">**</span>
+   <span class="n">User</span> <span class="o">**</span><span class="n">username</span><span class="o">**</span>
+   <span class="n">LocalForward</span> <span class="mi">3039</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">3039</span>
+   <span class="n">RemoteForward</span> <span class="mi">52698</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">52698</span>
+   <span class="n">IdentityFile</span> <span class="o">**~/.</span><span class="n">ssh</span><span class="o">/</span><span class="n">id_rsa_hostname</span><span class="o">**</span>
+   <span class="n">UseKeychain</span> <span class="n">yes</span>
+   <span class="n">AddKeysToAgent</span> <span class="n">Yes</span>
+</pre></div>
+</div>
+<p><strong>Final Notes:</strong></p>
+<ul class="simple">
+<li><p>Do not use this with VPN, use ithome aka hashbang as proxy. If the connection is interrupted you can still reconnect, assuming the jupyter process is still running. But make sure not to leave zombie jupyter processes with open ports on remote hosts!</p></li>
+<li><p>Remember the port numbers chosen are arbitary. If you choose the same number as someone else on your network, their files may open up on your computer and vice versa!</p></li>
+</ul>
+</div>
+<div class="section" id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h2>
+<p>This documentation was written by Brett McKim, peer reviewed by Denis Sergeev, and quality controlled by Ross Castle.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, the Isca development team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,366 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Trip Tests &mdash; isca dev documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="References" href="../references.html" />
+    <link rel="prev" title="Testing Isca" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> isca
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/index.html">Components of Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Testing Isca</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Trip Tests</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#why-do-we-ask-you-to-run-the-trip-tests">Why do we ask you to run the trip tests?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-do-i-run-the-trip-tests">How do I run the trip tests?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-do-i-meet-the-trip-test-requirements-for-a-pull-request">How do I meet the trip test requirements for a pull request?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-output">Example output</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#faqs">FAQs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isca</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Testing Isca</a> &raquo;</li>
+        
+      <li>Trip Tests</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/testing/trip_test.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="trip-tests">
+<h1>Trip Tests<a class="headerlink" href="#trip-tests" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>The primary purpose of the trip tests is to identify if proposed changes to the Isca master result in it giving different results for a range of test cases.</p>
+<p>The trip test program takes two commit IDs as input, and compares the results of Isca’s test cases using the two versions of Isca that are defined by the commit IDs. A comparison is then made between the output from each of the test cases. The output of the program shows which test cases produced bit-wise identical results and which did not.</p>
+<p><strong>Please note</strong> that this guide assumes some knowledge of the <cite>git</cite> version control system. If you get stuck on this, there are lots of free guides online to using <cite>git</cite>, e.g. <a class="reference external" href="https://guides.github.com/introduction/git-handbook/">GitHub’s Git Handbook</a>.</p>
+</div>
+<div class="section" id="why-do-we-ask-you-to-run-the-trip-tests">
+<h2>Why do we ask you to run the trip tests?<a class="headerlink" href="#why-do-we-ask-you-to-run-the-trip-tests" title="Permalink to this headline">¶</a></h2>
+<p>We are very keen for people to contribute their modifications and enhancements back into Isca’s master - for instructions on how to contribute, see the <a class="reference internal" href="../contributing.html"><span class="doc">Contributor’s Guide</span></a> . As part of this process, before we accept your modifications, we require you to run the trip tests. By running these tests, we can check whether your modifications changes the results of any of the test cases.</p>
+<p>We want to check this for three principal reasons:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>If you add a new feature, we want to make sure it is turned off by default. This is so that an existing Isca user who doesn’t know about the feature isn’t forced to use it when they upgrade to the newest Isca version. This prevents confusion where two versions of Isca give different answers for the same experimental configuration.</p></li>
+<li><p>If your modification contains a bug fix, then this will likely alter Isca’s output. If this is the case, we want to know which of test cases are affected by your bug fix.</p></li>
+<li><p>You may think your modifications won’t have changed Isca’s results, but we want to make sure that’s the case. The trip tests are very good at highlighting unexpected consequences of your changes, and help us keep to a high-standard of reproducibility.</p></li>
+</ol>
+</div></blockquote>
+</div>
+<div class="section" id="how-do-i-run-the-trip-tests">
+<h2>How do I run the trip tests?<a class="headerlink" href="#how-do-i-run-the-trip-tests" title="Permalink to this headline">¶</a></h2>
+<p>The first thing to do before you run the trip tests is to decide on which two commit IDs you would like to compare, and then obtain their commit IDs. When you submit a pull request, we ask you to use the current HEAD commit of Isca’s master branch as one of the commits, and the HEAD of your pull-requested branch as the other. If you are using the trip tests as a testing tool, then you can choose any two commits you like.</p>
+<p>To run the trip tests, navigate to <code class="docutils literal notranslate"><span class="pre">${GFDL_BASE}/exp/test_cases/trip_test/</span></code>. From this directory the trip tests are run using the command-line interface. The simplest example call is</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">trip_test_command_line</span> <span class="mi">155661</span><span class="n">f</span> <span class="n">ec29bf3</span>
+</pre></div>
+</div>
+<p>This would run all of the test cases, comparing the results using commit ID <code class="docutils literal notranslate"><span class="pre">155661f</span></code> with commit ID <code class="docutils literal notranslate"><span class="pre">ec29bf3</span></code>. These commit IDs are for illustration purposes only. Please use two commit IDs relevant for your testing (i.e. the current HEAD of the Isca master and the HEAD of your branch).</p>
+<p>The optional arguments and their defaults are</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">e</span> <span class="s1">&#39;all&#39;</span> <span class="o">-</span> <span class="n">Runs</span> <span class="nb">all</span> <span class="n">test</span> <span class="n">experiments</span>
+<span class="o">-</span><span class="n">n</span> <span class="mi">4</span>     <span class="o">-</span> <span class="n">Uses</span> <span class="mi">4</span> <span class="n">cores</span> <span class="n">to</span> <span class="n">run</span> <span class="n">Isca</span>
+<span class="o">-</span><span class="n">r</span> <span class="s1">&#39;git@github.com:ExeClim/Isca&#39;</span> <span class="o">-</span> <span class="n">Uses</span> <span class="n">the</span> <span class="n">online</span> <span class="n">Isca</span> <span class="n">repo</span> <span class="n">to</span> <span class="n">checkout</span> <span class="n">commits</span> <span class="kn">from</span>
+</pre></div>
+</div>
+<p>To specify a subset of the test cases, use the <code class="docutils literal notranslate"><span class="pre">-e</span></code> option</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">trip_test_command_line</span> <span class="mi">155661</span><span class="n">f</span> <span class="n">ec29bf3</span> <span class="o">-</span><span class="n">e</span> <span class="s1">&#39;axisymmetric&#39;</span> <span class="s1">&#39;bucket_model&#39;</span> <span class="s1">&#39;frierson&#39;</span>
+</pre></div>
+</div>
+<p><strong>Please note</strong> that when you submit a pull request, you need to show results for <em>all</em> the test cases. Even if you think your modifications will not affect another test case, the trip tests are an easy way of making sure. For nearly all pull requests, we will require all the trip tests to pass. See <a class="reference internal" href="#faqs"><span class="std std-ref">FAQs</span></a>. The option for running a subset of test cases is intended for subsequent testing if, for example, you find only one test fails, and you want to spend more focussed time investigating which commit caused the failure.</p>
+<p>To change the number of cores Isca is run on, use the <code class="docutils literal notranslate"><span class="pre">-n</span></code> option.</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">trip_test_command_line</span> <span class="mi">155661</span><span class="n">f</span> <span class="n">ec29bf3</span> <span class="o">-</span><span class="n">e</span> <span class="s1">&#39;axisymmetric&#39;</span> <span class="s1">&#39;bucket_model&#39;</span> <span class="s1">&#39;frierson&#39;</span> <span class="o">-</span><span class="n">n</span> <span class="mi">4</span>
+</pre></div>
+</div>
+<p>To specify the github repo used for the tests (e.g. your fork rather than <code class="docutils literal notranslate"><span class="pre">ExeClim/Isca</span></code>), use the <code class="docutils literal notranslate"><span class="pre">-r</span></code> option</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">trip_test_command_line</span> <span class="mi">155661</span><span class="n">f</span> <span class="n">ec29bf3</span> <span class="o">-</span><span class="n">e</span> <span class="s1">&#39;axisymmetric&#39;</span> <span class="s1">&#39;bucket_model&#39;</span> <span class="s1">&#39;frierson&#39;</span> <span class="o">-</span><span class="n">r</span> <span class="n">git</span><span class="nd">@github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">YOUR_GITHUB_USERNAME</span><span class="o">/</span><span class="n">Isca</span>
+</pre></div>
+</div>
+<p><strong>Please note that by default the trip tests will try to connect to the ExeClim/Isca repository using SSH</strong>. If you use HTTPs please use the option <code class="docutils literal notranslate"><span class="pre">-r</span> <span class="pre">https://github.com/ExeClim/Isca.git</span></code>.</p>
+</div>
+<div class="section" id="how-do-i-meet-the-trip-test-requirements-for-a-pull-request">
+<h2>How do I meet the trip test requirements for a pull request?<a class="headerlink" href="#how-do-i-meet-the-trip-test-requirements-for-a-pull-request" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Identify the commit ID of the HEAD of Isca’s master branch, and the HEAD of your pull-requested branch.</p></li>
+<li><p>Run the trip test for all of the test cases (default) using these two commit IDs.</p></li>
+<li><p>Post the summary output in your pull request (see below for example summary output).</p></li>
+<li><p>Mark your pull request with the label <code class="docutils literal notranslate"><span class="pre">trip</span> <span class="pre">tests</span> <span class="pre">passing</span></code> if all of the tests pass. Mark your pull request with <code class="docutils literal notranslate"><span class="pre">changes</span> <span class="pre">previous</span> <span class="pre">results</span></code> if some of the trip tests fail.</p></li>
+</ol>
+<p>If the tests all pass then your pull request should be accepted. If some of the tests fail then <em>please investigate why they have failed</em>. In general we will require all the tests to pass for a pull request to be accepted. If, however, you have fixed a bug and this causes a test case to fail, or similarly you think the results should change, then please make your case for this in the pull request.</p>
+<p><strong>Please note</strong> that you are required to run the trip tests when submitting a pull request that changes Isca’s model code. Updates to the python front-end will be excluded from this requirement.</p>
+</div>
+<div class="section" id="example-output">
+<h2>Example output<a class="headerlink" href="#example-output" title="Permalink to this headline">¶</a></h2>
+<p>Running the command</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">trip_test_command_line</span> <span class="mi">155661</span><span class="n">f</span> <span class="n">ec29bf3</span>
+</pre></div>
+</div>
+<p>Produces the following summary output</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">Results</span> <span class="k">for</span> <span class="nb">all</span> <span class="n">of</span> <span class="n">the</span> <span class="n">test</span> <span class="n">cases</span> <span class="n">ran</span> <span class="n">comparing</span> <span class="mi">155661</span><span class="n">f</span> <span class="ow">and</span> <span class="n">ec29bf3</span> <span class="n">are</span> <span class="k">as</span> <span class="n">follows</span><span class="o">...</span>
+<span class="n">variable_co2_grey</span> <span class="p">:</span> <span class="k">pass</span>
+<span class="n">realistic_continents_fixed_sst</span> <span class="p">:</span> <span class="k">pass</span>
+<span class="n">realistic_continents_variable_qflux</span> <span class="p">:</span> <span class="k">pass</span>
+<span class="n">held_suarez</span> <span class="p">:</span> <span class="k">pass</span>
+<span class="n">variable_co2_rrtm</span> <span class="p">:</span> <span class="k">pass</span>
+<span class="n">bucket_model</span> <span class="p">:</span> <span class="n">fail</span>
+<span class="n">top_down_test</span> <span class="p">:</span> <span class="k">pass</span>
+<span class="n">frierson</span> <span class="p">:</span> <span class="k">pass</span>
+<span class="n">axisymmetric</span> <span class="p">:</span> <span class="k">pass</span>
+<span class="n">MiMA</span> <span class="p">:</span> <span class="k">pass</span>
+<span class="n">giant_planet</span> <span class="p">:</span> <span class="k">pass</span>
+<span class="n">Nightmare</span><span class="p">,</span> <span class="n">some</span> <span class="n">tests</span> <span class="n">have</span> <span class="n">failed</span>
+</pre></div>
+</div>
+<p>The bucket test is the only one that fails in this instance. This is because the bucket model formulation was changed between these two commits, and so it is expected that the results with the two commits will differ. However, we note that the other tests have their results unchanged, meaning this is a safe modification to the code, and the pull request is likely to be approved. Any unexpected failures should be investigated before submitting a pull-request.</p>
+</div>
+<div class="section" id="faqs">
+<span id="id1"></span><h2>FAQs<a class="headerlink" href="#faqs" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><strong>What happens if the trip tests fail for my modifications?</strong> If some of the trip tests fail, please investigate why you think this might be. If the tests fail on an isolated test case that you haven’t used before, please post the results in your pull request and we can discuss what is best to do. We will accept some pull requests that fail the trip tests, but we will need to understand why first.</p></li>
+<li><p><strong>When I submit a pull request, which two commit IDs should I use?</strong> Please use the commit ID of the current HEAD of Isca’s master branch as one, and the HEAD of your pull-requested branch as the other. <em>Please note that in order for this to work, you will have to use the</em> <cite>-r</cite> <em>option to select your own fork, as described above.</em></p></li>
+<li><p><strong>How do I find a commit ID?</strong> The commit ID is a 40-character string of letters and numbers associated with the commit, which you can find on GitHub under <cite>Commits</cite> or using <cite>git log</cite> on the command line. You require only the first 7 characters of the ID for these tests.</p></li>
+<li><p><strong>How long do the trip tests take to run?</strong> The code is re-compiled several times during the trip tests, so the majority of time will be spent compiling. Each test case is only run for a few days, so once the code has compiled it shouldn’t take more than 30 minutes or so, depending on how many cores you’re using. You can increase the number of cores by using the <code class="docutils literal notranslate"><span class="pre">-n</span></code> option.</p></li>
+<li><p><strong>I am getting an error message saying that git cannot find my commit ID - how do I fix this?</strong> If you are specifying commit IDs that are present on your fork but not in the ExeClim version of Isca, you will need to specify your own fork as the repository. To do this, use the <code class="docutils literal notranslate"><span class="pre">-r</span></code> option, e.g. <code class="docutils literal notranslate"><span class="pre">-r</span> <span class="pre">git&#64;github.com:YOUR_GITHUB_USERNAME/Isca</span></code>. Note that you can specify the repository location using the HTTPS option, or the SSH option depending on your preference.</p></li>
+<li><p><strong>Do I have to connect to GitHub to run the trip tests, or can I do it all locally?</strong> It is possible to run the trip tests locally. Use the option <code class="docutils literal notranslate"><span class="pre">-r</span> <span class="pre">PATH_TO_MY_LOCAL_REPO</span></code> and it should work fine.</p></li>
+<li><p><strong>Which of the test cases does the trip tests run</strong>? A list of the available test cases can be found in the <code class="docutils literal notranslate"><span class="pre">list_all_test_cases_implemented_in_trip_test</span></code> function in <code class="docutils literal notranslate"><span class="pre">${GFDL_BASE}/exp/test_cases/trip_test/trip_test_functions.py</span></code>.</p></li>
+<li><p><strong>I haven’t setup Socrates - does that matter?</strong> Socrates is an optional radiation scheme that Isca can be complied with, but is not by default (see <a class="reference internal" href="../modules/socrates.html"><span class="doc">SOCRATES Radiation Scheme Interface</span></a>). So you are not required to run the Socrates test case if you have not set it up - just post the results you can obtain.</p></li>
+<li><p><strong>If I add a new test case to the</strong> <code class="docutils literal notranslate"><span class="pre">test_cases</span></code> <strong>folder, how do I add it to the trip tests?</strong> In the <code class="docutils literal notranslate"><span class="pre">get_nml_diag</span></code> function in <code class="docutils literal notranslate"><span class="pre">trip_test_functions.py</span></code>, you will see several similar calls to import the namelist dictionary from each of the existing test cases. Just copy this syntax and edit it for your test case. You can then add the name of your test case to the list in the <code class="docutils literal notranslate"><span class="pre">list_all_test_cases_implemented_in_trip_test</span></code> function, and it should be run by default. <em>Please note</em> that if you add a new trip test that uses new features, it will fail the trip test because the existing Isca master won’t be able to run it. This is OK, and you should highlight this when submitting the pull request.</p></li>
+<li><p><strong>I have defined a new</strong> <code class="docutils literal notranslate"><span class="pre">codebase</span></code> <strong>object for my test case. How can I get the trip test to select it?</strong> In the <code class="docutils literal notranslate"><span class="pre">conduct_comparison_on_test_case</span></code> the codebase object is selected. You can edit this section accordingly.</p></li>
+<li><p><strong>Why don’t you compare the results of the test cases to some standard output, rather than comparing the results from two commits?</strong> We do this because different compilers and different hardware can produce slightly different results for a given test case. Therefore comparing to standard output is a much more difficult test for users to pass. We therefore compare the results of two different Isca versions <em>on the same hardware and with the same compilers</em> to make the tests easier to understand.</p></li>
+</ul>
+</div>
+<div class="section" id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h2>
+<p>This documentation was written by Stephen Thomson, peer reviewed by Penelope Maher, and quality controlled by Ross Castle.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../references.html" class="btn btn-neutral float-right" title="References" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Testing Isca" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, the Isca development team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

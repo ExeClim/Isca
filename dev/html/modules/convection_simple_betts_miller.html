@@ -1,0 +1,374 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Convection scheme: Simple Betts-Miller &mdash; isca dev documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "document", "processHtmlClass": "math|output_area"}}</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="SOCRATES Radiation Scheme Interface" href="socrates.html" />
+    <link rel="prev" title="Radiative transfer: Simple gray and multi-band radiation schemes." href="two_stream_gray_rad.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> isca
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Components of Isca</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Experiment configuration scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamics.html">Isca’s dynamical core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physics.html">Isca’s physical parameterisations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Changing Isca output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idealised_moist_phys.html">Moist physics driver: idealized_moist_phys.F90</a></li>
+<li class="toctree-l2"><a class="reference internal" href="two_stream_gray_rad.html">Radiative transfer: Simple gray and multi-band radiation schemes.</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Convection scheme: Simple Betts-Miller</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logic-of-the-routine">Logic of the routine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#namelist-options">Namelist options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#relevant-modules-and-subroutines">Relevant modules and subroutines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#references">References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="socrates.html">SOCRATES Radiation Scheme Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isca</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Components of Isca</a> &raquo;</li>
+        
+      <li>Convection scheme: Simple Betts-Miller</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/convection_simple_betts_miller.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="convection-scheme-simple-betts-miller">
+<h1>Convection scheme: Simple Betts-Miller<a class="headerlink" href="#convection-scheme-simple-betts-miller" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>The simplified Betts-Miller (SBM) scheme is a moist adjustment convection scheme developed by <a class="reference internal" href="../references.html#frierson2007" id="id1"><span>[Frierson2007]</span></a> and the modifications described in <a class="reference internal" href="../references.html#ogormanschneider2008" id="id2"><span>[OGormanSchneider2008]</span></a>. The simple Betts-Miller scheme is a widely-used convection scheme in Isca. The key purpose of the routine is to output a moisture tendency <code class="docutils literal notranslate"><span class="pre">deltaq</span></code>, a temperature tendency <code class="docutils literal notranslate"><span class="pre">deltaT</span></code>, and a convective rainfall amount <code class="docutils literal notranslate"><span class="pre">rain</span></code>. The scheme has both deep convection and non-precipitating shallow convection.</p>
+</div>
+<div class="section" id="logic-of-the-routine">
+<h2>Logic of the routine<a class="headerlink" href="#logic-of-the-routine" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Perform a particle ascent to calculate the environmental vertical profiles of moisture and temperature, and convective available potential energy (CAPE) within a grid cell.</p></li>
+<li><p>Test if the convection scheme should trigger. The convection scheme will trigger when <span class="math notranslate nohighlight">\(CAPE&gt;0\)</span>. This means that if the grid point has positive CAPE, then the convention scheme will try to generate rain. If the CAPE is negative, then a parcel will not be buoyant and convection can not occur.</p></li>
+<li><p>Calculate the temperature (<span class="math notranslate nohighlight">\(T_{ref}\)</span>) and moisture reference profiles (<span class="math notranslate nohighlight">\(q_{ref}\)</span>). Think of these profiles as the desirable parcel properties for the atmosphere to be stable (with respect to convection).</p></li>
+<li><p>Calculate the first guess reference profiles using equations 1-2 from <a class="reference internal" href="../references.html#frierson2007" id="id3"><span>[Frierson2007]</span></a>:</p></li>
+</ol>
+<p><span class="math notranslate nohighlight">\(\partial q = - \frac{q-q_{ref}}{\tau}\)</span>,</p>
+<p><span class="math notranslate nohighlight">\(\partial T = - \frac{T-T_{ref}}{\tau}\)</span>.</p>
+<p>These profiles are called <em>first guess</em> profiles as they will later be corrected (to conserve enthalpy).</p>
+<ol class="arabic simple" start="5">
+<li><p>Determine if deep convection, shallow convection or no convection occurs in the grid cell (see Section 2 of <a class="reference internal" href="../references.html#frierson2007" id="id4"><span>[Frierson2007]</span></a> for how these are separated). If the parcel profile is unstable, with respect to the reference profile, it will adjust the profiles and generate rain. This adjustment occurs for both the moisture and temperature profiles so that rain is generated when the environment has excess moisture or is cooler compared to the reference profiles).</p></li>
+<li><p>If deep or shallow convection occurs, test if the vertical integral of enthalpy (<span class="math notranslate nohighlight">\(H\)</span>) is conserved (it usually is not) and adjust the rainfall and tendencies to conserve enthalpy. Note that <span class="math notranslate nohighlight">\(\partial H = -\partial T + \frac{L}{cp}\partial q\)</span>.</p></li>
+<li><p>The final rainfall amount is given by the enthalpy corrected vertical integral of the moisture tendency. The updated tendencies (no longer called <em>first-guess</em>) and rainfall are then passed back to <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys.F90</span></code> along with other diagnostics.</p></li>
+</ol>
+</div>
+<div class="section" id="namelist-options">
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline">¶</a></h2>
+<p>There are five optional namelist variables.</p>
+<p>The first two are directly relevant to how the tendency equations and precipitation are calculated</p>
+<dl class="field-list simple">
+<dt class="field-odd">tau_bm</dt>
+<dd class="field-odd"><p>The relaxation time (<span class="math notranslate nohighlight">\(\tau\)</span>) with the default value of <span class="math notranslate nohighlight">\(7200\)</span> <span class="math notranslate nohighlight">\(s\)</span>.</p>
+</dd>
+<dt class="field-even">rhbm</dt>
+<dd class="field-even"><p>The critical Relative Humidity (RH) used to calculate the moisture reference profile (<span class="math notranslate nohighlight">\(RH_{SBM}\)</span>) with the default value of <span class="math notranslate nohighlight">\(0.8\)</span>.</p>
+</dd>
+</dl>
+<p>The final three are used to construct the look up table for calculating the lifting condensation level (LCL).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Tmin</dt>
+<dd class="field-odd"><p>The minimum look up table value with the default of <span class="math notranslate nohighlight">\(173\)</span> <span class="math notranslate nohighlight">\(K\)</span>.</p>
+</dd>
+<dt class="field-even">Tmax</dt>
+<dd class="field-even"><p>The maximum look up table value with the default of <span class="math notranslate nohighlight">\(335\)</span> <span class="math notranslate nohighlight">\(K\)</span>.</p>
+</dd>
+<dt class="field-odd">val_inc</dt>
+<dd class="field-odd"><p>The increment used to linearly interpolate within the look up table with the default of <span class="math notranslate nohighlight">\(0.01\)</span>.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="diagnostics">
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline">¶</a></h2>
+<p>The diagnostics are not sent out within the call to convection but are sent out from <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys.F90</span></code> with the module name <code class="docutils literal notranslate"><span class="pre">atmosphere</span></code>. The diagnostics relevant to the simple Betts-Miller scheme are in the table below.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 34%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Units</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>dt_qg_convection</p></td>
+<td><p>Moisture tendency</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg~kg^{-1}~s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>dt_tg_convection</p></td>
+<td><p>Temperature tendency</p></td>
+<td><p><span class="math notranslate nohighlight">\(K~s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p>convection_rain</p></td>
+<td><p>Convective precipitation</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg~m^{-2}~s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>cape</p></td>
+<td><p>Convective available
+potential energy</p></td>
+<td><p><span class="math notranslate nohighlight">\(J~kg^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p>cin</p></td>
+<td><p>Convective inhibition</p></td>
+<td><p><span class="math notranslate nohighlight">\(J~kg^{-1}\)</span></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="relevant-modules-and-subroutines">
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline">¶</a></h2>
+<p>The convection scheme is located in: <code class="docutils literal notranslate"><span class="pre">src/atmos_param/qe_moist_convection/qe_moist_convection.F90</span></code>. The files name reflects this style of a quasi-equilibrium (qe) convection scheme (for more information on convective quasi-equilibrium see <a class="reference internal" href="../references.html#yanoplant2016" id="id5"><span>[YanoPlant2016]</span></a>).</p>
+<p>The simple Betts-Miller scheme is initialised and called by: <code class="docutils literal notranslate"><span class="pre">/src/atmos_spectral/driver/solo/idealized_moist_phys.F90</span></code>.</p>
+<p>Relevant routines which are called by the convection scheme are:
+<code class="docutils literal notranslate"><span class="pre">src/shared/sat_vapor_pres/sat_vapor_pres.F90</span></code>.</p>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<p>The reference list within this docs page are: <a class="reference internal" href="../references.html#frierson2007" id="id6"><span>[Frierson2007]</span></a>, <a class="reference internal" href="../references.html#betts1986" id="id7"><span>[Betts1986]</span></a>, <a class="reference internal" href="../references.html#bettsmiller1986" id="id8"><span>[BettsMiller1986]</span></a>, <a class="reference internal" href="../references.html#yanoplant2016" id="id9"><span>[YanoPlant2016]</span></a>, and <a class="reference internal" href="../references.html#ogormanschneider2008" id="id10"><span>[OGormanSchneider2008]</span></a>.</p>
+</div>
+<div class="section" id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h2>
+<p>This documentation was written by Penelope Maher, peer reviewed by Denis Sergeev, and quality controlled by Ross Castle.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="socrates.html" class="btn btn-neutral float-right" title="SOCRATES Radiation Scheme Interface" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="two_stream_gray_rad.html" class="btn btn-neutral float-left" title="Radiative transfer: Simple gray and multi-band radiation schemes." accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, the Isca development team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

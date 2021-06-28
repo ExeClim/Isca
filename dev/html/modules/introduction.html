@@ -1,0 +1,367 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Experiment configuration scripts &mdash; isca dev documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Isca’s dynamical core" href="dynamics.html" />
+    <link rel="prev" title="Components of Isca" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> isca
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Components of Isca</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Experiment configuration scripts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setup">Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#namelist">Namelist</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-the-experiment">Running the experiment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#output">Output</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dynamics.html">Isca’s dynamical core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physics.html">Isca’s physical parameterisations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Changing Isca output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idealised_moist_phys.html">Moist physics driver: idealized_moist_phys.F90</a></li>
+<li class="toctree-l2"><a class="reference internal" href="two_stream_gray_rad.html">Radiative transfer: Simple gray and multi-band radiation schemes.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="convection_simple_betts_miller.html">Convection scheme: Simple Betts-Miller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socrates.html">SOCRATES Radiation Scheme Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isca</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Components of Isca</a> &raquo;</li>
+        
+      <li>Experiment configuration scripts</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/introduction.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="experiment-configuration-scripts">
+<h1>Experiment configuration scripts<a class="headerlink" href="#experiment-configuration-scripts" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>Once you have managed to run a test case, you may want to run your own experiment. The model configuration, diagnostics, and simulation parameters
+of your experiment can be configured with a python-based run script.
+Find the test case in <code class="docutils literal notranslate"><span class="pre">Isca/exp/test_cases</span></code> that most resembles your experiment, copy and modify it. The important lines are described below.</p>
+</div>
+<div class="section" id="setup">
+<h2>Setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">isca</span> <span class="kn">import</span> <span class="n">DryCodeBase</span>
+</pre></div>
+</div>
+<p>imports the Isca python module that should have been installed.
+<code class="docutils literal notranslate"><span class="pre">DryCodeBase</span></code> refers to the part of the code needed to run the dry model. The codebase object is defined in <code class="docutils literal notranslate"><span class="pre">Isca/src/extra/python/isca/codebase.py</span></code>. The different default codebases are designed to avoid the model compiling un-needed parts of the code, which speeds up compilation. <code class="docutils literal notranslate"><span class="pre">DryCodeBase</span></code> can be replaced by <code class="docutils literal notranslate"><span class="pre">IscaCodeBase</span></code>, <code class="docutils literal notranslate"><span class="pre">GreyCodeBase</span></code>, or <code class="docutils literal notranslate"><span class="pre">SocratesCodeBase</span></code> (provided you setup Socrates, see Socrates documentation).</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">NCORES</span> <span class="o">=</span> <span class="mi">16</span>
+</pre></div>
+</div>
+<p>specifies how many cores should be used when running the model.</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">RESOLUTION</span> <span class="o">=</span> <span class="n">T42</span><span class="p">,</span> <span class="mi">25</span>
+</pre></div>
+</div>
+<p>specifies the horizontal (in this case, spectral T42) and vertical (25 pressure levels)
+resolution. Runs at T42 by default. If the horizontal resolution is not T42, make sure the
+input files (such as land masks) are changed and add <code class="docutils literal notranslate"><span class="pre">exp.set_resolution(*RESOLUTION)</span></code> after exp is defined.
+Other common spectral resolutions are T21 and T85.</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">cb</span> <span class="o">=</span> <span class="n">DryCodeBase</span><span class="o">.</span><span class="n">from_directory</span><span class="p">(</span><span class="n">GFDL_BASE</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>tells Isca to find the model code at the location <code class="docutils literal notranslate"><span class="pre">GFDL_BASE</span></code>, which is where the source code may be changed. You can replace <code class="docutils literal notranslate"><span class="pre">from_directory(GFDL_BASE)</span></code> with <code class="docutils literal notranslate"><span class="pre">from_repo(repo='https://github.com/isca/isca',</span> <span class="pre">commit='isca1.1')</span></code> to point to a specific git repository and commit id. This should ensure future, independent, reproducibility of results. But, the compilation depends on computer specific settings.  The <code class="docutils literal notranslate"><span class="pre">$GFDL_ENV</span></code> environment variable is used to determine which <code class="docutils literal notranslate"><span class="pre">$GFDL_BASE/src/extra/env</span></code> file is used to load the correct compilers.  The env file is always loaded from <code class="docutils literal notranslate"><span class="pre">$GFDL_BASE</span></code> and not the checked out git repo.</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">cb</span><span class="o">.</span><span class="n">compile</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>compiles the source code.</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">exp</span> <span class="o">=</span> <span class="n">Experiment</span><span class="p">(</span><span class="s1">&#39;EXPERIMENT_NAME&#39;</span><span class="p">,</span> <span class="n">codebase</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>creates an experiment object which will handle the configuration of model parameters and output diagnostics. The output files will be found at <code class="docutils literal notranslate"><span class="pre">$GFDL_DATA/EXPERIMENT_NAME</span></code>.</p>
+</div>
+<div class="section" id="diagnostics">
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">diag</span> <span class="o">=</span> <span class="n">DiagTable</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>creates a DiagTable object which we can configure to tell Isca which variables to output.</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">diag</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="s1">&#39;atmos_monthly&#39;</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="s1">&#39;days&#39;</span><span class="p">,</span> <span class="n">time_units</span><span class="o">=</span><span class="s1">&#39;days&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>creates an <code class="docutils literal notranslate"><span class="pre">atmos_monthly.nc</span></code> file every 30 days, which is an average of the output over the previous 30 days. The output files can be found at <code class="docutils literal notranslate"><span class="pre">$GFDL_DATA/EXPERIMENT_NAME/run####/*</span></code>.</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">diag</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">MODULE_NAME</span><span class="p">,</span> <span class="n">VARIABLE_NAME</span><span class="p">,</span> <span class="n">time_avg</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>determines which fields will be written in <code class="docutils literal notranslate"><span class="pre">atmos_monthly.nc</span></code>. Find the available VARIABLE_NAMEs by going to the MODULE_NAME documentation or by finding the relevant source code (<code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">Isca/src/</span> <span class="pre">&amp;</span> <span class="pre">find</span> <span class="pre">.</span> <span class="pre">-name</span> <span class="pre">&quot;MODULE_NAME*&quot;</span></code>).</p>
+</div>
+<div class="section" id="namelist">
+<h2>Namelist<a class="headerlink" href="#namelist" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">namelist</span> <span class="o">=</span> <span class="n">Namelist</span><span class="p">({</span><span class="o">...</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>defines a namelist object, which lets us configure the science options.
+It is only necessary to set values that are different from the default parameters, which are defined
+in the relevant module documentation (for example, <code class="docutils literal notranslate"><span class="pre">atmosphere_nml</span></code> parameters can be found in the <code class="docutils literal notranslate"><span class="pre">atmosphere</span></code>
+module documentation or at the beginning of the <code class="docutils literal notranslate"><span class="pre">atmosphere.F90</span></code> source file).</p>
+</div>
+<div class="section" id="running-the-experiment">
+<h2>Running the experiment<a class="headerlink" href="#running-the-experiment" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">exp</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>will make the model run for the amount of time specified in <code class="docutils literal notranslate"><span class="pre">main_nml</span></code> (usually 30 days).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">use_restart</span></code> option can be set to <code class="docutils literal notranslate"><span class="pre">False</span></code> to start from scratch (isothermal atmosphere) or can point to a restart file (<code class="docutils literal notranslate"><span class="pre">use_restart</span> <span class="pre">=</span> <span class="pre">$GFDL_DATA/exp_name/run####/restarts/*</span></code>) to initialize the run from the output of a previous run. If unspecified, it will start from where the previous run left off or from an isothermal atmosphere in the absence of a previous run.</p>
+</div>
+<div class="section" id="output">
+<h2>Output<a class="headerlink" href="#output" title="Permalink to this headline">¶</a></h2>
+<p>Output from the experiment can be found at <code class="docutils literal notranslate"><span class="pre">$GFDL_DATA/EXP_NAME</span></code>. The atmospheric output is provided on
+sigma levels where sigma is the pressure normalized by the surface pressure. For a planet with no topography, sigma and pressure levels are quite similar.
+If there is topography present (such as in the <code class="docutils literal notranslate"><span class="pre">realistic_continents</span></code> test case), you need to interpolate the
+data onto pressure levels before analyzing it. Top of atmosphere and surface values are not affected, but in-atmosphere values are.</p>
+<p>The details and code for interpolation to pressure levels can be found at <a class="reference external" href="https://github.com/ExeClim/Isca/tree/master/postprocessing/plevel_interpolation">https://github.com/ExeClim/Isca/tree/master/postprocessing/plevel_interpolation</a></p>
+<p>In the python code, there is a convenient function which can be used to call the interpolation code: <a class="reference external" href="https://github.com/ExeClim/Isca/blob/master/src/extra/python/isca/util.py">https://github.com/ExeClim/Isca/blob/master/src/extra/python/isca/util.py</a>  (line 134).</p>
+<p>For example:</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">isca.util</span> <span class="kn">import</span> <span class="n">interpolate_output</span>
+<span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;EXPERIMENT_NAME&quot;</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">121</span><span class="p">,</span> <span class="mi">241</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">infile</span> <span class="o">=</span> <span class="s1">&#39;/data_directory/&#39;</span> <span class="o">+</span> <span class="n">run</span> <span class="o">+</span> <span class="s1">&#39;/run</span><span class="si">%04d</span><span class="s1">/atmos_monthly.nc&#39;</span> <span class="o">%</span> <span class="n">i</span>
+            <span class="n">outfile</span> <span class="o">=</span> <span class="s1">&#39;/data_directory/&#39;</span> <span class="o">+</span> <span class="n">run</span> <span class="o">+</span> <span class="s1">&#39;/run</span><span class="si">%04d</span><span class="s1">/plev_monthly.nc&#39;</span> <span class="o">%</span> <span class="n">i</span>
+            <span class="n">interpolate_output</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">p_levs</span><span class="o">=</span><span class="s1">&#39;EVEN&#39;</span><span class="p">,</span> <span class="n">var_names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;slp&#39;</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h2>
+<p>This documentation was written by Matthew Henry (heavily inspired from document written by Neil Lewis), peer reviewed by Will Seviour, and quality controlled by Brett McKim.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="dynamics.html" class="btn btn-neutral float-right" title="Isca’s dynamical core" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Components of Isca" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, the Isca development team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

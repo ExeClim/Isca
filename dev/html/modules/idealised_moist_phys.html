@@ -1,0 +1,750 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Moist physics driver: idealized_moist_phys.F90 &mdash; isca dev documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "document", "processHtmlClass": "math|output_area"}}</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Radiative transfer: Simple gray and multi-band radiation schemes." href="two_stream_gray_rad.html" />
+    <link rel="prev" title="Changing Isca output" href="output.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> isca
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Components of Isca</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Experiment configuration scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamics.html">Isca’s dynamical core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physics.html">Isca’s physical parameterisations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Changing Isca output</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Moist physics driver: idealized_moist_phys.F90</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#namelist-options">Namelist options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#humidity-condensation-and-convection">Humidity, Condensation and Convection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#radiation">Radiation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#drag-and-turbulence">Drag and Turbulence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#land-and-hydrology">Land and hydrology</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#relevant-modules-and-subroutines">Relevant modules and subroutines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#references">References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="two_stream_gray_rad.html">Radiative transfer: Simple gray and multi-band radiation schemes.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="convection_simple_betts_miller.html">Convection scheme: Simple Betts-Miller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socrates.html">SOCRATES Radiation Scheme Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isca</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Components of Isca</a> &raquo;</li>
+        
+      <li>Moist physics driver: idealized_moist_phys.F90</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/idealised_moist_phys.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="moist-physics-driver-idealized-moist-phys-f90">
+<h1>Moist physics driver: idealized_moist_phys.F90<a class="headerlink" href="#moist-physics-driver-idealized-moist-phys-f90" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">idealized_moist_phys.F90</span></code> calls the various modules associated with Isca’s moist physics configurations. The specific parameterisations to be used can be selected via namelist input to this module. This is where the radiation, convection, turbulence and land options are set. In addition, timestepping for the bucket hydrology option is managed locally here.</p>
+<p>These options allow users to configure a wide range of planets, including notable configurations from the literature <a class="reference internal" href="../references.html#frierson2006a" id="id1"><span>[Frierson2006a]</span></a>, <a class="reference internal" href="../references.html#byrne2013" id="id2"><span>[Byrne2013]</span></a>, <a class="reference internal" href="../references.html#schneider2009" id="id3"><span>[Schneider2009]</span></a>, <a class="reference internal" href="../references.html#jucker2017" id="id4"><span>[Jucker2017]</span></a>. Users should bear in mind that the full parameter space is vast and not all options may be compatible with one another.</p>
+<p>The fortran file is found in <code class="docutils literal notranslate"><span class="pre">Isca/src/atmos_spectral/driver/solo/idealized_moist_phys.F90</span></code></p>
+</div>
+<div class="section" id="namelist-options">
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline">¶</a></h2>
+<p>This module controls a large number of switches for different modules. Further information on what each module is for can be found on the module’s documentation page.</p>
+<p>NB. Defaults are generally set to <code class="docutils literal notranslate"><span class="pre">False</span></code> to avoid accidental use of modules, but this is unlikely to be a useful configuration! For examples of how parameters are set to achieve different model configurations, see the test cases in <code class="docutils literal notranslate"><span class="pre">Isca/exp/test_cases/</span></code>.</p>
+<div class="section" id="humidity-condensation-and-convection">
+<h3>Humidity, Condensation and Convection<a class="headerlink" href="#humidity-condensation-and-convection" title="Permalink to this headline">¶</a></h3>
+<p>Four convection schemes, and the option of no convection, are currently available in Isca. The defaults are set so the user should actively select a scheme to use via one of the methods below. Large-scale condensation will be called following the convection scheme in all cases, unless <code class="docutils literal notranslate"><span class="pre">DRY_CONV</span></code> is selected.</p>
+<div class="section" id="method-1-preferred">
+<h4>Method 1 (preferred)<a class="headerlink" href="#method-1-preferred" title="Permalink to this headline">¶</a></h4>
+<p>The scheme to be used can be selected using the <code class="docutils literal notranslate"><span class="pre">convection_scheme</span></code> namelist parameter, which may be set to:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 74%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Value</p></th>
+<th class="head"><p>Effect</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SIMPLE_BETTS_CONV</span></code></p></td>
+<td><p>Use Frierson Quasi-Equilibrium convection scheme <a class="reference internal" href="../references.html#frierson2007" id="id5"><span>[Frierson2007]</span></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FULL_BETTS_MILLER_CONV</span></code></p></td>
+<td><p>Use the Betts-Miller convection scheme <a class="reference internal" href="../references.html#betts1986" id="id6"><span>[Betts1986]</span></a>, <a class="reference internal" href="../references.html#bettsmiller1986" id="id7"><span>[BettsMiller1986]</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RAS_CONV</span></code></p></td>
+<td><p>Use the relaxed Arakawa Schubert convection scheme <a class="reference internal" href="../references.html#moorthi1992" id="id8"><span>[Moorthi1992]</span></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DRY_CONV</span></code></p></td>
+<td><p>Use the dry convection scheme <a class="reference internal" href="../references.html#schneider2006" id="id9"><span>[Schneider2006]</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NO_CONV</span></code></p></td>
+<td><p>Use no convection scheme.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">UNSET</span></code></p></td>
+<td><p>Model looks through flags listed under Method 2.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Using the <code class="docutils literal notranslate"><span class="pre">convection_scheme</span></code> option will ensure that flags are set consistently for the selected convection scheme, avoiding user error. The default is <code class="docutils literal notranslate"><span class="pre">UNSET</span></code>.</p>
+</div>
+<div class="section" id="method-2-legacy">
+<h4>Method 2 (legacy)<a class="headerlink" href="#method-2-legacy" title="Permalink to this headline">¶</a></h4>
+<p>Three namelist parameters exist as switches to select the convection options:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 75%" />
+<col style="width: 8%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">lwet_convection</span></code></p></td>
+<td><p>If true, this is equivalent to specifying <code class="docutils literal notranslate"><span class="pre">SIMPLE_BETTS_CONV</span></code> in Method 1.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">do_bm</span></code></p></td>
+<td><p>If true, this is equivalent to specifying <code class="docutils literal notranslate"><span class="pre">FULL_BETTS_MILLER_CONV</span></code> in Method 1.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">do_ras</span></code></p></td>
+<td><p>If true, this is equivalent to specifying <code class="docutils literal notranslate"><span class="pre">RAS_CONV</span></code> in Method 1.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>If multiple flags are set as True, or all are False, an error will be raised. This method exists for compatibility with configurations pre-dating method 1. Method 1 is preferred for new model configurations.</p>
+</div>
+<div class="section" id="humidity-calculation-options">
+<h4>Humidity calculation options<a class="headerlink" href="#humidity-calculation-options" title="Permalink to this headline">¶</a></h4>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 75%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">do_simple</span></code></p></td>
+<td><p>If true, use a simplification when calculating relative humidity.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="radiation">
+<h3>Radiation<a class="headerlink" href="#radiation" title="Permalink to this headline">¶</a></h3>
+<p>Two more comprehensive radiation codes are currently included in Isca: RRTM <a class="reference internal" href="../references.html#mlaweretal1997" id="id10"><span>[MlawerEtAl1997]</span></a> and Socrates <a class="reference internal" href="../references.html#mannersetal2015" id="id11"><span>[MannersEtAl2015]</span></a>. In addition, a number of simple radiation parameterisations for the atmospheres of Earth and other planets can be found in <code class="docutils literal notranslate"><span class="pre">two_stream_gray_rad.F90</span></code>. The radiation scheme is set through the following flags:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 58%" />
+<col style="width: 11%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">two_stream_gray</span></code></p></td>
+<td><p>If true, call the two stream radiation module.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">do_rrtm_radiation</span></code></p></td>
+<td><p>If true, call the RRTM radiation module.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">do_socrates_radiation</span></code></p></td>
+<td><p>If true, call the SOCRATES radiation module.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="drag-and-turbulence">
+<h3>Drag and Turbulence<a class="headerlink" href="#drag-and-turbulence" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="lower-boundary-heat-momentum-humidity-exchange">
+<h4>Lower Boundary Heat, Momentum &amp; Humidity Exchange<a class="headerlink" href="#lower-boundary-heat-momentum-humidity-exchange" title="Permalink to this headline">¶</a></h4>
+<p>Near the surface, different processes will be appropriate for terrestrial vs. gaseous planets, and for different experimental designs. These are determined by namelist parameters in <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys</span></code> as follows.</p>
+<p><strong>Terrestrial Planets</strong></p>
+<p>Isca will evaluate surface heat exchange provided a gaseous option is not specified (see below). Vertical diffusion may be enabled by setting the namelist parameter <code class="docutils literal notranslate"><span class="pre">turb</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code>; default is <code class="docutils literal notranslate"><span class="pre">False</span></code>. This enables calls to <code class="docutils literal notranslate"><span class="pre">vert_turb_driver_mod</span></code>, <code class="docutils literal notranslate"><span class="pre">vert_diff_mod</span></code> and <code class="docutils literal notranslate"><span class="pre">mixed_layer_mod</span></code>.</p>
+<p>Additional namelist parameters further specify the processes called and parameters used:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 68%" />
+<col style="width: 8%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mixed_layer_bc</span></code></p></td>
+<td><p>Dictates whether <code class="docutils literal notranslate"><span class="pre">mixed_layer_mod</span></code> is called.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">do_virtual</span></code></p></td>
+<td><p>Selects whether virtual temperature is used in the vertical diffusion module.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">roughness_moist</span></code></p></td>
+<td><p>Roughness length for use in surface moisture exchange.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.05</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">roughness_mom</span></code></p></td>
+<td><p>Roughness length for use in surface momentum exchange.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.05</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">roughness_heat</span></code></p></td>
+<td><p>Roughness length for use in surface heat exchange.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.05</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">land_roughness_prefactor</span></code></p></td>
+<td><p>Multiplier on the above roughness lengths to allow land-ocean contrast.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1.0</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Gaseous Planets</strong></p>
+<p>Isca currently includes options to run a Jupiter-type planet. The relevant namelist parameter for the lower boundary physics in this case is:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 68%" />
+<col style="width: 8%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gp_surface</span></code></p></td>
+<td><p>Turns on prescription of lower-boundary heat flux following <a class="reference internal" href="../references.html#schneider2009" id="id12"><span>[Schneider2009]</span></a> .</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="upper-level-damping">
+<h4>Upper Level Damping<a class="headerlink" href="#upper-level-damping" title="Permalink to this headline">¶</a></h4>
+<p>At upper levels, damping may be needed to account for subgrid-scale processes that decelerate fast upper-level winds. The module <code class="docutils literal notranslate"><span class="pre">damping_driver_mod</span></code> applies Rayleigh friction at upper levels. This is switched on with:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 68%" />
+<col style="width: 8%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">do_damping</span></code></p></td>
+<td><p>If true, call <code class="docutils literal notranslate"><span class="pre">damping_driver_mod</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>NB: <code class="docutils literal notranslate"><span class="pre">damping_driver_mod</span></code> is currently being configured to allow gravity wave drag options.</p>
+</div>
+</div>
+<div class="section" id="land-and-hydrology">
+<h3>Land and hydrology<a class="headerlink" href="#land-and-hydrology" title="Permalink to this headline">¶</a></h3>
+<p>Land and hydrology processes are predominantly dealt with in <code class="docutils literal notranslate"><span class="pre">surface_flux_mod</span></code> and <code class="docutils literal notranslate"><span class="pre">mixed_layer_mod</span></code>, but land and bucket hydrology options are initialised with the following namelist parameters. We acknowledge that the bucket hydrology is adapted from code from <a class="reference external" href="https://github.com/tapios">https://github.com/tapios</a> and follows <a class="reference internal" href="../references.html#manabe1969" id="id13"><span>[Manabe1969]</span></a>. Land and hydrology options in this module are:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 63%" />
+<col style="width: 15%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">land_option</span></code></p></td>
+<td><p>Selects how land-mask is defined, a summary of options is given below.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">none</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">land_file_name</span></code></p></td>
+<td><p>Filename for the input land-mask.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">'INPUT/land.nc'</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">land_field_name</span></code></p></td>
+<td><p>Field name in the input land-mask netcdf.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">'land_mask'</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bucket</span></code></p></td>
+<td><p>If true, use bucket hydrology.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">init_bucket_depth</span></code></p></td>
+<td><p>Value at which to initialise bucket water depth over ocean (large, in <span class="math notranslate nohighlight">\(m\)</span>).</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1000.</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">init_bucket_depth_land</span></code></p></td>
+<td><p>Value at which to initialise bucket water depth over land.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">20.</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max_bucket_depth_land</span></code></p></td>
+<td><p>Maximum depth of water in bucket over land following initialisation.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.15</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">robert_bucket</span></code></p></td>
+<td><p>Robert coefficient for RAW filter* on bucket leapfrog timestepping.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.04</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">raw_bucket</span></code></p></td>
+<td><p>RAW coefficient for RAW filter* on bucket leapfrog timestepping.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.53</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p><cite>*</cite> Roberts-Asselin-Williams filter, <a class="reference internal" href="../references.html#williams2011" id="id14"><span>[Williams2011]</span></a></p>
+<p><code class="docutils literal notranslate"><span class="pre">land_option</span></code> may be set to:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 86%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Value</p></th>
+<th class="head"><p>Effect</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">'input'</span></code></p></td>
+<td><p>Read land mask from input file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">'zsurf'</span></code></p></td>
+<td><p>Define land where surface geopotential height at model initialisation exceeds a threshold.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">'none'</span></code></p></td>
+<td><p>Do not apply a land mask</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="diagnostics">
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline">¶</a></h2>
+<p>Diagnostics from this module are output under <code class="docutils literal notranslate"><span class="pre">mod_name</span> <span class="pre">=</span> <span class="pre">'atmosphere'</span></code>. Some diagnostics may only be output when certain namelist options are set, e.g. those associated with the bucket hydrology. Requesting unsaved diagnostics in your diagnostic list will result in those diagnostics not being output, but will not cause a fatal error or affect other diagnostics.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 51%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Units</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dt_ug_diffusion</span></code></p></td>
+<td><p>Zonal wind tendency from vertical diffusion</p></td>
+<td><p><span class="math notranslate nohighlight">\(ms^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dt_vg_diffusion</span></code></p></td>
+<td><p>Meridional wind tendency from vertical diffusion</p></td>
+<td><p><span class="math notranslate nohighlight">\(ms^{-2}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dt_tg_diffusion</span></code></p></td>
+<td><p>Temperature tendency from vertical diffusion</p></td>
+<td><p><span class="math notranslate nohighlight">\(Ks^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dt_qg_diffusion</span></code></p></td>
+<td><p>Specific humidity tendency from vertical diffusion</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg kg^{-1} s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">convection_rain</span></code></p></td>
+<td><p>Rain from convection</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg m^{-2} s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">condensation_rain</span></code></p></td>
+<td><p>Rain from large-scale condensation</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg m^{-2} s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">precipitation</span></code></p></td>
+<td><p>Precipitation from resolved, parameterised and snow</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg m^{-2} s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dt_tg_convection</span></code></p></td>
+<td><p>Temperature tendency from convection</p></td>
+<td><p><span class="math notranslate nohighlight">\(Ks^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dt_qg_convection</span></code></p></td>
+<td><p>Specific humidity tendency from convection</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg kg^{-1} s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dt_tg_condensation</span></code></p></td>
+<td><p>Temperature tendency from condensation</p></td>
+<td><p><span class="math notranslate nohighlight">\(Ks^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dt_qg_condensation</span></code></p></td>
+<td><p>Specific humidity tendency from condensation</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg kg^{-1} s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rh</span></code></p></td>
+<td><p>Relative humidity</p></td>
+<td><p>%</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cape</span></code></p></td>
+<td><p>Convective Available Potential Energy</p></td>
+<td><p><span class="math notranslate nohighlight">\(J kg^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cin</span></code></p></td>
+<td><p>Convective Inhibition</p></td>
+<td><p><span class="math notranslate nohighlight">\(J kg^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flux_u</span></code></p></td>
+<td><p>Surface zonal wind stress</p></td>
+<td><p><span class="math notranslate nohighlight">\(N m^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">flux_v</span></code></p></td>
+<td><p>Surface meridional wind stress</p></td>
+<td><p><span class="math notranslate nohighlight">\(N m^{-2}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">temp_2m</span></code></p></td>
+<td><p>Air temperature 2m above surface</p></td>
+<td><p><span class="math notranslate nohighlight">\(K\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sphum_2m</span></code></p></td>
+<td><p>Specific humidity 2m above surface</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg kg^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rh_2m</span></code></p></td>
+<td><p>Relative humidity 2m above surface</p></td>
+<td><p>%</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">u_10m</span></code></p></td>
+<td><p>Zonal wind 10m above surface</p></td>
+<td><p><span class="math notranslate nohighlight">\(ms^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">v_10m</span></code></p></td>
+<td><p>Meridional wind 10m above surface</p></td>
+<td><p><span class="math notranslate nohighlight">\(ms^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">diss_heat_ray</span></code></p></td>
+<td><p>Heat dissipated by Rayleigh drag in <a class="reference internal" href="../references.html#schneider2009" id="id15"><span>[Schneider2009]</span></a> scheme</p></td>
+<td><p><span class="math notranslate nohighlight">\(Ks^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bucket_depth</span></code></p></td>
+<td><p>Depth of surface reservoir</p></td>
+<td><p><span class="math notranslate nohighlight">\(m\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bucket_depth_conv</span></code></p></td>
+<td><p>Tendency of bucket depth due to convection</p></td>
+<td><p><span class="math notranslate nohighlight">\(ms^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bucket_depth_cond</span></code></p></td>
+<td><p>Tendency of bucket depth due to condensation</p></td>
+<td><p><span class="math notranslate nohighlight">\(ms^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bucket_depth_lh</span></code></p></td>
+<td><p>Tendency of bucket depth due to evaporation</p></td>
+<td><p><span class="math notranslate nohighlight">\(ms^{-1}\)</span></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="relevant-modules-and-subroutines">
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline">¶</a></h2>
+<p>Key physics modules managed from this module include:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">vert_turb_driver_mod</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">vert_diff_mod</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">two_stream_gray_rad_mod</span></code></p></li>
+<li><p>RRTM: see <code class="docutils literal notranslate"><span class="pre">Isca/src/atmos_param/rrtm_radiation/</span></code></p></li>
+<li><p>SOCRATES: see <code class="docutils literal notranslate"><span class="pre">Isca/src/atmos_param/socrates/</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mixed_layer_mod</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lscale_cond_mod</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">qe_moist_convection_mod</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ras_mod</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">betts_miller_mod</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dry_convection_mod</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">surface_flux_mod</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">damping_driver_mod</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rayleigh_bottom_drag_mod</span></code></p></li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="../references.html#betts1986" id="id16"><span>[Betts1986]</span></a>
+<a class="reference internal" href="../references.html#bettsmiller1986" id="id17"><span>[BettsMiller1986]</span></a>
+<a class="reference internal" href="../references.html#byrne2013" id="id18"><span>[Byrne2013]</span></a>
+<a class="reference internal" href="../references.html#frierson2006a" id="id19"><span>[Frierson2006a]</span></a>
+<a class="reference internal" href="../references.html#frierson2007" id="id20"><span>[Frierson2007]</span></a>
+<a class="reference internal" href="../references.html#jucker2017" id="id21"><span>[Jucker2017]</span></a>
+<a class="reference internal" href="../references.html#manabe1969" id="id22"><span>[Manabe1969]</span></a>
+<a class="reference internal" href="../references.html#mannersetal2015" id="id23"><span>[MannersEtAl2015]</span></a>
+<a class="reference internal" href="../references.html#mlaweretal1997" id="id24"><span>[MlawerEtAl1997]</span></a>
+<a class="reference internal" href="../references.html#moorthi1992" id="id25"><span>[Moorthi1992]</span></a>
+<a class="reference internal" href="../references.html#schneider2006" id="id26"><span>[Schneider2006]</span></a>
+<a class="reference internal" href="../references.html#schneider2009" id="id27"><span>[Schneider2009]</span></a>
+<a class="reference internal" href="../references.html#williams2011" id="id28"><span>[Williams2011]</span></a></p>
+</div>
+<div class="section" id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h2>
+<p>This documentation was written by Ruth Geen, peer reviewed by Marianne Pietschnig, and quality controlled by Ross Castle.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="two_stream_gray_rad.html" class="btn btn-neutral float-right" title="Radiative transfer: Simple gray and multi-band radiation schemes." accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="output.html" class="btn btn-neutral float-left" title="Changing Isca output" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, the Isca development team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

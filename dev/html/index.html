@@ -1,0 +1,401 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Overview &mdash; isca dev documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> isca
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/index.html">Components of Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">isca</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Overview</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<p>Welcome to Isca!
+On this page and those following you will find the documentation to help you understand and run Isca. You can find a briefer and more general overview <a class="reference external" href="https://execlim.github.io/IscaWebsite/">here</a> and the code itself is on <a class="reference external" href="https://github.com/ExeClim/Isca">github</a>.</p>
+<div class="section" id="about-isca">
+<h2>About Isca<a class="headerlink" href="#about-isca" title="Permalink to this headline">¶</a></h2>
+<p>Isca is a framework for the construction of models of the global circulation of the atmosphere of Earth and other planets at varying levels of realism and complexity.  The framework uses the dynamical core and the software infrastructure (FMS, for Flexible Modeling System) from the Geophysical Fluid Dynamics Laboratory in Princeton, USA, and some of the physical parameterizations are also taken from there.  Isca itself is not a single model, nor is it intended to provide a fully ‘comprehensive’ model capable of weather forecasts or climate projections for policy use. Rather, our intent is to take the idea of a model hierarchy seriously and thereby enable the user to make appropriate models for the problem at hand, or to make a connected and traceable sequence of models with feedbacks and processes included or denied as appropriate, ranging from the very simple to the near comprehensive.</p>
+<div class="figure align-default" id="id3">
+<a class="reference internal image-reference" href="_images/index_fig_marspv.gif"><img alt="_images/index_fig_marspv.gif" src="_images/index_fig_marspv.gif" style="width: 248.0px; height: 261.2px;" /></a>
+<p class="caption"><span class="caption-text">Isca simulation of the northern Martian winter polar vortex, showing the evolution of Lait-scaled potential vorticity on the 300K isentropic surface from late autumn (Ls 230) through to late winter (Ls 300). Figure produced by Emily Ball (University of Bristol), on a developmental branch.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</div>
+<p>Isca’s user friendly Python front end allows users to quickly and easily configure their experiments. Test experiments are included to aid the first-time user in understanding the framework, but can also be used as a basis for more specialised experiments. Because of it flexibility and intuitive interface, Isca now has many users thus creating an Isca community that, with the addition of the documentation you can find here, are able to support fellow researchers with ideas and solutions to problems.  The code is open source and downloadable from <a class="reference external" href="https://github.com/ExeClim/Isca">github</a>, and if you have questions please <a class="reference external" href="https://github.com/ExeClim/Isca/issues">raise an issue</a> there.</p>
+<p>The various options for Isca are described in detail in the links in the left column (where appropriate references are also given), and here we just give an overview of what is available. Please note that, since Isca is constantly being developed and improved, not all of the options are as yet fully documented.  We hope that you, the user, may also wish to contribute to Isca’s development and documentation.</p>
+</div>
+<div class="section" id="options-and-configurability">
+<h2>Options and configurability<a class="headerlink" href="#options-and-configurability" title="Permalink to this headline">¶</a></h2>
+<p>The main code is written in Fortran 90 to which we provide a Python front end. The front end enables many model configurations, parameter changes and output options to be set without going into the code itself, but if you wish to make more substantial changes then editing the Fortran may be necessary.</p>
+<div class="section" id="dynamical-cores-and-variants">
+<h3>Dynamical cores and variants:<a class="headerlink" href="#dynamical-cores-and-variants" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Primitive equation, spectral model on the sphere. This may also be configured as a zonally-symmetric model</p></li>
+<li><p>Shallow water model on the sphere</p></li>
+<li><p>Column model, for example for radiative-convective equilibrium studies</p></li>
+<li><p>Barotropic vorticity equation on the sphere</p></li>
+</ul>
+</div>
+<div class="section" id="radiative-forcing">
+<h3>Radiative forcing<a class="headerlink" href="#radiative-forcing" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Thermal relaxation: Held-Suarez, variations for terrestrial exoplanets, and a ‘top–down’ scheme that provides a self-consistent determination of the tropopause</p></li>
+<li><p>Grey radiation, with or without water vapour feedback</p></li>
+<li><p>Simple, two IR band (with an IR window) scheme, with a simple solar scheme</p></li>
+<li><p>Comprehensive, multi-band schemes using either SOCRATES or RRTM</p></li>
+</ul>
+</div>
+<div class="section" id="convection-and-boundary-layer-schemes">
+<h3>Convection and boundary-layer schemes<a class="headerlink" href="#convection-and-boundary-layer-schemes" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>A very flexible moist and dry convective adjustment scheme, suitable for both Earth and other planetary atmospheres</p></li>
+<li><p>The Betts-Miller scheme (a well-known and much used convective relaxation scheme)</p></li>
+<li><p>A mass flux scheme (relaxed Arakawa-Schubert)</p></li>
+<li><p>A simple boundary-layer scheme</p></li>
+</ul>
+</div>
+<div class="section" id="clouds">
+<h3>Clouds<a class="headerlink" href="#clouds" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>A simple cloud scheme based on relative humidity and inversion strength.</p></li>
+</ul>
+</div>
+<div class="section" id="surface-properties">
+<h3>Surface properties<a class="headerlink" href="#surface-properties" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Specified sea-surface temperatures</p></li>
+<li><p>A slab ocean with a prognostic SST</p></li>
+<li><p>A swamp land surface with an evaporative resistance</p></li>
+<li><p>A simple bucket model</p></li>
+<li><p>A simple vegetation model</p></li>
+<li><p>Realistic Earth continental outlines, or user-configurable idealized continental configurations</p></li>
+<li><p>User configurable topography</p></li>
+</ul>
+</div>
+<div class="section" id="test-cases">
+<h3>Test cases<a class="headerlink" href="#test-cases" title="Permalink to this headline">¶</a></h3>
+<p>Various out of the box test cases are available that should run with no additional configuration. These include:</p>
+<ul class="simple">
+<li><p>The Held-Suarez test case</p></li>
+<li><p>An aquaplanet with a slab ocean and grey radiation</p></li>
+<li><p>A MiMA-like test case using RRTM</p></li>
+<li><p>An axisymmetric model</p></li>
+<li><p>A gas giant planet (Jupiter-like)</p></li>
+<li><p>Cases with realistic, Earth-like continents</p></li>
+</ul>
+</div>
+<div class="section" id="planets">
+<h3>Planets<a class="headerlink" href="#planets" title="Permalink to this headline">¶</a></h3>
+<p>Earth is, naturally, the planet to which Isca has most often been applied. However, models of varying degrees of sophistication of Mars, Jupiter, Titan, TRAPPIST-1e, and a generic tidally-locked exoplanet have or are being constructed.</p>
+<div class="figure align-default" id="id4">
+<a class="reference internal image-reference" href="_images/index_fig_trappist.png"><img alt="_images/index_fig_trappist.png" src="_images/index_fig_trappist.png" style="width: 492.59999999999997px; height: 174.6px;" /></a>
+<p class="caption"><span class="caption-text">Simulations for the <a class="reference external" href="http://www.nexss.info/community/workshops/thai">TRAPPIST-1 Habitable Atmosphere Intercomparison (THAI)</a> project. TRAPPIST-1e is a tidally-locked rocky exoplanet and is a promising candidate for habitable surface conditions. Figure produced by Dr Matthew Henry.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+<div class="section" id="the-future">
+<h3>The Future<a class="headerlink" href="#the-future" title="Permalink to this headline">¶</a></h3>
+<p>Isca, and this documentation, is constantly under development. A simple cloud scheme has recently been incorporated into Isca, and models of other planetary bodies are continually being developed. The next major model addition will be a fully interactive ocean as an integrated component of Isca and therefore configurable with the Python interface and flexible in its nature and use.  We invite contributions from users to add to its capabilities and improve its documentation.</p>
+<div class="figure align-default" id="id5">
+<a class="reference internal image-reference" href="_images/index_fig_qbo.png"><img alt="_images/index_fig_qbo.png" src="_images/index_fig_qbo.png" style="width: 256.0px; height: 192.0px;" /></a>
+<p class="caption"><span class="caption-text">The Quasi-Biennial Oscillation (QBO), a wave driven periodic reversal of the stratospheric tropical winds on Earth. This was produced in Isca using the convective gravity wave parameterisation modified by Prof. Chaim Garkfinel. Figure produced by Ross Castle.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+</div>
+<div class="section" id="how-to-cite-isca">
+<h2>How to cite Isca<a class="headerlink" href="#how-to-cite-isca" title="Permalink to this headline">¶</a></h2>
+<div class="line-block">
+<div class="line">The primary reference for Isca, and the one that should be cited if you use it, is:</div>
+<div class="line">Vallis, G.K., Colyer, G., Geen, R., Gerber, E., Jucker, M., Maher, P., Paterson, A., Pietschnig, M., Penn, J. and Thomson, S.I., 2018. Isca, v1. 0: A framework for the global modelling of the atmospheres of Earth and other planets at varying levels of complexity.  <em>Geosci. Model Dev.</em>, 11, 843–859.</div>
+<div class="line"><br /></div>
+<div class="line">In addition, if you use particular aspects of Isca please consider referencing one of the following papers:</div>
+<div class="line"><br /></div>
+<div class="line">For use of the SOCRATES radiation scheme:</div>
+<div class="line">Thomson, S.I. Vallis, G.K., 2019. The effects of gravity on the climate and circulation of a terrestrial planet. <em>Quarterly Journal of the Royal Meteorological Society</em>, 145, pp. 2627–2640.</div>
+<div class="line"><br /></div>
+<div class="line">To emphasize the hierarchical aspects of Isca, or if using the Mars, Jupiter or shallow water models:</div>
+<div class="line">Thomson, S.I. and Vallis, G.K., 2019. Hierarchical Modeling of Solar System Planets with Isca. <em>Atmosphere,</em> 10, p.803.</div>
+<div class="line"><br /></div>
+<div class="line">For a general discussion of the value of a hierarchical approach:</div>
+<div class="line">Maher, P., Gerber, E.P., Medeiros, B., Merlis, T.M., Sherwood, S., Sheshadri, A., Sobel, A.H., Vallis, G.K., Voigt, A. and Zurita‐Gotor, P., 2019. Model hierarchies for understanding atmospheric circulation. <em>Rev. Geophysics,</em> 57, pp.250-280.</div>
+<div class="line"><br /></div>
+<div class="line">For a simple surface model:</div>
+<div class="line">Pietschnig, M., Lambert, F.H., Saint‐Lu, M. and Vallis, G.K., 2019. The presence of Africa and limited soil moisture contribute to future drying of South America. <em>Geophysical Research Letters,</em> 46(21), pp.12445-12453.</div>
+<div class="line"><br /></div>
+<div class="line">For examples of different land configurations:</div>
+<div class="line">Geen, R., Lambert, F.H. and Vallis, G.K., 2018. Regime change behavior during Asian monsoon onset. <em>Journal of Climate,</em> 31(8), pp.3327-3348.</div>
+<div class="line"><br /></div>
+<div class="line">For the MiMA configuration of Isca, with the RRTM radiation scheme:</div>
+<div class="line">Jucker, M. and Gerber, E.P., 2017. Untangling the annual cycle of the tropical tropopause layer with an idealized moist model. <em>Journal of Climate,</em> 30(18), pp.7339-7358.</div>
+<div class="line"><br /></div>
+<div class="line">For exoplanets:</div>
+<div class="line">Penn, J. and Vallis, G.K., 2018. Atmospheric Circulation and Thermal Phase-curve Offset of Tidally and Nontidally Locked Terrestrial Exoplanets. <em>The Astrophysical Journal,</em> 868(2), p.147.</div>
+</div>
+</div>
+</div>
+<div class="section" id="contents">
+<h1>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/index.html">Components of Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="see-also">
+<h1>See also<a class="headerlink" href="#see-also" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p>Isca <a class="reference external" href="https://execlim.github.io/IscaWebsite">home page</a></p></li>
+<li><p>Isca v1.0 model description: <a class="reference internal" href="references.html#vallisetal2018" id="id2"><span>[VallisEtAl2018]</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="license">
+<h1>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h1>
+<p>Isca is released under the terms of the <a class="reference external" href="https://github.com/ExeClim/Isca/blob/master/LICENSE">GPL-3.0 license</a>.</p>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="install.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, the Isca development team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
