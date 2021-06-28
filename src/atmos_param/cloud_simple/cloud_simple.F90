@@ -354,7 +354,7 @@ module cloud_simple_mod
 
     type(time_type) , intent(in)       :: Time
 
-    real :: used
+    logical :: used
 
     if ( id_cf > 0 ) then
       used = send_data ( id_cf, cf, Time)
