@@ -6,7 +6,7 @@ module idealized_moist_phys_mod
   use fms_mod, only: open_namelist_file, close_file
 #endif
 
-use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, FATAL, read_data, field_size, uppercase, mpp_pe
+use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, FATAL, read_data, field_size, uppercase, mpp_pe, check_nml_error
 
 use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS, dens_h2o !mj cp_air needed for rrtmg !s pstd_mks needed for pref calculation
 
@@ -308,7 +308,7 @@ real, dimension (size(rad_lonb_2d,1)-1, size(rad_latb_2d,2)-1) :: sgsmtn !s adde
 
 !s added for land reading
 integer, dimension(4) :: siz
-integer :: global_num_lon, global_num_lat
+integer :: global_num_lon, global_num_lat, ierr
 character(len=12) :: ctmp1='     by     ', ctmp2='     by     '
 !s end added for land reading
 
@@ -327,10 +327,12 @@ call write_version_number(version, tagname)
 
 #ifdef INTERNAL_FILE_NML
    read (input_nml_file, nml=idealized_moist_phys_nml, iostat=io)
+   ierr = check_nml_error (io,'idealized_moist_phys_nml')
 #else
    if ( file_exist('input.nml') ) then
       nml_unit = open_namelist_file()
       read (nml_unit, idealized_moist_phys_nml, iostat=io)
+      ierr = check_nml_error (io,'idealized_moist_phys_nml')
       call close_file(nml_unit)
    endif
 #endif
