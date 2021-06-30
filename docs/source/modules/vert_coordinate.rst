@@ -62,10 +62,6 @@ Even Sigma
 ^^^^^^^^^^
 This option will create an evenly spaced set of levels from sigma level 0 (top) to 1 (surface), scaled by the surface pressure set in ``spectral_dynamics``. To use this scheme, set ``'vert_coord_option': 'even_sigma'`` and also provide a value for ``num_levels``. Increasing the number of levels will decrease the thickness of each model layer.
 
-For example, if surf_res = 1 then you get even spacing in height. If surf_res = 0 then you get a height depending on zeta**exponent. 
-For surf_res in between, you get a mix of the two. 
-scale_heights sets the model top height, and exponent determines how heavily biased your level spacings are towards the troposphere. Larger exponent values are more tropospherically biased. 
-
 Uneven Sigma
 ^^^^^^^^^^^^
 The use of evenly-spaced model levels is often not the best option for modelling atmospheres, since it can lead to low resolution near the surface and in the troposphere, where the atmosphere is often the most dynamic). In addition, poor resolution near the model top can in certain configurations be unstable, since breaking gravity waves deposit significant amounts of energy into the upper layers. 
