@@ -47,7 +47,6 @@ class Experiment(Logger, EventEmitter):
             'num_fourier': 42,
             'num_spherical': 43,
         },
-
         'T21': {
             'lon_max': 64,
             'lat_max': 32,
