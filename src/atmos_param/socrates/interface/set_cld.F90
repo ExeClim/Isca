@@ -9,7 +9,7 @@ CONTAINS
 
 ! Subroutine to set the cloud fields for the core radiation code.
 !------------------------------------------------------------------------------
-SUBROUTINE set_no_cld(control, dimen, spectrum, cld, n_profile)
+SUBROUTINE set_cld(control, dimen, spectrum, cld, n_profile)
 
 USE rad_pcf
 USE def_spectrum, ONLY: StrSpecData
@@ -41,5 +41,5 @@ INTEGER(i_def), INTENT(IN) :: n_profile
 CALL allocate_cld(cld, dimen, spectrum)
 CALL allocate_cld_prsc(cld, dimen, spectrum)
 
-END SUBROUTINE set_no_cld
+END SUBROUTINE set_cld
 END MODULE set_cld_mod

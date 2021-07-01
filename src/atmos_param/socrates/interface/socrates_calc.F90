@@ -53,7 +53,7 @@ use set_dimen_mod,     only: set_dimen
 use set_atm_mod,       only: set_atm
 use set_bound_mod,     only: set_bound
 use socrates_set_cld_mod,  only: set_simple_cld
-use set_cld_mod,           only: set_no_cld
+use set_cld_mod,           only: set_cld
 use set_aer_mod,       only: set_aer
 
 use soc_constants_mod,   only: i_def, r_def
@@ -186,7 +186,7 @@ call set_bound(control, dimen, spectrum, bound, n_profile,                     &
   t_rad_surf, cos_zenith_angle, solar_irrad, orog_corr,                        &
   l_planet_grey_surface, planet_albedo, planet_emissivity)
 
-  !if (do_cloud_simple) then
+  if (do_cloud_simple) then
       zeros_cld = 0.
       ten_microns_cld = 1.
       call set_simple_cld(cld, control, dimen, spectrum, n_profile, n_layer, &
@@ -197,9 +197,9 @@ call set_bound(control, dimen, spectrum, bound, n_profile,                     &
                 ice_mmr       = zeros_cld,    &
                 liq_dim       = reff_rad,     &
                 ice_dim       = zeros_cld )
-  !else
-  !    call set_no_cld(control, dimen, spectrum, cld, n_profile)
-  !endif
+  else
+      call set_cld(control, dimen, spectrum, cld, n_profile)
+  endif
 
 call set_aer(control, dimen, spectrum, aer, n_profile)
 

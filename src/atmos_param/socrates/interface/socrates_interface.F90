@@ -745,6 +745,7 @@ write(stdlog_unit, socrates_rad_nml)
                input_cld_conv_frac(idx_chunk_start:idx_chunk_end,:),                        &
                input_reff_rad(idx_chunk_start:idx_chunk_end,:),                             & 
                input_mmr_cl_rad(idx_chunk_start:idx_chunk_end,:),                           &
+               do_cloud_simple,                                                             &
                soc_flux_direct(idx_chunk_start:idx_chunk_end,:),                            &
                soc_flux_down(idx_chunk_start:idx_chunk_end,:),                              &
                soc_flux_up(idx_chunk_start:idx_chunk_end,:),                                &
@@ -776,7 +777,8 @@ write(stdlog_unit, socrates_rad_nml)
                input_cld_frac(idx_chunk_start:idx_chunk_end,:),                             &
                input_cld_conv_frac(idx_chunk_start:idx_chunk_end,:),                        &
                input_reff_rad(idx_chunk_start:idx_chunk_end,:),                             & 
-               input_mmr_cl_rad(idx_chunk_start:idx_chunk_end,:),                           &               
+               input_mmr_cl_rad(idx_chunk_start:idx_chunk_end,:),                           &     
+               do_cloud_simple,                                                             &        
                soc_flux_direct(idx_chunk_start:idx_chunk_end,:),                            &
                soc_flux_down(idx_chunk_start:idx_chunk_end,:),                              &
                soc_flux_up(idx_chunk_start:idx_chunk_end,:),                                &
