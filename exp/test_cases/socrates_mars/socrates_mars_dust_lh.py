@@ -42,8 +42,9 @@ os.path.join(base_dir,'input/cdod_clim_MY33.nc'),
 os.path.join(base_dir,'input/cdod_clim_MY34.nc'),
 os.path.join(base_dir,'input/cdod_clim_scenario.nc'),
 os.path.join(base_dir,'input/cdod_cold.nc'),
-os.path.join(base_dir,'input/cdod_warm_25.nc')]
-
+os.path.join(base_dir,'input/cdod_warm_25.nc'),
+os.path.join(base_dir,'input/cdod_all_years_long.nc'),
+os.path.join(base_dir,'input/cdod_all_years.nc')]
 
 # create a diagnostics output file for daily snapshots
 diag = DiagTable()
@@ -261,8 +262,8 @@ namelist = Namelist({
     },
 
     'spectral_init_cond_nml': {
-         'topog_file_name': 't42_mola_mars.nc',
-         'topography_option': 'input',
+        'topog_file_name': 't42_mola_mars.nc',
+        'topography_option': 'input',
     },
 
 })
@@ -277,14 +278,14 @@ if __name__=="__main__":
 
     scale = 1.
 
-    dust_clim = 'cdod_clim_MY29'
+    dust_clim = 'cdod_clim_MY28'
 
-    dust_scale = 4.2e-5
+    dust_scale = 7.4e-5
 
     for conv in conv_schemes:
         for depth_val in depths:
             for per_value in pers:
-                exp = Experiment('soc_mars_mk36_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val)+'_'+dust_clim+'_'+str(dust_scale)+'_lh_rel', codebase=cb)
+                exp = Experiment('soc_mars_mk36_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val)+'_with_mola_topo_'+dust_clim+'_'+str(dust_scale)+'_lh_rel', codebase=cb)
                 exp.clear_rundir()
 
                 exp.diag_table = diag
@@ -302,7 +303,7 @@ if __name__=="__main__":
 
 #            with exp_progress(exp, description='o%.0f d{day}' % scale):
                 exp.run(1, use_restart=False, num_cores=NCORES)
-                for i in range(2, 1201):
+                for i in range(2, 1691):
 #                with exp_progress(exp, description='o%.0f d{day}' % scale):
                     exp.run(i, num_cores=NCORES)
 #                notify('top down with conv scheme = '+conv+' has completed', 'isca')

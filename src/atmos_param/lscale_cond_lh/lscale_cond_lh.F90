@@ -112,7 +112,7 @@ contains
 !--------------------- interface arguments -----------------------------
 
    real   , intent(in) , dimension(:,:,:) :: qin, pfull, phalf
-   real   , intent(inout), dimension(:,:,:) :: tin
+   real   , intent(in), dimension(:,:,:) :: tin
    logical   , intent(in) , dimension(:,:):: coldT
    real   , intent(out), dimension(:,:)   :: rain,snow
    real   , intent(out), dimension(:,:,:) :: tdel, qdel, lh_rel
@@ -137,7 +137,7 @@ integer  k, kx, j, jx, i, ix
       jx=size(tin,2)
       ix=size(tin,1)
 
-      tcond(:,:,:) = 154.2+6.48*LOG(0.00135*pfull(:,:,:))         ! CO2 condensation temperature, Way 2017
+      tcond(:,:,:) = 149.2+6.48*LOG(0.00135*pfull(:,:,:))         ! CO2 condensation temperature, Way 2017
 
    do i=1,ix
       do j=1,jx
@@ -150,7 +150,6 @@ integer  k, kx, j, jx, i, ix
             tdel(i,j,k)=0.0
             lh_rel(i,j,k)=0.0
          endif
-         tin(i,j,k) = max(tin(i,j,k),tcond(i,j,k))
          enddo
       enddo
    enddo
