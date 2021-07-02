@@ -500,7 +500,7 @@ write(stdlog_unit, socrates_rad_nml)
        fms_temp, fms_spec_hum, fms_ozone, fms_co2, fms_t_surf,       &
        fms_p_full, fms_p_half, fms_z_full, fms_z_half, fms_albedo,   &
        fms_coszen, fms_rrsun, n_profile, n_layer,                    &
-       fms_cld_frac, fms_cld_conv_frac, fms_reff_rad, fms_mmr_cl_rad,&
+       !fms_cld_frac, fms_cld_conv_frac, fms_reff_rad, fms_mmr_cl_rad,&
        output_heating_rate, output_flux_down, output_flux_up,        &
        output_flux_down_clear, output_flux_up_clear,                 &
        do_cloud_simple,                                              &
@@ -544,8 +544,8 @@ write(stdlog_unit, socrates_rad_nml)
     real(r_def), intent(in) :: rlat(:,:)
     real(r_def), intent(in) :: fms_z_full(:,:,:), fms_z_half(:,:,:)
     real(r_def), intent(in) :: fms_rrsun 
-    real(r_def), intent(in) :: fms_cld_frac(:,:,:), fms_reff_rad(:,:,:), fms_mmr_cl_rad(:,:,:)
-    real(r_def), intent(in) :: fms_cld_conv_frac(:,:,:)
+    !real(r_def), intent(in) :: fms_cld_frac(:,:,:), fms_reff_rad(:,:,:), fms_mmr_cl_rad(:,:,:)
+    !real(r_def), intent(in) :: fms_cld_conv_frac(:,:,:)
 
     logical, intent(in) :: do_cloud_simple
 
@@ -568,8 +568,8 @@ write(stdlog_unit, socrates_rad_nml)
     real(r_def), dimension(n_profile, n_layer) :: input_p, input_t, input_mixing_ratio, &
          input_d_mass, input_density, input_layer_heat_capacity, &
          soc_heating_rate, input_o3_mixing_ratio, &
-         input_co2_mixing_ratio,z_full_reshaped, input_cld_frac, input_reff_rad, input_mmr_cl_rad, &
-         input_cld_conv_frac
+         input_co2_mixing_ratio,z_full_reshaped!, input_cld_frac, input_reff_rad, input_mmr_cl_rad, &
+         !input_cld_conv_frac
 
     real(r_def), dimension(n_profile, 0:n_layer) :: input_p_level, input_t_level, soc_flux_direct, &
          soc_flux_down, soc_flux_up, z_half_reshaped, &
@@ -615,11 +615,11 @@ write(stdlog_unit, socrates_rad_nml)
           input_p = reshape(fms_p_full(:,:,:),(/si*sj,sk /))
           input_p_level = reshape(fms_p_half(:,:,:),(/si*sj,sk+1 /))
 
-          input_cld_frac = reshape(fms_cld_frac(:,:,:),(/si*sj,sk /))
-          input_cld_conv_frac = reshape(fms_cld_conv_frac(:,:,:),(/si*sj,sk /))
+          !input_cld_frac = reshape(fms_cld_frac(:,:,:),(/si*sj,sk /))
+          !input_cld_conv_frac = reshape(fms_cld_conv_frac(:,:,:),(/si*sj,sk /))
 
-          input_reff_rad = reshape(fms_reff_rad(:,:,:),(/si*sj,sk /))
-          input_mmr_cl_rad = reshape(fms_mmr_cl_rad(:,:,:),(/si*sj,sk/))
+          !input_reff_rad = reshape(fms_reff_rad(:,:,:),(/si*sj,sk /))
+          !input_mmr_cl_rad = reshape(fms_mmr_cl_rad(:,:,:),(/si*sj,sk/))
 
           if (account_for_effect_of_water == .true.) then
               input_mixing_ratio = reshape(fms_spec_hum(:,:,:) / (1. - fms_spec_hum(:,:,:)),(/si*sj,sk /)) !Mass mixing ratio = q / (1-q)
@@ -741,10 +741,10 @@ write(stdlog_unit, socrates_rad_nml)
                input_planet_albedo(idx_chunk_start:idx_chunk_end),                          &
                input_planet_emissivity,                                                     &
                input_layer_heat_capacity(idx_chunk_start:idx_chunk_end,:),                  &
-               input_cld_frac(idx_chunk_start:idx_chunk_end,:),                             &
-               input_cld_conv_frac(idx_chunk_start:idx_chunk_end,:),                        &
-               input_reff_rad(idx_chunk_start:idx_chunk_end,:),                             & 
-               input_mmr_cl_rad(idx_chunk_start:idx_chunk_end,:),                           &
+               !input_cld_frac(idx_chunk_start:idx_chunk_end,:),                             &
+               !input_cld_conv_frac(idx_chunk_start:idx_chunk_end,:),                        &
+               !input_reff_rad(idx_chunk_start:idx_chunk_end,:),                             & 
+               !input_mmr_cl_rad(idx_chunk_start:idx_chunk_end,:),                           &
                do_cloud_simple,                                                             &
                soc_flux_direct(idx_chunk_start:idx_chunk_end,:),                            &
                soc_flux_down(idx_chunk_start:idx_chunk_end,:),                              &
@@ -774,10 +774,10 @@ write(stdlog_unit, socrates_rad_nml)
                input_planet_albedo(idx_chunk_start:idx_chunk_end),                          &
                input_planet_emissivity,                                                     &
                input_layer_heat_capacity(idx_chunk_start:idx_chunk_end,:),                  &
-               input_cld_frac(idx_chunk_start:idx_chunk_end,:),                             &
-               input_cld_conv_frac(idx_chunk_start:idx_chunk_end,:),                        &
-               input_reff_rad(idx_chunk_start:idx_chunk_end,:),                             & 
-               input_mmr_cl_rad(idx_chunk_start:idx_chunk_end,:),                           &     
+               !input_cld_frac(idx_chunk_start:idx_chunk_end,:),                             &
+               !input_cld_conv_frac(idx_chunk_start:idx_chunk_end,:),                        &
+               !input_reff_rad(idx_chunk_start:idx_chunk_end,:),                             & 
+               !input_mmr_cl_rad(idx_chunk_start:idx_chunk_end,:),                           &     
                do_cloud_simple,                                                             &        
                soc_flux_direct(idx_chunk_start:idx_chunk_end,:),                            &
                soc_flux_down(idx_chunk_start:idx_chunk_end,:),                              &
@@ -833,8 +833,8 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, co2_soc, p_full_soc 
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: output_heating_rate_sw, output_heating_rate_lw 
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: output_heating_rate_total, z_full_soc
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: cld_frac_soc, cld_conv_frac_soc 
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: reff_rad_soc, mmr_cl_rad_soc, qcl_rad_soc
+!    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: cld_frac_soc, cld_conv_frac_soc 
+!    real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: reff_rad_soc, mmr_cl_rad_soc, qcl_rad_soc
 
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: p_half_soc, t_half_out, z_half_soc
     real(r_def), dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: output_soc_flux_sw_down, output_soc_flux_sw_up
@@ -1194,7 +1194,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,    &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, &
             p_half_soc, z_full_soc, z_half_soc, albedo_soc, coszen, rrsun,     &
-            n_profile, n_layer, cld_frac_soc, cld_conv_frac_soc, reff_rad_soc, mmr_cl_rad_soc,&            
+            n_profile, n_layer, &!cld_frac_soc, cld_conv_frac_soc, reff_rad_soc, mmr_cl_rad_soc,&            
             output_heating_rate_lw, output_soc_flux_lw_down, output_soc_flux_lw_up, &
             output_soc_flux_lw_down_clear, output_soc_flux_lw_up_clear,        &
             do_cloud_simple,                                                   &
@@ -1225,7 +1225,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
        CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,     &
             tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc,  &
             p_half_soc, z_full_soc, z_half_soc, albedo_soc, coszen, rrsun,      &
-            n_profile, n_layer, cld_frac_soc, cld_conv_frac_soc, reff_rad_soc, mmr_cl_rad_soc, &                        
+            n_profile, n_layer, &!cld_frac_soc, cld_conv_frac_soc, reff_rad_soc, mmr_cl_rad_soc, &                        
             output_heating_rate_sw, output_soc_flux_sw_down, output_soc_flux_sw_up, &
             output_soc_flux_sw_down_clear, output_soc_flux_sw_up_clear,         &
             do_cloud_simple)
