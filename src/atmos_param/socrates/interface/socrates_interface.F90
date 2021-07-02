@@ -809,7 +809,7 @@ write(stdlog_unit, socrates_rad_nml)
   end subroutine socrates_interface
 
 subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p_full_in, p_half_in, z_full_in, z_half_in, albedo_in, &
-       temp_tend, net_surf_sw_down, surf_lw_down, delta_t, do_cloud_simple, cf_rad, cca_rad, reff_rad, qcl_rad) 
+       temp_tend, net_surf_sw_down, surf_lw_down, delta_t, do_cloud_simple)!, cf_rad, cca_rad, reff_rad, qcl_rad) 
 
     use astronomy_mod, only: diurnal_solar
     use constants_mod,         only: pi, wtmco2, wtmozone, rdgas, gas_constant
@@ -825,7 +825,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     real, intent(out), dimension(:,:)   :: net_surf_sw_down, surf_lw_down
     real, intent(in) :: delta_t
     logical, intent(in) :: do_cloud_simple
-    real, intent(in), dimension(:,:,:) :: cf_rad, cca_rad, reff_rad, qcl_rad
+    !real, intent(in), dimension(:,:,:) :: cf_rad, cca_rad, reff_rad, qcl_rad
 
     integer(i_def) :: n_profile, n_layer
 
@@ -1155,23 +1155,23 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
          endif
        endif
 
+       !turn off the cloud scheme for trip test error finding
+       ! if(do_cloud_simple) then
+       !     cld_frac_soc = REAL(cf_rad, kind(r_def))
+       !     cld_conv_frac_soc = REAL(cca_rad, kind(r_def))
 
-        if(do_cloud_simple) then
-            cld_frac_soc = REAL(cf_rad, kind(r_def))
-            cld_conv_frac_soc = REAL(cca_rad, kind(r_def))
+       !     reff_rad_soc = REAL(reff_rad, kind(r_def))
 
-            reff_rad_soc = REAL(reff_rad, kind(r_def))
-
-            qcl_rad_soc  = REAL(qcl_rad, kind(r_def))
-            mmr_cl_rad_soc = qcl_rad_soc / (1.0 - qcl_rad_soc) !check if qcl is indeed specific humidity and not mmr
+       !     qcl_rad_soc  = REAL(qcl_rad, kind(r_def))
+       !     mmr_cl_rad_soc = qcl_rad_soc / (1.0 - qcl_rad_soc) !check if qcl is indeed specific humidity and not mmr
         
-        else
-            cld_frac_soc = 0.
-            cld_conv_frac_soc = 0.
-            reff_rad_soc = 0.            
-            mmr_cl_rad_soc = 0.
+       ! else
+       !     cld_frac_soc = 0.
+       !     cld_conv_frac_soc = 0.
+       !     reff_rad_soc = 0.            
+       !     mmr_cl_rad_soc = 0.
 
-        endif
+       ! endif
        n_profile = INT(size(temp_in,2)*size(temp_in,1), kind(i_def))
        n_layer   = INT(size(temp_in,3), kind(i_def))
        t_surf_for_soc = REAL(t_surf_in(:,:), kind(r_def))
