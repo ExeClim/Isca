@@ -21,11 +21,7 @@ Below are a set of controls that allow the physical size and rotation of a plane
 +---------------------+----------------------------------+----------------------------------+-----------------------------------------------------------+
 |``omega``            | :math:`7.2921150\times 10^{-5}`  | rad :math:`\cdot` s :math:`^{-1}`| Rotation rate of planet                                   |
 +---------------------+----------------------------------+----------------------------------+-----------------------------------------------------------+
-|``rotation_period``  | :math:`-1.0` (inactive)          | s                                | Rotation period of planet (overrides ``omega`` )          |
-+---------------------+----------------------------------+----------------------------------+-----------------------------------------------------------+
 |``orbital_period``   | :math:`31557600`                 | s                                | Orbital period of planet                                  |
-+---------------------+----------------------------------+----------------------------------+-----------------------------------------------------------+
-|``orbital_rate``     | :math:`2\pi` / ``orbital_period``| rad :math:`\cdot` s :math:`^{-1}`| Orbital rate of planet                                    |
 +---------------------+----------------------------------+----------------------------------+-----------------------------------------------------------+
 |``solar_constant``   | :math:`1368.22`                  | Wm :math:`^{-2}`                 | Stellar irradiance                                        |
 +---------------------+----------------------------------+----------------------------------+-----------------------------------------------------------+
@@ -42,10 +38,10 @@ whereas setting ``earthday_multiple`` to true modifies the calculation to
 
 .. note:: Whilst the rotation and orbital rates are set within this module, other parameters associated with planetary motion such as axial tilt (obliquity) and eccentricity are controlled from the ``astronomy_mod`` module. 
 
-Dry Atmosphere
-^^^^^^^^^^^^^^
+Atmospheric Parameters
+^^^^^^^^^^^^^^^^^^^^^^
 
-Changing the dry atmosphere values allows atmospheres with a wide range of compositions to be studied, including both terrestrial planets (e.g. Earth) and gas giants such as Jupiter. In the case of Earth, the reference surface pressure is taken to be the mean sea level pressure.
+Changing the basic atmospheric properties allows atmospheres with a wide range of compositions to be studied, including both terrestrial planets (e.g. Earth/Mars) and gas giants such as Jupiter. In the case of Earth, the reference surface pressure is taken to be the mean sea level pressure.
 
 The dry air gas constant for any homogeneous atmosphere can be calculated from its chemical composition. It is calculated by dividing the universal gas constant :math:`R` by the average molar mass of the atmosphere.
 
@@ -60,51 +56,16 @@ The dry air gas constant for any homogeneous atmosphere can be calculated from i
 +------------+----------------------------+-------------------------------------+-------------------------------------------------------+
 |``kappa``   | :math:`2/7`                | dimensionless                       | Heat capacity ratio ( :math:`\gamma` for an ideal gas)|
 +------------+----------------------------+-------------------------------------+-------------------------------------------------------+
-
-.. note:: If the mean surface pressure value is changed here, it is necessary to also set ``reference_sea_level_press`` from the ``spectral_dynamics`` namelist, else the output file will not extend to the pressure specified.
-
-
-Moist Atmosphere
-^^^^^^^^^^^^^^^^
-
-With the addition of moist physics, a number of additional namelist parameters can be used to change the primary condensate present in the atmosphere. This allows atmospheres in temperature regimes significantly different from Earth to be modelled, including Titan, which has an active methane cycle.
-
-+---------------+-------------------------+----------------------------------+-------------------------------------------+
-| Name          | Default                 | Units                            | Description                               |
-+===============+=========================+==================================+===========================================+
-|``rvgas``      | :math:`461.50`          | Jkg :math:`^{-1}` K :math:`^{-1}`| Vapour gas constant                       |
-+---------------+-------------------------+----------------------------------+-------------------------------------------+
-|``dens_liquid``| :math:`1000`            | kgm :math:`^{-3}`                | Density of condensate in the liquid phase |
-+---------------+-------------------------+----------------------------------+-------------------------------------------+
-|``hlv``        | :math:`2.500\times 10^6`| Jkg :math:`^{-1}`                | Latent heat of vaporisation  of condensate|
-+---------------+-------------------------+----------------------------------+-------------------------------------------+
-|``hlf``        | :math:`3.34\times 10^5` | Jkg :math:`^{-1}`                | Latent heat of fusion of condensate       |
-+---------------+-------------------------+----------------------------------+-------------------------------------------+
-|``tfreeze``    | :math:`273.16`          | K                                | Freezing point of condensate              |
-+---------------+-------------------------+----------------------------------+-------------------------------------------+
-|``tppress``    | :math:`610.78`          | Pa / Nm :math:`^{-2}`            | Triple point pressure of condensate       |
-+---------------+-------------------------+----------------------------------+-------------------------------------------+
-|``es0``        | :math:`1.0`             | dimensionless                    | Humidity factor :math:`^\dagger`          |
-+---------------+-------------------------+----------------------------------+-------------------------------------------+
+|``es0``     | :math:`1.0`                | dimensionless                       | Humidity factor :math:`^\dagger`                      |
++------------+----------------------------+-------------------------------------+-------------------------------------------------------+
 
 :math:`^\dagger`: The humidity factor controls the atmospheric humidity content via the expression for saturation vapor pressure *if* ``do_simple: True`` is set within the ``idealized_moist_phys`` namelist.
 
-Derived Constants
+.. note:: If the mean surface pressure value is changed here, it is necessary to also set ``reference_sea_level_press`` from the ``spectral_dynamics`` namelist, else the output file will not extend to the pressure specified.
+
+Moist Atmospheres
 ^^^^^^^^^^^^^^^^^
-
-From the above namelist variables a few more derived atmospheric constants are calculated that are called by other modules, these are:
-
-+------------+-----------------------+---------------------------------+------------------------------------------+
-| Name       | Default               | Units                           | Description                              |
-+============+=======================+=================================+==========================================+
-|``cp_air``  | ``rvgas`` / ``kappa`` |Jkg :math:`^{-1}` K :math:`^{-1}`| Dry air heat capacity                    |
-+------------+-----------------------+---------------------------------+------------------------------------------+
-|``cp_vapor``| :math:`4` * ``rvgas`` |Jkg :math:`^{-1}` K :math:`^{-1}`| Vapour heat capacity                     |
-+------------+-----------------------+---------------------------------+------------------------------------------+
-|``hls``     |``hlv`` + ``hlf``      |Jkg :math:`^{-1}`                | Latent heat of sublimation of condensate |
-+------------+-----------------------+---------------------------------+------------------------------------------+
-
-
+We hope to be able to introduce controls for moist atmospheres in a future update to Isca. This will allow condensable species other than water to be easily modelled.
 
 Relevant Modules
 ----------------
