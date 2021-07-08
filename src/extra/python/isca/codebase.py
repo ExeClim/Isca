@@ -324,6 +324,59 @@ class SocratesCodeBase(CodeBase):
         self.disable_rrtm()
         self.simlink_to_soc_code()
 
+class SocColumnCodeBase(CodeBase):
+    """Isca without RRTM but with the Met Office radiation scheme, Socrates. THIS VERSION FOR SINGLE COLUMN USE. 
+    """
+    #path_names_file = P(_module_directory, 'templates', 'moist_path_names')
+    name = 'socrates_column'
+    executable_name = 'soc_column_isca.x'
+
+    def column_model(self):
+        self.compile_flags.append('-DCOLUMN_MODEL')
+        self.log.info('USING SINGLE COLUMN MODEL')
+
+    def disable_rrtm(self):
+        # add no compile flag
+        self.compile_flags.append('-DRRTM_NO_COMPILE')
+        self.log.info('RRTM compilation disabled.')
+
+    def simlink_to_soc_code(self):
+        #Make symlink to socrates source code if one doesn't already exist.
+        socrates_desired_location = self.codedir+'/src/atmos_param/socrates/src/trunk'
+
+        #First check if socrates is in correct place already
+        if os.path.exists(socrates_desired_location):
+            link_correct = os.path.exists(socrates_desired_location+'/src/')
+            if link_correct:
+                socrates_code_in_desired_location=True
+            else:
+                socrates_code_in_desired_location=False                
+                if os.path.islink(socrates_desired_location):
+                    self.log.info('Socrates source code symlink is in correct place, but is to incorrect location. Trying to correct.')
+                    os.unlink(socrates_desired_location)
+                else:
+                    self.log.info('Socrates source code is in correct place, but folder structure is wrong. Contents of the folder '+socrates_desired_location+' should include a src folder.')
+        else:
+            socrates_code_in_desired_location=False
+            self.log.info('Socrates source code symlink does not exist. Creating.')
+
+        # If socrates is not in the right place already, then attempt to make symlink to location of code provided by GFDL_SOC
+        if socrates_code_in_desired_location:
+            self.log.info('Socrates source code already in correct place. Continuing.')
+        else:
+            if GFDL_SOC is not None:
+                sh.ln('-s', GFDL_SOC, socrates_desired_location)
+            elif GFDL_SOC is None:
+                error_mesg = 'Socrates code is required for SocratesCodebase, but source code is not provided in location GFDL_SOC='+ str(GFDL_SOC)
+                self.log.error(error_mesg)
+                raise OSError(error_mesg)
+
+    def __init__(self, *args, **kwargs):
+        super(SocColumnCodeBase, self).__init__(*args, **kwargs)
+        self.column_model()
+        self.disable_rrtm()
+        self.simlink_to_soc_code()
+
 class GreyCodeBase(CodeBase):
     """The Frierson model.
     This is the closest to the Frierson model, with moist dynamics and a
@@ -350,6 +403,27 @@ class GreyCodeBase(CodeBase):
     def __init__(self, *args, **kwargs):
         super(GreyCodeBase, self).__init__(*args, **kwargs)
         self.disable_rrtm()
+        self.disable_soc()
+
+class ColumnCodeBase(CodeBase):
+    """This contains code that will allow one to use all model physics in a single column configuration (i.e. without calling the dynamical core)
+    """
+    #path_names_file = P(_module_directory, 'templates', 'moist_path_names')
+    name = 'column'
+    executable_name = 'column_isca.x'
+
+    def column_model(self):
+        self.compile_flags.append('-DCOLUMN_MODEL')
+        self.log.info('USING SINGLE COLUMN MODEL')
+
+    def disable_soc(self):
+        # add no compile flag
+        self.compile_flags.append('-DSOC_NO_COMPILE')
+        self.log.info('SOCRATES compilations diabled.') 
+
+    def __init__(self, *args, **kwargs):
+        super(ColumnCodeBase, self).__init__(*args, **kwargs)
+        self.column_model()
         self.disable_soc()
 
 class DryCodeBase(GreyCodeBase):

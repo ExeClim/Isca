@@ -49,7 +49,11 @@ use   interpolator_mod, only: interpolate_type, interpolator_init, &
                               CONSTANT, INTERP_WEIGHTED_P
 
 use      astronomy_mod, only: diurnal_exoplanet, astronomy_init, obliq, ecc
+#ifdef COLUMN_MODEL
+use       spec_mpp_mod, only: grid_domain, get_grid_domain 
+#else
 use     transforms_mod, only: grid_domain, get_grid_domain
+#endif
 
 
 implicit none
