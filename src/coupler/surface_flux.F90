@@ -256,6 +256,7 @@ logical :: old_dtaudv            = .false.
 logical :: use_mixing_ratio      = .false.
 real    :: gust_const            =  1.0
 real    :: gust_min              =  0.0
+real    :: w_atm_const           =  0.0
 logical :: ncar_ocean_flux       = .false.
 logical :: ncar_ocean_flux_orig  = .false. ! for backwards compatibility
 logical :: raoult_sat_vap        = .false.
@@ -273,6 +274,7 @@ namelist /surface_flux_nml/ no_neg_q,             &
                             alt_gustiness,        &
                             gust_const,           &
                             gust_min,             &
+							w_atm_const,          &
                             old_dtaudv,           &
                             use_mixing_ratio,     &
                             ncar_ocean_flux,      &
@@ -343,7 +345,7 @@ subroutine surface_flux_1d (                                           &
      u_surf,    v_surf,                                                &
      rough_mom, rough_heat, rough_moist, rough_scale, gust,            &
      flux_t, flux_q, flux_r, flux_u, flux_v,                           &
-     cd_m,      cd_t,       cd_q,                                      &
+     cd_m,      cd_t,       cd_q,       rho,                           &
      w_atm,     u_star,     b_star,     q_star,                        &
      dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &
      dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &
@@ -367,7 +369,7 @@ subroutine surface_flux_1d (                                           &
        dhdt_surf, dedt_surf,  dedq_surf, drdt_surf,          &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
-       cd_m,      cd_t,       cd_q,                          & 
+       cd_m,      cd_t,       cd_q,      rho,                & 
        ex_del_m, ex_del_h, ex_del_q,                         & !mp586 for 10m winds and 2m temp
        temp_2m, u_10m, v_10m,                                & !mp586 for 10m winds and 2m temp
        q_2m, rh_2m                                             ! Add 2m q and RH
@@ -391,7 +393,7 @@ subroutine surface_flux_1d (                                           &
        thv_atm,  th_atm,   tv_atm,    thv_surf,            &
        e_sat,    e_sat1,   q_sat,     q_sat1,    p_ratio,  &
        t_surf0,  t_surf1,  u_dif,     v_dif,               &
-       rho_drag, drag_t,    drag_m,   drag_q,    rho,      &
+       rho_drag, drag_t,    drag_m,   drag_q,              &
        q_atm,    q_surf0,  dw_atmdu,  dw_atmdv,  w_gust,   &
        e_sat_2m, q_sat_2m
 
@@ -569,22 +571,40 @@ subroutine surface_flux_1d (                                           &
      ! scale momentum drag coefficient on orographic roughness
      cd_m = cd_m*(log(z_atm/rough_mom+1)/log(z_atm/rough_scale+1))**2
      ! surface layer drag coefficients
-     drag_t = cd_t * w_atm
-     drag_q = cd_q * w_atm
      drag_m = cd_m * w_atm
-
      ! density
      rho = p_atm / (rdgas * tv_atm)
+  end where
+  
+  
+  ! RG Add option to fix w_atm in the evaporation and sensible heat equations. 
+  if (w_atm_const > 0.0) then
+	  where (avail)
+	      ! sensible heat flux
+	      drag_t = cd_t * w_atm_const
+	      rho_drag = cp_air * drag_t * rho
+	      flux_t = rho_drag * (t_surf0 - th_atm)  ! flux of sensible heat (W/m**2)
+	      dhdt_surf =  rho_drag                   ! d(sensible heat flux)/d(surface temperature)
+	      dhdt_atm  = -rho_drag*p_ratio           ! d(sensible heat flux)/d(atmos temperature)
+		  
+		  drag_q = cd_q * w_atm_const
+		  rho_drag = drag_q * rho
+		  
+	  end where
+  else
+	  where (avail)
+	      ! sensible heat flux
+	      drag_t = cd_t * w_atm
+	      rho_drag = cp_air * drag_t * rho
+	      flux_t = rho_drag * (t_surf0 - th_atm)  ! flux of sensible heat (W/m**2)
+	      dhdt_surf =  rho_drag                   ! d(sensible heat flux)/d(surface temperature)
+	      dhdt_atm  = -rho_drag*p_ratio           ! d(sensible heat flux)/d(atmos temperature)
+		  
+		  drag_q = cd_q * w_atm
+		  rho_drag  =  drag_q * rho
+	  end where
+  end if
 
-     ! sensible heat flux
-     rho_drag = cp_air * drag_t * rho
-     flux_t = rho_drag * (t_surf0 - th_atm)  ! flux of sensible heat (W/m**2)
-     dhdt_surf =  rho_drag                   ! d(sensible heat flux)/d(surface temperature)
-     dhdt_atm  = -rho_drag*p_ratio           ! d(sensible heat flux)/d(atmos temperature)
-
-     ! evaporation
-     rho_drag  =  drag_q * rho
-  end where  
 
 !RG Add bucket - if bucket is on evaluate fluxes based on moisture availability.
 !RG Note changes to avail statements to allow bucket to be switched on or off	  
@@ -647,6 +667,19 @@ subroutine surface_flux_1d (                                           &
   endif
 
 !RG end Add bucket changes
+
+
+! RG Add option to fix w_atm in the evaporation and sensible heat equations. 
+if (w_atm_const > 0.0) then
+  where (avail)
+      q_surf = q_atm + flux_q / (rho*cd_q*w_atm_const)   ! surface specific humidity
+  end where
+else
+  where (avail)
+      q_surf = q_atm + flux_q / (rho*cd_q*w_atm)   ! surface specific humidity
+  end where
+end if
+
 
   where (avail)
 
@@ -730,8 +763,8 @@ subroutine surface_flux_0d (                                                 &
        dhdt_surf_0, dedt_surf_0,  dedq_surf_0, drdt_surf_0,            &
        dhdt_atm_0,  dedq_atm_0,   dtaudu_atm_0,dtaudv_atm_0,           &
        w_atm_0,     u_star_0,     b_star_0,    q_star_0,               &
-       cd_m_0,      cd_t_0,       cd_q_0,      			       &
-       ex_del_m_0, ex_del_h_0, ex_del_q_0,                        	       & !mp586 for 10m winds and 2m temp
+       cd_m_0,      cd_t_0,       cd_q_0,      			               &
+       ex_del_m_0, ex_del_h_0, ex_del_q_0,                        	   & !mp586 for 10m winds and 2m temp
        temp_2m_0, u_10m_0, v_10m_0,                                    & !mp586 for 10m winds and 2m temp
        q_2m_0, rh_2m_0
   real, intent(inout) :: q_surf_0
@@ -750,7 +783,7 @@ subroutine surface_flux_0d (                                                 &
        dhdt_surf, dedt_surf,  dedq_surf, drdt_surf,          &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
-       cd_m,      cd_t,       cd_q,	 		     & 
+       cd_m,      cd_t,       cd_q,	 	 rho,        	     & 
        ex_del_m, ex_del_h, ex_del_q,                         & !mp586 for 10m winds and 2m temp
        temp_2m, u_10m, v_10m,                                & !mp586 for 10m winds and 2m temp
        q_2m, rh_2m                                             !Add 2m q and RH
@@ -792,7 +825,7 @@ subroutine surface_flux_0d (                                                 &
        u_surf,    v_surf,                                                &
        rough_mom, rough_heat, rough_moist, rough_scale, gust,            &
        flux_t, flux_q, flux_r, flux_u, flux_v,                           &
-       cd_m,      cd_t,       cd_q,                                      &
+       cd_m,      cd_t,       cd_q,       rho,                           &
        w_atm,     u_star,     b_star,     q_star,                        &
        dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &
        dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &
@@ -841,7 +874,7 @@ subroutine surface_flux_2d (                                           &
      u_surf,    v_surf,                                                &
      rough_mom, rough_heat, rough_moist, rough_scale, gust,            &
      flux_t,    flux_q,     flux_r,    flux_u,    flux_v,              &
-     cd_m,      cd_t,       cd_q,                                      &
+     cd_m,      cd_t,       cd_q,      rho,                            &
      w_atm,     u_star,     b_star,     q_star,                        &
      dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &
      dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &
@@ -862,7 +895,7 @@ subroutine surface_flux_2d (                                           &
        dhdt_surf, dedt_surf,  dedq_surf, drdt_surf,          &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
-       cd_m,      cd_t,       cd_q,                          &
+       cd_m,      cd_t,       cd_q,      rho,                &
        ex_del_m, ex_del_h, ex_del_q,                         & !mp586 for 10m winds and 2m temp
        temp_2m, u_10m, v_10m,                                & !mp586 for 10m winds and 2m temp
        q_2m, rh_2m                                             !Add 2m q and RH
@@ -887,7 +920,7 @@ subroutine surface_flux_2d (                                           &
           u_surf(:,j),    v_surf(:,j),                                                                    &
           rough_mom(:,j), rough_heat(:,j), rough_moist(:,j), rough_scale(:,j), gust(:,j),                 &
           flux_t(:,j),    flux_q(:,j),     flux_r(:,j),    flux_u(:,j),    flux_v(:,j),                   &
-          cd_m(:,j),      cd_t(:,j),       cd_q(:,j),                                                     &
+          cd_m(:,j),      cd_t(:,j),       cd_q(:,j),       rho(:,j),                                     &
           w_atm(:,j),     u_star(:,j),     b_star(:,j),     q_star(:,j),                                  &
           dhdt_surf(:,j), dedt_surf(:,j),  dedq_surf(:,j),  drdt_surf(:,j),                               &
           dhdt_atm(:,j),  dedq_atm(:,j),   dtaudu_atm(:,j), dtaudv_atm(:,j),                              &
