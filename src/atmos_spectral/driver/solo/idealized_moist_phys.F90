@@ -967,7 +967,7 @@ endif
 
 ! initialise outs to zero
 
-cf_rad(:,:,:)   = 0. !TODO could it be setting to zero?
+cf_rad(:,:,:)   = 0.
 reff_rad(:,:,:) = 0.
 qcl_rad(:,:,:)  = 0.
 cca_rad(:,:,:)  = 0.
@@ -1116,7 +1116,7 @@ if (do_socrates_radiation) then
     if(do_cloud_simple) then
        ! Simple cloud scheme outputs radii in microns, but Socrates expects 
        ! it in metres so convert it.
-       reff_rad = 1.e-6 * reff_rad
+       reff_rad = 1.e-6 * reff_rad 
     endif
   
     call run_socrates(Time, Time+Time_step, rad_lat, rad_lon,                  &
@@ -1125,8 +1125,8 @@ if (do_socrates_radiation) then
                       p_half(:,:,:,current), z_full(:,:,:,current),            &
                       z_half(:,:,:,current), albedo, dt_tg(:,:,:),             &
                       net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t,       &
-                      do_cloud_simple)!, cf_rad(:,:,:), cca_rad(:,:,:),          & !TODO what happens when these are off?
-                      !reff_rad(:,:,:), qcl_rad(:,:,:))
+                      do_cloud_simple, cf_rad(:,:,:), cca_rad(:,:,:),          &
+                      reff_rad(:,:,:), qcl_rad(:,:,:)   )
 
 endif
 #endif
