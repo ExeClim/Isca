@@ -350,9 +350,9 @@ write(stdlog_unit, idealized_moist_phys_nml)
 d622 = rdgas/rvgas
 d378 = 1.-d622
 
-!if(do_cloud_simple) then
-!  call cloud_simple_init(get_axis_id(), Time)
-!end if
+if(do_cloud_simple) then
+  call cloud_simple_init(get_axis_id(), Time)
+end if
 
 !s need to make sure that gray radiation and rrtm radiation are not both called.
 if(two_stream_gray .and. do_rrtm_radiation) &
@@ -797,7 +797,7 @@ real :: delta_t
 real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
 
 ! Simple cloud scheme variabilies to pass to radiation
-!real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cf_rad, reff_rad, qcl_rad, cca_rad  
+real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cf_rad, reff_rad, qcl_rad, cca_rad  
 
 real, intent(in) , dimension(:,:,:), optional :: mask
 integer, intent(in) , dimension(:,:),   optional :: kbot
@@ -967,23 +967,23 @@ endif
 
 ! initialise outs to zero
 
-!cf_rad(:,:,:)   = 0. !TODO could it be setting to zero?
-!reff_rad(:,:,:) = 0.
-!qcl_rad(:,:,:)  = 0.
-!cca_rad(:,:,:)  = 0.
+cf_rad(:,:,:)   = 0. !TODO could it be setting to zero?
+reff_rad(:,:,:) = 0.
+qcl_rad(:,:,:)  = 0.
+cca_rad(:,:,:)  = 0.
 
-!if(do_cloud_simple) then
+if(do_cloud_simple) then
 
-!    call cloud_simple(p_half(:,:,:,current), p_full(:,:,:,current),  &
-!                      Time,                                &
-!                      tg(:,:,:,previous),                  &
-!                      grid_tracers(:,:,:,previous,nsphum), &
-!                      ! inouts - 
-!                      cf_rad(:,:,:), cca_rad(:,:,:),       &
-!                      reff_rad(:,:,:), qcl_rad(:,:,:)      & 
-!                      )
+    call cloud_simple(p_half(:,:,:,current), p_full(:,:,:,current),  &
+                      Time,                                &
+                      tg(:,:,:,previous),                  &
+                      grid_tracers(:,:,:,previous,nsphum), &
+                      ! inouts - 
+                      cf_rad(:,:,:), cca_rad(:,:,:),       &
+                      reff_rad(:,:,:), qcl_rad(:,:,:)      & 
+                      )
 
-!endif
+endif
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
@@ -1113,11 +1113,11 @@ endif
 if (do_socrates_radiation) then
        ! Socrates interface
   
-    !if(do_cloud_simple) then
-    !   ! Simple cloud scheme outputs radii in microns, but Socrates expects 
-    !   ! it in metres so convert it.
-    !   reff_rad = 1.e-6 * reff_rad
-    !endif
+    if(do_cloud_simple) then
+       ! Simple cloud scheme outputs radii in microns, but Socrates expects 
+       ! it in metres so convert it.
+       reff_rad = 1.e-6 * reff_rad
+    endif
   
     call run_socrates(Time, Time+Time_step, rad_lat, rad_lon,                  &
                       tg(:,:,:,previous), grid_tracers(:,:,:,previous,nsphum), &
