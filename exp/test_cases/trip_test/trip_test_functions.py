@@ -13,6 +13,7 @@ import pdb
 import numpy as np
 import os
 import sys
+import f90nml
 
 def get_nml_diag(test_case_name):
     """Gets the appropriate namelist and input files from each of the test case scripts in the test_cases folder
@@ -223,6 +224,12 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
                 if maxval !=0.:
                     print('Test failed for '+var+' max diff value = '+str(maxval.values))
                     test_pass = False
+
+            base_experiment_input_nml = f90nml.read(data_dir_dict[base_commit] +'/run0001/input.nml')
+            later_commit_input_nml    = f90nml.read(data_dir_dict[later_commit] +'/run0001/input.nml')
+
+            if base_experiment_input_nml!=later_commit_input_nml:
+                raise AttributeError(f'The two experiments to be compared have been run using different input namelists, and so the results may be different because of this. This only happens when you have run the trip tests using one of the commit IDs before, and that you happen to have used a different version of the test cases on that previous occasion. Try removing both {data_dir_dict[base_commit]} and {data_dir_dict[later_commit]} and try again.')
 
         if test_pass:
             print('Test passed for '+test_case_name+'. Commit '+later_commit+' gives the same answer as commit '+base_commit)
