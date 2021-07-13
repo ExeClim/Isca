@@ -366,8 +366,14 @@ class DryCodeBase(GreyCodeBase):
 
 
 
-# class ShallowCodeBase(CodeBase):
-#     """The Shallow Water Equations.
-#     """
-#     name = 'shallow'
-#     executable_name = 'shallow.x'
+class ShallowCodeBase(CodeBase):
+    """The Shallow Water Equations.
+    """
+    name = 'shallow'
+    executable_name = 'shallow.x'
+
+class BarotropicCodeBase(CodeBase):
+    """The Barotropic vorticity equations.
+    """
+    name = 'barotropic'
+    executable_name = 'barotropic_isca.x'
