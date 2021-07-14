@@ -278,7 +278,7 @@ if __name__=="__main__":
 
     scale = 1.
 
-    dust_clim = 'cdod_clim_MY28'
+    dust_clim = 'cdod_clim_MY24'
 
     dust_scale = 7.4e-5
 
