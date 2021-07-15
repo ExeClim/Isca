@@ -131,7 +131,7 @@ def delete_all_restarts(exp, exceptions=None):
 
 
 
-def interpolate_output(infile, outfile, all_fields=True, var_names=[], p_levs = "input"):
+def interpolate_output(infile, outfile, all_fields=True, var_names=[], p_levs = "input", dry=False):
     """Interpolate data from sigma to pressure levels. Includes option to remove original file.
 
     This is a very thin wrapper around the plevel.sh script found in
@@ -170,8 +170,10 @@ def interpolate_output(infile, outfile, all_fields=True, var_names=[], p_levs = 
     plev = " ".join("{:.0f}".format(x) for x in reversed(sorted(levels)))
     if all_fields:
         interpolator = interpolator.bake('-a')
+    if dry:
+        interpolator = interpolator.bake('-0')
     var_names = ' '.join(var_names)
-
+    
     interpolator('-i', infile, '-o', outfile, '-p', plev, var_names)
 
 
