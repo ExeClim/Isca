@@ -4,15 +4,16 @@ on:
   push:
     branches: [ master ]
     paths:
+      - '.github/workflows/docs.yml'
       - 'docs/**'
       - 'src/**'
 
 env:
-  GFDL_BASE: $PWD
+  GFDL_BASE: ${PWD}
   GFDL_ENV: "ubuntu_conda"
   GFDL_WORK: "$HOME/gfdl_work"
   GFDL_DATA: "$HOME/gfdl_data"
-  GFDL_PYDIR: "$PWD/src/extra/python"
+  GFDL_PYDIR: ${PWD}/"src/extra/python"
 
 jobs:
   docs:
