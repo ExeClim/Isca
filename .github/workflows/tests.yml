@@ -26,8 +26,8 @@ on:
 env:
   GFDL_BASE: ${{ github.workspace }}
   GFDL_ENV: "ubuntu_conda"
-  GFDL_WORK: "$HOME/gfdl_work"
-  GFDL_DATA: "$HOME/gfdl_data"
+  GFDL_WORK: "${{ github.workspace }}/../gfdl_work"
+  GFDL_DATA: "${{ github.workspace }}/../gfdl_data"
   GFDL_PYDIR: "${{ github.workspace }}/src/extra/python"
 
 jobs:
