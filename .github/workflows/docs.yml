@@ -9,11 +9,11 @@ on:
       - 'src/**'
 
 env:
-  GFDL_BASE: ${PWD}
+  GFDL_BASE: $GITHUB_WORKSPACE
   GFDL_ENV: "ubuntu_conda"
   GFDL_WORK: "$HOME/gfdl_work"
   GFDL_DATA: "$HOME/gfdl_data"
-  GFDL_PYDIR: ${PWD}/"src/extra/python"
+  GFDL_PYDIR: "$GITHUB_WORKSPACE/src/extra/python"
 
 jobs:
   docs:
@@ -43,6 +43,10 @@ jobs:
       - name: Install
         shell: bash -l {0}
         run: |
+          echo $GFDL_BASE
+          echo $GFDL_PYDIR
+          echo $GITHUB_WORKSPACE
+          echo $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
           cd $GFDL_PYDIR
           python -m pip install -e .
           cd $GFDL_BASE
