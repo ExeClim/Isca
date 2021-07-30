@@ -31,6 +31,7 @@ jobs:
 
       - name: Check environment variables
         run: |
+          echo "Testing"
           echo $GFDL_BASE
           echo $GFDL_PYDIR
           echo $GITHUB_WORKSPACE
