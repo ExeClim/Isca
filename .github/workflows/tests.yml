@@ -4,6 +4,8 @@ on:
   push:
     branches: [ master ]
     paths:
+      - '.github/workflows/tests.yml'
+      - 'bin/**'
       - 'bin/**'
       - 'ci/**'
       - 'exp/**'
@@ -13,6 +15,7 @@ on:
   pull_request:
     branches: [ master ]
     paths:
+      - '.github/workflows/tests.yml'
       - 'bin/**'
       - 'ci/**'
       - 'exp/**'
@@ -32,7 +35,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]  # ,  macos-latest]
         python-version: ['3.9']
 
     steps:
