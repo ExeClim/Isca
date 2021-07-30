@@ -1,8 +1,28 @@
-[![Build Status](https://travis-ci.com/execlim/Isca.svg?branch=master)](https://travis-ci.com/execlim/Isca)
-[![Documentation](https://img.shields.io/badge/docs-latest-green?logo=github)](https://execlim.github.io/Isca)
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg?logo=gnu)](LICENSE)
+<h1 align="center">
+  <a href="https://execlim.github.io/Isca">
+   <img src="docs/source/_static/isca_logo_large.png" alt="Isca" width="300"></a><br>
+</h1>
 
-# Isca
+<p align="center">
+<a href="https://www.python.org/downloads/">
+<img src="https://img.shields.io/badge/python-3.7+-blue.svg?logo=python&logoColor=white"
+     alt="Python 3.7+"></a>
+<a href="https://github.com/psf/black">
+<img src="https://img.shields.io/badge/code%20style-black-000000.svg"
+     alt="black"></a>
+<a href="https://github.com/execlim/Isca/actions?query=workflow%3Atests">
+<img src="https://github.com/execlim/Isca/workflows/tests/badge.svg"
+     alt="Tests"></a>
+<a href="https://execlim.github.io/Isca">
+<img src="https://img.shields.io/badge/docs-latest-green?logo=github"
+     alt="Documentation"></a>
+<a href="https://twitter.com/IscaModel">
+<img src="https://img.shields.io/twitter/follow/IscaModel?color=yellow&label=twitter%7CIscaModel&logo=twitter"
+     alt="twitter IscaModel"></a>
+<a href="LICENSE">
+<img src="https://img.shields.io/badge/license-GPL%20v3-blue.svg?logo=gnu"
+     alt="License: GPL v3"></a>
+</p>
 
 Isca is a framework for the idealized modelling of the global circulation of
 planetary atmospheres at varying levels of complexity and realism. The
