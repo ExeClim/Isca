@@ -29,52 +29,56 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Conda Environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-          environment-file: docs/environment.yml
-          miniforge-variant: Mambaforge
-          miniforge-version: "latest"
-          use-mamba: true
-          activate-environment: isca_docs
-          auto-activate-base: false
-
-      - name: Install
-        shell: bash -l {0}
+      - name: Check environment variables
         run: |
           echo $GFDL_BASE
           echo $GFDL_PYDIR
           echo $GITHUB_WORKSPACE
           echo $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+      - name: Install
+        shell: bash -l {0}
+        run: |
           cd $GFDL_PYDIR
           python -m pip install -e .
           cd $GFDL_BASE
-
-      - name: List installed packages
-        shell: bash -l {0}
-        run: conda list
-
-      - name: Build docs
-        shell: bash -l {0}
-        run: |
-          cd docs/
-          make html -e
-
-      - name: Commit documentation changes
-        run: |
-          git clone https://github.com/$GITHUB_REPOSITORY.git --branch gh-pages --single-branch gh-pages
-          cp -r docs/_build/html/* gh-pages/
-          cd gh-pages
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add .
-          git commit -m "Update documentation" -a || true
-          # The above command will fail if no changes were present, so we ignore that.
-
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          branch: gh-pages
-          directory: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+# 
+#       - name: Setup Conda Environment
+#         uses: conda-incubator/setup-miniconda@v2
+#         with:
+#           python-version: ${{ matrix.python-version }}
+#           environment-file: docs/environment.yml
+#           miniforge-variant: Mambaforge
+#           miniforge-version: "latest"
+#           use-mamba: true
+#           activate-environment: isca_docs
+#           auto-activate-base: false
+# 
+# 
+#       - name: List installed packages
+#         shell: bash -l {0}
+#         run: conda list
+# 
+#       - name: Build docs
+#         shell: bash -l {0}
+#         run: |
+#           cd docs/
+#           make html -e
+# 
+#       - name: Commit documentation changes
+#         run: |
+#           git clone https://github.com/$GITHUB_REPOSITORY.git --branch gh-pages --single-branch gh-pages
+#           cp -r docs/_build/html/* gh-pages/
+#           cd gh-pages
+#           git config --local user.email "action@github.com"
+#           git config --local user.name "GitHub Action"
+#           git add .
+#           git commit -m "Update documentation" -a || true
+#           # The above command will fail if no changes were present, so we ignore that.
+# 
+#       - name: Push changes
+#         uses: ad-m/github-push-action@master
+#         with:
+#           branch: gh-pages
+#           directory: gh-pages
+#           github_token: ${{ secrets.GITHUB_TOKEN }}
