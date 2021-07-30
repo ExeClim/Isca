@@ -9,11 +9,11 @@ on:
       - 'src/**'
 
 env:
-  GFDL_BASE: ${{ env.GITHUB_WORKSPACE }}
+  GFDL_BASE: ${{ GITHUB_WORKSPACE }}
   GFDL_ENV: "ubuntu_conda"
   GFDL_WORK: "$HOME/gfdl_work"
   GFDL_DATA: "$HOME/gfdl_data"
-  GFDL_PYDIR: "${{ env.GITHUB_WORKSPACE }}/src/extra/python"
+  GFDL_PYDIR: "${{ GITHUB_WORKSPACE }}/src/extra/python"
 
 jobs:
   docs:
