@@ -5,25 +5,29 @@ Vertical Coordinates
 Summary
 -------
 
-Climate models split the atmosphere into a number of different levels in order to calculate various quantities (e.g. temperature :math:`T`, zonal wind :math:`u`) throughout the depth of the model. There are a number of ways one may wish to divide the atmosphere; this is the purpose of the ``vert_coordinate`` module. Isca provides four different methods for prescribing model levels:
+Climate models split the atmosphere into a number of different levels in order to calculate various quantities (e.g. temperature :math:`T`, zonal wind :math:`u`) throughout the depth of the model. There are a number of ways one may wish to divide the atmosphere; this is the purpose of the ``vert_coordinate`` module. Isca provides four different methods for prescribing model levels, which will be detailed later:
 
 1. Manually prescribed levels 
 2. Even Sigma levels 
 3. Uneven Sigma levels
 4. Hybrid Scheme
 
-which we will elaborate on later, but first a note about model levels in climate models.
+Glancing at any of the output files produced by Isca, one will notice that there are two different pressure levels listed. ``p_half`` represents the upper/lower boundaries of each model layer whilst ``p_full`` is the pressure height of the mid-point of each layer. Each of Isca's four level schemes produce an array of ``p_half`` values, from which the corresponding ``p_full`` are calculated.
+
 
 Pressure or Sigma Levels??
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Whilst at first glance one might think the best way to divide up the atmosphere is using pressure levels (i.e. 1000-900hPa, 900-800hPa etc.), it is far more common in climate models to use what are known as sigma (:math:`\sigma`) levels, which are scaled pressure levels. Doing so is advantageous when topography is included in the model, as the different model levels form continuous functions; there are no discontinuities where the terrain intercepts the pressure levels. The figure below compares how conventional pressure levels intercept a mountain in the model, whereas the two schemes using :math:`\sigma`-levels follow the curvature of the terrain. All three models have 10 levels, but note how the distribution changes when using the uneven scheme. 
+Whilst at first glance one might think the best way to divide up the atmosphere is using pressure levels (i.e. 1000-900hPa, 900-800hPa etc.), it is far more common in climate models to use what are known as sigma (:math:`\sigma`) levels, which are scaled pressure levels. Doing so is advantageous when topography is included in the model, as the different model levels form continuous functions; there are no discontinuities where the terrain intercepts the pressure levels.
+
+The figure below compares a conventional pressure level based scheme against two different :math:`\sigma`-level schemes (even/uneven), with black lines and red dashes representing ``p_half`` and ``p_full`` values respectively. Note how the pressure levels intercept the mountain, whereas the two schemes using :math:`\sigma`-levels follow the curvature of the terrain. All three models have 10 levels.
 
 
 .. figure:: model_levels.png
    :scale: 100
 
-.. note:: Isca models will usually contain two pressure variables in their output files. ``p_half`` represents the boundaries of each model layer (black lines above) whereas ``p_full`` is the pressure height of the mid-point of each layer, denoted by the dashed red lines above.
+.. note:: The model levels in any output files will follow the scheme selected in the namelist. If you wish to interpret these results in a pressure coordinate basis, it is necessary to interpolate back to standard pressure levels. If your model has no topography then :math:`\sigma`-levels are equivalent to pressure levels, so this is not required. *(Interpolation documentation will follow in future)*
+
 
 Namelist options
 ---------------- 
@@ -64,13 +68,13 @@ This option will create an evenly spaced set of levels from sigma level 0 (top) 
 
 Uneven Sigma
 ^^^^^^^^^^^^
-The use of evenly-spaced model levels is often not the best option for modelling atmospheres, since it can lead to low resolution near the surface and in the troposphere, where the atmosphere is often the most dynamic). In addition, poor resolution near the model top can in certain configurations be unstable, since breaking gravity waves deposit significant amounts of energy into the upper layers. 
+The use of evenly-spaced model levels is often not the best option for atmospheric modelling, since the vertical structure of planetary atmospheres does not tend to fall into regions of even thickness. For example if one splits an Earth-like (surface pressure 1000hPa) model into 10 even regions, the entire stratosphere, which contains the Ozone Layer, is represented by only two levels. In addition, poor resolution near the model top can in certain configurations be unstable, since breaking gravity waves deposit significant amounts of energy into the upper layers; leading to violation of the `CFL criterion <https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition>`_. 
 
 An improvement one can make is to use an uneven sigma scheme, where the model levels are not equally spaced, selected with ``'vert_coord_option': 'uneven_sigma'``. In addition to a number of model levels, there are two additional arguments in the namelist that control the spacing of the levels. ``scale_heights`` sets the overall depth of the model, whilst ``surf_res`` changes the distribution of the levels and ``exponent`` controls the bias of these levels towards the surface. When ``surf_res=1`` levels are evenly spaced, and when ``surf_res=0`` model levels follow a function set by the exponent (with mixed behaviour at intermediate values). Setting ``exponent`` to higher values increases the amount of levels in the troposphere.
 
 Hybrid Scheme
 ^^^^^^^^^^^^^
-In models with particularly high top levels (for example models including the stratosphere or of other planets), running with a conventional sigma level scheme can be undesirable since the model can become quite unstable; calculations in the uppermost layers are more stable if the layers are flat. To overcome this we can specify a hybrid model level scheme, which combines :math:`\sigma`-levels in the lower atmosphere with :math:`p`-levels in the upper atmosphere (and a transition region in between). 
+In models with particularly high top levels (for example models including the stratosphere and/or of other planets), running with a conventional sigma level scheme can be undesirable since the model can become unstable as a result of the surface topography being 'imprinted' on all model levels.  Calculations in the uppermost layers are more stable if the layers are flat. To overcome this we can specify a hybrid model level scheme, which combines :math:`\sigma`-levels in the lower atmosphere with :math:`p`-levels in the upper atmosphere (and a transition region in between). 
 
 To use this scheme we set ``'vert_coord_option': 'hybrid'``, along with any namelist controls we previously used for the uneven sigma scheme, but we must also include two additional parameters to the namelist, ``p_press`` and ``p_sigma``. These two variables are values between 0 and 1, where 0 is the top :math:`\sigma`-level and 1 the bottom (surface) :math:`\sigma`-level, that represent the boundaries of the transition region between pure-pressure and pure-sigma levels (where ``p_press`` < ``p_sigma``).
 
