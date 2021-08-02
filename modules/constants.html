@@ -1,0 +1,405 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Constants: Atmospheric and Planetary Parameters &mdash; isca dev documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "document", "processHtmlClass": "math|output_area"}}</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Changing Isca output" href="output.html" />
+    <link rel="prev" title="Isca’s physical parameterisations" href="physics.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> isca
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Components of Isca</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Experiment configuration scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamics.html">Isca’s dynamical core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physics.html">Isca’s physical parameterisations</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Constants: Atmospheric and Planetary Parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#planetary-parameters">Planetary Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#atmospheric-parameters">Atmospheric Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#moist-atmospheres">Moist Atmospheres</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#relevant-modules">Relevant Modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Changing Isca output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idealised_moist_phys.html">Moist physics driver: idealized_moist_phys.F90</a></li>
+<li class="toctree-l2"><a class="reference internal" href="two_stream_gray_rad.html">Radiative transfer: Simple gray and multi-band radiation schemes.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="convection_simple_betts_miller.html">Convection scheme: Simple Betts-Miller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socrates.html">SOCRATES Radiation Scheme Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../remote_access.html">Remote Access</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isca</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Components of Isca</a> &raquo;</li>
+        
+      <li>Constants: Atmospheric and Planetary Parameters</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/constants.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="constants-atmospheric-and-planetary-parameters">
+<h1>Constants: Atmospheric and Planetary Parameters<a class="headerlink" href="#constants-atmospheric-and-planetary-parameters" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">constants.F90</span></code> provides a number of controls that set the fundamental parameters of the planet being studied - it is used by nearly every other module in Isca. By default, Isca models a planet equivalent to Earth in terms of physical characteristics such as size, surface gravity and rotational period. In addition, water is set as the default condensate for any moist physics modules that may be used.</p>
+<div class="section" id="planetary-parameters">
+<h3>Planetary Parameters<a class="headerlink" href="#planetary-parameters" title="Permalink to this headline">¶</a></h3>
+<p>Below are a set of controls that allow the physical size and rotation of a planet to be set in the namelist. This allows us to model a range of planets, including others in the Solar System such as Mars and Jupiter, in addition to exoplanets. Rotation can be set by two different parameters: a rotation rate <code class="docutils literal notranslate"><span class="pre">omega</span></code> can be specified; or alternatively a period in seconds can be given that is converted back to a value of <code class="docutils literal notranslate"><span class="pre">omega</span></code>.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 23%" />
+<col style="width: 23%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Units</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(6371\times 10^3\)</span></p></td>
+<td><p>m</p></td>
+<td><p>Radius of planet</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gravity</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(9.80\)</span></p></td>
+<td><p>ms <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>Surface gravitational acceleration</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">omega</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(7.2921150\times 10^{-5}\)</span></p></td>
+<td><p>rad <span class="math notranslate nohighlight">\(\cdot\)</span> s <span class="math notranslate nohighlight">\(^{-1}\)</span></p></td>
+<td><p>Rotation rate of planet</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">orbital_period</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(31557600\)</span></p></td>
+<td><p>s</p></td>
+<td><p>Orbital period of planet</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">solar_constant</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(1368.22\)</span></p></td>
+<td><p>Wm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>Stellar irradiance</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">earthday_multiple</span></code></p></td>
+<td><p>False</p></td>
+<td><p>n/a</p></td>
+<td><p>Modifies seconds per sol calculation (planetary solar day)</p></td>
+</tr>
+</tbody>
+</table>
+<p>By default the parameter <code class="docutils literal notranslate"><span class="pre">seconds_per_sol</span></code> (where <code class="docutils literal notranslate"><span class="pre">earthday_multiple</span></code> is false) is calculated using</p>
+<div class="math notranslate nohighlight">
+\[\texttt{seconds_per_sol} = \left|\frac{2\pi}{\texttt{orbital_rate} - \texttt{omega}}\right| ,\]</div>
+<p>whereas setting <code class="docutils literal notranslate"><span class="pre">earthday_multiple</span></code> to true modifies the calculation to</p>
+<div class="math notranslate nohighlight">
+\[\texttt{seconds_per_sol} = 86400 \cdot \frac{\texttt{earth_omega}}{\texttt{omega}} .\]</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Whilst the rotation and orbital rates are set within this module, other parameters associated with planetary motion such as axial tilt (obliquity) and eccentricity are controlled from the <code class="docutils literal notranslate"><span class="pre">astronomy_mod</span></code> module.</p>
+</div>
+</div>
+<div class="section" id="atmospheric-parameters">
+<h3>Atmospheric Parameters<a class="headerlink" href="#atmospheric-parameters" title="Permalink to this headline">¶</a></h3>
+<p>Changing the basic atmospheric properties allows atmospheres with a wide range of compositions to be studied, including both terrestrial planets (e.g. Earth/Mars) and gas giants such as Jupiter. In the case of Earth, the reference surface pressure is taken to be the mean sea level pressure.</p>
+<p>The dry air gas constant for any homogeneous atmosphere can be calculated from its chemical composition. It is calculated by dividing the universal gas constant <span class="math notranslate nohighlight">\(R\)</span> by the average molar mass of the atmosphere.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 21%" />
+<col style="width: 28%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Units</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pstd_mks</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(101325.0\)</span></p></td>
+<td><p>Pa / Nm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>Mean (reference) surface pressure (SI)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">pstd</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(1.013250\times 10^6\)</span></p></td>
+<td><p>dyn <span class="math notranslate nohighlight">\(\cdot\)</span> cm <span class="math notranslate nohighlight">\(^{-2}\)</span></p></td>
+<td><p>Mean (reference) surface pressure (cgs)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rdgas</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(287.04\)</span></p></td>
+<td><p>Jkg <span class="math notranslate nohighlight">\(^{-1}\)</span></p></td>
+<td><p>Dry air gas constant</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kappa</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(2/7\)</span></p></td>
+<td><p>dimensionless</p></td>
+<td><p>Heat capacity ratio ( <span class="math notranslate nohighlight">\(\gamma\)</span> for an ideal gas)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">es0</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(1.0\)</span></p></td>
+<td><p>dimensionless</p></td>
+<td><p>Humidity factor <span class="math notranslate nohighlight">\(^\dagger\)</span></p></td>
+</tr>
+</tbody>
+</table>
+<p><span class="math notranslate nohighlight">\(^\dagger\)</span>: The humidity factor controls the atmospheric humidity content via the expression for saturation vapor pressure <em>if</em> <code class="docutils literal notranslate"><span class="pre">do_simple:</span> <span class="pre">True</span></code> is set within the <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys</span></code> namelist.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the mean surface pressure value is changed here, it is necessary to also set <code class="docutils literal notranslate"><span class="pre">reference_sea_level_press</span></code> from the <code class="docutils literal notranslate"><span class="pre">spectral_dynamics</span></code> namelist, else the output file will not extend to the pressure specified.</p>
+</div>
+</div>
+<div class="section" id="moist-atmospheres">
+<h3>Moist Atmospheres<a class="headerlink" href="#moist-atmospheres" title="Permalink to this headline">¶</a></h3>
+<p>We hope to be able to introduce controls for moist atmospheres in a future update to Isca. This will allow condensable species other than water to be easily modelled.</p>
+</div>
+</div>
+<div class="section" id="relevant-modules">
+<h2>Relevant Modules<a class="headerlink" href="#relevant-modules" title="Permalink to this headline">¶</a></h2>
+<p>Since this module provides the definition of a number of physical constants, it is used by most other modules that exist within the Isca framework.</p>
+</div>
+<div class="section" id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h2>
+<p>This documentation was written by Daniel Williams, peer reviewed by Stephen Thompson, and quality controlled by Ross Castle.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="output.html" class="btn btn-neutral float-right" title="Changing Isca output" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="physics.html" class="btn btn-neutral float-left" title="Isca’s physical parameterisations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, the Isca development team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
