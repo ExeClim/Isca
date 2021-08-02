@@ -1,8 +1,31 @@
-[![Build Status](https://travis-ci.com/execlim/Isca.svg?branch=master)](https://travis-ci.com/execlim/Isca)
-[![Documentation](https://img.shields.io/badge/docs-latest-green?logo=github)](https://execlim.github.io/Isca)
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg?logo=gnu)](LICENSE)
+<h1 align="center">
+  <a href="https://execlim.github.io/Isca">
+   <img src="docs/source/_static/isca_logo_large.png" alt="Isca" width="300"></a><br>
+</h1>
 
-# Isca
+<p align="center">
+<a href="https://doi.org/10.5194/gmd-11-843-2018">
+<img src="https://img.shields.io/badge/Paper-GMD-orange.svg?logo=data:image/svg%2bxml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMzI1IiB3aWR0aD0iNDEwIj4KPGcgc3R5bGU9ImZpbGw6IzAwNzJiYyI+CjxwYXRoIGQ9Im0gMjE5LjcsMjQ5LjcgYyAtMTkuNSwxNi4xIC00NC41LDI1LjggLTcxLjgsMjUuOCAtNjIuMywwIC0xMTMsLTUwLjcgLTExMywtMTEzIDAsLTYyLjMgNTAuNywtMTEzIDExMywtMTEzIDI3LjIsMCA1Mi4zLDkuNyA3MS44LDI1LjggNy41LC0yIDE1LjMsLTMuMSAyMy41LC0zLjEgOC41LDAgMTYuNywxLjIgMjQuNCwzLjQgQyAyNTYuMyw2MC4xIDI0Mi4xLDQ2LjkgMjI1LjgsMzYuOCBMIDIzNi4xLDE0LjkgMjA0LjQsMC4xIDE5NC4yLDIyIEMgMTc5LjYsMTcuMiAxNjQuMSwxNC42IDE0OCwxNC42IDY2LjQsMTQuNiAwLDgxIDAsMTYyLjYgYyAwLDUzIDI4LDk5LjYgNzAsMTI1LjcgbCAtMTAuMiwyMS45IDMxLjcsMTQuOCAxMC4yLC0yMS44IGMgMTQuNiw0LjggMzAuMSw3LjQgNDYuMiw3LjQgNDkuMSwwIDkyLjgsLTI0LjEgMTE5LjcsLTYxLjEgLTcuOCwyLjIgLTE2LDMuNCAtMjQuNCwzLjQgLTguMSwtMC4xIC0xNiwtMS4yIC0yMy41LC0zLjIgeiIvPgo8cGF0aCBkPSJtIDE2MCwxMjMuOSBjIDQuNSwtOS44IDEwLjcsLTE4LjcgMTguMiwtMjYuMyBsIC05Mi42LDAgMCwxMjkgOTIuNSwwIEMgMTcwLjYsMjE5IDE2NC41LDIxMC4xIDE2MCwyMDAuMyBsIC00OC4xLDAgMCwtMjUgNDAuNywwIGMgLTAuNiwtNC4zIC0wLjksLTguNyAtMC45LC0xMy4xIDAsLTQuNSAwLjMsLTguOSAxLC0xMy4yIGwgLTQwLjgsMCAwLC0yNSBjIDAsLTAuMSAzMS42LC0wLjEgNDguMSwtMC4xIHoiLz4KPHBhdGggZD0ibSAyMzMuMSwxNzQuNyAzMS42LDAgMCwyNCBjIC02LjMsMy43IC0xMy41LDUuNiAtMjEsNS42IC0yMy4zLDAgLTQyLjIsLTE4LjkgLTQyLjIsLTQyLjIgMCwtMjMuMyAxOC45LC00Mi4yIDQyLjIsLTQyLjIgOS41LDAgMTguNSwzLjEgMjYsOSBMIDI4NiwxMDguMiBjIC0xMi4yLC05LjUgLTI2LjgsLTE0LjYgLTQyLjMsLTE0LjYgLTM3LjgsMCAtNjguNiwzMC44IC02OC42LDY4LjYgMCwzNy44IDMwLjgsNjguNiA2OC42LDY4LjYgMTUuNSwwIDMwLjEsLTUgNDIuMywtMTQuNiBsIDUsLTQgMCwtNjMuNyAtNTcuOSwwIDAsMjYuMiB6Ii8+CjxwYXRoIGQ9Im0gMzgzLjgsOTcuNSAwLDg0LjQgYyAwLDEyLjMgLTEwLDIyLjQgLTIyLjQsMjIuNCAtMTIuMywwIC0yMi40LC0xMCAtMjIuNCwtMjIuNCBsIDAsLTg0LjQgLTI2LjMsMCAwLDg0LjQgYyAwLDI2LjkgMjEuOSw0OC43IDQ4LjcsNDguNyAyNi45LDAgNDguNywtMjEuOSA0OC43LC00OC43IGwgMCwtODQuNCAtMjYuMywwIHoiLz4KPC9nPgo8L3N2Zz4K&logoColor=white"
+     alt="Python 3.7+"></a>
+<a href="https://www.python.org/downloads/">
+<img src="https://img.shields.io/badge/python-3.7+-blue.svg?logo=python&logoColor=white"
+     alt="Python 3.7+"></a>
+<a href="https://github.com/psf/black">
+<img src="https://img.shields.io/badge/code%20style-black-000000.svg"
+     alt="black"></a>
+<a href="https://github.com/execlim/Isca/actions?query=workflow%3Atests">
+<img src="https://github.com/execlim/Isca/workflows/tests/badge.svg"
+     alt="Tests"></a>
+<a href="https://execlim.github.io/Isca">
+<img src="https://img.shields.io/badge/docs-latest-green?logo=github"
+     alt="Documentation"></a>
+<a href="LICENSE">
+<img src="https://img.shields.io/badge/license-GPL%20v3-blue.svg?logo=gnu"
+     alt="License: GPL v3"></a>
+<a href="https://twitter.com/IscaModel">
+<img src="https://img.shields.io/twitter/follow/IscaModel?color=yellow&label=twitter%7CIscaModel&logo=twitter&style=flat"
+     alt="twitter IscaModel"></a>
+</p>
 
 Isca is a framework for the idealized modelling of the global circulation of
 planetary atmospheres at varying levels of complexity and realism. The
