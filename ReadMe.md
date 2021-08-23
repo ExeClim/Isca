@@ -67,16 +67,17 @@ $ cd Isca
 
 The python module is found in the `src` directory and can be installed using `pip`.  It's recommended that you use some sort of python environment manager to do this, such as using a conda distribution and creating an environment (in the code below called "`isca_env`"), or using `virtualenv` instead. This getting started will show you how to create a python environment that includes Isca's required packages, and then install the model. 
 
-*Optional step*: Note that some workstations may have outdated default python and conda installations, which may cause conflicts during installation. As a lightweight solution to get up-to-date installations, we recommend downloading [Miniforge](https://github.com/conda-forge/miniforge).
+*Recommended step*: Note that some workstations may have outdated default python and conda installations, which may cause conflicts during installation. As a lightweight solution to get up-to-date installations, we recommend downloading [Miniforge](https://github.com/conda-forge/miniforge).
+To ensure this works as expected, check that `$PYTHONPATH` is unset and that your `.bashrc` does not contain `module load` statements that may cause conda conflicts.
 
 Requirements for Isca can be installed via the .yml file included with the model in `Isca/ci/environment-py3.9.yml`
 First we create a conda environment `isca_env` containing the required packages, and activate the environment:
 ```{bash}
 $ conda env create -f ci/environment-py3.9.yml
-$ source activate isca_env
+$ conda activate isca_env
 ```
 
-Now install the `isca` python module in "development mode".  This will allow you, if you wish, to edit the `src/extra/python/isca` files and have those changes be used when you next run an Isca script.
+Now install the `isca` python module in "development mode".  This will allow you, if you wish, to edit the `src/extra/python/isca` files and have those changes be used when you next run an Isca script. Change directory to `Isca/src/extra/python/` and run:
 
 ```{bash}
 (isca_env)$ pip install -e .
