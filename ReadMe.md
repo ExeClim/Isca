@@ -60,12 +60,13 @@ A python module `isca` (note lowercase) is provided alongside the Fortran source
 
 The python module is found in the `src` directory and can be installed using `pip`.  It's recommended that you use some sort of python environment manager to do this, such as using a conda distribution and creating an environment (in the code below called "`isca_env`"), or using `virtualenv` instead. This getting started will show you how to create a python environment that includes Isca's required packages, and then install the model. 
 
-1. Install [Miniforge](https://github.com/conda-forge/miniforge)
+1. **Install [Miniforge](https://github.com/conda-forge/miniforge)**
+
 *Recommended step*: Some workstations may have outdated default python and conda installations, which may cause conflicts during installation. As a lightweight solution to get up-to-date installations, we recommend downloading [Miniforge](https://github.com/conda-forge/miniforge).
 To ensure this works as expected, check that `$PYTHONPATH` is unset and that your `.bashrc` does not contain `module load` statements that may cause conda conflicts.
 If you have a recent conda installed in your home directory already you may wish to skip this step.
 
-2. Check out or download this repository.
+2. **Check out or download this repository**
 To begin you'll need a copy of the source code. Either fork the Isca repository to your own github username, or clone directly from the ExeClim group.
 
 ```{bash}
@@ -73,7 +74,7 @@ $ git clone https://github.com/ExeClim/Isca
 $ cd Isca
 ```
 
-3. Create a conda environment
+3. **Create a conda environment**
 
 Requirements for Isca can be installed via the .yml file included with the model in `Isca/ci/environment-py3.9.yml`
 Navigate to the downloaded Isca folder, and create a conda environment `isca_env` containing the required packages using: 
@@ -85,7 +86,8 @@ Then activate the environment; you'll need to do this each time you launch a new
 $ conda activate isca_env
 ```
 
-4. Install the model
+4. **Install the model**
+
 Now install the `isca` python module in "development mode".  This will allow you, if you wish, to edit the `src/extra/python/isca` files and have those changes be used when you next run an Isca script. Navigate to `Isca/src/extra/python/` and run:
 
 ```{bash}
