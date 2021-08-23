@@ -67,7 +67,7 @@ $ cd Isca
 
 The python module is found in the `src` directory and can be installed using `pip`.  It's recommended that you use some sort of python environment manager to do this, such as using a conda distribution and creating an environment (in the code below called "`isca_env`"), or using `virtualenv` instead. This getting started will show you how to create a python environment that includes Isca's required packages, and then install the model. 
 
-*Optional step*: Note that some workstations may have outdated default python and conda installations, which may cause conflicts during installation. As a lightweight solution to get up-to-date installations, we recommend downloading [Miniforge](https://github.com/conda-forge/miniforge)
+*Optional step*: Note that some workstations may have outdated default python and conda installations, which may cause conflicts during installation. As a lightweight solution to get up-to-date installations, we recommend downloading [Miniforge](https://github.com/conda-forge/miniforge).
 
 Requirements for Isca can be installed via the .yml file included with the model in `Isca/ci/environment-py3.9.yml`
 First we create a conda environment `isca_env` containing the required packages, and activate the environment:
