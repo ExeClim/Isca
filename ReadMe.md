@@ -67,6 +67,7 @@ To ensure this works as expected, check that `$PYTHONPATH` is unset and that you
 If you have a recent conda installed in your home directory already you may wish to skip this step.
 
 2. **Check out or download this repository**
+
 To begin you'll need a copy of the source code. Either fork the Isca repository to your own github username, or clone directly from the ExeClim group.
 
 ```{bash}
