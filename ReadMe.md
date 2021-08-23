@@ -58,7 +58,7 @@ A python module `isca` (note lowercase) is provided alongside the Fortran source
 
 ### Installing the `isca` python module
 
-The python module is found in the `src` directory and can be installed using `pip`.  It's recommended that you use some sort of python environment manager to do this, such as using a conda distribution and creating an environment (in the code below called "`isca_env`"), or using `virtualenv` instead. This getting started will show you how to create a python environment that includes Isca's required packages, and then install the model. 
+The python module is found in the `src` directory and can be installed using `pip`.  It's recommended that you use some sort of python environment manager to do this, such as using a conda distribution and creating an environment (in the code below called "`isca_env`"), or using `virtualenv` instead. This "getting started" will show you how to create a python environment that includes Isca's required packages, and then install the model. 
 
 1. **Install [Miniforge](https://github.com/conda-forge/miniforge)**
 
