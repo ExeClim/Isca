@@ -65,16 +65,15 @@ $ git clone https://github.com/ExeClim/Isca
 $ cd Isca
 ```
 
-The python module is found in the `src` directory and can be installed using `pip`.  It's recommended (but not essential) that you use some sort of python environment manager to do this, such as using the Anaconda distribution and creating an environment (in the code below called "`isca_env`"), or using `virtualenv` instead.  This getting started will use Anaconda.
+The python module is found in the `src` directory and can be installed using `pip`.  It's recommended that you use some sort of python environment manager to do this, such as using a conda distribution and creating an environment (in the code below called "`isca_env`"), or using `virtualenv` instead. This getting started will show you how to create a python environment that includes Isca's required packages, and then install the model. 
 
+*Optional step*: Note that some workstations may have outdated default python and conda installations, which may cause conflicts during installation. As a lightweight solution to get up-to-date installations, we recommend downloading [Miniforge](https://github.com/conda-forge/miniforge)
+
+Requirements for Isca can be installed via the .yml file included with the model in `Isca/ci/environment-py3.9.yml`
+First we create a conda environment `isca_env` containing the required packages, and activate the environment:
 ```{bash}
-$ conda create -n isca_env python ipython
-...
+$ conda env create -f ci/environment-py3.9.yml
 $ source activate isca_env
-(isca_env)$ cd src/extra/python
-(isca_env)$ pip install -r requirements.txt
-...
-Successfully installed MarkupSafe-1.0 f90nml jinja2-2.9.6 numpy-1.13.3 pandas-0.21.0 python-dateutil-2.6.1 pytz-2017.3 sh-1.12.14 six-1.11.0 xarray-0.9.6
 ```
 
 Now install the `isca` python module in "development mode".  This will allow you, if you wish, to edit the `src/extra/python/isca` files and have those changes be used when you next run an Isca script.
