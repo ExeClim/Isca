@@ -64,7 +64,8 @@ The python module is found in the `src` directory and can be installed using `pi
 
 *Recommended step*: Some workstations may have outdated default python and conda installations, which may cause conflicts during installation. As a lightweight solution to get up-to-date installations, we recommend downloading [Miniforge](https://github.com/conda-forge/miniforge).
 To ensure this works as expected, check that `$PYTHONPATH` is unset and that your `.bashrc` does not contain `module load` statements that may cause conda conflicts.
-If you have a recent conda installed in your home directory already you may wish to skip this step.
+
+*If you have a recent conda installed in your home directory already you may wish to skip this step.*
 
 2. **Check out or download this repository**
 
