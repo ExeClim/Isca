@@ -481,6 +481,7 @@ allocate(ex_del_h    (is:ie, js:je))
 allocate(ex_del_q    (is:ie, js:je))
 allocate(temp_2m     (is:ie, js:je))
 allocate(u_10m       (is:ie, js:je))
+allocate(v_10m       (is:ie, js:je))
 allocate(q_2m        (is:ie, js:je))
 allocate(rh_2m       (is:ie, js:je))
 allocate(land        (is:ie, js:je)); land = .false.
