@@ -80,7 +80,6 @@ def two_daily_average(nc_file_in, nc_file_out, avg_or_daily):
     subprocess.call('cdo timselmean,'+str(number_of_timesteps)+' '+nc_file_in+' '+nc_file_out, shell=True)
 
 def join_files(files_in, file_name_out):
-
     subprocess.call('cdo mergetime '+files_in+' '+file_name_out, shell=True)
     
 def join_files_base_dir(base_dir, files_in, file_name_out):

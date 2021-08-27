@@ -5,22 +5,27 @@ import os
 import time
 import pdb
 import subprocess
+import numpy as np
 
 start_time=time.time()
-# base_dir='/disca/share/sit204/data_from_isca_cpu/cssp_perturb_exps/anoms/'
 base_dir = os.environ['GFDL_DATA']
-#exp_name_list = ['soc_ga3_files_smooth_topo_fftw_mk1_fresh_compile_long', 'soc_ga3_files_smooth_topo_old_fft_mk2_long']
 exp_name_list = ['ml_test_with_ml_full_sd_mean_clim_half_month']
 avg_or_daily_list=['half_monthly']
 start_file=133
 end_file=134
+all_vars=True
+var_names_list = 'slp height precipitation vcomp ucomp temp_2m temp div flux_t flux_lhe bucket_depth'
 nfiles=(end_file-start_file)+1
 
 do_extra_averaging=False #If true, then 6hourly data is averaged into daily data using cdo
-group_months_into_one_file=False # If true then monthly data files and daily data files are merged into one big netcdf file each.
+group_months_into_one_file=True # If true then monthly data files and daily data files are merged into one big netcdf file each.
+overwrite_previous_combined_files=True
+n_splits_of_combined_nc_file = 20
 level_set='standard' #Default is the standard levels used previously. ssw_diagnostics are the ones blanca requested for MiMa validation
 mask_below_surface_set=' ' #Default is to mask values that lie below the surface pressure when interpolated. For some applications, e.g. Tom Clemo's / Mark Baldwin's stratosphere index, you want to have values interpolated below ground, i.e. as if the ground wasn't there. To use this option, this value should be set to '-x '. 
-
+all_vars=True
+#var_names_list = 'slp height precipitation vcomp ucomp temp_2m temp div flux_t flux_lhe bucket_depth'
+var_names_list = '-a slp height'
 
 try:
     out_dir
@@ -43,13 +48,22 @@ if level_set=='standard':
     plevs['6hourly']=' -p "1000 10000 25000 50000 85000 92500"'
     plevs['daily']  =' -p "1000 10000 25000 50000 85000 92500"'
     
-    var_names['monthly']='-a slp height'
-    var_names['half_monthly']='-a slp height'
-    var_names['pentad']='-a slp height'    
+    if all_vars:
+        var_names['monthly']='-a slp height'
+        var_names['half_monthly']='-a slp height'
+        var_names['pentad']='-a slp height'
+    else:
+        var_names['monthly']=var_names_list
+        var_names['half_monthly']=var_names_list
+        var_names['pentad']=var_names_list
     var_names['timestep']='-a'
     var_names['6hourly']='ucomp slp height vor t_surf vcomp omega'
     var_names['daily']='ucomp slp height vor t_surf vcomp omega temp'
-    file_suffix='_interp_new_height_temp_not_below_ground'
+
+    if all_vars:
+        file_suffix='_interp_new_height_temp_not_below_ground'
+    else:
+        file_suffix='_interp_new_height_temp_not_below_ground_subset_vars_5'
 
 elif level_set=='ssw_diagnostics':
     plevs['6hourly']=' -p "1000 10000"'
@@ -85,18 +99,25 @@ for exp_name in exp_name_list:
 #                two_daily_average(nc_file_out, nc_file_out_two_daily, avg_or_daily)
 
 if group_months_into_one_file:
-    avg_or_daily_list_together=['daily']
+    avg_or_daily_list_together=avg_or_daily_list
 
 
     for exp_name in exp_name_list:
         for avg_or_daily in avg_or_daily_list_together:
-            nc_file_string=''
-            for n in range(nfiles):
-                nc_file_in = base_dir+'/'+exp_name+'/run'+number_prefix+str(n+start_file)+'/atmos_'+avg_or_daily+file_suffix+'.nc'
-                nc_file_string=nc_file_string+' '+nc_file_in
-            nc_file_out=base_dir+'/'+exp_name+'/atmos_'+avg_or_daily+'_together'+file_suffix+'.nc'
-            if not os.path.isfile(nc_file_out):
-                join_files(nc_file_string,nc_file_out)
+            
+            for itr_idx in range(n_splits_of_combined_nc_file):
+                nc_file_string=''
+                n_files_in_each = int(np.ceil(nfiles / n_splits_of_combined_nc_file))
+
+                start_file_itr = start_file + (itr_idx)*n_files_in_each
+                end_file_itr = int(np.min([start_file + ((itr_idx+1)*n_files_in_each - 1), end_file]))
+
+                for n in range(start_file_itr, end_file_itr+1):
+                    nc_file_in = base_dir+'/'+exp_name+'/run%04d'%(n)+'/atmos_'+avg_or_daily+file_suffix+'.nc'
+                    nc_file_string=nc_file_string+' '+nc_file_in
+                nc_file_out=base_dir+'/'+exp_name+'/atmos_'+avg_or_daily+f'_together_{start_file_itr}_{end_file_itr}'+file_suffix+'.nc'
+                if not os.path.isfile(nc_file_out) or overwrite_previous_combined_files:
+                    join_files(nc_file_string,nc_file_out)
 
 print('execution time', time.time()-start_time)
 

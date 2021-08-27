@@ -6,7 +6,7 @@ import sys
 from datetime import datetime
 
 
-def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True, average_time_parameter_sweep=False, file_to_use_for_timing = 'logfile.000000.out'):
+def calculate_month_run_time(exp_dir_list, loc_list, plot_against_wall_time=True, average_time_parameter_sweep=False, file_to_use_for_timing = 'logfile.000000.out'):
     """A script that takes a list of experiment names as input, and plots the time taken to run each month in that experiment vs the wall time. """
 
     try:
@@ -15,10 +15,17 @@ def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True, average_
         print('Environment variables GFDL_DATA must be set')
         sys.exit(0)
 
+    mean_time_arr = []
 
     for exp_dir in exp_dir_list:
 
-        exp_dir_full = GFDL_DATA+'/'+exp_dir+'/'
+        exp_idx = exp_dir_list.index(exp_dir)
+        location = loc_list[exp_idx]
+
+        if location=='GFDL_DATA':
+            exp_dir_full = GFDL_DATA+'/'+exp_dir+'/'
+        else:
+            exp_dir_full = location+'/'+exp_dir+'/'
 
         #Finds all the months for particular experiment
         months_to_check=os.listdir(exp_dir_full)
@@ -68,19 +75,26 @@ def calculate_month_run_time(exp_dir_list, plot_against_wall_time=True, average_
             else:
                 plt.plot(month_num_arr[:-1], delta_t_arr, label=exp_dir)                
                 plt.xlabel('Month number')
-        
+        mean_time_arr.append(np.mean(delta_t_arr))
+
     plt.legend()
     plt.ylabel('Wall time elapsed per month (minutes)')
 
     if average_time_parameter_sweep:
         ax = plt.gca()
-        ax.set_xscale('log')
+    #    ax.set_xscale('log')
+
+    return mean_time_arr
 
 if __name__=="__main__":
 
-    exp_dir_list = ['socrates_test_mk44_chunk_size_longer_'+str(i) for i in [1, 2, 4,8,16,32,64, 128,256, 512]]
+    #exp_dir_list = ['socrates_ga3_chunk_size_'+str(i) for i in [4,8,16,32,64]]
 
-    calculate_month_run_time(exp_dir_list, plot_against_wall_time=False, average_time_parameter_sweep=True, file_to_use_for_timing='git_hash_used.txt')
+    exp_dir_list = ['soc_dsa_files_smooth_topo_mk1', 'soc_ga3_files_smooth_topo_mk1', 'soc_ga7_files_smooth_topo_mk1','soc_ga3_files_smooth_topo_mk1_with_output_topo', 'soc_ga3_files_smooth_topo_old_fft_mk2_long', 'soc_ga3_files_smooth_topo_fftw_mk1_fresh_compile_long']
+
+    loc_list = ['GFDL_DATA'] * 4 + ['/scratch/sit204/mounts/isca_data/']*2
+
+    mean_time_arr = calculate_month_run_time(exp_dir_list, loc_list, plot_against_wall_time=False, average_time_parameter_sweep=False, file_to_use_for_timing='git_hash_used.txt')
 
     plt.show()
 
