@@ -16,3 +16,5 @@ Components of Isca
    two_stream_gray_rad
    convection_simple_betts_miller
    socrates 
+   rrtm_radiation
+
