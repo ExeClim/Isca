@@ -176,6 +176,7 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
     diag_use = define_simple_diag_table()
     test_pass = True
     run_complete = True
+    compile_successful=True
 
     #Do the run for each of the commits in turn
     for s in [base_commit, later_commit]:
@@ -184,17 +185,23 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             cb = SocratesCodeBase(repo=repo_to_use, commit=s)
         else:
             cb = IscaCodeBase(repo=repo_to_use, commit=s)
-        cb.compile()
-        exp = Experiment(exp_name, codebase=cb)
-        exp.namelist = nml_use.copy()
-        exp.diag_table = diag_use
-        exp.inputfiles = input_files_use
+        try:
+            cb.compile()
+            exp = Experiment(exp_name, codebase=cb)
+            exp.namelist = nml_use.copy()
+            exp.diag_table = diag_use
+            exp.inputfiles = input_files_use
 
-        #Only run for 3 days to keep things short.
-        exp.update_namelist({
-        'main_nml': {
-        'days': 3,
-        }})
+            #Only run for 3 days to keep things short.
+            exp.update_namelist({
+            'main_nml': {
+            'days': 3,
+            }})
+        except:
+            run_complete = False
+            test_pass = False      
+            compile_successful=False                  
+            continue            
 
 
         try:
@@ -239,7 +246,12 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             return_test_result = 'fail'
 
     else:
-        print('Test failed for '+test_case_name+' because the run crashed.')
+        if compile_successful:
+            #This means that the compiles were both successful, but at least one of the runs crashed.
+            print('Test failed for '+test_case_name+' because the run crashed.')
+        else:
+            print('Test failed for '+test_case_name+' because at least one of the runs failed to compile.')
+
         return_test_result = 'fail'
 
 
