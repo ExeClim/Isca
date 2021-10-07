@@ -1,0 +1,70 @@
+name: tests
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - '.github/workflows/tests.yml'
+      - 'bin/**'
+      - 'bin/**'
+      - 'ci/**'
+      - 'exp/**'
+      - 'input/**'
+      - 'src/**'
+      - 'test/**'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - '.github/workflows/tests.yml'
+      - 'bin/**'
+      - 'ci/**'
+      - 'exp/**'
+      - 'input/**'
+      - 'src/**'
+      - 'test/**'
+
+env:
+  GFDL_BASE: ${{ github.workspace }}
+  GFDL_ENV: "ubuntu_conda"
+  GFDL_WORK: "${{ github.workspace }}/../gfdl_work"
+  GFDL_DATA: "${{ github.workspace }}/../gfdl_data"
+  GFDL_PYDIR: "${{ github.workspace }}/src/extra/python"
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]  # ,  macos-latest]
+        python-version: ['3.9']
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Setup Conda for OS ${{ matrix.os }} and Python ${{ matrix.python-version }}
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          environment-file: ci/environment-py${{ matrix.python-version }}.yml
+          miniforge-variant: Mambaforge
+          miniforge-version: "latest"
+          use-mamba: true
+          activate-environment: isca_env
+          auto-activate-base: false
+
+      - name: Install
+        shell: bash -l {0}
+        run: |
+          cd $GFDL_PYDIR
+          python -m pip install -e .
+          cd $GFDL_BASE
+
+      - name: List installed packages
+        shell: bash -l {0}
+        run: conda list
+
+      - name: Run tests
+        shell: bash -l {0}
+        run: |
+          python -m pytest

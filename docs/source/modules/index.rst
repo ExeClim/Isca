@@ -7,8 +7,10 @@ Components of Isca
 .. toctree::
    :maxdepth: 1
 
+   introduction
    dynamics
    physics
+   constants
    output
    idealised_moist_phys
    two_stream_gray_rad
@@ -16,3 +18,4 @@ Components of Isca
    socrates
    surface_flux_mod
    diag_manager_mod
+

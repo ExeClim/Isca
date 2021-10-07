@@ -12,7 +12,7 @@ dependencies:
 - numpy
 - openmpi
 - pandas
-- python=3.7
+- python=3.9
 - pip
 - pytest
 - sh

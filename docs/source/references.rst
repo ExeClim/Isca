@@ -28,6 +28,12 @@ References
 .. [Geen2016] Geen, R., Czaja, A., and Haigh, J. D., 2016: The effects of increasing humidity on heat transport by 
               extratropical waves, *Geophys. Res. Lett.*, **43**, 8314–8321, doi.
 
+.. [Gierasch2000] Gierasch, P.J., Ingersoll, A.P., Banfield, D., Ewald, S.P., Helfenstein, P., Simon-Miller, A., Vasavada, A., Breneman,                 H.H., Senske, D.A. and Team, G.I., 2000: 
+           Observation of moist convection in Jupiter's atmosphere. 
+           *Nature*,
+           **403(6770)**, 628--630.
+           doi: `10.1038/35001017 <https://doi.org/10.1038/35001017>`_.
+
 .. [Jucker2017] Jucker, M. and Gerber, E. P., 2017:
            Untangling the Annual Cycle of the Tropical Tropopause Layer with an Idealized Moist Model.
            *Journal of Climate*,
@@ -39,6 +45,12 @@ References
            *Journal of Climate*,
            **21(15)**, 3815--3832,
            doi: `10.1175/2007JCLI2065.1 <http://dx.doi.org/10.1175/2007JCLI2065.1>`_.
+
+.. [Large2004] Large, W. G., and Yeager, S., 2004:
+           Diurnal to decadal global forcing for ocean and sea-ice models: The data sets and flux climatologies. 
+           *NCAR Technical Report; University Corporation for Atmospheric Research*,
+           **No. NCAR/TN-460+STR**,
+           doi: `10.5065/D6KK98Q6 <http://dx.doi.org/10.5065/D6KK98Q6>`_.
 
 .. [Manabe1969] Manabe, S. 1969:
            Climate and the Ocean Circulation: I. The Atmopsheric Circulation and the Hydrology of the Earth's Surface.

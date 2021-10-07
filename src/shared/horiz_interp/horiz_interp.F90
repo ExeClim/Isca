@@ -1288,6 +1288,7 @@ implicit none
   !--- read namelist
 #ifdef INTERNAL_FILE_NML
       read (input_nml_file, test_horiz_interp_nml, iostat=io)
+      ierr = check_nml_error(io, 'test_horiz_interp_nml')
 #else
   if (file_exist('input.nml')) then
      ierr=1
