@@ -131,6 +131,7 @@ Contents
    changelog
    contributing
    testing/index.rst
+   debug
    references
    remote_access
 
