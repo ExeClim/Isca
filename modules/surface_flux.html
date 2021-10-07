@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Surface flux calculation &mdash; isca dev documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Python API" href="../python.html" />
+    <link rel="prev" title="SOCRATES Radiation Scheme Interface" href="socrates.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> isca
+          </a>
+              <div class="version">
+                dev
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Components of Isca</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Experiment configuration scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamics.html">Isca’s dynamical core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physics.html">Isca’s physical parameterisations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants.html">Constants: Atmospheric and Planetary Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Changing Isca output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idealised_moist_phys.html">Moist physics driver: idealized_moist_phys.F90</a></li>
+<li class="toctree-l2"><a class="reference internal" href="two_stream_gray_rad.html">Radiative transfer: Simple gray and multi-band radiation schemes.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="convection_simple_betts_miller.html">Convection scheme: Simple Betts-Miller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socrates.html">SOCRATES Radiation Scheme Interface</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Surface flux calculation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parametrization-for-planets-with-a-rock-liquid-surface">Parametrization for planets with a rock/liquid surface</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#land">Land</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#parametrization-for-gas-giants">Parametrization for gas giants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#namelist-options">Namelist options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#relevant-modules-and-subroutines">Relevant modules and subroutines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#references">References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../remote_access.html">Remote Access</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isca</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Components of Isca</a> &raquo;</li>
+      <li>Surface flux calculation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/modules/surface_flux.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="surface-flux-calculation">
+<h1>Surface flux calculation<a class="headerlink" href="#surface-flux-calculation" title="Permalink to this headline"></a></h1>
+<p>Documentation for <code class="docutils literal notranslate"><span class="pre">surface_flux</span></code> and <code class="docutils literal notranslate"><span class="pre">gp_surface_flux</span></code>, both found at <code class="docutils literal notranslate"><span class="pre">Isca/src/coupler/surface_flux.F90</span></code>.</p>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<p>This module manages the exchange of heat, momentum and moisture at the planet’s surface.
+A brief overview of how the exchange of these is calculated and the options available is given first, with a full summary of the namelist parameters below.</p>
+</section>
+<section id="parametrization-for-planets-with-a-rock-liquid-surface">
+<h2>Parametrization for planets with a rock/liquid surface<a class="headerlink" href="#parametrization-for-planets-with-a-rock-liquid-surface" title="Permalink to this headline"></a></h2>
+<p>Fluxes of heat (<span class="math notranslate nohighlight">\(S\)</span>), momentum (<span class="math notranslate nohighlight">\(\mathcal{T}\)</span>) and humidity (<span class="math notranslate nohighlight">\(E\)</span>) are calculated following the standard drag equations set out in [Frierson2006a].</p>
+<div class="math notranslate nohighlight">
+\[S = \rho_{a} c_{p} C_{S} |\mathbf{v}_{a}|(\Theta_{a} - \Theta_{s})\]</div>
+<div class="math notranslate nohighlight">
+\[\mathcal{T} = \rho_{a} C_{\mathcal{T}} |\mathbf{v}_{a}|\mathbf{v}_{a}\]</div>
+<div class="math notranslate nohighlight">
+\[E = \rho_{a} C_{E} |\mathbf{v}_{a}|(q_{a} - q_{s}^{*}).\]</div>
+<p>In the above, <span class="math notranslate nohighlight">\(\rho_{a}\)</span>, <span class="math notranslate nohighlight">\(|\mathbf{v}_{a}\)</span>, <span class="math notranslate nohighlight">\(\Theta_{a}\)</span>, and <span class="math notranslate nohighlight">\(q_{a}\)</span> are the density, horizontal wind, potential temperature and specific humidity calculated at the lowest model level. <span class="math notranslate nohighlight">\(c_{p}\)</span> is the heat capacity at constant pressure, <span class="math notranslate nohighlight">\(\Theta_{s}\)</span> is the surface potential temperature and <span class="math notranslate nohighlight">\(q_{s}^{*}\)</span> is the saturation specific humidity at the surface temperature.</p>
+<p><span class="math notranslate nohighlight">\(C_{S}\)</span>, <span class="math notranslate nohighlight">\(C_{\mathcal{T}}\)</span> and <span class="math notranslate nohighlight">\(C_{E}\)</span> are drag coefficients. These are calculated according to a simplified Monin-Obukhov similarity theory [Frierson2006a] in the module <code class="docutils literal notranslate"><span class="pre">monin_obukhov_mod</span></code>, found in <code class="docutils literal notranslate"><span class="pre">Isca/src/atmos_param/monin_obukhov/monin_obukhov.F90</span></code>. Roughness lengths for each flux can be specified as namelist parameters in <code class="docutils literal notranslate"><span class="pre">idealised_moist_phys</span></code>.</p>
+<section id="land">
+<h3>Land<a class="headerlink" href="#land" title="Permalink to this headline"></a></h3>
+<p>Land is implemented in Isca in 4 ways, via adjustment of (1) the roughness length, (2) the evaporative flux, (3) the albedo, (4) the mixed layer depth:</p>
+<ol class="arabic">
+<li><p>Any desired adjustments to roughness length over land are made in <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys_mod</span></code> via the namelist parameter <code class="docutils literal notranslate"><span class="pre">land_roughness_prefactor</span></code> and are then fed to <code class="docutils literal notranslate"><span class="pre">surface_flux_mod</span></code>. This parameter prescribes a prefactor to modify the roughness lengths used over land in the Monin-Obukhov calculations. The same modification prefactor is used for all fluxes.</p></li>
+<li><p>Adjustments to the evaporative flux are made in <code class="docutils literal notranslate"><span class="pre">surface_flux_mod</span></code>. 2 options are available:</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li><p>Prefactors <span class="math notranslate nohighlight">\(\alpha\)</span> and <span class="math notranslate nohighlight">\(\beta\)</span> may be prescribed over land to modify the evaporative flux:</p></li>
+</ol>
+<div class="math notranslate nohighlight">
+\[E = \beta \rho_{a} C_{E} |\mathbf{v}_{a}|(q_{a} - \alpha q_{s}^{*}).\]</div>
+<p><span class="math notranslate nohighlight">\(\alpha\)</span> is set using <code class="docutils literal notranslate"><span class="pre">land_humidity_prefactor</span></code> and <span class="math notranslate nohighlight">\(\beta\)</span> is set using <code class="docutils literal notranslate"><span class="pre">land_evap_prefactor</span></code> in the <code class="docutils literal notranslate"><span class="pre">surface_flux_nml</span></code>.</p>
+<ol class="loweralpha simple" start="2">
+<li><p>A simple bucket hydrology may be used following [Manabe1969]. In this case, hydrology is described by prescribing land with a bucket depth <span class="math notranslate nohighlight">\(W\)</span> which can vary between 0, corresponding to an empty bucket, and a field capacity <span class="math notranslate nohighlight">\(W_{FC}\)</span>, corresponding to a full bucket. The evaporation equation is then modified over land grid cells according to the bucket depth.</p></li>
+</ol>
+<p>If <span class="math notranslate nohighlight">\(W \lt 0.75 W_{FC}\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[E = \frac{W}{0.75 W_{FC}} \rho_{a} C_{E} |\mathbf{v}_{a}|(q_{a} - q_{s}^{*})\]</div>
+<p>If <span class="math notranslate nohighlight">\(W \ge 0.75 W_{FC}\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[E = \rho_{a} C_{E} |\mathbf{v}_{a}|(q_{a} - q_{s}^{*})\]</div>
+<p>Bucket namelist parameters are input via <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys_mod</span></code>.</p>
+</div></blockquote>
+</li>
+</ol>
+<p>3.&amp; 4. Adjustments to the albedo and mixed layer depth are made via namelist parameters in the module :mixed_layer_mod: found in <code class="docutils literal notranslate"><span class="pre">Isca/src/atmos_spectral/driver/solo/mixed_layer.F90</span></code>.</p>
+</section>
+</section>
+<section id="parametrization-for-gas-giants">
+<h2>Parametrization for gas giants<a class="headerlink" href="#parametrization-for-gas-giants" title="Permalink to this headline"></a></h2>
+<p>For modelling gas giants, the namelist option <code class="docutils literal notranslate"><span class="pre">flux_heat_gp</span></code> allows the user to prescribe an intrinsic heat flux at 1 bar, appropriate for a giant planet atmosphere where there is no surface [Schneider2009]. In practice, the subroutine <code class="docutils literal notranslate"><span class="pre">gp_surface_flux</span></code> will then impose an atmospheric heating <span class="math notranslate nohighlight">\(Q_{gp}\)</span> at the lowest model level as:</p>
+<div class="math notranslate nohighlight">
+\[Q_{gp} = \frac{g \gamma}{c_{p} \Delta p}\]</div>
+<p>where <span class="math notranslate nohighlight">\(g\)</span> is the gravitational acceleration, <span class="math notranslate nohighlight">\(\gamma\)</span> is the value of <code class="docutils literal notranslate"><span class="pre">flux_heat_gp</span></code>, <span class="math notranslate nohighlight">\(c_{p}\)</span> is the heat capacity at constant pressure and <span class="math notranslate nohighlight">\(\Delta p\)</span> is the thickness of the lowest model pressure level. To accelerate model spin-up, this intrinsic heat flux can be increased via the namelist option <code class="docutils literal notranslate"><span class="pre">diabatic_acce</span></code>. Alternatively, Isca’s column model configuration could be run to equilibrium.</p>
+<p>To turn on this parametrization, <code class="docutils literal notranslate"><span class="pre">gp_surface</span></code> should be set to True in the <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys</span></code> namelist.</p>
+</section>
+<section id="namelist-options">
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h2>
+<p>The namelist options for <code class="docutils literal notranslate"><span class="pre">surface_flux_nml</span></code> are listed below. These include options to limit evaporation over land, to use more simplified parametrisations, to account for salinity over ocean, and to help with issues resulting from truncation. We note that Isca is developed from the GFDL FMS model (<a class="reference external" href="https://github.com/NOAA-GFDL/FMS">https://github.com/NOAA-GFDL/FMS</a>) and some options remain to enable old model configurations to be supported, as indicated in the table.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 8%" />
+<col style="width: 71%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">no_neg_q</span></code></p></td>
+<td><p>False</p></td>
+<td><p>If q_atm_in (specific humidity input) is negative (because of numerical truncation),
+then override with 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">use_virtual_temp</span></code></p></td>
+<td><p>True</p></td>
+<td><p>If true, use virtual potential temp to calculate the stability of the surface layer.
+If false, use potential temp.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">alt_gustiness</span></code></p></td>
+<td><p>False</p></td>
+<td><p>If true, use an alternative formulation for gustiness calculation where a minimum bound
+on the wind speed is used in flux calculations, with the bound equal to <code class="docutils literal notranslate"><span class="pre">gust_const</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gust_const</span></code></p></td>
+<td><p>1.0</p></td>
+<td><p>Constant for alternative gustiness calculation.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gust_min</span></code></p></td>
+<td><ol class="arabic simple" start="0">
+<li></li>
+</ol>
+</td>
+<td><p>Minimum gustiness used when alt_gustiness is set to False.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">old_dtaudv</span></code></p></td>
+<td><p>False</p></td>
+<td><p>If true, the derivatives of surface wind stress w.r.t. the zonal wind and meridional
+wind are each approximated by the same value.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">use_mixing_ratio</span></code></p></td>
+<td><p>False</p></td>
+<td><p>GFDL LEGACY: If true, then use the saturation surface mixing ratio instead of specific
+humidity in calculating surface moisture exchange. This provides the capability to run
+the Manabe Climate form of the surface flux.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">do_simple</span></code></p></td>
+<td><p>False</p></td>
+<td><p>If true, then approximate saturation surface specific humidity as:
+<span class="math notranslate nohighlight">\(q_{sat} = 0.622*e_{sat} / p_{surf}\)</span>.
+If false:    <span class="math notranslate nohighlight">\(q_{sat} = 0.622*e_{sat} / (p_{surf} - e_{sat})\)</span> is used.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ncar_ocean_flux</span></code></p></td>
+<td><p>False</p></td>
+<td><p>Use NCAR climate model turbulent flux calculation described by [Large2004].</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ncar_ocean_flux_orig</span></code></p></td>
+<td><p>False</p></td>
+<td><p>GFDL LEGACY: Use NCAR climate model turbulent flux calculation described by [Large2004],
+using the original GFDL implementation, which contains a bug in the specification of the
+exchange coefficient for the sensible heat. Not recommended for new experiments.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">raoult_sat_vap</span></code></p></td>
+<td><p>False</p></td>
+<td><p>If true, reduce saturation vapor pressures over ocean to account for seawater salinity.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">land_humidity_prefactor</span></code></p></td>
+<td><p>1.0</p></td>
+<td><p>Factor that multiplies the surface specific humidity over land. This is included to make
+land ‘dry’. If it is equal to 1, land behaves like ocean. If it is between 0 and 1,
+this will decrease the evaporative heat flux in areas of land. Note that this can lead
+to sign changes in the evaporative flux, and we find this becomes unstable over very
+shallow mixed layer depths.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">land_evap_prefactor</span></code></p></td>
+<td><p>1.0</p></td>
+<td><p>Factor that multiplies the evaporative flux over land. This is included to make land
+‘dry’. If it is equal to 1, land behaves like ocean. If it is between 0 and 1, this will
+decrease the evaporative heat flux in areas of land. This formulation avoids sign
+changes in the evaporative flux and remains stable over very shallow mixed layer depths.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">flux_heat_gp</span></code></p></td>
+<td><p>5.7</p></td>
+<td><p>Intrinsic heat flux imposed to describe the lower boundary of a giant planet atmosphere.
+[Schneider2009]. Default is <span class="math notranslate nohighlight">\(5.7 Wm^{-2}\)</span>, appropriate for Jupiter [Gierasch2000].</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">diabatic_acce</span></code></p></td>
+<td><p>1.0</p></td>
+<td><p>Multiplicative scaling factor for the temperature tendency in the giant planet scheme.
+This can be used to speed up model spin-up. It will speed up the model spin-up if
+greater than 1. A similar factor can also be applied for giant planet radiation. Note
+that an alternative way to accelerate spin-up is to run Isca’s column model to
+equilibrium.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="diagnostics">
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h2>
+<p>No diagnostics are saved within the <code class="docutils literal notranslate"><span class="pre">surface_flux</span></code> module itself. Diagnostics related to surface exchange are available via the <cite>atmosphere</cite> diagnostic list in <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys.F90</span></code>, and the <cite>mixed_layer</cite> diagnostic list in <code class="docutils literal notranslate"><span class="pre">mixed_layer.F90</span></code>.</p>
+</section>
+<section id="relevant-modules-and-subroutines">
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline"></a></h2>
+<p>Modules relevant to this one include:</p>
+<dl class="field-list simple">
+<dt class="field-odd">idealized_moist_phys</dt>
+<dd class="field-odd"><p>Momentum flux diagnostics are output here. A land roughness prefactor can also be applied in this module, which is used to alter the roughness lengths that are fed to <code class="docutils literal notranslate"><span class="pre">surface_flux_mod</span></code>.</p>
+</dd>
+<dt class="field-even">mixed_layer_mod</dt>
+<dd class="field-even"><p>Diagnostics for fluxes of sensible and latent heat are output here.</p>
+</dd>
+</dl>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
+<div class="line-block">
+<div class="line"><a class="reference internal" href="../references.html#frierson2006a" id="id1"><span>[Frierson2006a]</span></a></div>
+<div class="line"><a class="reference internal" href="../references.html#gierasch2000" id="id2"><span>[Gierasch2000]</span></a></div>
+<div class="line"><a class="reference internal" href="../references.html#large2004" id="id3"><span>[Large2004]</span></a></div>
+<div class="line"><a class="reference internal" href="../references.html#manabe1969" id="id4"><span>[Manabe1969]</span></a></div>
+<div class="line"><a class="reference internal" href="../references.html#schneider2009" id="id5"><span>[Schneider2009]</span></a></div>
+<div class="line"><a class="reference internal" href="../references.html#vallisetal2018" id="id6"><span>[VallisEtAl2018]</span></a></div>
+</div>
+</section>
+<section id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<p>This documentation was written by Ruth Geen, peer reviewed by Marianne Pietschnig, and quality controlled by Ross Castle.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="socrates.html" class="btn btn-neutral float-left" title="SOCRATES Radiation Scheme Interface" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../python.html" class="btn btn-neutral float-right" title="Python API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, the Isca development team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

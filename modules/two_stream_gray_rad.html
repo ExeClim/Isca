@@ -1,38 +1,17 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Radiative transfer: Simple gray and multi-band radiation schemes. &mdash; isca dev documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-
-  
-  
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-  
-
-  
-  
-
-  
-
-  
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
@@ -40,43 +19,23 @@
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
+    <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Convection scheme: Simple Betts-Miller" href="convection_simple_betts_miller.html" />
     <link rel="prev" title="Moist physics driver: idealized_moist_phys.F90" href="idealised_moist_phys.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="../index.html" class="icon icon-home"> isca
-          
-
-          
           </a>
-
-          
-            
-            
               <div class="version">
                 dev
               </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -84,18 +43,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
@@ -122,6 +70,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="convection_simple_betts_miller.html">Convection scheme: Simple Betts-Miller</a></li>
 <li class="toctree-l2"><a class="reference internal" href="socrates.html">SOCRATES Radiation Scheme Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="surface_flux.html">Surface flux calculation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
@@ -132,73 +81,31 @@
 <li class="toctree-l1"><a class="reference internal" href="../remote_access.html">Remote Access</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">isca</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-        
           <li><a href="index.html">Components of Isca</a> &raquo;</li>
-        
       <li>Radiative transfer: Simple gray and multi-band radiation schemes.</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="../_sources/modules/two_stream_gray_rad.rst.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   
 <style>
 /* CSS overrides for sphinx_rtd_theme */
@@ -223,11 +130,11 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="radiative-transfer-simple-gray-and-multi-band-radiation-schemes">
-<h1>Radiative transfer: Simple gray and multi-band radiation schemes.<a class="headerlink" href="#radiative-transfer-simple-gray-and-multi-band-radiation-schemes" title="Permalink to this headline">¶</a></h1>
+<section id="radiative-transfer-simple-gray-and-multi-band-radiation-schemes">
+<h1>Radiative transfer: Simple gray and multi-band radiation schemes.<a class="headerlink" href="#radiative-transfer-simple-gray-and-multi-band-radiation-schemes" title="Permalink to this headline"></a></h1>
 <p>Documentation for <code class="docutils literal notranslate"><span class="pre">two_stream_gray_rad_mod</span></code>.</p>
-<div class="section" id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
 <p>This module includes different simple configurations for solving the two stream radiative transfer equations. There are three semi-gray configurations available (gray in shortwave and longwave), and one intermediate multi-band configuration (gray in shortwave, multi-band in longwave). These configurations are selected by setting the <code class="docutils literal notranslate"><span class="pre">rad_scheme</span></code> namelist option.</p>
 <table class="docutils align-default">
 <colgroup>
@@ -294,9 +201,9 @@
 </table>
 <p>For each of these schemes diurnally-and-seasonally averaged, and time-dependent options for the incoming solar radiation are available.</p>
 <p>In the next few sections we will describe the main options available to the user for solving the radiative transfer equations, and prescribing the insolation. Namelist options and their defaults, and available output diagnostics are summarised at the end of the documentation.</p>
-</div>
-<div class="section" id="frierson-byrne-schemes">
-<h2>Frierson/Byrne schemes<a class="headerlink" href="#frierson-byrne-schemes" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="frierson-byrne-schemes">
+<h2>Frierson/Byrne schemes<a class="headerlink" href="#frierson-byrne-schemes" title="Permalink to this headline"></a></h2>
 <p>Each of these schemes solve the same equations to compute the longwave and shortwave fluxes. The difference between them lies in the definition of the longwave optical depths.</p>
 <div class="line-block">
 <div class="line"><strong>Longwave</strong></div>
@@ -337,9 +244,9 @@
 <div class="math notranslate nohighlight">
 \[\tau^{\ast}_{0}=(1-\Delta\tau^{\ast}\sin^{2}\theta)*\tau_{0e}^{\ast}\]</div>
 <p>where <span class="math notranslate nohighlight">\(\tau_{0e}^{\ast}\)</span> is the surface optical depth at the equator, and <span class="math notranslate nohighlight">\(\Delta\tau^{\ast}\)</span> determines the variation of shortwave optical depth with latitude.</p>
-</div>
-<div class="section" id="schneider-giant-planet-scheme">
-<h2>Schneider giant planet scheme<a class="headerlink" href="#schneider-giant-planet-scheme" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="schneider-giant-planet-scheme">
+<h2>Schneider giant planet scheme<a class="headerlink" href="#schneider-giant-planet-scheme" title="Permalink to this headline"></a></h2>
 <p>This scheme is suitable to use for giant planet experiments where there is no solid surface at the bottom of the model atmosphere. It is selected by setting <code class="docutils literal notranslate"><span class="pre">rad_scheme</span></code> to <code class="docutils literal notranslate"><span class="pre">'SCHNEIDER'</span></code>.</p>
 <div class="line-block">
 <div class="line"><strong>Longwave</strong></div>
@@ -378,9 +285,9 @@
 <div class="line"><strong>Note on input parameters for this scheme</strong></div>
 <div class="line">At present, each of the input parameters <span class="math notranslate nohighlight">\(\tilde{\omega}\)</span>, <span class="math notranslate nohighlight">\(f_{b}\)</span>, <span class="math notranslate nohighlight">\(\tau_{0,\text{gp}}\)</span>, <span class="math notranslate nohighlight">\(k_{\text{gp}}\)</span>, <span class="math notranslate nohighlight">\(\tau^{\ast}_{0,\text{gp}}\)</span>, and  <span class="math notranslate nohighlight">\(k^{\ast}_{\text{gp}}\)</span> are hardcoded and are not available as namelist options. There default values are given in the description of the scheme above. The code could be easily modified if a user wished to vary these parameters from the namelist.</div>
 </div>
-</div>
-<div class="section" id="geen-scheme">
-<h2>Geen scheme<a class="headerlink" href="#geen-scheme" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="geen-scheme">
+<h2>Geen scheme<a class="headerlink" href="#geen-scheme" title="Permalink to this headline"></a></h2>
 <p>The Geen scheme provides an intermediate option between gray radiation and more complete descriptions of radiative transfer (e.g., the correlated-<span class="math notranslate nohighlight">\(k\)</span> schemes SOCRATES and RRTM). It has two infrared bands and one solar band. The shortwave band (<span class="math notranslate nohighlight">\(&lt;4\,\mu\,\text{m}\)</span>) treats all solar radiation. Two long-wave bands treat absorption: one in the infrared region of the spectral (<span class="math notranslate nohighlight">\(8-14\,\mu\,\text{m}\)</span>), and the other in all other longwave wavelengths (<span class="math notranslate nohighlight">\(&lt;4\,\mu\,\text{m}\)</span>, non-window).</p>
 <p>Note: the Geen scheme is currently only stable when run in a fixed SST configuration. A version stable with a slab ocean is expected by 30/11/2020.</p>
 <div class="line-block">
@@ -420,9 +327,9 @@
 <div class="math notranslate nohighlight">
 \[\log[b_{\text{sw}}(\tau^{\ast})]=\frac{0.01887}{\tau^{\ast}+0.009522}+\frac{1.603}{(\tau^{\ast}+0.5194)^{2}}.\]</div>
 <p><span class="math notranslate nohighlight">\(a_{\text{sw}}=0.0596\)</span> and <span class="math notranslate nohighlight">\(c_{\text{sw}}=0.0029\)</span>. As it stands, <span class="math notranslate nohighlight">\(a_{\text{sw}}\)</span>, <span class="math notranslate nohighlight">\(b_{\text{sw}}\)</span>, and <span class="math notranslate nohighlight">\(c_{\text{sw}}\)</span> are hardcoded and not modifiable via the namelist. As with the longwave absorption coefficients, the default values for the absorption coefficients were fitted to SBDART output.</p>
-</div>
-<div class="section" id="incoming-solar-radiation">
-<h2>Incoming solar radiation<a class="headerlink" href="#incoming-solar-radiation" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="incoming-solar-radiation">
+<h2>Incoming solar radiation<a class="headerlink" href="#incoming-solar-radiation" title="Permalink to this headline"></a></h2>
 <p>For each of the radiative transfer schemes, diurnally-and-seasonally averaged, and time-dependent options for the incoming solar radiation are avaialable. The user selects whether diurnally-and-seasonally averaged or time-dependent solar forcing is used by setting the namelist option <code class="docutils literal notranslate"><span class="pre">do_seasonal</span></code>.</p>
 <div class="line-block">
 <div class="line"><strong>Diurnally-and-seasonally averaged insolation</strong></div>
@@ -448,9 +355,9 @@ P_{2} &amp;= (1 - 3\sin^{2}\theta)/4\end{split}\]</div>
 <p>where <span class="math notranslate nohighlight">\(\zeta\)</span> is the zenith angle, <span class="math notranslate nohighlight">\(a\)</span> is the semi-major axis of the orbital ellipse, and <span class="math notranslate nohighlight">\(r\)</span> is the time-varying planet-star distance. NB: <span class="math notranslate nohighlight">\((a/r)^{2}\)</span> is called <code class="docutils literal notranslate"><span class="pre">rrsun</span></code> in the code.</p>
 <p>If the user wishes, they may average incoming solar radiation over a period <span class="math notranslate nohighlight">\(\Delta t_{\text{avg}}\)</span> (units <span class="math notranslate nohighlight">\(\text{s}\)</span>). This allows the user to have seasonally varying forcing without a diurnal cycle, for example. To achieve diurnally averaged insolation for a planet with the Earth’s length of day one would set <span class="math notranslate nohighlight">\(\Delta t_{\text{avg}}=86400.0\,\text{s}\)</span>.</p>
 <p>There is also an option to run perpetually on one day by setting the namelist variable <code class="docutils literal notranslate"><span class="pre">solday</span></code>. For example if Northern Hemisphere autumn equinox was set to occur on day <span class="math notranslate nohighlight">\(270\)</span> of a <span class="math notranslate nohighlight">\(360\)</span> day year, then one could run a perpetual solstice simulation by setting <code class="docutils literal notranslate"><span class="pre">solday=180</span></code>. This can be used in conjunction with an appropriate choice for <span class="math notranslate nohighlight">\(\text{d}t_{\text{avg}}\)</span> to remove the diurnal cycle in such an experiment.</p>
-</div>
-<div class="section" id="namelist-options">
-<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="namelist-options">
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h2>
 <p>The namelist options for <strong>two_stream_gray_rad_nml</strong> are listed below.</p>
 <p><strong>Namelist option to choose scheme</strong></p>
 <dl class="field-list simple">
@@ -617,9 +524,9 @@ P_{2} &amp;= (1 - 3\sin^{2}\theta)/4\end{split}\]</div>
 <dd class="field-even"><p>Planetary rotation rate in <span class="math notranslate nohighlight">\(s^{-1}\)</span>. Default value is <span class="math notranslate nohighlight">\(7.29\times10^{-5}\,\text{s}^{-1}\)</span></p>
 </dd>
 </dl>
-</div>
-<div class="section" id="diagnostics">
-<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="diagnostics">
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h2>
 <p>These are the diagnostics associated with the <code class="docutils literal notranslate"><span class="pre">two_stream_gray_rad</span></code> module.</p>
 <table class="docutils align-default">
 <colgroup>
@@ -721,9 +628,9 @@ transmission.</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="relevant-modules-and-subroutines">
-<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="relevant-modules-and-subroutines">
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline"></a></h2>
 <p>Modules relevant to this one include:</p>
 <dl class="field-list simple">
 <dt class="field-odd">astronomy_mod</dt>
@@ -748,9 +655,9 @@ transmission.</p></td>
 <dd class="field-even"><p>Interface for flexible Met-Office correlated-<span class="math notranslate nohighlight">\(k\)</span> scheme used for Earth-like and exoplanetary atmospheres.</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="../references.html#byrne2013" id="id8"><span>[Byrne2013]</span></a></div>
 <div class="line"><a class="reference internal" href="../references.html#frierson2006a" id="id9"><span>[Frierson2006a]</span></a></div>
@@ -758,59 +665,42 @@ transmission.</p></td>
 <div class="line"><a class="reference internal" href="../references.html#schneider2009" id="id11"><span>[Schneider2009]</span></a></div>
 <div class="line"><a class="reference internal" href="../references.html#vallisetal2018" id="id12"><span>[VallisEtAl2018]</span></a></div>
 </div>
-</div>
-<div class="section" id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
 <p>This documentation was written by Neil Lewis, peer reviewed by Ruth Geen, and quality controlled by Matthew Henry.</p>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="convection_simple_betts_miller.html" class="btn btn-neutral float-right" title="Convection scheme: Simple Betts-Miller" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="idealised_moist_phys.html" class="btn btn-neutral float-left" title="Moist physics driver: idealized_moist_phys.F90" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="convection_simple_betts_miller.html" class="btn btn-neutral float-right" title="Convection scheme: Simple Betts-Miller" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2020, the Isca development team.
-
-    </p>
+    <p>&#169; Copyright 2020, the Isca development team.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
