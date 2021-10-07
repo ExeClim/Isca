@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagnostics Manager Module &amp; Saving model output &mdash; isca dev documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Python API" href="../python.html" />
+    <link rel="prev" title="Surface flux calculation" href="surface_flux.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> isca
+          </a>
+              <div class="version">
+                dev
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../begginers_guide.html">Isca Beginner’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Components of Isca</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Experiment configuration scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamics.html">Isca’s dynamical core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physics.html">Isca’s physical parameterisations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants.html">Constants: Atmospheric and Planetary Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Changing Isca output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idealised_moist_phys.html">Moist physics driver: idealized_moist_phys.F90</a></li>
+<li class="toctree-l2"><a class="reference internal" href="two_stream_gray_rad.html">Radiative transfer: Simple gray and multi-band radiation schemes.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="convection_simple_betts_miller.html">Convection scheme: Simple Betts-Miller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socrates.html">SOCRATES Radiation Scheme Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="surface_flux.html">Surface flux calculation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Diagnostics Manager Module &amp; Saving model output</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#namelist-options">Namelist options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#diagnostics">Diagnostics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#output-files">Output files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#output-fields">Output fields</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#relevant-modules-and-subroutines">Relevant modules and subroutines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../remote_access.html">Remote Access</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isca</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Components of Isca</a> &raquo;</li>
+      <li>Diagnostics Manager Module &amp; Saving model output</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/modules/diag_manager_mod.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="diagnostics-manager-module-saving-model-output">
+<h1>Diagnostics Manager Module &amp; Saving model output<a class="headerlink" href="#diagnostics-manager-module-saving-model-output" title="Permalink to this headline"></a></h1>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<p>This module handles the writing of diagnostic output to netCDF files. The user can specify which fields should be output and at which temporal resolution (e.g. monthly means, daily means … ). The source code is located at <code class="docutils literal notranslate"><span class="pre">src/shared/diag_manager/diag_manager.F90</span></code>.</p>
+</section>
+<section id="namelist-options">
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 8%" />
+<col style="width: 68%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">append_pelist_name</span></code></p></td>
+<td><p>False</p></td>
+<td><p>Decides whether to append the pelist_name to file name</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mix_snapshot_average_fields</span></code></p></td>
+<td><p>False</p></td>
+<td><p>Allow both time average and instantaneous fields in the same output file</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max_files</span></code></p></td>
+<td><p>31</p></td>
+<td><p>Sets the maximum number of output files allowed</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max_output_fields</span></code></p></td>
+<td><p>300</p></td>
+<td><p>Sets the maximum number of output fields allowed</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max_input_fields</span></code></p></td>
+<td><p>300</p></td>
+<td><p>Sets the maximum number of input fields allowed</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max_axes</span></code></p></td>
+<td><p>60</p></td>
+<td><p>Sets the maximum number of independent axes</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">do_diag_field_log</span></code></p></td>
+<td><p>False</p></td>
+<td><p>to log the registration of the data field, put the OPTIONAL parameter
+<code class="docutils literal notranslate"><span class="pre">do_not_log</span></code> = <code class="docutils literal notranslate"><span class="pre">False</span></code> and the namelist variable <code class="docutils literal notranslate"><span class="pre">do_diag_field_log</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">write_bytes_in_files</span></code></p></td>
+<td><p>False</p></td>
+<td><p>Write out the number of bytes of data saved to this file</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">debug_diag_manager</span></code></p></td>
+<td><p>False</p></td>
+<td><p>When set to true, bounds are checked in <code class="docutils literal notranslate"><span class="pre">send_data</span></code> (send data to output fields)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max_num_axis_sets</span></code></p></td>
+<td><p>25</p></td>
+<td><p>Set maximum number of axes for output (e.g. time and space axes)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">use_cmor</span></code></p></td>
+<td><p>False</p></td>
+<td><p>Let the <code class="docutils literal notranslate"><span class="pre">diag_manager</span></code> know if the missing value (if supplied) should be overridden
+to be the CMOR standard value of -1.0e20</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">issue_oor_warnings</span></code></p></td>
+<td><p>True</p></td>
+<td><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code> check for values outside the valid range. This range is passed to the
+<code class="docutils literal notranslate"><span class="pre">diag_manager_mod</span></code> via the OPTIONAL variable range in the
+<code class="docutils literal notranslate"><span class="pre">register_diag_field</span></code> function</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">oor_warnings_fatal</span></code></p></td>
+<td><p>True</p></td>
+<td><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code> issue a fatal error if any values for the output field are outside the
+given range</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="diagnostics">
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h2>
+<p>This part of the code does not have its own diagnostics, but rather handles the saving of all variables. See also <code class="docutils literal notranslate"><span class="pre">/src/extra/python/isca/diagtable.py</span></code></p>
+<section id="output-files">
+<h3>Output files<a class="headerlink" href="#output-files" title="Permalink to this headline"></a></h3>
+<p>In order to save output in Isca, an output file is created first in your experiment runscript (see examples in <code class="docutils literal notranslate"><span class="pre">/exp/test_cases/</span></code>). Commonly used output timesteps include monthly, daily or x-hourly.</p>
+<p><code class="docutils literal notranslate"><span class="pre">diag.add_file('atmos_monthly',</span> <span class="pre">30,</span> <span class="pre">'days',</span> <span class="pre">time_units='days')</span></code>
+<code class="docutils literal notranslate"><span class="pre">diag.add_file('atmos_daily',</span> <span class="pre">1,</span> <span class="pre">'days',</span> <span class="pre">time_units='days')</span></code>
+<code class="docutils literal notranslate"><span class="pre">diag.add_file('atmos_6_hourly',</span> <span class="pre">6,</span> <span class="pre">'hours',</span> <span class="pre">time_units='hours')</span></code></p>
+<p>The frequency at which data is saved can be set in the <code class="docutils literal notranslate"><span class="pre">main_nml</span></code>:</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;main_nml&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;dt_atmos&#39;</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span>
+        <span class="s1">&#39;days&#39;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>
+        <span class="s1">&#39;calendar&#39;</span><span class="p">:</span> <span class="s1">&#39;thirty_day&#39;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>For example, set <code class="docutils literal notranslate"><span class="pre">'days':</span> <span class="pre">15</span></code> and <code class="docutils literal notranslate"><span class="pre">'calendar':</span> <span class="pre">'fifteen_day'</span></code>.</p>
+</section>
+<section id="output-fields">
+<h3>Output fields<a class="headerlink" href="#output-fields" title="Permalink to this headline"></a></h3>
+<p>An output field is created via <code class="docutils literal notranslate"><span class="pre">diag.add_field(module,</span> <span class="pre">name,</span> <span class="pre">time_avg,</span> <span class="pre">files)</span></code> in the experiment runscript.
+The default for <code class="docutils literal notranslate"><span class="pre">time_avg</span></code> = False, the default for <code class="docutils literal notranslate"><span class="pre">files</span></code> = None.
+<code class="docutils literal notranslate"><span class="pre">time_avg</span></code> is usually set to True for most variables when an output field is defined.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">files</span></code> = None, then the diagnostics will be saved to all of the given output files (in our example monthly, daily and 6h).
+An output file can be specified via e.g. <code class="docutils literal notranslate"><span class="pre">files=['atmos_6_hourly']</span></code> in
+<code class="docutils literal notranslate"><span class="pre">diag.add_field('dynamics',</span> <span class="pre">'ucomp',</span> <span class="pre">time_avg=True,</span> <span class="pre">files=['atmos_6_hourly'])</span></code> if 6h zonal winds shall be saved, but not monthly/daily</p>
+<p>Below is a list of commonly saved diagnostics. See the relevant modules for an exhaustive list of available diagnostics.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 16%" />
+<col style="width: 18%" />
+<col style="width: 33%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Dimensions</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Units</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ps</span></code></p></td>
+<td><p>(time, lat, lon)</p></td>
+<td><p>surface pressure</p></td>
+<td><p><span class="math notranslate nohighlight">\(Pa\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">bk</span></code></p></td>
+<td><p>(phalf)</p></td>
+<td><p>vertical coordinate sigma values</p></td>
+<td><p><span class="math notranslate nohighlight">\(Pa\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">pk</span></code></p></td>
+<td><p>(phalf)</p></td>
+<td><p>vertical coordinate pressure values</p></td>
+<td><p><span class="math notranslate nohighlight">\(Pa\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">slp</span></code></p></td>
+<td><p>(time, lat, lon)</p></td>
+<td><p>sea level pressure</p></td>
+<td><p><span class="math notranslate nohighlight">\(Pa\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">height</span></code></p></td>
+<td><p>(time, pfull, lat, lon)</p></td>
+<td><p>geopotential height at full model levels</p></td>
+<td><p><span class="math notranslate nohighlight">\(m\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zsurf</span></code></p></td>
+<td><p>(lat, lon)</p></td>
+<td><p>geopotential height at the surface</p></td>
+<td><p><span class="math notranslate nohighlight">\(m\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">u_comp</span></code></p></td>
+<td><p>(time, pfull, lat, lon)</p></td>
+<td><p>zonal component of the horizontal winds</p></td>
+<td><p><span class="math notranslate nohighlight">\(m/s\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">v_comp</span></code></p></td>
+<td><p>(time, pfull, lat, lon)</p></td>
+<td><p>meridional component of the horizontal winds</p></td>
+<td><p><span class="math notranslate nohighlight">\(m/s\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">omega</span></code></p></td>
+<td><p>(time, pfull, lat, lon)</p></td>
+<td><p>vertical velocity</p></td>
+<td><p><span class="math notranslate nohighlight">\(Pa/s\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">sphum</span></code></p></td>
+<td><p>(time, pfull, lat, lon)</p></td>
+<td><p>specific humidity</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg/kg\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">temp</span></code></p></td>
+<td><p>(time, pfull, lat, lon)</p></td>
+<td><p>temperature</p></td>
+<td><p><span class="math notranslate nohighlight">\(K\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">vor</span></code></p></td>
+<td><p>(time, pfull, lat, lon)</p></td>
+<td><p>vorticity</p></td>
+<td><p><span class="math notranslate nohighlight">\(1/s\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">div</span></code></p></td>
+<td><p>(time, pfull, lat, lon)</p></td>
+<td><p>divergence</p></td>
+<td><p><span class="math notranslate nohighlight">\(1/s\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">atmosphere</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">precipitation</span></code></p></td>
+<td><p>(time, lat, lon)</p></td>
+<td><p>precipitation from resolved, parameterised
+and snow</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg/(m^2 s)\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">atmosphere</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">rh</span></code></p></td>
+<td><p>(time, pfull, lat, lon)</p></td>
+<td><p>relative humidity</p></td>
+<td><p><span class="math notranslate nohighlight">\(\%\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mixed-layer</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">t_surf</span></code></p></td>
+<td><p>(time, lat, lon)</p></td>
+<td><p>surface temperature</p></td>
+<td><p><span class="math notranslate nohighlight">\(K\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mixed-layer</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">flux_t</span></code></p></td>
+<td><p>(time, lat, lon)</p></td>
+<td><p>sensible heat flux at the surface (up)</p></td>
+<td><p><span class="math notranslate nohighlight">\(W/m^2\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mixed-layer</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">flux_lhe</span></code></p></td>
+<td><p>(time, lat, lon)</p></td>
+<td><p>latent heat flux at the surface (up)</p></td>
+<td><p><span class="math notranslate nohighlight">\(W/m^2\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rrtm_radiation</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">flux_sw</span></code></p></td>
+<td><p>(time, lat, lon)</p></td>
+<td><p>net shortwave flux at the surface (down)</p></td>
+<td><p><span class="math notranslate nohighlight">\(W/m^2\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rrtm_radiation</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">flux_lw</span></code></p></td>
+<td><p>(time, lat, lon)</p></td>
+<td><p>longwave flux at the surface (down only)</p></td>
+<td><p><span class="math notranslate nohighlight">\(W/m^2\)</span></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="relevant-modules-and-subroutines">
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">diag_manager_mod</span></code> uses several modules and subroutines, including</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">diag_axis</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">diag_grid</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">diag_output</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">diag_util</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">diag_data</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">diag_table</span></code></p></li>
+</ul>
+</section>
+<section id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<p>This documentation was written by Marianne Pietschnig, peer reviewed by Stephen Thomson and quality controlled by Ross Castle.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="surface_flux.html" class="btn btn-neutral float-left" title="Surface flux calculation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../python.html" class="btn btn-neutral float-right" title="Python API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, the Isca development team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
