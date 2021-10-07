@@ -66,10 +66,12 @@ for exp_name in exp_name_list:
 
             number_prefix=''
 
-            if n+start_file < 100:
+            if n+start_file < 1000:
                 number_prefix='0'
-            if n+start_file < 10:
+            if n+start_file < 100:
                 number_prefix='00'
+            if n+start_file < 10:
+                number_prefix='000'
 
             nc_file_in = base_dir+'/'+exp_name+'/run'+number_prefix+str(n+start_file)+'/atmos_'+avg_or_daily+'.nc'
             nc_file_out = out_dir+'/'+exp_name+'/run'+number_prefix+str(n+start_file)+'/atmos_'+avg_or_daily+file_suffix+'.nc'

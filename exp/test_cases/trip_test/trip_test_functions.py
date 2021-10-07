@@ -13,6 +13,7 @@ import pdb
 import numpy as np
 import os
 import sys
+import f90nml
 
 def get_nml_diag(test_case_name):
     """Gets the appropriate namelist and input files from each of the test case scripts in the test_cases folder
@@ -79,6 +80,12 @@ def get_nml_diag(test_case_name):
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist       
 
+    if 'socrates_aquaplanet_cloud' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_test/'))
+        from socrates_aquaplanet_cloud import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist       
+
     if 'top_down_test' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/top_down_test/'))
         from top_down_test import namelist as nml_out
@@ -107,7 +114,20 @@ def get_nml_diag(test_case_name):
 def list_all_test_cases_implemented_in_trip_test():
 
     #List of test cases to check
-    exps_implemented = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'socrates_aquaplanet', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm', 'ape_aquaplanet']
+    exps_implemented = ['axisymmetric', 
+                        'bucket_model', 
+                        'frierson', 
+                        'giant_planet', 
+                        'held_suarez', 
+                        'MiMA', 
+                        'realistic_continents_fixed_sst', 
+                        'realistic_continents_variable_qflux', 
+                        'socrates_aquaplanet', 
+                        'socrates_aquaplanet_cloud', 
+                        'top_down_test', 
+                        'variable_co2_grey', 
+                        'variable_co2_rrtm', 
+                        'ape_aquaplanet']
 
     return exps_implemented
 
@@ -176,6 +196,7 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
         'days': 3,
         }})
 
+
         try:
             # run with a progress bar
             with exp_progress(exp, description=s) as pbar:
@@ -185,6 +206,8 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             run_complete = False
             test_pass = False
             continue
+
+
 
         data_dir_dict[s] = exp.datadir
     if run_complete:
@@ -201,6 +224,12 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
                 if maxval !=0.:
                     print('Test failed for '+var+' max diff value = '+str(maxval.values))
                     test_pass = False
+
+            base_experiment_input_nml = f90nml.read(data_dir_dict[base_commit] +'/run0001/input.nml')
+            later_commit_input_nml    = f90nml.read(data_dir_dict[later_commit] +'/run0001/input.nml')
+
+            if base_experiment_input_nml!=later_commit_input_nml:
+                raise AttributeError(f'The two experiments to be compared have been run using different input namelists, and so the results may be different because of this. This only happens when you have run the trip tests using one of the commit IDs before, and that you happen to have used a different version of the test cases on that previous occasion. Try removing both {data_dir_dict[base_commit]} and {data_dir_dict[later_commit]} and try again.')
 
         if test_pass:
             print('Test passed for '+test_case_name+'. Commit '+later_commit+' gives the same answer as commit '+base_commit)

@@ -131,6 +131,7 @@ Contents
    contributing
    testing/index.rst
    references
+   remote_access
 
 See also
 ========
