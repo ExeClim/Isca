@@ -16,6 +16,6 @@ Components of Isca
    two_stream_gray_rad
    convection_simple_betts_miller
    socrates
-   surface_flux_mod
+   surface_flux
    diag_manager_mod
 
