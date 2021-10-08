@@ -5,7 +5,13 @@ When Isca runs crash it can be difficult to diagnose the problem. We suggest try
 
 Write Statements
 ----------------
-Add in some write commands into the Fortran files you suspect are causing trouble. These can be either to print out values to check if they seem sensible, or periodic statements (e.g. every 100 lines or after every major function) so see how far the code is running. 
+Add in some write commands into the Fortran files you suspect are causing trouble. These can be either to print out values to check if they seem sensible, or periodic statements (e.g. every 100 lines or after every major function) so see how far the code is running. A quick and dirty way of printing variables directly to the terminal is to use a command in the code like this (note this will print every timestep without further conditions):
+
+.. code-block:: fortran
+
+    write(6,*) "<Some description>: ", <variable>
+
+Alternatively variables can be written to files, such as this `example <http://www.python.org/>`_.
 
 Running on 1 core
 -----------------
@@ -15,7 +21,7 @@ Column Model
 ------------
 Using the column model can be useful to test that parameterisations like convection and radiation are working properly as you don’t have horizontal dynamics complicating things.
 
-1 Change At A Time
+One Change At A Time
 ------------------
 Generally when building a model, it is a good idea to create it iteratively. Start from somewhere you know works, for example one of our test cases, and make 1 or 2 changes at a time towards your ideal set up. Then you will know what change is causing the crash.
 
@@ -29,7 +35,7 @@ Ensure that you are recompiling the Fortran each time.
 
 Timestep
 --------
-The usual quickest fix when you have a model run that is crashing part way through is to increase the timestep. Your timestep must obey the CFL criterion.
+The usual quickest fix when you have a model run that is crashing part way through is to increase the timestep. Your timestep must obey the `CFL criterion <https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition>`_.
 
 Check you’ve allocated large enough variable size
 -------------------------------------------------
@@ -44,4 +50,4 @@ Ensure there is enough temporary memory to hold the run and data created.
 Authors
 -------
 This documentation was put together by the Isca team from their experience with using Isca. 
-Last updated 07/10/2021
+Last updated 08/10/2021
