@@ -6,7 +6,7 @@ Summary
 
 The module computes the large scale temperature and specific humidity adjustments are computed in model layers where the relative humidity exceeds a threshold relative humidity, and returns the mass of rain and snow (or other frozen precipitation) that reach the ground. The module also outputs the temperature tendency and the specific humidity tendency. Features include the option for the re-evaporation of falling precipitation and energetically consistent adjustment with precipitation type.
 
-See [Frierson2006a]_ (Section 2e) for a detailed description here `here <https://journals.ametsoc.org/view/journals/atsc/63/10/jas3753.1.xml>`_.
+See [Frierson2006a]_ (Section 2e) for a detailed description `here <https://journals.ametsoc.org/view/journals/atsc/63/10/jas3753.1.xml>`_.
 
 Namelist options
 ----------------
