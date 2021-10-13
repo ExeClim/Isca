@@ -13,11 +13,9 @@ Namelist options
 
 There are three namelist variables. 
 
-The first two are directly relevant to how the tendency equations and precipitation are calculated
-
 :hc: The relative humidity at which large scale condensation, where :math:`0.0 <= hc <= 1.0`. Default is :math:`hc=1.0`.
 :do_evap: The flag for the re-evaporation of moisture in sub-saturated layers below, if ``True`` then re-evaporation is performed. Default is ``False``.
-:do_simple: If ``True`` then all precipitation is rain/liquid preciptiation, there is no snow/frozen preciptation. Default is ``False``.
+:do_simple: If ``True`` then all precipitation is rain/liquid precipitation, there is no snow/frozen precipitation. Default is ``False``.
 
 Diagnostics
 -----------
