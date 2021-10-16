@@ -23,10 +23,18 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_aquaplanet', codebase=cb)
+# note on this experiement.
+#    The original era land file will generate Gibbs ripples if land is used. 
+#    This files only purpose if for testing the behaviour of era land.
+#     
+exp = Experiment('soc_aquaplanet_amip_old_era_land', codebase=cb)
 exp.clear_rundir()
 
-inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
+inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
+              os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc'),
+              os.path.join(GFDL_BASE,'exp/test_cases/realistic_continents/input/sst_clim_amip.nc'),
+              os.path.join(GFDL_BASE,'exp/test_cases/realistic_continents/input/siconc_clim_amip.nc'),
+             ]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -105,6 +113,10 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
+        'do_cloud_simple': False, 
+        'land_option' : 'input',
+        'land_file_name' : 'INPUT/era_land_t42.nc',
+        'land_roughness_prefactor' :10.0, 
     },
 
 
@@ -124,7 +136,8 @@ exp.namelist = namelist = Namelist({
     'surface_flux_nml': {
         'use_virtual_temp': False,
         'do_simple': True,
-        'old_dtaudv': True    
+        'old_dtaudv': True,
+	    'land_humidity_prefactor': 0.7,
     },
 
     'atmosphere_nml': {
@@ -136,8 +149,17 @@ exp.namelist = namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':True,  
-        'depth': 2.5,                          #Depth of mixed layer used
-        'albedo_value': 0.38,                  #Albedo value used      
+        'depth': 20.0,                          #Depth of mixed layer used
+        'albedo_value': 0.2,                  #Albedo value used      
+        'land_option': 'input',              #Tell mixed layer to get land mask from input file
+        'land_h_capacity_prefactor': 0.1,    #What factor to multiply mixed-layer depth by over land. 
+        'albedo_value': 0.25,                #Ocean albedo value
+        'land_albedo_prefactor': 1.3,        #What factor to multiply ocean albedo by over land     
+        'do_qflux' : False, #Don't use the prescribed analytical formula for q-fluxes
+        'do_read_sst' : True, #Read in sst values from input file
+        'do_sc_sst' : True, #Do specified ssts (need both to be true)
+        'sst_file' : 'sst_clim_amip', #Set name of sst input file
+        'specify_sst_over_ocean_only' : True, #Make sure sst only specified in regions of ocean.              
     },
 
     'qe_moist_convection_nml': {
@@ -153,6 +175,7 @@ exp.namelist = namelist = Namelist({
     
     'sat_vapor_pres_nml': {
            'do_simple':True,
+           'construct_table_wrt_liq_and_ice':True
        },
     
     'damping_driver_nml': {
@@ -187,7 +210,13 @@ exp.namelist = namelist = Namelist({
         'surf_res':0.2, #Parameter that sets the vertical distribution of sigma levels
         'scale_heights' : 11.0,
         'exponent':7.0,
-        'robert_coeff':0.03
+        'robert_coeff':0.03,
+        'ocean_topog_smoothing': 0.8
+    },
+
+    'spectral_init_cond_nml':{
+        'topog_file_name': 'era_land_t42.nc',
+        'topography_option': 'input'
     },
 
 })
@@ -202,5 +231,5 @@ if __name__=="__main__":
         overwrite=False
 
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
-        for i in range(2,121):
+        for i in range(2,61):
             exp.run(i, num_cores=NCORES, overwrite_data=overwrite)

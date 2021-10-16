@@ -123,13 +123,16 @@ Contents
    :glob:
 
    install
+   begginers_guide
    examples/index.rst
+   isca_structure
    modules/index.rst
    python
    changelog
    contributing
    testing/index.rst
    references
+   remote_access
 
 See also
 ========
