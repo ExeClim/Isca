@@ -1,7 +1,10 @@
 References
 ==========
 
-
+.. [Alexander1999] Alexander, M. J., & Dunkerton, T. J. (1999). A spectral parameterization of
+           mean-flow forcing due to breaking gravity waves. Journal of the Atmospheric Sciences,
+           56(24), 4167-4182. <https://doi.org/10.1175/1520-0469(1999)056<4167:ASPOMF>2.0.CO;2>`_.
+           
 .. [Betts1986] Betts, A. K., 1986:
            A new convective adjustment scheme. Part I: Observational and theoretical basis.
            *Quarterly Journal of the Royal Meteorological Society*,
@@ -73,6 +76,9 @@ References
            *Monthly Weather Review*,
            **120(6)**, 978--1002,
            doi: 10.1175/1520-0493(1992)120<0978:RASAPO>2.0.CO;2
+.. [Pierrehumbert1986] Pierrehumbert, R. T. (1986, September). An essay on the parameterization
+           of orographic gravity wave drag. In Proc. Seminar/Workshop on Observation, Theory and
+           Modeling of Orographic Effects (Vol. 1, pp. 251-282).
 			 
 .. [Ricchiazzi1998] Ricchiazzi, P., Yang, S., Gautier, C., and Sowle, D., 1998: SBDART: A research and teaching 
                 software tool for plane-parallel radiative transfer in the Earth’s atmosphere, 
@@ -101,7 +107,7 @@ References
            other planets at varying levels of complexity. *Geoscientific Model Development*,
            **11(3)**, 843-859,
            doi: `10.5194/gmd-11-843-2018 <https://doi.org/10.5194/gmd-11-843-2018>`_.
-
+           
 .. [Williams2011] Williams, P. D., 2011:
            The RAW Filter: An Improvement to the Robert-Asselin Filter in Semi-Implicit Integrations.
            *Mon. Wea. Rev.*
@@ -113,8 +119,3 @@ References
            *Dynamics of Atmospheres and Oceans*,
            **73**, 10--33,
            doi: `10.1016/j.dynatmoce.2015.11.001 <https://doi.org/10.1016/j.dynatmoce.2015.11.001>`_.
-
-
-
-
-
