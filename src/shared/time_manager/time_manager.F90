@@ -3479,6 +3479,7 @@ logical :: test17=.true.,test18=.true.,test19=.true.
 
 #ifdef INTERNAL_FILE_NML
       read (input_nml_file, test_nml, iostat=io)
+      ierr = check_nml_error (io, 'test_nml')
 #else
  nmlunit = open_namelist_file()
  ierr=1
