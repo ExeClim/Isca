@@ -1,7 +1,5 @@
-Topography in Isca
+Topography and Land Masks in Isca
 ==================
-
-NOTE: RC IS WRITING THIS AS IF SOME CHANGES HAVE BEEN MADE TO TOPOGRAPHY.F90 (SECTION 3) WHICH RC WILL DO SOON.
 
 This guide covers:
 
@@ -12,18 +10,18 @@ This guide covers:
 1 - Implementing Topography in Isca
 -----------------------------------
 
-This is realively simple to do, assuming that the topography/land mask you are using has already been interpolated to the same spectral grid you are running the model at. If running at T42, you can use the one provided (``input/land_masks/era_land_t42.nc``). If not, you can interpolate fairly easily from any high resolution data, or for configurations of Earth continents, please refer to section 2 of this guide.
+This is relatively simple to do, assuming that the topography/land mask you are using has already been interpolated to the same spectral grid you are running the model at. If running at T42, you can use the one provided (``input/land_masks/era_land_t42.nc``). If not, you can interpolate fairly easily from any high resolution data, or for configurations of Earth continents, please refer to section 2 of this guide.
 
 - The land mask is a binary field the size of the spectral model grid (e.g. 64 x 128 for T42) that contains a ``1`` if that grid box is designated as being land or a ``0`` if it is not. 
 - Topography is a seperate field, again the size of the spectral model grid, containing the surface height for that grid box.
 - Often a 'land mask' will contain both these fields.
 
-**Can I have land without topography?** Yes - For idealized modelling sometimes it is useful to have the land/sea contrasts (different albedo, no ocean exchange and differnt surface parameters) without the complexity of topography. 
+**Can I have land without topography?** Yes - For idealized modelling sometimes it is useful to have the land/sea contrasts (different albedo, no ocean exchange and different surface parameters) without the complexity of topography. 
 
-Implementing these options require different namelist values. There are two places in the namelist that need to be told about land and topography:
+Implementing these options require different namelist values. There are two namelists that need to be told about land and topograhy; ``idealized_moist_phys_nml`` (land mask) and ``spectral_init_cond_nml`` (topography). 
 
-``idealized_moist_phys``
-^^^^^^^^^^^^^^^^^^^^^^^^
+idealized_moist_phys
+^^^^^^^^^^^^^^^^^^^^
 NOTE: see the :ref:`idealized moist phys <idealized_moist_phys>` documentation for additional guidance on this namelist.
 
 The ``idealized_moist_phys`` module is primarily concerned with the land mask. Its job is to pass the information about the land mask to other modules, which in the first instance are the ``mixed_layer`` and the ``surface_flux`` modules, which deal with ocean and surface exchanges with the atmosphere respectively. Both modules need to know where there is ocean/land as so correct physics can be computed in the correct location. In addition to passing this information, ``idealized_moist_phys`` will also use the land mask for some other model features, for example some land based parameters and calculating buckets if using bucket hydrology.
@@ -34,9 +32,9 @@ The ``idealized_moist_phys`` namelist options to include the appropriate land ma
 | ``land_file_name : 'INPUT/era_land_t42.nc'`` (using the example of the provided land file)
 | ``land_field_name : 'land_mask'`` (this is the default and doesn't need to be specified if that is correct)
 
-``spectral_init_cond``
-^^^^^^^^^^^^^^^^^^^^^^
-Now there is a land mask, topography can be included if desired. If not, this step does can be ignored.
+spectral_init_cond
+^^^^^^^^^^^^^^^^^^
+Now there is a land mask, topography can be included if desired. If not, this step can be ignored.
 
 The namelist options below are to include topography from the same file as the land mask. It can be a different file, as long as the grid size is still correct. There are multiple other options for including topography, some of which are unused at the moment.
 
@@ -59,7 +57,7 @@ Other ``topography_option`` options are available, but not widely used by the Is
 2 - Creating Custom Topography
 ------------------------------
 
-We provide python code that allows land files to be generated for a range of scenarios. This code is found in ``src/extra/python/isca/land_generator_fn.py``. Some tweaking of the code will be needed to suit the users requirements. The most useful feature of this code is interpolating high resolution data into the correct spectral grid size.
+We provide python code that allows land files to be generated for a range of scenarios. This code is found in ``src/extra/python/isca/land_generator_fn.py``. Some tweaking of the code will be needed to suit the users requirements.
 
 Land Options
 ^^^^^^^^^^^^
@@ -71,7 +69,7 @@ Land Options
 Topography Options:
 ^^^^^^^^^^^^^^^^^^^
 - 'none' (default) Topography set to zero everywhere
-- 'sauliere2012' Choose mountains from Sauliere 2012 configuration using mountains keyword. Default is 'all', alternatively only 'rockys' or 'tibet' may be specified
+- 'sauliere2012' Choose mountains from [Sauliere2012]_ configuration using mountains keyword. Default is 'all', alternatively only 'rockys' or 'tibet' may be specified
 - 'gaussian' Use parameters specified in topo_gauss keyword to set up a Gaussian mountain. topo_gauss should be a list in the form: [central_lat, central_lon, radius_degrees, std_dev, height]
 
 3 - Topography Module (topography.F90)
@@ -79,7 +77,7 @@ Topography Options:
 
 Summary
 ^^^^^^^
-The ``topography`` module contains numerous routines for creating land surface topography fields and land-water masks for specified latitutde-longitude grids. It does this by interpolating from a high resolution netCDF file, which is designated in the namelist. This is the ERA 1/8th degree file included in the standard release. The module was originally written to work with the 1/6 degree Navy mean topography and water data sets. However, any netCDF file can be used as an input in the namelist, providing that the file contains grid box boundaries, (which should be named in the namelist) and whether degrees or radians is specified in the namelist.
+The ``topography`` module contains numerous routines for creating land surface topography fields and land-water masks for specified latitutde-longitude grids. It does this by interpolating from a high resolution netCDF file, which is designated in the namelist. The module was originally written to work with the 1/6 degree Navy mean topography and water data sets. However, any netCDF file can be used as an input in the namelist, providing that the file contains grid box boundaries, (which should be named in the namelist) and whether degrees or radians is specified in the namelist.
 
 As mentioned above, this module is generally not called anymore, in the normal Isca set up, land masks are actually specified through the ``idealized_moist_phys`` module, and the model topography through the ``spectral_init_cond`` module. The main use of it is to provide the "subgrid topography" when using the orographic gravity wave drag scheme (``mg_drag``).
 
@@ -89,15 +87,10 @@ Namelist options
 ^^^^^^^^^^^^^^^^
 | ``topog_file`` - The topography file that you wish to use.
 | ``water_file`` - The water data file (not commonly used, not provided in the Isca release)
-| ``file_in_rad`` - Is the topography file axis measured in radians? (Default False)
-| ``file_in_rad`` - Is the topography file axis measured in degrees? (Default True)
-| ``lat_box_name`` - Name of the latitudinal grid box boundaries of the topog_file. (Default 'latb')
-| ``lon_box_name`` - Name of the longitudinal grid box boundaries of the topog_file. (Default 'lonb')
-
 
 For a typical Earth set up the namelist would simply be:
 
-``'topog_file': ERA_0125.nc``
+``'topog_file': navy_topography.nc``
 
 This essentially just points the ``topography`` module to this file when it is asked for by another subroutine, e.g. ``mg_drag``.
 
@@ -112,7 +105,7 @@ NOTE: Some subroutines have dimensional variants, e.g. interp_topog has both a 1
 
 **Public Subroutines**
 
-These subroutines are used by the topography module to produce the land-masks etc that are being asked for by the user. They are largely self explainitory.
+These subroutines are used by the topography module to produce the land-masks etc that are being asked for by the user. They are largely self explanatory.
 
 | ``get_topog_mean`` returns the mean height from a region of the topography file so that that value can be used as the value when interpolating onto a smaller grid.
 | ``get_topog_stdev`` returns the standard deviation from a region of the topography file so that that value can be assoiated with the same region when interpolating onto a smaller grid.
@@ -129,8 +122,8 @@ There are other subroutines called by the above. These are listed below:
 
 References
 ----------
-None needed at present.
+See [Sauliere2012]_ for the topography option in ``land_generator_fn.py``.
    
 Authors
 -------
-This documentation was written by Ross Castle, peer reviewed by Ruth Geen, and quality controlled by Marrianne Pietschnig.
+This documentation was written by Ross Castle, peer reviewed by Ruth Geen, and quality controlled by Marianne Pietschnig.
