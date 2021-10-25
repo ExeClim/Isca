@@ -6,8 +6,8 @@ Summary
 The ``damping_driver`` module is called by the ``idealized_moist_phys`` module by setting ``do_damping`` to true. It controls the upper level momentum damping in Isca. It controls 4 optional functions:
 
 1. **Rayleigh friction** which acts on levels ``1`` to ``kbot``. This function is located in ``damping_driver`` itself.
-2. A (orographic) **mountain gravity wave drag** module (``mg_drag``) may be called.
-3. A (non orographic) **convective gravity wave drag** module (``cg_drag``) may be called.
+2. A (orographic) **mountain gravity wave drag** module (``cg_drag``) may be called.
+3. A (non orographic) **convective gravity wave drag** module (``mg_drag``) may be called.
 4. A **time independent drag** may be called. This function is located in ``damping_driver`` itself.
 
 Another module (``topo_drag``) is referenced in the code, but is not available in Isca at present.
@@ -36,10 +36,10 @@ Namelist options
 
 ``const_drag_off`` - (for constant drag) Parameter for adjusting drag. Default 0.
 
-For a typical idealized Earth set up there is no parameterised gravity wave drag and Rayleigh damping is only needed to keep the model stable. The namelist would then look like: 
+For a typical idealized Earth set up there is no parameterised gravity wave drag and Rayleigh damping is only needed to keep the model stable. The namelist would then look like:: 
     ``'do_rayleigh': True,
     'trayfric': -0.25,
-    'sponge_pbottom':  5000.,
+    'sponge_pbottom':  50.,
     'do_conserve_energy': True``
 
 Diagnostics
