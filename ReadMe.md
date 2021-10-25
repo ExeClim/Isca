@@ -1,8 +1,31 @@
-[![Build Status](https://travis-ci.com/execlim/Isca.svg?branch=master)](https://travis-ci.com/execlim/Isca)
-[![Documentation](https://img.shields.io/badge/docs-latest-green?logo=github)](https://execlim.github.io/Isca)
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg?logo=gnu)](LICENSE)
+<h1 align="center">
+  <a href="https://execlim.github.io/Isca">
+   <img src="docs/source/_static/isca_logo_large.png" alt="Isca" width="300"></a><br>
+</h1>
 
-# Isca
+<p align="center">
+<a href="https://doi.org/10.5194/gmd-11-843-2018">
+<img src="https://img.shields.io/badge/Paper-GMD-orange.svg?logo=data:image/svg%2bxml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMzI1IiB3aWR0aD0iNDEwIj4KPGcgc3R5bGU9ImZpbGw6IzAwNzJiYyI+CjxwYXRoIGQ9Im0gMjE5LjcsMjQ5LjcgYyAtMTkuNSwxNi4xIC00NC41LDI1LjggLTcxLjgsMjUuOCAtNjIuMywwIC0xMTMsLTUwLjcgLTExMywtMTEzIDAsLTYyLjMgNTAuNywtMTEzIDExMywtMTEzIDI3LjIsMCA1Mi4zLDkuNyA3MS44LDI1LjggNy41LC0yIDE1LjMsLTMuMSAyMy41LC0zLjEgOC41LDAgMTYuNywxLjIgMjQuNCwzLjQgQyAyNTYuMyw2MC4xIDI0Mi4xLDQ2LjkgMjI1LjgsMzYuOCBMIDIzNi4xLDE0LjkgMjA0LjQsMC4xIDE5NC4yLDIyIEMgMTc5LjYsMTcuMiAxNjQuMSwxNC42IDE0OCwxNC42IDY2LjQsMTQuNiAwLDgxIDAsMTYyLjYgYyAwLDUzIDI4LDk5LjYgNzAsMTI1LjcgbCAtMTAuMiwyMS45IDMxLjcsMTQuOCAxMC4yLC0yMS44IGMgMTQuNiw0LjggMzAuMSw3LjQgNDYuMiw3LjQgNDkuMSwwIDkyLjgsLTI0LjEgMTE5LjcsLTYxLjEgLTcuOCwyLjIgLTE2LDMuNCAtMjQuNCwzLjQgLTguMSwtMC4xIC0xNiwtMS4yIC0yMy41LC0zLjIgeiIvPgo8cGF0aCBkPSJtIDE2MCwxMjMuOSBjIDQuNSwtOS44IDEwLjcsLTE4LjcgMTguMiwtMjYuMyBsIC05Mi42LDAgMCwxMjkgOTIuNSwwIEMgMTcwLjYsMjE5IDE2NC41LDIxMC4xIDE2MCwyMDAuMyBsIC00OC4xLDAgMCwtMjUgNDAuNywwIGMgLTAuNiwtNC4zIC0wLjksLTguNyAtMC45LC0xMy4xIDAsLTQuNSAwLjMsLTguOSAxLC0xMy4yIGwgLTQwLjgsMCAwLC0yNSBjIDAsLTAuMSAzMS42LC0wLjEgNDguMSwtMC4xIHoiLz4KPHBhdGggZD0ibSAyMzMuMSwxNzQuNyAzMS42LDAgMCwyNCBjIC02LjMsMy43IC0xMy41LDUuNiAtMjEsNS42IC0yMy4zLDAgLTQyLjIsLTE4LjkgLTQyLjIsLTQyLjIgMCwtMjMuMyAxOC45LC00Mi4yIDQyLjIsLTQyLjIgOS41LDAgMTguNSwzLjEgMjYsOSBMIDI4NiwxMDguMiBjIC0xMi4yLC05LjUgLTI2LjgsLTE0LjYgLTQyLjMsLTE0LjYgLTM3LjgsMCAtNjguNiwzMC44IC02OC42LDY4LjYgMCwzNy44IDMwLjgsNjguNiA2OC42LDY4LjYgMTUuNSwwIDMwLjEsLTUgNDIuMywtMTQuNiBsIDUsLTQgMCwtNjMuNyAtNTcuOSwwIDAsMjYuMiB6Ii8+CjxwYXRoIGQ9Im0gMzgzLjgsOTcuNSAwLDg0LjQgYyAwLDEyLjMgLTEwLDIyLjQgLTIyLjQsMjIuNCAtMTIuMywwIC0yMi40LC0xMCAtMjIuNCwtMjIuNCBsIDAsLTg0LjQgLTI2LjMsMCAwLDg0LjQgYyAwLDI2LjkgMjEuOSw0OC43IDQ4LjcsNDguNyAyNi45LDAgNDguNywtMjEuOSA0OC43LC00OC43IGwgMCwtODQuNCAtMjYuMywwIHoiLz4KPC9nPgo8L3N2Zz4K&logoColor=white"
+     alt="Python 3.7+"></a>
+<a href="https://www.python.org/downloads/">
+<img src="https://img.shields.io/badge/python-3.7+-blue.svg?logo=python&logoColor=white"
+     alt="Python 3.7+"></a>
+<a href="https://github.com/psf/black">
+<img src="https://img.shields.io/badge/code%20style-black-000000.svg"
+     alt="black"></a>
+<a href="https://github.com/execlim/Isca/actions?query=workflow%3Atests">
+<img src="https://github.com/execlim/Isca/workflows/tests/badge.svg"
+     alt="Tests"></a>
+<a href="https://execlim.github.io/Isca">
+<img src="https://img.shields.io/badge/docs-latest-green?logo=github"
+     alt="Documentation"></a>
+<a href="LICENSE">
+<img src="https://img.shields.io/badge/license-GPL%20v3-blue.svg?logo=gnu"
+     alt="License: GPL v3"></a>
+<a href="https://twitter.com/IscaModel">
+<img src="https://img.shields.io/twitter/follow/IscaModel?color=yellow&label=twitter%7CIscaModel&logo=twitter&style=flat"
+     alt="twitter IscaModel"></a>
+</p>
 
 Isca is a framework for the idealized modelling of the global circulation of
 planetary atmospheres at varying levels of complexity and realism. The
@@ -35,6 +58,17 @@ A python module `isca` (note lowercase) is provided alongside the Fortran source
 
 ### Installing the `isca` python module
 
+The python module is found in the `src` directory and can be installed using `pip`.  It's recommended that you use some sort of python environment manager to do this, such as using a conda distribution and creating an environment (in the code below called "`isca_env`"), or using `virtualenv` instead. This "getting started" will show you how to create a python environment that includes Isca's required packages, and then install the model. 
+
+1. **Install [Miniforge](https://github.com/conda-forge/miniforge)**
+
+*Recommended step*: Some workstations may have outdated default python and conda installations, which may cause conflicts during installation. As a lightweight solution to get up-to-date installations, we recommend downloading [Miniforge](https://github.com/conda-forge/miniforge).
+To ensure this works as expected, check that `$PYTHONPATH` is unset and that your `.bashrc` does not contain `module load` statements that may cause conda conflicts.
+
+*If you have a recent conda version installed in your home directory already you may wish to skip this step.*
+
+2. **Check out or download this repository**
+
 To begin you'll need a copy of the source code. Either fork the Isca repository to your own github username, or clone directly from the ExeClim group.
 
 ```{bash}
@@ -42,19 +76,21 @@ $ git clone https://github.com/ExeClim/Isca
 $ cd Isca
 ```
 
-The python module is found in the `src` directory and can be installed using `pip`.  It's recommended (but not essential) that you use some sort of python environment manager to do this, such as using the Anaconda distribution and creating an environment (in the code below called "`isca_env`"), or using `virtualenv` instead.  This getting started will use Anaconda.
+3. **Create a conda environment**
 
+Requirements for Isca can be installed via the .yml file included with the model in `Isca/ci/environment-py3.9.yml`
+Navigate to the downloaded Isca folder, and create a conda environment `isca_env` containing the required packages using: 
 ```{bash}
-$ conda create -n isca_env python ipython
-...
-$ source activate isca_env
-(isca_env)$ cd src/extra/python
-(isca_env)$ pip install -r requirements.txt
-...
-Successfully installed MarkupSafe-1.0 f90nml jinja2-2.9.6 numpy-1.13.3 pandas-0.21.0 python-dateutil-2.6.1 pytz-2017.3 sh-1.12.14 six-1.11.0 xarray-0.9.6
+$ conda env create -f ci/environment-py3.9.yml
+```
+Then activate the environment; you'll need to do this each time you launch a new bash session.
+```{bash}
+$ conda activate isca_env
 ```
 
-Now install the `isca` python module in "development mode".  This will allow you, if you wish, to edit the `src/extra/python/isca` files and have those changes be used when you next run an Isca script.
+4. **Install the model**
+
+Now install the `isca` python module in "development mode".  This will allow you, if you wish, to edit the `src/extra/python/isca` files and have those changes be used when you next run an Isca script. Navigate to `Isca/src/extra/python/` and run:
 
 ```{bash}
 (isca_env)$ pip install -e .
