@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Damping Driver &mdash; isca dev documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Moist physics driver: idealized_moist_phys.F90" href="idealised_moist_phys.html" />
+    <link rel="prev" title="Changing Isca output" href="output.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> isca
+          </a>
+              <div class="version">
+                dev
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../begginers_guide.html">Isca Beginner’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Components of Isca</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Experiment configuration scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamics.html">Isca’s dynamical core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physics.html">Isca’s physical parameterisations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants.html">Constants: Atmospheric and Planetary Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Changing Isca output</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Damping Driver</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#namelist-options">Namelist options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#relevant-modules-and-subroutines">Relevant modules and subroutines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#references">References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="idealised_moist_phys.html">Moist physics driver: idealized_moist_phys.F90</a></li>
+<li class="toctree-l2"><a class="reference internal" href="two_stream_gray_rad.html">Radiative transfer: Simple gray and multi-band radiation schemes.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="convection_simple_betts_miller.html">Convection scheme: Simple Betts-Miller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socrates.html">SOCRATES Radiation Scheme Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="surface_flux.html">Surface flux calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="diag_manager_mod.html">Diagnostics Manager Module &amp; Saving model output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../remote_access.html">Remote Access</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isca</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Components of Isca</a> &raquo;</li>
+      <li>Damping Driver</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/modules/damping_driver.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="damping-driver">
+<h1>Damping Driver<a class="headerlink" href="#damping-driver" title="Permalink to this headline"></a></h1>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">damping_driver</span></code> module is called by the <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys</span></code> module by setting <code class="docutils literal notranslate"><span class="pre">do_damping</span></code> to true. It controls the upper level momentum damping in Isca. It controls 4 optional functions:</p>
+<ol class="arabic simple">
+<li><p><strong>Rayleigh friction</strong> which acts on levels <code class="docutils literal notranslate"><span class="pre">1</span></code> to <code class="docutils literal notranslate"><span class="pre">kbot</span></code>. This function is located in <code class="docutils literal notranslate"><span class="pre">damping_driver</span></code> itself.</p></li>
+<li><p>A (orographic) <strong>mountain gravity wave drag</strong> module (<code class="docutils literal notranslate"><span class="pre">cg_drag</span></code>) may be called.</p></li>
+<li><p>A (non orographic) <strong>convective gravity wave drag</strong> module (<code class="docutils literal notranslate"><span class="pre">mg_drag</span></code>) may be called.</p></li>
+<li><p>A <strong>time independent drag</strong> may be called. This function is located in <code class="docutils literal notranslate"><span class="pre">damping_driver</span></code> itself.</p></li>
+</ol>
+<p>Another module (<code class="docutils literal notranslate"><span class="pre">topo_drag</span></code>) is referenced in the code, but is not available in Isca at present.</p>
+<p>It is located at: <code class="docutils literal notranslate"><span class="pre">Isca/src/atmos_param/damping_driver/damping_driver.f90</span></code></p>
+</section>
+<section id="namelist-options">
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">trayfric</span></code> - (for Rayleigh friction) damping time in seconds for Rayleigh damping momentum in the top model layers, the number of which is specified by <code class="docutils literal notranslate"><span class="pre">nlev_rayfric</span></code> (non namelist parameter, automatically determined in code). If <code class="docutils literal notranslate"><span class="pre">trayfric</span></code> &lt; 0 then time in days. Default 0.</p>
+<p><code class="docutils literal notranslate"><span class="pre">do_rayleigh</span></code> - On/Off switch for doing Rayleigh friction. Default False</p>
+<p><code class="docutils literal notranslate"><span class="pre">sponge_pbottom</span></code> - (for Rayleigh friction) used to calculate <code class="docutils literal notranslate"><span class="pre">nlev_rayfric</span></code>, it specifies the bottom level where the Rayleigh friction starts. Default 50Pa.</p>
+<p><code class="docutils literal notranslate"><span class="pre">do_cg_drag</span></code> - On/Off switch for doing mountain gravity wave drag. Default False.</p>
+<p><code class="docutils literal notranslate"><span class="pre">do_topo_drag</span></code> - On/Off switch for doing the topo_drag module which is currently unavailable. Default False.</p>
+<p><code class="docutils literal notranslate"><span class="pre">do_mg_drag</span></code> - On/Off switch for doing convective gravity wave drag. Default False.</p>
+<p><code class="docutils literal notranslate"><span class="pre">do_conserve_energy</span></code> - (for Rayleigh friction) On/Off switch for also calculating the temperature tendency (if True). Default False.</p>
+<p><code class="docutils literal notranslate"><span class="pre">do_const_drag</span></code> - On/Off switch for doing the constant drag. Default False.</p>
+<p><code class="docutils literal notranslate"><span class="pre">const_drag_amp</span></code> - (for constant drag) Parameter for adjusting drag. Default 3.e-04.</p>
+<p><code class="docutils literal notranslate"><span class="pre">const_drag_off</span></code> - (for constant drag) Parameter for adjusting drag. Default 0.</p>
+<dl class="simple">
+<dt>For a typical idealized Earth set up there is no parameterised gravity wave drag and Rayleigh damping is only needed to keep the model stable. The namelist would then look like::</dt><dd><p><code class="docutils literal notranslate"><span class="pre">'do_rayleigh':</span> <span class="pre">True,</span>
+<span class="pre">'trayfric':</span> <span class="pre">-0.25,</span>
+<span class="pre">'sponge_pbottom':</span>&#160; <span class="pre">50.,</span>
+<span class="pre">'do_conserve_energy':</span> <span class="pre">True</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="diagnostics">
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h2>
+<p>There are many diagnostics either in or passed by damping driver.</p>
+<p><strong>Rayleigh friction:</strong></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 43%" />
+<col style="width: 29%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Units</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">udt_rdamp</span></code></p></td>
+<td><p>u wind tendency</p></td>
+<td><p><span class="math notranslate nohighlight">\(m s^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">vdt_rdamp</span></code></p></td>
+<td><p>v wind tendency</p></td>
+<td><p><span class="math notranslate nohighlight">\(m s^{-2}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tdt_diss_rdamp</span></code></p></td>
+<td><p>dissipative heating</p></td>
+<td><p><span class="math notranslate nohighlight">\(K s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">diss_heat_rdamp</span></code></p></td>
+<td><p>integrated dissipative heating</p></td>
+<td><p><span class="math notranslate nohighlight">\(W m^{-2}\)</span></p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Mountain GWD:</strong></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 43%" />
+<col style="width: 29%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Units</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">udt_gwd</span></code></p></td>
+<td><p>u wind tendency</p></td>
+<td><p><span class="math notranslate nohighlight">\(m s^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">vdt_gwd</span></code></p></td>
+<td><p>v wind tendency</p></td>
+<td><p><span class="math notranslate nohighlight">\(m s^{-2}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">taubx</span></code></p></td>
+<td><p>x base flux</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg m^{-1} s^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tauby</span></code></p></td>
+<td><p>y base flux</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg m^{-1} s^{-2}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">taus</span></code></p></td>
+<td><p>saturation flux</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg m^{-1} s^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tdt_diss_gwd</span></code></p></td>
+<td><p>dissipative heating</p></td>
+<td><p><span class="math notranslate nohighlight">\(K s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">diss_heat_gwd</span></code></p></td>
+<td><p>integrated dissipative heating</p></td>
+<td><p><span class="math notranslate nohighlight">\(W s^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sgsmtn</span></code></p></td>
+<td><p>sub-grid scale topography variance</p></td>
+<td><p><span class="math notranslate nohighlight">\(m\)</span></p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Convective GWD:</strong></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 43%" />
+<col style="width: 29%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Units</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">udt_cgwd</span></code></p></td>
+<td><p>u wind tendency</p></td>
+<td><p><span class="math notranslate nohighlight">\(m s^{-2}\)</span></p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Constant Drag:</strong></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 43%" />
+<col style="width: 29%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Units</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">udt_cnstd</span></code></p></td>
+<td><p>u wind tendency</p></td>
+<td><p><span class="math notranslate nohighlight">\(m s^{-2}\)</span></p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>topo_drag:</strong></p>
+<p>Note: These are not currently available</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 43%" />
+<col style="width: 29%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Units</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">udt_topo</span></code></p></td>
+<td><p>u wind tendency</p></td>
+<td><p><span class="math notranslate nohighlight">\(m s^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">vdt_topo</span></code></p></td>
+<td><p>v wind tendency</p></td>
+<td><p><span class="math notranslate nohighlight">\(m s^{-2}\)</span></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="relevant-modules-and-subroutines">
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline"></a></h2>
+<p>The code is split into 4 subroutines; <code class="docutils literal notranslate"><span class="pre">damping_driver</span></code>, <code class="docutils literal notranslate"><span class="pre">damping_driver_init</span></code>, <code class="docutils literal notranslate"><span class="pre">damping_driver_end</span></code> and <code class="docutils literal notranslate"><span class="pre">rayleigh</span></code>. The <code class="docutils literal notranslate"><span class="pre">_init</span></code> and <code class="docutils literal notranslate"><span class="pre">_end</span></code> subroutines are for initializing and closing the module. The majority of the <code class="docutils literal notranslate"><span class="pre">damping</span> <span class="pre">driver</span></code> code is just a switchboard with the exception of the Rayleigh and constant drag calculations. The calculations for the other drag schemes are given in their own documentation.</p>
+<p><strong>Rayleigh Drag</strong></p>
+<p>Located in the <code class="docutils literal notranslate"><span class="pre">rayleigh</span></code> subroutine. This code damps the momentum toward zero in the specified upper model levels. The zonal/meridional tendency for each grid cell is calculated my multiplying the zonal/meridional velocity by a factor determined by the pressure and Rayleigh parameters. The damping is therefor proportional to the wind velocity.</p>
+<p>The temperature tendency is calculated using the wind velocities, wind tendencies, and the heat capacity of air.</p>
+<p><strong>Constant Drag</strong></p>
+<p>Located in the <code class="docutils literal notranslate"><span class="pre">damping_driver</span></code> subroutine. This is modelled on Alexander-Dunkerton winter average, it uses a 3rd order polynomial and the constant drag parameters to calculate a time invariant drag. This set up is modelled on Earth’s atmosphere and therefore not recommended for other planets.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
+<p>Convective Gravity Wave Drag (cg_drag) <a class="reference internal" href="../references.html#pierrehumbert1986" id="id1"><span>[Pierrehumbert1986]</span></a></p>
+<p>Orographic Gravity Wave Drag (mg_drag) <a class="reference internal" href="../references.html#alexander1999" id="id2"><span>[Alexander1999]</span></a></p>
+</section>
+<section id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<p>This documentation was written by Ross Castle, peer reviewed by Stephen Thomson, and quality controlled by Matthew Henry.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="output.html" class="btn btn-neutral float-left" title="Changing Isca output" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="idealised_moist_phys.html" class="btn btn-neutral float-right" title="Moist physics driver: idealized_moist_phys.F90" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, the Isca development team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
