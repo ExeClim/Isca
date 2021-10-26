@@ -60,6 +60,8 @@ use       fv_advection_mod, only : fv_advection_init, a_grid_horiz_advection
 
 use           stirring_mod, only : stirring, stirring_end
 
+use interpolator_mod, only: interpolate_type,interpolator_init,CONSTANT,interpolator
+
 !======================================================================================
 implicit none
 private
@@ -151,8 +153,15 @@ real    :: init_vortex_h_h_0 = 0.1
 logical :: add_initial_vortex_pair = .false.
 logical :: add_initial_vortex_as_height = .true.
 
+logical :: initial_condition_from_input_file=.false.
+character(len=64) :: init_cond_file = 'init_cond_h_vor_div'
+character(len=64) :: input_file_div_name = 'div'
+character(len=64) :: input_file_height_name = 'height'
+character(len=64) :: input_file_vor_name = 'vor'
 
 real, dimension(2) :: valid_range_v = (/-1.e3,1.e3/)
+
+type(interpolate_type),save :: init_cond_interp
 
 namelist /shallow_dynamics_nml/ check_fourier_imag,          &
                           south_to_north, triang_trunc,      &
@@ -174,7 +183,12 @@ namelist /shallow_dynamics_nml/ check_fourier_imag,          &
                           init_vortex_vor_f,                 &
                           init_vortex_h_h_0,                 &
                           add_initial_vortex_pair,           &
-                          add_initial_vortex_as_height                 
+                          add_initial_vortex_as_height,      &
+                          initial_condition_from_input_file, &
+                          init_cond_file,                    &
+                          input_file_div_name,               &
+                          input_file_height_name,            &
+                          input_file_vor_name               
 
 
 contains
@@ -190,6 +204,7 @@ real               , intent(in)     :: dt_real
 integer :: i, j
 
 real,    allocatable, dimension(:)   :: glon_bnd, glat_bnd
+real,    allocatable, dimension(:,:) :: rad_lonb_2d, rad_latb_2d
 real :: xx, yy, dd, deep_geopot_global_mean, radius_loc_cyc, radius_loc_acyc
 
 integer  :: ierr, io, unit, id_lon, id_lat, id_lonb, id_latb
@@ -241,6 +256,16 @@ call get_cos_lat (cos_lat)
 allocate (glon_bnd  (num_lon + 1))
 allocate (glat_bnd  (num_lat + 1))
 call get_grid_boundaries (glon_bnd, glat_bnd, global=.true.)
+allocate (rad_lonb_2d(is:ie+1, js:je+1))
+allocate (rad_latb_2d(is:ie+1, js:je+1))
+
+do i = is,ie+1
+  rad_lonb_2d(i,:) = glon_bnd(i)
+enddo
+
+do j = js,je+1
+  rad_latb_2d(:,j) = glat_bnd(j)
+enddo
 
 coriolis = 2*omega*sin_lat
 
@@ -279,6 +304,11 @@ if(Dyn%spec_tracer) then
   allocate(Dyn%Spec%trs (ms:me, ns:ne, num_time_levels))
 endif
 
+if( initial_condition_from_input_file ) then
+  call interpolator_init( init_cond_interp, trim(init_cond_file)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+endif
+
+
 do i = is, ie 
     Dyn%grid%deep_geopot(i, js:je) = -2.*omega * u_deep_mag * radius * (1./(1.-n_merid_deep_flow**2.))*(-cos(n_merid_deep_flow*DEG_TO_RAD*deg_lat(js:je))*cos(DEG_TO_RAD*deg_lat(js:je)) - n_merid_deep_flow * (sin(n_merid_deep_flow*DEG_TO_RAD*deg_lat(js:je))*sin(DEG_TO_RAD*deg_lat(js:je))-sin(n_merid_deep_flow*(2.*atan(1.)))))
 enddo
@@ -288,45 +318,53 @@ Dyn%grid%deep_geopot(:,:) = Dyn%grid%deep_geopot(:,:)-deep_geopot_global_mean
 
 if(Time == Time_init) then
 
-    Dyn%Grid%div(:,:,1) = 0.0
-    Dyn%Grid%h  (:,:,1) = h_0 - Dyn%grid%deep_geopot(:,:)
+  if (initial_condition_from_input_file) then 
 
-  do i = is, ie   
-    Dyn%Grid%vor(i,js:je,1) = -((u_upper_mag_init * n_merid_deep_flow)/radius) * sin(DEG_to_RAD * deg_lat(js:je))
+    call interpolator( init_cond_interp, Dyn%Grid%div(:,:,1), input_file_div_name )
+    call interpolator( init_cond_interp, Dyn%Grid%h(:,:,1), input_file_height_name )    
+    call interpolator( init_cond_interp, Dyn%Grid%vor(:,:,1), input_file_vor_name )
 
-    if (add_initial_vortex_pair) then
+  else
+      Dyn%Grid%div(:,:,1) = 0.0
+      Dyn%Grid%h  (:,:,1) = h_0 - Dyn%grid%deep_geopot(:,:)
 
-        do j=js, je
+    do i = is, ie   
+      Dyn%Grid%vor(i,js:je,1) = -((u_upper_mag_init * n_merid_deep_flow)/radius) * sin(DEG_to_RAD * deg_lat(js:je))
 
-            radius_loc_cyc = ((min((deg_lon(i)-lon_centre_init_cyc)**2., (deg_lon(i)-lon_centre_init_cyc-360.)**2.)+(deg_lat(j)-lat_centre_init_cyc)**2.)**0.5)/init_vortex_radius_deg
-            radius_loc_acyc = ((min((deg_lon(i)-lon_centre_init_acyc)**2., (deg_lon(i)-lon_centre_init_acyc-360.)**2.)+(deg_lat(j)-lat_centre_init_acyc)**2.)**0.5)/init_vortex_radius_deg            
+      if (add_initial_vortex_pair) then
+
+          do j=js, je
+
+              radius_loc_cyc = ((min((deg_lon(i)-lon_centre_init_cyc)**2., (deg_lon(i)-lon_centre_init_cyc-360.)**2.)+(deg_lat(j)-lat_centre_init_cyc)**2.)**0.5)/init_vortex_radius_deg
+              radius_loc_acyc = ((min((deg_lon(i)-lon_centre_init_acyc)**2., (deg_lon(i)-lon_centre_init_acyc-360.)**2.)+(deg_lat(j)-lat_centre_init_acyc)**2.)**0.5)/init_vortex_radius_deg            
 
 
-            if(radius_loc_cyc.le.1.0 .and. radius_loc_acyc.le.1.0) then
-                call error_mesg('shallow_dynamics','Cannot initialise cyclone and anticyclone in same grid box ', FATAL)
-            endif
+              if(radius_loc_cyc.le.1.0 .and. radius_loc_acyc.le.1.0) then
+                  call error_mesg('shallow_dynamics','Cannot initialise cyclone and anticyclone in same grid box ', FATAL)
+              endif
 
-            if(add_initial_vortex_as_height) then
-                if (radius_loc_cyc.le.2.0) then
-                    Dyn%Grid%h(i,j,1) = Dyn%Grid%h(i,j,1) + init_vortex_h_h_0 * -h_0 * exp(-radius_loc_cyc**2.)
-                elseif (radius_loc_acyc.le.2.0) then 
-                    Dyn%Grid%h(i,j,1) = Dyn%Grid%h(i,j,1) + init_vortex_h_h_0 * h_0 * exp(-radius_loc_acyc**2.)
-                endif
-            else
-                if (radius_loc_cyc.le.1.0) then
-                    Dyn%Grid%vor(i,j,1) = init_vortex_vor_f * 2.*omega
-                elseif (radius_loc_acyc.le.1.0) then 
-                    Dyn%Grid%vor(i,j,1) = init_vortex_vor_f * -2.*omega
-                endif
+              if(add_initial_vortex_as_height) then
+                  if (radius_loc_cyc.le.2.0) then
+                      Dyn%Grid%h(i,j,1) = Dyn%Grid%h(i,j,1) + init_vortex_h_h_0 * -h_0 * exp(-radius_loc_cyc**2.)
+                  elseif (radius_loc_acyc.le.2.0) then 
+                      Dyn%Grid%h(i,j,1) = Dyn%Grid%h(i,j,1) + init_vortex_h_h_0 * h_0 * exp(-radius_loc_acyc**2.)
+                  endif
+              else
+                  if (radius_loc_cyc.le.1.0) then
+                      Dyn%Grid%vor(i,j,1) = init_vortex_vor_f * 2.*omega
+                  elseif (radius_loc_acyc.le.1.0) then 
+                      Dyn%Grid%vor(i,j,1) = init_vortex_vor_f * -2.*omega
+                  endif
 
-            endif
+              endif
 
-        enddo
-        
+          enddo
+          
 
-    endif
+      endif !add_initial_vortex_pair
+    enddo
 
-  enddo
+  endif ! initial_condition_from_input_file
     
   call trans_grid_to_spherical(Dyn%Grid%vor(:,:,1), Dyn%Spec%vor(:,:,1))
   call trans_grid_to_spherical(Dyn%Grid%div(:,:,1), Dyn%Spec%div(:,:,1))

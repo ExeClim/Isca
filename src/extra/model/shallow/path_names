@@ -136,3 +136,13 @@ shared/platform/platform.F90
 shared/time_manager/get_cal_time.F90
 shared/time_manager/time_manager.F90
 shared/tracer_manager/tracer_manager.F90
+atmos_shared/interpolator/interpolator.F90
+shared/horiz_interp/horiz_interp_bicubic.F90
+shared/horiz_interp/horiz_interp_bilinear.F90
+shared/horiz_interp/horiz_interp_conserve.F90
+shared/horiz_interp/horiz_interp.F90
+shared/horiz_interp/horiz_interp_spherical.F90
+shared/horiz_interp/horiz_interp_type.F90
+shared/time_interp/time_interp_external.F90
+shared/time_interp/time_interp.F90
+shared/axis_utils/axis_utils.F90
