@@ -107,7 +107,11 @@ def create_time_arr(num_years,is_climatology,time_spacing):
     return time_arr,day_number,ntime,time_units,time_bounds
 
 
-def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,variable_name,number_dict, time_bounds=None):
+def output_multiple_variables_to_file(data_dict,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,number_dict, time_bounds=None):
+    """Default is to accept multiple data variables to put in the file.
+    Input format in data_dict = {variable_name:variable_array}.
+    Currently only accepts all 2D fields or all 3D fields. 
+    Could be updated in future to accept a mix."""
 
     output_file = Dataset(file_name, 'w', format='NETCDF3_CLASSIC')
 
@@ -116,6 +120,10 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
     else:
         is_thd=True
 
+    if time_arr is None:
+        add_time = False
+    else:
+        add_time = True
 
     lat = output_file.createDimension('lat', number_dict['nlat'])
     lon = output_file.createDimension('lon', number_dict['nlon'])
@@ -137,7 +145,8 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
         pfull = output_file.createDimension('pfull', number_dict['npfull'])
         phalf = output_file.createDimension('phalf', number_dict['nphalf'])
 
-    time = output_file.createDimension('time', 0) #s Key point is to have the length of the time axis 0, or 'unlimited'. This seems necessary to get the code to run properly. 
+    if add_time:
+        time = output_file.createDimension('time', 0) #s Key point is to have the length of the time axis 0, or 'unlimited'. This seems necessary to get the code to run properly. 
 
     latitudes = output_file.createVariable('lat','d',('lat',))
     longitudes = output_file.createVariable('lon','d',('lon',))
@@ -146,7 +155,8 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
         pfulls = output_file.createVariable('pfull','d',('pfull',))
         phalfs = output_file.createVariable('phalf','d',('phalf',))
 
-    times = output_file.createVariable('time','d',('time',))
+    if add_time:
+        times = output_file.createVariable('time','d',('time',))
 
     latitudes.units = 'degrees_N'.encode('utf-8')
     latitudes.cartesian_axis = 'Y'
@@ -179,11 +189,11 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
         phalfs.positive = 'down'
         phalfs.long_name = 'half pressure level'
 
-
-    times.units = time_units
-    times.calendar = 'THIRTY_DAY_MONTHS'
-    times.calendar_type = 'THIRTY_DAY_MONTHS'
-    times.cartesian_axis = 'T'
+    if add_time:
+        times.units = time_units
+        times.calendar = 'THIRTY_DAY_MONTHS'
+        times.calendar_type = 'THIRTY_DAY_MONTHS'
+        times.cartesian_axis = 'T'
 
     if time_bounds is not None:
 
@@ -198,12 +208,6 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
 
         times.bounds = 'time_bounds'
 
-
-    if is_thd:
-        output_array_netcdf = output_file.createVariable(variable_name,'f4',('time','pfull', 'lat','lon',))
-    else:
-        output_array_netcdf = output_file.createVariable(variable_name,'f4',('time','lat','lon',))
-
     latitudes[:] = lats
     longitudes[:] = lons
 
@@ -216,14 +220,34 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
         pfulls[:]     = p_full
         phalfs[:]     = p_half
 
-    if type(time_arr[0])!=np.float64 and type(time_arr[0])!=np.int64 :
-        times[:]     = date2num(time_arr,units='days since 0001-01-01 00:00:00.0',calendar='360_day')
-    else:
-        times[:]     = time_arr
+    if add_time:
+        if type(time_arr[0])!=np.float64 and type(time_arr[0])!=np.int64 :
+            times[:]     = date2num(time_arr,units='days since 0001-01-01 00:00:00.0',calendar='360_day')
+        else:
+            times[:]     = time_arr
 
-    output_array_netcdf[:] = data
+    for variable_name in data_dict.keys():
+        if is_thd:
+            if add_time:
+                three_d_dims = ('time','pfull', 'lat','lon',)
+            else:
+                three_d_dims = ('pfull', 'lat','lon',)            
+
+            output_array_netcdf = output_file.createVariable(variable_name,'f4',three_d_dims)
+        else:
+            if add_time:
+                two_d_dims = ('time','lat','lon',)
+            else:
+                two_d_dims = ('lat','lon',)              
+            output_array_netcdf = output_file.createVariable(variable_name,'f4',two_d_dims)
+
+        output_array_netcdf[:] = data_dict[variable_name]
 
     output_file.close()
 
+def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,variable_name,number_dict, time_bounds=None):
 
+    """Special interface for script wanting to output 1 variable only."""
 
+    data_dict_to_send = {variable_name:data}
+    output_multiple_variables_to_file(data_dict_to_send,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,number_dict,time_bounds=time_bounds)
