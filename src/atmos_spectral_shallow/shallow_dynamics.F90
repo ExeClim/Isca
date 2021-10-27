@@ -324,6 +324,8 @@ if(Time == Time_init) then
     call interpolator( init_cond_interp, Dyn%Grid%h(:,:,1), input_file_height_name )    
     call interpolator( init_cond_interp, Dyn%Grid%vor(:,:,1), input_file_vor_name )
 
+    Dyn%Grid%h(:,:,1) = Dyn%Grid%h(:,:,1)+h_0 !want to make sure that we keep h_0 consistent, so make sure mean of h input is zero, and add h_0 on afterwards...
+
   else
       Dyn%Grid%div(:,:,1) = 0.0
       Dyn%Grid%h  (:,:,1) = h_0 - Dyn%grid%deep_geopot(:,:)
