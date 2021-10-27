@@ -9,9 +9,8 @@ import matplotlib.pyplot as plt
 import windspharm as wsp
 import pdb
 
-def convert_to_vor_div(u_in, v_in, lat_arr):
+def convert_to_vor_div(u_in, v_in, lat_arr, planet_radius):
     """convert spherical polar velocities to vor and div"""
-
 
     uwnd, uwnd_info = wsp.tools.prep_data(u_in, 'yx')
     vwnd, vwnd_info = wsp.tools.prep_data(v_in, 'yx')
@@ -22,7 +21,7 @@ def convert_to_vor_div(u_in, v_in, lat_arr):
 
     # Create a VectorWind instance to handle the computation of streamfunction and
     # velocity potential.
-    w = wsp.standard.VectorWind(uwnd, vwnd, rsphere=55000e3)
+    w = wsp.standard.VectorWind(uwnd, vwnd, rsphere=planet_radius)
 
     # Compute the streamfunction and velocity potential. Also use the bundled
     # tools to re-shape the outputs to the 4D shape of the wind components as they
@@ -37,7 +36,8 @@ def convert_to_vor_div(u_in, v_in, lat_arr):
 
 def set_u_v_height_field(lon_in, lat_in, lonb_in, latb_in, epsilon, alpha, beta, m, r_0, planet_radius, northern_hemisphere=True):
     """Configure an initial condition for u, v and h given some
-    balance condition"""
+    balance condition. Use parameters and gradient-wind balance for Saturn
+    from 10.1016/j.icarus.2017.06.006"""
 
     deformation_scale = 3200e3 #p62 of Rostami et al 2017
     f_0 = 3.2e-4
@@ -111,6 +111,7 @@ time_arr_adj=None
 lon_array_2d, lat_array_2d = np.meshgrid(longitudes, latitudes)
 lonb_array_2d, latb_array_2d = np.meshgrid(longitude_bounds, latitude_bounds)
 
+#Note that in the following we're making the initial condition symmetric about the equator. This is because if you only set the initial conditions in the northern hemisphere then you end up needing a very large set of latitudinal functions to get that level of asymmetry, and the code gets very upset when translating that to a finite spectral representation. Making it symmetric gets rid of this problem, at least to some extent.
 
 epsilon = 0.15*2.
 alpha = 0.42
@@ -140,7 +141,7 @@ v_array_total = v_array_vortex+v_array_vortex_sp + v_array_jet+v_array_jet_sp
 height_array_total = height_array_vortex+height_array_vortex_sp + height_array_jet+height_array_jet_sp
 grad_geopot_total = grad_geopot_vortex + grad_geopot_vortex_sp + grad_geopot_jet + grad_geopot_jet_sp
 
-vor_array, div_array = convert_to_vor_div(u_array_total, v_array_total, height_array_total)
+vor_array, div_array = convert_to_vor_div(u_array_total, v_array_total, height_array_total, planet_radius)
 
 
 p_full=None
