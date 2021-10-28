@@ -21,7 +21,7 @@ def convert_to_vor_div(u_in, v_in, lat_arr, planet_radius):
 
     # Create a VectorWind instance to handle the computation of streamfunction and
     # velocity potential.
-    w = wsp.standard.VectorWind(uwnd, vwnd, rsphere=planet_radius)
+    w = wsp.standard.VectorWind(uwnd, vwnd, rsphere=planet_radius, gridtype='gaussian')
 
     # Compute the streamfunction and velocity potential. Also use the bundled
     # tools to re-shape the outputs to the 4D shape of the wind components as they
@@ -152,7 +152,7 @@ nphalf=None
 
 #Output it to a netcdf file. 
 
-file_name='rostami_t85_jet_and_vortex_mk7.nc'
+file_name='rostami_t85_jet_and_vortex_mk7_gg.nc'
 
 
 number_dict={}
