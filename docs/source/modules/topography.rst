@@ -13,10 +13,10 @@ This guide covers:
 This is relatively simple to do, assuming that the topography/land mask you are using has already been interpolated to the same spectral grid you are running the model at. If running at T42, you can use the one provided (``input/land_masks/era_land_t42.nc``). If not, you can interpolate fairly easily from any high resolution data, or for configurations of Earth continents, please refer to section 2 of this guide.
 
 - The land mask is a binary field the size of the spectral model grid (e.g. 64 x 128 for T42) that contains a ``1`` if that grid box is designated as being land or a ``0`` if it is not. 
-- Topography is a seperate field, again the size of the spectral model grid, containing the surface height for that grid box.
+- Topography is a separate field, again the size of the spectral model grid, containing the surface height for that grid box in meters.
 - Often a 'land mask' will contain both these fields.
 
-**Can I have land without topography?** Yes - For idealized modelling sometimes it is useful to have the land/sea contrasts (different albedo, no ocean exchange and different surface parameters) without the complexity of topography. 
+**Can I have land without topography?** Yes - For idealized modelling sometimes it is useful to have the land/sea contrasts (different albedo, no ocean exchange and different surface parameters) without the complexity of topography. It is also possible to have topography without land (aquamountains). 
 
 Implementing these options require different namelist values. There are two namelists that need to be told about land and topograhy; ``idealized_moist_phys_nml`` (land mask) and ``spectral_init_cond_nml`` (topography). 
 
@@ -24,7 +24,7 @@ idealized_moist_phys
 ^^^^^^^^^^^^^^^^^^^^
 NOTE: see the :ref:`idealized moist phys <idealized_moist_phys>` documentation for additional guidance on this namelist.
 
-The ``idealized_moist_phys`` module is primarily concerned with the land mask. Its job is to pass the information about the land mask to other modules, which in the first instance are the ``mixed_layer`` and the ``surface_flux`` modules, which deal with ocean and surface exchanges with the atmosphere respectively. Both modules need to know where there is ocean/land as so correct physics can be computed in the correct location. In addition to passing this information, ``idealized_moist_phys`` will also use the land mask for some other model features, for example some land based parameters and calculating buckets if using bucket hydrology.
+The ``idealized_moist_phys`` module is primarily concerned with the land mask. Its job is to pass the information about the land mask to other modules, which in the first instance are the ``mixed_layer`` and the ``surface_flux`` modules, which deal with ocean and surface exchanges with the atmosphere respectively. Both modules need to know where there is ocean/land so correct physics can be computed in the correct location. In addition to passing this information, ``idealized_moist_phys`` will also use the land mask for some other model features, for example some land based parameters and calculating buckets if using bucket hydrology.
 
 The ``idealized_moist_phys`` namelist options to include the appropriate land mask are:
 
@@ -36,7 +36,7 @@ spectral_init_cond
 ^^^^^^^^^^^^^^^^^^
 Now there is a land mask, topography can be included if desired. If not, this step can be ignored.
 
-The namelist options below are to include topography from the same file as the land mask. It can be a different file, as long as the grid size is still correct. There are multiple other options for including topography, some of which are unused at the moment.
+The namelist options below are to include topography from the same file as the land mask. It can be a different file, as long as the grid size is still correct and the height units is meters. There are multiple other options for including topography, some of which are unused at the moment.
 
 | ``topography_option : 'input'``  (Tell model to get topography from input file)
 | ``topog_file_name : 'era_land_t42.nc'`` (Again, we use the provided file as the example)
@@ -77,7 +77,7 @@ Topography Options:
 
 Summary
 ^^^^^^^
-The ``topography`` module contains numerous routines for creating land surface topography fields and land-water masks for specified latitutde-longitude grids. It does this by interpolating from a high resolution netCDF file, which is designated in the namelist. The module was originally written to work with the 1/6 degree Navy mean topography and water data sets. However, any netCDF file can be used as an input in the namelist, providing that the file contains grid box boundaries, (which should be named in the namelist) and whether degrees or radians is specified in the namelist.
+The ``topography`` module contains numerous routines for creating land surface topography fields and land-water masks for specified latitude-longitude grids. It does this by interpolating from a high resolution netCDF file, which is designated in the namelist. The module was originally written to work with the 1/6 degree Navy mean topography and water data sets. However, any netCDF file can be used as an input in the namelist, providing that the file contains grid box boundaries, (which should be named in the namelist) and whether degrees or radians is specified in the namelist.
 
 As mentioned above, this module is generally not called anymore, in the normal Isca set up, land masks are actually specified through the ``idealized_moist_phys`` module, and the model topography through the ``spectral_init_cond`` module. The main use of it is to provide the "subgrid topography" when using the orographic gravity wave drag scheme (``mg_drag``).
 
