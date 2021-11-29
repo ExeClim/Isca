@@ -1828,7 +1828,7 @@ if(id_sphum_vert_int > 0) then
     call tracer_vertical_integral(p_half, grid_tracers, nhum, vert_int_sphum)
     used = send_data(id_sphum_vert_int,  vert_int_sphum, Time)
   else
-    call error_mesg('spectral_diagnostics','Vertical integral requires fields height or height_half', FATAL)
+    call error_mesg('spectral_diagnostics','Vertical integral requires diagnostics height or height_half', FATAL)
   endif
 endif
 
