@@ -124,27 +124,22 @@ contains
     real, intent(in)                       ::  delta_t
     real, intent(in), dimension (:,:)       :: lat
     
-    real, optional, dimension (:,:,:)       :: ug_previous, vg_previous, & 
+    real, intent(in), dimension (:,:,:)       :: ug_previous, vg_previous, & 
                                         p_half_previous, p_full_previous
     
     real, intent(inout), dimension(:,:,:)   :: dt_ug, dt_vg, dt_tg
     real, intent(out),   dimension(:,:,:)   :: dissipative_heat
 
 
-    if(present(ug_previous)) then
-          if (do_drag_at_surface) then
-             call surface_drag(Time, delta_t, lat, is, js, ug_previous, vg_previous,    &
-                            p_half_previous,  p_full_previous, dt_ug, dt_vg,    &
-                            dt_tg, dissipative_heat)
-	  else 
-             call interior_drag(Time, delta_t, lat, is, js, ug_previous, vg_previous,    &
-                            p_half_previous,  p_full_previous, dt_ug, dt_vg,    &
-                            dt_tg, dissipative_heat)
-          endif
-    else
-       call error_mesg('compute_rayleigh_bottom_drag',                         &
-            'ug_previous is not present',fatal)
-    end if
+   if (do_drag_at_surface) then
+      call surface_drag(Time, delta_t, lat, is, js, ug_previous, vg_previous,    &
+                     p_half_previous,  p_full_previous, dt_ug, dt_vg,    &
+                     dt_tg, dissipative_heat)
+   else 
+      call interior_drag(Time, delta_t, lat, is, js, ug_previous, vg_previous,    &
+                     p_half_previous,  p_full_previous, dt_ug, dt_vg,    &
+                     dt_tg, dissipative_heat)
+   endif
 
   end subroutine compute_rayleigh_bottom_drag
 
@@ -158,9 +153,9 @@ contains
     integer, intent(in)                       :: is, js
     real,    intent(in),    dimension (:,:,:) :: ug, vg, p_full, p_half
     real,    intent(inout), dimension(:,:,:)  :: dt_ug, dt_vg, dt_tg
-    real,    dimension(size(ug,1),size(ug,2)) :: sigma, sigma_norm, sigma_max
     real,    intent(out),   dimension(:,:,:)  :: dissipative_heat 
-    
+
+    real,    dimension(size(ug,1),size(ug,2)) :: sigma, sigma_norm, sigma_max
     real, dimension(size(ug,1),size(ug,2),size(ug,3)):: dt_u_temp, dt_v_temp
     real, dimension(size(ug,2))  :: drag_coeff
     integer :: j, k, num_level 
@@ -234,9 +229,9 @@ contains
     integer, intent(in)                       :: is, js
     real,    intent(in),    dimension (:,:,:) :: ug, vg, p_full, p_half
     real,    intent(inout), dimension(:,:,:)  :: dt_ug, dt_vg, dt_tg
-    real,    dimension(size(ug,1),size(ug,2)) :: sigma, sigma_norm, sigma_max
     real,    intent(out),   dimension(:,:,:)  :: dissipative_heat 
-    
+
+    real,    dimension(size(ug,1),size(ug,2)) :: sigma, sigma_norm, sigma_max
     real, dimension(size(ug,1),size(ug,2),size(ug,3)):: dt_u_temp, dt_v_temp
     real, dimension(size(ug,2))  :: drag_coeff
     integer :: j, k, num_level 

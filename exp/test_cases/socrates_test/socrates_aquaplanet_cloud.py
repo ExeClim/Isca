@@ -23,7 +23,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_aquaplanet', codebase=cb)
+exp = Experiment('soc_aquaplanet_with_clouds', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -65,6 +65,25 @@ diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
 diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
 
+#clear sky fluxes
+diag.add_field('socrates', 'soc_surf_flux_lw_clear', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_sw_clear', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_lw_down_clear', time_avg=True)
+diag.add_field('socrates', 'soc_surf_flux_sw_down_clear', time_avg=True)
+diag.add_field('socrates', 'soc_olr_clear', time_avg=True)
+diag.add_field('socrates', 'soc_toa_sw_clear', time_avg=True) 
+diag.add_field('socrates', 'soc_toa_sw_down_clear', time_avg=True) 
+
+diag.add_field('cloud_simple', 'cf', time_avg=True)
+diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
+diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
+diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
+#diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
+diag.add_field('cloud_simple', 'rh_min', time_avg=True)
+diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
+diag.add_field('mixed_layer', 'albedo')
+
+
 exp.diag_table = diag
 exp.inputfiles = inputfiles
 
@@ -105,15 +124,19 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
+        'do_cloud_simple': True # this is where the clouds scheme is turned on
     },
 
+    'cloud_simple_nml': { #use all existing defaults as in code
+        'spookie_protocol':2
+    },
 
     'vert_turb_driver_nml': {
         'do_mellor_yamada': False,     # default: True
         'do_diffusivity': True,        # default: False
         'do_simple': True,             # default: False
         'constant_gust': 0.0,          # default: 1.0
-        'use_tau': False
+        'use_tau': False 
     },
 
     'diffusivity_nml': {
@@ -137,7 +160,7 @@ exp.namelist = namelist = Namelist({
         'prescribe_initial_dist':True,
         'evaporation':True,  
         'depth': 2.5,                          #Depth of mixed layer used
-        'albedo_value': 0.38,                  #Albedo value used      
+        'albedo_value': 0.2,                  #Albedo value used      
     },
 
     'qe_moist_convection_nml': {
@@ -153,6 +176,7 @@ exp.namelist = namelist = Namelist({
     
     'sat_vapor_pres_nml': {
            'do_simple':True,
+           'construct_table_wrt_liq_and_ice':True
        },
     
     'damping_driver_nml': {
@@ -201,6 +225,7 @@ if __name__=="__main__":
 
         overwrite=False
 
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)
+
         for i in range(2,121):
             exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
