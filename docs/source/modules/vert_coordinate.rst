@@ -91,4 +91,4 @@ References
 
 Authors
 -------
-This documentation was written by Daniel Williams, peer reviewed by Stephen Thomson
+This documentation was written by Daniel Williams, peer reviewed by Stephen Thomson and quality controlled by Neil Lewis.
