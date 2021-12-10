@@ -51,6 +51,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "nbsphinx",
+    "sphinx.ext.autosectionlabel"
 ]
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
