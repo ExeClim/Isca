@@ -7,24 +7,34 @@ This module updates the sea surface temperature (SST) noted as :math:`T_s` below
 
 SST boundary condition options
 -----------------------
-The SST options are:
-    - an input SST file (``do_sc_sst`` namelist option)
-    - a slab ocean aquaplanet analytic form (``prescribe_initial_dist`` namelist option)
-    - an AquaPlanet Experiment protocol (APE) analytic form (``do_ape_sst`` namelist option)
-    - an implicit timestep (``do_calc_eff_heat_cap`` namelist option)
-    - an optional Q-flux (this is not controlled by a flag but rather an input file that is generated offline).
 
-Each of these options are discussed below.
+The SST options are:
+    - prescribe SST from an input file (``do_sc_sst`` namelist option).
+    - prescribe SST to follow an AquaPlanet Experiment protocol (APE) analytic form (``do_ape_sst`` namelist option).
+    - calculate SST based on the surface fluxes and mixed layer depth of a **slab ocean**, with the option of including a Q-flux (either analytic or read from a file).
+
+Note that only the final case will generate a closed surface energy budget. Each of these options are discussed below, followed by an outline of the implicit time-stepping process used when SST is not prescribed. 
 
 Input SST file
-^^^^^^^^^^^^^^^
+-----------------------
 Set ``do_sc_sst`` to True if you want to specify the SST field. The SST field will be read in from a NetCDF file with a file name specified by the ``sst_file`` variable. 
-Using an input SST field is useful, for example,  when you want to add a temperature anomaly. The file is read in during the initialisation (i.e. within the call to mixed_layer_init from within idealized_moist_phys).
+Using an input SST field is useful, for example,  when you want to add a temperature anomaly. The file is read in during the initialisation (i.e. within the call to ``mixed_layer_init`` from within ``idealized_moist_phys``).
 The input file can be time independent (i.e. no diurnal or seasonal cycle or any changes in the SST from one time step to another) or vary with time. More information can be found in the Diagnostics section below.
 
+APE aquaplanet (analytic SST)
+-----------------------
+The prescribed SST for the APE aquaplanet protocol is given by:
+
+.. math::
+    T_s = 27 \left( 1 - \sin^2\left( \frac{3}{2} \lambda \right) \right),
+
+between 60N-60S, equation 1 of Neele and Hoskins 2004 [NealeHoskins2004]_, and 0 deg C poleward of 60N/S.
+
 Slab ocean 
-^^^^^^^^^^^^^^^
-During the initialisation, if there is no restart file to open, the surface temperature is set to the prescribed initial distribution (``prescribe_initial_dist = True``):
+-----------------------
+To allow the SST to evolve based on the surface fluxes, the atmosphere can be coupled to a slab ocean, whose depth is specified by the namelist parameter ``depth``. This also allows a closed surface energy budget, useful for e.g. simulations with increased greenhouse gases.
+
+In this case, during the initialisation, if there is no restart file to open, the surface temperature is set to the prescribed initial distribution (``prescribe_initial_dist = True``):
 
 .. math::
     T_s = T_{surf} -\frac{1}{3} dT \left(3\sin(\lambda)^2-1\right),
@@ -33,18 +43,8 @@ where the default values we use in the trip test for the Frierson test case (``e
 
 This form of :math:`T_{surf}` is similar to a 2nd legendre polynomial, it is a parabola that maximises at the equator.
 
-APE aquaplanet (analytic form)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The prescribed SST for the APE aquaplanet protocol is given by:
-
-.. math::
-    T_s = 27 \left( 1 - \sin^2\left( \frac{3}{2} \lambda \right) \right),
-
-between 60N-60S, equation 1 of Neele and Hoskins 2004 [NealeHoskins2004]_, and 0 deg C poleward of 60N/S.
-
-
-Implicit timestep
-^^^^^^^^^^^^^^^^^^^^
+Implicit timestepping procedure
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The mixed layer module calculates the evolution of surface temperature using an implicit timestep.
 Whereas an explicit method uses the current state of the system to calculate the state of the system 
 at the next timestep, an implicit method uses the inferred state of the system at the next timestep.
@@ -69,17 +69,17 @@ This is simplified by defining ``eff_heat_capacity`` as ``land_sea_heat_capacity
     eff_heat_capacity * dTs/dt = - corrected_flux
 
 Optional Q-flux
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 The slab ocean model only communicates between grid-boxes in the vertical (i.e. air-sea exchange) but does not represent any horizontal transport (i.e. no north-south or east-west communications between grid cells). 
 An idealised horizontal transport can be included using an ocean heat flux (Q-flux). Atmospheric heat transport is more realistic with an ocean heat transport.
 
-Adding a Q-Flux to Isca is a three step process. It involves running a control experiment, creating a NetCDF Q-flux file offline and then passing this file to the model via the python interface run script. 
+Isca is able to calculate an analytic Q-flux, appropriate to an aquaplanet, following Merlis et al 2013 [MerlisEtAl2013] if ``do_qflux`` is True. Additionally, an analytic warmpool can be added  by setting ``do_warmpool``.  The warmpool structure is set in ``Isca/src/atmos_param/qflux/qflux.f90``. Alternatively an arbitrary Q-flux may be read from a file if ``load_qflux`` is True. 
 
-
+In the case where both a specific SST distribution (e.g. AMIP climatology) and closed surface energy budget are desired, a Q-flux input file can be generated by running a control experiment with the prescribed SST, creating a NetCDF Q-flux file offline and then passing this file to the model via the python interface run script.
 
 1. Run a prescribed experiment (i.e. a control) using either observations, AMIP or similar.
 
-2. Using the prescribed SST field and the surface fluxes from step 1 create the Q-flux file. This is an offline script that is run independently of the model. An example script is shown in: ``src/extra/python/scripts/calculate_qflux/calculate_qflux.py`` but you can create your own script to do this depending on your application.
+2. Using the prescribed SST field and the surface fluxes from step 1, create the Q-flux file. This is an offline script that is run independently of the model. An example script is shown in: ``src/extra/python/scripts/calculate_qflux/calculate_qflux.py`` but you can create your own script to do this depending on your application.
 
 3. Add the Q-Flux file to the ``inputfiles`` in the python run script (same as you would for ozone, land etc). Then in the ``mixed_layer_nml`` namelist in the python run script set ``load_qflux`` to True, ``qflux_file_name`` to the name of the input file (don't include the .nc extension) and ``qflux_field_name`` is the Q-flux variable name in the file.
 
