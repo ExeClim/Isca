@@ -61,13 +61,11 @@ END SELECT
 dimen%nd_subcol_gen = cld_subcol_gen
 dimen%nd_subcol_req = cld_subcol_req
 
-dimen%id_cloud_top = dimen%nd_layer + 1 - n_cloud_layer
-IF (control%l_cloud) THEN
-  dimen%nd_layer_clr = dimen%id_cloud_top - 1
-ELSE
-  dimen%nd_layer_clr = dimen%nd_layer
-END IF
+dimen%id_cloud_top = dimen%nd_layer + 1 - n_cloud_layer  !ie TOA
 
+! this gives the allocate the full column for radiation
+! rather than the layers over which cloud is present 
+dimen%nd_layer_clr = dimen%nd_layer
 
 ! Aerosol
 dimen%nd_aerosol_mode = MAX(1,n_aer_mode)

@@ -26,6 +26,7 @@ src/atmos_param/socrates/src/trunk*
 ~*
 nohup.out
 Makefile
+!docs/Makefile
 *.DS_Store
 ._*
 *.mod

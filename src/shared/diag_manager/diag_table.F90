@@ -357,7 +357,7 @@ CONTAINS
     INTEGER, INTENT(out), OPTIONAL, TARGET :: istat
     CHARACTER(len=*), INTENT(out), OPTIONAL :: err_msg
 
-    INTEGER, PARAMETER :: DT_LINE_LENGTH = 256
+    INTEGER, PARAMETER :: DT_LINE_LENGTH = 512
 
     INTEGER :: stdlog_unit !< Fortran file unit number for the stdlog file.
     INTEGER :: record_len !< String length of the diag_table line read in.

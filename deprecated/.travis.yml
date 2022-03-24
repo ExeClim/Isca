@@ -9,7 +9,7 @@ branches:
 env:
   global:
     - GFDL_BASE=$TRAVIS_BUILD_DIR
-    - GFDL_ENV="$TRAVIS_BUILD_DIR/src/extra/env/ubuntu_conda"
+    - GFDL_ENV="ubuntu_conda"
     - GFDL_WORK="$HOME/gfdl_work"
     - GFDL_DATA="$HOME/gfdl_data"
     - GFDL_PYDIR="$TRAVIS_BUILD_DIR/src/extra/python"
@@ -18,7 +18,7 @@ env:
 matrix:
   fast_finish: true
   include:
-    - env: CONDA_ENV=docs
+    # - env: CONDA_ENV=docs
     - env: CONDA_ENV=py37
 
 before_install:
@@ -37,7 +37,7 @@ install:
     else
       conda env create -n test_env --file ci/environment_$CONDA_ENV.yml;
     fi;
-  - source $GFDL_ENV
+  - source $TRAVIS_BUILD_DIR/src/extra/env/$GFDL_ENV
   - source $HOME/miniconda/etc/profile.d/conda.sh
   - conda activate test_env
   - conda list

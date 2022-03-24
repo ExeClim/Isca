@@ -23,7 +23,7 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp = Experiment('soc_test_aquaplanet', codebase=cb)
+exp = Experiment('soc_aquaplanet', codebase=cb)
 exp.clear_rundir()
 
 inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
@@ -32,23 +32,28 @@ inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 diag = DiagTable()
 diag.add_file('atmos_monthly', 30, 'days', time_units='days')
 
-#Tell model which diagnostics to write
+#Write out diagnostics need for vertical interpolation post-processing
 diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
+diag.add_field('dynamics', 'zsurf')
+
+#Tell model which diagnostics to write
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
+diag.add_field('atmosphere', 'rh', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
+diag.add_field('mixed_layer', 'flux_t', time_avg=True) #SH
+diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #LH
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
+diag.add_field('dynamics', 'omega', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
-diag.add_field('dynamics', 'vor', time_avg=True)
-diag.add_field('dynamics', 'div', time_avg=True)
 
-#radiative tendencies
-diag.add_field('socrates', 'soc_tdt_lw', time_avg=True)
+#temperature tendency - units are K/s
+diag.add_field('socrates', 'soc_tdt_lw', time_avg=True) # net flux lw 3d (up - down)
 diag.add_field('socrates', 'soc_tdt_sw', time_avg=True)
-diag.add_field('socrates', 'soc_tdt_rad', time_avg=True)
+diag.add_field('socrates', 'soc_tdt_rad', time_avg=True) #sum of the sw and lw heating rates
 
 #net (up) and down surface fluxes
 diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
@@ -59,14 +64,6 @@ diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
 diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
 diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
-
-# additional output options commented out 
-#diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
-#diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
-#diag.add_field('socrates', 'soc_co2', time_avg=True)
-#diag.add_field('socrates', 'soc_ozone', time_avg=True) 
-#diag.add_field('socrates', 'soc_coszen', time_avg=True) 
-#diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 
 exp.diag_table = diag
 exp.inputfiles = inputfiles
@@ -94,7 +91,7 @@ exp.namelist = namelist = Namelist({
         'chunk_size': 16,
         'use_pressure_interp_for_half_levels':False,
         'tidally_locked':False,
-        #'solday': 90
+        'solday':90
     }, 
     'idealized_moist_phys_nml': {
         'do_damping': True,
@@ -110,6 +107,7 @@ exp.namelist = namelist = Namelist({
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
     },
 
+
     'vert_turb_driver_nml': {
         'do_mellor_yamada': False,     # default: True
         'do_diffusivity': True,        # default: False
@@ -117,7 +115,7 @@ exp.namelist = namelist = Namelist({
         'constant_gust': 0.0,          # default: 1.0
         'use_tau': False
     },
-    
+
     'diffusivity_nml': {
         'do_entrain':False,
         'do_simple': True,
@@ -154,8 +152,8 @@ exp.namelist = namelist = Namelist({
     },
     
     'sat_vapor_pres_nml': {
-        'do_simple':True
-    },
+           'do_simple':True,
+       },
     
     'damping_driver_nml': {
         'do_rayleigh': True,
@@ -197,9 +195,12 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
 
-        cb.compile()
+        cb.compile(debug=False)
         #Set up the experiment object, with the first argument being the experiment name.
         #This will be the name of the folder that the data will appear in.
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
+
+        overwrite=False
+
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
         for i in range(2,121):
-            exp.run(i, num_cores=NCORES)
+            exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
