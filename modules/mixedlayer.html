@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mixed layer module &mdash; isca dev documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Surface flux calculation" href="surface_flux.html" />
+    <link rel="prev" title="SOCRATES Radiation Scheme Interface" href="socrates.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> isca
+          </a>
+              <div class="version">
+                dev
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../begginers_guide.html">Isca Beginner’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Components of Isca</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Experiment configuration scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamics.html">Isca’s dynamical core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physics.html">Isca’s physical parameterisations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants.html">Constants: Atmospheric and Planetary Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Changing Isca output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="damping_driver.html">Damping Driver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idealised_moist_phys.html">Moist physics driver: idealized_moist_phys.F90</a></li>
+<li class="toctree-l2"><a class="reference internal" href="two_stream_gray_rad.html">Radiative transfer: Simple gray and multi-band radiation schemes.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="convection_simple_betts_miller.html">Convection scheme: Simple Betts-Miller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socrates.html">SOCRATES Radiation Scheme Interface</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Mixed layer module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sst-boundary-condition-options">SST boundary condition options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#input-sst-file">Input SST file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ape-aquaplanet-analytic-sst">APE aquaplanet (analytic SST)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slab-ocean">Slab ocean</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#implicit-timestepping-procedure">Implicit timestepping procedure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#optional-q-flux">Optional Q-flux</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#namelist-options">Namelist options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#q-flux-options">Q-flux options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#initialize-surface-temperature">Initialize surface temperature</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#surface-albedo-options">Surface albedo options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#land-options">Land options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ice-options">Ice options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#relevant-modules-and-subroutines">Relevant modules and subroutines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#references">References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="surface_flux.html">Surface flux calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="diag_manager_mod.html">Diagnostics Manager Module &amp; Saving model output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../remote_access.html">Remote Access</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isca</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Components of Isca</a> &raquo;</li>
+      <li>Mixed layer module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/modules/mixedlayer.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="mixed-layer-module">
+<h1>Mixed layer module<a class="headerlink" href="#mixed-layer-module" title="Permalink to this headline"></a></h1>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<p>This module updates the sea surface temperature (SST) noted as <span class="math notranslate nohighlight">\(T_s\)</span> below.</p>
+</section>
+<section id="sst-boundary-condition-options">
+<h2>SST boundary condition options<a class="headerlink" href="#sst-boundary-condition-options" title="Permalink to this headline"></a></h2>
+<dl class="simple">
+<dt>The SST options are:</dt><dd><ul class="simple">
+<li><p>prescribe SST from an input file (<code class="docutils literal notranslate"><span class="pre">do_sc_sst</span></code> namelist option).</p></li>
+<li><p>prescribe SST to follow an AquaPlanet Experiment protocol (APE) analytic form (<code class="docutils literal notranslate"><span class="pre">do_ape_sst</span></code> namelist option).</p></li>
+<li><p>calculate SST based on the surface fluxes and mixed layer depth of a <strong>slab ocean</strong>, with the option of including a Q-flux (either analytic or read from a file).</p></li>
+</ul>
+</dd>
+</dl>
+<p>Note that only the final case will generate a closed surface energy budget. Each of these options are discussed below, followed by an outline of the implicit time-stepping process used when SST is not prescribed.</p>
+</section>
+<section id="input-sst-file">
+<h2>Input SST file<a class="headerlink" href="#input-sst-file" title="Permalink to this headline"></a></h2>
+<p>Set <code class="docutils literal notranslate"><span class="pre">do_sc_sst</span></code> to True if you want to specify the SST field. The SST field will be read in from a NetCDF file with a file name specified by the <code class="docutils literal notranslate"><span class="pre">sst_file</span></code> variable.
+Using an input SST field is useful, for example,  when you want to add a temperature anomaly. The file is read in during the initialisation (i.e. within the call to <code class="docutils literal notranslate"><span class="pre">mixed_layer_init</span></code> from within <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys</span></code>).
+The input file can be time independent (i.e. no diurnal or seasonal cycle or any changes in the SST from one time step to another) or vary with time. More information can be found in the Diagnostics section below.</p>
+</section>
+<section id="ape-aquaplanet-analytic-sst">
+<h2>APE aquaplanet (analytic SST)<a class="headerlink" href="#ape-aquaplanet-analytic-sst" title="Permalink to this headline"></a></h2>
+<p>The prescribed SST for the APE aquaplanet protocol is given by:</p>
+<div class="math notranslate nohighlight">
+\[T_s = 27 \left( 1 - \sin^2\left( \frac{3}{2} \lambda \right) \right),\]</div>
+<p>between 60N-60S, equation 1 of Neele and Hoskins 2004 <a class="reference internal" href="../references.html#nealehoskins2004" id="id1"><span>[NealeHoskins2004]</span></a>, and 0 deg C poleward of 60N/S.</p>
+</section>
+<section id="slab-ocean">
+<h2>Slab ocean<a class="headerlink" href="#slab-ocean" title="Permalink to this headline"></a></h2>
+<p>To allow the SST to evolve based on the surface fluxes, the atmosphere can be coupled to a slab ocean, whose depth is specified by the namelist parameter <code class="docutils literal notranslate"><span class="pre">depth</span></code>. This also allows a closed surface energy budget, useful for e.g. simulations with increased greenhouse gases.</p>
+<p>In this case, during the initialisation, if there is no restart file to open, the surface temperature is set to the prescribed initial distribution (<code class="docutils literal notranslate"><span class="pre">prescribe_initial_dist</span> <span class="pre">=</span> <span class="pre">True</span></code>):</p>
+<div class="math notranslate nohighlight">
+\[T_s = T_{surf} -\frac{1}{3} dT \left(3\sin(\lambda)^2-1\right),\]</div>
+<p>where the default values we use in the trip test for the Frierson test case (<code class="docutils literal notranslate"><span class="pre">exp/test_cases/frierson/frierson_test_case.py</span></code>) are: <span class="math notranslate nohighlight">\(T_{surf} = 285 K\)</span> and <span class="math notranslate nohighlight">\(dT = 40 K\)</span>.</p>
+<p>This form of <span class="math notranslate nohighlight">\(T_{surf}\)</span> is similar to a 2nd legendre polynomial, it is a parabola that maximises at the equator.</p>
+<section id="implicit-timestepping-procedure">
+<h3>Implicit timestepping procedure<a class="headerlink" href="#implicit-timestepping-procedure" title="Permalink to this headline"></a></h3>
+<p>The mixed layer module calculates the evolution of surface temperature using an implicit timestep.
+Whereas an explicit method uses the current state of the system to calculate the state of the system
+at the next timestep, an implicit method uses the inferred state of the system at the next timestep.</p>
+<p>The net flux into the surface is given by:</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">net_surf_sw_down</span> <span class="o">+</span> <span class="n">surf_lw_down</span> <span class="o">-</span> <span class="n">flux_r</span> <span class="o">-</span> <span class="n">SH</span> <span class="o">-</span> <span class="n">LH</span> <span class="o">+</span> <span class="n">ocean_qflux</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">net_surf_sw_down</span></code> is the net shortwave radiation into the surface, <code class="docutils literal notranslate"><span class="pre">surf_lw_down</span></code> the downwelling longwave radiation into the surface, and <code class="docutils literal notranslate"><span class="pre">flux_r</span></code> the upwelling longwave radiation at the
+surface. The sensible heat (<code class="docutils literal notranslate"><span class="pre">SH</span></code>) is the sum of the surface sensible heat flux and the temperature diffusion flux. The latent heat (<code class="docutils literal notranslate"><span class="pre">LH</span></code>) is the sum of the surface latent heat and the
+moisture diffusion flux (only included if <code class="docutils literal notranslate"><span class="pre">evaporation</span></code> is true). The <code class="docutils literal notranslate"><span class="pre">ocean_flux</span></code> is an optional term and is zero if the Q-flux is not used.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">do_calc_eff_heat_cap</span></code> is True, the <code class="docutils literal notranslate"><span class="pre">land_sea_heat_capacity</span></code> is used at each timestep to compute the surface temperature using the following equation:</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">land_sea_heat_capacity</span> <span class="o">*</span> <span class="n">dTs</span><span class="o">/</span><span class="n">dt</span> <span class="o">=</span> <span class="o">-</span> <span class="n">corrected_flux</span> <span class="o">-</span> <span class="n">t_surf_dependence</span> <span class="o">*</span> <span class="n">dTs</span>
+</pre></div>
+</div>
+<p>The change in surface temperature in this timestep (<code class="docutils literal notranslate"><span class="pre">dTs/dt</span></code>) times the heat capacity of the surface is equal to the net flux into the surface at the given timestep (<code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">corrected_flux</span></code>) plus the change in the net flux
+into the surface caused by the change in surface temperature (<code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">t_surf_dependence</span> <span class="pre">*</span> <span class="pre">dTs</span></code>).</p>
+<p>This is simplified by defining <code class="docutils literal notranslate"><span class="pre">eff_heat_capacity</span></code> as <code class="docutils literal notranslate"><span class="pre">land_sea_heat_capacity</span> <span class="pre">+</span> <span class="pre">t_surf_dependence</span> <span class="pre">*</span> <span class="pre">dt</span></code>, and then <code class="docutils literal notranslate"><span class="pre">Ts</span></code> is updated using:</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">eff_heat_capacity</span> <span class="o">*</span> <span class="n">dTs</span><span class="o">/</span><span class="n">dt</span> <span class="o">=</span> <span class="o">-</span> <span class="n">corrected_flux</span>
+</pre></div>
+</div>
+</section>
+<section id="optional-q-flux">
+<h3>Optional Q-flux<a class="headerlink" href="#optional-q-flux" title="Permalink to this headline"></a></h3>
+<p>The slab ocean model only communicates between grid-boxes in the vertical (i.e. air-sea exchange) but does not represent any horizontal transport (i.e. no north-south or east-west communications between grid cells).
+An idealised horizontal transport can be included using an ocean heat flux (Q-flux). Atmospheric heat transport is more realistic with an ocean heat transport.</p>
+<p>Isca is able to calculate an analytic Q-flux, appropriate to an aquaplanet, following Merlis et al 2013 [MerlisEtAl2013] if <code class="docutils literal notranslate"><span class="pre">do_qflux</span></code> is True. Additionally, an analytic warmpool can be added  by setting <code class="docutils literal notranslate"><span class="pre">do_warmpool</span></code>.  The warmpool structure is set in <code class="docutils literal notranslate"><span class="pre">Isca/src/atmos_param/qflux/qflux.f90</span></code>. Alternatively an arbitrary Q-flux may be read from a file if <code class="docutils literal notranslate"><span class="pre">load_qflux</span></code> is True.</p>
+<p>In the case where both a specific SST distribution (e.g. AMIP climatology) and closed surface energy budget are desired, a Q-flux input file can be generated by running a control experiment with the prescribed SST, creating a NetCDF Q-flux file offline and then passing this file to the model via the python interface run script.</p>
+<ol class="arabic simple">
+<li><p>Run a prescribed experiment (i.e. a control) using either observations, AMIP or similar.</p></li>
+<li><p>Using the prescribed SST field and the surface fluxes from step 1, create the Q-flux file. This is an offline script that is run independently of the model. An example script is shown in: <code class="docutils literal notranslate"><span class="pre">src/extra/python/scripts/calculate_qflux/calculate_qflux.py</span></code> but you can create your own script to do this depending on your application.</p></li>
+<li><p>Add the Q-Flux file to the <code class="docutils literal notranslate"><span class="pre">inputfiles</span></code> in the python run script (same as you would for ozone, land etc). Then in the <code class="docutils literal notranslate"><span class="pre">mixed_layer_nml</span></code> namelist in the python run script set <code class="docutils literal notranslate"><span class="pre">load_qflux</span></code> to True, <code class="docutils literal notranslate"><span class="pre">qflux_file_name</span></code> to the name of the input file (don’t include the .nc extension) and <code class="docutils literal notranslate"><span class="pre">qflux_field_name</span></code> is the Q-flux variable name in the file.</p></li>
+</ol>
+<p>See Q-flux options below for namelist options. Note that the Q-flux is only relevant for slab ocean experiments (not fixed or prescribed SST runs). Also note that if the MiMA radiation code is used then the Q-flux is implemented following Merlis et al 2013 <a class="reference internal" href="../references.html#merlisetal2013" id="id2"><span>[MerlisEtAl2013]</span></a></p>
+<p>More information on the method for Q-flux can be found in Russel et al 1985 <a class="reference internal" href="../references.html#russeletal1985" id="id3"><span>[RusselEtAl1985]</span></a></p>
+</section>
+</section>
+<section id="namelist-options">
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 68%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">evaporation</span></code></p></td>
+<td><p>Switch for surface evaporation.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">depth</span></code></p></td>
+<td><p>Mixed layer depth.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">40.0</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<section id="q-flux-options">
+<h3>Q-flux options<a class="headerlink" href="#q-flux-options" title="Permalink to this headline"></a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">do_qflux</span></code> is True, use <code class="docutils literal notranslate"><span class="pre">qflux_amp</span></code> and <code class="docutils literal notranslate"><span class="pre">qflux_width</span></code> to calculate a time-independent surface Q-flux.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 70%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">do_qflux</span></code></p></td>
+<td><p>Switch to calculate time-independent Q-flux.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">qflux_amp</span></code></p></td>
+<td><p>Amplitude of time-independent Q-flux if <code class="docutils literal notranslate"><span class="pre">do_qflux</span></code> is True.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.0</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">qflux_width</span></code></p></td>
+<td><p>Width of time-independent Q-flux if <code class="docutils literal notranslate"><span class="pre">do_qflux</span></code> is True.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">16.0</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>If <code class="docutils literal notranslate"><span class="pre">load_qflux</span></code> is True, use input file to load in a time-independent or time-dependent Q-flux.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 82%" />
+<col style="width: 8%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">load_qflux</span></code></p></td>
+<td><p>Switch to use input file to get Q-flux.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">qflux_file_name</span></code></p></td>
+<td><p>Name of file among input files, from which to get Q-flux.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ocean_qflux</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">qflux_field_name</span></code></p></td>
+<td><p>Name of field name in Q-flux file name, from which to get Q-flux. This is only used when <code class="docutils literal notranslate"><span class="pre">time_varying_qflux</span></code> is False. Otherwise the code assumes field_name = file_name.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ocean_qflux</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">time_varying_qflux</span></code></p></td>
+<td><p>Flag that determines whether input Q-flux file is time dependent.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="initialize-surface-temperature">
+<h3>Initialize surface temperature<a class="headerlink" href="#initialize-surface-temperature" title="Permalink to this headline"></a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 66%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">prescribe_initial_dist</span></code></p></td>
+<td><p>Switch to turn on setting the initial surface temperature distribution.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">305.0</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tconst</span></code></p></td>
+<td><p>Initial surface temperature following formula in <code class="docutils literal notranslate"><span class="pre">Slab</span> <span class="pre">ocean</span></code> section.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">305.0</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">delta_T</span></code></p></td>
+<td><p>Initial surface temperature gradient following formula in <code class="docutils literal notranslate"><span class="pre">Slab</span> <span class="pre">ocean</span></code> section.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">40.0</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">do_read_sst</span></code></p></td>
+<td><p>Flag to use fixed SSTs, prescribed from input file (<code class="docutils literal notranslate"><span class="pre">sst_file</span></code>).</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sst_file</span></code></p></td>
+<td><p>Name of file containing fixed SSTs.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">do_sc_sst</span></code></p></td>
+<td><p>Flag to use fixed SSTs, prescribed from input file (<code class="docutils literal notranslate"><span class="pre">sst_file</span></code>).</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">specify_sst_over_ocean_only</span></code></p></td>
+<td><p>Flag to specify SSTs only over ocean, only works if <code class="docutils literal notranslate"><span class="pre">do_sc_sst</span></code> is True.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">do_ape_sst</span></code></p></td>
+<td><p>Flag to set prescribed SST according to the APE aquaplanet analytic form</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">add_latent_heat_flux_anom</span></code></p></td>
+<td><p>Flag to add an anomalous latent heat flux</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">do_warmpool</span></code></p></td>
+<td><p>Flag to call warmpool module, which returns <code class="docutils literal notranslate"><span class="pre">ocean_qflux</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="surface-albedo-options">
+<h3>Surface albedo options<a class="headerlink" href="#surface-albedo-options" title="Permalink to this headline"></a></h3>
+<dl>
+<dt>There are 5 options for setting the surface albedo, determined by the value of <code class="docutils literal notranslate"><span class="pre">albedo_choice</span></code>.</dt><dd><ul>
+<li><p>1: Surface albedo is a constant (<code class="docutils literal notranslate"><span class="pre">albedo_value</span></code>).</p></li>
+<li><p>2: Glacier with higher albedo in one hemisphere only. If <code class="docutils literal notranslate"><span class="pre">lat_glacier</span></code> &gt;0, albedo = <code class="docutils literal notranslate"><span class="pre">higher_albedo</span></code> North of <code class="docutils literal notranslate"><span class="pre">lat_glacier</span></code>. If <code class="docutils literal notranslate"><span class="pre">lat_glacier</span></code> &lt;0, albedo = <code class="docutils literal notranslate"><span class="pre">higher_albedo</span></code> South of <code class="docutils literal notranslate"><span class="pre">lat_glacier</span></code>.</p></li>
+<li><p>3: Glacier with higher albedo in both hemispheres. Albedo = <code class="docutils literal notranslate"><span class="pre">higher_albedo</span></code> where latitude &gt; <code class="docutils literal notranslate"><span class="pre">|lat_glacier|</span></code>.</p></li>
+<li><p>4: Albedo set by <code class="docutils literal notranslate"><span class="pre">albedo_value</span> <span class="pre">+</span> <span class="pre">(higher_albedo</span> <span class="pre">-</span> <span class="pre">albedo_value)</span> <span class="pre">(lat/90)</span> <span class="pre">^</span> <span class="pre">albedo_exp</span></code>.</p></li>
+<li><p>5: Tanh increase around <code class="docutils literal notranslate"><span class="pre">albedo_cntr</span></code> with <code class="docutils literal notranslate"><span class="pre">albedo_wdth</span></code>:</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">albedo</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span> <span class="o">=</span> <span class="n">albedo_value</span> <span class="o">+</span> <span class="p">(</span><span class="n">higher_albedo</span><span class="o">-</span><span class="n">albedo_value</span><span class="p">)</span><span class="o">*</span> <span class="mf">0.5</span> <span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">tanh</span><span class="p">((</span><span class="n">lat</span><span class="o">-</span><span class="n">albedo_cntr</span><span class="p">)</span><span class="o">/</span><span class="n">albedo_wdth</span><span class="p">))</span><span class="o">.</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 73%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">albedo_choice</span></code></p></td>
+<td><p>Switch to choose surface albedo option described above.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">albedo_value</span></code></p></td>
+<td><p>Parameter that sets surface albedo depending on albedo choice.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.06</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">higher_albedo</span></code></p></td>
+<td><p>Parameter that sets surface albedo depending on albedo choice.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.10</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">lat_glacier</span></code></p></td>
+<td><p>Parameter that sets the glacier latitude for albedo choices 2 and 3.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">60.0</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">albedo_exp</span></code></p></td>
+<td><p>Parameter that sets surface albedo latitude dependence for albedo choice 4.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2.</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">albedo_cntr</span></code></p></td>
+<td><p>Parameter that sets surface albedo for albedo choice 5.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">45.0</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">albedo_wdth</span></code></p></td>
+<td><p>Parameter that sets surface albedo for albedo choice 5.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="land-options">
+<h3>Land options<a class="headerlink" href="#land-options" title="Permalink to this headline"></a></h3>
+<dl class="simple">
+<dt>There are 4 options for setting up the land, determined by the value of <code class="docutils literal notranslate"><span class="pre">land_option</span></code>.</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">none</span></code>: No land.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">input</span></code>: Use input file to determine land mask.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zsurf</span></code>: The surface heat capacity is set to <code class="docutils literal notranslate"><span class="pre">land_capacity</span></code> where the surface geopotential is greater than 10.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lonlat</span></code>: The surface heat capacity is set to <code class="docutils literal notranslate"><span class="pre">land_capacity</span></code> in the longitude / latitude boxes set by [slandlon(k), elandlon(k)] and [slandlat(k), elandlat(k)] for all k’s.</p></li>
+</ul>
+</dd>
+</dl>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 72%" />
+<col style="width: 7%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">land_option</span></code></p></td>
+<td><p>Switch to choose land option as described above.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">none</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">land_depth</span></code></p></td>
+<td><p>Value of land mixed layer depth.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-1</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">slandlon</span></code></p></td>
+<td><p>Vector determining lower bounds of longitudes for land masses.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">slandlat</span></code></p></td>
+<td><p>Vector determining lower bounds of latitudes for land masses.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">elandlon</span></code></p></td>
+<td><p>Vector determining higher bounds of longitudes for land masses.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-1</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">elandlat</span></code></p></td>
+<td><p>Vector determining higher bounds of latitudes for land masses.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-1</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">land_h_capacity_prefactor</span></code></p></td>
+<td><p>Factor by which to multiply ocean heat capacity to get land heat capacity if <code class="docutils literal notranslate"><span class="pre">input</span></code> option is used.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1.0</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">land_albedo_prefactor</span></code></p></td>
+<td><p>Factor by which to multiply ocean albedo to get land albedo if <code class="docutils literal notranslate"><span class="pre">input</span></code> option is used.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1.0</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="ice-options">
+<h3>Ice options<a class="headerlink" href="#ice-options" title="Permalink to this headline"></a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 67%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Summary</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">update_albedo_from_ice</span></code></p></td>
+<td><p>Flag to set the surface albedo to <code class="docutils literal notranslate"><span class="pre">ice_albedo_value</span></code> where there is ice as specified by <code class="docutils literal notranslate"><span class="pre">ice_file_name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ice_albedo_value</span></code></p></td>
+<td><p>Value for ice albedo when <code class="docutils literal notranslate"><span class="pre">update_albedo_from_ice</span></code> is True.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.7</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ice_file_name</span></code></p></td>
+<td><p>Name of file containing sea ice concentration.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">siconc_clim_amip</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ice_concentration_threshold</span></code></p></td>
+<td><p>Value of sea ice concentration above which albedo should be set to <code class="docutils literal notranslate"><span class="pre">ice_albedo_value</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.5</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ice_file_name</span></code></p></td>
+<td><p>Name of file containing sea ice concentration.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">siconc_clim_amip</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="diagnostics">
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 34%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Units</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">t_surf</span></code></p></td>
+<td><p>Surface temperature</p></td>
+<td><p>K</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">delta_t_surf</span></code></p></td>
+<td><p>Surface temperature change</p></td>
+<td><p>K</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flux_t</span></code></p></td>
+<td><p>Surface sensible heat flux</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{W}\,\text{m}^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">flux_lhe</span></code></p></td>
+<td><p>Surface latent heat flux</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{W}\,\text{m}^{-2}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flux_oceanq</span></code></p></td>
+<td><p>Ocean heat flux</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{W}\,\text{m}^{-2}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ice_conc</span></code></p></td>
+<td><p>Sea ice concentration</p></td>
+<td><p>0-1</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">albedo</span></code></p></td>
+<td><p>Surface albedo</p></td>
+<td><p>0-1</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">land_sea_heat_capacity</span></code></p></td>
+<td><p>Heat capacity of land and sea</p></td>
+<td><p><span class="math notranslate nohighlight">\(\text{J}\,\text{m}^{-2},\text{K}^{-1}\)</span></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="relevant-modules-and-subroutines">
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline"></a></h2>
+<p>The mixed layer code is located in: <code class="docutils literal notranslate"><span class="pre">src/atmos_spectral/driver/solo/mixed_layer.F90</span></code>. The name of this file reflects the fact that the code determines the properties of the single layer (either a slab ocean model
+or prescribed SST) below the air-sea interface.</p>
+<p>The mixed layer ocean is initialised and called by:  <code class="docutils literal notranslate"><span class="pre">src/atmos_spectral/driver/solo/idealized_moist_phys.F90</span></code>.</p>
+<dl class="simple">
+<dt>Relevant routines which are called by the mixed layer ocean:</dt><dd><ul class="simple">
+<li><p>The SST input file is read in using the interpolator module found here: <code class="docutils literal notranslate"><span class="pre">src/atmos_shared/interpolator/interpolator.F90</span></code>.</p></li>
+<li><p>The Q-flux and warmpool components use the Q-flux module: <code class="docutils literal notranslate"><span class="pre">src/atmos_param/qflux/qflux.f90</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
+<p><a class="reference internal" href="../references.html#vallis2017" id="id4"><span>[Vallis2017]</span></a>
+<a class="reference internal" href="../references.html#nealehoskins2004" id="id5"><span>[NealeHoskins2004]</span></a>
+<a class="reference internal" href="../references.html#merlisetal2013" id="id6"><span>[MerlisEtAl2013]</span></a>
+<a class="reference internal" href="../references.html#russeletal1985" id="id7"><span>[RusselEtAl1985]</span></a></p>
+</section>
+<section id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<p>This documentation was written by Matthew Henry and Penelope Maher, peer reviewed by Stephen Thomson, and quality controlled by Ruth Geen.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="socrates.html" class="btn btn-neutral float-left" title="SOCRATES Radiation Scheme Interface" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="surface_flux.html" class="btn btn-neutral float-right" title="Surface flux calculation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, the Isca development team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
