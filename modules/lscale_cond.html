@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Isca’s dynamical core &mdash; isca dev documentation</title>
+  <title>Large Scale Condensation and Precipitation &mdash; isca dev documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
@@ -17,11 +17,13 @@
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Isca’s physical parameterisations" href="physics.html" />
-    <link rel="prev" title="Experiment configuration scripts" href="introduction.html" /> 
+    <link rel="next" title="Topography and Land Masks in Isca" href="topography.html" />
+    <link rel="prev" title="Convection scheme: Simple Betts-Miller" href="convection_simple_betts_miller.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -49,10 +51,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Components of Isca</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="introduction.html">Experiment configuration scripts</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Isca’s dynamical core</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#references">References</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="dynamics.html">Isca’s dynamical core</a></li>
 <li class="toctree-l2"><a class="reference internal" href="physics.html">Isca’s physical parameterisations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="constants.html">Constants: Atmospheric and Planetary Parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="output.html">Changing Isca output</a></li>
@@ -60,7 +59,15 @@
 <li class="toctree-l2"><a class="reference internal" href="idealised_moist_phys.html">Moist physics driver: idealized_moist_phys.F90</a></li>
 <li class="toctree-l2"><a class="reference internal" href="two_stream_gray_rad.html">Radiative transfer: Simple gray and multi-band radiation schemes.</a></li>
 <li class="toctree-l2"><a class="reference internal" href="convection_simple_betts_miller.html">Convection scheme: Simple Betts-Miller</a></li>
-<li class="toctree-l2"><a class="reference internal" href="lscale_cond.html">Large Scale Condensation and Precipitation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Large Scale Condensation and Precipitation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#namelist-options">Namelist options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#relevant-modules-and-subroutines">Relevant Modules and Subroutines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#references">References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="topography.html">Topography and Land Masks in Isca</a></li>
 <li class="toctree-l2"><a class="reference internal" href="socrates.html">SOCRATES Radiation Scheme Interface</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mixedlayer.html">Mixed layer module</a></li>
@@ -92,9 +99,9 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="index.html">Components of Isca</a> &raquo;</li>
-      <li>Isca’s dynamical core</li>
+      <li>Large Scale Condensation and Precipitation</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/modules/dynamics.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/modules/lscale_cond.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -126,12 +133,75 @@
     text-align: unset;
 }
 </style>
-<section id="isca-s-dynamical-core">
-<h1>Isca’s dynamical core<a class="headerlink" href="#isca-s-dynamical-core" title="Permalink to this headline"></a></h1>
-<p>Coming soon…</p>
+<section id="large-scale-condensation-and-precipitation">
+<h1>Large Scale Condensation and Precipitation<a class="headerlink" href="#large-scale-condensation-and-precipitation" title="Permalink to this headline"></a></h1>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<p>The module computes the large scale temperature and specific humidity adjustments needed in model layers where the relative humidity exceeds a threshold relative humidity, and returns the mass of rain and snow (or other frozen precipitation) that reaches the ground. The module also outputs the temperature tendency and the specific humidity tendency. Features include the option for the re-evaporation of falling precipitation and energetically consistent adjustment with precipitation type.</p>
+<p>See <a class="reference internal" href="../references.html#frierson2006a" id="id1"><span>[Frierson2006a]</span></a> (Section 2e) for a detailed description <a class="reference external" href="https://doi.org/10.1175/JAS3753.1">here</a>.</p>
+</section>
+<section id="namelist-options">
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h2>
+<p>There are three namelist variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">hc</dt>
+<dd class="field-odd"><p>The relative humidity at which large scale condensation, where <span class="math notranslate nohighlight">\(0.0 &lt;= hc &lt;= 1.0\)</span>. Default is <span class="math notranslate nohighlight">\(hc=1.0\)</span>.</p>
+</dd>
+<dt class="field-even">do_evap</dt>
+<dd class="field-even"><p>The flag for the re-evaporation of moisture in sub-saturated layers below, if <code class="docutils literal notranslate"><span class="pre">True</span></code> then re-evaporation is performed. Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</dd>
+<dt class="field-odd">do_simple</dt>
+<dd class="field-odd"><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code> then all precipitation is rain/liquid precipitation, there is no snow/frozen precipitation. Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="diagnostics">
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h2>
+<p>The diagnostics are not sent out within the call to convection but are sent out from <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys.F90</span></code> with the module name <code class="docutils literal notranslate"><span class="pre">atmosphere</span></code>. The diagnostics relevant to the lscale_cond module are set out below:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 44%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Units</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>cond_dt_qg</p></td>
+<td><p>Moisture tendency</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg~kg^{-1}~s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>cond_dt_tg</p></td>
+<td><p>Temperature tendency</p></td>
+<td><p><span class="math notranslate nohighlight">\(K~s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p>cond_rain</p></td>
+<td><p>Rain from condensation</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg~m^{-2}~s^{-1}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>precip</p></td>
+<td><p>Rain and Snow from resolved and
+parameterised condensation/convection</p></td>
+<td><p><span class="math notranslate nohighlight">\(kg~m^{-2}~s^{-1}\)</span></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="relevant-modules-and-subroutines">
+<h2>Relevant Modules and Subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline"></a></h2>
+<p>Relevant modules are: sat_vapor_pres_mod, utilities_mod, constants_mod.</p>
+</section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
-<p><a class="reference internal" href="../references.html#vallis2017" id="id1"><span>[Vallis2017]</span></a></p>
+<p>The reference list within this docs page are: <a class="reference internal" href="../references.html#frierson2006a" id="id2"><span>[Frierson2006a]</span></a></p>
+</section>
+<section id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<p>This documentation was written by Ross Castle and reviewed by Ruth Geen</p>
 </section>
 </section>
 
@@ -139,8 +209,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="introduction.html" class="btn btn-neutral float-left" title="Experiment configuration scripts" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="physics.html" class="btn btn-neutral float-right" title="Isca’s physical parameterisations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="convection_simple_betts_miller.html" class="btn btn-neutral float-left" title="Convection scheme: Simple Betts-Miller" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="topography.html" class="btn btn-neutral float-right" title="Topography and Land Masks in Isca" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
