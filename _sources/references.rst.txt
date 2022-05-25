@@ -76,6 +76,7 @@ References
            *Monthly Weather Review*,
            **120(6)**, 978--1002,
            doi: 10.1175/1520-0493(1992)120<0978:RASAPO>2.0.CO;2
+	   
 .. [Pierrehumbert1986] Pierrehumbert, R. T. (1986, September). An essay on the parameterization
            of orographic gravity wave drag. In Proc. Seminar/Workshop on Observation, Theory and
            Modeling of Orographic Effects (Vol. 1, pp. 251-282).
@@ -83,6 +84,12 @@ References
 .. [Ricchiazzi1998] Ricchiazzi, P., Yang, S., Gautier, C., and Sowle, D., 1998: SBDART: A research and teaching 
                 software tool for plane-parallel radiative transfer in the Earth’s atmosphere, 
                 *B. Am. Meteorol. Soc.*, **79**, 2101–2114, doi.
+		
+.. [Sauliere2012] Saulière, J., Brayshaw, D. J., Hoskins, B., & Blackburn, M. (2012):
+            Further investigation of the impact of idealized continents and SST distributions on the Northern Hemisphere storm tracks.
+            *J. Atmos. Sci.*, 
+            **69(3)**, 840-856,
+            doi: `10.1175/JAS-D-11-0113.1 <https://doi.org/10.1175/JAS-D-11-0113.1>`_.
 
 .. [Schneider2006] Schneider, T., Walker, C. C., 2006:
             Self-Organization of Atmospheric Macroturbulence into Critical States of Weak Nonlinear Eddy–Eddy Interactions.

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Topography and Land Masks in Isca &mdash; isca dev documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="SOCRATES Radiation Scheme Interface" href="socrates.html" />
+    <link rel="prev" title="Convection scheme: Simple Betts-Miller" href="convection_simple_betts_miller.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> isca
+          </a>
+              <div class="version">
+                dev
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../begginers_guide.html">Isca Beginner’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../isca_structure.html">Isca’s Code Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Components of Isca</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Experiment configuration scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamics.html">Isca’s dynamical core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physics.html">Isca’s physical parameterisations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants.html">Constants: Atmospheric and Planetary Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output.html">Changing Isca output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="damping_driver.html">Damping Driver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="idealised_moist_phys.html">Moist physics driver: idealized_moist_phys.F90</a></li>
+<li class="toctree-l2"><a class="reference internal" href="two_stream_gray_rad.html">Radiative transfer: Simple gray and multi-band radiation schemes.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="convection_simple_betts_miller.html">Convection scheme: Simple Betts-Miller</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Topography and Land Masks in Isca</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#implementing-topography-in-isca">1 - Implementing Topography in Isca</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#idealized-moist-phys">idealized_moist_phys</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#spectral-init-cond">spectral_init_cond</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-custom-topography">2 - Creating Custom Topography</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#land-options">Land Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#topography-options">Topography Options:</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#topography-module-topography-f90">3 - Topography Module (topography.F90)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#summary">Summary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#namelist-options">Namelist options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#relevant-subroutines">Relevant subroutines</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#references">References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors">Authors</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="socrates.html">SOCRATES Radiation Scheme Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mixedlayer.html">Mixed layer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="surface_flux.html">Surface flux calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="diag_manager_mod.html">Diagnostics Manager Module &amp; Saving model output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../python.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributor’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing/index.html">Testing Isca</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../bve_swe_equations.html">Barotropic Vorticity and Shallow Water Equation Solvers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../remote_access.html">Remote Access</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isca</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Components of Isca</a> &raquo;</li>
+      <li>Topography and Land Masks in Isca</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/modules/topography.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="topography-and-land-masks-in-isca">
+<h1>Topography and Land Masks in Isca<a class="headerlink" href="#topography-and-land-masks-in-isca" title="Permalink to this headline"></a></h1>
+<p>This guide covers:</p>
+<ol class="arabic simple">
+<li><p>How to implement a land mask and/or topography (using the T42 land mask provided).</p></li>
+<li><p>How to create/modify topography to suit your own needs (using the python tools included in Isca).</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">topography.F90</span></code> module, which used to control land masks/topography but has now been superceeded. It still retains some useful functions however.</p></li>
+</ol>
+<section id="implementing-topography-in-isca">
+<h2>1 - Implementing Topography in Isca<a class="headerlink" href="#implementing-topography-in-isca" title="Permalink to this headline"></a></h2>
+<p>This is relatively simple to do, assuming that the topography/land mask you are using has already been interpolated to the same spectral grid you are running the model at. If running at T42, you can use the one provided (<code class="docutils literal notranslate"><span class="pre">input/land_masks/era_land_t42.nc</span></code>). If not, you can interpolate fairly easily from any high resolution data, or for configurations of Earth continents, please refer to section 2 of this guide.</p>
+<ul class="simple">
+<li><p>The land mask is a binary field the size of the spectral model grid (e.g. 64 x 128 for T42) that contains a <code class="docutils literal notranslate"><span class="pre">1</span></code> if that grid box is designated as being land or a <code class="docutils literal notranslate"><span class="pre">0</span></code> if it is not.</p></li>
+<li><p>Topography is a separate field, again the size of the spectral model grid, containing the surface height for that grid box in meters.</p></li>
+<li><p>Often a ‘land mask’ will contain both these fields.</p></li>
+</ul>
+<p><strong>Can I have land without topography?</strong> Yes - For idealized modelling sometimes it is useful to have the land/sea contrasts (different albedo, no ocean exchange and different surface parameters) without the complexity of topography. It is also possible to have topography without land (aquamountains).</p>
+<p>Implementing these options require different namelist values. There are two namelists that need to be told about land and topograhy; <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys_nml</span></code> (land mask) and <code class="docutils literal notranslate"><span class="pre">spectral_init_cond_nml</span></code> (topography).</p>
+<section id="idealized-moist-phys">
+<h3>idealized_moist_phys<a class="headerlink" href="#idealized-moist-phys" title="Permalink to this headline"></a></h3>
+<p>NOTE: see the <a class="reference internal" href="#idealized-moist-phys"><span class="std std-ref">idealized moist phys</span></a> documentation for additional guidance on this namelist.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys</span></code> module is primarily concerned with the land mask. Its job is to pass the information about the land mask to other modules, which in the first instance are the <code class="docutils literal notranslate"><span class="pre">mixed_layer</span></code> and the <code class="docutils literal notranslate"><span class="pre">surface_flux</span></code> modules, which deal with ocean and surface exchanges with the atmosphere respectively. Both modules need to know where there is ocean/land so correct physics can be computed in the correct location. In addition to passing this information, <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys</span></code> will also use the land mask for some other model features, for example some land based parameters and calculating buckets if using bucket hydrology.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys</span></code> namelist options to include the appropriate land mask are:</p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">land_option</span> <span class="pre">:</span> <span class="pre">'input'</span></code> (the default is <code class="docutils literal notranslate"><span class="pre">'none'</span></code>, - this is essentially the on switch)</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">land_file_name</span> <span class="pre">:</span> <span class="pre">'INPUT/era_land_t42.nc'</span></code> (using the example of the provided land file)</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">land_field_name</span> <span class="pre">:</span> <span class="pre">'land_mask'</span></code> (this is the default and doesn’t need to be specified if that is correct)</div>
+</div>
+</section>
+<section id="spectral-init-cond">
+<h3>spectral_init_cond<a class="headerlink" href="#spectral-init-cond" title="Permalink to this headline"></a></h3>
+<p>Now there is a land mask, topography can be included if desired. If not, this step can be ignored.</p>
+<p>The namelist options below are to include topography from the same file as the land mask. It can be a different file, as long as the grid size is still correct and the height units is meters. There are multiple other options for including topography, some of which are unused at the moment.</p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">topography_option</span> <span class="pre">:</span> <span class="pre">'input'</span></code>  (Tell model to get topography from input file)</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">topog_file_name</span> <span class="pre">:</span> <span class="pre">'era_land_t42.nc'</span></code> (Again, we use the provided file as the example)</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">topog_field_name</span> <span class="pre">:</span> <span class="pre">'zsurf'</span></code> (The height field name)</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">land_field_name</span> <span class="pre">:</span> <span class="pre">'land_mask'</span></code> (The land field name)</div>
+</div>
+<p>NOTE: <code class="docutils literal notranslate"><span class="pre">zsurf</span></code> and <code class="docutils literal notranslate"><span class="pre">land_mask</span></code> are the default values in Isca and these are the names used in the provided land mask so does not need to be included when using it.</p>
+<p>This set up is the standard way to use topography in Isca, using the <code class="docutils literal notranslate"><span class="pre">spectral_init_cond</span></code> module. The module deals with topography, setting up the shape of the model boundary layer.</p>
+<p>Other <code class="docutils literal notranslate"><span class="pre">topography_option</span></code> options are available, but not widely used by the Isca team:</p>
+<ul class="simple">
+<li><p>No topography - the default.</p></li>
+<li><p>Flat topography - the surface geopotential is 0.</p></li>
+<li><p>Interpolated topography - where it will call the <code class="docutils literal notranslate"><span class="pre">topography</span></code> module below, however this set up is not currently used.</p></li>
+<li><p>Gaussian Topography - Simple Gaussian-shaped mountains are generated from specified parameters.</p></li>
+</ul>
+</section>
+</section>
+<section id="creating-custom-topography">
+<h2>2 - Creating Custom Topography<a class="headerlink" href="#creating-custom-topography" title="Permalink to this headline"></a></h2>
+<p>We provide python code that allows land files to be generated for a range of scenarios. This code is found in <code class="docutils literal notranslate"><span class="pre">src/extra/python/isca/land_generator_fn.py</span></code>. Some tweaking of the code will be needed to suit the users requirements.</p>
+<section id="land-options">
+<h3>Land Options<a class="headerlink" href="#land-options" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>‘square’ (default) Square block of land with boundaries specified by boundaries keyword, a list of 4 floats in the form [S,N,W,E]</p></li>
+<li><p>‘continents_old’ Choose continents from the original continent set-up adapted from the Sauliere 2012 paper (Jan 16), including North and South America, Eurasia, and Africa.</p></li>
+<li><p>‘continents’ Choose continents from a newer continet set-up allowing addition of India, Australia, and South East Asia.</p></li>
+<li><p>If continents keyword is set to ‘all’ (default), then this will include all possibilities for the given set-up. Alternatively, continents can be set to a list of strings allowing any combination of continents. Instructions for this are available in the code.</p></li>
+</ul>
+</section>
+<section id="topography-options">
+<h3>Topography Options:<a class="headerlink" href="#topography-options" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>‘none’ (default) Topography set to zero everywhere</p></li>
+<li><p>‘sauliere2012’ Choose mountains from <a class="reference internal" href="../references.html#sauliere2012" id="id1"><span>[Sauliere2012]</span></a> configuration using mountains keyword. Default is ‘all’, alternatively only ‘rockys’ or ‘tibet’ may be specified</p></li>
+<li><p>‘gaussian’ Use parameters specified in topo_gauss keyword to set up a Gaussian mountain. topo_gauss should be a list in the form: [central_lat, central_lon, radius_degrees, std_dev, height]</p></li>
+</ul>
+</section>
+</section>
+<section id="topography-module-topography-f90">
+<h2>3 - Topography Module (topography.F90)<a class="headerlink" href="#topography-module-topography-f90" title="Permalink to this headline"></a></h2>
+<section id="summary">
+<h3>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">topography</span></code> module contains numerous routines for creating land surface topography fields and land-water masks for specified latitude-longitude grids. It does this by interpolating from a high resolution netCDF file, which is designated in the namelist. The module was originally written to work with the 1/6 degree Navy mean topography and water data sets. However, any netCDF file can be used as an input in the namelist, providing that the file contains grid box boundaries, (which should be named in the namelist) and whether degrees or radians is specified in the namelist.</p>
+<p>As mentioned above, this module is generally not called anymore, in the normal Isca set up, land masks are actually specified through the <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys</span></code> module, and the model topography through the <code class="docutils literal notranslate"><span class="pre">spectral_init_cond</span></code> module. The main use of it is to provide the “subgrid topography” when using the orographic gravity wave drag scheme (<code class="docutils literal notranslate"><span class="pre">mg_drag</span></code>).</p>
+<p>The fields that can be generated with this module are mean and standard deviation of topography within the specified grid boxes; and land-ocean (or water) mask and fractional area. The interpolation conserves the area weighted average of the input data by using the <code class="docutils literal notranslate"><span class="pre">horiz_interp</span></code> module.</p>
+</section>
+<section id="namelist-options">
+<h3>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h3>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">topog_file</span></code> - The topography file that you wish to use.</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">water_file</span></code> - The water data file (not commonly used, not provided in the Isca release)</div>
+</div>
+<p>For a typical Earth set up the namelist would simply be:</p>
+<p><code class="docutils literal notranslate"><span class="pre">'topog_file':</span> <span class="pre">navy_topography.nc</span></code></p>
+<p>This essentially just points the <code class="docutils literal notranslate"><span class="pre">topography</span></code> module to this file when it is asked for by another subroutine, e.g. <code class="docutils literal notranslate"><span class="pre">mg_drag</span></code>.</p>
+</section>
+<section id="diagnostics">
+<h3>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h3>
+<p>There are no diagnostics available directly through this module. The subgrid topography variance can be obtained through damping driver by asking for <code class="docutils literal notranslate"><span class="pre">sgsmtn</span></code> (<code class="docutils literal notranslate"><span class="pre">mg_drag</span></code> must be turned on).</p>
+</section>
+<section id="relevant-subroutines">
+<h3>Relevant subroutines<a class="headerlink" href="#relevant-subroutines" title="Permalink to this headline"></a></h3>
+<p>NOTE: Some subroutines have dimensional variants, e.g. interp_topog has both a 1d and 2d variant.</p>
+<p><strong>Public Subroutines</strong></p>
+<p>These subroutines are used by the topography module to produce the land-masks etc that are being asked for by the user. They are largely self explanatory.</p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">get_topog_mean</span></code> returns the mean height from a region of the topography file so that that value can be used as the value when interpolating onto a smaller grid.</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">get_topog_stdev</span></code> returns the standard deviation from a region of the topography file so that that value can be assoiated with the same region when interpolating onto a smaller grid.</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">get_ocean_frac</span></code> returns the fraction of the land mask that is covered by ocean.</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">get_ocean_mask</span></code> returns an ocean/land mask</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">get_water_frac</span></code> returns the fraction of the land mask that is covered by water.</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">get_water_mask</span></code> returns a water/land mask</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">gaussian_topog_init</span></code> and <code class="docutils literal notranslate"><span class="pre">get_gaussian_topog</span></code> call the gaussian topography module.</div>
+</div>
+<p><strong>Private Subroutines</strong></p>
+<p>There are other subroutines called by the above. These are listed below:
+<code class="docutils literal notranslate"><span class="pre">open_topog_file</span></code>, <code class="docutils literal notranslate"><span class="pre">interp_topog</span></code>, <code class="docutils literal notranslate"><span class="pre">find_indices</span></code>, <code class="docutils literal notranslate"><span class="pre">input_data</span></code>, <code class="docutils literal notranslate"><span class="pre">interp_water</span></code>, <code class="docutils literal notranslate"><span class="pre">determine_ocean_points</span></code>, <code class="docutils literal notranslate"><span class="pre">read_namelist</span></code>.</p>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
+<p>See <a class="reference internal" href="../references.html#sauliere2012" id="id2"><span>[Sauliere2012]</span></a> for the topography option in <code class="docutils literal notranslate"><span class="pre">land_generator_fn.py</span></code>.</p>
+</section>
+<section id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<p>This documentation was written by Ross Castle, peer reviewed by Ruth Geen, and quality controlled by Marianne Pietschnig.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="convection_simple_betts_miller.html" class="btn btn-neutral float-left" title="Convection scheme: Simple Betts-Miller" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="socrates.html" class="btn btn-neutral float-right" title="SOCRATES Radiation Scheme Interface" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, the Isca development team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
