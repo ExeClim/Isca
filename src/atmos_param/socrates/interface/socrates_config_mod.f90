@@ -44,7 +44,7 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   real(r_def), dimension(100) :: scm_ozone = -1 ! input array for single column ozone. max number of levels = 100 
 
   logical :: use_pressure_interp_for_half_levels = .False. !By default (.False.) does linear interpolation in height for half-level temperatures. True does linear interp using pressure. 
-      
+
   ! Incoming radiation options for namelist
   
   integer   :: solday=0  ! if >0, do perpetual run corresponding to day of the year = solday \in [0,days per year]

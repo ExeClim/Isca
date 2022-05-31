@@ -62,6 +62,8 @@ information below.
 Troubleshooting
 ---------------
 
+If you're having compiler issues please speak to your computing officer. We've tried and tested Intel Fortran, GFortran (usually works) and Cray-Fortran. NetCDF compilers can also be an issue too.
+
 Please search through the `Issues page`_ on Github if anybody else has had the same problem you're facing.
 If none do, then please send open a new Issue.
 

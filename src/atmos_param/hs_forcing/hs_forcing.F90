@@ -989,7 +989,7 @@ real, intent(in),  dimension(:,:,:), optional :: mask
                 teq(:,:,k) = max(teq(:,:,k), tstr(:,:))
 		elseif (stratosphere_t_option == 'extend_tp') then
 			do i=1,size(t,1)
-			do j=1,size(t,1)
+			do j=1,size(t,2)
                 if (zfull(i,j,k)/1000 >= h_trop(i,j)) then
                     teq(i,j,k) = t_trop(i,j)
                 endif
