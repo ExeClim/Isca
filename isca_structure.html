@@ -15,6 +15,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -111,10 +112,10 @@
 }
 </style>
 <section id="isca-s-code-structure">
-<h1>Isca’s Code Structure<a class="headerlink" href="#isca-s-code-structure" title="Permalink to this headline"></a></h1>
+<h1>Isca’s Code Structure<a class="headerlink" href="#isca-s-code-structure" title="Permalink to this heading"></a></h1>
 <p>This page briefly shows the general order in which Isca’s modules are called when running the code. It would be too complicated to show every single Fortran file, and the exact formulation would be different depending on the model configuration. As Isca is structured a little differently to other spectral climate models, we show a more general description of a spectral model at the end of this page.</p>
 <section id="isca-structure">
-<h2>Isca Structure<a class="headerlink" href="#isca-structure" title="Permalink to this headline"></a></h2>
+<h2>Isca Structure<a class="headerlink" href="#isca-structure" title="Permalink to this heading"></a></h2>
 <p>For ease and accessibility, Isca is controlled using a python interface which sets up the experiment runs, e.g. <code class="docutils literal notranslate"><span class="pre">frierson_test_case.py</span></code>. This then calls the atmosphere model (<code class="docutils literal notranslate"><span class="pre">atmos_model.F90</span></code>) which essentially just controls the model run, calling the atmosphere module (<code class="docutils literal notranslate"><span class="pre">atmosphere.F90</span></code>) every timestep. This module in turn calls the physical parameterisations from the physics driver (usually <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys.F90</span></code>), the spectral dynamical core (<code class="docutils literal notranslate"><span class="pre">spectral_dynamics.F90</span></code>) and the vertical coordinate driver (<code class="docutils literal notranslate"><span class="pre">press_and_geopot.F90</span></code>). Most of the lower layer code, which is where the Isca’s many different options are located, is called from the physics driver. This includes radiation schemes, convection schemes, damping and diffusion.</p>
 <p>Note: If using grey radiation, the surface flux is calculated after the up sweep in the grey radiation code, but before the down sweep. In addition for any configuration, the mixed layer ocean code is called after the down sweep in the vertical diffusion code, but before the up sweep.</p>
 <figure class="align-default" id="id1">
@@ -125,7 +126,7 @@
 </figure>
 </section>
 <section id="comparison-to-a-general-spectral-model">
-<h2>Comparison To A General Spectral Model<a class="headerlink" href="#comparison-to-a-general-spectral-model" title="Permalink to this headline"></a></h2>
+<h2>Comparison To A General Spectral Model<a class="headerlink" href="#comparison-to-a-general-spectral-model" title="Permalink to this heading"></a></h2>
 <p>Our comparison here is based on the 2006 release of the GDFL CM2 spectral model. Because these models have an atmosphere ocean coupler, the model runs in a different, and slightly more complicated way. Note the multiple loops that the code must run through to do an up and down sweep. In Isca, because the mixed layer ocean is defined on that atmosphere grid, we can avoid these steps, meaning the model is easier to understand and use.</p>
 <figure class="align-default" id="id2">
 <a class="reference internal image-reference" href="_images/other_model_structure_diagram.png"><img alt="_images/other_model_structure_diagram.png" src="_images/other_model_structure_diagram.png" style="width: 563.2px; height: 394.6px;" /></a>
@@ -135,7 +136,7 @@
 </figure>
 </section>
 <section id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this heading"></a></h2>
 <p>This documentation was written by Ross Castle and reviewed by Penelope Maher and Stephen Thomson.</p>
 </section>
 </section>

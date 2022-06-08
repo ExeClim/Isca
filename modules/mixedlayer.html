@@ -15,6 +15,7 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -149,13 +150,13 @@
 }
 </style>
 <section id="mixed-layer-module">
-<h1>Mixed layer module<a class="headerlink" href="#mixed-layer-module" title="Permalink to this headline"></a></h1>
+<h1>Mixed layer module<a class="headerlink" href="#mixed-layer-module" title="Permalink to this heading"></a></h1>
 <section id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this heading"></a></h2>
 <p>This module updates the sea surface temperature (SST) noted as <span class="math notranslate nohighlight">\(T_s\)</span> below.</p>
 </section>
 <section id="sst-boundary-condition-options">
-<h2>SST boundary condition options<a class="headerlink" href="#sst-boundary-condition-options" title="Permalink to this headline"></a></h2>
+<h2>SST boundary condition options<a class="headerlink" href="#sst-boundary-condition-options" title="Permalink to this heading"></a></h2>
 <dl class="simple">
 <dt>The SST options are:</dt><dd><ul class="simple">
 <li><p>prescribe SST from an input file (<code class="docutils literal notranslate"><span class="pre">do_sc_sst</span></code> namelist option).</p></li>
@@ -167,20 +168,20 @@
 <p>Note that only the final case will generate a closed surface energy budget. Each of these options are discussed below, followed by an outline of the implicit time-stepping process used when SST is not prescribed.</p>
 </section>
 <section id="input-sst-file">
-<h2>Input SST file<a class="headerlink" href="#input-sst-file" title="Permalink to this headline"></a></h2>
+<h2>Input SST file<a class="headerlink" href="#input-sst-file" title="Permalink to this heading"></a></h2>
 <p>Set <code class="docutils literal notranslate"><span class="pre">do_sc_sst</span></code> to True if you want to specify the SST field. The SST field will be read in from a NetCDF file with a file name specified by the <code class="docutils literal notranslate"><span class="pre">sst_file</span></code> variable.
 Using an input SST field is useful, for example,  when you want to add a temperature anomaly. The file is read in during the initialisation (i.e. within the call to <code class="docutils literal notranslate"><span class="pre">mixed_layer_init</span></code> from within <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys</span></code>).
 The input file can be time independent (i.e. no diurnal or seasonal cycle or any changes in the SST from one time step to another) or vary with time. More information can be found in the Diagnostics section below.</p>
 </section>
 <section id="ape-aquaplanet-analytic-sst">
-<h2>APE aquaplanet (analytic SST)<a class="headerlink" href="#ape-aquaplanet-analytic-sst" title="Permalink to this headline"></a></h2>
+<h2>APE aquaplanet (analytic SST)<a class="headerlink" href="#ape-aquaplanet-analytic-sst" title="Permalink to this heading"></a></h2>
 <p>The prescribed SST for the APE aquaplanet protocol is given by:</p>
 <div class="math notranslate nohighlight">
 \[T_s = 27 \left( 1 - \sin^2\left( \frac{3}{2} \lambda \right) \right),\]</div>
 <p>between 60N-60S, equation 1 of Neele and Hoskins 2004 <a class="reference internal" href="../references.html#nealehoskins2004" id="id1"><span>[NealeHoskins2004]</span></a>, and 0 deg C poleward of 60N/S.</p>
 </section>
 <section id="slab-ocean">
-<h2>Slab ocean<a class="headerlink" href="#slab-ocean" title="Permalink to this headline"></a></h2>
+<h2>Slab ocean<a class="headerlink" href="#slab-ocean" title="Permalink to this heading"></a></h2>
 <p>To allow the SST to evolve based on the surface fluxes, the atmosphere can be coupled to a slab ocean, whose depth is specified by the namelist parameter <code class="docutils literal notranslate"><span class="pre">depth</span></code>. This also allows a closed surface energy budget, useful for e.g. simulations with increased greenhouse gases.</p>
 <p>In this case, during the initialisation, if there is no restart file to open, the surface temperature is set to the prescribed initial distribution (<code class="docutils literal notranslate"><span class="pre">prescribe_initial_dist</span> <span class="pre">=</span> <span class="pre">True</span></code>):</p>
 <div class="math notranslate nohighlight">
@@ -188,7 +189,7 @@ The input file can be time independent (i.e. no diurnal or seasonal cycle or any
 <p>where the default values we use in the trip test for the Frierson test case (<code class="docutils literal notranslate"><span class="pre">exp/test_cases/frierson/frierson_test_case.py</span></code>) are: <span class="math notranslate nohighlight">\(T_{surf} = 285 K\)</span> and <span class="math notranslate nohighlight">\(dT = 40 K\)</span>.</p>
 <p>This form of <span class="math notranslate nohighlight">\(T_{surf}\)</span> is similar to a 2nd legendre polynomial, it is a parabola that maximises at the equator.</p>
 <section id="implicit-timestepping-procedure">
-<h3>Implicit timestepping procedure<a class="headerlink" href="#implicit-timestepping-procedure" title="Permalink to this headline"></a></h3>
+<h3>Implicit timestepping procedure<a class="headerlink" href="#implicit-timestepping-procedure" title="Permalink to this heading"></a></h3>
 <p>The mixed layer module calculates the evolution of surface temperature using an implicit timestep.
 Whereas an explicit method uses the current state of the system to calculate the state of the system
 at the next timestep, an implicit method uses the inferred state of the system at the next timestep.</p>
@@ -211,7 +212,7 @@ into the surface caused by the change in surface temperature (<code class="docut
 </div>
 </section>
 <section id="optional-q-flux">
-<h3>Optional Q-flux<a class="headerlink" href="#optional-q-flux" title="Permalink to this headline"></a></h3>
+<h3>Optional Q-flux<a class="headerlink" href="#optional-q-flux" title="Permalink to this heading"></a></h3>
 <p>The slab ocean model only communicates between grid-boxes in the vertical (i.e. air-sea exchange) but does not represent any horizontal transport (i.e. no north-south or east-west communications between grid cells).
 An idealised horizontal transport can be included using an ocean heat flux (Q-flux). Atmospheric heat transport is more realistic with an ocean heat transport.</p>
 <p>Isca is able to calculate an analytic Q-flux, appropriate to an aquaplanet, following Merlis et al 2013 [MerlisEtAl2013] if <code class="docutils literal notranslate"><span class="pre">do_qflux</span></code> is True. Additionally, an analytic warmpool can be added  by setting <code class="docutils literal notranslate"><span class="pre">do_warmpool</span></code>.  The warmpool structure is set in <code class="docutils literal notranslate"><span class="pre">Isca/src/atmos_param/qflux/qflux.f90</span></code>. Alternatively an arbitrary Q-flux may be read from a file if <code class="docutils literal notranslate"><span class="pre">load_qflux</span></code> is True.</p>
@@ -226,7 +227,7 @@ An idealised horizontal transport can be included using an ocean heat flux (Q-fl
 </section>
 </section>
 <section id="namelist-options">
-<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h2>
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this heading"></a></h2>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 22%" />
@@ -251,7 +252,7 @@ An idealised horizontal transport can be included using an ocean heat flux (Q-fl
 </tbody>
 </table>
 <section id="q-flux-options">
-<h3>Q-flux options<a class="headerlink" href="#q-flux-options" title="Permalink to this headline"></a></h3>
+<h3>Q-flux options<a class="headerlink" href="#q-flux-options" title="Permalink to this heading"></a></h3>
 <p>If <code class="docutils literal notranslate"><span class="pre">do_qflux</span></code> is True, use <code class="docutils literal notranslate"><span class="pre">qflux_amp</span></code> and <code class="docutils literal notranslate"><span class="pre">qflux_width</span></code> to calculate a time-independent surface Q-flux.</p>
 <table class="docutils align-default">
 <colgroup>
@@ -314,7 +315,7 @@ An idealised horizontal transport can be included using an ocean heat flux (Q-fl
 </table>
 </section>
 <section id="initialize-surface-temperature">
-<h3>Initialize surface temperature<a class="headerlink" href="#initialize-surface-temperature" title="Permalink to this headline"></a></h3>
+<h3>Initialize surface temperature<a class="headerlink" href="#initialize-surface-temperature" title="Permalink to this heading"></a></h3>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 25%" />
@@ -372,7 +373,7 @@ An idealised horizontal transport can be included using an ocean heat flux (Q-fl
 </table>
 </section>
 <section id="surface-albedo-options">
-<h3>Surface albedo options<a class="headerlink" href="#surface-albedo-options" title="Permalink to this headline"></a></h3>
+<h3>Surface albedo options<a class="headerlink" href="#surface-albedo-options" title="Permalink to this heading"></a></h3>
 <dl>
 <dt>There are 5 options for setting the surface albedo, determined by the value of <code class="docutils literal notranslate"><span class="pre">albedo_choice</span></code>.</dt><dd><ul>
 <li><p>1: Surface albedo is a constant (<code class="docutils literal notranslate"><span class="pre">albedo_value</span></code>).</p></li>
@@ -432,7 +433,7 @@ An idealised horizontal transport can be included using an ocean heat flux (Q-fl
 </table>
 </section>
 <section id="land-options">
-<h3>Land options<a class="headerlink" href="#land-options" title="Permalink to this headline"></a></h3>
+<h3>Land options<a class="headerlink" href="#land-options" title="Permalink to this heading"></a></h3>
 <dl class="simple">
 <dt>There are 4 options for setting up the land, determined by the value of <code class="docutils literal notranslate"><span class="pre">land_option</span></code>.</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">none</span></code>: No land.</p></li>
@@ -491,7 +492,7 @@ An idealised horizontal transport can be included using an ocean heat flux (Q-fl
 </table>
 </section>
 <section id="ice-options">
-<h3>Ice options<a class="headerlink" href="#ice-options" title="Permalink to this headline"></a></h3>
+<h3>Ice options<a class="headerlink" href="#ice-options" title="Permalink to this heading"></a></h3>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 19%" />
@@ -530,7 +531,7 @@ An idealised horizontal transport can be included using an ocean heat flux (Q-fl
 </section>
 </section>
 <section id="diagnostics">
-<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h2>
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this heading"></a></h2>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 25%" />
@@ -580,7 +581,7 @@ An idealised horizontal transport can be included using an ocean heat flux (Q-fl
 </table>
 </section>
 <section id="relevant-modules-and-subroutines">
-<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline"></a></h2>
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this heading"></a></h2>
 <p>The mixed layer code is located in: <code class="docutils literal notranslate"><span class="pre">src/atmos_spectral/driver/solo/mixed_layer.F90</span></code>. The name of this file reflects the fact that the code determines the properties of the single layer (either a slab ocean model
 or prescribed SST) below the air-sea interface.</p>
 <p>The mixed layer ocean is initialised and called by:  <code class="docutils literal notranslate"><span class="pre">src/atmos_spectral/driver/solo/idealized_moist_phys.F90</span></code>.</p>
@@ -593,14 +594,14 @@ or prescribed SST) below the air-sea interface.</p>
 </dl>
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
+<h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
 <p><a class="reference internal" href="../references.html#vallis2017" id="id4"><span>[Vallis2017]</span></a>
 <a class="reference internal" href="../references.html#nealehoskins2004" id="id5"><span>[NealeHoskins2004]</span></a>
 <a class="reference internal" href="../references.html#merlisetal2013" id="id6"><span>[MerlisEtAl2013]</span></a>
 <a class="reference internal" href="../references.html#russeletal1985" id="id7"><span>[RusselEtAl1985]</span></a></p>
 </section>
 <section id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this heading"></a></h2>
 <p>This documentation was written by Matthew Henry and Penelope Maher, peer reviewed by Stephen Thomson, and quality controlled by Ruth Geen.</p>
 </section>
 </section>

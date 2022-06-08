@@ -15,6 +15,7 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -134,14 +135,14 @@
 }
 </style>
 <section id="large-scale-condensation-and-precipitation">
-<h1>Large Scale Condensation and Precipitation<a class="headerlink" href="#large-scale-condensation-and-precipitation" title="Permalink to this headline"></a></h1>
+<h1>Large Scale Condensation and Precipitation<a class="headerlink" href="#large-scale-condensation-and-precipitation" title="Permalink to this heading"></a></h1>
 <section id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this heading"></a></h2>
 <p>The module computes the large scale temperature and specific humidity adjustments needed in model layers where the relative humidity exceeds a threshold relative humidity, and returns the mass of rain and snow (or other frozen precipitation) that reaches the ground. The module also outputs the temperature tendency and the specific humidity tendency. Features include the option for the re-evaporation of falling precipitation and energetically consistent adjustment with precipitation type.</p>
 <p>See <a class="reference internal" href="../references.html#frierson2006a" id="id1"><span>[Frierson2006a]</span></a> (Section 2e) for a detailed description <a class="reference external" href="https://doi.org/10.1175/JAS3753.1">here</a>.</p>
 </section>
 <section id="namelist-options">
-<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h2>
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this heading"></a></h2>
 <p>There are three namelist variables.</p>
 <dl class="field-list simple">
 <dt class="field-odd">hc</dt>
@@ -156,7 +157,7 @@
 </dl>
 </section>
 <section id="diagnostics">
-<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h2>
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this heading"></a></h2>
 <p>The diagnostics are not sent out within the call to convection but are sent out from <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys.F90</span></code> with the module name <code class="docutils literal notranslate"><span class="pre">atmosphere</span></code>. The diagnostics relevant to the lscale_cond module are set out below:</p>
 <table class="docutils align-default">
 <colgroup>
@@ -192,15 +193,15 @@ parameterised condensation/convection</p></td>
 </table>
 </section>
 <section id="relevant-modules-and-subroutines">
-<h2>Relevant Modules and Subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline"></a></h2>
+<h2>Relevant Modules and Subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this heading"></a></h2>
 <p>Relevant modules are: sat_vapor_pres_mod, utilities_mod, constants_mod.</p>
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
+<h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
 <p>The reference list within this docs page are: <a class="reference internal" href="../references.html#frierson2006a" id="id2"><span>[Frierson2006a]</span></a></p>
 </section>
 <section id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this heading"></a></h2>
 <p>This documentation was written by Ross Castle and reviewed by Ruth Geen</p>
 </section>
 </section>

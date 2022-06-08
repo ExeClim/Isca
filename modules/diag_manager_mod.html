@@ -15,6 +15,7 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -137,13 +138,13 @@
 }
 </style>
 <section id="diagnostics-manager-module-saving-model-output">
-<h1>Diagnostics Manager Module &amp; Saving model output<a class="headerlink" href="#diagnostics-manager-module-saving-model-output" title="Permalink to this headline"></a></h1>
+<h1>Diagnostics Manager Module &amp; Saving model output<a class="headerlink" href="#diagnostics-manager-module-saving-model-output" title="Permalink to this heading"></a></h1>
 <section id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this heading"></a></h2>
 <p>This module handles the writing of diagnostic output to netCDF files. The user can specify which fields should be output and at which temporal resolution (e.g. monthly means, daily means … ). The source code is located at <code class="docutils literal notranslate"><span class="pre">src/shared/diag_manager/diag_manager.F90</span></code>.</p>
 </section>
 <section id="namelist-options">
-<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h2>
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this heading"></a></h2>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 24%" />
@@ -218,10 +219,10 @@ given range</p></td>
 </table>
 </section>
 <section id="diagnostics">
-<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h2>
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this heading"></a></h2>
 <p>This part of the code does not have its own diagnostics, but rather handles the saving of all variables. See also <code class="docutils literal notranslate"><span class="pre">/src/extra/python/isca/diagtable.py</span></code></p>
 <section id="output-files">
-<h3>Output files<a class="headerlink" href="#output-files" title="Permalink to this headline"></a></h3>
+<h3>Output files<a class="headerlink" href="#output-files" title="Permalink to this heading"></a></h3>
 <p>In order to save output in Isca, an output file is created first in your experiment runscript (see examples in <code class="docutils literal notranslate"><span class="pre">/exp/test_cases/</span></code>). Commonly used output timesteps include monthly, daily or x-hourly.</p>
 <p><code class="docutils literal notranslate"><span class="pre">diag.add_file('atmos_monthly',</span> <span class="pre">30,</span> <span class="pre">'days',</span> <span class="pre">time_units='days')</span></code>
 <code class="docutils literal notranslate"><span class="pre">diag.add_file('atmos_daily',</span> <span class="pre">1,</span> <span class="pre">'days',</span> <span class="pre">time_units='days')</span></code>
@@ -237,7 +238,7 @@ given range</p></td>
 <p>For example, set <code class="docutils literal notranslate"><span class="pre">'days':</span> <span class="pre">15</span></code> and <code class="docutils literal notranslate"><span class="pre">'calendar':</span> <span class="pre">'fifteen_day'</span></code>.</p>
 </section>
 <section id="output-fields">
-<h3>Output fields<a class="headerlink" href="#output-fields" title="Permalink to this headline"></a></h3>
+<h3>Output fields<a class="headerlink" href="#output-fields" title="Permalink to this heading"></a></h3>
 <p>An output field is created via <code class="docutils literal notranslate"><span class="pre">diag.add_field(module,</span> <span class="pre">name,</span> <span class="pre">time_avg,</span> <span class="pre">files)</span></code> in the experiment runscript.
 The default for <code class="docutils literal notranslate"><span class="pre">time_avg</span></code> = False, the default for <code class="docutils literal notranslate"><span class="pre">files</span></code> = None.
 <code class="docutils literal notranslate"><span class="pre">time_avg</span></code> is usually set to True for most variables when an output field is defined.</p>
@@ -388,7 +389,7 @@ and snow</p></td>
 </section>
 </section>
 <section id="relevant-modules-and-subroutines">
-<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline"></a></h2>
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this heading"></a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">diag_manager_mod</span></code> uses several modules and subroutines, including</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">diag_axis</span></code></p></li>
@@ -400,7 +401,7 @@ and snow</p></td>
 </ul>
 </section>
 <section id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this heading"></a></h2>
 <p>This documentation was written by Marianne Pietschnig, peer reviewed by Stephen Thomson and quality controlled by Ross Castle.</p>
 </section>
 </section>

@@ -15,6 +15,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -105,11 +106,11 @@
 }
 </style>
 <section id="overview">
-<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline"></a></h1>
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h1>
 <p>Welcome to Isca!
 On this page and those following you will find the documentation to help you understand and run Isca. You can find a briefer and more general overview <a class="reference external" href="https://execlim.github.io/IscaWebsite/">here</a> and the code itself is on <a class="reference external" href="https://github.com/ExeClim/Isca">github</a>.</p>
 <section id="about-isca">
-<h2>About Isca<a class="headerlink" href="#about-isca" title="Permalink to this headline"></a></h2>
+<h2>About Isca<a class="headerlink" href="#about-isca" title="Permalink to this heading"></a></h2>
 <p>Isca is a framework for the construction of models of the global circulation of the atmosphere of Earth and other planets at varying levels of realism and complexity.  The framework uses the dynamical core and the software infrastructure (FMS, for Flexible Modeling System) from the Geophysical Fluid Dynamics Laboratory in Princeton, USA, and some of the physical parameterizations are also taken from there.  Isca itself is not a single model, nor is it intended to provide a fully ‘comprehensive’ model capable of weather forecasts or climate projections for policy use. Rather, our intent is to take the idea of a model hierarchy seriously and thereby enable the user to make appropriate models for the problem at hand, or to make a connected and traceable sequence of models with feedbacks and processes included or denied as appropriate, ranging from the very simple to the near comprehensive.</p>
 <figure class="align-default" id="id3">
 <a class="reference internal image-reference" href="_images/index_fig_marspv.gif"><img alt="_images/index_fig_marspv.gif" src="_images/index_fig_marspv.gif" style="width: 248.0px; height: 261.2px;" /></a>
@@ -121,10 +122,10 @@ On this page and those following you will find the documentation to help you und
 <p>The various options for Isca are described in detail in the links in the left column (where appropriate references are also given), and here we just give an overview of what is available. Please note that, since Isca is constantly being developed and improved, not all of the options are as yet fully documented.  We hope that you, the user, may also wish to contribute to Isca’s development and documentation.</p>
 </section>
 <section id="options-and-configurability">
-<h2>Options and configurability<a class="headerlink" href="#options-and-configurability" title="Permalink to this headline"></a></h2>
+<h2>Options and configurability<a class="headerlink" href="#options-and-configurability" title="Permalink to this heading"></a></h2>
 <p>The main code is written in Fortran 90 to which we provide a Python front end. The front end enables many model configurations, parameter changes and output options to be set without going into the code itself, but if you wish to make more substantial changes then editing the Fortran may be necessary.</p>
 <section id="dynamical-cores-and-variants">
-<h3>Dynamical cores and variants:<a class="headerlink" href="#dynamical-cores-and-variants" title="Permalink to this headline"></a></h3>
+<h3>Dynamical cores and variants:<a class="headerlink" href="#dynamical-cores-and-variants" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>Primitive equation, spectral model on the sphere. This may also be configured as a zonally-symmetric model</p></li>
 <li><p>Shallow water model on the sphere</p></li>
@@ -133,7 +134,7 @@ On this page and those following you will find the documentation to help you und
 </ul>
 </section>
 <section id="radiative-forcing">
-<h3>Radiative forcing<a class="headerlink" href="#radiative-forcing" title="Permalink to this headline"></a></h3>
+<h3>Radiative forcing<a class="headerlink" href="#radiative-forcing" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>Thermal relaxation: Held-Suarez, variations for terrestrial exoplanets, and a ‘top–down’ scheme that provides a self-consistent determination of the tropopause</p></li>
 <li><p>Grey radiation, with or without water vapour feedback</p></li>
@@ -142,7 +143,7 @@ On this page and those following you will find the documentation to help you und
 </ul>
 </section>
 <section id="convection-and-boundary-layer-schemes">
-<h3>Convection and boundary-layer schemes<a class="headerlink" href="#convection-and-boundary-layer-schemes" title="Permalink to this headline"></a></h3>
+<h3>Convection and boundary-layer schemes<a class="headerlink" href="#convection-and-boundary-layer-schemes" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>A very flexible moist and dry convective adjustment scheme, suitable for both Earth and other planetary atmospheres</p></li>
 <li><p>The Betts-Miller scheme (a well-known and much used convective relaxation scheme)</p></li>
@@ -151,13 +152,13 @@ On this page and those following you will find the documentation to help you und
 </ul>
 </section>
 <section id="clouds">
-<h3>Clouds<a class="headerlink" href="#clouds" title="Permalink to this headline"></a></h3>
+<h3>Clouds<a class="headerlink" href="#clouds" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>A simple cloud scheme based on relative humidity and inversion strength.</p></li>
 </ul>
 </section>
 <section id="surface-properties">
-<h3>Surface properties<a class="headerlink" href="#surface-properties" title="Permalink to this headline"></a></h3>
+<h3>Surface properties<a class="headerlink" href="#surface-properties" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>Specified sea-surface temperatures</p></li>
 <li><p>A slab ocean with a prognostic SST</p></li>
@@ -169,7 +170,7 @@ On this page and those following you will find the documentation to help you und
 </ul>
 </section>
 <section id="test-cases">
-<h3>Test cases<a class="headerlink" href="#test-cases" title="Permalink to this headline"></a></h3>
+<h3>Test cases<a class="headerlink" href="#test-cases" title="Permalink to this heading"></a></h3>
 <p>Various out of the box test cases are available that should run with no additional configuration. These include:</p>
 <ul class="simple">
 <li><p>The Held-Suarez test case</p></li>
@@ -181,7 +182,7 @@ On this page and those following you will find the documentation to help you und
 </ul>
 </section>
 <section id="planets">
-<h3>Planets<a class="headerlink" href="#planets" title="Permalink to this headline"></a></h3>
+<h3>Planets<a class="headerlink" href="#planets" title="Permalink to this heading"></a></h3>
 <p>Earth is, naturally, the planet to which Isca has most often been applied. However, models of varying degrees of sophistication of Mars, Jupiter, Titan, TRAPPIST-1e, and a generic tidally-locked exoplanet have or are being constructed.</p>
 <figure class="align-default" id="id4">
 <a class="reference internal image-reference" href="_images/index_fig_trappist.png"><img alt="_images/index_fig_trappist.png" src="_images/index_fig_trappist.png" style="width: 492.59999999999997px; height: 174.6px;" /></a>
@@ -191,7 +192,7 @@ On this page and those following you will find the documentation to help you und
 </figure>
 </section>
 <section id="the-future">
-<h3>The Future<a class="headerlink" href="#the-future" title="Permalink to this headline"></a></h3>
+<h3>The Future<a class="headerlink" href="#the-future" title="Permalink to this heading"></a></h3>
 <p>Isca, and this documentation, is constantly under development. A simple cloud scheme has recently been incorporated into Isca, and models of other planetary bodies are continually being developed. The next major model addition will be a fully interactive ocean as an integrated component of Isca and therefore configurable with the Python interface and flexible in its nature and use.  We invite contributions from users to add to its capabilities and improve its documentation.</p>
 <figure class="align-default" id="id5">
 <a class="reference internal image-reference" href="_images/index_fig_qbo.png"><img alt="_images/index_fig_qbo.png" src="_images/index_fig_qbo.png" style="width: 256.0px; height: 192.0px;" /></a>
@@ -202,7 +203,7 @@ On this page and those following you will find the documentation to help you und
 </section>
 </section>
 <section id="how-to-cite-isca">
-<h2>How to cite Isca<a class="headerlink" href="#how-to-cite-isca" title="Permalink to this headline"></a></h2>
+<h2>How to cite Isca<a class="headerlink" href="#how-to-cite-isca" title="Permalink to this heading"></a></h2>
 <div class="line-block">
 <div class="line">The primary reference for Isca, and the one that should be cited if you use it, is:</div>
 <div class="line">Vallis, G.K., Colyer, G., Geen, R., Gerber, E., Jucker, M., Maher, P., Paterson, A., Pietschnig, M., Penn, J. and Thomson, S.I., 2018. Isca, v1. 0: A framework for the global modelling of the atmospheres of Earth and other planets at varying levels of complexity.  <em>Geosci. Model Dev.</em>, 11, 843–859.</div>
@@ -233,7 +234,7 @@ On this page and those following you will find the documentation to help you und
 </section>
 </section>
 <section id="contents">
-<h1>Contents<a class="headerlink" href="#contents" title="Permalink to this headline"></a></h1>
+<h1>Contents<a class="headerlink" href="#contents" title="Permalink to this heading"></a></h1>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
@@ -252,18 +253,18 @@ On this page and those following you will find the documentation to help you und
 </div>
 </section>
 <section id="see-also">
-<h1>See also<a class="headerlink" href="#see-also" title="Permalink to this headline"></a></h1>
+<h1>See also<a class="headerlink" href="#see-also" title="Permalink to this heading"></a></h1>
 <ul class="simple">
 <li><p>Isca <a class="reference external" href="https://execlim.github.io/IscaWebsite">home page</a></p></li>
 <li><p>Isca v1.0 model description: <a class="reference internal" href="references.html#vallisetal2018" id="id2"><span>[VallisEtAl2018]</span></a></p></li>
 </ul>
 </section>
 <section id="license">
-<h1>License<a class="headerlink" href="#license" title="Permalink to this headline"></a></h1>
+<h1>License<a class="headerlink" href="#license" title="Permalink to this heading"></a></h1>
 <p>Isca is released under the terms of the <a class="reference external" href="https://github.com/ExeClim/Isca/blob/master/LICENSE">GPL-3.0 license</a>.</p>
 </section>
 <section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline"></a></h1>
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading"></a></h1>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>

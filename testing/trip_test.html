@@ -15,6 +15,7 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../_static/js/theme.js"></script>
@@ -119,15 +120,15 @@
 }
 </style>
 <section id="trip-tests">
-<h1>Trip Tests<a class="headerlink" href="#trip-tests" title="Permalink to this headline"></a></h1>
+<h1>Trip Tests<a class="headerlink" href="#trip-tests" title="Permalink to this heading"></a></h1>
 <section id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this heading"></a></h2>
 <p>The primary purpose of the trip tests is to identify if proposed changes to the Isca master result in it giving different results for a range of test cases.</p>
 <p>The trip test program takes two commit IDs as input, and compares the results of Isca’s test cases using the two versions of Isca that are defined by the commit IDs. A comparison is then made between the output from each of the test cases. The output of the program shows which test cases produced bit-wise identical results and which did not.</p>
 <p><strong>Please note</strong> that this guide assumes some knowledge of the <cite>git</cite> version control system. If you get stuck on this, there are lots of free guides online to using <cite>git</cite>, e.g. <a class="reference external" href="https://guides.github.com/introduction/git-handbook/">GitHub’s Git Handbook</a>.</p>
 </section>
 <section id="why-do-we-ask-you-to-run-the-trip-tests">
-<h2>Why do we ask you to run the trip tests?<a class="headerlink" href="#why-do-we-ask-you-to-run-the-trip-tests" title="Permalink to this headline"></a></h2>
+<h2>Why do we ask you to run the trip tests?<a class="headerlink" href="#why-do-we-ask-you-to-run-the-trip-tests" title="Permalink to this heading"></a></h2>
 <p>We are very keen for people to contribute their modifications and enhancements back into Isca’s master - for instructions on how to contribute, see the <a class="reference internal" href="../contributing.html"><span class="doc">Contributor’s Guide</span></a> . As part of this process, before we accept your modifications, we require you to run the trip tests. By running these tests, we can check whether your modifications changes the results of any of the test cases.</p>
 <p>We want to check this for three principal reasons:</p>
 <blockquote>
@@ -139,7 +140,7 @@
 </div></blockquote>
 </section>
 <section id="how-do-i-run-the-trip-tests">
-<h2>How do I run the trip tests?<a class="headerlink" href="#how-do-i-run-the-trip-tests" title="Permalink to this headline"></a></h2>
+<h2>How do I run the trip tests?<a class="headerlink" href="#how-do-i-run-the-trip-tests" title="Permalink to this heading"></a></h2>
 <p>The first thing to do before you run the trip tests is to decide on which two commit IDs you would like to compare, and then obtain their commit IDs. When you submit a pull request, we ask you to use the current HEAD commit of Isca’s master branch as one of the commits, and the HEAD of your pull-requested branch as the other. If you are using the trip tests as a testing tool, then you can choose any two commits you like.</p>
 <p>To run the trip tests, navigate to <code class="docutils literal notranslate"><span class="pre">${GFDL_BASE}/exp/test_cases/trip_test/</span></code>. From this directory the trip tests are run using the command-line interface. The simplest example call is</p>
 <div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">trip_test_command_line</span> <span class="mi">155661</span><span class="n">f</span> <span class="n">ec29bf3</span>
@@ -168,7 +169,7 @@
 <p><strong>Please note that by default the trip tests will try to connect to the ExeClim/Isca repository using SSH</strong>. If you use HTTPs please use the option <code class="docutils literal notranslate"><span class="pre">-r</span> <span class="pre">https://github.com/ExeClim/Isca.git</span></code>.</p>
 </section>
 <section id="how-do-i-meet-the-trip-test-requirements-for-a-pull-request">
-<h2>How do I meet the trip test requirements for a pull request?<a class="headerlink" href="#how-do-i-meet-the-trip-test-requirements-for-a-pull-request" title="Permalink to this headline"></a></h2>
+<h2>How do I meet the trip test requirements for a pull request?<a class="headerlink" href="#how-do-i-meet-the-trip-test-requirements-for-a-pull-request" title="Permalink to this heading"></a></h2>
 <ol class="arabic simple">
 <li><p>Identify the commit ID of the HEAD of Isca’s master branch, and the HEAD of your pull-requested branch.</p></li>
 <li><p>Run the trip test for all of the test cases (default) using these two commit IDs.</p></li>
@@ -179,7 +180,7 @@
 <p><strong>Please note</strong> that you are required to run the trip tests when submitting a pull request that changes Isca’s model code. Updates to the python front-end will be excluded from this requirement.</p>
 </section>
 <section id="example-output">
-<h2>Example output<a class="headerlink" href="#example-output" title="Permalink to this headline"></a></h2>
+<h2>Example output<a class="headerlink" href="#example-output" title="Permalink to this heading"></a></h2>
 <p>Running the command</p>
 <div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">trip_test_command_line</span> <span class="mi">155661</span><span class="n">f</span> <span class="n">ec29bf3</span>
 </pre></div>
@@ -203,7 +204,7 @@
 <p>The bucket test is the only one that fails in this instance. This is because the bucket model formulation was changed between these two commits, and so it is expected that the results with the two commits will differ. However, we note that the other tests have their results unchanged, meaning this is a safe modification to the code, and the pull request is likely to be approved. Any unexpected failures should be investigated before submitting a pull-request.</p>
 </section>
 <section id="faqs">
-<span id="id1"></span><h2>FAQs<a class="headerlink" href="#faqs" title="Permalink to this headline"></a></h2>
+<span id="id1"></span><h2>FAQs<a class="headerlink" href="#faqs" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p><strong>What happens if the trip tests fail for my modifications?</strong> If some of the trip tests fail, please investigate why you think this might be. If the tests fail on an isolated test case that you haven’t used before, please post the results in your pull request and we can discuss what is best to do. We will accept some pull requests that fail the trip tests, but we will need to understand why first.</p></li>
 <li><p><strong>When I submit a pull request, which two commit IDs should I use?</strong> Please use the commit ID of the current HEAD of Isca’s master branch as one, and the HEAD of your pull-requested branch as the other. <em>Please note that in order for this to work, you will have to use the</em> <cite>-r</cite> <em>option to select your own fork, as described above.</em></p></li>
@@ -219,7 +220,7 @@
 </ul>
 </section>
 <section id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this heading"></a></h2>
 <p>This documentation was written by Stephen Thomson, peer reviewed by Penelope Maher, and quality controlled by Ross Castle.</p>
 </section>
 </section>

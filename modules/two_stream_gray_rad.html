@@ -15,6 +15,7 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -138,10 +139,10 @@
 }
 </style>
 <section id="radiative-transfer-simple-gray-and-multi-band-radiation-schemes">
-<h1>Radiative transfer: Simple gray and multi-band radiation schemes.<a class="headerlink" href="#radiative-transfer-simple-gray-and-multi-band-radiation-schemes" title="Permalink to this headline"></a></h1>
+<h1>Radiative transfer: Simple gray and multi-band radiation schemes.<a class="headerlink" href="#radiative-transfer-simple-gray-and-multi-band-radiation-schemes" title="Permalink to this heading"></a></h1>
 <p>Documentation for <code class="docutils literal notranslate"><span class="pre">two_stream_gray_rad_mod</span></code>.</p>
 <section id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this heading"></a></h2>
 <p>This module includes different simple configurations for solving the two stream radiative transfer equations. There are three semi-gray configurations available (gray in shortwave and longwave), and one intermediate multi-band configuration (gray in shortwave, multi-band in longwave). These configurations are selected by setting the <code class="docutils literal notranslate"><span class="pre">rad_scheme</span></code> namelist option.</p>
 <table class="docutils align-default">
 <colgroup>
@@ -210,7 +211,7 @@
 <p>In the next few sections we will describe the main options available to the user for solving the radiative transfer equations, and prescribing the insolation. Namelist options and their defaults, and available output diagnostics are summarised at the end of the documentation.</p>
 </section>
 <section id="frierson-byrne-schemes">
-<h2>Frierson/Byrne schemes<a class="headerlink" href="#frierson-byrne-schemes" title="Permalink to this headline"></a></h2>
+<h2>Frierson/Byrne schemes<a class="headerlink" href="#frierson-byrne-schemes" title="Permalink to this heading"></a></h2>
 <p>Each of these schemes solve the same equations to compute the longwave and shortwave fluxes. The difference between them lies in the definition of the longwave optical depths.</p>
 <div class="line-block">
 <div class="line"><strong>Longwave</strong></div>
@@ -253,7 +254,7 @@
 <p>where <span class="math notranslate nohighlight">\(\tau_{0e}^{\ast}\)</span> is the surface optical depth at the equator, and <span class="math notranslate nohighlight">\(\Delta\tau^{\ast}\)</span> determines the variation of shortwave optical depth with latitude.</p>
 </section>
 <section id="schneider-giant-planet-scheme">
-<h2>Schneider giant planet scheme<a class="headerlink" href="#schneider-giant-planet-scheme" title="Permalink to this headline"></a></h2>
+<h2>Schneider giant planet scheme<a class="headerlink" href="#schneider-giant-planet-scheme" title="Permalink to this heading"></a></h2>
 <p>This scheme is suitable to use for giant planet experiments where there is no solid surface at the bottom of the model atmosphere. It is selected by setting <code class="docutils literal notranslate"><span class="pre">rad_scheme</span></code> to <code class="docutils literal notranslate"><span class="pre">'SCHNEIDER'</span></code>.</p>
 <div class="line-block">
 <div class="line"><strong>Longwave</strong></div>
@@ -294,7 +295,7 @@
 </div>
 </section>
 <section id="geen-scheme">
-<h2>Geen scheme<a class="headerlink" href="#geen-scheme" title="Permalink to this headline"></a></h2>
+<h2>Geen scheme<a class="headerlink" href="#geen-scheme" title="Permalink to this heading"></a></h2>
 <p>The Geen scheme provides an intermediate option between gray radiation and more complete descriptions of radiative transfer (e.g., the correlated-<span class="math notranslate nohighlight">\(k\)</span> schemes SOCRATES and RRTM). It has two infrared bands and one solar band. The shortwave band (<span class="math notranslate nohighlight">\(&lt;4\,\mu\,\text{m}\)</span>) treats all solar radiation. Two long-wave bands treat absorption: one in the infrared region of the spectral (<span class="math notranslate nohighlight">\(8-14\,\mu\,\text{m}\)</span>), and the other in all other longwave wavelengths (<span class="math notranslate nohighlight">\(&lt;4\,\mu\,\text{m}\)</span>, non-window).</p>
 <p>Note: the Geen scheme is currently only stable when run in a fixed SST configuration. A version stable with a slab ocean is expected by 30/11/2020.</p>
 <div class="line-block">
@@ -336,7 +337,7 @@
 <p><span class="math notranslate nohighlight">\(a_{\text{sw}}=0.0596\)</span> and <span class="math notranslate nohighlight">\(c_{\text{sw}}=0.0029\)</span>. As it stands, <span class="math notranslate nohighlight">\(a_{\text{sw}}\)</span>, <span class="math notranslate nohighlight">\(b_{\text{sw}}\)</span>, and <span class="math notranslate nohighlight">\(c_{\text{sw}}\)</span> are hardcoded and not modifiable via the namelist. As with the longwave absorption coefficients, the default values for the absorption coefficients were fitted to SBDART output.</p>
 </section>
 <section id="incoming-solar-radiation">
-<h2>Incoming solar radiation<a class="headerlink" href="#incoming-solar-radiation" title="Permalink to this headline"></a></h2>
+<h2>Incoming solar radiation<a class="headerlink" href="#incoming-solar-radiation" title="Permalink to this heading"></a></h2>
 <p>For each of the radiative transfer schemes, diurnally-and-seasonally averaged, and time-dependent options for the incoming solar radiation are avaialable. The user selects whether diurnally-and-seasonally averaged or time-dependent solar forcing is used by setting the namelist option <code class="docutils literal notranslate"><span class="pre">do_seasonal</span></code>.</p>
 <div class="line-block">
 <div class="line"><strong>Diurnally-and-seasonally averaged insolation</strong></div>
@@ -364,7 +365,7 @@ P_{2} &amp;= (1 - 3\sin^{2}\theta)/4\end{split}\]</div>
 <p>There is also an option to run perpetually on one day by setting the namelist variable <code class="docutils literal notranslate"><span class="pre">solday</span></code>. For example if Northern Hemisphere autumn equinox was set to occur on day <span class="math notranslate nohighlight">\(270\)</span> of a <span class="math notranslate nohighlight">\(360\)</span> day year, then one could run a perpetual solstice simulation by setting <code class="docutils literal notranslate"><span class="pre">solday=180</span></code>. This can be used in conjunction with an appropriate choice for <span class="math notranslate nohighlight">\(\text{d}t_{\text{avg}}\)</span> to remove the diurnal cycle in such an experiment.</p>
 </section>
 <section id="namelist-options">
-<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h2>
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this heading"></a></h2>
 <p>The namelist options for <strong>two_stream_gray_rad_nml</strong> are listed below.</p>
 <p><strong>Namelist option to choose scheme</strong></p>
 <dl class="field-list simple">
@@ -533,7 +534,7 @@ P_{2} &amp;= (1 - 3\sin^{2}\theta)/4\end{split}\]</div>
 </dl>
 </section>
 <section id="diagnostics">
-<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h2>
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this heading"></a></h2>
 <p>These are the diagnostics associated with the <code class="docutils literal notranslate"><span class="pre">two_stream_gray_rad</span></code> module.</p>
 <table class="docutils align-default">
 <colgroup>
@@ -637,7 +638,7 @@ transmission.</p></td>
 </table>
 </section>
 <section id="relevant-modules-and-subroutines">
-<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline"></a></h2>
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this heading"></a></h2>
 <p>Modules relevant to this one include:</p>
 <dl class="field-list simple">
 <dt class="field-odd">astronomy_mod</dt>
@@ -664,7 +665,7 @@ transmission.</p></td>
 </dl>
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
+<h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="../references.html#byrne2013" id="id8"><span>[Byrne2013]</span></a></div>
 <div class="line"><a class="reference internal" href="../references.html#frierson2006a" id="id9"><span>[Frierson2006a]</span></a></div>
@@ -674,7 +675,7 @@ transmission.</p></td>
 </div>
 </section>
 <section id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this heading"></a></h2>
 <p>This documentation was written by Neil Lewis, peer reviewed by Ruth Geen, and quality controlled by Matthew Henry.</p>
 </section>
 </section>

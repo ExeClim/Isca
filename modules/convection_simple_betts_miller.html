@@ -15,6 +15,7 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -135,13 +136,13 @@
 }
 </style>
 <section id="convection-scheme-simple-betts-miller">
-<h1>Convection scheme: Simple Betts-Miller<a class="headerlink" href="#convection-scheme-simple-betts-miller" title="Permalink to this headline"></a></h1>
+<h1>Convection scheme: Simple Betts-Miller<a class="headerlink" href="#convection-scheme-simple-betts-miller" title="Permalink to this heading"></a></h1>
 <section id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this heading"></a></h2>
 <p>The simplified Betts-Miller (SBM) scheme is a moist adjustment convection scheme developed by <a class="reference internal" href="../references.html#frierson2007" id="id1"><span>[Frierson2007]</span></a> and the modifications described in <a class="reference internal" href="../references.html#ogormanschneider2008" id="id2"><span>[OGormanSchneider2008]</span></a>. The simple Betts-Miller scheme is a widely-used convection scheme in Isca. The key purpose of the routine is to output a moisture tendency <code class="docutils literal notranslate"><span class="pre">deltaq</span></code>, a temperature tendency <code class="docutils literal notranslate"><span class="pre">deltaT</span></code>, and a convective rainfall amount <code class="docutils literal notranslate"><span class="pre">rain</span></code>. The scheme has both deep convection and non-precipitating shallow convection.</p>
 </section>
 <section id="logic-of-the-routine">
-<h2>Logic of the routine<a class="headerlink" href="#logic-of-the-routine" title="Permalink to this headline"></a></h2>
+<h2>Logic of the routine<a class="headerlink" href="#logic-of-the-routine" title="Permalink to this heading"></a></h2>
 <ol class="arabic simple">
 <li><p>Perform a particle ascent to calculate the environmental vertical profiles of moisture and temperature, and convective available potential energy (CAPE) within a grid cell.</p></li>
 <li><p>Test if the convection scheme should trigger. The convection scheme will trigger when <span class="math notranslate nohighlight">\(CAPE&gt;0\)</span>. This means that if the grid point has positive CAPE, then the convention scheme will try to generate rain. If the CAPE is negative, then a parcel will not be buoyant and convection can not occur.</p></li>
@@ -158,7 +159,7 @@
 </ol>
 </section>
 <section id="namelist-options">
-<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h2>
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this heading"></a></h2>
 <p>There are five optional namelist variables.</p>
 <p>The first two are directly relevant to how the tendency equations and precipitation are calculated</p>
 <dl class="field-list simple">
@@ -183,7 +184,7 @@
 </dl>
 </section>
 <section id="diagnostics">
-<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h2>
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this heading"></a></h2>
 <p>The diagnostics are not sent out within the call to convection but are sent out from <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys.F90</span></code> with the module name <code class="docutils literal notranslate"><span class="pre">atmosphere</span></code>. The diagnostics relevant to the simple Betts-Miller scheme are in the table below.</p>
 <table class="docutils align-default">
 <colgroup>
@@ -223,18 +224,18 @@ potential energy</p></td>
 </table>
 </section>
 <section id="relevant-modules-and-subroutines">
-<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline"></a></h2>
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this heading"></a></h2>
 <p>The convection scheme is located in: <code class="docutils literal notranslate"><span class="pre">src/atmos_param/qe_moist_convection/qe_moist_convection.F90</span></code>. The files name reflects this style of a quasi-equilibrium (qe) convection scheme (for more information on convective quasi-equilibrium see <a class="reference internal" href="../references.html#yanoplant2016" id="id5"><span>[YanoPlant2016]</span></a>).</p>
 <p>The simple Betts-Miller scheme is initialised and called by: <code class="docutils literal notranslate"><span class="pre">/src/atmos_spectral/driver/solo/idealized_moist_phys.F90</span></code>.</p>
 <p>Relevant routines which are called by the convection scheme are:
 <code class="docutils literal notranslate"><span class="pre">src/shared/sat_vapor_pres/sat_vapor_pres.F90</span></code>.</p>
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
+<h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
 <p>The reference list within this docs page are: <a class="reference internal" href="../references.html#frierson2007" id="id6"><span>[Frierson2007]</span></a>, <a class="reference internal" href="../references.html#betts1986" id="id7"><span>[Betts1986]</span></a>, <a class="reference internal" href="../references.html#bettsmiller1986" id="id8"><span>[BettsMiller1986]</span></a>, <a class="reference internal" href="../references.html#yanoplant2016" id="id9"><span>[YanoPlant2016]</span></a>, and <a class="reference internal" href="../references.html#ogormanschneider2008" id="id10"><span>[OGormanSchneider2008]</span></a>.</p>
 </section>
 <section id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this heading"></a></h2>
 <p>This documentation was written by Penelope Maher, peer reviewed by Denis Sergeev, and quality controlled by Ross Castle.</p>
 </section>
 </section>

@@ -15,6 +15,7 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -136,12 +137,12 @@
 }
 </style>
 <section id="constants-atmospheric-and-planetary-parameters">
-<h1>Constants: Atmospheric and Planetary Parameters<a class="headerlink" href="#constants-atmospheric-and-planetary-parameters" title="Permalink to this headline"></a></h1>
+<h1>Constants: Atmospheric and Planetary Parameters<a class="headerlink" href="#constants-atmospheric-and-planetary-parameters" title="Permalink to this heading"></a></h1>
 <section id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">constants.F90</span></code> provides a number of controls that set the fundamental parameters of the planet being studied - it is used by nearly every other module in Isca. By default, Isca models a planet equivalent to Earth in terms of physical characteristics such as size, surface gravity and rotational period. In addition, water is set as the default condensate for any moist physics modules that may be used.</p>
 <section id="planetary-parameters">
-<h3>Planetary Parameters<a class="headerlink" href="#planetary-parameters" title="Permalink to this headline"></a></h3>
+<h3>Planetary Parameters<a class="headerlink" href="#planetary-parameters" title="Permalink to this heading"></a></h3>
 <p>Below are a set of controls that allow the physical size and rotation of a planet to be set in the namelist. This allows us to model a range of planets, including others in the Solar System such as Mars and Jupiter, in addition to exoplanets. Rotation can be set by two different parameters: a rotation rate <code class="docutils literal notranslate"><span class="pre">omega</span></code> can be specified; or alternatively a period in seconds can be given that is converted back to a value of <code class="docutils literal notranslate"><span class="pre">omega</span></code>.</p>
 <table class="docutils align-default">
 <colgroup>
@@ -202,7 +203,7 @@
 </div>
 </section>
 <section id="atmospheric-parameters">
-<h3>Atmospheric Parameters<a class="headerlink" href="#atmospheric-parameters" title="Permalink to this headline"></a></h3>
+<h3>Atmospheric Parameters<a class="headerlink" href="#atmospheric-parameters" title="Permalink to this heading"></a></h3>
 <p>Changing the basic atmospheric properties allows atmospheres with a wide range of compositions to be studied, including both terrestrial planets (e.g. Earth/Mars) and gas giants such as Jupiter. In the case of Earth, the reference surface pressure is taken to be the mean sea level pressure.</p>
 <p>The dry air gas constant for any homogeneous atmosphere can be calculated from its chemical composition. It is calculated by dividing the universal gas constant <span class="math notranslate nohighlight">\(R\)</span> by the average molar mass of the atmosphere.</p>
 <table class="docutils align-default">
@@ -254,16 +255,16 @@
 </div>
 </section>
 <section id="moist-atmospheres">
-<h3>Moist Atmospheres<a class="headerlink" href="#moist-atmospheres" title="Permalink to this headline"></a></h3>
+<h3>Moist Atmospheres<a class="headerlink" href="#moist-atmospheres" title="Permalink to this heading"></a></h3>
 <p>We hope to be able to introduce controls for moist atmospheres in a future update to Isca. This will allow condensable species other than water to be easily modelled.</p>
 </section>
 </section>
 <section id="relevant-modules">
-<h2>Relevant Modules<a class="headerlink" href="#relevant-modules" title="Permalink to this headline"></a></h2>
+<h2>Relevant Modules<a class="headerlink" href="#relevant-modules" title="Permalink to this heading"></a></h2>
 <p>Since this module provides the definition of a number of physical constants, it is used by most other modules that exist within the Isca framework.</p>
 </section>
 <section id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this heading"></a></h2>
 <p>This documentation was written by Daniel Williams, peer reviewed by Stephen Thompson, and quality controlled by Ross Castle.</p>
 </section>
 </section>

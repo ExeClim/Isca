@@ -15,6 +15,7 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -139,9 +140,9 @@
 }
 </style>
 <section id="socrates-radiation-scheme-interface">
-<h1>SOCRATES Radiation Scheme Interface<a class="headerlink" href="#socrates-radiation-scheme-interface" title="Permalink to this headline"></a></h1>
+<h1>SOCRATES Radiation Scheme Interface<a class="headerlink" href="#socrates-radiation-scheme-interface" title="Permalink to this heading"></a></h1>
 <section id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline"></a></h2>
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this heading"></a></h2>
 <p>SOCRATES (Suite Of Community RAdiative Transfer codes based on Edwards and Slingo) is the radiation scheme used by UK Met Office for Earth and planetary science <a class="reference internal" href="../references.html#mannersetal2015" id="id1"><span>[MannersEtAl2015]</span></a>, which has many significant advantages over RRTM, notably its flexibility in terms of atmospheric composition and the spectral properties of the radiation scheme (e.g. number of bands, etc).</p>
 <ul class="simple">
 <li><p>The code used to integrate Socrates into Isca is contained within the folder <code class="docutils literal notranslate"><span class="pre">src/atmos_params/socrates/interface</span></code>.</p></li>
@@ -151,10 +152,10 @@
 </ul>
 </section>
 <section id="namelist-options">
-<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this headline"></a></h2>
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this heading"></a></h2>
 <p>The Socrates namelist <code class="docutils literal notranslate"><span class="pre">socrates_rad_nml</span></code> can be found at <code class="docutils literal notranslate"><span class="pre">src/atmos_param/socrates/interface/socrates_config_mod.f90</span></code>.</p>
 <section id="radiation-options">
-<h3>Radiation options<a class="headerlink" href="#radiation-options" title="Permalink to this headline"></a></h3>
+<h3>Radiation options<a class="headerlink" href="#radiation-options" title="Permalink to this heading"></a></h3>
 <p>Here are some options to set incoming radiation:</p>
 <table class="docutils align-default">
 <colgroup>
@@ -243,7 +244,7 @@
 </table>
 </section>
 <section id="spectral-files">
-<h3>Spectral files<a class="headerlink" href="#spectral-files" title="Permalink to this headline"></a></h3>
+<h3>Spectral files<a class="headerlink" href="#spectral-files" title="Permalink to this heading"></a></h3>
 <p>Socrates reads external input spectral files that tell it the number of spectral bands to use, with one file setting the shortwave options, and another file setting the longwave options. Some spectral files have lots of bands, which will make the model run slowly. The default files used in the Met Office’s Unified Model-GA7, and also in Isca, can be found within the <code class="docutils literal notranslate"><span class="pre">data/spectra</span></code> directory of Socrates source code. For example, it can be here if you put the Socrates source code within the <code class="docutils literal notranslate"><span class="pre">trunk</span></code> directory:</p>
 <div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">src</span><span class="o">/</span><span class="n">atmos_param</span><span class="o">/</span><span class="n">socrates</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">trunk</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">spectra</span><span class="o">/</span><span class="n">ga7</span><span class="o">/</span><span class="n">sp_lw_ga7</span> <span class="k">for</span> <span class="n">the</span> <span class="n">longwave</span>
 <span class="n">src</span><span class="o">/</span><span class="n">atmos_param</span><span class="o">/</span><span class="n">socrates</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">trunk</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">spectra</span><span class="o">/</span><span class="n">ga7</span><span class="o">/</span><span class="n">sp_sw_ga7</span> <span class="k">for</span> <span class="n">the</span> <span class="n">shortwave</span>
@@ -294,7 +295,7 @@ if <code class="docutils literal notranslate"><span class="pre">True</span></cod
 </table>
 </section>
 <section id="co2-ozone-and-other-gases">
-<h3>CO2, ozone and other gases<a class="headerlink" href="#co2-ozone-and-other-gases" title="Permalink to this headline"></a></h3>
+<h3>CO2, ozone and other gases<a class="headerlink" href="#co2-ozone-and-other-gases" title="Permalink to this heading"></a></h3>
 <p>To include radiative effects of water vapor, CO2 and ozone, the following switches should be <code class="docutils literal notranslate"><span class="pre">True</span></code>:</p>
 <table class="docutils align-default">
 <colgroup>
@@ -411,7 +412,7 @@ if <code class="docutils literal notranslate"><span class="pre">True</span></cod
 </section>
 </section>
 <section id="diagnostics">
-<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this headline"></a></h2>
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this heading"></a></h2>
 <p>Diagnostics from Socrates are under module name <code class="docutils literal notranslate"><span class="pre">socrates</span></code>. The outputs include the temperature tendencies due to LW/SW radiation, LW/SW radiation fluxes at each level, and the fluxes at surface and the top of the atmosphere (TOA).</p>
 <table class="docutils align-default">
 <colgroup>
@@ -512,7 +513,7 @@ if <code class="docutils literal notranslate"><span class="pre">True</span></cod
 </table>
 </section>
 <section id="relevant-modules-and-subroutines">
-<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this headline"></a></h2>
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this heading"></a></h2>
 <p>The Socrates radiation scheme is initiatized and called by <code class="docutils literal notranslate"><span class="pre">src/atmos_spectral/driver/solo/idealized_moist_phys.F90</span></code>.</p>
 <p>The major modules/files under <code class="docutils literal notranslate"><span class="pre">src/atmos_param/socrates/interface/</span></code> are:</p>
 <ul class="simple">
@@ -529,12 +530,12 @@ if <code class="docutils literal notranslate"><span class="pre">True</span></cod
 </ul>
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
+<h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
 <p><a class="reference internal" href="../references.html#mannersetal2015" id="id4"><span>[MannersEtAl2015]</span></a>
 <a class="reference internal" href="../references.html#thomson-and-vallis2019" id="id5"><span>[Thomson_and_Vallis2019]</span></a></p>
 </section>
 <section id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline"></a></h2>
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this heading"></a></h2>
 <p>This documentation was written by Qun Liu (thanks to Stephen’s PR of Socrates), peer reviewed by Stephen Thomson, and quality controlled by Ruth Geen.</p>
 </section>
 </section>
