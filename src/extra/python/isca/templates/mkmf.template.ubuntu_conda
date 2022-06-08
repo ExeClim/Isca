@@ -20,7 +20,7 @@ NC_LIB=`nc-config --flibs`
 FFLAGS = $(CPPFLAGS) $(NC_LIB) -cpp -fcray-pointer \
 	-O2 -ffree-line-length-none -fno-range-check \
 	-fdefault-real-8 -fdefault-double-8 -fallow-invalid-boz \ 
-	-fallow-argument-mismatch 
+	-fallow-argument-mismatch
 
 FC = $(F90)
 LD = $(F90)
