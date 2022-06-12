@@ -18,9 +18,9 @@ template_debug={{ template_dir }}/mkmf.template.debug
 execdir={{ execdir }}        # where code is compiled and executable is created
 executable={{ executable_name }}
 
-netcdf_flags=`nf-config --fflags --flibs`
+#netcdf_flags=`nf-config --fflags --flibs`
 
-ulimit -s unlimited # Set stack size to unlimited
+#ulimit -s unlimited # Set stack size to unlimited
 export MALLOC_CHECK_=0
 
 # 3. compile the mppncombine tool if it hasn't yet been done.
@@ -53,13 +53,13 @@ if [ $debug == True ]; then
  echo "Compiling in debug mode"
 
 # execute mkmf to create makefile
-cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 {{compile_flags}}"
+cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 ${CDEFS} {{compile_flags}}"
 $mkmf  -a $sourcedir -t $template_debug -p $executable -c "$cppDefs" $pathnames $sourcedir/shared/include $sourcedir/shared/mpp/include
 
 else
 
 # execute mkmf to create makefile
-cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 {{compile_flags}}"
+cppDefs="-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8 ${CDEFS} {{compile_flags}}"
 $mkmf  -a $sourcedir -t $template -p $executable -c "$cppDefs" $pathnames $sourcedir/shared/include $sourcedir/shared/mpp/include
 
 fi

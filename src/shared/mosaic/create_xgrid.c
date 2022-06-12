@@ -96,6 +96,14 @@ void get_grid_great_circle_area_(const int *nlon, const int *nlat, const double 
 }
 #endif
 
+int isHeadNode_b(struct Node *list, struct Node nodeIn)
+{
+  if(sameNode(*list, nodeIn))
+    return 1;
+  else
+    return 0;
+}
+
 void get_grid_great_circle_area(const int *nlon, const int *nlat, const double *x, const double *y, const double *z, double *area)
 {
   int nx, ny, nxp, i, j, n_in;
@@ -1360,7 +1368,7 @@ int clip_2dx2d_great_circle(const double x1_in[], const double y1_in[], const do
       error_handler("firstIntersect is not in the subjList");
     }
     addNode(polyList, firstIntersect);
-    if( isHeadNode(intersectList, firstIntersect) ) {
+    if( isHeadNode_b(intersectList, firstIntersect) ) {
       temp = intersectList;
       intersectList = getNextNode(intersectList);
       free(temp);
@@ -1431,7 +1439,7 @@ int clip_2dx2d_great_circle(const double x1_in[], const double y1_in[], const do
 	else {
 	  addNode(polyList, *temp2);
 	  if(temp2IsIntersect) { /* remove temp2 from intersectList */
-	    if( isHeadNode(intersectList, *temp2) ) {
+	    if( isHeadNode_b(intersectList, *temp2) ) {
 	      temp = intersectList;
 	      intersectList = getNextNode(intersectList);
 	      free(temp);
@@ -1457,7 +1465,7 @@ int clip_2dx2d_great_circle(const double x1_in[], const double y1_in[], const do
 
       /* add curIntersect to polyList and remove it from intersectList and curList */
       addNode(polyList, curIntersect);
-      if( isHeadNode(intersectList, curIntersect) ) {
+      if( isHeadNode_b(intersectList, curIntersect) ) {
 	temp = intersectList;
 	intersectList = getNextNode(intersectList);
 	free(temp);
@@ -1466,7 +1474,7 @@ int clip_2dx2d_great_circle(const double x1_in[], const double y1_in[], const do
 	removeNode(intersectList, curIntersect);
       nintersect--;
       
-      if( isHeadNode(curList, curIntersect) ) {
+      if( isHeadNode_b(curList, curIntersect) ) {
 	temp = curList;
 	curList = getNextNode(curList);
 	if( curListNum == 0 )
