@@ -76,6 +76,7 @@ References
            *Monthly Weather Review*,
            **120(6)**, 978--1002,
            doi: 10.1175/1520-0493(1992)120<0978:RASAPO>2.0.CO;2
+	   
 .. [Pierrehumbert1986] Pierrehumbert, R. T. (1986, September). An essay on the parameterization
            of orographic gravity wave drag. In Proc. Seminar/Workshop on Observation, Theory and
            Modeling of Orographic Effects (Vol. 1, pp. 251-282).
@@ -83,6 +84,12 @@ References
 .. [Ricchiazzi1998] Ricchiazzi, P., Yang, S., Gautier, C., and Sowle, D., 1998: SBDART: A research and teaching 
                 software tool for plane-parallel radiative transfer in the Earth’s atmosphere, 
                 *B. Am. Meteorol. Soc.*, **79**, 2101–2114, doi.
+		
+.. [Sauliere2012] Saulière, J., Brayshaw, D. J., Hoskins, B., & Blackburn, M. (2012):
+            Further investigation of the impact of idealized continents and SST distributions on the Northern Hemisphere storm tracks.
+            *J. Atmos. Sci.*, 
+            **69(3)**, 840-856,
+            doi: `10.1175/JAS-D-11-0113.1 <https://doi.org/10.1175/JAS-D-11-0113.1>`_.
 
 .. [Schneider2006] Schneider, T., Walker, C. C., 2006:
             Self-Organization of Atmospheric Macroturbulence into Critical States of Weak Nonlinear Eddy–Eddy Interactions.
@@ -96,7 +103,19 @@ References
 .. [Thomson_and_Vallis2019] Thomson, S. I. and Vallis, G. K., 2019. Hierarchical Modeling of Solar System
             Planets with Isca. *Atmosphere*, **10 (12)**, 803,
             doi: `10.3390/atmos10120803 <https://doi.org/10.3390/atmos10120803>`_.
+            
+.. [NealeHoskins2004] Neale, R. B. and Hoskins, B. K., 2000. A standard test for AGCMs including their physical parametrizations: I: the proposal
+            *Atmospheric Science Letters*,
+            **1(2)**, 101-107
 
+.. [MerlisEtAl2013] Merlis, Timothy M., et al. 2013. Hadley circulation response to orbital precession. Part I: Aquaplanets. 
+            *Journal of Climate*,
+            **26(3)**, 740-753
+
+.. [RusselEtAl1985] Russell, Gary L., James R. Miller, and Lie-Ching Tsang. 1985. Seasonal oceanic heat transports computed from an atmospheric model.
+            *Dynamics of atmospheres and Oceans*
+            **9(3)**, 253-271.
+            
 .. [Vallis2017] Vallis, G. K., 2017: **Atmospheric and Oceanic Fluid Dynamics. Fundamentals and 
            Large-Scale Circulation**. 2nd ed. Cambridge University Press.
            doi: `10.1017/9781107588417 <https://doi.org/10.1017/9781107588417>`_.
