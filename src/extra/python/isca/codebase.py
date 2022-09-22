@@ -34,7 +34,7 @@ class CodeBase(Logger):
     def from_directory(cls, directory, **kwargs):
         return cls(directory=directory, **kwargs)
 
-    def __init__(self, repo=None, commit=None, directory=None, storedir=P(GFDL_WORK, 'codebase'), safe_mode=False):
+    def __init__(self, repo=None, commit=None, directory=None, storedir=P(GFDL_WORK, 'codebase'), safe_mode=False, socrates_version='1703'):
         """Create a new CodeBase object.
 
         A CodeBase can be created with either a git repository or a file directory as it's source.
@@ -119,6 +119,7 @@ class CodeBase(Logger):
 
         # read path names from the default file
         self.path_names = []
+        self.extra_path_names = []
         self.compile_flags = []  # users can append to this to add additional compiler options
 
     @property
@@ -258,7 +259,7 @@ class CodeBase(Logger):
 
         # get path_names from the directory
         if not self.path_names:
-            self.path_names = self.read_path_names(P(self.srcdir, 'extra', 'model', self.name, 'path_names'))
+            self.path_names = self.read_path_names(P(self.srcdir, 'extra', 'model', self.name, 'path_names')) + self.extra_path_names
         self.write_path_names(self.path_names)
         path_names_str = P(self.builddir, 'path_names')
 
@@ -342,10 +343,15 @@ class SocratesCodeBase(CodeBase):
                 self.log.error(error_mesg)
                 raise OSError(error_mesg)
 
+    def read_version_specific_paths(self, socrates_version_to_use):
+        self.extra_path_names = self.read_path_names(P(self.srcdir, 'extra', 'model', self.name, 'socrates_version_paths', socrates_version_to_use))        
+
     def __init__(self, *args, **kwargs):
         super(SocratesCodeBase, self).__init__(*args, **kwargs)
         self.disable_rrtm()
         self.simlink_to_soc_code()
+        socrates_version_to_use = kwargs['socrates_version']
+        self.read_version_specific_paths(socrates_version_to_use)
 
 class GreyCodeBase(CodeBase):
     """The Frierson model.
