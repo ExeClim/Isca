@@ -9,7 +9,7 @@ NCORES = 16
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
-cb = SocratesCodeBase.from_directory(GFDL_BASE)
+cb = SocratesCodeBase.from_directory(GFDL_BASE, socrates_version='1703')
 
 # or it can point to a specific git repo and commit id.
 # This method should ensure future, independent, reproducibility of results.
