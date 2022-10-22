@@ -132,6 +132,7 @@ Contents
    contributing
    testing/index.rst
    debug
+   bve_swe_equations
    references
    remote_access
 
