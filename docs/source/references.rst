@@ -17,7 +17,10 @@ References
            **112(473)**, 693--709,
            doi: `10.1002/qj.49711247308 <http://dx.doi.org/10.1002/qj.49711247308>`_.
 
-.. [Blackburn2013] Blackburn, M., Williamson, D. L., Nakajima, K., Ohfuchi
+.. [Blackburn2013] Blackburn, M., Williamson, D. L., Nakajima, K., Ohfuchi, W., Takahashi, Y. O., Hayashi, Y., Nakamura, H., Ishiwatari, M., McGregor, J. L., Borth, H., Wirth, V., Frank, H., Bechtold, P., Wedi, N. P., Tomita, H., Satoh, M., Zhao, M., Held, I. M., Suarez, M. J., Lee, M., Watanabe, M., Kimoto, M., Liu, Y., Wang, Z., Molod, A., Rajendran, K., Kitoh, A., Statton, R, 2013: The Aqua-Planet Experiment (APE): CONTROL SST Simulation.
+           *Journal of the Meteorological Society of Japan. Ser. II*
+           **91A**, 17-56
+           doi: `https://doi.org/10.2151/jmsj.2013-A02 <10.2151/jmsj.2013-A02>`_.
            
 .. [Byrne2013] Byrne, M. P. and O’Gorman, P. A., 2013: Land–ocean warming contrast over a wide range of climates: Convective quasi-equilibrium the- ory and idealized simulations, *J. Climate*, **26**, doi.
 
