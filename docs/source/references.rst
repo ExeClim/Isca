@@ -34,8 +34,14 @@ References
 .. [Gierasch2000] Gierasch, P.J., Ingersoll, A.P., Banfield, D., Ewald, S.P., Helfenstein, P., Simon-Miller, A., Vasavada, A., Breneman,                 H.H., Senske, D.A. and Team, G.I., 2000: 
            Observation of moist convection in Jupiter's atmosphere. 
            *Nature*,
-           **403(6770)**, 628--630.
+           **403(6770)**, 628--630,
            doi: `10.1038/35001017 <https://doi.org/10.1038/35001017>`_.
+
+.. [Held1994] Held, I. M. and Suarez, M. J, 1994:
+           A Proposal for the Intercomparison of the Dynamical Cores of Atmospheric General Circulation Models
+           *Bulletin of the American Meteorological Society*
+           **75(10)**, 1825--1830
+           doi: `10.1175/1520-0477(1994)075\<1825:APFTIO\>2.0.CO;2 <https://doi.org/10.1175/1520-0477(1994)075\<1825:APFTIO\>2.0.CO;2>`_.
 
 .. [Jucker2017] Jucker, M. and Gerber, E. P., 2017:
            Untangling the Annual Cycle of the Tropical Tropopause Layer with an Idealized Moist Model.
