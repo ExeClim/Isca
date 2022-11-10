@@ -8,7 +8,7 @@ Test Cases
 
 Isca provides a number of example test cases, located within ``src/test_cases``, which can be used as a basis for constructing your own model. These examples vary in complexity and a number make use of additional scripts which are also listed below.
 
-- **APE Aquaplanet:** Aquaplanet control experiment based off Blackburn et al. 2013. [Blackburn2013]_
+- **APE Aquaplanet:** Aquaplanet control experiment based off Blackburn et al. 2013, and first described as the control experiment by Neale & Hoskins 2004. [Blackburn2013]_ [Neale2004]_
 - **Axisymmetric:** Model setup with zonal-mean dynamics enforced, i.e. a run without eddies. Uses prescribed SSTs and vertical diffusion.
 - **Bucket Hydrology:** As described in the first Isca paper by Vallis et al., 2017  but without q-fluxes. [Vallis2017]_
 - **Frierson:** Control case of the so-called `Frierson model` described in Frierson et al. 2006. [Frierson2006a]_
@@ -50,6 +50,7 @@ References
 | [Byrne2013]_
 | [Frierson2006a]_
 | [Held1994]_
+| [Neale2004]_
 | [Jucker2017]_
 | [MannersEtAl2015]_
 | [Schneider2009]_

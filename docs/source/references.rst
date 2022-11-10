@@ -16,6 +16,8 @@ References
            *Quarterly Journal of the Royal Meteorological Society*,
            **112(473)**, 693--709,
            doi: `10.1002/qj.49711247308 <http://dx.doi.org/10.1002/qj.49711247308>`_.
+
+.. [Blackburn2013] Blackburn, M., Williamson, D. L., Nakajima, K., Ohfuchi
            
 .. [Byrne2013] Byrne, M. P. and O’Gorman, P. A., 2013: Land–ocean warming contrast over a wide range of climates: Convective quasi-equilibrium the- ory and idealized simulations, *J. Climate*, **26**, doi.
 
@@ -48,6 +50,12 @@ References
            *Journal of Climate*,
            **30(18)**, 7339--7358,
            doi: `10.1175/JCLI-D-17-0127.1 <https://doi.org/10.1175/JCLI-D-17-0127.1>`_.
+
+.. [Neale2004] Neale, R. B. and Hoskins, B. J, 2004:
+           A standard test for AGCMs including their physical parametrizations: I: the proposal.
+           *Atmospheric Science Letters*,
+           **1(2)**, 101-107,
+           doi: `10.1006/asle.2000.0022 <https://doi.org/10.1006/asle.2000.0022>`_.
 
 .. [OGormanSchneider2008] O'Gorman, P. and Schneider, T., 2008:
            The Hydrological Cycle over a Wide Range of Climates Simulated with an Idealized GCM.
