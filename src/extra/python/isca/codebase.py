@@ -120,6 +120,8 @@ class CodeBase(Logger):
         # read path names from the default file
         self.path_names = []
         self.compile_flags = []  # users can append to this to add additional compiler options
+        self.precision_compile_flags = ['-DOVERLOAD_C8'] # default double precision
+        self.other_compile_flags = ['-r8', '-i4'] # default double precision
 
     @property
     def code_is_available(self):
@@ -245,6 +247,7 @@ class CodeBase(Logger):
         mkdir(self.builddir)
 
         compile_flags = []
+        other_flags = []
         # if debug:
         #     compile_flags.append('-g')
         #     compile_flags.append('-traceback')
@@ -254,7 +257,11 @@ class CodeBase(Logger):
         #     compile_flags.append('-O%d' % optimisation)
 
         compile_flags.extend(self.compile_flags)
+        compile_flags.extend(self.precision_compile_flags)
         compile_flags_str = ' '.join(compile_flags)
+        
+        other_flags.extend(self.other_compile_flags)
+        other_flags_str = ' '.join(other_flags)
 
         # get path_names from the directory
         if not self.path_names:
@@ -268,6 +275,7 @@ class CodeBase(Logger):
             'srcdir': self.srcdir,
             'workdir': self.workdir,
             'compile_flags': compile_flags_str,
+            'extra_compile_flags': other_flags_str,
             'env_source': env,
             'path_names': path_names_str,
             'executable_name': self.executable_name,
@@ -280,6 +288,13 @@ class CodeBase(Logger):
             self._log_line(line)
 
         self.log.info('Compilation complete.')
+        
+    def use_single_precision(self):
+        self.log.info('Using single precision')
+        self.precision_compile_flags = ['-DOVERLOAD_C4', '-DOVERLOAD_R4']
+        self.other_compile_flags = ['-i4']
+        self.executable_name = self.executable_name.strip('.x')+'_single.x'
+        self.builddir = P(self.workdir, 'build', self.executable_name.split('.')[0])
 
 
 
