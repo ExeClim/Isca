@@ -138,6 +138,7 @@ type(interpolate_type),save         :: co2_interp           ! use external file 
 character(len=256)                  :: co2_file='co2'       !  file name of co2 file to read
 character(len=256)                  :: co2_variable_name='co2'       !  file name of co2 file to read
 
+logical :: do_toa_albedo = .false.
 
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            ir_tau_eq, ir_tau_pole, odp, atm_abs, sw_diff, &
@@ -148,7 +149,8 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 		   window, carbon_conc, rad_scheme, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
            use_time_average_coszen, dt_rad_avg,&
-           diabatic_acce !Schneider Liu values
+           diabatic_acce, & !Schneider Liu values 
+           do_toa_albedo 
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
@@ -453,6 +455,9 @@ else
   ! Default: Averaged Earth insolation at all longitudes
   p2          = (1. - 3.*sin(lat)**2)/4.
   insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
+  if (do_toa_albedo) then 
+      insolation  = insolation * (0.77 + 0.125 * 2. * p2)
+  endif 
 end if
 
 select case(sw_scheme)
@@ -487,9 +492,11 @@ case(B_FRIERSON, B_BYRNE)
   end do
 
   ! compute downward shortwave flux
+
   do k = 1, n+1
      sw_down(:,:,k)   = insolation(:,:) * exp(-sw_tau(:,:,k))
   end do
+
 
 case(B_SCHNEIDER_LIU)
   ! Schneider & Liu 2009 Giant planet scheme

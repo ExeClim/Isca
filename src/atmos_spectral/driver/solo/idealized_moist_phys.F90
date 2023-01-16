@@ -167,6 +167,7 @@ real, allocatable, dimension(:,:    ) :: dt_bucket, filt   ! RG Add bucket
 real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
      t_surf,               &   ! surface temperature
+     t_ml, h_thermo_ice,   &   ! NTL 01/23 thermodynamic sea ice
      q_surf,               &   ! surface moisture
      u_surf,               &   ! surface U wind
      v_surf,               &   ! surface V wind
@@ -448,6 +449,10 @@ allocate(depth_change_cond(is:ie, js:je))
 allocate(depth_change_conv(is:ie, js:je))
 allocate(z_surf      (is:ie, js:je))
 allocate(t_surf      (is:ie, js:je))
+! NTL 01/23 thermodynamic sea ice
+allocate(h_thermo_ice(is:ie, js:je))
+allocate(t_ml        (is:ie, js:je))
+!
 allocate(q_surf      (is:ie, js:je)); q_surf = 0.0
 allocate(u_surf      (is:ie, js:je)); u_surf = 0.0
 allocate(v_surf      (is:ie, js:je)); v_surf = 0.0
@@ -611,7 +616,9 @@ if(mixed_layer_bc) then
   ! to quickly enter the atmosphere avoiding problems with the convection scheme
   t_surf = t_surf_init + 1.0
 
-  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, bucket_depth, get_axis_id(), Time, albedo, rad_lonb_2d(:,:), rad_latb_2d(:,:), land, bucket) ! t_surf is intent(inout) !s albedo distribution set here.
+  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, &
+                        h_thermo_ice, t_ml, & ! NTL 01/23 thermodynamic sea ice
+                        bucket_depth, get_axis_id(), Time, albedo, rad_lonb_2d(:,:), rad_latb_2d(:,:), land, bucket) ! t_surf is intent(inout) !s albedo distribution set here.
   
 elseif(gp_surface) then
   albedo=0.0
@@ -1248,6 +1255,7 @@ if(turb) then
                               js,                                          & 
                               je,                                          &
                               t_surf(:,:),                                 & ! t_surf is intent(inout)
+                              h_thermo_ice(:,:), t_ml(:,:),                & ! NTL 01/23 thermodynamic sea ice
                               flux_t(:,:),                                 &
                               flux_q(:,:),                                 &
                               flux_r(:,:),                                 &
@@ -1347,7 +1355,9 @@ if(turb) then
    call vert_turb_driver_end
 endif
 call lscale_cond_end
-if(mixed_layer_bc)  call mixed_layer_end(t_surf, bucket_depth, bucket)
+if(mixed_layer_bc)  call mixed_layer_end(t_surf, &
+                                         h_thermo_ice, t_ml, albedo, & ! NTL 01/23 thermodynamic sea ice
+                                         bucket_depth, bucket)
 if(do_damping) call damping_driver_end
 
 #ifdef SOC_NO_COMPILE

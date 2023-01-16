@@ -120,6 +120,7 @@ real, public, parameter :: DEF_ES0 = 1.0
 real, public, parameter :: RVGAS = 461.50
 real, public, parameter :: CP_VAPOR = 4.0*RVGAS
 real, public, parameter :: DENS_H2O = 1000.
+real, public, parameter :: DENS_ICE = 917. ! NTL 01/23 for sea ice code 
 real, public, parameter :: HLV = 2.500e6
 real, public, parameter :: HLF = 3.34e5
 real, public, parameter :: HLS = HLV + HLF
