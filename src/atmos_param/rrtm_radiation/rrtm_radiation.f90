@@ -54,10 +54,9 @@
                                                                            ! dimension (ncols_rrt x nlay_rrt)
         real(kind=rb),allocatable,dimension(:,:)   :: co2                  ! CO2 [vmr]
                                                                            ! dimension (ncols_rrt x nlay_rrt)
-        real(kind=rb),allocatable,dimension(:,:,:) :: zeros                ! place holder for any species set
+        real(kind=rb),allocatable,dimension(:,:)   :: zeros                ! place holder for any species set
                                                                            !  to zero
-        real(kind=rb),allocatable,dimension(:,:,:) :: ones                 ! place holder for any species set
-                                                                           !  to zero
+        real(kind=rb),allocatable,dimension(:,:)   :: ones                 ! place holder for secondary species
         ! the following species are only set if use_secondary_gases=.true.
         real(kind=rb),allocatable,dimension(:,:)   :: ch4                  ! CH4 [vmr]
                                                                            ! dimension (ncols_rrt x nlay_rrt)
@@ -78,7 +77,7 @@
                                                                            ! =1 for black body
         ! clouds stuff
         !  cloud & aerosol optical depths, cloud and aerosol specific parameters. Set to zero
-        real(kind=rb),allocatable,dimension(:,:,:) :: taucld_lw, taucld_sw, tauaer_lw, tauaer_sw, sw_zro, zro_sw
+        real(kind=rb),allocatable,dimension(:,:,:) :: taucld,tauaer, sw_zro, zro_sw
         ! heating rates and fluxes, zenith angle when in-between radiation time steps
         real(kind=rb),allocatable,dimension(:,:)   :: sw_flux,lw_flux,zencos, olr, toa_sw! surface and TOA fluxes, cos(zenith angle) 
                                                                             ! dimension (lon x lat)
@@ -103,7 +102,7 @@
 ! some constants
         real(kind=rb)      :: daypersec=1./86400.,deg2rad   !RG: daypersec=1./86400. left in when conversion to non-specific day length made as this only converts heatrates from RRTM from K/day to K/sec
 ! no clouds in the radiative scheme
-        integer(kind=im) :: idrv=0, &
+        integer(kind=im) :: icld=0,idrv=0, &
              inflglw=0,iceflglw=0,liqflglw=0, &
              iaer=0
 !---------------------------------------------------------------------------------------------------------------
@@ -189,9 +188,6 @@
                                                               !  day of the year = solday \in [0,days per year]
         real(kind=rb)      :: equinox_day=0.75                ! fraction of the year defining NH autumn equinox \in [0,1]
         real(kind=rb)      :: solr_cnst= 1368.22              ! solar constant [W/m2]
-
-        integer(kind=im)   :: icld=0                          ! Cloud overlap method
-
 !-------------------------------------------------s--------------------------------------------------------------
 !
 !-------------------- diagnostics fields -------------------------------
@@ -214,17 +210,14 @@
              &lonstep, do_zm_tracers, do_zm_rad, &
              &do_precip_albedo, precip_albedo_mode, precip_albedo, precip_lat,&
              &do_read_co2, co2_file, co2_variable_name, use_dyofyr, solrad, &
-             &solday, equinox_day,solr_cnst, icld
+             &solday, equinox_day,solr_cnst
 
       end module rrtm_vars
 !*****************************************************************************************
 !*****************************************************************************************
       module rrtm_radiation
-          use parkind, only : im => kind_im, rb => kind_rb
-          use constants_mod,         only: pi, wtmozone, wtmh2o, gas_constant, rdgas
-          use parrrtm, only:          nbndlw, ngptlw
-          use parrrsw, only:          nbndsw, ngptsw
-
+        use parkind, only : im => kind_im, rb => kind_rb
+        use constants_mod,         only: pi, wtmozone, wtmh2o, gas_constant, rdgas
         implicit none
     
       contains
@@ -237,6 +230,8 @@
 ! Modules
           use rrtm_vars
           use astronomy_mod,         only: astronomy_init
+          use parrrtm, only:          nbndlw
+          use parrrsw, only:          nbndsw
           use diag_manager_mod, only: register_diag_field, send_data
           use interpolator_mod, only: interpolate_type, interpolator_init, &
                                       &CONSTANT, ZERO,INTERP_WEIGHTED_P
@@ -410,13 +405,11 @@
           if(.not. do_read_radiation .or. .not. do_read_sw_flux .and. .not. do_read_lw_flux)then
              allocate(h2o(ncols_rrt,nlay_rrt),o3(ncols_rrt,nlay_rrt), &
                   co2(ncols_rrt,nlay_rrt))
-             allocate(ones(ngptsw,ncols_rrt,nlay_rrt), &
-                  zeros(ngptsw,ncols_rrt,nlay_rrt))
+             allocate(ones(ncols_rrt,nlay_rrt), &
+                  zeros(ncols_rrt,nlay_rrt))
              allocate(emis(ncols_rrt,nbndlw))
-             allocate(taucld_lw(nbndlw,ncols_rrt,nlay_rrt), &
-                  tauaer_lw(ncols_rrt,nlay_rrt,nbndlw))
-             allocate(taucld_sw(nbndsw,ncols_rrt,nlay_rrt), &
-                  tauaer_sw(ncols_rrt,nlay_rrt,nbndsw))
+             allocate(taucld(nbndlw,ncols_rrt,nlay_rrt), &
+                  tauaer(ncols_rrt,nlay_rrt,nbndlw))
              allocate(sw_zro(nbndsw,ncols_rrt,nlay_rrt), &
                   zro_sw(ncols_rrt,nlay_rrt,nbndsw))
              if(id_coszen > 0)allocate(zencos (size(lonb,1)-1,size(latb,2)-1))
@@ -431,10 +424,8 @@
              emis  = 1. !black body: 1.0
              
              ! absorption
-             taucld_sw = 0.
-             tauaer_sw = 0.
-             taucld_lw = 0.
-             tauaer_lw = 0.
+             taucld = 0.
+             tauaer = 0.
              ! clouds
              sw_zro = 0.
              zro_sw = 0.
@@ -540,10 +531,7 @@
         end subroutine interp_temp
 !*****************************************************************************************
 !*****************************************************************************************
-        subroutine run_rrtmg(is,js,Time,lat,lon,p_full,p_half,        &
-                             albedo,q,t,t_surf_rad,tdt,               &
-                             coszen,flux_sw,flux_lw,cf_rad,reff_rad,  &
-                             do_cloud_simple)
+        subroutine run_rrtmg(is,js,Time,lat,lon,p_full,p_half,albedo,q,t,t_surf_rad,tdt,coszen,flux_sw,flux_lw)
 !
 ! Driver for RRTMG radiation scheme.
 ! Prepares all inputs, calls SW and LW radiation schemes, 
@@ -552,8 +540,8 @@
 ! Modules
           use fms_mod, only:         error_mesg, FATAL
           use mpp_mod, only:         mpp_pe,mpp_root_pe
-          use rrtmg_lw_rad, only:    rrtmg_lw, mcica_subcol_lw
-          use rrtmg_sw_rad, only:    rrtmg_sw, mcica_subcol_sw
+          use rrtmg_lw_rad, only:    rrtmg_lw
+          use rrtmg_sw_rad, only:    rrtmg_sw
           use astronomy_mod,         only: diurnal_solar
           use rrtm_vars
           use time_manager_mod,only: time_type,get_time,set_time, length_of_year, length_of_day
@@ -589,25 +577,14 @@
           real(kind=rb),dimension(:,:),intent(out),optional :: flux_sw,flux_lw ! surface fluxes [W/m2]
                                                                                ! dimension (lat x lon)
                                                                                ! need to have both or none!
-          real(kind=rb), dimension(:,:,:), intent(in)       :: cf_rad,reff_rad !cloud properties
-
-          logical, intent(in)                               :: do_cloud_simple
-
-
 !---------------------------------------------------------------------------------------------------------------
 ! Local variables
           integer k,j,i,ij,j1,i1,ij1,kend,dyofyr,seconds,days
           integer si,sj,sk,locmin(3)
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: o3f
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: co2f,co2f_temp
-
           real(kind=rb),dimension(ncols_rrt,nlay_rrt) :: pfull,tfull,fracday&
-               , hr,hrc, swhr, swhrc, cldfr, reliq, reice
-
-
-          real(kind=rb),dimension(ngptsw,ncols_rrt,nlay_rrt) :: cldfr_pass_sw
-          real(kind=rb),dimension(ngptlw,ncols_rrt,nlay_rrt) :: cldfr_pass_lw
-
+               , hr,hrc, swhr, swhrc
           real(kind=rb),dimension(size(tdt,1),size(tdt,2),size(tdt,3)) :: tdt_rrtm
           real(kind=rb),dimension(ncols_rrt,nlay_rrt+1) :: uflx, dflx, uflxc, dflxc&
                ,swuflx, swdflx, swuflxc, swdflxc
@@ -622,21 +599,13 @@
           real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
           real(kind=rb),dimension(size(q,1),size(q,2)) :: p2 !mp586 addition for annual mean insolation
 
-	      integer :: year_in_s
+	  integer :: year_in_s
           real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
 
-          !mcica variables
-	      integer ::  permuteseed, irng
-          real(kind=rb),dimension(ncols_rrt,nlay_rrt) :: reicmcl, relqmcl
 
-          real(kind=rb),dimension(ngptsw, ncols_rrt,nlay_rrt) :: cldfmcl_sw, ciwpmcl_sw, clwpmcl_sw, taucmcl_sw, ssacmcl, asmcmcl, fsfcmcl
-
-          real(kind=rb),dimension(ngptlw, ncols_rrt,nlay_rrt) :: cldfmcl_lw, ciwpmcl_lw, clwpmcl_lw, taucmcl_lw
 
 ! debug
-          real :: tmp1, tmp2 !remove tmp1 and tmp2 after debugging
-
-          integer :: indx2(2),indx(3),ii,ji,ki, pt1,pt2
+          integer :: indx2(2),indx(3),ii,ji,ki
           logical :: used
 !---------------------------------------------------------------------------------------------------------------
 
@@ -859,70 +828,32 @@
           ! anything lower than 0.01 (about 15min) is set to zero
 !          where(cosz_rr < 1.e-2)cosz_rr=0.
           
-          if (do_cloud_simple) then
-            pt1 = 1
-            pt2 = ngptsw
-            inflglw  = 2 !RRTM responsible for calculating optical properties of clouds
-            liqflglw = 1 !Sets liquid water radii to be used rather than being inactive (zero is inactive)
-            cldfr = reshape( cf_rad  (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
-            reliq = reshape(reff_rad  (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /)) !already in microns
-            reice = 10*ones(pt1,:,:) !Ice particle radii not used as iceflglw=0 meaning it is inactive. Setting to fill value of zeros
-          else
-            pt1 = 1
-            pt2 = 1
-            cldfr = zeros(pt1,:,:)
-            reliq = 10*ones(pt1,:,:)  ! not requires to be 10 microns but assumed a valid number
-            reice = 10*ones(pt1,:,:)  ! needs to be 10 microns
-            cldfr_pass_sw(pt1,:,:) = cldfr
-          endif
-
-
-          if (do_cloud_simple) then
-              !need to run monty carlo independent column approcimation (mcica)
-              permuteseed  = 1
-              irng = 1 !use a random number gerator either 0 (Kissvec) or 1(Mersenne Twister)
-
-              call mcica_subcol_sw(0, ncols_rrt, nlay_rrt, icld, permuteseed, irng, pfull, &
-                       cldfr, zeros(pt1,:,:), zeros(pt1,:,:), reice, reliq, tauaer_sw, zro_sw, zro_sw, zro_sw , &
-                       !outs
-                       cldfmcl_sw, ciwpmcl_sw, clwpmcl_sw, reicmcl, relqmcl, taucmcl_sw, ssacmcl, asmcmcl, fsfcmcl)
-
-              cldfr_pass_sw = cldfmcl_sw
-              reice = reicmcl
-              reliq = relqmcl
-              taucld_sw = taucmcl_sw
-              !other vars not needed
-           endif
-
-
           if(include_secondary_gases)then
              call rrtmg_sw &
                   (ncols_rrt, nlay_rrt , icld     , iaer         , &
                   pfull     , phalf    , tfull    , thalf        , tsrf         , &
-                  h2o       , o3       , co2      , ch4_val*ones(pt1,:,:) , n2o_val*ones(pt1,:,:) , o2_val*ones(pt1,:,:) , &
+                  h2o       , o3       , co2      , ch4_val*ones , n2o_val*ones , o2_val*ones , &
                   albedo_rr , albedo_rr, albedo_rr, albedo_rr, &
                   cosz_rr   , solrad   , dyofyr   , solr_cnst, &
-                  inflglw   , iceflglw , liqflglw ,            &
+                  inflglw   , iceflglw , liqflglw , &
                   ! cloud parameters
-                  cldfr_pass_sw(pt1:pt2,:,:),     &
-                  taucld_sw    , sw_zro   , sw_zro   , sw_zro  , &
-                  zeros(pt1:pt2,:,:) , zeros(pt1:pt2,:,:)  , reice    , reliq   , & 
-                  tauaer_sw    , zro_sw   , zro_sw   , zro_sw  , &
+                  zeros     , taucld   , sw_zro   , sw_zro   , sw_zro , &
+                  zeros     , zeros    , 10*ones  , 10*ones  , &
+                  tauaer    , zro_sw   , zro_sw   , zro_sw    , &
                   ! output
-                  swuflx    , swdflx   , swhr     , swuflxc , swdflxc, swhrc)
+                  swuflx    , swdflx   , swhr     , swuflxc  , swdflxc, swhrc)
           else
              call rrtmg_sw &
                   (ncols_rrt, nlay_rrt , icld     , iaer     , &
                   pfull     , phalf    , tfull    , thalf    , tsrf , &
-                  h2o       , o3       , co2      , zeros(pt1,:,:)    , zeros(pt1,:,:), zeros(pt1,:,:), &
+                  h2o       , o3       , co2      , zeros    , zeros, zeros, &
                   albedo_rr , albedo_rr, albedo_rr, albedo_rr, &
                   cosz_rr   , solrad   , dyofyr   , solr_cnst, &
-                  inflglw   , iceflglw , liqflglw ,            &
+                  inflglw   , iceflglw , liqflglw , &
                   ! cloud parameters
-                  cldfr_pass_sw(pt1:pt2,:,:),     &
-                  taucld_sw   , sw_zro   , sw_zro   , sw_zro ,    &
-                  zeros(pt1:pt2,:,:)     , zeros(pt1:pt2,:,:)    , reice   , reliq  ,    &
-                  tauaer_sw    , zro_sw   , zro_sw   , zro_sw   , &
+                  zeros     , taucld   , sw_zro   , sw_zro   , sw_zro , &
+                  zeros     , zeros    , 10*ones  , 10*ones  , &
+                  tauaer    , zro_sw   , zro_sw   , zro_sw   , &
                   ! output
                   swuflx    , swdflx   , swhr     , swuflxc  , swdflxc, swhrc)
           endif
@@ -936,20 +867,6 @@
 !                swhr  (:,i) = 0.
 !             endwhere
 !          enddo
-
-          if(do_cloud_simple) then
-
-              permuteseed  = 2
-
-              call mcica_subcol_lw(0, ncols_rrt, nlay_rrt, icld, permuteseed, irng, pfull, &
-                                   cldfr, zeros(pt1,:,:), zeros(pt1,:,:), reice, reliq, tauaer_lw,   &
-                                   cldfmcl_lw, ciwpmcl_lw, clwpmcl_lw, reicmcl, relqmcl, taucmcl_lw)
-              cldfr_pass_lw = cldfmcl_lw
-              reice = reicmcl
-              reliq = relqmcl
-              taucld_lw = taucmcl_lw
-          endif
-
              
           swijk   = reshape(swhr(:,sk:1:-1),(/ si/lonstep,sj,sk /))*daypersec
 
@@ -962,26 +879,26 @@
                   pfull          , phalf          , tfull          , thalf, tsrf  , &
                   h2o            , o3             , co2            , &
                   ! secondary gases
-                  ch4_val*ones(pt1,:,:)   , n2o_val*ones(pt1,:,:)   , o2_val*ones(pt1,:,:)    , &
-                  cfc11_val*ones(pt1,:,:) , cfc12_val*ones(pt1,:,:) , cfc22_val*ones(pt1,:,:) , ccl4_val*ones(pt1,:,:) , &
+                  ch4_val*ones   , n2o_val*ones   , o2_val*ones    , &
+                  cfc11_val*ones , cfc12_val*ones , cfc22_val*ones , ccl4_val*ones , &
                   ! emissivity and cloud composition
                   emis           , inflglw        , iceflglw       , liqflglw      ,  &
                   ! cloud parameters
-                  cldfr_pass_lw(pt1:pt2,:,:)          , taucld_lw         , zeros(pt1:pt2,:,:)          , zeros(pt1:pt2,:,:)         , reice, reliq, &
-                  tauaer_lw         , &
+                  zeros          , taucld         , zeros          , zeros         , 10*ones, 10*ones, &
+                  tauaer         , &
                   ! output
                   uflx           , dflx           , hr             , uflxc         , dflxc  , hrc)
           else
              call rrtmg_lw &
                   (ncols_rrt, nlay_rrt, icld    , idrv , &
                   pfull     , phalf   , tfull   , thalf, tsrf , &
-                  h2o       , o3      , co2     , zeros(pt1,:,:), zeros(pt1,:,:), zeros(pt1,:,:), &
-                  zeros(pt1,:,:)     , zeros(pt1,:,:)   , zeros(pt1,:,:)   , zeros(pt1,:,:), &
+                  h2o       , o3      , co2     , zeros, zeros, zeros, &
+                  zeros     , zeros   , zeros   , zeros, &
                   ! emissivity and cloud composition
                   emis      , inflglw , iceflglw, liqflglw, &
                   ! cloud parameters
-                  cldfr_pass_lw(pt1:pt2,:,:)     , taucld_lw  , zeros(pt1:pt2,:,:)   , zeros(pt1:pt2,:,:), reice, reliq, &
-                  tauaer_lw    , &
+                  zeros     , taucld  , zeros   , zeros, 10*ones, 10*ones, &
+                  tauaer    , &
                   ! output
                   uflx      , dflx    , hr      , uflxc, dflxc  , hrc)
           endif
