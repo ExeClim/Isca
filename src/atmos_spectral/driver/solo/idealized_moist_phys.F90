@@ -323,7 +323,7 @@ real, dimension (size(rad_lonb_2d,1)-1, size(rad_latb_2d,2)-1) :: sgsmtn ! neede
 
 !s added for land reading
 integer, dimension(4) :: siz
-integer :: global_num_lon, global_num_lat, ierr
+integer :: global_num_lon, global_num_lat
 character(len=12) :: ctmp1='     by     ', ctmp2='     by     '
 !s end added for land reading
 
