@@ -72,6 +72,12 @@ References
            **No. NCAR/TN-460+STR**,
            doi: `10.5065/D6KK98Q6 <http://dx.doi.org/10.5065/D6KK98Q6>`_.
 
+.. [Liu2021] Liu, Q. and Collins, M. and Maher, P. and Thomson, S. I. and Vallis, G. K.:
+           SimCloud version 1.0: a simple diagnostic cloud scheme for idealized climate models.
+           *Geoscientific Model Development*
+           **14**, 2801--2826
+           doi: 10.5194/gmd-14-2801-2021
+
 .. [Manabe1969] Manabe, S. 1969:
            Climate and the Ocean Circulation: I. The Atmopsheric Circulation and the Hydrology of the Earth's Surface.
            *Mon. Wea. Rev.*
