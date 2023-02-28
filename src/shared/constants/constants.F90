@@ -58,16 +58,16 @@ real :: realnumber
 ! <DATA NAME="GRAV" UNITS="m/s^2" TYPE="real" DEFAULT="9.80">
 !   acceleration due to gravity
 ! </DATA>
-! <DATA NAME="RDGAS" UNITS="J/kg/deg" TYPE="real" DEFAULT="287.04">
+! <DATA NAME="RDGAS" UNITS="J/kg/K" TYPE="real" DEFAULT="287.04">
 !   gas constant for dry air
 ! </DATA>
 ! <DATA NAME="KAPPA" TYPE="real" DEFAULT="2./7.">
 !   RDGAS / CP_AIR
 ! </DATA>
-! <DATA NAME="CP_AIR" UNITS="J/kg/deg" TYPE="real" DEFAULT="RDGAS/KAPPA">
+! <DATA NAME="CP_AIR" UNITS="J/kg/K" TYPE="real" DEFAULT="RDGAS/KAPPA">
 !   specific heat capacity of dry air at constant pressure
 ! </DATA>
-! <DATA NAME="CP_OCEAN" UNITS="J/kg/deg" TYPE="real" DEFAULT="3989.24495292815">
+! <DATA NAME="CP_OCEAN" UNITS="J/kg/K" TYPE="real" DEFAULT="3989.24495292815">
 !   specific heat capacity taken from McDougall (2002) "Potential Enthalpy ..."
 ! </DATA>
 ! <DATA NAME="RHO0" UNITS="kg/m^3" TYPE="real" DEFAULT="1.035e3">
@@ -76,8 +76,8 @@ real :: realnumber
 ! <DATA NAME="RHO0R" UNITS="m^3/kg" TYPE="real" DEFAULT="1.0/RHO0">
 !   reciprocal of average density of sea water
 ! </DATA>
-! <DATA NAME="RHO_CP" UNITS="J/m^3/deg" TYPE="real" DEFAULT="RHO0*CP_OCEAN">
-!   (kg/m^3)*(cal/kg/deg C)(joules/cal) = (joules/m^3/deg C)
+! <DATA NAME="RHO_CP" UNITS="J/m^3/K" TYPE="real" DEFAULT="RHO0*CP_OCEAN">
+!   (kg/m^3)*(J/kg/K) = (J/m^3/K)
 ! </DATA>
 
 real, public, parameter :: EARTH_GRAV = 9.80

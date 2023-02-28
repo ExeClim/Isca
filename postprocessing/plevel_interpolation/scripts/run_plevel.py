@@ -7,11 +7,11 @@ import pdb
 import subprocess
 
 start_time=time.time()
-base_dir='/scratch/sit204/data_isca/'
-exp_name_list = ['soc_test_aquaplanet_with_clouds_post_jm_suggestions_amip_ssts_land_low_albedo']
+base_dir='/scratch/sit204/Data_2013/'
+exp_name_list = ['no_ice_flux_lhe_exps_q_flux_hadgem_anoms_3']
 avg_or_daily_list=['monthly']
-start_file=96
-end_file=120
+start_file=287
+end_file=288
 nfiles=(end_file-start_file)+1
 
 do_extra_averaging=False #If true, then 6hourly data is averaged into daily data using cdo

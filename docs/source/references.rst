@@ -1,7 +1,10 @@
 References
 ==========
 
-
+.. [Alexander1999] Alexander, M. J., & Dunkerton, T. J. (1999). A spectral parameterization of
+           mean-flow forcing due to breaking gravity waves. Journal of the Atmospheric Sciences,
+           56(24), 4167-4182. <https://doi.org/10.1175/1520-0469(1999)056<4167:ASPOMF>2.0.CO;2>`_.
+           
 .. [Betts1986] Betts, A. K., 1986:
            A new convective adjustment scheme. Part I: Observational and theoretical basis.
            *Quarterly Journal of the Royal Meteorological Society*,
@@ -28,6 +31,12 @@ References
 .. [Geen2016] Geen, R., Czaja, A., and Haigh, J. D., 2016: The effects of increasing humidity on heat transport by 
               extratropical waves, *Geophys. Res. Lett.*, **43**, 8314–8321, doi.
 
+.. [Gierasch2000] Gierasch, P.J., Ingersoll, A.P., Banfield, D., Ewald, S.P., Helfenstein, P., Simon-Miller, A., Vasavada, A., Breneman,                 H.H., Senske, D.A. and Team, G.I., 2000: 
+           Observation of moist convection in Jupiter's atmosphere. 
+           *Nature*,
+           **403(6770)**, 628--630.
+           doi: `10.1038/35001017 <https://doi.org/10.1038/35001017>`_.
+
 .. [Jucker2017] Jucker, M. and Gerber, E. P., 2017:
            Untangling the Annual Cycle of the Tropical Tropopause Layer with an Idealized Moist Model.
            *Journal of Climate*,
@@ -39,6 +48,12 @@ References
            *Journal of Climate*,
            **21(15)**, 3815--3832,
            doi: `10.1175/2007JCLI2065.1 <http://dx.doi.org/10.1175/2007JCLI2065.1>`_.
+
+.. [Large2004] Large, W. G., and Yeager, S., 2004:
+           Diurnal to decadal global forcing for ocean and sea-ice models: The data sets and flux climatologies. 
+           *NCAR Technical Report; University Corporation for Atmospheric Research*,
+           **No. NCAR/TN-460+STR**,
+           doi: `10.5065/D6KK98Q6 <http://dx.doi.org/10.5065/D6KK98Q6>`_.
 
 .. [Manabe1969] Manabe, S. 1969:
            Climate and the Ocean Circulation: I. The Atmopsheric Circulation and the Hydrology of the Earth's Surface.
@@ -61,10 +76,20 @@ References
            *Monthly Weather Review*,
            **120(6)**, 978--1002,
            doi: 10.1175/1520-0493(1992)120<0978:RASAPO>2.0.CO;2
+	   
+.. [Pierrehumbert1986] Pierrehumbert, R. T. (1986, September). An essay on the parameterization
+           of orographic gravity wave drag. In Proc. Seminar/Workshop on Observation, Theory and
+           Modeling of Orographic Effects (Vol. 1, pp. 251-282).
 			 
 .. [Ricchiazzi1998] Ricchiazzi, P., Yang, S., Gautier, C., and Sowle, D., 1998: SBDART: A research and teaching 
                 software tool for plane-parallel radiative transfer in the Earth’s atmosphere, 
                 *B. Am. Meteorol. Soc.*, **79**, 2101–2114, doi.
+		
+.. [Sauliere2012] Saulière, J., Brayshaw, D. J., Hoskins, B., & Blackburn, M. (2012):
+            Further investigation of the impact of idealized continents and SST distributions on the Northern Hemisphere storm tracks.
+            *J. Atmos. Sci.*, 
+            **69(3)**, 840-856,
+            doi: `10.1175/JAS-D-11-0113.1 <https://doi.org/10.1175/JAS-D-11-0113.1>`_.
 
 .. [Schneider2006] Schneider, T., Walker, C. C., 2006:
             Self-Organization of Atmospheric Macroturbulence into Critical States of Weak Nonlinear Eddy–Eddy Interactions.
@@ -78,7 +103,19 @@ References
 .. [Thomson_and_Vallis2019] Thomson, S. I. and Vallis, G. K., 2019. Hierarchical Modeling of Solar System
             Planets with Isca. *Atmosphere*, **10 (12)**, 803,
             doi: `10.3390/atmos10120803 <https://doi.org/10.3390/atmos10120803>`_.
+            
+.. [NealeHoskins2004] Neale, R. B. and Hoskins, B. K., 2000. A standard test for AGCMs including their physical parametrizations: I: the proposal
+            *Atmospheric Science Letters*,
+            **1(2)**, 101-107
 
+.. [MerlisEtAl2013] Merlis, Timothy M., et al. 2013. Hadley circulation response to orbital precession. Part I: Aquaplanets. 
+            *Journal of Climate*,
+            **26(3)**, 740-753
+
+.. [RusselEtAl1985] Russell, Gary L., James R. Miller, and Lie-Ching Tsang. 1985. Seasonal oceanic heat transports computed from an atmospheric model.
+            *Dynamics of atmospheres and Oceans*
+            **9(3)**, 253-271.
+            
 .. [Vallis2017] Vallis, G. K., 2017: **Atmospheric and Oceanic Fluid Dynamics. Fundamentals and 
            Large-Scale Circulation**. 2nd ed. Cambridge University Press.
            doi: `10.1017/9781107588417 <https://doi.org/10.1017/9781107588417>`_.
@@ -89,7 +126,7 @@ References
            other planets at varying levels of complexity. *Geoscientific Model Development*,
            **11(3)**, 843-859,
            doi: `10.5194/gmd-11-843-2018 <https://doi.org/10.5194/gmd-11-843-2018>`_.
-
+           
 .. [Williams2011] Williams, P. D., 2011:
            The RAW Filter: An Improvement to the Robert-Asselin Filter in Semi-Implicit Integrations.
            *Mon. Wea. Rev.*
@@ -101,8 +138,3 @@ References
            *Dynamics of Atmospheres and Oceans*,
            **73**, 10--33,
            doi: `10.1016/j.dynatmoce.2015.11.001 <https://doi.org/10.1016/j.dynatmoce.2015.11.001>`_.
-
-
-
-
-

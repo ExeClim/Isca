@@ -51,6 +51,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "nbsphinx",
+    "sphinx.ext.autosectionlabel"
 ]
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
@@ -198,7 +199,7 @@ epub_exclude_files = ["search.html"]
 # Options for intersphinx.
 intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org", None),
-    "numpy": ("https://docs.scipy.org/doc/numpy", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
     "pandas": ("http://pandas.pydata.org/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://xarray.pydata.org/en/stable", None),

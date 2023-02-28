@@ -157,7 +157,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
 
     if(dt_rad_avg .le. 0) dt_rad_avg = dt_rad
 
-    if ((tidally_locked.eq..true.) .and. (frierson_solar_rad .eq. .true.)) then
+    if ((tidally_locked .eqv. .true.) .and. (frierson_solar_rad .eqv. .true.)) then
         call error_mesg( 'socrates_init', &
             'tidally_locked and frierson_solar_rad cannot both be true', FATAL)
     endif
@@ -394,7 +394,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     n_soc_bands_sw = spectrum_sw%dim%nd_band
     n_soc_bands_sw_hires = spectrum_sw_hires%dim%nd_band
 
-    if (socrates_hires_mode == .True.) then
+    if (socrates_hires_mode .eqv. .True.) then
         allocate(outputted_soc_spectral_olr(size(lonb,1)-1, size(latb,2)-1, n_soc_bands_lw_hires))
     else
         allocate(outputted_soc_spectral_olr(size(lonb,1)-1, size(latb,2)-1, n_soc_bands_lw ))
@@ -491,7 +491,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
 
         ! spectral output currently not available as required axis not present in diag file
         if (id_soc_spectral_olr > 0) then
-            if (socrates_hires_mode == .True.) then
+            if (socrates_hires_mode .eqv. .True.) then
                 allocate(spectral_olr_store(size(lonb,1)-1, size(latb,2)-1, n_soc_bands_lw_hires))
             else
                 allocate(spectral_olr_store(size(lonb,1)-1, size(latb,2)-1, n_soc_bands_lw ))
@@ -655,13 +655,13 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     input_reff_rad = reshape(fms_reff_rad(:,:,:),(/si*sj,sk /))
     input_mmr_cl_rad = reshape(fms_mmr_cl_rad(:,:,:),(/si*sj,sk/))
 
-    if (account_for_effect_of_water == .true.) then
+    if (account_for_effect_of_water .eqv. .true.) then
         input_mixing_ratio = reshape(fms_spec_hum(:,:,:) / (1. - fms_spec_hum(:,:,:)),(/si*sj,sk /)) !Mass mixing ratio = q / (1-q)
     else
         input_mixing_ratio = 0.0
     endif
 
-    if (account_for_effect_of_ozone == .true.) then
+    if (account_for_effect_of_ozone .eqv. .true.) then
         input_o3_mixing_ratio = reshape(fms_ozone(:,:,:),(/si*sj,sk /))
     else
         input_o3_mixing_ratio = 0.0
@@ -717,10 +717,10 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     soc_heating_rate = 0.0
 
     ! Test if LW or SW mode
-    if (soc_lw_mode == .TRUE.) then
+    if (soc_lw_mode .eqv. .TRUE.) then
         control_lw%isolir = 2
         CALL read_control(control_lw, spectrum_lw, do_cloud_simple)
-        if (socrates_hires_mode == .FALSE.) then
+        if (socrates_hires_mode .eqv. .FALSE.) then
         control_calc = control_lw
         spectrum_calc = spectrum_lw
         else
@@ -731,7 +731,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     else
         control_sw%isolir = 1
         CALL read_control(control_sw, spectrum_sw, do_cloud_simple)
-        if(socrates_hires_mode == .FALSE.) then
+        if(socrates_hires_mode .eqv. .FALSE.) then
         control_calc = control_sw
         spectrum_calc = spectrum_sw
         else
@@ -752,7 +752,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
         idx_chunk_start = (i_chunk-1)*chunk_size + 1
         idx_chunk_end   = (i_chunk)*chunk_size
 
-        if (soc_lw_mode==.TRUE.) then
+        if (soc_lw_mode .eqv. .TRUE.) then
         CALL socrates_calc(Time_diag, control_calc, spectrum_calc,                       &
             n_profile_chunk, n_layer, input_n_cloud_layer, input_n_aer_mode,             &
             input_cld_subcol_gen, input_cld_subcol_req,                                  &
@@ -840,7 +840,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
         tot_cloud_cover(:,:) = reshape(soc_tot_cloud_cover(:), (/si,sj/))
     endif
 
-    if (soc_lw_mode == .TRUE.) then
+    if (soc_lw_mode .eqv. .TRUE.) then
         output_soc_spectral_olr(:,:,:) = reshape(soc_spectral_olr(:,:),(/si,sj,int(n_soc_bands_lw,i_def) /))
     endif
 
@@ -1170,7 +1170,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     !get ozone
     if(do_read_ozone)then
         call interpolator( o3_interp, Time_diag, p_half_in, ozone_in, trim(ozone_field_name))
-        if (input_o3_file_is_mmr==.false.) then
+        if (input_o3_file_is_mmr .eqv. .false.) then
             ozone_in = ozone_in * wtmozone / (1000. * gas_constant / rdgas )
             ! Socrates expects all abundances to be mass mixing ratio. So if input file is volume mixing ratio,
             ! it must be converted to mass mixing ratio using the molar masses of dry air and ozone
@@ -1179,7 +1179,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
         endif
     endif
 
-    if (input_co2_mmr==.false.) then
+    if (input_co2_mmr .eqv. .false.) then
         co2_in = co2_ppmv * 1.e-6 * wtmco2 / (1000. * gas_constant / rdgas )
         ! Convert co2_ppmv to a mass mixing ratio, as required by socrates
         ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol
@@ -1191,7 +1191,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     !get co2
     if(do_read_co2)then
         call interpolator( co2_interp, Time_diag, p_half_in, co2_in, trim(co2_field_name))
-        if (input_co2_mmr==.false.) then
+        if (input_co2_mmr .eqv. .false.) then
             co2_in = co2_in * 1.e-6 * wtmco2 / (1000. * gas_constant / rdgas )
             ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol
             ! from kg/mol by multiplying by 1000. This conversion is necessary because wtmco2 is in g/mol.

@@ -17,12 +17,12 @@ implicit none
 
 contains
 
-! ==================================================================================
+! ==============================================================================
 
 ! Set up the call to the Socrates radiation scheme
 ! -----------------------------------------------------------------------------
 !DIAG Added Time
-subroutine socrates_calc(Time_diag,control, spectrum,                                    &
+subroutine socrates_calc(Time_diag,control, spectrum,                          &
   n_profile, n_layer, n_cloud_layer, n_aer_mode,                               &
   cld_subcol_gen, cld_subcol_req,                                              &
   p_layer, t_layer, t_layer_boundaries, d_mass, density,                       &

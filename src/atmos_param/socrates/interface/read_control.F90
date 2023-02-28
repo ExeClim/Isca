@@ -100,7 +100,7 @@ control%i_gas_overlap  = ip_overlap_k_eqv_scl
 if (do_cloud_simple) then
   control%i_cloud_representation = ip_cloud_ice_water
 else
-  control%i_cloud_representation = ip_cloud_off  
+  control%i_cloud_representation = ip_cloud_off
 end if
 control%i_overlap              = ip_max_rand
 control%i_inhom                = ip_homogeneous

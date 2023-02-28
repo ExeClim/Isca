@@ -348,7 +348,7 @@ case (ip_cloud_ice_water)
             cloud_frac(l, k)*ice_frac(l, k) / (liq_frac(l, k)+ice_frac(l, k))
         else
           cld%frac_cloud(l, k, ip_cloud_type_water) = 0.0_r_def
-          cld%frac_cloud(l, k, ip_cloud_type_ice) = 0.0_r_def
+          cld%frac_cloud(l, k, ip_cloud_type_ice)   = 0.0_r_def
         end if
       end do
     end do
