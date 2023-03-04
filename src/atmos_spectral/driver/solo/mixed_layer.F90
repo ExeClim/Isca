@@ -594,15 +594,15 @@ if(.not.module_is_initialized) then
   call error_mesg('mixed_layer','mixed_layer module is not initialized',FATAL)
 endif
 
-! if(update_albedo_from_ice) then
-! 	call read_ice_conc(Time_next)
-! 	land_ice_mask=.false.
-! 	where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
-!       land_ice_mask=.true.
-! 	end where
-! else
-    land_ice_mask=land_mask
-! endif
+if(update_albedo_from_ice) then
+  call read_ice_conc(Time_next)
+  land_ice_mask=.false.
+  where(land_mask.or.(ice_concentration.gt.ice_concentration_threshold))
+    land_ice_mask=.true.
+  end where
+else
+  land_ice_mask=land_mask
+endif
 
 call albedo_calc(albedo_out,Time_next)
 
@@ -757,11 +757,11 @@ albedo_inout=albedo_initial
 
 if(update_albedo_from_ice) then
 
-    !where(ice_concentration.gt.ice_concentration_threshold)
-    !	albedo_inout=ice_albedo_value
-    !end where
+    where(ice_concentration.gt.ice_concentration_threshold)
+      albedo_inout=ice_albedo_value
+    end where
 
-    albedo_inout = albedo_inout*(1.0-ice_concentration) + ice_albedo_value*ice_concentration
+    !albedo_inout = albedo_inout*(1.0-ice_concentration) + ice_albedo_value*ice_concentration
 
     if ( id_ice_conc > 0 ) used = send_data ( id_ice_conc, ice_concentration, Time )
     if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo_inout, Time )
