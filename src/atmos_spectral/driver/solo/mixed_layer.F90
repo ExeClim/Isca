@@ -121,7 +121,7 @@ character(len=256) :: qflux_field_name = 'ocean_qflux' !Only used when using a n
 
 character(len=256) :: ice_file_name  = 'siconc_clim_amip'
 real    :: ice_albedo_value = 0.7
-!real    :: ice_concentration_threshold = 0.5
+real    :: ice_concentration_threshold = 0.5
 logical :: update_albedo_from_ice = .false.
 
 logical :: add_latent_heat_flux_anom = .false.
@@ -143,7 +143,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               load_qflux,qflux_file_name,time_varying_qflux, &
                               update_albedo_from_ice, ice_file_name,         &
                               ice_albedo_value, specify_sst_over_ocean_only, &
-                              !ice_concentration_threshold,                   &
+                              ice_concentration_threshold,                   &
                               add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
                               flux_lhe_anom_field_name, do_ape_sst, qflux_field_name
 
