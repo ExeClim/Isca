@@ -2,7 +2,7 @@ import numpy as np
 
 from isca import IscaCodeBase, GreyCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
-from ntfy import notify
+# from ntfy import notify
 
 NCORES = 16
 
@@ -61,8 +61,8 @@ diag.add_field('two_stream', 'ang', time_avg=True)
 namelist = Namelist({
     'main_nml': {
         'dt_atmos': 110,
-        'days': 0.,
-        'seconds': 30.*88440.,
+        'days': 0,
+        'seconds': 30*88440,
         'calendar': 'no_calendar'
     },
 
@@ -133,7 +133,7 @@ namelist = Namelist({
     'sat_vapor_pres_nml': {
         'do_simple':True,
         'tcmin':  -223, #Make sure low temperature limit of saturation vapour pressure is low enough that it doesn't cause an error (note that this giant planet has no moisture anyway, so doesn't directly affect calculation.        
-        'tcmax': 350.,
+        'tcmax': 350,
     },
     
     'damping_driver_nml': {
@@ -242,4 +242,4 @@ if __name__=="__main__":
                 for i in range(2, 241):
 #                with exp_progress(exp, description='o%.0f d{day}' % scale):
                     exp.run(i, num_cores=NCORES)
-                notify('top down with conv scheme = '+conv+' has completed', 'isca')
+                # notify('top down with conv scheme = '+conv+' has completed', 'isca')
