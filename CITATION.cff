@@ -1,0 +1,38 @@
+cff-version: 1.1.0
+authors:
+  - family-names: Vallis
+    given-names: Geoffrey K.
+    orcid: https://orcid.org/0000-0002-5971-8995
+  - family-names: Colyer
+    given-names: Greg
+  - family-names: Geen 
+    given-names: Ruth
+  - family-names: Gerber
+    given-names: Edwin
+    orcid: https://orcid.org/0000-0002-6010-6638
+  - family-names: Jucker
+    given-names: Martin
+    orcid: https://orcid.org/0000-0002-4227-315X
+  - family-names: Maher
+    given-names: Penelope
+    orcid: https://orcid.org/0000-0001-8513-8700
+  - family-names: Paterson
+    given-names: Alexander
+  - family-names: Pietschnig
+    given-names: Marianne
+    orcid: https://orcid.org/0000-0002-7405-5536
+  - family-names: Penn
+    given-names: James
+  - family-names: Thomson
+    given-names: Stephen I.
+    orcid: https://orcid.org/0000-0002-4775-3259
+title: "Isca, v1.0: a framework for the global modelling of the atmospheres of Earth and other planets at varying levels of complexity"
+journal: Geoscientific Model Development
+volume: 11
+year: 2018
+number: 3
+pages: 843--859
+version: v1.0
+doi: 10.5194/gmd-11-843-2018
+url: https://gmd.copernicus.org/articles/11/843/2018/
+date-released: 2018-03-06

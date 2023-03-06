@@ -2278,6 +2278,7 @@ real,  intent(in),              optional :: hc
 !---- read namelist input ----
 #ifdef INTERNAL_FILE_NML
       read (input_nml_file, sat_vapor_pres_nml, iostat=io)
+      ierr = check_nml_error(io,'sat_vapor_pres_nml')
 #else
   if (file_exist('input.nml')) then
      unit = open_namelist_file ( )
