@@ -167,6 +167,7 @@ exp.namelist = Namelist({
         'init_bucket_depth_land': 0.15, 
     },
 
+    # Using linear cloud scheme option
     'cloud_simple_nml': {
         'do_qcl_with_temp': True,
         'do_cloud_cover_diags': True,
@@ -247,7 +248,8 @@ exp.namelist = Namelist({
         # Copy from realistic_continents namelist
         'update_albedo_from_ice': True,         # Use the simple ice model to update surface albedo
         'ice_albedo_value': 0.7,                # What value of albedo to use in regions of ice
-        #'ice_concentration_threshold': 0.5,    # ice concentration threshold above which to make albedo equal to ice_albedo_value        
+        #'ice_concentration_threshold': 0.5,    # ice concentration threshold above which to make albedo equal to ice_albedo_value       
+        'ice_albedo_method': 'ramp_function', 
     },
 
     'qe_moist_convection_nml': {
