@@ -131,7 +131,7 @@ exp.namelist = namelist = Namelist({
         'land_roughness_prefactor' :10.0, 
     },
 
-    'cloud_simple_nml': { #use all existing defaults as in code
+    'cloud_spookie_nml': { #use all existing defaults as in code
         'spookie_protocol':2
     },
 
