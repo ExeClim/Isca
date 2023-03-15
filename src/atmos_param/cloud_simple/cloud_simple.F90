@@ -71,6 +71,8 @@ module cloud_simple_mod
 #endif
     stdlog_unit = stdlog()
     write(stdlog_unit, cloud_simple_nml)
+    
+    call error_mesg(mod_name_cld, 'Using SimCloud cloud scheme', NOTE)
 
     !register diagnostics
     id_cf = register_diag_field (mod_name_cld, 'cf', axes(1:3), Time, &

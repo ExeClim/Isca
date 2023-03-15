@@ -1,6 +1,6 @@
 module cloud_spookie_mod
 
-  use            fms_mod, only: stdlog, FATAL, WARNING, error_mesg,  &
+  use            fms_mod, only: stdlog, FATAL, WARNING, NOTE, error_mesg,  &
                                 open_namelist_file, close_file, open_file, &
                                 check_nml_error, mpp_pe
   use   time_manager_mod, only: time_type
@@ -88,6 +88,8 @@ module cloud_spookie_mod
        write (unit,nml=cloud_spookie_nml)
     endif
     call close_file(unit)
+    
+    call error_mesg(mod_name_cld, 'Using SimCloud cloud scheme', NOTE)
 
     !register diagnostics
     id_cf = &

@@ -22,6 +22,8 @@ use two_stream_gray_rad_mod, only: two_stream_gray_rad_init, two_stream_gray_rad
 
 use        cloud_simple_mod, only: cloud_simple_init, cloud_simple_end, cloud_simple
 
+use       cloud_spookie_mod, only: cloud_spookie_init, cloud_spookie
+
 use         mixed_layer_mod, only: mixed_layer_init, mixed_layer, mixed_layer_end, albedo_calc
 
 use         lscale_cond_mod, only: lscale_cond_init, lscale_cond, lscale_cond_end
@@ -112,7 +114,8 @@ logical :: do_bm = .false.
 logical :: do_ras = .false.
 
 ! Cloud options
-logical :: do_cloud_simple = .false. ! by default the cloud scheme is off.
+logical :: do_cloud_simple = .false. ! SimCloud cloud scheme
+logical :: do_cloud_spookie = .false. ! SPOOKIE protocol cloud scheme
 
 !s Radiation options
 logical :: two_stream_gray = .true.
@@ -149,7 +152,7 @@ real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
 ! end RG Add bucket
 
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
-                                      do_cloud_simple,                               &
+                                      do_cloud_simple, do_cloud_spookie,             &
                                       two_stream_gray, do_rrtm_radiation, do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
@@ -361,8 +364,14 @@ write(stdlog_unit, idealized_moist_phys_nml)
 d622 = rdgas/rvgas
 d378 = 1.-d622
 
+if(do_cloud_simple .and. do_cloud_spookie) &
+  call error_mesg('cloud_simple','do_cloud_simple and do_cloud_spookie cannot both be .true.',FATAL)
+
 if(do_cloud_simple) then
   call cloud_simple_init(get_axis_id(), Time)
+end if
+if(do_cloud_spookie) then
+  call cloud_spookie_init(get_axis_id(), Time)
 end if
 
 !s need to make sure that gray radiation and rrtm radiation are not both called.
