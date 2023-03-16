@@ -5,10 +5,11 @@ import socket
 from jinja2 import Environment, FileSystemLoader
 import sh
 
-from isca import GFDL_WORK, GFDL_BASE, _module_directory, get_env_file
+from isca import GFDL_WORK, GFDL_BASE, GFDL_SOC, _module_directory, get_env_file
 from .loghandler import Logger
 from .helpers import url_to_folder, destructive, useworkdir, mkdir, cd, git, P, git_run_in_directory
 
+import pdb
 
 class CodeBase(Logger):
     """The CodeBase.
@@ -91,6 +92,28 @@ class CodeBase(Logger):
                 self.checkout()
             else:
                 self.link_source_to(directory)
+        elif self.code_is_available and self.commit is not None:
+            # problem is that if you try to checkout a specific commit, and it doesn't work, the next time you try it, the above code will only check if code exists, which it will, but it won't be at the correct commit. This will cause problems for e.g. the trip tests. Following code checks if the code that's checked out is the correct commit ID compared to what was asked for, and gives an error if they are different.         
+            commit_at_HEAD_of_repo = self.git_commit.split('"')[1]
+            commit_desired = self.commit
+            if len(commit_desired)==len(commit_at_HEAD_of_repo):
+                commit_to_compare_1 = commit_desired
+                commit_to_compare_2 = commit_at_HEAD_of_repo
+            elif len(commit_desired)>len(commit_at_HEAD_of_repo):
+                commit_to_compare_1 = commit_desired[0:len(commit_at_HEAD_of_repo)]
+                commit_to_compare_2 = commit_at_HEAD_of_repo
+            else:
+                commit_to_compare_1 = commit_desired
+                commit_to_compare_2 = commit_at_HEAD_of_repo[0:len(commit_desired)]
+
+            if commit_to_compare_1==commit_to_compare_2:
+                self.log.info('commit requested successfully checked out')
+            else:
+                self.log.warn('commit requested is not the commit to be used')
+                raise NotImplementedError("commit requested %s but commit supplied %s. This happens when you've previously tried to checkout a particular commit, but the commit was not found in the repo supplied. Try removing %s and trying again, making sure to select a repo that contains your desired commit." % (commit_to_compare_1, commit_to_compare_2, self.workdir ))
+
+
+        #TODO 
 
         self.templates = Environment(loader=FileSystemLoader(self.templatedir))
 
@@ -248,6 +271,7 @@ class CodeBase(Logger):
             'env_source': env,
             'path_names': path_names_str,
             'executable_name': self.executable_name,
+            'run_idb': debug,
         }
 
         self.templates.get_template('compile.sh').stream(**vars).dump(P(self.builddir, 'compile.sh'))
@@ -265,6 +289,63 @@ class IscaCodeBase(CodeBase):
     """
     name = 'isca'
     executable_name = 'isca.x'
+
+    def disable_soc(self):
+        # add no compile flag
+        self.compile_flags.append('-DSOC_NO_COMPILE')
+        self.log.info('SOCRATES compilation disabled.')
+
+    def __init__(self, *args, **kwargs):
+        super(IscaCodeBase, self).__init__(*args, **kwargs)
+        self.disable_soc()
+
+class SocratesCodeBase(CodeBase):
+    """Isca without RRTM but with the Met Office radiation scheme, Socrates.
+    """
+    #path_names_file = P(_module_directory, 'templates', 'moist_path_names')
+    name = 'socrates'
+    executable_name = 'soc_isca.x'
+
+    def disable_rrtm(self):
+        # add no compile flag
+        self.compile_flags.append('-DRRTM_NO_COMPILE')
+        self.log.info('RRTM compilation disabled.')
+
+    def simlink_to_soc_code(self):
+        #Make symlink to socrates source code if one doesn't already exist.
+        socrates_desired_location = self.codedir+'/src/atmos_param/socrates/src/trunk'
+
+        #First check if socrates is in correct place already
+        if os.path.exists(socrates_desired_location):
+            link_correct = os.path.exists(socrates_desired_location+'/src/')
+            if link_correct:
+                socrates_code_in_desired_location=True
+            else:
+                socrates_code_in_desired_location=False                
+                if os.path.islink(socrates_desired_location):
+                    self.log.info('Socrates source code symlink is in correct place, but is to incorrect location. Trying to correct.')
+                    os.unlink(socrates_desired_location)
+                else:
+                    self.log.info('Socrates source code is in correct place, but folder structure is wrong. Contents of the folder '+socrates_desired_location+' should include a src folder.')
+        else:
+            socrates_code_in_desired_location=False
+            self.log.info('Socrates source code symlink does not exist. Creating.')
+
+        # If socrates is not in the right place already, then attempt to make symlink to location of code provided by GFDL_SOC
+        if socrates_code_in_desired_location:
+            self.log.info('Socrates source code already in correct place. Continuing.')
+        else:
+            if GFDL_SOC is not None:
+                sh.ln('-s', GFDL_SOC, socrates_desired_location)
+            elif GFDL_SOC is None:
+                error_mesg = 'Socrates code is required for SocratesCodebase, but source code is not provided in location GFDL_SOC='+ str(GFDL_SOC)
+                self.log.error(error_mesg)
+                raise OSError(error_mesg)
+
+    def __init__(self, *args, **kwargs):
+        super(SocratesCodeBase, self).__init__(*args, **kwargs)
+        self.disable_rrtm()
+        self.simlink_to_soc_code()
 
 class GreyCodeBase(CodeBase):
     """The Frierson model.
@@ -284,10 +365,15 @@ class GreyCodeBase(CodeBase):
         self.compile_flags.append('-DRRTM_NO_COMPILE')
         self.log.info('RRTM compilation disabled.')
 
+    def disable_soc(self):
+        # add no compile flag
+        self.compile_flags.append('-DSOC_NO_COMPILE')
+        self.log.info('SOCRATES compilation disabled.')
+
     def __init__(self, *args, **kwargs):
         super(GreyCodeBase, self).__init__(*args, **kwargs)
         self.disable_rrtm()
-
+        self.disable_soc()
 
 class DryCodeBase(GreyCodeBase):
     """The Held-Suarez model.

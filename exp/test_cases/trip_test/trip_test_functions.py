@@ -6,13 +6,14 @@ or only change the test cases it expects to (e.g. a bug fix will change the resu
 When you submit a new pull request, please run this test and report the results in the pull request.
 """
 import numpy as np
-from isca import Experiment, IscaCodeBase, FailedRunError, GFDL_BASE, DiagTable
+from isca import Experiment, IscaCodeBase, SocratesCodeBase, FailedRunError, GFDL_BASE, DiagTable
 from isca.util import exp_progress
 import xarray as xar
 import pdb
 import numpy as np
 import os
 import sys
+import f90nml
 
 def get_nml_diag(test_case_name):
     """Gets the appropriate namelist and input files from each of the test case scripts in the test_cases folder
@@ -73,6 +74,18 @@ def get_nml_diag(test_case_name):
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist        
 
+    if 'socrates_aquaplanet' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_test/'))
+        from socrates_aquaplanet import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist       
+
+    if 'socrates_aquaplanet_cloud' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_test/'))
+        from socrates_aquaplanet_cloud import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist       
+
     if 'top_down_test' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/top_down_test/'))
         from top_down_test import namelist as nml_out
@@ -90,12 +103,31 @@ def get_nml_diag(test_case_name):
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist                   
                  
+    if 'ape_aquaplanet' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/ape_aquaplanet/'))
+        from socrates_ape_aquaplanet_T42 import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist        
+
     return nml_out, input_files  
 
 def list_all_test_cases_implemented_in_trip_test():
 
     #List of test cases to check
-    exps_implemented = ['axisymmetric', 'bucket_model', 'frierson', 'giant_planet', 'held_suarez', 'MiMA', 'realistic_continents_fixed_sst', 'realistic_continents_variable_qflux', 'top_down_test', 'variable_co2_grey', 'variable_co2_rrtm']
+    exps_implemented = ['axisymmetric', 
+                        'bucket_model', 
+                        'frierson', 
+                        'giant_planet', 
+                        'held_suarez', 
+                        'MiMA', 
+                        'realistic_continents_fixed_sst', 
+                        'realistic_continents_variable_qflux', 
+                        'socrates_aquaplanet', 
+                        'socrates_aquaplanet_cloud', 
+                        'top_down_test', 
+                        'variable_co2_grey', 
+                        'variable_co2_rrtm', 
+                        'ape_aquaplanet']
 
     return exps_implemented
 
@@ -144,22 +176,33 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
     diag_use = define_simple_diag_table()
     test_pass = True
     run_complete = True
+    compile_successful=True
 
     #Do the run for each of the commits in turn
     for s in [base_commit, later_commit]:
         exp_name = test_case_name+'_trip_test_21_'+s
-        cb = IscaCodeBase(repo=repo_to_use, commit=s)
-        cb.compile()
-        exp = Experiment(exp_name, codebase=cb)
-        exp.namelist = nml_use.copy()
-        exp.diag_table = diag_use
-        exp.inputfiles = input_files_use
+        if 'socrates' in test_case_name or 'ape_aquaplanet' in test_case_name:
+            cb = SocratesCodeBase(repo=repo_to_use, commit=s)
+        else:
+            cb = IscaCodeBase(repo=repo_to_use, commit=s)
+        try:
+            cb.compile()
+            exp = Experiment(exp_name, codebase=cb)
+            exp.namelist = nml_use.copy()
+            exp.diag_table = diag_use
+            exp.inputfiles = input_files_use
 
-        #Only run for 3 days to keep things short.
-        exp.update_namelist({
-        'main_nml': {
-        'days': 3,
-        }})
+            #Only run for 3 days to keep things short.
+            exp.update_namelist({
+            'main_nml': {
+            'days': 3,
+            }})
+        except:
+            run_complete = False
+            test_pass = False      
+            compile_successful=False                  
+            continue            
+
 
         try:
             # run with a progress bar
@@ -170,6 +213,8 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             run_complete = False
             test_pass = False
             continue
+
+
 
         data_dir_dict[s] = exp.datadir
     if run_complete:
@@ -187,6 +232,12 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
                     print('Test failed for '+var+' max diff value = '+str(maxval.values))
                     test_pass = False
 
+            base_experiment_input_nml = f90nml.read(data_dir_dict[base_commit] +'/run0001/input.nml')
+            later_commit_input_nml    = f90nml.read(data_dir_dict[later_commit] +'/run0001/input.nml')
+
+            if base_experiment_input_nml!=later_commit_input_nml:
+                raise AttributeError(f'The two experiments to be compared have been run using different input namelists, and so the results may be different because of this. This only happens when you have run the trip tests using one of the commit IDs before, and that you happen to have used a different version of the test cases on that previous occasion. Try removing both {data_dir_dict[base_commit]} and {data_dir_dict[later_commit]} and try again.')
+
         if test_pass:
             print('Test passed for '+test_case_name+'. Commit '+later_commit+' gives the same answer as commit '+base_commit)
             return_test_result = 'pass'
@@ -195,7 +246,12 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             return_test_result = 'fail'
 
     else:
-        print('Test failed for '+test_case_name+' because the run crashed.')
+        if compile_successful:
+            #This means that the compiles were both successful, but at least one of the runs crashed.
+            print('Test failed for '+test_case_name+' because the run crashed.')
+        else:
+            print('Test failed for '+test_case_name+' because at least one of the runs failed to compile.')
+
         return_test_result = 'fail'
 
 
