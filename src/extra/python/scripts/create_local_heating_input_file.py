@@ -16,21 +16,6 @@ resolution_file = xar.open_dataset('~/Desktop/full_continents_global_monthly_con
 lons = resolution_file['lon']
 lats = resolution_file['lat']
 
-#Decide whether heating rates are included in output file
-try:
-    resolution_file['htr_lw']
-    heating_rates_present=True
-except KeyError:
-    heating_rates_present=False
-
-#If heating rates are not present then calculate heating rates from differentiating vertical fluxes
-
-if not heating_rates_present:
-    total_flux = resolution_file['lw_recalculated']+resolution_file['sw_recalculated']
-    dflux_dp = diffz(total_flux.values, resolution_file['phalf'].values*100., axis=1)
-    heating_rate = (grav/c_p)*dflux_dp
-else:
-    heating_rate = resolution_file['htr_lw']+resolution_file['htr_sw']
 
 #Set up output file variables. 
 
@@ -64,6 +49,14 @@ p_full = resolution_file['pfull'][::-1]
 p_half = resolution_file['phalf'][::-1]
 
 time_arr = resolution_file['time'].values
+
+nphalf =p_half.shape[0] 
+
+heating_rate = np.zeros((nphalf, nlat, nlon))
+
+
+# DEFINE A HEATING RATE HERE.
+
 
 heating_rate_new = np.zeros((12, heating_rate.shape[1], nlat, nlon))
 
