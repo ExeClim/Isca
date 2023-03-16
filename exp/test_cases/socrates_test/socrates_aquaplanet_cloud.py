@@ -74,13 +74,13 @@ diag.add_field('socrates', 'soc_olr_clear', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw_clear', time_avg=True) 
 diag.add_field('socrates', 'soc_toa_sw_down_clear', time_avg=True) 
 
-diag.add_field('cloud_spookie', 'cf', time_avg=True)
-diag.add_field('cloud_spookie', 'reff_rad', time_avg=True)
-diag.add_field('cloud_spookie', 'frac_liq', time_avg=True)
-diag.add_field('cloud_spookie', 'qcl_rad', time_avg=True)
-#diag.add_field('cloud_spookie', 'simple_rhcrit', time_avg=True)
-diag.add_field('cloud_spookie', 'rh_min', time_avg=True)
-diag.add_field('cloud_spookie', 'rh_in_cf', time_avg=True)
+diag.add_field('cloud_simple', 'cf', time_avg=True)
+diag.add_field('cloud_simple', 'reff_rad', time_avg=True)
+diag.add_field('cloud_simple', 'frac_liq', time_avg=True)
+diag.add_field('cloud_simple', 'qcl_rad', time_avg=True)
+#diag.add_field('cloud_simple', 'simple_rhcrit', time_avg=True)
+diag.add_field('cloud_simple', 'rh_min', time_avg=True)
+diag.add_field('cloud_simple', 'rh_in_cf', time_avg=True)
 diag.add_field('mixed_layer', 'albedo')
 
 
@@ -124,7 +124,7 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
-        'do_cloud_simple': True # this is where the clouds scheme is turned on
+        'do_cloud_spookie': True # this is where the clouds scheme is turned on
     },
 
     'cloud_spookie_nml': { #use all existing defaults as in code

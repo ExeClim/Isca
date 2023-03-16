@@ -60,7 +60,7 @@ module cloud_spookie_mod
   integer :: id_cf, id_reff_rad, id_frac_liq, id_qcl_rad, id_rh_in_cf, &
              id_simple_rhcrit, id_rh_min
  
-  character(len=14), parameter ::   mod_name_cld = "cloud_spookie"
+  character(len=14), parameter ::   mod_name_cld = "cloud_simple"
 
   contains
 
