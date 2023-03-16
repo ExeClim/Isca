@@ -345,6 +345,10 @@ else
 
 endif
 
+if(trim(ice_albedo_method) == 'ramp_function') then
+  call error_mesg('mixed_layer','Alternative method ramp_function used for ice albedo output.', NOTE)
+endif
+
 id_t_surf = register_diag_field(mod_name, 't_surf',        &
                                 axes(1:2), Time, 'surface temperature','K')
 id_flux_t = register_diag_field(mod_name, 'flux_t',        &
@@ -764,7 +768,6 @@ if(update_albedo_from_ice) then
     end where
   else if(trim(ice_albedo_method) == 'ramp_function') then
     albedo_inout = albedo_inout*(1.0-ice_concentration) + ice_albedo_value*ice_concentration
-    call error_mesg('mixed_layer','Alternative method ramp_function used for ice albedo output.', NOTE)
   else
     call error_mesg('mixed_layer','"'//trim(ice_albedo_method)//'"'//' is not a valid method for determining'// &
       'albedo when ice is present. Choices are: step_function or ramp_function.', FATAL)

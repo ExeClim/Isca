@@ -87,10 +87,11 @@ MODULE socrates_interface_mod
 
   REAL(r_def), allocatable, dimension(:,:,:) :: outputted_soc_spectral_olr, spectral_olr_store, outputted_soc_spectral_olr_clr
   REAL(r_def), allocatable, dimension(:)     :: soc_bins_lw, soc_bins_sw
+  LOGICAL                                    :: do_clouds = .false.
 
 CONTAINS
 
-SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb, delta_t_atmos, do_cloud_simple)
+SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb, delta_t_atmos, do_cloud_simple, do_cloud_spookie)
     !! Initialises Socrates spectra, arrays, and constants
 
     USE astronomy_mod, only: astronomy_init
@@ -104,7 +105,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     INTEGER, INTENT(in)               :: is, ie, js, je, num_levels
     REAL, INTENT(in) , DIMENSION(:,:)   :: lat
     REAL, INTENT(in) , DIMENSION(:,:)   :: lonb, latb
-    LOGICAL, INTENT(IN)               :: do_cloud_simple
+    LOGICAL, INTENT(IN)               :: do_cloud_simple, do_cloud_spookie
 
     integer :: io, stdlog_unit
     integer :: res, time_step_seconds
@@ -189,6 +190,10 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
         endif
         sw_hires_spectral_filename = sw_spectral_filename
     endif
+    
+    if ((do_cloud_simple) .or. (do_cloud_spookie)) then
+      do_clouds = .true.
+    endif
 
     ! Socrates spectral files -- should be set by namelist
     control_lw%spectral_file = lw_spectral_filename
@@ -204,10 +209,10 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     CALL read_spectrum(control_sw_hires%spectral_file,spectrum_sw_hires)
 
     ! Set Socrates configuration
-    CALL read_control(control_lw,spectrum_lw, do_cloud_simple)
-    CALL read_control(control_lw_hires,spectrum_lw_hires, do_cloud_simple)
-    CALL read_control(control_sw,spectrum_sw, do_cloud_simple)
-    CALL read_control(control_sw_hires,spectrum_sw_hires, do_cloud_simple)
+    CALL read_control(control_lw,spectrum_lw, do_clouds)
+    CALL read_control(control_lw_hires,spectrum_lw_hires, do_clouds)
+    CALL read_control(control_sw,spectrum_sw, do_clouds)
+    CALL read_control(control_sw_hires,spectrum_sw_hires, do_clouds)
 
     ! Specify LW and SW setups
     control_sw%isolir=1
@@ -538,7 +543,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
        fms_cld_frac, fms_reff_rad, fms_mmr_cl_rad,                   &
        output_heating_rate, output_flux_down, output_flux_up,        &
        output_flux_down_clr, output_flux_up_clr,                     &
-       do_cloud_simple,                                              &
+       do_cloud_simple, do_cloud_spookie,                            &
        !optionals
        output_soc_spectral_olr, output_flux_direct,                  &
        output_flux_direct_clr, t_half_level_out, tot_cloud_cover )
@@ -581,7 +586,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     real(r_def), intent(in) :: fms_rrsun
     real(r_def), intent(in) :: fms_cld_frac(:,:,:), fms_reff_rad(:,:,:), fms_mmr_cl_rad(:,:,:)
 
-    logical, intent(in) :: do_cloud_simple
+    logical, intent(in) :: do_cloud_simple, do_cloud_spookie
 
     ! Output arrays
     real(r_def), intent(out) :: output_heating_rate(:,:,:)
@@ -715,11 +720,15 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
 
     ! Zero heating rate
     soc_heating_rate = 0.0
+    
+    if (do_cloud_simple .or. do_cloud_spookie) then
+      do_clouds = .true.
+    endif
 
     ! Test if LW or SW mode
     if (soc_lw_mode .eqv. .TRUE.) then
         control_lw%isolir = 2
-        CALL read_control(control_lw, spectrum_lw, do_cloud_simple)
+        CALL read_control(control_lw, spectrum_lw, do_clouds)
         if (socrates_hires_mode .eqv. .FALSE.) then
         control_calc = control_lw
         spectrum_calc = spectrum_lw
@@ -730,7 +739,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
 
     else
         control_sw%isolir = 1
-        CALL read_control(control_sw, spectrum_sw, do_cloud_simple)
+        CALL read_control(control_sw, spectrum_sw, do_clouds)
         if(socrates_hires_mode .eqv. .FALSE.) then
         control_calc = control_sw
         spectrum_calc = spectrum_sw
@@ -742,7 +751,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     end if
 
     ! Do calculation
-    CALL read_control(control_calc, spectrum_calc, do_cloud_simple)
+    CALL read_control(control_calc, spectrum_calc, do_clouds)
 
     n_chunk_loop = (si*sj)/chunk_size
     n_profile_chunk = n_profile / n_chunk_loop
@@ -847,7 +856,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
   end subroutine socrates_interface
 
 subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf_in, p_full_in, p_half_in, z_full_in, z_half_in, albedo_in, &
-       temp_tend, net_surf_sw_down, surf_lw_down, delta_t, do_cloud_simple, cf_rad, reff_rad, qcl_rad)
+       temp_tend, net_surf_sw_down, surf_lw_down, delta_t, do_cloud_simple, do_cloud_spookie, cf_rad, reff_rad, qcl_rad)
 
     use astronomy_mod, only: diurnal_solar
     use constants_mod,         only: pi, wtmco2, wtmozone, rdgas, gas_constant
@@ -862,7 +871,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     real, intent(inout), dimension(:,:,:) :: temp_tend
     real, intent(out), dimension(:,:)   :: net_surf_sw_down, surf_lw_down
     real, intent(in) :: delta_t
-    logical, intent(in) :: do_cloud_simple
+    logical, intent(in) :: do_cloud_simple, do_cloud_spookie
     real, intent(in), dimension(:,:,:) :: cf_rad, reff_rad, qcl_rad
 
     integer(i_def) :: n_profile, n_layer
@@ -1198,7 +1207,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
         endif
     endif
 
-    if(do_cloud_simple) then
+    if(do_cloud_simple .or. do_cloud_spookie) then
         cld_frac_soc = REAL(cf_rad, kind(r_def))
         reff_rad_soc = REAL(reff_rad, kind(r_def))
 
@@ -1239,7 +1248,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
         n_profile, n_layer, cld_frac_soc, reff_rad_soc, mmr_cl_rad_soc,    &
         output_heating_rate_lw, output_soc_flux_lw_down, output_soc_flux_lw_up, &
         output_soc_flux_lw_down_clr, output_soc_flux_lw_up_clr,            &
-        do_cloud_simple,                                                   &
+        do_cloud_simple, do_cloud_spookie,                                 &
         !optional outs
         output_soc_spectral_olr = outputted_soc_spectral_olr,              &
         t_half_level_out = t_half_out,                                     &
@@ -1267,7 +1276,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
         n_profile, n_layer, cld_frac_soc, reff_rad_soc, mmr_cl_rad_soc,     &
         output_heating_rate_sw, output_soc_flux_sw_down, output_soc_flux_sw_up, &
         output_soc_flux_sw_down_clr, output_soc_flux_sw_up_clr,             &
-        do_cloud_simple)
+        do_cloud_simple, do_cloud_spookie)
 
     tg_tmp_soc = tg_tmp_soc + output_heating_rate_sw*delta_t !Output heating rate in K/s, so is a temperature tendency
     net_surf_sw_down(:,:) = REAL(output_soc_flux_sw_down(:,:, n_layer+1)-output_soc_flux_sw_up(:,:,n_layer+1) )

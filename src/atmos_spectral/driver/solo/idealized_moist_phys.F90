@@ -378,11 +378,11 @@ end if
 if(two_stream_gray .and. do_rrtm_radiation) &
    call error_mesg('physics_driver_init','do_grey_radiation and do_rrtm_radiation cannot both be .true.',FATAL)
 
-if(two_stream_gray .and. do_cloud_simple) &
+if(two_stream_gray .and. (do_cloud_simple .or. do_cloud_spookie)) &
    call error_mesg('idealized_moist_phys','Gray radiation is not configured to run with the cloud scheme at present.',FATAL)
 
-!if(do_rrtm_radiation .and. do_cloud_simple) &
-!   call error_mesg('idealized_moist_phys','RRTM is not configured to run with the cloud scheme at present.',FATAL)
+if(do_rrtm_radiation .and. (do_cloud_simple .or. do_cloud_spookie)) &
+   call error_mesg('idealized_moist_phys','RRTM is not configured to run with the cloud scheme at present.',FATAL)
 
 if(uppercase(trim(convection_scheme)) == 'NONE') then
   r_conv_scheme = NO_CONV
@@ -781,7 +781,7 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
     endif
 #else
 if (do_socrates_radiation) then
-    call socrates_init(is, ie, js, je, num_levels, axes, Time, rad_lat, rad_lonb_2d, rad_latb_2d, Time_step_in, do_cloud_simple)
+    call socrates_init(is, ie, js, je, num_levels, axes, Time, rad_lat, rad_lonb_2d, rad_latb_2d, Time_step_in, do_cloud_simple, do_cloud_spookie)
 endif
 #endif
 
@@ -820,7 +820,7 @@ real :: delta_t
 real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
 
 ! Simple cloud scheme variabilies to pass to radiation
-real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cf_rad, reff_rad, qcl_rad
+real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cf_rad, reff_rad, qcl_rad, cca_rad
 
 real, intent(in) , dimension(:,:,:), optional :: mask
 integer, intent(in) , dimension(:,:),   optional :: kbot
@@ -992,10 +992,11 @@ endif
 
 ! initialise outs to zero
 
- !Set to zero regarles of if clouds are used in radiation code
+ !Set to zero regardless of if clouds are used in radiation code
  cf_rad   = 0.
  reff_rad = 0.
  qcl_rad  = 1e-8
+ cca_rad  = 0.
 
 if(do_cloud_simple) then
     call cloud_simple(p_half(:,:,:,current),               &
@@ -1015,6 +1016,20 @@ if(do_cloud_simple) then
                       cf_rad(:,:,:),                       &
                       reff_rad(:,:,:),                     &
                       qcl_rad(:,:,:)                       )
+elseif(do_cloud_spookie) then
+    cf_rad(:,:,:)   = 0.
+    reff_rad(:,:,:) = 0.
+    qcl_rad(:,:,:)  = 0.
+    cca_rad(:,:,:)  = 0.
+
+    call cloud_spookie(p_half(:,:,:,current),               &
+                       p_full(:,:,:,current),               &
+                       Time,                                &
+                       tg(:,:,:,previous),                  &
+                       grid_tracers(:,:,:,previous,nsphum), &
+                       ! inouts - 
+                       cf_rad(:,:,:), cca_rad(:,:,:),       &
+                       reff_rad(:,:,:), qcl_rad(:,:,:)      )
 endif
 
 ! Begin the radiation calculation by computing downward fluxes.
@@ -1157,7 +1172,7 @@ endif
 #else
 if (do_socrates_radiation) then
     ! Socrates interface
-    if(do_cloud_simple) then
+    if((do_cloud_simple) .or. (do_cloud_spookie)) then
        ! Simple cloud scheme outputs radii in microns, but Socrates expects 
        ! it in metres so convert it.
        reff_rad = 1.e-6 * reff_rad 
@@ -1169,7 +1184,7 @@ if (do_socrates_radiation) then
                       p_half(:,:,:,current), z_full(:,:,:,current),            &
                       z_half(:,:,:,current), albedo, dt_tg(:,:,:),             &
                       net_surf_sw_down(:,:), surf_lw_down(:,:), delta_t,       &
-                      do_cloud_simple, cf_rad(:,:,:),                          &
+                      do_cloud_simple, do_cloud_spookie, cf_rad(:,:,:),        &
                       reff_rad(:,:,:), qcl_rad(:,:,:) )
 endif
 #endif

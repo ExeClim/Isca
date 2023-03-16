@@ -89,7 +89,7 @@ module cloud_spookie_mod
     endif
     call close_file(unit)
     
-    call error_mesg(mod_name_cld, 'Using SimCloud cloud scheme', NOTE)
+    call error_mesg(mod_name_cld, 'Using SPOOKIE protocol cloud scheme', NOTE)
 
     !register diagnostics
     id_cf = &
