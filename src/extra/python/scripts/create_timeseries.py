@@ -116,6 +116,10 @@ def output_to_file(data,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,
     else:
         is_thd=True
 
+    if dims is not None and is_thd:
+        p_half_variable = 'phalf' in dims or 'p_half' in dims
+    else:
+        p_half_variable=False
 
     lat = output_file.createDimension('lat', number_dict['nlat'])
     lon = output_file.createDimension('lon', number_dict['nlon'])
