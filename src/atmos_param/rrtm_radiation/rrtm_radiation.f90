@@ -124,6 +124,7 @@
         logical            :: do_read_ozone=.false.           ! read ozone from an external file?
                                                               !  this is the only way to get ozone into the model
         character(len=256) :: ozone_file='ozone'              !  file name of ozone file to read
+        character(len=256) :: ozone_field='ozone'             ! Chung 10/2021: field name of ozone
         logical            :: input_o3_file_is_mmr=.true.     ! Does the ozone input file contain values as a mass mixing ratio (set to true) or a volume mixing ratio (set to false)?
         logical            :: do_read_h2o=.false.             ! read water vapor from an external file?
         character(len=256) :: h2o_file='h2o'                  !  file name of h2o file to read
@@ -157,7 +158,7 @@
         logical            :: store_intermediate_rad =.true.  ! Keep rad constant over entire dt_rad?
                                                               ! Else only heat radiatively at every dt_rad
         logical            :: do_rad_time_avg =.true.         ! Average coszen for SW radiation over dt_rad?
-        integer(kind=im)   :: dt_rad_avg = -1                 ! If averaging, over what time? dt_rad_avg=dt_rad if dt_rad_avg<=0
+        integer(kind=im)   :: dt_rad_avg = -1 ! 86400.  ! -1   ! If averaging, over what time? dt_rad_avg=dt_rad if dt_rad_avg<=0
         integer(kind=im)   :: lonstep=1                       ! Subsample fields along longitude
                                                               !  for faster radiation calculation
 
@@ -188,6 +189,20 @@
                                                               !  day of the year = solday \in [0,days per year]
         real(kind=rb)      :: equinox_day=0.75                ! fraction of the year defining NH autumn equinox \in [0,1]
         real(kind=rb)      :: solr_cnst= 1368.22              ! solar constant [W/m2]
+!!!!!!! coalbedo by Po-Chun Chung
+        real, allocatable, dimension(:,:) :: coalb_toa
+        logical                         :: do_coalb_toa_P2   = .false.
+        real   :: coalb_toa_P2_a0  = 1.1
+        real   :: del_coalb_toa_P2 = 0.1
+!!!!!!!!!!!!
+        logical                         :: do_coalb_toa_tanh = .false.
+        real   :: coalb_toa_tanh_a0         = 1
+        real   :: coalb_toa_tanh_polar_lat  = 80
+        real   :: coalb_toa_tanh_polar_amp  = 0.2
+        real   :: coalb_toa_tanh_tropic_lat = 10
+        real   :: coalb_toa_tanh_tropic_amp = 0
+!!!!!!!!!!!!
+
 !-------------------------------------------------s--------------------------------------------------------------
 !
 !-------------------- diagnostics fields -------------------------------
@@ -210,7 +225,11 @@
              &lonstep, do_zm_tracers, do_zm_rad, &
              &do_precip_albedo, precip_albedo_mode, precip_albedo, precip_lat,&
              &do_read_co2, co2_file, co2_variable_name, use_dyofyr, solrad, &
-             &solday, equinox_day,solr_cnst
+             &solday, equinox_day,solr_cnst    , &
+             &do_coalb_toa_P2, coalb_toa_P2_a0, del_coalb_toa_P2,&      ! new nml by Chung:coalbedo
+             &do_coalb_toa_tanh, coalb_toa_tanh_polar_lat , coalb_toa_tanh_polar_amp, & !!! new nml by Chung
+             &coalb_toa_tanh_a0, coalb_toa_tanh_tropic_lat, coalb_toa_tanh_tropic_amp,& !!! new nml by Chung
+             & ozone_field ! Chung 10/2021
 
       end module rrtm_vars
 !*****************************************************************************************
@@ -444,7 +463,8 @@
           endif
 
           if(do_read_ozone)then
-             call interpolator_init (o3_interp, trim(ozone_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+!             call interpolator_init (o3_interp, trim(ozone_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+             call interpolator_init (o3_interp, trim(ozone_file),lonb, latb, data_out_of_bounds=(/ZERO/)) ! Chung 10/2021
           endif
 
           if(do_read_h2o)then
@@ -687,6 +707,18 @@
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
           end if
 
+          !!!!! Chung coalbedo as a forcing !!!!!!
+          if (do_coalb_toa_P2) then
+            coalb_toa = coalb_toa_P2_a0 + (del_coalb_toa_P2)*((3.*sin(lat)**2-1)/2)
+            coszen    = coszen * coalb_toa
+          end if
+          if (do_coalb_toa_tanh) then
+            coalb_toa = coalb_toa_tanh_a0+ coalb_toa_tanh_polar_amp *( 1+tanh(abs(lat)-coalb_toa_tanh_polar_lat  ))/2 &
+                                         - coalb_toa_tanh_tropic_amp*(-1+tanh(abs(lat)-coalb_toa_tanh_tropic_lat ))/2
+            coszen    = coszen * coalb_toa
+          end if
+          !!!!! !!!!! !!!!! !!!!!
+
    		end if !mp586 addition for annual mean insolation
 
 ! input files: only deal with case where we don't need to call radiation at all
@@ -724,7 +756,9 @@
 
           !get ozone 
           if(do_read_ozone)then
-             call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_file))
+!             call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_file))
+             call interpolator( o3_interp, Time_loc, p_half, o3f,trim(ozone_field)) ! Chung 10/2021
+
              if (input_o3_file_is_mmr) then
                  o3f = o3f * (1000. * gas_constant / rdgas ) / wtmozone !RRTM expects all abundances to be volume mixing ratio. So if input file is mass mixing ratio, it must be converted to volume mixing ratio using the molar masses of dry air and ozone. 
                  ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol from kg/mol by multiplying by 1000. This conversion is necessary because wtmozone is in g/mol.

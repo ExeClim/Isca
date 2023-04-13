@@ -138,6 +138,17 @@ type(interpolate_type),save         :: co2_interp           ! use external file 
 character(len=256)                  :: co2_file='co2'       !  file name of co2 file to read
 character(len=256)                  :: co2_variable_name='co2'       !  file name of co2 file to read
 
+! coalbedo by Po-Chun Chung
+real, allocatable, dimension(:,:) :: coalb_toa
+logical                         :: do_coalb_toa_P2   = .false.
+real   :: coalb_toa_P2_a0  = 1.1
+real   :: del_coalb_toa_P2 = 0.1
+logical                         :: do_coalb_toa_tanh = .false.
+real   :: coalb_toa_tanh_a0         = 1
+real   :: coalb_toa_tanh_polar_lat  = 80
+real   :: coalb_toa_tanh_polar_amp  = 0.2
+real   :: coalb_toa_tanh_tropic_lat = 10
+real   :: coalb_toa_tanh_tropic_amp = 0
 
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            ir_tau_eq, ir_tau_pole, odp, atm_abs, sw_diff, &
@@ -147,7 +158,10 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            ir_tau_co2, ir_tau_wv1, ir_tau_wv2, &
 		   window, carbon_conc, rad_scheme, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
-           use_time_average_coszen, dt_rad_avg,&
+           use_time_average_coszen, dt_rad_avg, &
+           do_coalb_toa_P2  , coalb_toa_P2_a0, del_coalb_toa_P2, & !!! new nml by Chung
+           do_coalb_toa_tanh, coalb_toa_tanh_polar_lat , coalb_toa_tanh_polar_amp , & !!! new nml by Chung
+           coalb_toa_tanh_a0, coalb_toa_tanh_tropic_lat, coalb_toa_tanh_tropic_amp, & !!! new nml by Chung
            diabatic_acce !Schneider Liu values
 
 !==================================================================================
@@ -455,6 +469,18 @@ else
   insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
 end if
 
+!!!!! Chung coalbedo as a forcing !!!!!!
+if (do_coalb_toa_P2) then
+  coalb_toa = coalb_toa_P2_a0 + (del_coalb_toa_P2)*((3.*sin(lat)**2-1)/2)
+  insolation = insolation * coalb_toa
+end if
+if (do_coalb_toa_tanh) then
+  coalb_toa = coalb_toa_tanh_a0+ coalb_toa_tanh_polar_amp *( 1+tanh(abs(lat)-coalb_toa_tanh_polar_lat  ))/2 &
+                                -coalb_toa_tanh_tropic_amp*(-1+tanh(abs(lat)-coalb_toa_tanh_tropic_lat ))/2
+  insolation = insolation * coalb_toa
+end if
+!!!!! !!!!! !!!!! !!!!!
+
 select case(sw_scheme)
 case(B_GEEN)
   ! RG scheme: optical depth a function of wv and co2
@@ -635,6 +661,7 @@ endif
 !------- incoming sw flux toa -------
 if ( id_swdn_toa > 0 ) then
    used = send_data ( id_swdn_toa, toa_sw_in, Time_diag)
+!!!toa_sw_in = sw_down(:, :, 1) / coalb_toa !!! Chung
 endif
 !------- downward sw flux surface -------
 if ( id_swdn_sfc > 0 ) then

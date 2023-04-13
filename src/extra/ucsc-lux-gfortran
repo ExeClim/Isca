@@ -1,0 +1,17 @@
+echo loadmodules for UCSC lux
+
+export F90=mpif90
+export CC=mpicc
+export GFDL_MKMF_TEMPLATE=gfort
+
+module purge
+
+module load shared
+module load slurm
+
+module load python/3.8.6
+module load openmpi/4.0.1
+module load hdf5_gnu/1.10.6-parallel
+module load netcdf-c_gnu/4.7.3
+module load netcdf-f_gnu/4.5.2
+module load git/2.23.0

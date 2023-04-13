@@ -140,7 +140,7 @@ real, pointer            :: halflevs(:) =>NULL()
 type(horiz_interp_type)  :: interph
 type(time_type), pointer :: time_slice(:) =>NULL() ! An array of the times within the climatology.
 integer                  :: unit          ! Unit number on which file is being read.
-character(len=64)        :: file_name     ! Climatology filename
+character(len=256)        :: file_name     ! Climatology filename  !!! Chung:len=64>256
 integer                  :: TIME_FLAG     ! Linear or seaonal interpolation?
 integer                  :: level_type    ! Pressure or Sigma level
 integer                  :: is,ie,js,je
@@ -150,7 +150,7 @@ logical                  :: climatological_year ! Is data for year = 0000?
 
 !Field specific data  for nfields
 type(fieldtype),   pointer :: field_type(:) =>NULL()   ! NetCDF field type
-character(len=64), pointer :: field_name(:) =>NULL()   ! name of this field
+character(len=256), pointer :: field_name(:) =>NULL()   ! name of this field ! Chung:64>256
 integer,           pointer :: time_init(:,:) =>NULL()  ! second index is the number of time_slices being kept. 2 or ntime.
 integer,           pointer :: mr(:) =>NULL()           ! Flag for conversion of climatology to mixing ratio. 
 integer,           pointer :: out_of_bounds(:) =>NULL()! Flag for when surface pressure is out of bounds.
@@ -322,7 +322,7 @@ logical,          intent(out), optional :: single_year_file
 !
 
 integer                      :: unit
-character(len=64)            :: src_file
+character(len=256)            :: src_file !! Chung:len=64>256
 !++lwh
 real                         :: dlat, dlon
 !--lwh
@@ -360,7 +360,8 @@ num_fields = 0
 !--------------------------------------------------------------------
 ! open source file containing fields to be interpolated
 !--------------------------------------------------------------------
-src_file = 'INPUT/'//trim(file_name)
+src_file = file_name ! Chung 09/2021
+!src_file = 'INPUT/'//trim(file_name) 
 
 if(file_exist(trim(src_file))) then
    call mpp_open( unit, trim(src_file), action=MPP_RDONLY, &

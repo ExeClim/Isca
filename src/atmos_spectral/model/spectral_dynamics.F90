@@ -107,6 +107,7 @@ character(len=128), parameter :: tagname = '$Name: siena_201211 $'
 integer :: id_ps, id_u, id_v, id_t, id_vor, id_div, id_omega, id_wspd, id_slp
 integer :: id_pres_full, id_pres_half, id_zfull, id_zhalf, id_vort_norm, id_EKE
 integer :: id_uu, id_vv, id_tt, id_omega_omega, id_uv, id_omega_t, id_vw, id_uw, id_ut, id_vt, id_v_vor, id_uz, id_vz, id_omega_z
+integer :: id_uq, id_vq, id_omega_q !!!!! Chung 2022/10/27
 integer, allocatable, dimension(:) :: id_tr, id_utr, id_vtr, id_wtr !extra advection diags added by RG
 real :: gamma, expf, expf_inverse
 character(len=8) :: mod_name = 'dynamics'
@@ -1702,7 +1703,11 @@ enddo
 
 id_vort_norm = register_diag_field(mod_name, 'vort_norm', Time, 'vorticity norm', '1/(m*sec)')
 id_EKE       = register_diag_field(mod_name, 'EKE', Time, 'eddy kinetic energy', 'J/m^2')
-
+!!!!! Chung 2022/10/27
+id_uq = register_diag_field(mod_name, 'ucomp_sphum',axes_3d_full, Time, 'zonal wind * specific humidity', 'm/sec')
+id_vq = register_diag_field(mod_name, 'vcomp_sphum',axes_3d_full, Time, 'meridional wind * specific humidity', 'm/sec')
+id_omega_q = register_diag_field(mod_name, 'omega_sphum',axes_3d_full, Time, 'dp/dt * specific humidity', 'Pa/sec')
+!!!!! Chung 2022/10/27
 return
 end subroutine spectral_diagnostics_init
 !===================================================================================
@@ -1804,6 +1809,20 @@ if(id_omega_z > 0) then
   worka3d = wg_full*z_full
   used = send_data(id_omega_z, worka3d, Time)
 endif
+!!!!! Chung 2022/10/27 !!!!! 2022/11/02: nhum:X , tr_grid(:,:,:,time_level,ntr):?
+if(id_uq > 0) then
+  worka3d = tr_grid(:,:,:,time_level,ntr)*u_grid
+  used = send_data(id_uq, worka3d, Time)
+endif
+if(id_vq > 0) then
+  worka3d = tr_grid(:,:,:,time_level,ntr)*v_grid
+  used = send_data(id_vq, worka3d, Time)
+endif
+if(id_omega_q > 0) then
+  worka3d = tr_grid(:,:,:,time_level,ntr)*wg_full
+  used = send_data(id_omega_q, worka3d, Time)
+endif
+!!!!! Chung 2022/10/27
 
 if(size(tr_grid,5) /= num_tracers) then
   write(err_msg_1,'(i8)') size(tr_grid,5)

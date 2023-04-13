@@ -41,7 +41,7 @@ use      constants_mod, only: HLV, PI, RHO_CP, CP_AIR, KELVIN
 
 use   diag_manager_mod, only: register_diag_field, register_static_field, send_data
 
-use   time_manager_mod, only: time_type
+use   time_manager_mod, only: time_type     , get_time ! Chung add get_time
 
 use     transforms_mod, only: get_deg_lat, get_deg_lon, grid_domain
 
@@ -56,6 +56,7 @@ use interpolator_mod, only: interpolate_type,interpolator_init&
      &,CONSTANT,interpolator
 !mj q-flux
 use qflux_mod, only: qflux_init,qflux,warmpool
+
 
 implicit none
 private
@@ -111,7 +112,8 @@ logical :: do_ape_sst       = .false. ! use the AquaPlanet Experiement (APE) sst
 logical :: specify_sst_over_ocean_only = .false.
 logical :: do_calc_eff_heat_cap = .true. ! assumes specified SST are off the default.
 
-character(len=256) :: sst_file
+character(len=256) :: sst_file 
+character(len=256) :: sst_file_Chung,sst_field_Chung ! Chung 09/2021
 character(len=256) :: land_option = 'none'
 real,dimension(10) :: slandlon=0,slandlat=0,elandlon=-1,elandlat=-1
 !s End mj extra options
@@ -127,6 +129,33 @@ logical :: update_albedo_from_ice = .false.
 logical :: add_latent_heat_flux_anom = .false.
 character(len=256) :: flux_lhe_anom_file_name  = 'INPUT/flux_lhe_anom.nc'
 character(len=256) :: flux_lhe_anom_field_name = 'flux_lhe_anom'
+
+!!!!! thermodynamic ice !!!!! Chung add 05/2021
+logical :: do_prescribe_albedo     = .false. ! prescribe albedo (default ISCA model)
+logical :: do_thermodynamic_albedo = .true.  ! use thermodynamic ice by Ian Eisenman, XZ 02/2018
+ logical :: do_thickness_lock      = .false. ! fix ice thickness
+ character(len=256) :: ice_thickness_file = 'INPUT/h_ice.nc' ! specified ice thickness
+ character(len=256) :: ice_thickness_field= 'h_ice' ! (optional) variable name ! Chung add 09/2021
+  logical :: do_fraction_lock      = .false. ! fix ice fraction
+  character(len=256) :: ice_fraction_file = 'INPUT/a_ice.nc' ! specified ice fraction
+  character(len=256) :: ice_fraction_field= 'a_ice' ! (optional) variable name !Chung add 11/2021
+ integer  :: num_input_times_h = 72   ! number of times during year in input h_ice file ### ### Chung 09/2021
+ ! Sea ice parameters by Ian Eisenman, XZ 02/2018
+ logical :: sea_ice_in_mixed_layer = .true.  ! include sea ice model
+ logical :: ice_as_albedo_only = .false.     ! no sea ice thermodynamics, but change albedo when ML temp = TFREEZE
+ logical :: sfc_melt_from_file = .false.     ! whether to compute ice surface melt based on input surface temperature file
+ character(len=256) :: sfc_melt_file = 'INPUT/t_sfc.nc' ! (optional) specified t_surf for ice surface melt
+ character(len=256) :: sfc_melt_field= 't_surf' ! (optional) variable name ! Chung add 09/2021
+ integer  :: num_input_times = 12 ! 72  ! number of times during year in input t_surf file
+ ! parameters for sea ice model, XZ 02/2018
+ real :: L_ice = 3e8 ! latent heat of fusion (J/m^3)
+ real, parameter  :: k_ice = 2 ! conductivity of ice (W/m/K)
+ real, parameter  :: ice_basal_flux_const = 120 ! linear coefficient for heat flux from ocean to ice base (W/m^2/K)
+ real :: t_ice_base = 273.15 ! temperature at base of ice, taken to be freshwater freezing point
+ real :: t_surf_freeze = 273.15
+ real    :: thermodynamic_albedo_ocn = 0.1  ! surface albedo where there is not sea ice, XZ 02/2018
+ real    :: thermodynamic_albedo_ice = 0.4  ! surface albedo where there is sea ice, XZ 02/2018
+!!!!!
 
 namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               delta_T, prescribe_initial_dist,albedo_value,  &
@@ -145,7 +174,15 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               ice_albedo_value, specify_sst_over_ocean_only, &
                               ice_concentration_threshold,                   &
                               add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
-                              flux_lhe_anom_field_name, do_ape_sst, qflux_field_name
+                              flux_lhe_anom_field_name, do_ape_sst, qflux_field_name  ,&
+                              !!!!!
+                              sst_file_Chung, sst_field_Chung , &
+                              !!!!! thermodynamic ice !!!!! Chung
+                              do_prescribe_albedo, do_thermodynamic_albedo, &
+                              do_thickness_lock,ice_thickness_file,ice_thickness_field, &
+                              do_fraction_lock,ice_fraction_file,ice_fraction_field, & !!! Chung 11/2021
+                              sea_ice_in_mixed_layer,ice_as_albedo_only, sfc_melt_from_file,sfc_melt_file,sfc_melt_field,&
+                              t_surf_freeze, thermodynamic_albedo_ocn, thermodynamic_albedo_ice
 
 !=================================================================================================================================
 
@@ -163,13 +200,22 @@ integer ::                                                                    &
      id_heat_cap,          &   ! heat capacity
      id_albedo,            &   ! mj albedo
      id_ice_conc,          &   ! st ice concentration
-     id_delta_t_surf
+     id_delta_t_surf,      &
+     !!!!! thermodynamic ice !!!!! Chung
+     ! Sea ice by Ian Eisenman, XZ 02/2018
+     id_h_ice,             &   ! sea ice thickness
+     id_a_ice,             &   ! sea ice fractional area
+     id_t_ml,              &   ! mixed layer temperature
+     id_flux_ice               ! conductive heat flux through ice
 
 real, allocatable, dimension(:,:)   ::                                        &
      ocean_qflux,           &   ! Q-flux
      ice_concentration,     &   ! ice_concentration
      rad_lat_2d,            &   ! latitude in radians
-     flux_lhe_anom, flux_q_total
+     flux_lhe_anom, flux_q_total, &
+     !!!!! thermodynamic ice !!!!! Chung
+     ! Sea ice by Ian Eisenman, XZ 02/2018
+     t_surf_for_melt            ! if sfc_melt_from_file, current time t_surf from input file (otherwise, =t_surf)
 
 real, allocatable, dimension(:)   :: deg_lat, deg_lon
 
@@ -193,7 +239,16 @@ real, allocatable, dimension(:,:)   ::                                        &
      zsurf,                 &   ! mj know about topography
      land_sea_heat_capacity,&
      sst_new,               &   ! mj input SST
-     albedo_initial
+     albedo_initial!,        &
+
+real, allocatable, dimension(:,:)   ::                                        & ! Chung 10/19/2021
+     !!!!! thermodynamic ice !!!!! Chung
+     ! Sea ice by Ian Eisenman, XZ 02/2018
+     dFdt_surf,             &   ! d(corrected_flux)/d(t_surf), for calculation of ice sfc temperature
+     delta_t_ml,            &   ! Increment in mixed layer temperature
+     delta_h_ice,           &   ! Increment in sea ice thickness
+     delta_t_ice,           &   ! Increment in ice (steady-state) surface temperature
+     flux_ice                   ! Conductive heat flux through ice
 
 logical, allocatable, dimension(:,:) ::      land_mask
 
@@ -203,16 +258,26 @@ logical, allocatable, dimension(:,:) ::      land_mask
   type(interpolate_type),save :: ice_interp
   type(interpolate_type),save :: flux_lhe_anom_interp  
 
+!!!!! thermodynamic ice !!!!! Chung add 05/2021
+real, allocatable, dimension(:,:,:) ::  input_t_sfc ! Sfc temp read from file for ice sfc melt
+real, allocatable, dimension(:,:,:) ::  input_h_ice ! ice thickness read from file for thickness locking
+real, allocatable, dimension(:,:,:) ::  input_a_ice ! ice fraction read from file for thickness locking 11/2021
+!real, allocatable, dimension(:,:,:) ::  input_tt, input_hh ! Chung 09/2021
+
+
 real inv_cp_air
 
 !=================================================================================================================================
 contains
 !=================================================================================================================================
 
-subroutine mixed_layer_init(is, ie, js, je, num_levels, t_surf, bucket_depth, axes, Time, albedo, rad_lonb_2d,rad_latb_2d, land, restart_file_bucket_depth)
+subroutine mixed_layer_init(is, ie, js, je, num_levels, t_surf, bucket_depth, axes, Time, albedo, rad_lonb_2d,rad_latb_2d, land, restart_file_bucket_depth ,&
+!!!!! thermodynamic ice !!!!! Chung
+h_ice, a_ice,t_ml )
 
 type(time_type), intent(in)       :: Time
-real, intent(out), dimension(:,:) :: t_surf, albedo
+real, intent(out), dimension(:,:) :: t_surf, albedo 
+real, intent(out), dimension(:,:) :: h_ice, a_ice, t_ml !!!!! thermodynamic Chung
 real, intent(out), dimension(:,:,:) :: bucket_depth
 integer, intent(in), dimension(4) :: axes
 real, intent(in), dimension(:,:) :: rad_lonb_2d, rad_latb_2d
@@ -282,10 +347,19 @@ allocate(land_sea_heat_capacity  (is:ie, js:je))
 allocate(zsurf                   (is:ie, js:je))
 allocate(sst_new                 (is:ie, js:je))
 allocate(land_mask                 (is:ie, js:je)); land_mask=land
-!
-!see if restart file exists for the surface temperature
-!
-
+!!!!! thermodynamic ice !!!!! Chung
+! Sea ice by Ian Eisenman, XZ 02/2018
+allocate(t_surf_for_melt         (is:ie, js:je))
+allocate(dFdt_surf               (is:ie, js:je))
+allocate(delta_t_ml              (is:ie, js:je))
+allocate(delta_h_ice             (is:ie, js:je))
+allocate(delta_t_ice             (is:ie, js:je))
+allocate(flux_ice                (is:ie, js:je))
+allocate(input_t_sfc             (ie-is+1, je-js+1, num_input_times+2))
+allocate(input_h_ice             (ie-is+1, je-js+1, num_input_times_h+2))
+!allocate(input_tt    (ie-is+1, je-js+1, num_input_times))   ! Chung 09/2021
+!allocate(input_hh    (ie-is+1, je-js+1, num_input_times_h)) ! Chung 09/2021
+allocate(input_a_ice             (ie-is+1, je-js+1, num_input_times_h+2))
 
 ! latitude will be needed for oceanic q flux
 !s Moved up slightly so that rad_lat_2d can be used in initial temperature distribution if necessary.
@@ -307,16 +381,73 @@ call get_deg_lon(deg_lon)
 
     !mj read fixed SSTs
     if( do_read_sst ) then
-        call interpolator_init( sst_interp, trim(sst_file)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+!        call interpolator_init( sst_interp, trim(sst_file)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+      !! Chung 09/2021
+      call interpolator_init( sst_interp, trim(sst_file_Chung), rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
     endif
 
 
+!!!!! thermodynamic ice !!!!! Chung
+  if ( do_prescribe_albedo .and. do_thermodynamic_albedo)  then
+    write(*,*) 'mixed_layer: error, do_prescribe_albedo and do_thermodynamic_albedo cannot be true at the same time'
+  elseif  (.not. do_prescribe_albedo .and. .not. do_thermodynamic_albedo) then
+    write(*,*) 'mixed_layer: error, do_prescribe_albedo and do_thermodynamic_albedo cannot be false at the same time'
+  endif
 
+if (do_thermodynamic_albedo) then
+  ! Sea ice by Ian Eisenman, XZ 02/2018
+  ! read seasonally-varying input_sfc_melt(lat,lon,time)
+  if ( sfc_melt_from_file .and. file_exist(trim(sfc_melt_file)) ) then
+    do j = 1, num_input_times
+      call read_data( trim(sfc_melt_file),trim(sfc_melt_field) ,input_t_sfc(:,:,j+1), grid_domain, timelevel=j ) !! Chung
+!      call read_data( trim(sfc_melt_file),trim(sfc_melt_field),input_tt, grid_domain,timelevel=j ) !! 2021/09/12 !! Chung !!
+    end do
+!    input_t_sfc(:,:,2:num_input_times+1)=input_tt !! 2021/09/12 !! Chung
+    ! wrap edges of seasonal cycle for interpolation
+    input_t_sfc(:,:,1)=input_t_sfc(:,:,num_input_times+1)
+    input_t_sfc(:,:,num_input_times+2)=input_t_sfc(:,:,2)
+  endif
 
+  ! locking ice thickness by Chung 05/2021  ! read seasonally-varying input_h_ice(lat,lon,time)
+  if ( do_thickness_lock .and. file_exist(trim(ice_thickness_file)) ) then
+    do j = 1, num_input_times_h
+      call read_data( trim(ice_thickness_file),trim(ice_thickness_field), input_h_ice(:,:,j+1), grid_domain, timelevel=j )
+!      call read_data( trim(ice_thickness_file),trim(ice_thickness_field), input_hh, grid_domain, timelevel=j ) !! 2021/09/25 !! Chung
+!      call read_data( trim(ice_thickness_file), 'h_ice', input_hh, grid_domain,timelevel=j ) !! 2021/09/12 !! Chung
+    end do
+!    input_h_ice(:,:,2:num_input_times_h+1)=input_hh !! 2021/09/12 !! Chung
+    ! wrap edges of seasonal cycle for interpolation
+    input_h_ice(:,:,1)=input_h_ice(:,:,num_input_times_h+1)
+    input_h_ice(:,:,num_input_times_h+2)=input_h_ice(:,:,2)
+  endif
+
+  ! locking ice fraction by Chung 11/2021  ! read seasonally-varying input_a_ice(lat,lon,time)
+  ! In order to solve the h_ice locking problem (cannot fix 100%)
+  if ( do_fraction_lock .and. file_exist(trim(ice_fraction_file)) ) then
+    do j = 1, num_input_times_h
+      call read_data( trim(ice_fraction_file),trim(ice_fraction_field),input_a_ice(:,:,j+1), grid_domain, timelevel=j )
+    end do
+    ! wrap edges of seasonal cycle for interpolation
+    input_a_ice(:,:,1)=input_a_ice(:,:,num_input_times_h+1)
+    input_a_ice(:,:,num_input_times_h+2)=input_a_ice(:,:,2)
+  endif
+
+endif !!!!! Chung
+
+!
+!see if restart file exists for the surface temperature
+!
 if (file_exist('INPUT/mixed_layer.res.nc')) then
 
    call nullify_domain()
    call read_data(trim('INPUT/mixed_layer.res'), 't_surf',   t_surf, grid_domain)
+
+   if (do_thermodynamic_albedo) then
+   !!!!! thermodynamic ice !!!!! Chung add 05/2021 ! Sea ice by Ian Eisenman, added by XZ 02/2018
+     call read_data(trim('INPUT/mixed_layer.res'), 'h_ice',  h_ice,grid_domain)
+     call read_data(trim('INPUT/mixed_layer.res'), 'a_ice',  a_ice,grid_domain)
+     call read_data(trim('INPUT/mixed_layer.res'), 't_ml',   t_ml,grid_domain)
+   endif
    
    if (restart_file_bucket_depth) then
        call read_data(trim('INPUT/mixed_layer.res'), 'bucket_depth', bucket_depth, grid_domain)
@@ -331,7 +462,8 @@ else if (file_exist('INPUT/swamp.res')) then
 
 else if( do_read_sst ) then !s Added so that if we are reading sst values then we can restart using them.
 
-   call interpolator( sst_interp, Time, t_surf, trim(sst_file) )
+!   call interpolator( sst_interp, Time, t_surf, trim(sst_file) )
+   call interpolator( sst_interp, Time, t_surf, trim(sst_field_Chung) ) !! Chung 09/2021
 
 elseif (prescribe_initial_dist) then
 !  call error_mesg('mixed_layer','mixed_layer restart file not found - initializing from prescribed distribution', WARNING)
@@ -356,14 +488,25 @@ id_heat_cap = register_static_field(mod_name, 'ml_heat_cap',        &
                                  axes(1:2), 'mixed layer heat capacity','joules/m^2/deg C')
 id_delta_t_surf = register_diag_field(mod_name, 'delta_t_surf',        &
                                  axes(1:2), Time, 'change in sst','K')
-if (update_albedo_from_ice) then
+
+if (do_prescribe_albedo) then ! == Chung: default code here
+  if (update_albedo_from_ice) then
     id_albedo = register_diag_field(mod_name, 'albedo',    &
                                  axes(1:2), Time, 'surface albedo', 'none')
     id_ice_conc = register_diag_field(mod_name, 'ice_conc',    &
                                  axes(1:2), Time, 'ice_concentration', 'none')
-else
+  else
     id_albedo = register_static_field(mod_name, 'albedo',    &
                                  axes(1:2), 'surface albedo', 'none')
+  endif
+endif
+
+if (do_thermodynamic_albedo) then !!!!! thermodynamic ice !!!!! Chung ! sea ice by Ian Eisenman, XZ 02/2018
+  id_h_ice    = register_diag_field(mod_name, 'h_ice'   , axes(1:2), Time, 'sea ice thickness','m')
+  id_a_ice    = register_diag_field(mod_name, 'a_ice'   , axes(1:2), Time, 'sea ice area','fraction of grid box')
+  id_t_ml     = register_diag_field(mod_name, 't_ml'    , axes(1:2), Time, 'mixed layer tempeature','K')
+  id_flux_ice = register_diag_field(mod_name, 'flux_ice', axes(1:2), Time, 'conductive heat flux through sea ice','watts/m2')
+  id_albedo   = register_diag_field(mod_name, 'albedo'  , axes(1:2), Time, 'surface albedo', 'none')
 endif
 
 ocean_qflux = 0.
@@ -416,6 +559,8 @@ endif
 
 inv_cp_air = 1.0 / CP_AIR
 
+!!!!! Chung !!!!!
+if (do_prescribe_albedo) then ! === default ISCA setting  ===
 !s Prescribe albedo distribution here so that it will be the same in both two_stream_gray later and rrtmg radiation.
 
 albedo(:,:) = albedo_value
@@ -466,6 +611,13 @@ select case (albedo_choice)
        albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
              0.5*(1+tanh((lat-albedo_cntr)/albedo_wdth))
      enddo
+!!!  case (101) ! Chung: tanh increase around albedo_cntr with albedo_wdth
+!     do j = 1, size(t_surf,2)
+!       lat = abs(deg_lat(js+j-1))
+!       albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
+!             0.5*(1+tanh((abs(lat)-albedo_cntr)/albedo_wdth))
+!     enddo
+!!!!!!
 end select
 
 albedo_initial=albedo
@@ -477,6 +629,8 @@ if (update_albedo_from_ice) then
 else
     if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
 endif
+
+endif !(do_prescribe_albedo) ! === default ISCA setting  === !!!!! Chung !!!!!
 
 ! Note: do_calc_eff_heat_cap is true by default and control when the surface 
 ! heat capacity is calculated (land and ocean). 
@@ -571,20 +725,26 @@ subroutine mixed_layer (                                               &
      drdt_surf,                                                        &
      dhdt_atm,                                                         &
      dedq_atm,                                                         &
-     albedo_out)
+     albedo_out,                                                       &
+     albedo, h_ice, a_ice, t_ml) !!!!! thermodynamic ice !!!!! Chung !! is, ie , flux_u
 
 ! ---- arguments -----------------------------------------------------------
 type(time_type), intent(in)         :: Time, Time_next
 integer, intent(in)                 :: js, je
 real, intent(in), dimension(:,:)    :: net_surf_sw_down, surf_lw_down
 real, intent(in), dimension(:,:)    :: flux_t, flux_q, flux_r
-real, intent(inout), dimension(:,:) :: t_surf
+real, intent(inout), dimension(:,:) :: t_surf     
+real, intent(inout), dimension(:,:) :: h_ice, a_ice, t_ml !!!!! thermodynamic ice !!!!! Chung
 real, intent(in), dimension(:,:)    :: dhdt_surf, dedt_surf, dedq_surf, &
                                        drdt_surf, dhdt_atm, dedq_atm
 real, intent(in)                    :: dt
-real, intent(out), dimension(:,:)   :: albedo_out
+real, intent(out), dimension(:,:)   :: albedo_out   ,albedo !!!!! Chung add
 type(surf_diff_type), intent(inout) :: Tri_surf
 logical, dimension(size(land_mask,1),size(land_mask,2)) :: land_ice_mask
+!!!!! thermodynamic ice !!!!! Chung ! for sfc_melt_from_file, sea ice by Ian Eisenman, XZ 2/10/2018
+integer :: i, n, seconds, days
+real    :: days_in_year    = 360 ! how many model days in solar year
+real    :: day = 0.0
 
 !local variables
 
@@ -593,6 +753,9 @@ integer :: j
 if(.not.module_is_initialized) then
   call error_mesg('mixed_layer','mixed_layer module is not initialized',FATAL)
 endif
+
+!!!!! Chung !!!!!
+if (do_prescribe_albedo) then ! === default ISCA setting  ===
 
 if(update_albedo_from_ice) then
     call read_ice_conc(Time_next)
@@ -605,6 +768,8 @@ else
 endif
 
 call albedo_calc(albedo_out,Time_next)
+
+endif ! === default ISCA setting  ===  !!!!! Chung !!!!!
 
 !s Add latent heat flux anomalies before any of the calculations take place
 
@@ -658,17 +823,270 @@ endif
 !
 corrected_flux = - net_surf_sw_down - surf_lw_down + alpha_t * CP_AIR + alpha_lw - ocean_qflux
 t_surf_dependence = beta_t * CP_AIR + beta_lw
+flux_ice = 0 ! Initialize conductive heat flux through sea ice !!!!! Chung
 
 if (evaporation) then
   corrected_flux = corrected_flux + alpha_q * HLV
   t_surf_dependence = t_surf_dependence + beta_q * HLV
 endif
 
+!!!!! thermodynamic ice !!!!! Chung
+
+if (do_thermodynamic_albedo .and. .not. do_thickness_lock ) then ! == Chung add
+
+  ! for calculation of ice sfc temperature, sea ice by Ian Eisenman, XZ 02/2018
+  dFdt_surf = dhdt_surf + drdt_surf + HLV * (dedt_surf) ! d(corrected_flux)/d(T_surf)
+
+  ! Sea ice by Ian Eisenman, XZ 02/2018
+  ! === (3) surface temperature increment is calculated with
+  ! explicit forward time step using flux corrected for implicit atm;
+  ! next, (4) surface state is updated  ===
+
+  ! ======================================================================
+  !
+  !          Ocean mixed layer and sea ice model equations
+  !
+  ! ======================================================================
+  !
+  ! Mixed layer temperature is evolved is t_ml, and sea ice thickness is
+  ! h_ice. Atmosphere cares about surface temparature (t_surf). Where
+  ! h_ice=0, t_surf=t_ml, but where h_ice>0, t_surf=t_ice which is the
+  ! ice surface temperature (assumed to be in steady-state: "zero layer
+  ! model"). So h_ice, t_ml, and t_surf are all saved at each time step
+  ! (t_ice does not need to be saved).
+  !
+  ! This model is equivalent to the Semtner (1976) "zero-layer model",
+  ! with several differences (no snow, ice latent heat is same at base
+  ! as surface, ice surface temperature calculated by including sensible
+  ! and latent heat derivatives in dF/dT_surf, inclusion of frazil
+  ! growth).
+
+  if ( sea_ice_in_mixed_layer .and. .not. ice_as_albedo_only ) then ! === use sea ice model ===
+
+    ! calculate values of delta_h_ice, delta_t_ml, and delta_t_ice
+
+    where ( h_ice .le. 0 ) ! = ice-free = [ should be equivalent to use .eq. instead of .le. ]
+      delta_t_ml = - ( corrected_flux + ocean_qflux) * dt/(depth*RHO_CP)
+      delta_h_ice = 0
+    elsewhere ! = ice-covered = ( h>0 )
+      delta_t_ml = - ( ice_basal_flux_const * ( t_ml - t_ice_base ) + ocean_qflux) * dt/(depth*RHO_CP)
+      delta_h_ice = ( corrected_flux - ice_basal_flux_const * ( t_ml - t_ice_base) ) * dt/L_ice
+    endwhere
+    where ( t_ml + delta_t_ml .lt. t_surf_freeze ) ! = frazil growth =
+      delta_h_ice = delta_h_ice - ( t_ml + delta_t_ml - t_surf_freeze ) *(depth*RHO_CP)/L_ice
+      delta_t_ml = t_surf_freeze - t_ml
+    endwhere
+    where ( ( h_ice .gt. 0 ) .and. ( h_ice + delta_h_ice .le. 0 ) ) ! = complete ablation =
+      delta_t_ml = delta_t_ml - ( h_ice + delta_h_ice ) * L_ice/(depth*RHO_CP)
+      delta_h_ice = - h_ice
+    endwhere
+    ! = update surface temperature =
+    if ( sfc_melt_from_file ) then ! sfc melt from seasonally varying sfc temp specified from file
+      !
+      ! linearly interpolate from input file time to model time at each location
+      ! interp1( ( (1:num_input_times)-0.5 )*days_in_year/num_input_times,
+      ! albedo(x,y,:), day )
+      ! = interp1( 1:num_input_times, albedo(x,y,:),
+      ! day*num_input_times/days_in_year+0.5 )
+      ! find model time
+      ! call get_time(Time,seconds,days)
+      ! day = days + seconds/86400
+      ! ! make sure day is between 0 and days_in_year=360
+      ! do while (day .lt. 0)
+      !   day = day + days_in_year
+      ! end do
+      ! do while (day .ge. days_in_year)
+      !   day = day - days_in_year
+      ! end do
+      ! ! find index of nearest input time below
+      ! n=floor(day*num_input_times/days_in_year+1.5)
+      ! do i = 1, size(input_t_sfc,1)
+      !   do j = 1, size(input_t_sfc,2)
+      !     t_surf_for_melt(i,j)=input_t_sfc(i,j,n) +
+      !     (input_t_sfc(i,j,n+1)-input_t_sfc(i,j,n)) * &
+      !        ( (day*num_input_times/days_in_year+1.5)-n )
+      !   enddo
+      ! enddo
+      ! compute surface melt
+      where ( h_ice + delta_h_ice .gt. 0 ) ! surface is ice-covered
+        ! calculate increment in steady-state ice surface temperature
+        flux_ice = k_ice / (h_ice + delta_h_ice) * ( t_ice_base - t_surf )
+        delta_t_ice = ( - corrected_flux + flux_ice ) &
+                      / ( k_ice / (h_ice + delta_h_ice) + dFdt_surf )
+        ! in grid boxes with ice, wherever input t_surf=t_fr, make t_surf=t_fr;
+        ! otherwise, let t_surf be whatever it wants (even t_surf>t_fr)
+        ! where ( t_surf_for_melt .ge. TFREEZE ) ! surface ablation
+        !   delta_t_ice = TFREEZE - t_surf
+        ! endwhere
+        ! surface is ice-covered, so update t_surf as ice surface temperature
+        t_surf = t_surf + delta_t_ice
+      elsewhere ! ice-free, so update t_surf as mixed layer temperature
+        t_surf = t_ml + delta_t_ml
+      endwhere
+      !
+    else ! no file specifying sfc melt (default)
+      ! compute surface melt
+      where ( h_ice + delta_h_ice .gt. 0 ) ! surface is ice-covered
+        ! calculate increment in steady-state ice surface temperature
+        flux_ice = k_ice / (h_ice + delta_h_ice) * ( t_ice_base - t_surf )
+        delta_t_ice = ( - corrected_flux + flux_ice ) &
+                      / ( k_ice / (h_ice + delta_h_ice) + dFdt_surf )
+        where ( t_surf + delta_t_ice .gt. t_surf_freeze ) ! surface ablation
+          delta_t_ice = t_surf_freeze - t_surf
+        endwhere
+        ! surface is ice-covered, so update t_surf as ice surface temperature
+        t_surf = t_surf + delta_t_ice
+      elsewhere ! ice-free, so update t_surf as mixed layer temperature
+        t_surf = t_ml + delta_t_ml
+      endwhere
+    endif
+
+  else ! === do not use sea ice model: just evolve mixed layer with explicit step===
+    ! where ( land_mask .eq. 0 ) ! ocean
+    !   delta_t_ml = - ( corrected_flux + ocean_qflux) * dt/(depth*RHO_CP)
+    ! elsewhere ! land
+    !   delta_t_ml = - ( corrected_flux + ocean_qflux) * dt/(depth_land*RHO_CP)
+    ! endwhere
+    delta_t_ml = - ( corrected_flux + ocean_qflux) * dt/(depth*RHO_CP)
+    delta_h_ice = 0 ! do not evolve sea ice (no ice model)
+    ! t_surf and t_ml are equal (they differ only when mixed layer is ice-covered)
+    t_surf = t_ml + delta_t_ml
+  endif
+
+  ! = update state =
+  t_ml = t_ml + delta_t_ml
+  h_ice = h_ice + delta_h_ice
+
+
+
+
+!!!!!!!!!!!!! Chung add 2022/10/15
+  if (do_fraction_lock) then
+
+    ! linearly interpolate from input file time to model time at each location
+    ! find model time
+    call get_time(Time,seconds,days)
+!    day = days + seconds/86400
+    day = real(days) + real(seconds)/86400   !!!!! It is an integer (by Chung 11/02/2021)
+    ! make sure day is between 0 and days_in_year=360
+    do while (day .lt. 0)
+      day = day + days_in_year
+    end do
+    do while (day .ge. days_in_year)
+      day = day - days_in_year
+    end do
+    ! find index of nearest input time below
+    n=floor(day*num_input_times_h/days_in_year+1.5) ! integer:num_input_times_h=72
+    do i = 1, size(input_a_ice,1)
+      do j = 1, size(input_a_ice,2)
+        a_ice(i,j)=input_a_ice(i,j,n)+(input_a_ice(i,j,n+1)-input_a_ice(i,j,n))*((day*num_input_times_h/days_in_year+1.5)-n)
+      enddo
+    enddo
+  else !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  where ( h_ice .gt. 0 ) !!!
+    a_ice = 1            !!!
+  elsewhere              !!! original code from XZ
+    a_ice = 0            !!!
+  endwhere               !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  endif !!!
+!!!!!!!!!!!!! Chung add 2022/10/15
+
+
+
+
+  !if ( sea_ice_in_mixed_layer .and. ice_as_albedo_only ) then ! === model with !only albedo changing when T < Tfr ===
+  if ( ice_as_albedo_only ) then ! === model with only albedo changing when T < Tfr ===
+    ! a_ice is passed to radiation module for albedo. just set a_ice=1 where   ! T<Tfr.
+    where ( t_ml .le. t_surf_freeze)
+      a_ice = 1
+    elsewhere
+      a_ice = 0
+    endwhere
+  endif
+
+  ! ======================================================================
+
+  ! === (5) save increments in T and Q for lowest atm layer ===
+
+  !Tri_surf%delta_t = fn_t
+  !Tri_surf%delta_q = fn_q
+
+  !!!!! Chung add 05/2021 !!!!!
+  albedo(:,:) = (1-a_ice(:,:))*thermodynamic_albedo_ocn + a_ice(:,:)*thermodynamic_albedo_ice
+
+endif ! == thermodynamic ice, Chung add 05/2021
+
+!!!!! Chung add 05/2021
+if ( do_thickness_lock .and. file_exist(trim(ice_thickness_file)) ) then ! fix ice thickness
+
+  ! linearly interpolate from input file time to model time at each location
+  ! find model time
+  call get_time(Time,seconds,days)
+!  day = days + seconds/86400
+  day = real(days) + real(seconds)/86400   !!!!! It is an integer (by Chung 11/02/2021)
+
+  ! make sure day is between 0 and days_in_year=360
+  do while (day .lt. 0)
+    day = day + days_in_year
+  end do
+  do while (day .ge. days_in_year)
+    day = day - days_in_year
+  end do
+  ! find index of nearest input time below
+  n=floor(day*num_input_times_h/days_in_year+1.5) ! integer: num_input_times_h=72
+!  n=floor(day*num_input_times_h/days_in_year+1.4) !!!!! TEST 10/28/2021 Chung
+  do i = 1, size(input_h_ice,1)
+    do j = 1, size(input_h_ice,2)
+      h_ice(i,j)=input_h_ice(i,j,n)+(input_h_ice(i,j,n+1)-input_h_ice(i,j,n))*((day*num_input_times_h/days_in_year+1.5)-n)
+!!!!! TEST 10/28/2021 Chung
+!      h_ice(i,j)=input_h_ice(i,j,n)+(input_h_ice(i,j,n+1)-input_h_ice(i,j,n))*((day*num_input_times_h/days_in_year+1.4)-n)
+    enddo
+  enddo
+
+  if ( do_fraction_lock .and. file_exist(trim(ice_fraction_file)) ) then ! fix ice fraction
+    n=floor(day*num_input_times_h/days_in_year+1.5)
+    do i = 1, size(input_a_ice,1)
+      do j = 1, size(input_a_ice,2)
+        a_ice(i,j)=input_a_ice(i,j,n)+(input_a_ice(i,j,n+1)-input_a_ice(i,j,n))*((day*num_input_times_h/days_in_year+1.5)-n)
+      enddo
+    enddo
+  else
+    where ( h_ice .gt. 0 )
+!    where ( h_ice .gt. 0.02 ) !!! Chung 10/2021 changing ice thickness threshold to avoid precision problem
+      a_ice = 1
+    elsewhere
+      a_ice = 0
+    endwhere
+  endif
+
+  albedo(:,:) = (1-a_ice(:,:))*thermodynamic_albedo_ocn +a_ice(:,:)*thermodynamic_albedo_ice
+
+endif
+
+
+
+!if ( .not.(do_thickness_lock) .and. do_fraction_lock .and. file_exist(trim(ice_fraction_file)) ) then ! fix ice fraction !!!!! Chung 2022/09/26
+!  n=floor(day*num_input_times_h/days_in_year+1.5)
+!  do i = 1, size(input_a_ice,1)
+!    do j = 1, size(input_a_ice,2)
+!      a_ice(i,j)=input_a_ice(i,j,n)+(input_a_ice(i,j,n+1)-input_a_ice(i,j,n))*((day*num_input_times_h/days_in_year+1.5)-n)
+!    enddo
+!  enddo
+!  albedo(:,:) = (1-a_ice(:,:))*thermodynamic_albedo_ocn+a_ice(:,:)*thermodynamic_albedo_ice
+!endif
+!!!!! end of Chung's addition
+
+
+
+
 !s Surface heat_capacity calculation based on that in MiMA by mj
 
 if(do_sc_sst) then !mj sst read from input file
      ! read at the new time, as that is what we are stepping to
-     call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
+!     call interpolator( sst_interp, Time_next, sst_new, trim(sst_file) )
+     call interpolator( sst_interp, Time_next, sst_new, trim(sst_field_Chung) ) !! Chung 09/2021
 
      if(specify_sst_over_ocean_only) then
          where (.not.land_ice_mask) delta_t_surf = sst_new - t_surf
@@ -744,6 +1162,14 @@ if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time_next
 
 if(id_delta_t_surf > 0)   used = send_data(id_delta_t_surf, delta_t_surf, Time_next)
 
+!!!!! thermodynamic ice !!!!! Chung
+! Sea ice by Ian Eisenman, XZ 2/10/2018
+if(id_h_ice > 0) used = send_data(id_h_ice, h_ice, Time)
+if(id_a_ice > 0) used = send_data(id_a_ice, a_ice, Time)
+if(id_t_ml > 0) used = send_data(id_t_ml, t_ml, Time)
+if(id_flux_ice > 0) used = send_data(id_flux_ice, flux_ice, Time)
+if(id_albedo > 0) used = send_data(id_albedo, albedo, Time)
+
 end subroutine mixed_layer
 
 !=================================================================================================================================
@@ -780,9 +1206,10 @@ if ( id_ice_conc > 0 ) used = send_data ( id_ice_conc, ice_concentration, Time )
 end subroutine read_ice_conc
 !=================================================================================================================================
 
-subroutine mixed_layer_end(t_surf, bucket_depth, restart_file_bucket_depth)
+subroutine mixed_layer_end(t_surf, bucket_depth, restart_file_bucket_depth   , h_ice, a_ice, t_ml ) ! Chung
 
-real, intent(inout), dimension(:,:) :: t_surf
+real, intent(inout), dimension(:,:) :: t_surf  
+real, intent(inout), dimension(:,:) :: h_ice, a_ice, t_ml ! Chung ! Added by XZ 02/2018
 real, intent(inout), dimension(:,:,:) :: bucket_depth
 logical, intent(in)                 :: restart_file_bucket_depth
 integer:: unit
@@ -795,6 +1222,11 @@ call write_data(trim('RESTART/mixed_layer.res'), 't_surf',   t_surf, grid_domain
 if (restart_file_bucket_depth) then
     call write_data(trim('RESTART/mixed_layer.res'), 'bucket_depth',   bucket_depth, grid_domain)
 endif
+!!!!! thermodynamic ice !!!!! Chung
+! Sea ice by Ian Eisenman, XZ 2/11/2018
+call write_data(trim('RESTART/mixed_layer.res'), 'h_ice', h_ice, grid_domain)
+call write_data(trim('RESTART/mixed_layer.res'), 'a_ice', a_ice, grid_domain)
+call write_data(trim('RESTART/mixed_layer.res'), 't_ml', t_ml, grid_domain)
 
 module_is_initialized = .false.
 
