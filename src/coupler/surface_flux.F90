@@ -338,8 +338,8 @@ contains
 subroutine surface_flux_1d (                                           &
      t_atm,     q_atm_in,   u_atm,     v_atm,     p_atm,     z_atm,    &
      p_surf,    t_surf,     t_ca,      q_surf,                         &
-     bucket, bucket_depth, max_bucket_depth_land,                      & ! Add bucket
-     depth_change_lh_1d, depth_change_conv_1d, depth_change_cond_1d,   & ! Add bucket
+     bucket, bucket_depth, max_bucket_depth_land,                      &
+     depth_change_lh_1d, depth_change_conv_1d, depth_change_cond_1d,   &
      u_surf,    v_surf,                                                &
      rough_mom, rough_heat, rough_moist, rough_scale, gust,            &
      flux_t, flux_q, flux_r, flux_u, flux_v,                           &
@@ -347,16 +347,16 @@ subroutine surface_flux_1d (                                           &
      w_atm,     u_star,     b_star,     q_star,                        &
      dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &
      dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &
-     ex_del_m, ex_del_h, ex_del_q,                                     & ! 10m winds and 2m temp
-     temp_2m, u_10m, v_10m,                                            & ! 10m winds and 2m temp
-     q_2m, rh_2m,                                                      & ! 2m q and RH
+     ex_del_m, ex_del_h, ex_del_q,                                     &
+     temp_2m, u_10m, v_10m,                                            &
+     q_2m, rh_2m,                                                      &
      dt,        land,      seawater,     avail  )
 !</PUBLICROUTINE>
 !  slm Mar 28 2002 -- remove agument drag_q since it is just cd_q*wind
 ! ============================================================================
   ! ---- arguments -----------------------------------------------------------
   logical, intent(in), dimension(:) :: land,  seawater, avail
-  logical, intent(in) :: bucket         ! Add bucket
+  logical, intent(in) :: bucket         ! Add bucket model
   real, intent(in),  dimension(:) :: &
        t_atm,     q_atm_in,   u_atm,     v_atm,              &
        p_atm,     z_atm,      t_ca,                          &
@@ -368,22 +368,22 @@ subroutine surface_flux_1d (                                           &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
        cd_m,      cd_t,       cd_q,                          & 
-       ex_del_m, ex_del_h, ex_del_q,                         & ! 10m winds and 2m temp
-       temp_2m, u_10m, v_10m,                                & ! 10m winds and 2m temp
-       q_2m, rh_2m                                             ! 2m q and RH
+       ex_del_m, ex_del_h, ex_del_q,                         &
+       temp_2m, u_10m, v_10m,                                &
+       q_2m, rh_2m
 
 
   real, intent(inout), dimension(:) :: q_surf
-  real, intent(inout), dimension(:) :: bucket_depth                              ! Add bucket
-  real, intent(inout), dimension(:) :: depth_change_lh_1d                        ! Add bucket
-  real, intent(in), dimension(:) :: depth_change_conv_1d, depth_change_cond_1d   ! Add bucket
+  real, intent(inout), dimension(:) :: bucket_depth
+  real, intent(inout), dimension(:) :: depth_change_lh_1d
+  real, intent(in), dimension(:) :: depth_change_conv_1d, depth_change_cond_1d
   real, intent(in) :: max_bucket_depth_land
   real, intent(in) :: dt
 
   ! ---- local constants -----------------------------------------------------
   ! temperature increment and its reciprocal value for comp. of derivatives
   real, parameter:: del_temp=0.1, del_temp_inv=1.0/del_temp
-  real:: zrefm, zrefh                                          ! For 10m winds and 2m temp
+  real:: zrefm, zrefh
 
 
   ! ---- local vars ----------------------------------------------------------
@@ -709,9 +709,9 @@ subroutine surface_flux_0d (                                                 &
      w_atm_0,     u_star_0,     b_star_0,     q_star_0,                      &
      dhdt_surf_0, dedt_surf_0,  dedq_surf_0,  drdt_surf_0,                   &
      dhdt_atm_0,  dedq_atm_0,   dtaudu_atm_0, dtaudv_atm_0,                  &
-     ex_del_m_0, ex_del_h_0, ex_del_q_0,                                     & ! 10m winds and 2m temp
-     temp_2m_0, u_10m_0, v_10m_0,                                            & ! 10m winds and 2m temp
-     q_2m_0, rh_2m_0,                                                        & ! 2m q and RH
+     ex_del_m_0, ex_del_h_0, ex_del_q_0,                                     &
+     temp_2m_0, u_10m_0, v_10m_0,                                            &
+     q_2m_0, rh_2m_0,                                                        &
      dt,          land_0,       seawater_0,  avail_0  )
 
   ! ---- arguments -----------------------------------------------------------
@@ -727,8 +727,8 @@ subroutine surface_flux_0d (                                                 &
        dhdt_atm_0,  dedq_atm_0,   dtaudu_atm_0,dtaudv_atm_0,           &
        w_atm_0,     u_star_0,     b_star_0,    q_star_0,               &
        cd_m_0,      cd_t_0,       cd_q_0,                              &
-       ex_del_m_0, ex_del_h_0, ex_del_q_0,                             & ! 10m winds and 2m temp
-       temp_2m_0, u_10m_0, v_10m_0,                                    & ! 10m winds and 2m temp
+       ex_del_m_0, ex_del_h_0, ex_del_q_0,                             &
+       temp_2m_0, u_10m_0, v_10m_0,                                    &
        q_2m_0, rh_2m_0
   real, intent(inout) :: q_surf_0
   real, intent(in)    :: dt
@@ -747,15 +747,15 @@ subroutine surface_flux_0d (                                                 &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
        cd_m,      cd_t,       cd_q,                          &
-       ex_del_m, ex_del_h, ex_del_q,                         & ! 10m winds and 2m temp
-       temp_2m, u_10m, v_10m,                                & ! 10m winds and 2m temp
-       q_2m, rh_2m                                             ! 2m q and RH
+       ex_del_m, ex_del_h, ex_del_q,                         &
+       temp_2m, u_10m, v_10m,                                &
+       q_2m, rh_2m
 
   real, dimension(1) :: q_surf
-  real, dimension(1) :: bucket_depth                                 ! Add bucket
-  real, dimension(1) :: depth_change_lh_1d                           ! Add bucket
-  real, dimension(1) :: depth_change_conv_1d, depth_change_cond_1d   ! Add bucket
-  real :: max_bucket_depth_land  ! Add bucket
+  real, dimension(1) :: bucket_depth
+  real, dimension(1) :: depth_change_lh_1d
+  real, dimension(1) :: depth_change_conv_1d, depth_change_cond_1d
+  real :: max_bucket_depth_land
 
   avail = .true.
 
@@ -783,8 +783,8 @@ subroutine surface_flux_0d (                                                 &
   call surface_flux_1d (                                                 &
        t_atm,     q_atm,      u_atm,     v_atm,     p_atm,     z_atm,    &
        p_surf,    t_surf,     t_ca,      q_surf,                         &
-       bucket, bucket_depth, max_bucket_depth_land,                      & ! Add bucket
-       depth_change_lh_1d, depth_change_conv_1d, depth_change_cond_1d,   & ! Add bucket
+       bucket, bucket_depth, max_bucket_depth_land,                      &
+       depth_change_lh_1d, depth_change_conv_1d, depth_change_cond_1d,   &
        u_surf,    v_surf,                                                &
        rough_mom, rough_heat, rough_moist, rough_scale, gust,            &
        flux_t, flux_q, flux_r, flux_u, flux_v,                           &
@@ -792,9 +792,9 @@ subroutine surface_flux_0d (                                                 &
        w_atm,     u_star,     b_star,     q_star,                        &
        dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &
        dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &
-       ex_del_m, ex_del_h, ex_del_q,                                     & ! 10m winds and 2m temp
-       temp_2m, u_10m, v_10m,                                            & ! 10m winds and 2m temp
-       q_2m, rh_2m,                                                      & ! 2m q and RH
+       ex_del_m, ex_del_h, ex_del_q,                                     &
+       temp_2m, u_10m, v_10m,                                            &
+       q_2m, rh_2m,                                                      &
        dt,        land,      seawater, avail  )
 
   flux_t_0     = flux_t(1)
@@ -818,22 +818,22 @@ subroutine surface_flux_0d (                                                 &
   cd_m_0       = cd_m(1)
   cd_t_0       = cd_t(1)
   cd_q_0       = cd_q(1)
-  ex_del_m_0   = ex_del_m(1)    ! For 10m winds and 2m temp
-  ex_del_h_0   = ex_del_h(1)    ! For 10m winds and 2m temp
-  ex_del_q_0   = ex_del_q(1)    ! For 10m winds and 2m temp
-  temp_2m_0    = temp_2m(1)     ! For 10m winds and 2m temp
-  u_10m_0      = u_10m(1)       ! For 10m winds and 2m temp
-  v_10m_0      = v_10m(1)       ! For 10m winds and 2m temp
-  q_2m_0       = q_2m(1)        ! Add 2m q
-  rh_2m_0      = rh_2m(1)       ! Add 2m RH 
+  ex_del_m_0   = ex_del_m(1)
+  ex_del_h_0   = ex_del_h(1)
+  ex_del_q_0   = ex_del_q(1)
+  temp_2m_0    = temp_2m(1)
+  u_10m_0      = u_10m(1)
+  v_10m_0      = v_10m(1)
+  q_2m_0       = q_2m(1)
+  rh_2m_0      = rh_2m(1)
 
 end subroutine surface_flux_0d
 
 subroutine surface_flux_2d (                                           &
      t_atm,     q_atm_in,   u_atm,     v_atm,     p_atm,     z_atm,    &
      p_surf,    t_surf,     t_ca,      q_surf,                         &
-     bucket, bucket_depth, max_bucket_depth_land,                      & ! Add bucket
-     depth_change_lh,   depth_change_conv,   depth_change_cond,        & ! Add bucket
+     bucket, bucket_depth, max_bucket_depth_land,                      &
+     depth_change_lh,   depth_change_conv,   depth_change_cond,        &
      u_surf,    v_surf,                                                &
      rough_mom, rough_heat, rough_moist, rough_scale, gust,            &
      flux_t,    flux_q,     flux_r,    flux_u,    flux_v,              &
@@ -841,9 +841,9 @@ subroutine surface_flux_2d (                                           &
      w_atm,     u_star,     b_star,     q_star,                        &
      dhdt_surf, dedt_surf,  dedq_surf,  drdt_surf,                     &
      dhdt_atm,  dedq_atm,   dtaudu_atm, dtaudv_atm,                    &
-     ex_del_m, ex_del_h, ex_del_q,                                     & ! 10m winds and 2m temp
-     temp_2m, u_10m, v_10m,                                            & ! 10m winds and 2m temp
-     q_2m, rh_2m,                                                      & ! 2m q and RH
+     ex_del_m, ex_del_h, ex_del_q,                                     &
+     temp_2m, u_10m, v_10m,                                            &
+     q_2m, rh_2m,                                                      &
      dt,        land,       seawater,  avail  )
 
   ! ---- arguments -----------------------------------------------------------
@@ -859,16 +859,16 @@ subroutine surface_flux_2d (                                           &
        dhdt_atm,  dedq_atm,   dtaudu_atm,dtaudv_atm,         &
        w_atm,     u_star,     b_star,    q_star,             &
        cd_m,      cd_t,       cd_q,                          &
-       ex_del_m, ex_del_h, ex_del_q,                         & ! 10m winds and 2m temp
-       temp_2m, u_10m, v_10m,                                & ! 10m winds and 2m temp
-       q_2m, rh_2m                                             ! 2m q and RH
+       ex_del_m, ex_del_h, ex_del_q,                         &
+       temp_2m, u_10m, v_10m,                                &
+       q_2m, rh_2m
 
   real, intent(inout), dimension(:,:) :: q_surf
-  logical, intent(in) :: bucket ! Add bucket
-  real, intent(inout), dimension(:,:) :: bucket_depth ! Add bucket
-  real, intent(inout), dimension(:,:) :: depth_change_lh ! Add bucket
-  real, intent(in), dimension(:,:)    :: depth_change_conv, depth_change_cond ! Add bucket
-  real, intent(in) :: max_bucket_depth_land  ! Add bucket
+  logical, intent(in) :: bucket
+  real, intent(inout), dimension(:,:) :: bucket_depth
+  real, intent(inout), dimension(:,:) :: depth_change_lh
+  real, intent(in), dimension(:,:)    :: depth_change_conv, depth_change_cond
+  real, intent(in) :: max_bucket_depth_land
   real, intent(in) :: dt
 
   ! ---- local vars -----------------------------------------------------------
@@ -878,8 +878,8 @@ subroutine surface_flux_2d (                                           &
      call surface_flux_1d (                                           &
           t_atm(:,j),     q_atm_in(:,j),   u_atm(:,j),     v_atm(:,j),     p_atm(:,j),     z_atm(:,j),    &
           p_surf(:,j),    t_surf(:,j),     t_ca(:,j),      q_surf(:,j),                                   &
-          bucket, bucket_depth(:,j), max_bucket_depth_land,                                               & ! Add bucket
-          depth_change_lh(:,j), depth_change_conv(:,j), depth_change_cond(:,j),                           & ! Add bucket
+          bucket, bucket_depth(:,j), max_bucket_depth_land,                                               &
+          depth_change_lh(:,j), depth_change_conv(:,j), depth_change_cond(:,j),                           &
           u_surf(:,j),    v_surf(:,j),                                                                    &
           rough_mom(:,j), rough_heat(:,j), rough_moist(:,j), rough_scale(:,j), gust(:,j),                 &
           flux_t(:,j),    flux_q(:,j),     flux_r(:,j),    flux_u(:,j),    flux_v(:,j),                   &
@@ -887,8 +887,8 @@ subroutine surface_flux_2d (                                           &
           w_atm(:,j),     u_star(:,j),     b_star(:,j),     q_star(:,j),                                  &
           dhdt_surf(:,j), dedt_surf(:,j),  dedq_surf(:,j),  drdt_surf(:,j),                               &
           dhdt_atm(:,j),  dedq_atm(:,j),   dtaudu_atm(:,j), dtaudv_atm(:,j),                              &
-          ex_del_m(:,j), ex_del_h(:,j), ex_del_q(:,j),                                                    & ! 10m winds and 2m temp
-          temp_2m(:,j), u_10m(:,j), v_10m(:,j),                                                           & ! 10m winds and 2m temp
+          ex_del_m(:,j), ex_del_h(:,j), ex_del_q(:,j),                                                    &
+          temp_2m(:,j), u_10m(:,j), v_10m(:,j),                                                           &
           q_2m(:,j), rh_2m(:,j),                                                                          &
           dt,             land(:,j),       seawater(:,j),  avail(:,j)  )
   end do

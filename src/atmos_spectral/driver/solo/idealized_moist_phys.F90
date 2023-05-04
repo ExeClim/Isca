@@ -159,14 +159,14 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roug
                                       land_option, land_file_name, land_field_name,  & ! options for idealised land
                                       land_roughness_prefactor,                      &
                                       gp_surface, convection_scheme,                 &
-                                      bucket, init_bucket_depth, init_bucket_depth_land, & ! Add bucket
+                                      bucket, init_bucket_depth, init_bucket_depth_land, &
                                       max_bucket_depth_land, robert_bucket, raw_bucket, &
                                       do_socrates_radiation
 
 
 integer, parameter :: num_time_levels = 2 ! Add bucket - number of time levels added to allow timestepping in this module
-real, allocatable, dimension(:,:,:)   :: bucket_depth      ! Add bucket
-real, allocatable, dimension(:,:    ) :: dt_bucket, filt   ! Add bucket
+real, allocatable, dimension(:,:,:)   :: bucket_depth
+real, allocatable, dimension(:,:    ) :: dt_bucket, filt
 
 real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
@@ -835,8 +835,8 @@ else
 endif
 
 if (bucket) then
-  dt_bucket = 0.0                ! Add bucket
-  filt      = 0.0                ! Add bucket
+  dt_bucket = 0.0
+  filt      = 0.0
 endif
 
 rain = 0.0; snow = 0.0; precip = 0.0
@@ -862,7 +862,7 @@ case(SIMPLE_BETTS_CONV)
 
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
-   depth_change_conv = rain/dens_h2o     ! Add bucket
+   depth_change_conv = rain/dens_h2o
    rain       = rain/delta_t
    precip     = rain
 
@@ -891,7 +891,7 @@ case(FULL_BETTS_MILLER_CONV)
 
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
-   depth_change_conv = rain/dens_h2o     ! Add bucket
+   depth_change_conv = rain/dens_h2o
    rain       = rain/delta_t
    precip     = rain
 
@@ -971,7 +971,7 @@ if (r_conv_scheme .ne. DRY_CONV) then
 
   cond_dt_tg = cond_dt_tg/delta_t
   cond_dt_qg = cond_dt_qg/delta_t
-  depth_change_cond = rain/dens_h2o     ! Add bucket
+  depth_change_cond = rain/dens_h2o
   rain       = rain/delta_t
   snow       = snow/delta_t
   precip     = precip + rain + snow
