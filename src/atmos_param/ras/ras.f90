@@ -871,7 +871,7 @@ end subroutine ras_end
      ib  = ic(nc)
  if( ib >= klcl) CYCLE
 
- klzbs(i,j) = min(klzbs(i,j), ib) ! QL add, store the smallest cloud level
+ klzbs(i,j) = min(klzbs(i,j), ib)
 
  if ( setras ) then
 ! --- Compute some stuff

@@ -98,7 +98,7 @@ logical :: module_is_initialized =.false.
 logical :: turb = .false.
 logical :: do_virtual = .false. ! whether virtual temp used in gcm_vert_diff
 
-!s Convection scheme options
+! Convection scheme options
 character(len=256) :: convection_scheme = 'unset'  !< Use a specific convection scheme.  Valid options
 integer, parameter :: UNSET = -1,                & !! are NONE, SIMPLE_BETTS_MILLER, FULL_BETTS_MILLER, DRY
                       NO_CONV = 0,               &
@@ -117,31 +117,31 @@ logical :: do_ras = .false.
 logical :: do_cloud_simple = .false. ! SimCloud cloud scheme
 logical :: do_cloud_spookie = .false. ! SPOOKIE protocol cloud scheme
 
-!s Radiation options
+! Radiation options
 logical :: two_stream_gray = .true.
 logical :: do_rrtm_radiation = .false.
 logical :: do_socrates_radiation = .false.
 
-!s MiMA uses damping
+! MiMA uses damping
 logical :: do_damping = .false.
 
 
 logical :: mixed_layer_bc = .false.
-logical :: gp_surface = .false. !s Use Schneider & Liu 2009's prescription of lower-boundary heat flux
+logical :: gp_surface = .false. ! Use Schneider & Liu 2009's prescription of lower-boundary heat flux
 
-logical :: do_simple = .false. !s Have added this to enable relative humidity to be calculated correctly below.
+logical :: do_simple = .false. ! Have added this to enable relative humidity to be calculated correctly below.
 real :: roughness_heat = 0.05
 real :: roughness_moist = 0.05
 real :: roughness_mom = 0.05
 real :: land_roughness_prefactor = 1.0
 
-!s options for adding idealised land
+! options for adding idealised land
 
 character(len=256) :: land_option = 'none'
 character(len=256) :: land_file_name  = 'INPUT/land.nc'
 character(len=256) :: land_field_name = 'land_mask'
 
-! RG Add bucket
+! Add bucket
 logical :: bucket = .false.
 integer :: future
 real :: init_bucket_depth = 1000. ! default large value
@@ -149,24 +149,24 @@ real :: init_bucket_depth_land = 20.
 real :: max_bucket_depth_land = 0.15 ! default from Manabe 1969
 real :: robert_bucket = 0.04   ! default robert coefficient for bucket depth LJJ
 real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
-! end RG Add bucket
+! end Add bucket
 
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
                                       do_cloud_simple, do_cloud_spookie,             &
                                       two_stream_gray, do_rrtm_radiation, do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
-                                      land_option, land_file_name, land_field_name,  & !s options for idealised land
+                                      land_option, land_file_name, land_field_name,  & ! options for idealised land
                                       land_roughness_prefactor,                      &
                                       gp_surface, convection_scheme,                 &
-                                      bucket, init_bucket_depth, init_bucket_depth_land, & !RG Add bucket
+                                      bucket, init_bucket_depth, init_bucket_depth_land, & ! Add bucket
                                       max_bucket_depth_land, robert_bucket, raw_bucket, &
                                       do_socrates_radiation
 
 
-integer, parameter :: num_time_levels = 2 !RG Add bucket - number of time levels added to allow timestepping in this module
-real, allocatable, dimension(:,:,:)   :: bucket_depth      ! RG Add bucket
-real, allocatable, dimension(:,:    ) :: dt_bucket, filt   ! RG Add bucket
+integer, parameter :: num_time_levels = 2 ! Add bucket - number of time levels added to allow timestepping in this module
+real, allocatable, dimension(:,:,:)   :: bucket_depth      ! Add bucket
+real, allocatable, dimension(:,:    ) :: dt_bucket, filt   ! Add bucket
 
 real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
@@ -297,12 +297,12 @@ integer ::           &
 
 integer, allocatable, dimension(:,:) :: convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
-real,    allocatable, dimension(:) :: pref, p_half_1d, ln_p_half_1d, p_full_1d,ln_p_full_1d !s pref is a reference pressure profile, which in 2006 MiMA is just the initial full pressure levels, and an extra level with the reference surface pressure. Others are only necessary to calculate pref.
-real,    allocatable, dimension(:,:) :: capeflag !s Added for Betts Miller scheme (rather than the simplified Betts Miller scheme).
+real,    allocatable, dimension(:) :: pref, p_half_1d, ln_p_half_1d, p_full_1d,ln_p_full_1d ! pref is a reference pressure profile, which in 2006 MiMA is just the initial full pressure levels, and an extra level with the reference surface pressure. Others are only necessary to calculate pref.
+real,    allocatable, dimension(:,:) :: capeflag ! Added for Betts Miller scheme (rather than the simplified Betts Miller scheme).
 
 type(surf_diff_type) :: Tri_surf ! used by gcm_vert_diff
 
-!s initialise constants ready to be used in rh_calc
+! initialise constants ready to be used in rh_calc
 real :: d622 = 0.
 real :: d378 = 0.
 
@@ -324,11 +324,11 @@ real, intent(in), dimension(:,:) :: rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_lat
 integer :: io, ierr, nml_unit, stdlog_unit, seconds, days, id, jd, kd
 real, dimension (size(rad_lonb_2d,1)-1, size(rad_latb_2d,2)-1) :: sgsmtn ! needed for damping_driver
 
-!s added for land reading
+! added for land reading
 integer, dimension(4) :: siz
 integer :: global_num_lon, global_num_lat
 character(len=12) :: ctmp1='     by     ', ctmp2='     by     '
-!s end added for land reading
+! end added for land reading
 
 ! Added for RAS
 integer :: num_tracers=0,num_ras_tracers=0,n=0
@@ -360,7 +360,7 @@ call write_version_number(version, tagname)
 stdlog_unit = stdlog()
 write(stdlog_unit, idealized_moist_phys_nml)
 
-!s initialise variables for rh_calc
+! initialise variables for rh_calc
 d622 = rdgas/rvgas
 d378 = 1.-d622
 
@@ -374,7 +374,7 @@ if(do_cloud_spookie) then
   call cloud_spookie_init(get_axis_id(), Time)
 end if
 
-!s need to make sure that gray radiation and rrtm radiation are not both called.
+! need to make sure that gray radiation and rrtm radiation are not both called.
 if(two_stream_gray .and. do_rrtm_radiation) &
    call error_mesg('physics_driver_init','do_grey_radiation and do_rrtm_radiation cannot both be .true.',FATAL)
 
@@ -510,7 +510,7 @@ allocate(rough       (is:ie, js:je))
 allocate(diff_t      (is:ie, js:je, num_levels))
 allocate(diff_m      (is:ie, js:je, num_levels))
 allocate(diss_heat   (is:ie, js:je, num_levels))
-allocate(diss_heat_ray   (is:ie, js:je, num_levels)) !s added for rayleigh_bottom_drag, used when gp_surface=.True.
+allocate(diss_heat_ray   (is:ie, js:je, num_levels)) ! added for rayleigh_bottom_drag, used when gp_surface=.True.
 allocate(tdtlw       (is:ie, js:je, num_levels)); tdtlw = 0.0
 
 allocate(non_diff_dt_ug  (is:ie, js:je, num_levels))
@@ -542,11 +542,11 @@ allocate(convect      (is:ie, js:je)); convect = .false.
 allocate(t_ref (is:ie, js:je, num_levels)); t_ref = 0.0
 allocate(q_ref (is:ie, js:je, num_levels)); q_ref = 0.0
 
-allocate (albedo      (is:ie, js:je)) !s allocate for albedo, to be set in mixed_layer_init.
-allocate(coszen       (is:ie, js:je)) !s allocate coszen to be set in run_rrtmg
-allocate(pbltop       (is:ie, js:je)) !s allocate coszen to be set in run_rrtmg
+allocate (albedo      (is:ie, js:je)) ! allocate for albedo, to be set in mixed_layer_init.
+allocate(coszen       (is:ie, js:je)) ! allocate coszen to be set in run_rrtmg
+allocate(pbltop       (is:ie, js:je)) ! allocate coszen to be set in run_rrtmg
 
-allocate(pref(num_levels+1)) !s reference pressure profile, as in spectral_physics.f90 in FMS 2006 and original MiMA.
+allocate(pref(num_levels+1)) ! reference pressure profile, as in spectral_physics.f90 in FMS 2006 and original MiMA.
 allocate(p_half_1d(num_levels+1), ln_p_half_1d(num_levels+1))
 allocate(p_full_1d(num_levels  ), ln_p_full_1d(num_levels  ))
 allocate(capeflag     (is:ie, js:je))
@@ -554,17 +554,17 @@ allocate(capeflag     (is:ie, js:je))
 call get_surf_geopotential(z_surf)
 z_surf = z_surf/grav
 
-!s initialise the land area
+! initialise the land area
 if(trim(land_option) .eq. 'input')then
-!s read in land nc file
-!s adapted from spectral_init_cond.F90
+! read in land nc file
+! adapted from spectral_init_cond.F90
 
        if(file_exist(trim(land_file_name))) then
          call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat)
          call field_size(trim(land_file_name), trim(land_field_name), siz)
          if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
            call read_data(trim(land_file_name), trim(land_field_name), land_ones, grid_domain)
-           !s write something to screen to let the user know what's happening.
+           ! write something to screen to let the user know what's happening.
          else
            write(ctmp1(1: 4),'(i4)') siz(1)
            write(ctmp1(9:12),'(i4)') siz(2)
@@ -578,11 +578,11 @@ if(trim(land_option) .eq. 'input')then
                          ' but '//trim(land_file_name)//' does not exist', FATAL)
        endif
 
-    !s convert data in land nc file to land logical array
+    ! convert data in land nc file to land logical array
     where(land_ones > 0.) land = .true.
 
 elseif(trim(land_option) .eq. 'zsurf')then
-    !s wherever zsurf is greater than some threshold height then make land = .true.
+    ! wherever zsurf is greater than some threshold height then make land = .true.
     where ( z_surf > 10. ) land = .true.
 endif
 
@@ -631,7 +631,7 @@ if(mixed_layer_bc) then
   ! to quickly enter the atmosphere avoiding problems with the convection scheme
   t_surf = t_surf_init + 1.0
 
-  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, bucket_depth, get_axis_id(), Time, albedo, rad_lonb_2d(:,:), rad_latb_2d(:,:), land, bucket) ! t_surf is intent(inout) !s albedo distribution set here.
+  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, bucket_depth, get_axis_id(), Time, albedo, rad_lonb_2d(:,:), rad_latb_2d(:,:), land, bucket) ! t_surf is intent(inout) ! albedo distribution set here.
 
 elseif(gp_surface) then
   albedo=0.0
@@ -645,7 +645,7 @@ if(turb) then
 ! need to call vert_diff_init even if using gcm_vert_diff (rather than
 ! gcm_vert_diff_down) because the variable sphum is not initialized
 ! otherwise in the vert_diff module
-   call vert_diff_init (Tri_surf, ie-is+1, je-js+1, num_levels, .true., do_virtual) !s do_conserve_energy is hard-coded in.
+   call vert_diff_init (Tri_surf, ie-is+1, je-js+1, num_levels, .true., do_virtual) ! do_conserve_energy is hard-coded in.
 end if
 
 call lscale_cond_init()
@@ -764,7 +764,7 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
     endif
 #else
     if(do_rrtm_radiation) then
-       id=ie-is+1 !s Taking dimensions from equivalend calls in vert_turb_driver_init
+       id=ie-is+1 ! Taking dimensions from equivalend calls in vert_turb_driver_init
        jd=je-js+1
        kd=num_levels
        call rrtmg_lw_ini(cp_air)
@@ -835,8 +835,8 @@ else
 endif
 
 if (bucket) then
-  dt_bucket = 0.0                ! RG Add bucket
-  filt      = 0.0                ! RG Add bucket
+  dt_bucket = 0.0                ! Add bucket
+  filt      = 0.0                ! Add bucket
 endif
 
 rain = 0.0; snow = 0.0; precip = 0.0
@@ -862,7 +862,7 @@ case(SIMPLE_BETTS_CONV)
 
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
-   depth_change_conv = rain/dens_h2o     ! RG Add bucket
+   depth_change_conv = rain/dens_h2o     ! Add bucket
    rain       = rain/delta_t
    precip     = rain
 
@@ -891,7 +891,7 @@ case(FULL_BETTS_MILLER_CONV)
 
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
-   depth_change_conv = rain/dens_h2o     ! RG Add bucket
+   depth_change_conv = rain/dens_h2o     ! Add bucket
    rain       = rain/delta_t
    precip     = rain
 
@@ -971,7 +971,7 @@ if (r_conv_scheme .ne. DRY_CONV) then
 
   cond_dt_tg = cond_dt_tg/delta_t
   cond_dt_qg = cond_dt_qg/delta_t
-  depth_change_cond = rain/dens_h2o     ! RG Add bucket
+  depth_change_cond = rain/dens_h2o     ! Add bucket
   rain       = rain/delta_t
   snow       = snow/delta_t
   precip     = precip + rain + snow
@@ -1126,15 +1126,12 @@ if(.not.gp_surface) then
 
 endif
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!! added by mp586 for 10m winds and 2m temperature add mo_profile()!!!!!!!!
+! 10m winds and 2m temperature add mo_profile()
 
-if(id_temp_2m > 0) used = send_data(id_temp_2m, temp_2m, Time) ! mp586 add 2m temp
-if(id_u_10m > 0) used = send_data(id_u_10m, u_10m, Time)       ! mp586 add 10m wind (u)
-if(id_v_10m > 0) used = send_data(id_v_10m, v_10m, Time)       ! mp586 add 10m wind (v)
+if(id_temp_2m > 0) used = send_data(id_temp_2m, temp_2m, Time) ! 2m temp
+if(id_u_10m > 0) used = send_data(id_u_10m, u_10m, Time)       ! 10m wind (u)
+if(id_v_10m > 0) used = send_data(id_v_10m, v_10m, Time)       ! 10m wind (v)
 
-!!!!!!!!!!!! end of mp586 additions !!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if(id_q_2m > 0) used = send_data(id_q_2m, q_2m, Time)         ! Add 2m humidity
 if(id_rh_2m > 0) used = send_data(id_rh_2m, rh_2m*1e2, Time)  ! Add 2m humidity
 
@@ -1221,7 +1218,7 @@ if(do_damping) then
                              grid_tracers(:,:,:,previous,:),                            &
                              dt_ug(:,:,:), dt_vg(:,:,:), dt_tg(:,:,:),                  &
                              dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:),             &
-                             z_pbl) !s have taken the names of arrays etc from vert_turb_driver below. Watch ntp from 2006 call to this routine?
+                             z_pbl) ! have taken the names of arrays etc from vert_turb_driver below. Watch ntp from 2006 call to this routine?
 endif
 
 
@@ -1247,7 +1244,7 @@ if(turb) then
                          diff_m(:,:,:),                      gust(:,:), &
                             z_pbl(:,:) )
 
-      pbltop(is:ie,js:je) = z_pbl(:,:) !s added so that z_pbl can be used subsequently by damping_driver.
+      pbltop(is:ie,js:je) = z_pbl(:,:) ! added so that z_pbl can be used subsequently by damping_driver.
 
 !
 !! Don't zero these derivatives as the surface flux depends implicitly
@@ -1323,11 +1320,11 @@ if(turb) then
 
 endif ! if(turb) then
 
-!s Adding relative humidity calculation so as to allow comparison with Frierson's thesis.
+! Adding relative humidity calculation so as to allow comparison with Frierson's thesis.
    call rh_calc (p_full(:,:,:,previous),tg_tmp,qg_tmp,RH)
    if(id_rh >0) used = send_data(id_rh, RH*100., Time)
 
-! RG Add bucket
+! Add bucket
 ! Timestepping for bucket.
 ! NB In tapios github, all physics is still in atmosphere.F90 and this leapfrogging is done there.
 !This part has been included here to avoid editing atmosphere.F90
@@ -1405,7 +1402,7 @@ if(do_socrates_radiation) call run_socrates_end
 end subroutine idealized_moist_phys_end
 !=================================================================================================================================
 
-subroutine rh_calc(pfull,T,qv,RH) !s subroutine copied from 2006 FMS MoistModel file moist_processes.f90 (v14 2012/06/22 14:50:00).
+subroutine rh_calc(pfull,T,qv,RH) ! subroutine copied from 2006 FMS MoistModel file moist_processes.f90 (v14 2012/06/22 14:50:00).
 
         IMPLICIT NONE
 

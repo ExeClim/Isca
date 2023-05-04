@@ -472,7 +472,7 @@ logical :: avgbl
 !                where no adjustment, and set to the saturation humidity at 
 !                the parcel temperature below the LCL)
 !    klzb        Level of zero buoyancy
-!    klcl        Level of lifted condensation
+!    klcl        Lifting condensation level
 !
 !    Algorithm: 
 !    Start with surface parcel. 
