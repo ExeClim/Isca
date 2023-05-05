@@ -4,16 +4,16 @@ Remote Access
 Overview
 --------
 This is a guide for how to edit remote files on a local text editor via port-
-fowarding. By the end you should know: 
+forwarding. By the end you should know: 
 
 * how to quickly login to your remote server using an SSH config file
 * how to edit remote files in a local text editor through ``rmate``
 * how to edit remote python files in a local ``jupyter`` environment
 
-Simplifying logins and port-fowarding
+Simplifying logins and port-forwarding
 -------------------------------------
 If you use a Unix-based operating system on your personal computer, you can make use
-of an SSH config file to create shortcuts to your frequently used remote computers. We will take this one step further to simplify port-fowarding, a method which allows a user to redirect data from a specified remote host and port, through a secure tunnel, to a specified local port. Port-fowarding is helfpul because it will enable us to edit remote files locally.
+of an SSH config file to create shortcuts to your frequently used remote computers. We will take this one step further to simplify port-forwarding, a method which allows a user to redirect data from a specified remote host and port, through a secure tunnel, to a specified local port. Port-forwarding is helpful because it will enable us to edit remote files locally.
 
 As an example without any fancy tricks, let's set up an SSH tunnel that maps ``localhost`` port 3039 on my local machine to 3039 on my remote machine (the number is arbitrary as long as its between 1024 and 49150): ``$ ssh -l localhost:3039:host:3039 user@host``. You will then be required to enter in your password. This is cumbersome to repeat everytime we log in. Our goal will be to shorten the command to : ``$ ssh hostalias`` and without having to enter in your password. We give some instructions below:
 
@@ -51,12 +51,12 @@ You should not be able to log in simply by typing ``$ ssh hostalias``. Congratul
 Edit remote files in a local text editor using ``rmate``
 --------------------------------------------------------
 As an alternative to remote-based text editors such as ``vi`` and ``emacs``, we can
-use port-fowarding to set up a `local-based text editor like Atom <https://atom.io>`_ which includes features such as syntax highlighting and code completion. For instructions to install ``rmate`` on your **local machine**, `click here <https://github.com/textmate/rmate>`_. Then to specifically use Atom to edit remote files, `click here <https://atom.io/packages/remote-atom>`_. You will need to add the following line to your ``~/.ssh/config`` file: ``RemoteForward 52698 localhost:52698``.
+use port-forwarding to set up a `local-based text editor like Atom <https://atom.io>`_ which includes features such as syntax highlighting and code completion. For instructions to install ``rmate`` on your **local machine**, `click here <https://github.com/textmate/rmate>`_. Then to specifically use Atom to edit remote files, `click here <https://atom.io/packages/remote-atom>`_. You will need to add the following line to your ``~/.ssh/config`` file: ``RemoteForward 52698 localhost:52698``.
 
 
 Edit remote python files in a ``jupyter`` environment
 -----------------------------------------------------
-The ``jupyter`` environment is a great environent for data exploration and integrating
+The ``jupyter`` environment is a great environment for data exploration and integrating
 your figures inline with your code. To open your first Jupyter notebook, log in to your **remote machine** and type: ``$ jupyter lab --no-browser --port=3039``. 
 
 To make it even quicker, you can type the following on your **local machine**: ``$ssh remotehost "jupyter lab --no-browser --port=3039``. This should function because of all the work we put in during the port forwarding section. To shorten this command, add an alias to your ``~/.bashrc`` file on your **local machine**. I personally use the alias ``rjlab``.
@@ -81,7 +81,7 @@ Your final ``~/.ssh/config`` file should look like this (making sure to replace 
 
 * Do not use this with VPN, use ithome aka hashbang as proxy. If the connection is interrupted you can still reconnect, assuming the jupyter process is still running. But make sure not to leave zombie jupyter processes with open ports on remote hosts!
 
-* Remember the port numbers chosen are arbitary. If you choose the same number as someone else on your network, their files may open up on your computer and vice versa!
+* Remember the port numbers chosen are arbitrary. If you choose the same number as someone else on your network, their files may open up on your computer and vice versa!
 
 Authors
 -------
