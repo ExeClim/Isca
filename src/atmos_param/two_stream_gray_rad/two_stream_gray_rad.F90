@@ -28,7 +28,7 @@ module two_stream_gray_rad_mod
                                     mpp_pe, close_file, error_mesg, &
                                     NOTE, FATAL,  uppercase
 
-   use constants_mod,         only: stefan, cp_air, grav, pstd_mks, pstd_mks_earth, seconds_per_sol, orbital_period
+   use constants_mod,         only: stefan, cp_air, grav, pstd_mks, pstd_mks_earth, seconds_per_sol, orbital_period, radius
 
    use    diag_manager_mod,   only: register_diag_field, send_data
 
@@ -85,6 +85,11 @@ integer :: solday          = -10  !s Day of year to run perpetually if do_season
 real    :: equinox_day     = 0.75 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months).
 logical :: use_time_average_coszen = .false. !s if .true., then time-averaging is done on coszen so that insolation doesn't depend on timestep
 real    :: dt_rad_avg     = -1
+logical :: do_tl = .false.
+logical :: do_closein = .false. 
+logical :: do_normal_integration_method = .true. 
+real :: R_stellar = 476700000. 
+real :: d_stellar = 1117512000.0
 
 character(len=32) :: rad_scheme = 'frierson'
 
@@ -119,6 +124,7 @@ real :: bog_b = 1997.9
 real :: bog_mu = 1.0
 
 real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 !s albedo now defined in mixed_layer_init
+real, allocatable, dimension(:,:)   :: lat_tl, lat_tl_insol
 real, allocatable, dimension(:,:)   :: b_surf, b_surf_gp
 real, allocatable, dimension(:,:,:) :: b, tdt_rad, tdt_solar
 real, allocatable, dimension(:,:,:) :: lw_up, lw_down, lw_flux, sw_up, sw_down, sw_flux, rad_flux
@@ -150,14 +156,14 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
            use_time_average_coszen, dt_rad_avg,&
            diabatic_acce, & !Schneider Liu values 
-           do_toa_albedo 
+           do_toa_albedo, do_tl, do_closein, R_stellar, d_stellar, do_normal_integration_method 
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
 
 integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
            id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun, &
-           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2
+           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2, id_nudge_flux, id_tau
 
 character(len=10), parameter :: mod_name = 'two_stream'
 
@@ -268,6 +274,8 @@ allocate (sw_tau_0         (ie-is+1, je-js+1))
 allocate (olr              (ie-is+1, je-js+1))
 allocate (net_lw_surf      (ie-is+1, je-js+1))
 allocate (toa_sw_in        (ie-is+1, je-js+1))
+allocate (lat_tl           (ie-is+1, je-js+1))
+allocate (lat_tl_insol     (ie-is+1, je-js+1))
 
 allocate (insolation       (ie-is+1, je-js+1))
 allocate (p2               (ie-is+1, je-js+1))
@@ -354,6 +362,12 @@ end select
                register_diag_field ( mod_name, 'coszen', axes(1:2), Time, &
                  'cosine of zenith angle', &
                  'none', missing_value=missing_value      )
+                 
+    id_tau     = &
+               register_diag_field ( mod_name, 'tau', axes(1:2), Time, &
+                 'surface lw optical depth', &
+                 'none', missing_value=missing_value      )             
+                 
     id_fracsun  = &
                register_diag_field ( mod_name, 'fracsun', axes(1:2), Time, &
                  'daylight fraction of time interval', &
@@ -380,13 +394,17 @@ end select
                register_diag_field ( mod_name, 'lw_dtrans', axes(1:3), Time, &
                  'LW transmission (non window)', &
                  'none', missing_value=missing_value      )
+   id_nudge_flux = &
+   register_diag_field ( mod_name, 'nudge_flux', axes(1:2), Time, &
+               'Sea ice nudging flux', &
+               'W/m2', missing_value=missing_value               )
 return
 end subroutine two_stream_gray_rad_init
 
 ! ==================================================================================
 
 subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, lon, p_half, t,         &
-                           net_surf_sw_down, surf_lw_down, albedo, q)
+                           net_surf_sw_down, surf_lw_down, albedo, q, const_correct, nudge_out) ! NTL ICE CHANGE 
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
@@ -397,11 +415,17 @@ real, intent(in), dimension(:,:)    :: lat, lon, albedo
 real, intent(out), dimension(:,:)   :: net_surf_sw_down
 real, intent(out), dimension(:,:)   :: surf_lw_down
 real, intent(in), dimension(:,:,:)  :: t, q,  p_half
+real, intent(in), dimension(:,:) :: const_correct, nudge_out
 integer :: i, j, k, n, dyofyr
 
 integer :: seconds, year_in_s, days
 real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday, r_total_seconds, r_days, r_dt_rad_avg, dt_rad_radians
 logical :: used
+
+! all for closein insolation 
+real :: ci_lat_f, ci_lat_d
+real, dimension(size(q,1), size(q,2)) :: ci_rho_dist, ci_J_f, ci_alpha, ci_beta, ci_phi, & 
+                                         ci_t, ci_l, ci_s, ci_delta1, ci_delta2, ci_J_p
 
 
 real ,dimension(size(q,1),size(q,2),size(q,3)) :: co2f
@@ -448,6 +472,63 @@ if (do_seasonal) then
   end if
 
      insolation = solar_constant * coszen
+     
+  if (do_toa_albedo) then 
+      p2          = (1. - 3.*sin(lat)**2)/4.
+      insolation  = insolation * (0.75 + 0.15 * 2. * p2)
+  endif 
+
+     insolation = insolation 
+     
+else if (do_tl) then 
+
+
+  if (do_closein) then 
+      
+      lat_tl_insol = asin(cos(lat)*cos(lon)) + pi/2 
+      
+      ci_lat_f = acos((radius+R_stellar) / d_stellar)
+      ci_lat_d = acos((radius-R_stellar) / d_stellar) 
+      
+      ci_rho_dist = sqrt(d_stellar**2 + radius**2 - 2*d_stellar*radius*cos(lat_tl_insol))
+      
+      ! J_f
+      ci_J_f = (d_stellar * cos(lat_tl_insol) - radius)*R_stellar**2 / ci_rho_dist**3 
+      
+      ! J_p
+      ci_alpha = acos((d_stellar*cos(lat_tl_insol) - radius) / ci_rho_dist) 
+      ci_beta = pi/2 - ci_alpha 
+      ci_phi = asin(R_stellar / ci_rho_dist)
+      ci_t = ci_rho_dist * cos(ci_phi)
+      ci_l = ci_t * sin(ci_phi)
+      ci_s = ci_t * sin(ci_phi) * cos(ci_alpha) 
+      ci_delta1 = acos(cos(ci_phi)/cos(ci_beta)) 
+      ci_delta2 = acos(tan(ci_beta)/tan(ci_phi)) 
+      ci_J_p = ci_l * ci_s / pi / ci_t**2 * (pi - ci_delta2 + sin(ci_delta2)*cos(ci_delta2)) + 1 / pi * (ci_delta1 - sin(ci_delta1)*cos(ci_delta1))
+      
+      where (lat_tl_insol .le. ci_lat_f)
+          insolation = solar_constant * (d_stellar / R_stellar)**2 * ci_J_f 
+      elsewhere ((lat_tl_insol .gt. ci_lat_f) .and. (lat_tl_insol .lt. ci_lat_d)) 
+          insolation = solar_constant * (d_stellar / R_stellar)**2 * ci_J_p 
+      elsewhere  (lat_tl_insol .ge. ci_lat_d) 
+          insolation = 0. 
+      endwhere 
+      
+      
+      
+      
+  else
+
+      insolation = solar_constant * cos(lat) * cos(lon)
+  
+      where (insolation .le. 0. )
+          insolation = 0. 
+      endwhere   
+  endif 
+  
+  
+  coszen = insolation / solar_constant 
+  
 
 else if (sw_scheme==B_SCHNEIDER_LIU) then
   insolation = (solar_constant/pi)*cos(lat)
@@ -456,8 +537,9 @@ else
   p2          = (1. - 3.*sin(lat)**2)/4.
   insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
   if (do_toa_albedo) then 
-      insolation  = insolation * (0.77 + 0.125 * 2. * p2)
+      insolation  = insolation * (0.75 + 0.15 * 2. * p2)
   endif 
+  insolation = insolation 
 end if
 
 select case(sw_scheme)
@@ -580,7 +662,15 @@ case(B_BYRNE)
 
 case(B_FRIERSON)
   ! longwave optical thickness function of latitude and pressure
-  lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
+  if (do_tl) then 
+      lat_tl = pi/2 - asin(cos(lat)*cos(lon))
+      lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat_tl)**2
+      where (lat_tl .ge. (pi/2)) 
+          lw_tau_0 = ir_tau_pole
+      endwhere 
+  else 
+      lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
+  endif 
   lw_tau_0 = lw_tau_0 * odp ! scale by optical depth parameter - default 1
 
   ! compute optical depths for each model level
@@ -596,9 +686,17 @@ case(B_FRIERSON)
 
   ! compute downward longwave flux by integrating downward
   lw_down(:,:,1)      = 0.
-  do k = 1, n
-     lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
-  end do
+  if (do_normal_integration_method) then
+      do k = 1, n
+         lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
+      end do
+         
+  else
+      do k = 1, n
+         lw_down(:,:,k+1) = 2.*b(:,:,k) * (lw_tau(:,:,k+1) - lw_tau(:,:,k))/(2.+ (lw_tau(:,:,k+1) - lw_tau(:,:,k))) + &
+                            lw_down(:,:,k) * (2.- (lw_tau(:,:,k+1) - lw_tau(:,:,k)))/(2.+ (lw_tau(:,:,k+1) - lw_tau(:,:,k)))
+      end do
+  endif
 
 case(B_SCHNEIDER_LIU)
 
@@ -625,9 +723,9 @@ case default
 end select
 
 ! =================================================================================
-surf_lw_down     = lw_down(:, :, n+1)
+surf_lw_down     = lw_down(:, :, n+1) 
 toa_sw_in        = sw_down(:, :, 1)
-net_surf_sw_down = sw_down(:, :, n+1) * (1. - albedo)
+net_surf_sw_down = sw_down(:, :, n+1) * (1. - albedo) 
 ! =================================================================================
 
 if(lw_scheme.eq.B_SCHNEIDER_LIU) then
@@ -639,10 +737,20 @@ endif
 if ( id_lwdn_sfc > 0 ) then
    used = send_data ( id_lwdn_sfc, surf_lw_down, Time_diag)
 endif
+
+!surf_lw_down = surf_lw_down + const_correct + nudge_out ! NTL UPDATE NUDGING 
+
 !------- incoming sw flux toa -------
 if ( id_swdn_toa > 0 ) then
    used = send_data ( id_swdn_toa, toa_sw_in, Time_diag)
 endif
+
+! NTL NUDGING
+if( id_nudge_flux > 0) then 
+   used = send_data ( id_nudge_flux, const_correct+nudge_out, Time_diag)
+endif 
+
+
 !------- downward sw flux surface -------
 if ( id_swdn_sfc > 0 ) then
    used = send_data ( id_swdn_sfc, net_surf_sw_down, Time_diag)
@@ -651,6 +759,10 @@ endif
 !------- cosine of zenith angle ------------
 if ( id_coszen > 0 ) then
    used = send_data ( id_coszen, coszen, Time_diag)
+endif
+
+if (id_tau > 0) then 
+   used = send_data ( id_tau, lw_tau_0, Time_diag)
 endif
 
 !------- carbon dioxide concentration ------------
@@ -697,9 +809,17 @@ case(B_GEEN)
 case(B_FRIERSON, B_BYRNE)
   ! compute upward longwave flux by integrating upward
   lw_up(:,:,n+1)    = b_surf
-  do k = n, 1, -1
-     lw_up(:,:,k)   = lw_up(:,:,k+1)*lw_dtrans(:,:,k) + b(:,:,k)*(1.0 - lw_dtrans(:,:,k))
-  end do
+  if (do_normal_integration_method) then
+      do k = n, 1, -1
+         lw_up(:,:,k)   = lw_up(:,:,k+1)*lw_dtrans(:,:,k) + b(:,:,k)*(1.0 - lw_dtrans(:,:,k))
+      end do
+         
+  else
+      do k = n, 1, -1
+        lw_up(:,:,k) = 2.*b(:,:,k) * -1.*(lw_tau(:,:,k) - lw_tau(:,:,k+1))/ (2.- (lw_tau(:,:,k) - lw_tau(:,:,k+1))) &
+                        + lw_up(:,:,k+1)* (2. + (lw_tau(:,:,k) - lw_tau(:,:,k+1)))/(2. - (lw_tau(:,:,k) - lw_tau(:,:,k+1)))      
+      end do                        
+  endif
 
 case(B_SCHNEIDER_LIU)
   ! compute upward longwave flux by integrating upward
