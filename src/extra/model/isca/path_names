@@ -11,6 +11,7 @@ atmos_param/sea_esf_rad/null/rad_utilities.F90
 atmos_param/shallow_conv/shallow_conv.F90
 atmos_param/stable_bl_turb/stable_bl_turb.F90
 atmos_param/strat_cloud/null/strat_cloud.F90
+atmos_param/dry_adj/dry_adj.F90
 atmos_param/cloud_simple/cloud_simple.F90
 atmos_param/two_stream_gray_rad/two_stream_gray_rad.F90
 atmos_param/qflux/qflux.f90
@@ -19,7 +20,7 @@ atmos_param/monin_obukhov/monin_obukhov_kernel.F90
 atmos_param/monin_obukhov/monin_obukhov.F90
 atmos_param/dry_convection/dry_convection.f90
 atmos_param/rayleigh_bottom_drag/rayleigh_bottom_drag.F90
-atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/modules/parkind.f90
+atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/modules/parkind.F90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/modules/parrrtm.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/modules/rrlw_cld.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/modules/rrlw_con.f90
@@ -49,7 +50,7 @@ atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/mcica_random_numbers.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_cldprop.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_rad.nomcica.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_rtrn.f90
-atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_setcoef.f90
+atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_setcoef.F90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/mcica_subcol_gen_lw.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_init.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_rtrnmc.f90
@@ -57,7 +58,7 @@ atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_taumol.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_cldprmc.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_k_g.f90
 atmos_param/rrtm_radiation/rrtmg_lw/gcm_model/src/rrtmg_lw_rtrnmr.f90
-atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/parkind.f90
+atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/parkind.F90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/parrrsw.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/rrsw_aer.f90
 atmos_param/rrtm_radiation/rrtmg_sw/gcm_model/modules/rrsw_cld.f90
