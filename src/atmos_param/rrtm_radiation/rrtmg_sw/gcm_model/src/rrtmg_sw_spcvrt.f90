@@ -35,7 +35,7 @@
             (nlayers, istart, iend, icpr, idelm, iout, &
              pavel, tavel, pz, tz, tbound, palbd, palbp, &
              pclfr, ptauc, pasyc, pomgc, ptaucorig, &
-             ptaua, pasya, pomga, prmu0, coldry, wkl, adjflux, &
+             ptaua, pasya, pomga, prmu0, cloud_coalb, coldry, wkl, adjflux, &
              laytrop, layswtch, laylow, jp, jt, jt1, &
              co2mult, colch4, colco2, colh2o, colmol, coln2o, colo2, colo3, &
              fac00, fac01, fac10, fac11, &
@@ -121,6 +121,7 @@
       real(kind=rb), intent(in) :: palbp(:)                    ! surface albedo (direct)
                                                                !   Dimensions: (nbndsw)
       real(kind=rb), intent(in) :: prmu0                       ! cosine of solar zenith angle
+      real(kind=rb), intent(in) :: cloud_coalb ! prescribed cloud co-albedo 
       real(kind=rb), intent(in) :: pclfr(:)                    ! cloud fraction
                                                                !   Dimensions: (nlayers)
       real(kind=rb), intent(in) :: ptauc(:,:)                  ! cloud optical depth
@@ -312,7 +313,7 @@
             iw = iw+1
 
 ! Apply adjustments for correct Earth/Sun distance and zenith angle to incoming solar flux
-            zincflx(iw) = adjflux(jb) * zsflxzen(iw) * prmu0
+            zincflx(iw) = adjflux(jb) * zsflxzen(iw) * prmu0 * cloud_coalb
 !             zincflux = zincflux + adjflux(jb) * zsflxzen(iw) * prmu0           ! inactive
 
 ! Compute layer reflectances and transmittances for direct and diffuse sources, 

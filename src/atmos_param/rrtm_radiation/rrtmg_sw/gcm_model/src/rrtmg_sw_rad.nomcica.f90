@@ -80,7 +80,8 @@
              play    ,plev    ,tlay    ,tlev    ,tsfc    , &
              h2ovmr  ,o3vmr   ,co2vmr  ,ch4vmr  ,n2ovmr  ,o2vmr, &
              asdir   ,asdif   ,aldir   ,aldif   , &
-             coszen  ,adjes   ,dyofyr  ,scon    , &
+             coszen  ,cloud_coalb_spatial, &
+             adjes   ,dyofyr  ,scon    , &
              inflgsw ,iceflgsw,liqflgsw,cldfr   , &
              taucld  ,ssacld  ,asmcld  ,fsfcld  , &
              cicewp  ,cliqwp  ,reice   ,reliq   , &
@@ -228,6 +229,7 @@
 
       real(kind=rb), intent(in) :: coszen(:)          ! Cosine of solar zenith angle
                                                       !    Dimensions: (ncol)
+      real(kind=rb), intent(in) :: cloud_coalb_spatial(:) ! prescribed coalbedo for clouds  
       real(kind=rb), intent(in) :: adjes              ! Flux adjustment for Earth/Sun distance
       integer(kind=im), intent(in) :: dyofyr          ! Day of the year (used to get Earth/Sun
                                                       !  distance if adjflx not provided)
@@ -329,6 +331,7 @@
 
 !      real(kind=rb) :: earth_sun             ! function for Earth/Sun distance factor
       real(kind=rb) :: cossza                 ! Cosine of solar zenith angle
+      real(kind=rb) :: cloud_coalb ! co albedo for prescribed clouds 
       real(kind=rb) :: adjflux(jpband)        ! adjustment for current Earth/Sun distance
       real(kind=rb) :: solvar(jpband)         ! solar constant scaling factor from rrtmg_sw
                                               !  default value of 1368.22 Wm-2 at 1 AU
@@ -557,6 +560,7 @@
 !  is below horizon
 
          cossza = coszen(iplon)
+         cloud_coalb = cloud_coalb_spatial(iplon)
          if (cossza .lt. zepzen) cossza = zepzen
 
 
@@ -680,7 +684,7 @@
              (nlayers, istart, iend, icpr, idelm, iout, &
               pavel, tavel, pz, tz, tbound, albdif, albdir, &
               cldfrac, ztauc, zasyc, zomgc, ztaucorig, &
-              ztaua, zasya, zomga, cossza, coldry, wkl, adjflux, &	 
+              ztaua, zasya, zomga, cossza, cloud_coalb, coldry, wkl, adjflux, &	 
               laytrop, layswtch, laylow, jp, jt, jt1, &
               co2mult, colch4, colco2, colh2o, colmol, coln2o, colo2, colo3, &
               fac00, fac01, fac10, fac11, &
