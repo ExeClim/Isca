@@ -131,6 +131,7 @@ Contents
    changelog
    contributing
    testing/index.rst
+   bve_swe_equations
    references
    remote_access
 
