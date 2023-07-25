@@ -1,9 +1,8 @@
 # template for the Intel fortran compiler
 # typical use with mkmf
 # mkmf -t template.ifc -c"-Duse_libMPI -Duse_netCDF" path_names /usr/local/include
-CPPFLAGS = -I/home/links/sit204/utils/include
-NETCDF_LIBS = `/home/links/sit204/utils/bin/nc-config --libs`
-LIBS="-L/home/links/sit204/utils/lib -L/home/links/sit204/utils/lib -lnetcdf -lhdf5_hl -lhdf5 -lm -lz -lsz -lbz2 -lxml2 -lcurl -lmpi"
+CPPFLAGS = `nc-config --cflags`
+NETCDF_LIBS = `nc-config --libs`
 
 # FFLAGS:
 #  -fpp: Use the fortran preprocessor
@@ -22,7 +21,7 @@ LIBS="-L/home/links/sit204/utils/lib -L/home/links/sit204/utils/lib -lnetcdf -lh
 FFLAGS = $(CPPFLAGS) -fpp -stack_temps -safe_cray_ptr -ftz -assume byterecl -shared-intel -i4 -r8 -g -O2 -diag-disable 6843 -mcmodel large
 #FFLAGS = $(CPPFLAGS) -fltconsistency -stack_temps -safe_cray_ptr -ftz -shared-intel -assume byterecl -g -O0 -i4 -r8 -check -warn -warn noerrors -debug variable_locations -inline_debug_info -traceback
 FC = $(F90)
-LD = $(F90) $(NETCDF_LIBS) $(LIBS)
+LD = $(F90) $(NETCDF_LIBS)
 #CC = mpicc
 
 LDFLAGS = -lnetcdff -lnetcdf -lmpi -shared-intel -lhdf5_hl -lhdf5 -lm -lz -lsz -lbz2 -lxml2 -lcurl
