@@ -7,7 +7,7 @@ import sh
 
 from isca import GFDL_WORK, GFDL_BASE, GFDL_SOC, _module_directory, get_env_file
 from .loghandler import Logger
-from .helpers import url_to_folder, destructive, useworkdir, mkdir, cd, git, P, git_run_in_directory, check_for_sh_stdout
+from .helpers import url_to_folder, destructive, useworkdir, mkdir, git, P, git_run_in_directory, check_for_sh_stdout
 
 import pdb
 
