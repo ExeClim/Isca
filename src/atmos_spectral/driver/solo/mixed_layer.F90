@@ -876,29 +876,29 @@ corrected_flux = - net_surf_sw_down - surf_lw_down + alpha_t * CP_AIR + alpha_lw
 t_surf_dependence = beta_t * CP_AIR + beta_lw
 
 
-nudge_out = 0.0
-where ((h_thermo_ice .gt. 0) .and. (h_thermo_ice .le. 0.1)) 
-nudge_out = h_thermo_ice / (86400./4.) * L_thermo_ice 
-endwhere 
-corrected_flux = corrected_flux - nudge_out 
-const_nudge_correction = 0.0 
-const_correct = 0.0
-const_nudge_correction = -area_weighted_global_mean(nudge_out)
-if (.not. (const_nudge_correction .eq. 0.)) then 
-        where (nudge_out .eq. 0.) 
-            const_correct(:,:) = const_nudge_correction 
-        endwhere 
-    const_correct = const_correct * const_nudge_correction / area_weighted_global_mean(const_correct)
-    !const_correct(:,:) = -area_weighted_global_mean(nudge_out) !-area_weighted_global_mean(nudge_flux * L_thermo_ice/dt) 
-    corrected_flux = corrected_flux - const_correct
-endif 
+!nudge_out = 0.0
+!where ((h_thermo_ice .gt. 0) .and. (h_thermo_ice .le. 0.1)) 
+!nudge_out = h_thermo_ice / (86400./4.) * L_thermo_ice 
+!endwhere 
+!corrected_flux = corrected_flux - nudge_out 
+!const_nudge_correction = 0.0 
+!const_correct = 0.0
+!const_nudge_correction = -area_weighted_global_mean(nudge_out)
+!if (.not. (const_nudge_correction .eq. 0.)) then 
+!        where (nudge_out .eq. 0.) 
+!            const_correct(:,:) = const_nudge_correction 
+!        endwhere 
+!    const_correct = const_correct * const_nudge_correction / area_weighted_global_mean(const_correct)
+!    !const_correct(:,:) = -area_weighted_global_mean(nudge_out) !-area_weighted_global_mean(nudge_flux * L_thermo_ice/dt) 
+!    corrected_flux = corrected_flux - const_correct
+!endif 
 
 
 
 
 nudge_out = 0.0
 if (do_nudge_ice) then 
-  where ((h_thermo_ice .gt. 0.1) .and. (h_thermo_ice_in .le. 0)) 
+  where ((h_thermo_ice .gt. 0.0) .and. (h_thermo_ice_in .le. 0)) 
     nudge_out = h_thermo_ice / thermo_ice_nudge_timescale * L_thermo_ice 
   endwhere 
   corrected_flux = corrected_flux - nudge_out 
@@ -1219,8 +1219,8 @@ else if (do_thermo_ice) then
         where (land_ice_mask)
             albedo_out(:,:) = albedo_value * land_albedo_prefactor
         elsewhere 
-            where ( h_thermo_ice .gt. 0.1 )
-                albedo_out(:,:) = albedo_value + (thermo_ice_albedo - albedo_value) * tanh((h_thermo_ice-0.1)/1.)
+            where ( h_thermo_ice .gt. 0.0 )
+                albedo_out(:,:) = albedo_value + (thermo_ice_albedo - albedo_value) * tanh((h_thermo_ice)/1.)
             elsewhere 
                 albedo_out(:,:) = albedo_value 
             endwhere
@@ -1229,7 +1229,7 @@ else if (do_thermo_ice) then
         where (land_ice_mask)
             albedo_out(:,:) = albedo_value * land_albedo_prefactor
         elsewhere 
-            where ( h_thermo_ice .gt. 0.1 )
+            where ( h_thermo_ice .gt. 0.0 )
                 albedo_out(:,:) = thermo_ice_albedo
             elsewhere 
                 albedo_out(:,:) = albedo_value 
