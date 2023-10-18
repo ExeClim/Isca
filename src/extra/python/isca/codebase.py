@@ -34,7 +34,8 @@ class CodeBase(Logger):
     def from_directory(cls, directory, **kwargs):
         return cls(directory=directory, **kwargs)
 
-    def __init__(self, repo=None, commit=None, directory=None, storedir=P(GFDL_WORK, 'codebase'), safe_mode=False):
+    def __init__(self, repo=None, commit=None, directory=None, storedir=P(GFDL_WORK, 'codebase'), safe_mode=False, 
+                 compiler='intel', env_name=None):
         """Create a new CodeBase object.
 
         A CodeBase can be created with either a git repository or a file directory as it's source.
@@ -59,9 +60,13 @@ class CodeBase(Logger):
             self.log.error('Too many sources. Cannot create a CodeBase with both a source directory and a source repository.')
             raise AttributeError('Either repo= or directory= required to create CodeBase.')
 
-
+        self.compiler = compiler
+        self.env_name = env_name
         self.safe_mode = safe_mode
         self.storedir = storedir
+        if compiler == 'gfortran':
+            self.executable_name = self.executable_name.strip('.x')+'_gfort.x'
+        #print('HERE!!', self.executable_name)
 
         if directory is not None:
             self.directory = directory
@@ -121,7 +126,12 @@ class CodeBase(Logger):
         self.path_names = []
         self.compile_flags = []  # users can append to this to add additional compiler options
         self.precision_compile_flags = ['-DOVERLOAD_C8'] # default double precision
-        self.other_compile_flags = ['-r8', '-i4'] # default double precision
+        print(compiler, self.executable_name)
+        if self.compiler == 'intel':
+            self.other_compile_flags = ['-r8', '-i4'] # default double precision
+        elif self.compiler == 'gfortran': 
+            self.other_compile_flags = ['-fdefault-real-8', '-fdefault-double-8']
+        print('here', compiler, self.executable_name)
 
     @property
     def code_is_available(self):
@@ -243,7 +253,10 @@ class CodeBase(Logger):
     @useworkdir
     @destructive
     def compile(self, debug=False, optimisation=None):
-        env = get_env_file()
+        if self.env_name is not None:
+            env = get_env_file(self.env_name)
+        else:
+            env = get_env_file()
         mkdir(self.builddir)
 
         compile_flags = []
@@ -292,7 +305,10 @@ class CodeBase(Logger):
     def use_single_precision(self):
         self.log.info('Using single precision')
         self.precision_compile_flags = ['-DOVERLOAD_C4', '-DOVERLOAD_R4']
-        self.other_compile_flags = ['-i4']
+        if self.compiler == 'intel':
+            self.other_compile_flags = ['-i4']
+        elif self.compiler == 'gfortran': 
+            self.other_compile_flags = ['-freal-8-real-4']
         self.executable_name = self.executable_name.strip('.x')+'_single.x'
         self.builddir = P(self.workdir, 'build', self.executable_name.split('.')[0])
 

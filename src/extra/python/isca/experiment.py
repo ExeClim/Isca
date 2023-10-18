@@ -74,7 +74,10 @@ class Experiment(Logger, EventEmitter):
         self.restartdir = P(self.datadir, 'restarts') # where restarts will be stored
         self.template_dir = P(_module_directory, 'templates')
 
-        self.env_source = get_env_file()
+        if self.codebase.env_name is not None:
+            self.env_source = get_env_file(self.codebase.env_name)
+        else:
+            self.env_source = get_env_file()
 
         self.templates = Environment(loader=FileSystemLoader(self.template_dir))
 
