@@ -162,7 +162,8 @@ class CodeBase(Logger):
 
             # write out the git commit id of GFDL_BASE
             file.write("\n\n*---commit hash used for code in GFDL_BASE, including this python module---*:\n")
-            check_for_sh_stdout(file.write(gfdl_git.log('-1', '--format="%H"')))
+            gfdl_git_out = check_for_sh_stdout(gfdl_git.log('-1', '--format="%H"'))
+            file.write(gfdl_git_out)
 
             # if there are any uncommited changes in the working directory,
             # add those to the file too
