@@ -1052,7 +1052,7 @@ if(two_stream_gray) then
    call two_stream_gray_rad_down(is, js, Time, &
                        rad_lat(:,:),           &
                        rad_lon(:,:),           &
-                       p_half(:,:,:,current),  &
+                       p_full(:,:,:,current), p_half(:,:,:,current),  &
                        tg(:,:,:,previous),     &
                        net_surf_sw_down(:,:),  &
                        surf_lw_down(:,:), albedo, &

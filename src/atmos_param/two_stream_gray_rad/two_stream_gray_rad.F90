@@ -94,7 +94,7 @@ real :: d_stellar = 1117512000.0
 character(len=32) :: rad_scheme = 'frierson'
 
 integer, parameter :: B_GEEN = 1,  B_FRIERSON = 2, &
-                      B_BYRNE = 3, B_SCHNEIDER_LIU=4
+                      B_BYRNE = 3, B_SCHNEIDER_LIU=4, B_DAVIS=5, B_NEIL=6
 integer, private :: sw_scheme = B_FRIERSON
 integer, private :: lw_scheme = B_FRIERSON
 
@@ -163,7 +163,7 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 
 integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
            id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun, &
-           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2, id_nudge_flux, id_tau
+           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2, id_nudge_flux, id_tau, id_sw_tau
 
 character(len=10), parameter :: mod_name = 'two_stream'
 
@@ -229,6 +229,12 @@ else if(uppercase(trim(rad_scheme)) == 'FRIERSON') then
 else if(uppercase(trim(rad_scheme)) == 'BYRNE') then
   lw_scheme = B_BYRNE
   call error_mesg('two_stream_gray_rad','Using Byrne & OGorman (2013) radiation scheme.', NOTE)
+else if(uppercase(trim(rad_scheme)) == 'DAVIS') then
+  lw_scheme = B_DAVIS
+  call error_mesg('two_stream_gray_rad','Using Davis and Birner (2019) radiation scheme.', NOTE)
+else if(uppercase(trim(rad_scheme)) == 'NEIL') then
+  lw_scheme = B_NEIL
+  call error_mesg('two_stream_gray_rad','Using Neils radiation scheme.', NOTE)
 else if(uppercase(trim(rad_scheme)) == 'SCHNEIDER') then
   lw_scheme = B_SCHNEIDER_LIU
   call error_mesg('two_stream_gray_rad','Using Schneider & Liu (2009) radiation scheme for GIANT PLANETS.', NOTE)
@@ -357,6 +363,12 @@ end select
         register_diag_field ( mod_name, 'flux_sw', axes(half), Time, &
                'Net shortwave radiative flux (positive up)', &
                'W/m^2', missing_value=missing_value               )
+               
+    
+    id_sw_tau = &
+        register_diag_field ( mod_name, 'sw_tau', axes(half), Time, &
+               'shortwave optical depth', &
+               'nondim', missing_value=missing_value               )
 
     id_coszen  = &
                register_diag_field ( mod_name, 'coszen', axes(1:2), Time, &
@@ -403,7 +415,7 @@ end subroutine two_stream_gray_rad_init
 
 ! ==================================================================================
 
-subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, lon, p_half, t,         &
+subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, lon, p_full, p_half, t,         &
                            net_surf_sw_down, surf_lw_down, albedo, q, const_correct, nudge_out) ! NTL ICE CHANGE 
 
 ! Begin the radiation calculation by computing downward fluxes.
@@ -414,7 +426,7 @@ type(time_type), intent(in)         :: Time_diag
 real, intent(in), dimension(:,:)    :: lat, lon, albedo
 real, intent(out), dimension(:,:)   :: net_surf_sw_down
 real, intent(out), dimension(:,:)   :: surf_lw_down
-real, intent(in), dimension(:,:,:)  :: t, q,  p_half
+real, intent(in), dimension(:,:,:)  :: t, q,  p_half, p_full
 real, intent(in), dimension(:,:) :: const_correct, nudge_out
 integer :: i, j, k, n, dyofyr
 
@@ -427,8 +439,14 @@ real :: ci_lat_f, ci_lat_d
 real, dimension(size(q,1), size(q,2)) :: ci_rho_dist, ci_J_f, ci_alpha, ci_beta, ci_phi, & 
                                          ci_t, ci_l, ci_s, ci_delta1, ci_delta2, ci_J_p
 
+! for davis ozone 
+real, dimension(size(q,1), size(q,2)) :: p_center, p_width 
 
 real ,dimension(size(q,1),size(q,2),size(q,3)) :: co2f
+
+! for neil ozone 
+real, dimension(size(q,1),size(q,2),size(q,3)) :: dist, Z
+real :: H
 
 n = size(t,3)
 
@@ -563,12 +581,63 @@ case(B_GEEN)
      sw_down(:,:,k+1)   = sw_down(:,:,k) * sw_dtrans(:,:,k)
   end do
 
+case(B_DAVIS)
+  ! Default: Davis and Birner handling of SW radiation
+  ! SW optical thickness
+  sw_tau_0    = atm_abs * sqrt(pi) !/ 2. !(1.0 - sw_diff*sin(lat)**2)*atm_abs
+  p_center = (130. - 90. * cos(0.9*lat)**2.) * 100.
+  p_width  = (20. + 40. * sin(lat)**2.) * 100. 
+
+  ! compute optical depths for each model level
+  ! solar_tau_0(j)*frac_oz*(.25*sqrt(pi)*(erf(((p_half(1,j,k)-140)/60))+1)+&
+  !      (cos(0.3*lat(1,j))**2)*0.3333*sqrt(pi)*(erf((((p_half(1,j,k)-p_center(j))/p_width(j))))+1))
+  
+  do k = 1, n+1
+    sw_tau(:,:,k) = sw_tau_0  * (1./4. * (erf_func((p_half(:,:,k) - 14000.)/6000.) + 1.) + & 
+                                 1./3. * cos(0.3*lat(:,:))**2. * (erf_func((p_half(:,:,k) - p_center(:,:))/p_width(:,:)) + 1.))
+  end do
+
+  ! compute downward shortwave flux
+
+  do k = 1, n+1
+     sw_down(:,:,k)   = insolation(:,:) * exp(-sw_tau(:,:,k))
+  end do
+
+case(B_NEIL) 
+
+  sw_tau_0 = atm_abs 
+  
+  H = 287.*300./9.81
+  do k = 1, n
+    Z(:,:,k) = -1 * H *log(p_full(:,:,k) / p_half(:,:,n+1))
+  end do 
+  
+  do k = 1, n 
+    dist(:,:,k) = cos(-(Z(:,:,k) - 3.e4)*pi/3.e4) * (0.4 + 0.6*cos(lat(:,:))**2.) 
+  end do 
+  
+  where (Z .ge. (3.e4 + 3.e4/2.)) 
+    dist(:,:,:) = 0. 
+  elsewhere (Z .le. (3.e4 - 3.e4/2.)) 
+    dist(:,:,:) = 0. 
+  endwhere 
+  
+  sw_tau(:,:,1) = 0.
+  do k = 1, n 
+    sw_tau(:,:,k+1) = sw_tau_0*dist(:,:,k)*(p_half(:,:,k+1) - p_half(:,:,k))/grav + sw_tau(:,:,k)
+  end do 
+  
+  do k = 1, n+1
+     sw_down(:,:,k)   = insolation(:,:) * exp(-sw_tau(:,:,k))
+  end do
+
 case(B_FRIERSON, B_BYRNE)
   ! Default: Frierson handling of SW radiation
   ! SW optical thickness
   sw_tau_0    = (1.0 - sw_diff*sin(lat)**2)*atm_abs
 
   ! compute optical depths for each model level
+  
   do k = 1, n+1
     sw_tau(:,:,k) = sw_tau_0 * (p_half(:,:,k)/pstd_mks)**solar_exponent
   end do
@@ -660,7 +729,7 @@ case(B_BYRNE)
      lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
   end do
 
-case(B_FRIERSON)
+case(B_FRIERSON,B_DAVIS,B_NEIL)
   ! longwave optical thickness function of latitude and pressure
   if (do_tl) then 
       lat_tl = pi/2 - asin(cos(lat)*cos(lon))
@@ -765,6 +834,10 @@ if (id_tau > 0) then
    used = send_data ( id_tau, lw_tau_0, Time_diag)
 endif
 
+if (id_sw_tau > 0) then 
+   used = send_data ( id_sw_tau, sw_tau, Time_diag)
+endif
+
 !------- carbon dioxide concentration ------------
 if ( id_co2 > 0 ) then
    used = send_data ( id_co2, carbon_conc, Time_diag)
@@ -806,7 +879,7 @@ case(B_GEEN)
   end do
   lw_up = lw_up + lw_up_win
 
-case(B_FRIERSON, B_BYRNE)
+case(B_FRIERSON, B_BYRNE, B_DAVIS, B_NEIL)
   ! compute upward longwave flux by integrating upward
   lw_up(:,:,n+1)    = b_surf
   if (do_normal_integration_method) then
@@ -930,6 +1003,19 @@ endif
 if(do_read_co2)call interpolator_end(co2_interp)
 
 end subroutine two_stream_gray_rad_end
+
+! ===================================================================================
+
+function erf_func(x)
+
+   implicit none
+   
+   real, intent(in), dimension(:,:) :: x
+   real, dimension(size(x,1), size(x,2)) :: erf_func
+   
+   erf_func=(2/sqrt(pi))*(x/abs(x))*sqrt(1-exp(-(x**2)))*((sqrt(pi)/2)+ (31/200)*exp(-(x**2)) - (341/8000)*(exp(-2*(x**2))))
+
+end function erf_func
 
 ! ==================================================================================
 
