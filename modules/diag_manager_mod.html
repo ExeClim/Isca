@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Diagnostics Manager Module &amp; Saving model output &mdash; isca dev documentation</title>
@@ -12,11 +12,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="../_static/doctools.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=3ce10a4d"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
         <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -32,14 +32,18 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../index.html" class="icon icon-home"> isca
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            isca
           </a>
               <div class="version">
                 dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -101,9 +105,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="index.html">Components of Isca</a> &raquo;</li>
-      <li>Diagnostics Manager Module &amp; Saving model output</li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Components of Isca</a></li>
+      <li class="breadcrumb-item active">Diagnostics Manager Module &amp; Saving model output</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/modules/diag_manager_mod.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -113,44 +117,15 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="diagnostics-manager-module-saving-model-output">
-<h1>Diagnostics Manager Module &amp; Saving model output<a class="headerlink" href="#diagnostics-manager-module-saving-model-output" title="Permalink to this heading"></a></h1>
+  <section id="diagnostics-manager-module-saving-model-output">
+<h1>Diagnostics Manager Module &amp; Saving model output<a class="headerlink" href="#diagnostics-manager-module-saving-model-output" title="Link to this heading"></a></h1>
 <section id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this heading"></a></h2>
+<h2>Summary<a class="headerlink" href="#summary" title="Link to this heading"></a></h2>
 <p>This module handles the writing of diagnostic output to netCDF files. The user can specify which fields should be output and at which temporal resolution (e.g. monthly means, daily means … ). The source code is located at <code class="docutils literal notranslate"><span class="pre">src/shared/diag_manager/diag_manager.F90</span></code>.</p>
 </section>
 <section id="namelist-options">
-<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this heading"></a></h2>
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Link to this heading"></a></h2>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 24%" />
-<col style="width: 8%" />
-<col style="width: 68%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Name</p></th>
 <th class="head"><p>Default</p></th>
@@ -219,10 +194,10 @@ given range</p></td>
 </table>
 </section>
 <section id="diagnostics">
-<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this heading"></a></h2>
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Link to this heading"></a></h2>
 <p>This part of the code does not have its own diagnostics, but rather handles the saving of all variables. See also <code class="docutils literal notranslate"><span class="pre">/src/extra/python/isca/diagtable.py</span></code></p>
 <section id="output-files">
-<h3>Output files<a class="headerlink" href="#output-files" title="Permalink to this heading"></a></h3>
+<h3>Output files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h3>
 <p>In order to save output in Isca, an output file is created first in your experiment runscript (see examples in <code class="docutils literal notranslate"><span class="pre">/exp/test_cases/</span></code>). Commonly used output timesteps include monthly, daily or x-hourly.</p>
 <p><code class="docutils literal notranslate"><span class="pre">diag.add_file('atmos_monthly',</span> <span class="pre">30,</span> <span class="pre">'days',</span> <span class="pre">time_units='days')</span></code>
 <code class="docutils literal notranslate"><span class="pre">diag.add_file('atmos_daily',</span> <span class="pre">1,</span> <span class="pre">'days',</span> <span class="pre">time_units='days')</span></code>
@@ -238,7 +213,7 @@ given range</p></td>
 <p>For example, set <code class="docutils literal notranslate"><span class="pre">'days':</span> <span class="pre">15</span></code> and <code class="docutils literal notranslate"><span class="pre">'calendar':</span> <span class="pre">'fifteen_day'</span></code>.</p>
 </section>
 <section id="output-fields">
-<h3>Output fields<a class="headerlink" href="#output-fields" title="Permalink to this heading"></a></h3>
+<h3>Output fields<a class="headerlink" href="#output-fields" title="Link to this heading"></a></h3>
 <p>An output field is created via <code class="docutils literal notranslate"><span class="pre">diag.add_field(module,</span> <span class="pre">name,</span> <span class="pre">time_avg,</span> <span class="pre">files)</span></code> in the experiment runscript.
 The default for <code class="docutils literal notranslate"><span class="pre">time_avg</span></code> = False, the default for <code class="docutils literal notranslate"><span class="pre">files</span></code> = None.
 <code class="docutils literal notranslate"><span class="pre">time_avg</span></code> is usually set to True for most variables when an output field is defined.</p>
@@ -247,13 +222,6 @@ An output file can be specified via e.g. <code class="docutils literal notransla
 <code class="docutils literal notranslate"><span class="pre">diag.add_field('dynamics',</span> <span class="pre">'ucomp',</span> <span class="pre">time_avg=True,</span> <span class="pre">files=['atmos_6_hourly'])</span></code> if 6h zonal winds shall be saved, but not monthly/daily</p>
 <p>Below is a list of commonly saved diagnostics. See the relevant modules for an exhaustive list of available diagnostics.</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 19%" />
-<col style="width: 16%" />
-<col style="width: 18%" />
-<col style="width: 33%" />
-<col style="width: 14%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Module</p></th>
 <th class="head"><p>Name</p></th>
@@ -389,7 +357,7 @@ and snow</p></td>
 </section>
 </section>
 <section id="relevant-modules-and-subroutines">
-<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this heading"></a></h2>
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Link to this heading"></a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">diag_manager_mod</span></code> uses several modules and subroutines, including</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">diag_axis</span></code></p></li>
@@ -401,7 +369,7 @@ and snow</p></td>
 </ul>
 </section>
 <section id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this heading"></a></h2>
+<h2>Authors<a class="headerlink" href="#authors" title="Link to this heading"></a></h2>
 <p>This documentation was written by Marianne Pietschnig, peer reviewed by Stephen Thomson and quality controlled by Ross Castle.</p>
 </section>
 </section>

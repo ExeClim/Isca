@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Contributor’s Guide &mdash; isca dev documentation</title>
@@ -12,11 +12,11 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="_static/doctools.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=3ce10a4d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -30,14 +30,18 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> isca
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            isca
           </a>
               <div class="version">
                 dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -75,8 +79,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Contributor’s Guide</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Contributor’s Guide</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/contributing.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -86,35 +90,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="contributor-s-guide">
-<h1>Contributor’s Guide<a class="headerlink" href="#contributor-s-guide" title="Permalink to this heading"></a></h1>
+  <section id="contributor-s-guide">
+<h1>Contributor’s Guide<a class="headerlink" href="#contributor-s-guide" title="Link to this heading"></a></h1>
 <p>Isca takes contributions using pull requests on <a class="reference external" href="https://github.com/execlim/isca/pulls">GitHub</a>.</p>
 <section id="creating-a-github-fork">
-<h2>Creating a Github fork<a class="headerlink" href="#creating-a-github-fork" title="Permalink to this heading"></a></h2>
+<h2>Creating a Github fork<a class="headerlink" href="#creating-a-github-fork" title="Link to this heading"></a></h2>
 <ol class="arabic simple">
 <li><p>Fork Isca on Github, so a copy of it appears in your Github profile and has a remote URL like <a class="reference external" href="https://github.com/your_user_name/Isca">https://github.com/your_user_name/Isca</a>.</p></li>
 <li><p>Git-clone it to your computer using the new URL (or change the remote of your existing folder).</p></li>
@@ -126,7 +106,7 @@
 </ol>
 </section>
 <section id="contributing-to-the-documentation">
-<h2>Contributing to the documentation<a class="headerlink" href="#contributing-to-the-documentation" title="Permalink to this heading"></a></h2>
+<h2>Contributing to the documentation<a class="headerlink" href="#contributing-to-the-documentation" title="Link to this heading"></a></h2>
 <p>We welcome contributions to improve the documentation of Isca.</p>
 <ol class="arabic">
 <li><p>Please make yourself familiar with the <a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html">reST formatting guide</a>.</p></li>
@@ -137,12 +117,12 @@ b. If you are changing an existing file, proceed.</p></li>
 <li><p>Once you are done, remove all the comments from your .rst file if you are using the template.</p></li>
 <li><p>Do not forget to add any relevant references to papers or textbooks.
 a. Create a new entry in <code class="code docutils literal notranslate"><span class="pre">docs/source/references.rst</span></code>, following the formatting style of the existing entries. For example,</p>
-<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span>.. [VallisEtAl2018] Vallis, G. K. and Colyer, G. and Geen, R. and Gerber, E. and Jucker, M. and
-           Maher, P. and Paterson, A. and Pietschnig, M. and Penn, J. and Thomson, S. I., 2018:
-           Isca, v1.0: a framework for the global modelling of the atmospheres of Earth and
-           other planets at varying levels of complexity. *Geoscientific Model Development*,
-           **11(3)**, 843-859,
-           doi: `10.5194/gmd-11-843-2018 &lt;https://doi.org/10.5194/gmd-11-843-2018&gt;`_.
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="o">..</span> <span class="p">[</span><span class="n">VallisEtAl2018</span><span class="p">]</span> <span class="n">Vallis</span><span class="p">,</span> <span class="n">G</span><span class="o">.</span> <span class="n">K</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Colyer</span><span class="p">,</span> <span class="n">G</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Geen</span><span class="p">,</span> <span class="n">R</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Gerber</span><span class="p">,</span> <span class="n">E</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Jucker</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span> <span class="ow">and</span>
+           <span class="n">Maher</span><span class="p">,</span> <span class="n">P</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Paterson</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Pietschnig</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Penn</span><span class="p">,</span> <span class="n">J</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Thomson</span><span class="p">,</span> <span class="n">S</span><span class="o">.</span> <span class="n">I</span><span class="o">.</span><span class="p">,</span> <span class="mi">2018</span><span class="p">:</span>
+           <span class="n">Isca</span><span class="p">,</span> <span class="n">v1</span><span class="mf">.0</span><span class="p">:</span> <span class="n">a</span> <span class="n">framework</span> <span class="k">for</span> <span class="n">the</span> <span class="k">global</span> <span class="n">modelling</span> <span class="n">of</span> <span class="n">the</span> <span class="n">atmospheres</span> <span class="n">of</span> <span class="n">Earth</span> <span class="ow">and</span>
+           <span class="n">other</span> <span class="n">planets</span> <span class="n">at</span> <span class="n">varying</span> <span class="n">levels</span> <span class="n">of</span> <span class="n">complexity</span><span class="o">.</span> <span class="o">*</span><span class="n">Geoscientific</span> <span class="n">Model</span> <span class="n">Development</span><span class="o">*</span><span class="p">,</span>
+           <span class="o">**</span><span class="mi">11</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">**</span><span class="p">,</span> <span class="mi">843</span><span class="o">-</span><span class="mi">859</span><span class="p">,</span>
+           <span class="n">doi</span><span class="p">:</span> <span class="err">`</span><span class="mf">10.5194</span><span class="o">/</span><span class="n">gmd</span><span class="o">-</span><span class="mi">11</span><span class="o">-</span><span class="mi">843</span><span class="o">-</span><span class="mi">2018</span> <span class="o">&lt;</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">doi</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="mf">10.5194</span><span class="o">/</span><span class="n">gmd</span><span class="o">-</span><span class="mi">11</span><span class="o">-</span><span class="mi">843</span><span class="o">-</span><span class="mi">2018</span><span class="o">&gt;</span><span class="err">`</span><span class="n">_</span><span class="o">.</span>
 </pre></div>
 </div>
 <p>b. Add the citation to your docs page by using the relevant citation key (note the underscore symbol at the end). For example:</p>

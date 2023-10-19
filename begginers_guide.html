@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Isca Beginner’s Guide &mdash; isca dev documentation</title>
@@ -12,11 +12,11 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="_static/doctools.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=3ce10a4d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -30,14 +30,18 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> isca
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            isca
           </a>
               <div class="version">
                 dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -101,8 +105,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Isca Beginner’s Guide</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Isca Beginner’s Guide</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/begginers_guide.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -112,40 +116,16 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="isca-beginner-s-guide">
-<h1>Isca Beginner’s Guide<a class="headerlink" href="#isca-beginner-s-guide" title="Permalink to this heading"></a></h1>
+  <section id="isca-beginner-s-guide">
+<h1>Isca Beginner’s Guide<a class="headerlink" href="#isca-beginner-s-guide" title="Link to this heading"></a></h1>
 <p>Below is a list of reading and activites that will help you get comfortable using Isca. Be assured that your supervisor/tutor will not expect you to be fluent with this when you start using Isca, but it will help to have an idea of what to expect when you start running the model.</p>
 <p>This document is essentially a suggestion of signposts. With this kind of work, self-study and initiative is very important. It is up to you to go and research the topics until you feel comfortable.</p>
 <p>Note: users who are more familiar with scientific computing may find this document a little longwinded and may be better off looking at the <a class="reference external" href="https://github.com/ExeClim/Isca#readme">ReadMe</a> or this <a class="reference external" href="https://github.com/ExeClim/ictp-isca-workshop-2018/blob/master/experiments/isca_help_ictp.pdf">guide on how to run Isca experiments</a>.</p>
 <section id="essentials">
-<h2>Essentials<a class="headerlink" href="#essentials" title="Permalink to this heading"></a></h2>
+<h2>Essentials<a class="headerlink" href="#essentials" title="Link to this heading"></a></h2>
 <p>Users who will be using Isca to run simple planetary models under close guidance of a supervisor/teacher should learn about the following topics. Do not worry if it doesn’t make sense right now, you will understand more as you go on.</p>
 <section id="ssh-terminals">
-<h3>ssh/terminals<a class="headerlink" href="#ssh-terminals" title="Permalink to this heading"></a></h3>
+<h3>ssh/terminals<a class="headerlink" href="#ssh-terminals" title="Link to this heading"></a></h3>
 <p>To run Isca you will need to be using quite a powerful computer, most laptops will not suffice, especially for high resolution runs. You’ll likely run Isca on a university owned <em>workstation</em> or <em>supercomputer</em>. Your supervisor will inform you of the name of the computer. However, these computers are <em>remote</em> – that is you do not sit in front of them and login to them as you might be used to. You have to login to them from another computer, e.g. your personal laptop. This is called <em>SSH</em>, or <em>Secure Shell</em>, a protocol that enables two computers to communicate and share data.</p>
 <p>To do this you will need a <em>terminal</em> on your own personal computer. Mac and linux computers will have a factory installed app for this called <em>terminal</em>. Windows users will need to download a piece of software, the most common is <a class="reference external" href="https://www.putty.org/">PuTTY</a>. These are <em>ssh clients</em>. This software is text based - everything is done using text commands from the <em>command line</em>, we talk about this more later.</p>
 <p>To login to the <em>unix server</em>, all you need to do is open the <em>terminal</em> and run something like:</p>
@@ -155,12 +135,12 @@
 <p>There are some interesting videos on youtube on how the SSH protocol works: e.g. <a class="reference external" href="https://www.youtube.com/watch?v=qWKK_PNHnnA">here</a>, but you don’t need to understand how it works in order to use it.</p>
 </section>
 <section id="unix-servers">
-<h3>Unix Servers<a class="headerlink" href="#unix-servers" title="Permalink to this heading"></a></h3>
+<h3>Unix Servers<a class="headerlink" href="#unix-servers" title="Link to this heading"></a></h3>
 <p>Most scientific computing is done on computers/servers that use an <em>unix</em> operating system. These do not have a <em>graphical user interface (GUI)</em>, everything is done with text commands. There are good guides on the internet, like <a class="reference external" href="https://ubuntu.com/tutorials/command-line-for-beginners#1-overview">here</a>.</p>
 <p>If you are an apple/linux user, you can just open the terminal app on your laptop and practise there. If you use windows, it maybe easiest to use this <a class="reference external" href="https://cocalc.com/projects?session=default">emulator</a>, then select the drop down arrow to the right of <cite>New</cite> and select <cite>_Terminal.term</cite>. Note because you’re using an emulator it may not be possible to follow the steps of the guide exactly, but try and get a feel of the commands they suggest (<cite>cd, cd .., ls, mkdir, rm, pwd, mv, cp, less</cite>).</p>
 </section>
 <section id="python-namelists">
-<h3>Python (namelists)<a class="headerlink" href="#python-namelists" title="Permalink to this heading"></a></h3>
+<h3>Python (namelists)<a class="headerlink" href="#python-namelists" title="Link to this heading"></a></h3>
 <p>Isca is configured using <em>python</em> scripts, although the actual model is coded in <em>FORTRAN</em> (see <a class="reference internal" href="#fortran"><span class="std std-ref">FORTRAN</span></a> in Advanced). <a class="reference external" href="https://www.python.org">Python</a> is a powerful high-level programming language, similar to Matlab – but far better.</p>
 <p>At this stage you don’t need to be able to code in python, as Isca has prewritten scripts called <em>test cases</em> which you can just edit in order to change the model set up. Editing will require changing one or more <em>namelists</em>. The namelists are actually part of the FORTRAN code but we use <em>python packages</em> to pass these variables between the python script and the FORTRAN model.</p>
 <p>For example say that in the model the value for the CO2 concentration was 300, and you wanted to make it 600, all you would need to do is change:</p>
@@ -168,7 +148,7 @@
 <p>If you haven’t used python before and want to become more familiar, there are hundreds of tutorials (e.g. <a class="reference external" href="https://docs.python.org/3/tutorial/">here</a>) and videos. To practise you can use a <em>python notebook</em> on something like <a class="reference external" href="https://colab.research.google.com">Colab</a>, or download software like <a class="reference external" href="https://anaconda.org">Anaconda</a>. Python is comprised of the basic python <em>packages</em> and then additional <em>libraries</em> you have to install and <em>import</em>. In the future it may be useful to have python <em>environments</em> (see <a class="reference internal" href="#conda"><span class="std std-ref">Conda</span></a> in Intermediate).</p>
 </section>
 <section id="text-editors">
-<h3>Text Editors<a class="headerlink" href="#text-editors" title="Permalink to this heading"></a></h3>
+<h3>Text Editors<a class="headerlink" href="#text-editors" title="Link to this heading"></a></h3>
 <p>You will need to be able to edit text based files, this includes code files like python and other scripts relevant to scientific computing (see <a class="reference internal" href="#shell-scripts"><span class="std std-ref">shell/bash</span></a> in Advanced).
 Every unix server will have <em>vim</em>, which is a powerful text editor, but it does take some getting used to. For example, unlike in ‘MS Word’ or editors with <em>GUIs</em>, you cannot click to place your cursor in vim.</p>
 <p>You can try out this <a class="reference external" href="https://www.openvim.com">tutorial</a>. Note: I have found that you can usually also use the <cite>up/down/left/right</cite> keys to navigate the text, not just <cite>h/j/k/l</cite> as is stated here. You can practise freely using terminal (Mac/Linux) or the unix <a class="reference external" href="https://cocalc.com/projects?session=default">emulator</a>.</p>
@@ -182,18 +162,18 @@ Every unix server will have <em>vim</em>, which is a powerful text editor, but i
 </section>
 </section>
 <section id="intermediate">
-<h2>Intermediate<a class="headerlink" href="#intermediate" title="Permalink to this heading"></a></h2>
+<h2>Intermediate<a class="headerlink" href="#intermediate" title="Link to this heading"></a></h2>
 <p>If the user will be running multiple experiments on their own and analysing the output, the following will likely be useful to them:</p>
 <section id="isca-structure">
-<h3>Isca Structure<a class="headerlink" href="#isca-structure" title="Permalink to this heading"></a></h3>
+<h3>Isca Structure<a class="headerlink" href="#isca-structure" title="Link to this heading"></a></h3>
 <p>It may be useful for you to have a rough idea on how Isca works. The best way to do this is to look through the Isca <a class="reference external" href="https://execlim.github.io/Isca/latest/html/">documentation</a>, especially the Isca structure page. You can also skim through the <a class="reference external" href="https://github.com/ExeClim/Isca/tree/master/src">source code</a>, to get an idea of what files there are – there are lots, but you don’t need to worry about how they all work so do not be intimidated!</p>
 </section>
 <section id="conda">
-<h3>Conda<a class="headerlink" href="#conda" title="Permalink to this heading"></a></h3>
+<h3>Conda<a class="headerlink" href="#conda" title="Link to this heading"></a></h3>
 <p>As mentioned earlier in the Python section, often Python libraries have to be installed, and you’ll need different libraries depending on what you’re doing. Python <em>environments</em> are very useful as loading them will load all the libraries you need for a given task. For example, there is an isca environment which is set up during the Isca installation, which has all the relevant python modules for running Isca. See <a class="reference external" href="https://conda.io/projects/conda/en/latest/user-guide/concepts/environments.html">here</a> for more details.</p>
 </section>
 <section id="workstations">
-<h3>Workstations<a class="headerlink" href="#workstations" title="Permalink to this heading"></a></h3>
+<h3>Workstations<a class="headerlink" href="#workstations" title="Link to this heading"></a></h3>
 <p>Some terminology things to be aware of when running on servers/workstations:</p>
 <ul class="simple">
 <li><p>Workstations (for example the ‘GV machines’ at Exeter) have <em>cores</em> which are like groups of processors. So when running Isca you can run on a number of cores, generally the more cores the faster. Due to the way Isca works, you can only run on a number of cores that is a power of 2 (1, 2, 4, 8, 16, 32). We usually run at 8 or 16.</p></li>
@@ -202,22 +182,22 @@ Every unix server will have <em>vim</em>, which is a powerful text editor, but i
 </ul>
 </section>
 <section id="x11-forwarding">
-<h3>X11 forwarding<a class="headerlink" href="#x11-forwarding" title="Permalink to this heading"></a></h3>
+<h3>X11 forwarding<a class="headerlink" href="#x11-forwarding" title="Link to this heading"></a></h3>
 <p>If you want to make plots and view them from a computer you have SSH’d into, you might need to set up some sort of <em>X11 forwarding</em>. It just allows images created in windows on another computer to appear as windows on your own computer.</p>
 <p>Use software like <a class="reference external" href="https://www.xquartz.org">XQuartz</a> for macOS or Xming for Windows. You’ll also need to add the <code class="docutils literal notranslate"><span class="pre">-Y</span></code> or <code class="docutils literal notranslate"><span class="pre">-X</span></code> option to your ssh command (i.e. <code class="docutils literal notranslate"><span class="pre">ssh</span> <span class="pre">–Y</span> <span class="pre">user&#64;emps-gv1.ex.ac.uk</span></code>) . Getting it set up the first time may be a little tricky, but there is plenty of help available on google/your supervisor.</p>
 </section>
 <section id="netcdfs">
-<h3>netCDFs<a class="headerlink" href="#netcdfs" title="Permalink to this heading"></a></h3>
+<h3>netCDFs<a class="headerlink" href="#netcdfs" title="Link to this heading"></a></h3>
 <p>Isca has to store the data it generates so that you can analyse it and make plots. The file type it uses is called a <em>netCDF</em> file which has a <em>.nc</em> suffix. For example, every month Isca can output a file called <code class="docutils literal notranslate"><span class="pre">atmos_monthly.nc</span></code> which contains all the variables asked for in the python run script (wind velocities, temperature, precipitation, etc). They are very useful for climate data because it allows variables to be stores on sets of <em>axis</em> like latitude, longitude, height* and time. This makes it easy to make plots and there are python libraries e.g. <em>netCDF4</em> which have many useful functions to make your life easier.</p>
 <p>If you’re interested there is reams of documentation <a class="reference external" href="https://www.unidata.ucar.edu/software/netcdf/docs/index.html">here</a> but again, you don’t need to understand it too much in order to use it.</p>
 <p><a href="#id7"><span class="problematic" id="id8">*</span></a>Note: In Isca’s case the ‘height’ axis is not measured in meters, but usually in <a class="reference external" href="https://glossary.ametsoc.org/wiki/Sigma_vertical_coordinate">sigma pressure coordinates</a>.</p>
 </section>
 <section id="plotting-xarray">
-<h3>Plotting/xarray<a class="headerlink" href="#plotting-xarray" title="Permalink to this heading"></a></h3>
+<h3>Plotting/xarray<a class="headerlink" href="#plotting-xarray" title="Link to this heading"></a></h3>
 <p>When Isca has finished it’s model run, you’ll want to look at the data created and analyse it and make plots. We have some scripts that will help get you started <a class="reference external" href="https://github.com/ExeClim/ictp-isca-workshop-2018/tree/master/analysis">here</a>. These scripts are written using functions from python libraries called <a class="reference external" href="http://xarray.pydata.org/en/stable/">xarray</a>, which is a very powerful way to work with datasets in python, and <a class="reference external" href="https://matplotlib.org/2.0.2/api/pyplot_api.html">matplotlib</a> which is a plotting library. You will need to install these libraries to a python environment to use them.</p>
 </section>
 <section id="transferring-files-sftp-scp">
-<h3>Transferring Files (SFTP/SCP)<a class="headerlink" href="#transferring-files-sftp-scp" title="Permalink to this heading"></a></h3>
+<h3>Transferring Files (SFTP/SCP)<a class="headerlink" href="#transferring-files-sftp-scp" title="Link to this heading"></a></h3>
 <p>Now you have made plots – or indeed any file you want to transfer between the computer you have SSH’d into and your own – you will need a way of transferring them. There are several ways of doing this.</p>
 <p><em>SFTP (SSH File Transfer Protocol)</em> is one, it will work on all operating systems and is the easiest for windows. One way of using SFTP is with an <em>SFTP client</em>, many are available. One of them is <a class="reference external" href="https://cyberduck.io">Cyberduck</a>. It will require setting up but it is fairly straight forward. These clients tend to have a GUI so you can just drag and drop the files you want to transfer. It is also possible to view and transfer files using the native file browser if you’re using Linux or macOS, using their built-in functions to connect via SFTP.</p>
 <p>Other option is to use a command line function, for example <code class="docutils literal notranslate"><span class="pre">scp</span></code>. This is a secure file copy protol, which uses SSH. The usage is simple, for example on the computer you want to transfer the file to, type:</p>
@@ -228,39 +208,39 @@ Every unix server will have <em>vim</em>, which is a powerful text editor, but i
 </section>
 </section>
 <section id="advanced">
-<h2>Advanced<a class="headerlink" href="#advanced" title="Permalink to this heading"></a></h2>
+<h2>Advanced<a class="headerlink" href="#advanced" title="Link to this heading"></a></h2>
 <p>Users who either intend to make changes to the Isca source code, or will use the model so often as to benefit from additional tools, should research the following:</p>
 <section id="git">
-<h3>Git<a class="headerlink" href="#git" title="Permalink to this heading"></a></h3>
+<h3>Git<a class="headerlink" href="#git" title="Link to this heading"></a></h3>
 <p>Git is a <em>version control software</em>, which allows you and every other user to have different copies of the Isca source code and modify it safely. Developers of Isca will have different <em>branches</em> on their own <em>fork</em>, which they can modify and improve. If the improvements are useful to everyone, the changes can be added to the <a class="reference external" href="https://github.com/ExeClim/Isca">master copy</a>.</p>
 <p>Here is a <a class="reference external" href="https://www.youtube.com/watch?v=w3jLJU7DT5E">video</a> about how git works. Here is a useful <a class="reference external" href="https://education.github.com/git-cheat-sheet-education.pdf">cheat sheet</a> on git commands.</p>
 </section>
 <section id="supercomputers">
-<h3>Supercomputers<a class="headerlink" href="#supercomputers" title="Permalink to this heading"></a></h3>
+<h3>Supercomputers<a class="headerlink" href="#supercomputers" title="Link to this heading"></a></h3>
 <p>You may be able to run Isca on a supercomputer, for example at Exeter we have <em>ISCA HPC (High Performance Computer)</em> - the same name get’s confusing. Your supervisor will help get you set up on this as they are a little more complicated, although usually faster.</p>
 <p>When you login to a supercomputer you are in fact logging in to a small <em>login node</em> which is not designed to run code. It is designed to allow you to submit your job to a <em>queue</em> which will then be run on the main computer (see <a class="reference internal" href="#slurm"><span class="std std-ref">Slurm</span></a> below). Here is some <a class="reference external" href="https://universityofexeteruk.sharepoint.com/sites/ExeterARC">documentation for ISCA HPC</a>, see the ISCA User Guide.</p>
 </section>
 <section id="slurm">
-<h3>Slurm<a class="headerlink" href="#slurm" title="Permalink to this heading"></a></h3>
+<h3>Slurm<a class="headerlink" href="#slurm" title="Link to this heading"></a></h3>
 <p>Submitting jobs to a queue requires you to use the supercomputers <em>workload manager</em>. ISCA HPC uses <em>Slurm</em>, but there is also <em>moab</em>. See here for a <a class="reference external" href="http://www.physik.uni-leipzig.de/wiki/files/slurm_summary.pdf">slurm cheat sheet</a>. The important ones are <code class="docutils literal notranslate"><span class="pre">sbatch</span></code> and <code class="docutils literal notranslate"><span class="pre">squeue</span></code>.</p>
 </section>
 <section id="fortran">
-<h3>FORTRAN<a class="headerlink" href="#fortran" title="Permalink to this heading"></a></h3>
+<h3>FORTRAN<a class="headerlink" href="#fortran" title="Link to this heading"></a></h3>
 <p>The actual Isca model is written in a coding language called <em>FORTRAN.90</em>. Therefor if you intend on modifying the source code, you’ll need to know a little FORTRAN. It is incredibly fast, but it has to be <em>compiled</em> before use (it is a <em>low level</em> language) and is slightly different from <em>high level</em> code. For example, you have to define variables before you can use them. There are plenty of FORTRAN tutorials around, e.g. <a class="reference external" href="https://www.fortrantutorial.com">here</a>, however you will probably learn as you go by modifying the Isca code.</p>
 </section>
 <section id="shell-scripts">
-<h3>Shell Scripts<a class="headerlink" href="#shell-scripts" title="Permalink to this heading"></a></h3>
+<h3>Shell Scripts<a class="headerlink" href="#shell-scripts" title="Link to this heading"></a></h3>
 <p>A <em>shell script</em> (<code class="docutils literal notranslate"><span class="pre">scriptname.sh</span></code>) is a useful tool if you have a series of command lines you have to write, especially if you do it often. For example, I have a shell script that transfers data from one server to another. The <a class="reference external" href="https://github.com/ExeClim/Isca/blob/master/exp/test_cases/isca_job.sh">example file</a> to submit a job to ISCA HPC is also a shell script. See <a class="reference external" href="https://www.shellscript.sh">here</a> for more details or google.</p>
 </section>
 <section id="bashrc-script-aliases">
-<h3>.bashrc Script (aliases)<a class="headerlink" href="#bashrc-script-aliases" title="Permalink to this heading"></a></h3>
+<h3>.bashrc Script (aliases)<a class="headerlink" href="#bashrc-script-aliases" title="Link to this heading"></a></h3>
 <p>One particular shell script is your <code class="docutils literal notranslate"><span class="pre">.bashrc</span></code> script, see <a class="reference external" href="https://www.journaldev.com/41479/bashrc-file-in-linux">here</a>. Your supervisor will set this up for you, as some Isca file locations need to be included in it. One very useful thing that you can set up in this script is <em>aliases</em>. This is where a text string is assigned to a command.</p>
 <p>E.g. the line <code class="docutils literal notranslate"><span class="pre">alias</span> <span class="pre">go_data='cd</span> <span class="pre">/scratch/USER/data_isca'</span></code> will allow you to go to your data file location, just by typing <code class="docutils literal notranslate"><span class="pre">go_data</span></code>.</p>
 <p>Or the line <code class="docutils literal notranslate"><span class="pre">alias</span> <span class="pre">i='source</span> <span class="pre">activate</span> <span class="pre">isca_env'</span></code> will activate your <code class="docutils literal notranslate"><span class="pre">isca</span></code> python environment just by typing <code class="docutils literal notranslate"><span class="pre">i</span></code>.</p>
 </section>
 </section>
 <section id="useful-links">
-<h2>Useful Links<a class="headerlink" href="#useful-links" title="Permalink to this heading"></a></h2>
+<h2>Useful Links<a class="headerlink" href="#useful-links" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/ExeClim/Isca/blob/master/ReadMe.md">How to install isca</a></p></li>
 <li><p>Will Seviour’s Scripts - useful code designed for <a class="reference external" href="https://github.com/wseviour/Bristol_Climate_Dynamics/blob/master/Isca_SOCRATES.md">setting up Isca at Bristol university</a> and <a class="reference external" href="https://github.com/wseviour/Bristol_Climate_Dynamics/blob/master/Anthropocene_Isca_analysis.ipynb">analysing data using a python notebook</a></p></li>
@@ -270,7 +250,7 @@ Every unix server will have <em>vim</em>, which is a powerful text editor, but i
 </ul>
 </section>
 <section id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this heading"></a></h2>
+<h2>Authors<a class="headerlink" href="#authors" title="Link to this heading"></a></h2>
 <p>This documentation was written by Ross Castle with input from the Isca team, notably Penny Maher, Denis Sergeev, Geoff Vallis and Will Seviour. It is hoped that this document will continue to be edited and improved, especially by masters and PhD students.</p>
 <p>Last updated 31/03/2021</p>
 </section>

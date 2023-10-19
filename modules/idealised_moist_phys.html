@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Moist physics driver: idealized_moist_phys.F90 &mdash; isca dev documentation</title>
@@ -12,11 +12,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="../_static/doctools.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=3ce10a4d"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
         <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -32,14 +32,18 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../index.html" class="icon icon-home"> isca
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            isca
           </a>
               <div class="version">
                 dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -104,9 +108,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="index.html">Components of Isca</a> &raquo;</li>
-      <li>Moist physics driver: idealized_moist_phys.F90</li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Components of Isca</a></li>
+      <li class="breadcrumb-item active">Moist physics driver: idealized_moist_phys.F90</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/modules/idealised_moist_phys.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -116,53 +120,25 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="moist-physics-driver-idealized-moist-phys-f90">
-<span id="idealized-moist-phys"></span><h1>Moist physics driver: idealized_moist_phys.F90<a class="headerlink" href="#moist-physics-driver-idealized-moist-phys-f90" title="Permalink to this heading"></a></h1>
+  <section id="moist-physics-driver-idealized-moist-phys-f90">
+<span id="idealized-moist-phys"></span><h1>Moist physics driver: idealized_moist_phys.F90<a class="headerlink" href="#moist-physics-driver-idealized-moist-phys-f90" title="Link to this heading"></a></h1>
 <section id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this heading"></a></h2>
+<h2>Summary<a class="headerlink" href="#summary" title="Link to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">idealized_moist_phys.F90</span></code> calls the various modules associated with Isca’s moist physics configurations. The specific parameterisations to be used can be selected via namelist input to this module. This is where the radiation, convection, turbulence and land options are set. In addition, timestepping for the bucket hydrology option is managed locally here.</p>
 <p>These options allow users to configure a wide range of planets, including notable configurations from the literature <a class="reference internal" href="../references.html#frierson2006a" id="id1"><span>[Frierson2006a]</span></a>, <a class="reference internal" href="../references.html#byrne2013" id="id2"><span>[Byrne2013]</span></a>, <a class="reference internal" href="../references.html#schneider2009" id="id3"><span>[Schneider2009]</span></a>, <a class="reference internal" href="../references.html#jucker2017" id="id4"><span>[Jucker2017]</span></a>. Users should bear in mind that the full parameter space is vast and not all options may be compatible with one another.</p>
 <p>The fortran file is found in <code class="docutils literal notranslate"><span class="pre">Isca/src/atmos_spectral/driver/solo/idealized_moist_phys.F90</span></code></p>
 </section>
 <section id="namelist-options">
-<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Permalink to this heading"></a></h2>
+<h2>Namelist options<a class="headerlink" href="#namelist-options" title="Link to this heading"></a></h2>
 <p>This module controls a large number of switches for different modules. Further information on what each module is for can be found on the module’s documentation page.</p>
 <p>NB. Defaults are generally set to <code class="docutils literal notranslate"><span class="pre">False</span></code> to avoid accidental use of modules, but this is unlikely to be a useful configuration! For examples of how parameters are set to achieve different model configurations, see the test cases in <code class="docutils literal notranslate"><span class="pre">Isca/exp/test_cases/</span></code>.</p>
 <section id="humidity-condensation-and-convection">
-<h3>Humidity, Condensation and Convection<a class="headerlink" href="#humidity-condensation-and-convection" title="Permalink to this heading"></a></h3>
+<h3>Humidity, Condensation and Convection<a class="headerlink" href="#humidity-condensation-and-convection" title="Link to this heading"></a></h3>
 <p>Four convection schemes, and the option of no convection, are currently available in Isca. The defaults are set so the user should actively select a scheme to use via one of the methods below. Large-scale condensation will be called following the convection scheme in all cases, unless <code class="docutils literal notranslate"><span class="pre">DRY_CONV</span></code> is selected.</p>
 <section id="method-1-preferred">
-<h4>Method 1 (preferred)<a class="headerlink" href="#method-1-preferred" title="Permalink to this heading"></a></h4>
+<h4>Method 1 (preferred)<a class="headerlink" href="#method-1-preferred" title="Link to this heading"></a></h4>
 <p>The scheme to be used can be selected using the <code class="docutils literal notranslate"><span class="pre">convection_scheme</span></code> namelist parameter, which may be set to:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 26%" />
-<col style="width: 74%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Value</p></th>
 <th class="head"><p>Effect</p></th>
@@ -192,14 +168,9 @@
 <p>Using the <code class="docutils literal notranslate"><span class="pre">convection_scheme</span></code> option will ensure that flags are set consistently for the selected convection scheme, avoiding user error. The default is <code class="docutils literal notranslate"><span class="pre">UNSET</span></code>.</p>
 </section>
 <section id="method-2-legacy">
-<h4>Method 2 (legacy)<a class="headerlink" href="#method-2-legacy" title="Permalink to this heading"></a></h4>
+<h4>Method 2 (legacy)<a class="headerlink" href="#method-2-legacy" title="Link to this heading"></a></h4>
 <p>Three namelist parameters exist as switches to select the convection options:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 17%" />
-<col style="width: 75%" />
-<col style="width: 8%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Option</p></th>
 <th class="head"><p>Summary</p></th>
@@ -224,13 +195,8 @@
 <p>If multiple flags are set as True, or all are False, an error will be raised. This method exists for compatibility with configurations pre-dating method 1. Method 1 is preferred for new model configurations.</p>
 </section>
 <section id="humidity-calculation-options">
-<h4>Humidity calculation options<a class="headerlink" href="#humidity-calculation-options" title="Permalink to this heading"></a></h4>
+<h4>Humidity calculation options<a class="headerlink" href="#humidity-calculation-options" title="Link to this heading"></a></h4>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 15%" />
-<col style="width: 75%" />
-<col style="width: 10%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Option</p></th>
 <th class="head"><p>Summary</p></th>
@@ -247,14 +213,9 @@
 </section>
 </section>
 <section id="radiation">
-<h3>Radiation<a class="headerlink" href="#radiation" title="Permalink to this heading"></a></h3>
+<h3>Radiation<a class="headerlink" href="#radiation" title="Link to this heading"></a></h3>
 <p>Two more comprehensive radiation codes are currently included in Isca: RRTM <a class="reference internal" href="../references.html#mlaweretal1997" id="id10"><span>[MlawerEtAl1997]</span></a> and Socrates <a class="reference internal" href="../references.html#mannersetal2015" id="id11"><span>[MannersEtAl2015]</span></a>. In addition, a number of simple radiation parameterisations for the atmospheres of Earth and other planets can be found in <code class="docutils literal notranslate"><span class="pre">two_stream_gray_rad.F90</span></code>. The radiation scheme is set through the following flags:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 31%" />
-<col style="width: 58%" />
-<col style="width: 11%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Option</p></th>
 <th class="head"><p>Summary</p></th>
@@ -278,19 +239,14 @@
 </table>
 </section>
 <section id="drag-and-turbulence">
-<h3>Drag and Turbulence<a class="headerlink" href="#drag-and-turbulence" title="Permalink to this heading"></a></h3>
+<h3>Drag and Turbulence<a class="headerlink" href="#drag-and-turbulence" title="Link to this heading"></a></h3>
 <section id="lower-boundary-heat-momentum-humidity-exchange">
-<h4>Lower Boundary Heat, Momentum &amp; Humidity Exchange<a class="headerlink" href="#lower-boundary-heat-momentum-humidity-exchange" title="Permalink to this heading"></a></h4>
+<h4>Lower Boundary Heat, Momentum &amp; Humidity Exchange<a class="headerlink" href="#lower-boundary-heat-momentum-humidity-exchange" title="Link to this heading"></a></h4>
 <p>Near the surface, different processes will be appropriate for terrestrial vs. gaseous planets, and for different experimental designs. These are determined by namelist parameters in <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys</span></code> as follows.</p>
 <p><strong>Terrestrial Planets</strong></p>
 <p>Isca will evaluate surface heat exchange provided a gaseous option is not specified (see below). Vertical diffusion may be enabled by setting the namelist parameter <code class="docutils literal notranslate"><span class="pre">turb</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code>; default is <code class="docutils literal notranslate"><span class="pre">False</span></code>. This enables calls to <code class="docutils literal notranslate"><span class="pre">vert_turb_driver_mod</span></code>, <code class="docutils literal notranslate"><span class="pre">vert_diff_mod</span></code> and <code class="docutils literal notranslate"><span class="pre">mixed_layer_mod</span></code>.</p>
 <p>Additional namelist parameters further specify the processes called and parameters used:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 25%" />
-<col style="width: 68%" />
-<col style="width: 8%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Option</p></th>
 <th class="head"><p>Summary</p></th>
@@ -327,11 +283,6 @@
 <p><strong>Gaseous Planets</strong></p>
 <p>Isca currently includes options to run a Jupiter-type planet. The relevant namelist parameter for the lower boundary physics in this case is:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 24%" />
-<col style="width: 68%" />
-<col style="width: 8%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Option</p></th>
 <th class="head"><p>Summary</p></th>
@@ -347,14 +298,9 @@
 </table>
 </section>
 <section id="upper-level-damping">
-<h4>Upper Level Damping<a class="headerlink" href="#upper-level-damping" title="Permalink to this heading"></a></h4>
+<h4>Upper Level Damping<a class="headerlink" href="#upper-level-damping" title="Link to this heading"></a></h4>
 <p>At upper levels, damping may be needed to account for subgrid-scale processes that decelerate fast upper-level winds. The module <code class="docutils literal notranslate"><span class="pre">damping_driver_mod</span></code> applies Rayleigh friction at upper levels. This is switched on with:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 25%" />
-<col style="width: 68%" />
-<col style="width: 8%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Option</p></th>
 <th class="head"><p>Summary</p></th>
@@ -372,14 +318,9 @@
 </section>
 </section>
 <section id="land-and-hydrology">
-<h3>Land and hydrology<a class="headerlink" href="#land-and-hydrology" title="Permalink to this heading"></a></h3>
+<h3>Land and hydrology<a class="headerlink" href="#land-and-hydrology" title="Link to this heading"></a></h3>
 <p>Land and hydrology processes are predominantly dealt with in <code class="docutils literal notranslate"><span class="pre">surface_flux_mod</span></code> and <code class="docutils literal notranslate"><span class="pre">mixed_layer_mod</span></code>, but land and bucket hydrology options are initialised with the following namelist parameters. We acknowledge that the bucket hydrology is adapted from code from <a class="reference external" href="https://github.com/tapios">https://github.com/tapios</a> and follows <a class="reference internal" href="../references.html#manabe1969" id="id13"><span>[Manabe1969]</span></a>. Land and hydrology options in this module are:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 22%" />
-<col style="width: 63%" />
-<col style="width: 15%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Option</p></th>
 <th class="head"><p>Summary</p></th>
@@ -428,10 +369,6 @@
 <p><cite>*</cite> Roberts-Asselin-Williams filter, <a class="reference internal" href="../references.html#williams2011" id="id14"><span>[Williams2011]</span></a></p>
 <p><code class="docutils literal notranslate"><span class="pre">land_option</span></code> may be set to:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 14%" />
-<col style="width: 86%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Value</p></th>
 <th class="head"><p>Effect</p></th>
@@ -452,14 +389,9 @@
 </section>
 </section>
 <section id="diagnostics">
-<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Permalink to this heading"></a></h2>
+<h2>Diagnostics<a class="headerlink" href="#diagnostics" title="Link to this heading"></a></h2>
 <p>Diagnostics from this module are output under <code class="docutils literal notranslate"><span class="pre">mod_name</span> <span class="pre">=</span> <span class="pre">'atmosphere'</span></code>. Some diagnostics may only be output when certain namelist options are set, e.g. those associated with the bucket hydrology. Requesting unsaved diagnostics in your diagnostic list will result in those diagnostics not being output, but will not cause a fatal error or affect other diagnostics.</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 18%" />
-<col style="width: 51%" />
-<col style="width: 30%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Name</p></th>
 <th class="head"><p>Description</p></th>
@@ -575,7 +507,7 @@
 </table>
 </section>
 <section id="relevant-modules-and-subroutines">
-<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Permalink to this heading"></a></h2>
+<h2>Relevant modules and subroutines<a class="headerlink" href="#relevant-modules-and-subroutines" title="Link to this heading"></a></h2>
 <p>Key physics modules managed from this module include:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">vert_turb_driver_mod</span></code></p></li>
@@ -595,7 +527,7 @@
 </ul>
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
 <p><a class="reference internal" href="../references.html#betts1986" id="id16"><span>[Betts1986]</span></a>
 <a class="reference internal" href="../references.html#bettsmiller1986" id="id17"><span>[BettsMiller1986]</span></a>
 <a class="reference internal" href="../references.html#byrne2013" id="id18"><span>[Byrne2013]</span></a>
@@ -611,7 +543,7 @@
 <a class="reference internal" href="../references.html#williams2011" id="id28"><span>[Williams2011]</span></a></p>
 </section>
 <section id="authors">
-<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this heading"></a></h2>
+<h2>Authors<a class="headerlink" href="#authors" title="Link to this heading"></a></h2>
 <p>This documentation was written by Ruth Geen, peer reviewed by Marianne Pietschnig, and quality controlled by Ross Castle.</p>
 </section>
 </section>
