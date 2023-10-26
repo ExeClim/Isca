@@ -181,7 +181,7 @@ module cloud_simple_mod
   subroutine output_cloud_diags(cf, reff_rad, frac_liq, qcl_rad, rh_in_cf, Time)
     real, intent(in), dimension(:,:,:) :: cf, reff_rad, frac_liq, qcl_rad, rh_in_cf
     type(time_type) , intent(in)       :: Time
-    real :: used
+    logical :: used
 
     if (id_cf > 0) then
       used = send_data (id_cf, cf, Time)

@@ -147,7 +147,8 @@ module marine_strat_cloud_mod
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: theta, dthdp, marine_strat
     integer, dimension(size(temp,1), size(temp,2)) :: kdthdp, kinvs
     real,    dimension(size(temp,1), size(temp,2)) :: eis, ectei, ELF, low_ca_park
-    real :: strat, used, omega_pos_threshold
+    real :: strat, omega_pos_threshold
+    logical :: used
     character(len=32) :: method_str = ''
     integer :: i, j, k, k700, kb, k_surf, kk, nlev
 

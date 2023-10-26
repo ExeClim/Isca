@@ -144,7 +144,7 @@ module large_scale_cloud_mod
     real, intent(out), dimension(:,:,:) :: cf
     type(time_type), intent(in)         :: Time
     real, dimension(size(rh,1), size(rh,2), size(rh,3)) :: rhcrit
-    real :: used
+    logical :: used
 
     if (do_simple_rhcrit) then
       call calc_rhcrit(pfull, rhcrit)

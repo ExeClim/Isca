@@ -353,7 +353,7 @@ module cloud_cover_diags_mod
   subroutine output_cldamt(tot_ca, hgh_ca, mid_ca, low_ca, Time)
     real, intent(in), dimension(:,:) :: tot_ca, hgh_ca, mid_ca, low_ca
     type(time_type),  intent(in)     :: Time
-    real :: used
+    logical :: used
 
     if (id_tot_cld_amt > 0) then
       used = send_data (id_tot_cld_amt, tot_ca*1.0e2, Time)
