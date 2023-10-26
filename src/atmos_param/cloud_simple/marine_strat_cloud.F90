@@ -357,7 +357,8 @@ module marine_strat_cloud_mod
     real,    intent(out), dimension(:,:)   :: eis
     real, dimension(size(temp,1), size(temp,2)) :: zlcl, z700, Gamma850, LTS
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: zfull_height
-    real    :: pstar, T850, used
+    real    :: pstar, T850
+    logical :: used
     integer :: k700, i, j
 
     zfull_height = geopotential_to_height(zfull*GRAV)
@@ -408,7 +409,8 @@ module marine_strat_cloud_mod
     real, intent(out), dimension(:,:)   :: ectei
     real, dimension(size(pfull,1),size(pfull,2)) :: q_700
     integer :: k700, i, j
-    real :: k_en, C_qgap, beta, used
+    real :: k_en, C_qgap, beta
+    logical :: used
 
     k_en = 0.7
     C_qgap = 0.76
@@ -447,7 +449,8 @@ module marine_strat_cloud_mod
     ! other paramters
     real, dimension(size(temp,1), size(temp,2)) :: beta1, IS, DS, eis, ectei, alpha, f_para
     real, dimension(size(temp,1), size(temp,2), size(temp,3)) :: zfull_height
-    real :: pstar, delta_zs, theta_ML, used
+    real :: pstar, delta_zs, theta_ML
+    logical :: used
     integer :: k700, i, j
 
     delta_zs = 2750.0 ! meter, constant
@@ -548,7 +551,7 @@ module marine_strat_cloud_mod
     real, intent(in), dimension(:,:) :: beta1, beta2, alpha, eis, &
                             IS, DS, z700, zinv, Gamma700, Gamma_DL
     type(time_type) , intent(in) :: Time
-    real :: used
+    logical :: used
 
     if (id_eis>0) then
       ! Notice the eis here is a little different from that in calc_eis
