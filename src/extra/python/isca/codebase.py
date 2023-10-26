@@ -7,7 +7,7 @@ import sh
 
 from isca import GFDL_WORK, GFDL_BASE, GFDL_SOC, _module_directory, get_env_file
 from .loghandler import Logger
-from .helpers import url_to_folder, destructive, useworkdir, mkdir, cd, git, P, git_run_in_directory
+from .helpers import url_to_folder, destructive, useworkdir, mkdir, git, P, git_run_in_directory, check_for_sh_stdout
 
 import pdb
 
@@ -137,7 +137,7 @@ class CodeBase(Logger):
 
     @property
     def git_commit(self):
-        return self.git.log('-1', '--format="%H"').stdout.decode('utf8')
+        return check_for_sh_stdout(self.git.log('-1', '--format="%H"'))
 
     # @property
     # def git_diff(self):
@@ -162,11 +162,12 @@ class CodeBase(Logger):
 
             # write out the git commit id of GFDL_BASE
             file.write("\n\n*---commit hash used for code in GFDL_BASE, including this python module---*:\n")
-            file.write(gfdl_git.log('-1', '--format="%H"').stdout.decode('utf8'))
+            gfdl_git_out = check_for_sh_stdout(gfdl_git.log('-1', '--format="%H"'))
+            file.write(gfdl_git_out)
 
             # if there are any uncommited changes in the working directory,
             # add those to the file too
-            source_status = self.git.status("-b", "--porcelain").stdout.decode('utf8')
+            source_status = check_for_sh_stdout(self.git.status("-b", "--porcelain"))
             # filter the source status for changes in specific files
             filetypes = ('.f90', '.inc', '.c')
             source_status = [line for line in source_status.split('\n')
@@ -178,7 +179,7 @@ class CodeBase(Logger):
                 file.write("*---git status output (only f90 and inc files)---*:\n")
                 file.write('\n'.join(source_status))
                 file.write('\n\n*---git diff output---*\n')
-                source_diff = self.git.diff('--no-color').stdout.decode('utf8')
+                source_diff = check_for_sh_stdout(self.git.diff('--no-color'))
                 file.write(source_diff)
 
     def read_path_names(self, path_names_file):
