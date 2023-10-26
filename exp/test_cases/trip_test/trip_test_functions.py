@@ -74,11 +74,11 @@ def get_nml_diag(test_case_name):
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist        
 
-    #if 'soc_realistic_continents_fixed_sst_with_linear_cld_scheme' in test_case_name:
-    #    sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/simple_clouds/'))
-    #    from socrates_aquaplanet import exp as exp_temp
-    #    input_files = exp_temp.inputfiles
-    #    nml_out = exp_temp.namelist       
+    if 'soc_realistic_continents_fixed_sst_with_linear_cld_scheme' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/simple_clouds/'))
+        from socrates_aquaplanet import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist       
 
     if 'socrates_aquaplanet' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_test/'))
