@@ -2,7 +2,7 @@ name: isca_env
 channels:
 - conda-forge
 dependencies:
-- dask=24.1.0
+- dask=2024.1.0
 - f90nml=1.4.4
 - fortran-compiler=1.7.0
 - ipykernel=6.29.0
