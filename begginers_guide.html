@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Isca Beginner’s Guide &mdash; isca dev documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
     <link rel="shortcut icon" href="_static/favicon.ico"/>
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
@@ -118,7 +120,7 @@
              
   <section id="isca-beginner-s-guide">
 <h1>Isca Beginner’s Guide<a class="headerlink" href="#isca-beginner-s-guide" title="Link to this heading"></a></h1>
-<p>Below is a list of reading and activites that will help you get comfortable using Isca. Be assured that your supervisor/tutor will not expect you to be fluent with this when you start using Isca, but it will help to have an idea of what to expect when you start running the model.</p>
+<p>Below is a list of reading and activities that will help you get comfortable using Isca. Be assured that your supervisor/tutor will not expect you to be fluent with this when you start using Isca, but it will help to have an idea of what to expect when you start running the model.</p>
 <p>This document is essentially a suggestion of signposts. With this kind of work, self-study and initiative is very important. It is up to you to go and research the topics until you feel comfortable.</p>
 <p>Note: users who are more familiar with scientific computing may find this document a little longwinded and may be better off looking at the <a class="reference external" href="https://github.com/ExeClim/Isca#readme">ReadMe</a> or this <a class="reference external" href="https://github.com/ExeClim/ictp-isca-workshop-2018/blob/master/experiments/isca_help_ictp.pdf">guide on how to run Isca experiments</a>.</p>
 <section id="essentials">
@@ -200,7 +202,7 @@ Every unix server will have <em>vim</em>, which is a powerful text editor, but i
 <h3>Transferring Files (SFTP/SCP)<a class="headerlink" href="#transferring-files-sftp-scp" title="Link to this heading"></a></h3>
 <p>Now you have made plots – or indeed any file you want to transfer between the computer you have SSH’d into and your own – you will need a way of transferring them. There are several ways of doing this.</p>
 <p><em>SFTP (SSH File Transfer Protocol)</em> is one, it will work on all operating systems and is the easiest for windows. One way of using SFTP is with an <em>SFTP client</em>, many are available. One of them is <a class="reference external" href="https://cyberduck.io">Cyberduck</a>. It will require setting up but it is fairly straight forward. These clients tend to have a GUI so you can just drag and drop the files you want to transfer. It is also possible to view and transfer files using the native file browser if you’re using Linux or macOS, using their built-in functions to connect via SFTP.</p>
-<p>Other option is to use a command line function, for example <code class="docutils literal notranslate"><span class="pre">scp</span></code>. This is a secure file copy protol, which uses SSH. The usage is simple, for example on the computer you want to transfer the file to, type:</p>
+<p>Other option is to use a command line function, for example <code class="docutils literal notranslate"><span class="pre">scp</span></code>. This is a secure file copy protocol, which uses SSH. The usage is simple, for example on the computer you want to transfer the file to, type:</p>
 <p><code class="docutils literal notranslate"><span class="pre">scp</span> <span class="pre">USER&#64;COMPUTERNAME.ex.ac.uk:/path_to_file/file.png</span> <span class="pre">/path_to_destination/</span></code></p>
 <p>This uses the protocol to SSH into the computer with the file and copy it to the location specified on the RHS. Note to copy a directory you can use the <code class="docutils literal notranslate"><span class="pre">-r</span></code> (<em>recursion</em>) option. We also can use a <code class="docutils literal notranslate"><span class="pre">.</span></code> to copy to our current file location.</p>
 <p><code class="docutils literal notranslate"><span class="pre">scp</span> <span class="pre">–r</span> <span class="pre">USER&#64;COMPUTERNAME.ex.ac.uk:/path_to_directory/</span> <span class="pre">./</span></code></p>
