@@ -1,0 +1,164 @@
+<HTML>
+<TITLE>module atmosphere_mod</TITLE>
+<BODY BGCOLOR="#ffefd5" TEXT="#332211" >
+
+<DIV ALIGN="CENTER"> <FONT SIZE=1>
+<A HREF="#INTERFACE">PUBLIC INTERFACE</A> / 
+<A HREF="#DATA_TYPES">DATA</A> / 
+<A HREF="#ROUTINES">ROUTINES</A> / 
+<A HREF="#NAMELIST">NAMELIST</A> / 
+<A HREF="#ERRORS">ERRORS</A>
+</FONT>
+<BR><BR></DIV><HR>
+
+<H2>module atmosphere_mod</H2>
+<A NAME="HEADER">
+<!-- BEGIN HEADER -->
+<PRE>
+     <B>Contact:</B> Isaac Held
+     <B>Reviewers:</B> Peter Phillipps
+</PRE>
+<!-- END HEADER --></A>
+<!--------------------------------------------------------------------->
+<A NAME="OVERVIEW">
+<HR>
+<H4>OVERVIEW</H4>
+<!-- BEGIN OVERVIEW -->
+<PRE>
+   A spectral transform model for the shallow water equations on the sphere
+</PRE>
+<!-- END OVERVIEW --></A>
+<!--------------------------------------------------------------------->
+<A NAME="DESCRIPTION">
+<HR>
+<H4>DESCRIPTION</H4>
+<!-- BEGIN DESCRIPTION -->
+<PRE>
+   Integrates the shallow water equations for hydrostatic flow in a thin layer
+   of homogeneous fluid on the sphere, using the spectral transform technique.
+   Also allows for the inclusion of a passive tracer advected by the 
+   spectral advection algorithm as the vorticity, and a gridpoint tracer 
+   advected with a finite volume algorithm on the transform grid.  
+   The default experiment is forced by a "monsoonal" mass source, starting
+   from a state of rest.
+   
+   For a full description of the model and algorithms used, see <A HREF="shallow.ps">shallow.ps</A>
+
+   The interfaces in this module are the generic intefaces required by the
+   main program that can be used to drive various idealized atmospheric
+   models within FMS. Model resolution and related parameters are set in
+   namelists within the modules shallow_xxx.
+</PRE>
+<!-- END DESCRIPTION --></A>
+<!--------------------------------------------------------------------->
+<A NAME="MODULES_USED">
+<HR>
+<H4>OTHER MODULES USED</H4>
+<!-- BEGIN MODULES_USED -->
+<PRE>
+     fms_mod
+     constants_mod
+     transforms_mod
+     time_manager_mod
+     diag_manager_mod
+     shallow_dynamics_mod
+     shallow_physics_mod
+     shallow_diagnostics_mod
+</PRE>
+<!-- END MODULES_USED --></A>
+<!--------------------------------------------------------------------->
+<A NAME="INTERFACE">
+<HR>
+<H4>PUBLIC INTERFACE</H4>
+<!-- BEGIN INTERFACE -->
+<PRE>
+  use atmosphere_mod [,only: atmosphere_init,       
+                             atmosphere,
+			     atmosphere_end]
+</PRE>
+<!-- END INTERFACE --></A>
+<!--------------------------------------------------------------------->
+<A NAME="DATA_TYPES">
+<HR>
+<H4>PUBLIC DATA</H4>
+<!-- BEGIN DATA_TYPES -->
+<PRE>
+  There are no public data types
+</PRE>
+<!-- END DATA_TYPES --></A>
+<!--------------------------------------------------------------------->
+<A NAME="ROUTINES">
+<HR>
+<H4>PUBLIC ROUTINES</H4>
+<!-- BEGIN ROUTINES -->
+<PRE>
+subroutine <A HREF="#atmosphere_init">atmosphere_init</A>. Initializes the model.
+subroutine <A HREF="#atmosphere">atmosphere</A>.      Integrates forward one time step
+subroutine <A HREF="#atmosphere_end">atmosphere_end</A>.  Terminates model, cleaning up memory and finalizing diagnostics.
+
+<A NAME="atmosphere_init">
+<PRE>
+ subroutine atmosphere_init(Time_init, Time, Time_step)
+
+   input:
+
+   type(time_type) :: Time_init -- Initial model time
+
+   type(time_type) :: Time      -- Model time
+
+   type(time_type) :: Time_step -- Time step
+
+   When Time=Time_init, the first time step is a forward
+   step rather than leap frog because a cold start is assumed.
+
+   The FMS main program that runs the solo atmospheric models
+   obtains Time_init from the diag_table and Time from its namelist.
+       
+<!-- END atmosphere_init --></A>
+<HR>
+<A NAME="atmosphere">
+
+  subroutine atmosphere(Time)
+
+    input:
+ 
+    type(time_type) :: Time -- Model time
+      
+    Integrates forward one time step
+
+<!-- END atmosphere --></A>
+<HR>
+ <A NAME="atmosphere_end">
+   subroutine atmosphere_end
+   
+    No calling arguments.  
+      
+    Terminates model, cleaning up memory and finalizing diagnostics
+<!-- END atmosphere_end --></A>
+<HR>
+</PRE>
+<!-- END ROUTINES --></A>
+<A NAME="NAMELIST">
+<H4>NAMELIST</H4>
+<!-- BEGIN NAMELIST -->
+<PRE>
+<B>&atmosphere_nml</B>
+
+   print_interval, integer : time interval in seconds 
+   between prints of global mean energy and enstrophy to standard output
+</PRE>
+<!-- END NAMELIST --></A>
+<!--------------------------------------------------------------------->
+<A NAME="ERRORS">
+<HR>
+<H4>ERROR MESSAGES</H4>
+<!-- BEGIN ERRORS -->
+<PRE>
+  Fatal error message if subroutine atmosphere or atmosphere_end
+  is called prior to atmosphere_init.
+</PRE>
+<!-- END ERRORS --></A>
+<!--------------------------------------------------------------------->
+<HR>
+</BODY>
+</HTML>

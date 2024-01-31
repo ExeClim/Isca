@@ -7,11 +7,12 @@ import pdb
 import subprocess
 
 start_time=time.time()
-base_dir='/scratch/sit204/Data_2013/'
-exp_name_list = ['no_ice_flux_lhe_exps_q_flux_hadgem_anoms_3']
+base_dir='/disca/share/sit204/data_from_isca_cpu/cssp_perturb_exps/anoms/'
+#exp_name_list = ['soc_ga3_files_smooth_topo_fftw_mk1_fresh_compile_long', 'soc_ga3_files_smooth_topo_old_fft_mk2_long']
+exp_name_list = [f'soc_ga3_do_simple_false_cmip_o3_bucket_perturbed_ens_{f}' for f in range(100, 200)]
 avg_or_daily_list=['monthly']
-start_file=287
-end_file=288
+start_file=1
+end_file=1
 nfiles=(end_file-start_file)+1
 
 do_extra_averaging=False #If true, then 6hourly data is averaged into daily data using cdo
@@ -44,7 +45,7 @@ if level_set=='standard':
     var_names['timestep']='-a'
     var_names['6hourly']='ucomp slp height vor t_surf vcomp omega'
     var_names['daily']='ucomp slp height vor t_surf vcomp omega temp'
-    file_suffix='_interp_new_height_temp'
+    file_suffix='_interp_new_height_temp_not_below_ground'
 
 elif level_set=='ssw_diagnostics':
     plevs['6hourly']=' -p "1000 10000"'
@@ -71,7 +72,7 @@ for exp_name in exp_name_list:
             if n+start_file < 100:
                 number_prefix='00'
             if n+start_file < 10:
-                number_prefix='000'
+                number_prefix = '000'
 
             nc_file_in = base_dir+'/'+exp_name+'/run'+number_prefix+str(n+start_file)+'/atmos_'+avg_or_daily+'.nc'
             nc_file_out = out_dir+'/'+exp_name+'/run'+number_prefix+str(n+start_file)+'/atmos_'+avg_or_daily+file_suffix+'.nc'
