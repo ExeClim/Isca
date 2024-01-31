@@ -23,25 +23,29 @@ def get_nml_diag(test_case_name):
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/axisymmetric/'))
         from axisymmetric_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles   
-        nml_out = exp_temp.namelist             
+        nml_out = exp_temp.namelist    
+        codebase_to_use = IscaCodeBase
 
     if 'bucket_model' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/bucket_hydrology/'))
         from bucket_model_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
-        nml_out = exp_temp.namelist        
-             
+        nml_out = exp_temp.namelist     
+        codebase_to_use = IscaCodeBase
+            
     if 'frierson' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/frierson/'))
         from frierson_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
-        nml_out = exp_temp.namelist        
+        nml_out = exp_temp.namelist  
+        codebase_to_use = IscaCodeBase
         
     if 'giant_planet' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/giant_planet/'))
         from giant_planet_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles   
         nml_out = exp_temp.namelist
+        codebase_to_use = IscaCodeBase
         
         #Make giant planet test case a lower resolution so that it runs in a finite time!
         nml_out['spectral_dynamics_nml']['num_fourier']=42
@@ -55,30 +59,35 @@ def get_nml_diag(test_case_name):
         from held_suarez_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist
+        codebase_to_use = IscaCodeBase
         
     if 'MiMA' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/MiMA/'))
         from MiMA_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
-        nml_out = exp_temp.namelist        
+        nml_out = exp_temp.namelist     
+        codebase_to_use = IscaCodeBase
         
     if 'realistic_continents_fixed_sst' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/realistic_continents/'))
         from realistic_continents_fixed_sst_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles   
         nml_out = exp_temp.namelist        
+        codebase_to_use = IscaCodeBase
 
     if 'realistic_continents_variable_qflux' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/realistic_continents/'))
         from realistic_continents_variable_qflux_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist        
+        codebase_to_use = IscaCodeBase
 
     if 'soc_realistic_continents_fixed_sst_with_linear_cld_scheme' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/simple_clouds/'))
         from socrates_aquaplanet import exp as exp_temp
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist       
+        codebase_to_use=SocratesCodeBase
 
     if 'socrates_aquaplanet' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_test/'))
@@ -90,32 +99,53 @@ def get_nml_diag(test_case_name):
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_test/'))
         from socrates_aquaplanet_cloud import exp as exp_temp
         input_files = exp_temp.inputfiles
-        nml_out = exp_temp.namelist       
+        nml_out = exp_temp.namelist     
+        codebase_to_use=SocratesCodeBase
 
     if 'top_down_test' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/top_down_test/'))
         from top_down_test import namelist as nml_out
         input_files = []
+        codebase_to_use = IscaCodeBase
 
     if 'variable_co2_grey' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/variable_co2_concentration/'))
         from variable_co2_grey import exp as exp_temp
         input_files = exp_temp.inputfiles      
-        nml_out = exp_temp.namelist                        
+        nml_out = exp_temp.namelist           
+        codebase_to_use = IscaCodeBase
 
     if 'variable_co2_rrtm' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/variable_co2_concentration/'))
         from variable_co2_rrtm import exp as exp_temp
         input_files = exp_temp.inputfiles
-        nml_out = exp_temp.namelist                   
+        nml_out = exp_temp.namelist              
+        codebase_to_use = IscaCodeBase
                  
     if 'ape_aquaplanet' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/ape_aquaplanet/'))
         from socrates_ape_aquaplanet_T42 import exp as exp_temp
         input_files = exp_temp.inputfiles
-        nml_out = exp_temp.namelist        
+        nml_out = exp_temp.namelist
+        codebase_to_use=SocratesCodeBase
+        
+    if 'barotropic_vort_eq_stirring' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/barotropic_vorticity_equation/'))
+        from barotropic_vor_eq_stirring_test import exp as exp_temp
+        from isca import BarotropicCodeBase
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use=BarotropicCodeBase
 
-    return nml_out, input_files  
+    if 'shallow_water_stirring' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/shallow_water/'))
+        from shallow_water_stirring_test import exp as exp_temp
+        from isca import ShallowCodeBase
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use=ShallowCodeBase
+
+    return nml_out, input_files, codebase_to_use
 
 def list_all_test_cases_implemented_in_trip_test():
 
@@ -134,7 +164,9 @@ def list_all_test_cases_implemented_in_trip_test():
                         'top_down_test', 
                         'variable_co2_grey', 
                         'variable_co2_rrtm', 
-                        'ape_aquaplanet']
+                        'ape_aquaplanet',
+                        'barotropic_vort_eq_stirring',
+                        'shallow_water_stirring']
 
     return exps_implemented
 
@@ -153,6 +185,27 @@ def define_simple_diag_table():
     diag.add_field('dynamics', 'temp', time_avg=True)
     diag.add_field('dynamics', 'vor', time_avg=True)
     diag.add_field('dynamics', 'div', time_avg=True)
+
+    return diag
+
+def define_simple_diag_table_2d(shallow_or_baro):
+    """Defines a simple diag table for the 
+    shallow water and barotropic vorticity test cases."""
+
+    if shallow_or_baro=='shallow':
+        diag_name = 'shallow_diagnostics'
+    elif shallow_or_baro=='barotropic':
+        diag_name = 'barotropic_diagnostics'
+    else:
+        raise NotImplementedError('incorrect option for 2d diag table')
+
+    diag = DiagTable()
+    diag.add_file('atmos_daily', 1, 'days', time_units='days')
+
+    #Tell model which diagnostics to write
+    diag.add_field(diag_name, 'ucomp', time_avg=True)
+    diag.add_field(diag_name, 'vcomp', time_avg=True)
+    diag.add_field(diag_name, 'vor', time_avg=True)
 
     return diag
 
@@ -179,8 +232,15 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
     in the diag file. If there are any differences in the output variables then the test classed as a failure."""
 
     data_dir_dict = {}
-    nml_use, input_files_use  = get_nml_diag(test_case_name)
-    diag_use = define_simple_diag_table()
+    nml_use, input_files_use, codebase_obj  = get_nml_diag(test_case_name)
+    
+    if 'shallow_water' in test_case_name:
+        diag_use = define_simple_diag_table_2d('shallow')    
+    elif 'barotropic_vort_eq' in test_case_name:
+        diag_use = define_simple_diag_table_2d('barotropic')            
+    else:
+        diag_use = define_simple_diag_table()
+        
     test_pass = True
     run_complete = True
     compile_successful=True
@@ -188,10 +248,7 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
     #Do the run for each of the commits in turn
     for s in [base_commit, later_commit]:
         exp_name = test_case_name+'_trip_test_21_'+s
-        if 'socrates' in test_case_name or 'ape_aquaplanet' in test_case_name:
-            cb = SocratesCodeBase(repo=repo_to_use, commit=s)
-        else:
-            cb = IscaCodeBase(repo=repo_to_use, commit=s)
+        cb = codebase_obj(repo=repo_to_use, commit=s)
         try:
             cb.compile()
             exp = Experiment(exp_name, codebase=cb)
