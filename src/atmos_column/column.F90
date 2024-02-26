@@ -76,6 +76,7 @@ integer :: lon_max             = 1,  & ! Column
 
 integer, dimension(2) ::  print_interval=(/1,0/)
 
+logical :: q_decrease_only = .false. 
 
 character(len=64) :: vert_coord_option      = 'even_sigma',   &
                      vert_difference_option = 'simmons_and_burridge', &
@@ -103,7 +104,7 @@ namelist /column_nml/ use_virtual_temperature, valid_range_t, &
                       reference_sea_level_press, scale_heights, surf_res, &
                       p_press, p_sigma, exponent, &
                       initial_state_option, initial_sphum, graceful_shutdown, &
-                      raw_filter_coeff, robert_coeff, json_logging
+                      raw_filter_coeff, robert_coeff, json_logging, q_decrease_only
 
 
 contains 
@@ -267,7 +268,7 @@ else
 endif
 
 
-call leapfrog_3d_real(tg, dt_tg, previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
+call leapfrog_3d_real(tg, dt_tg, previous, current, future, delta_t, robert_coeff, raw_filter_coeff, .false.)
 
 
 
@@ -341,7 +342,7 @@ endif
 
 ! NTL: Need to write a different version of this which uses the leapfrog below...
 do ntr = 1, num_tracers  
-  call leapfrog_3d_real(grid_tracers(:,:,:,:,ntr),dt_tracers_tmp(:,:,:,ntr),previous,current,future,delta_t,tracer_attributes(ntr)%robert_coeff, raw_filter_coeff)
+  call leapfrog_3d_real(grid_tracers(:,:,:,:,ntr),dt_tracers_tmp(:,:,:,ntr),previous,current,future,delta_t,tracer_attributes(ntr)%robert_coeff, raw_filter_coeff, q_decrease_only)
 enddo 
 
 
@@ -752,12 +753,13 @@ subroutine get_initial_fields(ug_out, vg_out, tg_out, psg_out, grid_tracers_out)
   
 
 
-  subroutine leapfrog_3d_real(a, dt_a, previous, current, future, delta_t, robert_coeff, raw_filter_coeff)
+  subroutine leapfrog_3d_real(a, dt_a, previous, current, future, delta_t, robert_coeff, raw_filter_coeff, q_decrease_only)
 
     real, intent(inout), dimension(:,:,:,:) :: a
     real, intent(in),    dimension(:,:,:  ) :: dt_a
     integer, intent(in) :: previous, current, future
     real,    intent(in) :: delta_t, robert_coeff, raw_filter_coeff
+    logical, intent(in) :: q_decrease_only
     
     real, dimension(size(dt_a,1),size(dt_a,2),size(dt_a,3)) :: prev_curr_part_raw_filter
   
@@ -774,6 +776,20 @@ subroutine get_initial_fields(ug_out, vg_out, tg_out, psg_out, grid_tracers_out)
     endif
     
     a(:,:,:,future ) = a(:,:,:,future ) + robert_coeff * (prev_curr_part_raw_filter + a(:,:,:,future )) * (raw_filter_coeff-1.0) 
+    
+    if (q_decrease_only) then 
+      do i=1, size(dt_a,1)
+        do j=1, size(dt_a,2) 
+          do k=size(dt_a,3)-1, 1, -1
+            if (a(1,1,k,future) > a(1,1,k+1,future)) then 
+              a(:,:,k,future) = a(:,:,k+1,future)
+            endif 
+          end do 
+        end do 
+      end do 
+    endif 
+    
+    
     
     !st RAW filter (see e.g. Williams 2011 10.1175/2010MWR3601.1) conserves 3-time-level mean in leap-frog integrations, improving amplitude accuracy of leap-frog scheme from first to third order).
     
