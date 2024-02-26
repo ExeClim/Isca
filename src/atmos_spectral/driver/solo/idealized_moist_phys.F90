@@ -95,6 +95,7 @@ public :: idealized_moist_phys_init , idealized_moist_phys , idealized_moist_phy
 
 logical :: module_is_initialized =.false.
 logical :: turb = .false.
+logical :: do_lcl_diffusivity_depth = .false. 
 logical :: do_virtual = .false. ! whether virtual temp used in gcm_vert_diff
 
 !s Convection scheme options
@@ -159,7 +160,7 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roug
                                       gp_surface, convection_scheme,          &
                                       bucket, init_bucket_depth, init_bucket_depth_land, & !RG Add bucket 
                                       max_bucket_depth_land, robert_bucket, raw_bucket, &
-                                      do_socrates_radiation
+                                      do_socrates_radiation, do_lcl_diffusivity_depth
 
 
 integer, parameter :: num_time_levels = 2 !RG Add bucket - number of time levels added to allow timestepping in this module
@@ -250,6 +251,9 @@ real, allocatable, dimension(:,:) ::                                          &
      rain,                 &   ! Can be resolved or  parameterised
      snow,                 &   !
      precip                    ! cumulus rain  + resolved rain  + resolved snow
+     
+integer, allocatable, dimension(:,:) :: & 
+     ind_lcl ! array of integers specifying lcl depth 
 
 real, allocatable, dimension(:,:,:) :: &
      t_ref,          &   ! relaxation temperature for bettsmiller scheme
@@ -368,6 +372,7 @@ if(two_stream_gray .and. do_cloud_simple) &
 if(do_rrtm_radiation .and. do_cloud_simple) &
    call error_mesg('idealized_moist_phys','RRTM is not configured to run with the cloud scheme at present.',FATAL)
 
+
 if(uppercase(trim(convection_scheme)) == 'NONE') then
   r_conv_scheme = NO_CONV
   lwet_convection = .false.
@@ -430,6 +435,11 @@ if(lwet_convection .and. do_ras) &
 
 if(do_bm .and. do_ras) &
   call error_mesg('idealized_moist_phys','do_bm and do_ras cannot both be .true.',FATAL)  
+
+if(do_lcl_diffusivity_depth .and. (.not. lwet_convection)) & 
+  call error_mesg('idealized_moist_phys','do_lcl_diffusivity_depth cannot be .true. if lwet_convection is not .true.',FATAL)
+
+
 
 nsphum = nhum
 Time_step = Time_step_in
@@ -520,6 +530,8 @@ allocate(snow         (is:ie, js:je)); snow = 0.0
 allocate(precip       (is:ie, js:je)); precip = 0.0
 allocate(convflag     (is:ie, js:je))
 allocate(convect      (is:ie, js:je)); convect = .false.
+
+allocate(ind_lcl      (is:ie, js:je)); ind_lcl = 0
 
 allocate(t_ref (is:ie, js:je, num_levels)); t_ref = 0.0
 allocate(q_ref (is:ie, js:je, num_levels)); q_ref = 0.0
@@ -821,7 +833,7 @@ if (bucket) then
   filt      = 0.0                ! RG Add bucket
 endif
 
-rain = 0.0; snow = 0.0; precip = 0.0
+rain = 0.0; snow = 0.0; precip = 0.0; ind_lcl = 0
 
 select case(r_conv_scheme)
 
@@ -835,7 +847,8 @@ case(SIMPLE_BETTS_CONV)
                                 q_ref,                        convflag,      &
                                 klzbs,                            cape,      &
                                   cin,             invtau_q_relaxation,      &
-                  invtau_t_relaxation,                           t_ref)
+                  invtau_t_relaxation,                           t_ref,      & 
+                              ind_lcl)
 
    tg_tmp = conv_dt_tg + tg(:,:,:,previous)
    qg_tmp = conv_dt_qg + grid_tracers(:,:,:,previous,nsphum)
@@ -1195,9 +1208,10 @@ if(turb) then
    grid_tracers(:,:,:,previous,nsphum), grid_tracers(:,:,:,previous,:), &
                           dt_ug(:,:,:),                   dt_vg(:,:,:), &
                           dt_tg(:,:,:),       dt_tracers(:,:,:,nsphum), &
+                          ind_lcl(:,:),       do_lcl_diffusivity_depth, &
                    dt_tracers(:,:,:,:),                  diff_t(:,:,:), &
                          diff_m(:,:,:),                      gust(:,:), &
-                            z_pbl(:,:) )
+                                                            z_pbl(:,:) )
 
       pbltop(is:ie,js:je) = z_pbl(:,:) !s added so that z_pbl can be used subsequently by damping_driver.
 
