@@ -762,6 +762,8 @@ subroutine get_initial_fields(ug_out, vg_out, tg_out, psg_out, grid_tracers_out)
     logical, intent(in) :: q_decrease_only
     
     real, dimension(size(dt_a,1),size(dt_a,2),size(dt_a,3)) :: prev_curr_part_raw_filter
+    
+    integer :: i,j,k
   
     
     prev_curr_part_raw_filter=a(:,:,:,previous) - 2.0*a(:,:,:,current) !st Defined at the start to get unmodified value of a(:,:,:,current).

@@ -1208,9 +1208,9 @@ if(turb) then
    grid_tracers(:,:,:,previous,nsphum), grid_tracers(:,:,:,previous,:), &
                           dt_ug(:,:,:),                   dt_vg(:,:,:), &
                           dt_tg(:,:,:),       dt_tracers(:,:,:,nsphum), &
-                          ind_lcl(:,:),       do_lcl_diffusivity_depth, &
-                   dt_tracers(:,:,:,:),                  diff_t(:,:,:), &
-                         diff_m(:,:,:),                      gust(:,:), &
+                          dt_tracers(:,:,:,:),            ind_lcl(:,:), &
+                          do_lcl_diffusivity_depth,      diff_t(:,:,:), &
+                          diff_m(:,:,:),                     gust(:,:), &
                                                             z_pbl(:,:) )
 
       pbltop(is:ie,js:je) = z_pbl(:,:) !s added so that z_pbl can be used subsequently by damping_driver.
