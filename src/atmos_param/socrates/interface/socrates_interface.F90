@@ -1189,17 +1189,34 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
     ozone_in = 0.0
 
-    !get ozone
-    if(do_read_ozone)then
-        call interpolator( o3_interp, Time_diag, p_half_in, ozone_in, trim(ozone_field_name))
-        if (input_o3_file_is_mmr .eqv. .false.) then
-            ozone_in = ozone_in * wtmozone / (1000. * gas_constant / rdgas )
-            ! Socrates expects all abundances to be mass mixing ratio. So if input file is volume mixing ratio,
-            ! it must be converted to mass mixing ratio using the molar masses of dry air and ozone
-            ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol
-            ! from kg/mol by multiplying by 1000. This conversion is necessary because wtmozone is in g/mol.
-        endif
-    endif
+    !get ozone 
+     if(do_read_ozone)then
+       call interpolator( o3_interp, Time_diag, p_half_in, ozone_in, trim(ozone_field_name))
+     endif 
+     if(do_scm_ozone)then ! Allows for option to specify ozone vertical profile in namelist for SCM. 
+       if(do_read_ozone)then 
+          call error_mesg('socrates_interface', 'Cannot set do_scm_ozone and do_read_ozone = .true.', FATAL)
+       endif 
+       if((size(temp_in,1)>1).or.(size(temp_in,2)>1))then 
+          call error_mesg('socrates_interface', 'Cannot set do_scm_ozone if simulating more than one column, use do_read_ozone instead', FATAL)
+       endif 
+      if(scm_ozone(size(temp_in,3)).eq.-1)then 
+          call error_mesg('socrates_interface', 'Input o3 must be specified on model pressure levels but not enough levels specified', FATAL)
+      endif 
+      if(scm_ozone(size(temp_in,3)+1).ne.-1)then 
+          call error_mesg('socrates_interface', 'Input o3 must be specified on model pressure levels but too many levels specified', FATAL)
+      endif 
+      ozone_in(1,1,:) = scm_ozone(1:size(temp_in,3))
+           !PUT THIS WARNING SOMEWHERE ELSE 
+     endif
+     if (do_read_ozone .or. do_scm_ozone) then
+       if (input_o3_file_is_mmr.eqv..false.) then
+
+           ozone_in = ozone_in * wtmozone / (1000. * gas_constant / rdgas ) !Socrates expects all abundances to be mass mixing ratio. So if input file is volume mixing ratio, it must be converted to mass mixing ratio using the molar masses of dry air and ozone
+           ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol from kg/mol by multiplying by 1000. This conversion is necessary because wtmozone is in g/mol.
+           
+       endif 
+     endif
 
     if (input_co2_mmr .eqv. .false.) then
         co2_in = co2_ppmv * 1.e-6 * wtmco2 / (1000. * gas_constant / rdgas )
