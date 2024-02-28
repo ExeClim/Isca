@@ -189,7 +189,7 @@ contains
   subroutine qe_moist_convection (dt, Tin, qin, p_full, p_half, coldT, &
                                   rain, snow, deltaT, deltaq, qref, convflag, &
                                   kLZBs, CAPE, CIN, invtau_q_relaxation, &
-                                  invtau_t_relaxation, Tref, ind_lcl)
+                                  invtau_t_relaxation, Tref, kLCLs)
 
     !-----------------------------------------------------------------------
     !
@@ -231,11 +231,10 @@ contains
     real   , intent(in)                    :: dt
     logical, intent(in) , dimension(:,:)   :: coldT
     
-    real   , intent(out), dimension(:,:)   :: rain, snow, kLZBs, CAPE, CIN
+    real   , intent(out), dimension(:,:)   :: rain, snow, CAPE, CIN
     real   , intent(out), dimension(:,:)   :: invtau_q_relaxation, invtau_t_relaxation
-    integer, intent(out), dimension(:,:)   :: convflag
+    integer, intent(out), dimension(:,:)   :: convflag, kLZBs, kLCLs
     real   , intent(out), dimension(:,:,:) :: deltaT, deltaq, qref, Tref
-    integer, intent(out), dimension(:,:)   :: ind_lcl
 
     !-----------------------------------------------------------------------
     !     computation of precipitation by convection scheme
@@ -249,7 +248,7 @@ contains
     call SBM_convection_scheme(dt, Tin, qin, p_full, p_half, rain, snow, &
          deltaT, deltaq, kLZBs, CAPE, CIN,invtau_q_relaxation,           &
          invtau_t_relaxation, Tref, qref,                                &
-         val_min, val_max, val_inc, lcl_temp_table, convflag, ind_lcl)
+         val_min, val_max, val_inc, lcl_temp_table, convflag, kLCLs)
      
   end subroutine qe_moist_convection
 
@@ -257,7 +256,8 @@ contains
   
   subroutine SBM_convection_scheme(dt, Tin, qin, p_full, p_half, rain,  snow, &
        deltaT, deltaq, kLZBs, CAPE, CIN, invtau_q_relaxation, invtau_t_relaxation,&
-       Tref, qref, val_min, val_max, val_inc, lcl_temp_table, convflag, ind_lcl)
+       Tref, qref, val_min, val_max, val_inc, lcl_temp_table, convflag, kLCLs)
+
    
     !-----------------------------------------------------------------------
     !
@@ -276,21 +276,16 @@ contains
     real, intent(in), dimension(:)         :: lcl_temp_table
     real, intent(out), dimension(:,:)      :: rain, snow, CAPE, CIN
     real, intent(out), dimension(:,:)      :: invtau_q_relaxation, invtau_t_relaxation
-    real, intent(out), dimension(:,:)      :: kLZBs
     real, intent(out), dimension(:,:,:)    :: deltaT, deltaq, Tref, qref
-    integer, intent(out), dimension(:,:)   :: convflag    
-    integer, intent(out), dimension(:,:)   :: ind_lcl
+    integer, intent(out), dimension(:,:)   :: kLZBs, convflag, kLCLs
     
-    integer                                :: k_surface, i, j, kLZB
+    integer                                :: k_surface, i, j, kLZB, kLCL
     real, dimension(size(Tin, 3))          ::     &
          deltaq_parcel, deltaT_parcel, T_parcel, r_parcel, qref_parcel, Tref_parcel
     real, dimension(size(Tin, 1), size(Tin, 2))            :: Pq
     real, dimension(size(Tin,1), size(Tin,2), size(Tin,3)) :: rin
     real                                   :: cape_parcel, cin_parcel, Pq_parcel, Pt_parcel
     real                                   :: invtau_q_relaxation_parcel, invtau_t_relaxation_parcel
-    integer                                :: ind_lcl_parcel
-
-
 
     ! Initialization of parameters and variables
     k_surface = size(Tin, 3)
@@ -320,13 +315,14 @@ contains
           ! parcel lifted from lowest model level
           call CAPE_calculation(k_surface, p_full(i,j,:), p_half(i,j,:), &
                Tin(i,j,:), rin(i,j,:), kLZB, T_parcel, r_parcel,         &
-               cape_parcel, cin_parcel, val_min, val_max, lcl_temp_table, ind_lcl_parcel)
+               cape_parcel, cin_parcel, val_min, val_max, lcl_temp_table,&
+               kLCL)
             
           ! Store values
           CAPE(i,j)  = cape_parcel
           CIN(i,j)   = cin_parcel
           kLZBs(i,j) = kLZB
-          ind_lcl(i,j) = ind_lcl_parcel
+          kLCLs(i,j) = kLCL
           
           ! If CAPE>0, set reference temperature and humidity above and below 
           ! the LZB (Level of Zero Buoyancy) 
@@ -397,7 +393,8 @@ contains
   !#######################################################################
   
   subroutine CAPE_calculation(k_surface, p_full, p_half, Tin, rin, kLZB, &
-       Tp, rp, CAPE, CIN, val_min, val_max, lcl_temp_table, ind_lcl)
+       Tp, rp, CAPE, CIN, val_min, val_max, lcl_temp_table, kLCL)
+       
 
     ! Calculates CAPE, CIN, level of zero buoyancy, and parcel properties 
     ! (second order accurate in delta(ln p) and exact LCL calculation)
@@ -408,14 +405,13 @@ contains
     real, intent(in), dimension(:)       :: Tin, rin
     real, intent(in)                     :: val_min , val_max
     real, intent(in), dimension(:)       :: lcl_temp_table
-    integer, intent(out)                 :: kLZB
+    integer, intent(out)                 :: kLZB, kLCL
     real, intent(out), dimension(:)      :: Tp, rp
     real, intent(out)                    :: CAPE, CIN
-    integer, intent(out)                 :: ind_lcl
     
     logical                              :: nocape, saturated, skip
     real                                 :: pLZB, T0, r0, es, rs, pLCL
-    integer                              :: kLFC, k, kLCL
+    integer                              :: kLFC, k
     real, dimension(size(Tin))           :: Tin_virtual
     
     nocape = .true.
@@ -427,7 +423,7 @@ contains
     Tp     = Tin
     rp     = rin
     saturated = .false.
-    ind_lcl = 0
+    kLCL = 0
     
     ! Calculation of values to check whether the lowest level is saturated
     ! Calculate the virtual temperature
@@ -458,7 +454,6 @@ contains
     call CAPE_above_LCL(kLCL, kLZB, kLFC, Tp, rp, rin, p_full, nocape, skip,&
          CIN, CAPE, Tin, Tin_virtual, p_half, pLZB)
          
-    ind_lcl = kLCL
     
   end subroutine CAPE_CALCULATION
   

@@ -1,0 +1,6 @@
+echo loadmodules for maths2 machines
+
+export F90=mpiifort
+export CC=mpiicc
+
+export GFDL_MKMF_TEMPLATE=maths2

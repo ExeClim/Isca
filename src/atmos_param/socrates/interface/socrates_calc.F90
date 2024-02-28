@@ -19,9 +19,6 @@ contains
 
 ! ==============================================================================
 
-
-
-
 ! Set up the call to the Socrates radiation scheme
 ! -----------------------------------------------------------------------------
 !DIAG Added Time
@@ -33,10 +30,10 @@ subroutine socrates_calc(Time_diag,control, spectrum,                          &
   t_rad_surf, cos_zenith_angle, solar_irrad, orog_corr,                        &
   l_planet_grey_surface, planet_albedo, planet_emissivity,                     &
   layer_heat_capacity,                                                         &
-  cld_frac, cld_conv_frac, reff_rad, mmr_cl_rad, do_cloud_simple,              &
+  cld_frac, reff_rad, mmr_cl_rad,                                              &
   flux_direct, flux_down, flux_up,                                             &
-  flux_down_clear, flux_up_clear,                                              &
-  heating_rate,  spectral_olr)
+  flux_direct_clear, flux_down_clear, flux_up_clear,                           &
+  heating_rate, spectral_olr, tot_cloud_cover)
 
 use rad_pcf
 use def_control,  only: StrCtrl
@@ -52,8 +49,7 @@ use set_control_mod,   only: set_control
 use set_dimen_mod,     only: set_dimen
 use set_atm_mod,       only: set_atm
 use set_bound_mod,     only: set_bound
-use socrates_set_cld_mod,  only: set_simple_cld
-use set_cld_mod,           only: set_cld
+use socrates_set_cld,  only: set_cld
 use set_aer_mod,       only: set_aer
 
 use soc_constants_mod,   only: i_def, r_def
@@ -119,10 +115,7 @@ real(r_def), intent(in) :: layer_heat_capacity(n_profile, n_layer)
 !   Heat capacity of layer
 
 real(r_def), intent(in) :: cld_frac(n_profile, n_layer)
-!   Cloud fraction at layer centres for stratocumulus cloud
-
-real(r_def), intent(in) :: cld_conv_frac(n_profile, n_layer)
-!   Cloud fraction at layer centres for convective cloud
+!   Cloud fraction at layer centres
 
 real(r_def), intent(in) :: reff_rad(n_profile, n_layer)
 !   Cloud liquid particle radius from simple cloud scheme
@@ -130,22 +123,26 @@ real(r_def), intent(in) :: reff_rad(n_profile, n_layer)
 real(r_def), intent(in) :: mmr_cl_rad(n_profile, n_layer)
 !   Cloud liquid mmr at layer centres
 
-logical, INTENT(in) :: do_cloud_simple
-!  Logical for if cloud scheme is on or not
-
 real(r_def), intent(out) :: flux_direct(n_profile, 0:n_layer)
 !   Direct (unscattered) downwards flux (Wm-2)
-real(r_def), intent(out) :: flux_down(n_profile, 0:n_layer),   &
-                            flux_down_clear(n_profile, 0:n_layer)
+real(r_def), intent(out) :: flux_down(n_profile, 0:n_layer)
 !   Downwards flux (Wm-2)
-real(r_def), intent(out) :: flux_up(n_profile, 0:n_layer),     &
-                            flux_up_clear(n_profile, 0:n_layer) 
+real(r_def), intent(out) :: flux_up(n_profile, 0:n_layer)
 !   Upwards flux (Wm-2)
+real(r_def), intent(out) :: flux_direct_clear(n_profile, 0:n_layer)
+!   Direct (unscattered) downwards flux under clear-sky condition (Wm-2)
+real(r_def), intent(out) :: flux_down_clear(n_profile, 0:n_layer)
+!   Downwards flux under clear-sky condition (Wm-2)
+real(r_def), intent(out) :: flux_up_clear(n_profile, 0:n_layer)
+!   Upwards flux under clear-sky condition  (Wm-2)
 real(r_def), intent(out) :: heating_rate(n_profile, n_layer)
 !   Heating rate (Ks-1)
 
 REAL(r_def), INTENT(inout), optional :: spectral_olr(:,:)
 !   Spectral OLR
+real(r_def), intent(out), optional :: tot_cloud_cover(n_profile)
+!   Total cloud cover
+
 
 ! Dimensions:
 TYPE (StrDim) :: dimen
@@ -186,26 +183,22 @@ call set_bound(control, dimen, spectrum, bound, n_profile,                     &
   t_rad_surf, cos_zenith_angle, solar_irrad, orog_corr,                        &
   l_planet_grey_surface, planet_albedo, planet_emissivity)
 
-  if (do_cloud_simple) then
-      zeros_cld = 0.
-      ten_microns_cld = 1.
-      call set_simple_cld(cld, control, dimen, spectrum, n_profile, n_layer, &
-                conv_frac     = cld_conv_frac,&
-                liq_frac      = cld_frac,     &
-                ice_frac      = zeros_cld,    &
-                liq_mmr       = mmr_cl_rad,   &
-                ice_mmr       = zeros_cld,    &
-                liq_dim       = reff_rad,     &
-                ice_dim       = zeros_cld )
-  else
-      call set_cld(control, dimen, spectrum, cld, n_profile)
-  endif
+! call set_cld(control, dimen, spectrum, cld, n_profile)
+
+zeros_cld = 0.
+ten_microns_cld = 1.
+call set_cld(cld, control, dimen, spectrum, n_profile, n_layer, &
+            liq_frac      = cld_frac,     &
+            ice_frac      = zeros_cld,     &
+            liq_mmr       = mmr_cl_rad,      &
+            ice_mmr       = zeros_cld,      &
+            liq_dim       = reff_rad,      &
+            ice_dim       = zeros_cld )
 
 call set_aer(control, dimen, spectrum, aer, n_profile)
 
 ! DEPENDS ON: radiance_calc
 call radiance_calc(control, dimen, spectrum, atm, cld, aer, bound, radout)
-
 
 ! set heating rates and diagnostics
 do l=1, n_profile
@@ -218,15 +211,20 @@ end do
 
 do l=1, n_profile
   do i=0, n_layer
-    flux_direct(l, i)       = radout%flux_direct(l, i, 1)
-    flux_down(l, i)         = radout%flux_down(l, i, 1)
+    flux_direct(l, i) = radout%flux_direct(l, i, 1)
+    flux_down(l, i)   = radout%flux_down(l, i, 1)
+    flux_up(l, i)     = radout%flux_up(l, i, 1)
+
+    flux_direct_clear(l, i) = radout%flux_direct_clear(l, i, 1)
     flux_down_clear(l, i)   = radout%flux_down_clear(l, i, 1)
-    flux_up(l, i)           = radout%flux_up(l, i, 1)
     flux_up_clear(l, i)     = radout%flux_up_clear(l, i, 1)
   end do
   if (present(spectral_olr)) then
      spectral_olr(l,:) = radout%flux_up_clear_band(l,0,:)
   endif
+  if (present(tot_cloud_cover)) then
+    tot_cloud_cover(l) = radout%tot_cloud_cover(l)
+ endif
 end do
 
 call deallocate_out(radout)
@@ -236,7 +234,6 @@ call deallocate_cld_prsc(cld)
 call deallocate_cld(cld)
 call deallocate_bound(bound)
 call deallocate_atm(atm)
-
 
 end subroutine socrates_calc
 end module socrates_calc_mod

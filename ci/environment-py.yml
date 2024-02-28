@@ -10,9 +10,9 @@ dependencies:
 - libgfortran
 - netcdf-fortran
 - numpy
-- openmpi
+- openmpi=4.*
 - pandas
-- python=3.9
+- python
 - pip
 - pytest
 - sh
