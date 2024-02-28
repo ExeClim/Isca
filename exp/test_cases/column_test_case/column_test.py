@@ -83,11 +83,11 @@ exp.clear_rundir()
 #Define values for the 'core' namelist
 exp.namelist = namelist = Namelist({
     'main_nml':{
-     'days'   : 30,
+     'days'   : 360,
      'hours'  : 0,
      'minutes': 0,
      'seconds': 0,
-     'dt_atmos':360,
+     'dt_atmos':1440,
      'current_date' : [1,1,1,0,0,0],
      'calendar' : 'thirty_day'
     },
@@ -194,5 +194,5 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
     exp.run(1, use_restart=False, num_cores=NCORES)
-    for i in range(2,4):
+    for i in range(2,11):
         exp.run(i, num_cores=NCORES)
