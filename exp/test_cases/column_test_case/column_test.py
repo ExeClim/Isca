@@ -193,6 +193,6 @@ exp.namelist = namelist = Namelist({
 
 #Lets do a run!
 if __name__=="__main__":
-    exp.run(1, use_restart=False, num_cores=NCORES)
+    exp.run(1, use_restart=False, num_cores=NCORES, mpirun_opts='--bind-to socket')
     for i in range(2,11):
-        exp.run(i, num_cores=NCORES)
+        exp.run(i, num_cores=NCORES, mpirun_opts='--bind-to socket')
