@@ -117,7 +117,7 @@ exp.namelist = namelist = Namelist({
         'global_average': True # don't use this option at the moment
     },
 
-    # set initial condition, NOTE: currently there is not an option to read in initial condition from a file. 
+    # set initial condition, NOTE: currently there is not an option to read in initial condition from a file (aside from a restart file). 
     'column_init_cond_nml': {
         'initial_temperature': 264., # initial atmospheric temperature 
         'surf_geopotential': 0.0, # applied to all columns 
@@ -126,10 +126,10 @@ exp.namelist = namelist = Namelist({
 
     'idealized_moist_phys_nml': {
         'do_damping': False, # no damping in column model, surface wind prescribed 
-        'turb':True,        # DONT WANT TO USE THIS, BUT NOT DOING SO IS STOPPING MIXED LAYER FROM WORKING
-        'mixed_layer_bc':True, # need surface, how is this trying to modify the wind field? ****
+        'turb':True,        
+        'mixed_layer_bc':True, 
         'do_simple': True, # simple RH calculation 
-        'roughness_mom': 3.21e-05, # DONT WANT TO USE THIS, BUT NOT DOING SO IS STOPPING MIXED LAYER FROM WORKING
+        'roughness_mom': 3.21e-05, 
         'roughness_heat':3.21e-05,
         'roughness_moist':3.21e-05,                
         'two_stream_gray': False,     #Use grey radiation
@@ -163,7 +163,7 @@ exp.namelist = namelist = Namelist({
         'old_dtaudv': True    
     },
 
-    'vert_turb_driver_nml': { # DONT WANT TO USE THIS, BUT NOT DOING SO IS STOPPING MIXED LAYER FROM WORKING
+    'vert_turb_driver_nml': { 
         'do_mellor_yamada': False,     # default: True
         'do_diffusivity': True,        # default: False
         'do_simple': True,             # default: False
