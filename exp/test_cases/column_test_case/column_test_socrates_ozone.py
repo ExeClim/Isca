@@ -118,7 +118,8 @@ exp.namelist = namelist = Namelist({
                       # latitude can be set in column_grid_nml if only 1 lat used. 
         'num_levels': 50,  # number of levels 
         'initial_sphum': 1e-6, 
-        'vert_coord_option': 'even_sigma'
+        'vert_coord_option': 'even_sigma',
+        'q_decrease_only':True, # constrain q in stratosphere
     },
 
     'column_grid_nml': { 
@@ -144,6 +145,7 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use grey radiation
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use the simple Betts Miller convection scheme 
+        'do_lcl_diffusivity_depth':True, # use convection scheme LCL height to set PBL depth 
     },
 
 
