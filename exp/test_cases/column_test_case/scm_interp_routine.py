@@ -128,7 +128,7 @@ def global_average_lat_lon(ds_in, var_name, radius=6371.e3):
 
     var_out_dims = tuple(x for x in var_in_dims if x!='lat' and x!='lon')
 
-    ds_in[var_name+'_area_av'] = (var_out_dims, area_average)
+    ds_in[var_name+'_area_av'] = (var_out_dims, area_average.data)
 
 def cell_area(dataset_in, radius = 6371.e3):
 
@@ -156,7 +156,7 @@ def cell_area(dataset_in, radius = 6371.e3):
 
     area_array = xsize*ysize
 
-    dataset_in['area_array'] = (('lat','lon'), area_array.transpose('lat','lon'))
+    dataset_in['area_array'] = (('lat','lon'), area_array.transpose('lat','lon').data)
 
 def pkbk(coord_option, nlevels, surf_res=.1, exponent=2.5, scale_heights=4.):
 
