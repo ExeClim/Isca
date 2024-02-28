@@ -101,7 +101,7 @@ exp.namelist = namelist = Namelist({
         'lat_max': 1, # number of columns in latitude, precise 
                       # latitude can be set in column_grid_nml if only 1 lat used. 
         'num_levels': 31,  # number of levels 
-        'initial_sphum': 1e-6, 
+        'initial_sphum': 1e-3, 
         'q_decrease_only':True, # constrain q in stratosphere
     },
 
