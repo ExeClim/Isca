@@ -37,7 +37,7 @@ multiple columns are simulated, the model can only run on 1 core at the moment (
 to fix this as some point). Also, the column model cannot read in topography input files. 
 
 Any questions to Neil Lewis:  
-neil.lewis@physics.ox.ac.uk 
+n.t.lewis@exeter.ac.uk
 """
 
 
