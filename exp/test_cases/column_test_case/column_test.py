@@ -1,6 +1,8 @@
 """ 
 This script configures a column model that uses Isca's columnwise physics routines. 
 
+Single column configuration of Isca. Please cite McKim et al. (2024, submitted) (https://doi.org/10.22541/essoar.170904795.55675140/v1) if you use the SCM. 
+
 Useful for testing new convection / radiation parametrizations, as the dynamical core is 
 bypassed so the model runs a gazillion times faster (especially if you're only simulating
 one column). Can in principle simulate many (in lat and lon) at the same time. 
