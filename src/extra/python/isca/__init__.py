@@ -83,4 +83,4 @@ class EventEmitter(object):
 
 
 from isca.experiment import Experiment, DiagTable, Namelist, FailedRunError
-from isca.codebase import IscaCodeBase, SocratesCodeBase, DryCodeBase, GreyCodeBase #, ShallowCodeBase
+from isca.codebase import IscaCodeBase, SocratesCodeBase, DryCodeBase, GreyCodeBase, ColumnCodeBase, SocColumnCodeBase #, ShallowCodeBase

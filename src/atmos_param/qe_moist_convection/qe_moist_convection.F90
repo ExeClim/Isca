@@ -257,6 +257,7 @@ contains
   subroutine SBM_convection_scheme(dt, Tin, qin, p_full, p_half, rain,  snow, &
        deltaT, deltaq, kLZBs, CAPE, CIN, invtau_q_relaxation, invtau_t_relaxation,&
        Tref, qref, val_min, val_max, val_inc, lcl_temp_table, convflag, kLCLs)
+
    
     !-----------------------------------------------------------------------
     !
@@ -285,7 +286,6 @@ contains
     real, dimension(size(Tin,1), size(Tin,2), size(Tin,3)) :: rin
     real                                   :: cape_parcel, cin_parcel, Pq_parcel, Pt_parcel
     real                                   :: invtau_q_relaxation_parcel, invtau_t_relaxation_parcel
-
 
     ! Initialization of parameters and variables
     k_surface = size(Tin, 3)
@@ -394,6 +394,7 @@ contains
   
   subroutine CAPE_calculation(k_surface, p_full, p_half, Tin, rin, kLZB, &
        Tp, rp, CAPE, CIN, val_min, val_max, lcl_temp_table, kLCL)
+       
 
     ! Calculates CAPE, CIN, level of zero buoyancy, and parcel properties 
     ! (second order accurate in delta(ln p) and exact LCL calculation)
@@ -422,6 +423,7 @@ contains
     Tp     = Tin
     rp     = rin
     saturated = .false.
+    kLCL = 0
     
     ! Calculation of values to check whether the lowest level is saturated
     ! Calculate the virtual temperature
@@ -451,6 +453,7 @@ contains
     ! Calculation above the LCL
     call CAPE_above_LCL(kLCL, kLZB, kLFC, Tp, rp, rin, p_full, nocape, skip,&
          CIN, CAPE, Tin, Tin_virtual, p_half, pLZB)
+         
     
   end subroutine CAPE_CALCULATION
   

@@ -38,9 +38,13 @@ use      dry_convection_mod, only: dry_convection_init, dry_convection
 
 use        diag_manager_mod, only: register_diag_field, send_data
 
-use          transforms_mod, only: get_grid_domain
-
+#ifdef COLUMN_MODEL 
+use              column_mod, only: get_num_levels, get_surf_geopotential, get_axis_id
+use            spec_mpp_mod, only: get_grid_domain, grid_domain 
+#else
+use          transforms_mod, only: get_grid_domain, grid_domain
 use   spectral_dynamics_mod, only: get_axis_id, get_num_levels, get_surf_geopotential
+#endif 
 
 use        surface_flux_mod, only: surface_flux, gp_surface_flux
 
@@ -51,8 +55,6 @@ use      damping_driver_mod, only: damping_driver, damping_driver_init, damping_
 use    press_and_geopot_mod, only: pressure_variables
 
 use         mpp_domains_mod, only: mpp_get_global_domain ! needed for reading in land
-
-use          transforms_mod, only: grid_domain
 
 use tracer_manager_mod, only: get_number_tracers, query_method
 
@@ -96,6 +98,7 @@ public :: idealized_moist_phys_init , idealized_moist_phys , idealized_moist_phy
 
 logical :: module_is_initialized =.false.
 logical :: turb = .false.
+logical :: do_lcl_diffusivity_depth = .false. 
 logical :: do_virtual = .false. ! whether virtual temp used in gcm_vert_diff
 
 ! Convection scheme options
@@ -161,7 +164,7 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roug
                                       gp_surface, convection_scheme,                 &
                                       bucket, init_bucket_depth, init_bucket_depth_land, &
                                       max_bucket_depth_land, robert_bucket, raw_bucket, &
-                                      do_socrates_radiation
+                                      do_socrates_radiation, do_lcl_diffusivity_depth
 
 
 integer, parameter :: num_time_levels = 2 ! Add bucket - number of time levels added to allow timestepping in this module
@@ -384,6 +387,7 @@ if(two_stream_gray .and. (do_cloud_simple .or. do_cloud_spookie)) &
 if(do_rrtm_radiation .and. (do_cloud_simple .or. do_cloud_spookie)) &
    call error_mesg('idealized_moist_phys','RRTM is not configured to run with the cloud scheme at present.',FATAL)
 
+
 if(uppercase(trim(convection_scheme)) == 'NONE') then
   r_conv_scheme = NO_CONV
   lwet_convection = .false.
@@ -446,6 +450,11 @@ if(lwet_convection .and. do_ras) &
 
 if(do_bm .and. do_ras) &
   call error_mesg('idealized_moist_phys','do_bm and do_ras cannot both be .true.',FATAL)
+
+if(do_lcl_diffusivity_depth .and. (.not. (lwet_convection .or. do_ras .or. do_bm))) & 
+  call error_mesg('idealized_moist_phys','do_lcl_diffusivity_depth cannot be .true. if moist convection is not enabled',FATAL)
+
+
 
 nsphum = nhum
 Time_step = Time_step_in
@@ -526,8 +535,8 @@ allocate(cond_dt_tg  (is:ie, js:je, num_levels))
 allocate(cond_dt_qg  (is:ie, js:je, num_levels))
 
 allocate(coldT        (is:ie, js:je)); coldT = .false.
-allocate(klzbs        (is:ie, js:je))
-allocate(klcls        (is:ie, js:je))
+allocate(klzbs        (is:ie, js:je)); klzbs = 0
+allocate(klcls        (is:ie, js:je)); klcls = 0
 allocate(cape         (is:ie, js:je))
 allocate(cin          (is:ie, js:je))
 allocate(invtau_q_relaxation  (is:ie, js:je))
@@ -538,6 +547,8 @@ allocate(precip       (is:ie, js:je)); precip = 0.0
 allocate(convective_rain (is:ie, js:je)); convective_rain = 0.0
 allocate(convflag     (is:ie, js:je))
 allocate(convect      (is:ie, js:je)); convect = .false.
+
+
 
 allocate(t_ref (is:ie, js:je, num_levels)); t_ref = 0.0
 allocate(q_ref (is:ie, js:je, num_levels)); q_ref = 0.0
@@ -839,8 +850,10 @@ if (bucket) then
   filt      = 0.0
 endif
 
-rain = 0.0; snow = 0.0; precip = 0.0
+
+rain = 0.0; snow = 0.0; precip = 0.0; klcls = 0
 convective_rain = 0.0
+
 
 select case(r_conv_scheme)
 
@@ -856,6 +869,7 @@ case(SIMPLE_BETTS_CONV)
                                   cin,             invtau_q_relaxation,      &
                   invtau_t_relaxation,                           t_ref,      &
                                 klcls)
+
    tg_tmp = conv_dt_tg + tg(:,:,:,previous)
    qg_tmp = conv_dt_qg + grid_tracers(:,:,:,previous,nsphum)
 !  note the delta's are returned rather than the time derivatives
@@ -944,6 +958,7 @@ case(RAS_CONV)
 
 
 case(NO_CONV)
+   conv_dt_tg = 0.0
    tg_tmp = tg(:,:,:,previous)
    qg_tmp = grid_tracers(:,:,:,previous,nsphum)
 
@@ -1240,9 +1255,10 @@ if(turb) then
    grid_tracers(:,:,:,previous,nsphum), grid_tracers(:,:,:,previous,:), &
                           dt_ug(:,:,:),                   dt_vg(:,:,:), &
                           dt_tg(:,:,:),       dt_tracers(:,:,:,nsphum), &
-                   dt_tracers(:,:,:,:),                  diff_t(:,:,:), &
-                         diff_m(:,:,:),                      gust(:,:), &
-                            z_pbl(:,:) )
+                          dt_tracers(:,:,:,:),            klcls(:,:), &
+                          do_lcl_diffusivity_depth,      diff_t(:,:,:), &
+                          diff_m(:,:,:),                     gust(:,:), &
+                                                            z_pbl(:,:) )
 
       pbltop(is:ie,js:je) = z_pbl(:,:) ! added so that z_pbl can be used subsequently by damping_driver.
 

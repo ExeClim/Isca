@@ -163,6 +163,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
             'tidally_locked and frierson_solar_rad cannot both be true', FATAL)
     endif
 
+
     if (js == 1) then
         if (lw_spectral_filename .eq. 'unset') then
             call error_mesg( 'socrates_init', &
@@ -388,6 +389,12 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
         call interpolator_init (co2_interp, trim(co2_file_name)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
     endif
 
+      if(do_scm_ozone)then 
+         call error_mesg('socrates_interface', &
+             'Input o3 will be read in exactly as specified in input (i.e. no plevel interpolation will be performed). Ensure it is specified correctly in namelist. ONLY FOR USE WITH SINGLE COLUMN MODEL.', &
+             WARNING)
+      endif
+
     if (mod((size(lonb,1)-1)*(size(latb,1)-1), chunk_size) .ne. 0) then
         call error_mesg( 'socrates_init', &
             'chunk_size must equally divide number of points per processor, which it currently does not.', FATAL)
@@ -398,6 +405,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     n_soc_bands_lw_hires = spectrum_lw_hires%dim%nd_band
     n_soc_bands_sw = spectrum_sw%dim%nd_band
     n_soc_bands_sw_hires = spectrum_sw_hires%dim%nd_band
+
 
     if (socrates_hires_mode .eqv. .True.) then
         allocate(outputted_soc_spectral_olr(size(lonb,1)-1, size(latb,2)-1, n_soc_bands_lw_hires))
@@ -651,6 +659,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     sj = size(fms_temp,2)
     sk = size(fms_temp,3)
 
+
     !Set input T, p, p_level, and mixing ratio profiles
     input_t = reshape(fms_temp(:,:,:),(/si*sj,sk /))
     input_p = reshape(fms_p_full(:,:,:),(/si*sj,sk /))
@@ -698,6 +707,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
             input_t_level(:,n_layer) = input_t(:,n_layer) + (input_t(:,n_layer)-input_t(:,n_layer-1)) * ((input_p_level(:,n_layer)-input_p(:,n_layer))/(input_p(:,n_layer)-input_p(:,n_layer-1)))
 
 !              input_t_level(:,0) = input_t(:,1) - (input_t_level(:,1) - input_t(:,1))
+
             input_t_level(:,0) = input_t(:,1) + (input_t(:,2)-input_t(:,1)) * ((input_p_level(:,0)-input_p(:,1))/(input_p(:,2)-input_p(:,1)))
 
         END DO
@@ -753,8 +763,10 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     ! Do calculation
     CALL read_control(control_calc, spectrum_calc, do_clouds)
 
+
     n_chunk_loop = (si*sj)/chunk_size
     n_profile_chunk = n_profile / n_chunk_loop
+
 
     DO i_chunk=1,n_chunk_loop
 
@@ -852,6 +864,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     if (soc_lw_mode .eqv. .TRUE.) then
         output_soc_spectral_olr(:,:,:) = reshape(soc_spectral_olr(:,:),(/si,sj,int(n_soc_bands_lw,i_def) /))
     endif
+
 
   end subroutine socrates_interface
 
@@ -1132,12 +1145,12 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
     !Set tide-locked flux if tidally-locked = .true. Else use diurnal-solar
     !to calculate insolation from orbit!
-    if (tidally_locked.eq..true.) then
+    if (tidally_locked.eqv..true.) then
         coszen = COS(rad_lat(:,:))*COS(rad_lon(:,:))
         WHERE (coszen < 0.0) coszen = 0.0
         rrsun = 1 ! needs to be set, set to 1 so that stellar_radiation is unchanged in socrates_interface
 
-    elseif (frierson_solar_rad .eq. .true.) then
+    elseif (frierson_solar_rad .eqv. .true.) then
         p2     = (1. - 3.*sin(rad_lat(:,:))**2)/4.
         coszen = 0.25 * (1.0 + del_sol * p2 + del_sw * sin(rad_lat(:,:)))
         rrsun  = 1 ! needs to be set, set to 1 so that stellar_radiation is unchanged in socrates_interface
@@ -1176,17 +1189,34 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
     ozone_in = 0.0
 
-    !get ozone
-    if(do_read_ozone)then
-        call interpolator( o3_interp, Time_diag, p_half_in, ozone_in, trim(ozone_field_name))
-        if (input_o3_file_is_mmr .eqv. .false.) then
-            ozone_in = ozone_in * wtmozone / (1000. * gas_constant / rdgas )
-            ! Socrates expects all abundances to be mass mixing ratio. So if input file is volume mixing ratio,
-            ! it must be converted to mass mixing ratio using the molar masses of dry air and ozone
-            ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol
-            ! from kg/mol by multiplying by 1000. This conversion is necessary because wtmozone is in g/mol.
-        endif
-    endif
+    !get ozone 
+     if(do_read_ozone)then
+       call interpolator( o3_interp, Time_diag, p_half_in, ozone_in, trim(ozone_field_name))
+     endif 
+     if(do_scm_ozone)then ! Allows for option to specify ozone vertical profile in namelist for SCM. 
+       if(do_read_ozone)then 
+          call error_mesg('socrates_interface', 'Cannot set do_scm_ozone and do_read_ozone = .true.', FATAL)
+       endif 
+       if((size(temp_in,1)>1).or.(size(temp_in,2)>1))then 
+          call error_mesg('socrates_interface', 'Cannot set do_scm_ozone if simulating more than one column, use do_read_ozone instead', FATAL)
+       endif 
+      if(scm_ozone(size(temp_in,3)).eq.-1)then 
+          call error_mesg('socrates_interface', 'Input o3 must be specified on model pressure levels but not enough levels specified', FATAL)
+      endif 
+      if(scm_ozone(size(temp_in,3)+1).ne.-1)then 
+          call error_mesg('socrates_interface', 'Input o3 must be specified on model pressure levels but too many levels specified', FATAL)
+      endif 
+      ozone_in(1,1,:) = scm_ozone(1:size(temp_in,3))
+           !PUT THIS WARNING SOMEWHERE ELSE 
+     endif
+     if (do_read_ozone .or. do_scm_ozone) then
+       if (input_o3_file_is_mmr.eqv..false.) then
+
+           ozone_in = ozone_in * wtmozone / (1000. * gas_constant / rdgas ) !Socrates expects all abundances to be mass mixing ratio. So if input file is volume mixing ratio, it must be converted to mass mixing ratio using the molar masses of dry air and ozone
+           ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol from kg/mol by multiplying by 1000. This conversion is necessary because wtmozone is in g/mol.
+           
+       endif 
+     endif
 
     if (input_co2_mmr .eqv. .false.) then
         co2_in = co2_ppmv * 1.e-6 * wtmco2 / (1000. * gas_constant / rdgas )

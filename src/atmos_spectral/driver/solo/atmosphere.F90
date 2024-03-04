@@ -32,17 +32,25 @@ use                  fms_mod, only: set_domain, write_version_number, field_size
 
 use            constants_mod, only: grav, pi
 
-use           transforms_mod, only: trans_grid_to_spherical, trans_spherical_to_grid, &
-                                    get_deg_lon, get_deg_lat, get_grid_boundaries, grid_domain,    &
-                                    spectral_domain, get_grid_domain, get_lon_max, get_lat_max, atmosphere_domain
-
 use         time_manager_mod, only: time_type, get_time, operator( + )
 
 use     press_and_geopot_mod, only: compute_pressures_and_heights
 
-use    spectral_dynamics_mod, only: spectral_dynamics_init, spectral_dynamics, spectral_dynamics_end, &
-                                    get_num_levels, get_axis_id, spectral_diagnostics, get_initial_fields, &
-                                    complete_robert_filter, get_surf_geopotential
+#ifdef COLUMN_MODEL
+  use             spec_mpp_mod, only: grid_domain, get_grid_domain, atmosphere_domain
+  use               column_mod, only: column_init, column, column_end, &
+                                      get_axis_id, column_diagnostics, get_num_levels, &
+                                      get_surf_geopotential, get_initial_fields
+  use          column_grid_mod, only: get_deg_lon, get_deg_lat, get_grid_boundaries, &
+                                      get_lon_max, get_lat_max  
+#else
+  use    spectral_dynamics_mod, only: spectral_dynamics_init, spectral_dynamics, spectral_dynamics_end, &
+                                      get_num_levels, get_axis_id, spectral_diagnostics, get_initial_fields, &
+                                      complete_robert_filter, get_surf_geopotential
+  use           transforms_mod, only: trans_grid_to_spherical, trans_spherical_to_grid, &
+                                      get_deg_lon, get_deg_lat, get_grid_boundaries, grid_domain,    &
+                                      spectral_domain, get_grid_domain, get_lon_max, get_lat_max, atmosphere_domain
+#endif
 
 use          tracer_type_mod, only: tracer_type
 
@@ -78,7 +86,7 @@ namelist/atmosphere_nml/ idealized_moist_model
 
 integer, parameter :: num_time_levels = 2
 integer :: is, ie, js, je, num_levels, num_tracers, nhum
-logical :: dry_model
+logical :: dry_model, column_model
 
 real, allocatable, dimension(:,:,:,:) :: p_half, p_full
 real, allocatable, dimension(:,:,:,:) :: z_half, z_full
@@ -142,7 +150,13 @@ dt_real      = float(dt_integer)
 
 call get_number_tracers(MODEL_ATMOS, num_prog=num_tracers)
 allocate (tracer_attributes(num_tracers))
-call spectral_dynamics_init(Time, Time_step, tracer_attributes, dry_model, nhum)
+#ifdef COLUMN_MODEL
+  call column_init(Time, Time_step, tracer_attributes, dry_model, nhum)
+  column_model = .true.
+#else
+  call spectral_dynamics_init(Time, Time_step, tracer_attributes, dry_model, nhum)
+  column_model = .false.
+#endif 
 call get_grid_domain(is, ie, js, je)
 call get_num_levels(num_levels)
 
@@ -302,11 +316,17 @@ if(previous == current) then
 else
   future = previous
 endif
-
-call spectral_dynamics(Time, psg(:,:,future), ug(:,:,:,future), vg(:,:,:,future), &
+#ifdef COLUMN_MODEL
+call column(Time, psg(:,:,future), ug(:,:,:,future), vg(:,:,:,future), &
                        tg(:,:,:,future), tracer_attributes, grid_tracers(:,:,:,:,:), future, &
                        dt_psg, dt_ug, dt_vg, dt_tg, dt_tracers, wg_full, &
                        p_full(:,:,:,current), p_half(:,:,:,current), z_full(:,:,:,current))
+#else 
+  call spectral_dynamics(Time, psg(:,:,future), ug(:,:,:,future), vg(:,:,:,future), &
+                       tg(:,:,:,future), tracer_attributes, grid_tracers(:,:,:,:,:), future, &
+                       dt_psg, dt_ug, dt_vg, dt_tg, dt_tracers, wg_full, &
+                       p_full(:,:,:,current), p_half(:,:,:,current), z_full(:,:,:,current))
+#endif
 
 if(dry_model) then
   call compute_pressures_and_heights(tg(:,:,:,future), psg(:,:,future), surf_geopotential, &
@@ -317,8 +337,13 @@ else
                                      grid_tracers(:,:,:,future,nhum))
 endif
 
+#ifdef COLUMN_MODEL
+call column_diagnostics(Time_next, psg(:,:,future), ug(:,:,:,future), vg(:,:,:,future), &
+tg(:,:,:,future), wg_full, grid_tracers(:,:,:,:,:), future)
+#else
 call spectral_diagnostics(Time_next, psg(:,:,future), ug(:,:,:,future), vg(:,:,:,future), &
                           tg(:,:,:,future), wg_full, grid_tracers(:,:,:,:,:), future)
+#endif
 
 previous = current
 current  = future
@@ -359,7 +384,11 @@ if(idealized_moist_model) then
 else
     call hs_forcing_end
 endif
+#ifdef COLUMN_MODEL
+call column_end(tracer_attributes)
+#else
 call spectral_dynamics_end(tracer_attributes)
+#endif
 deallocate(tracer_attributes)
 
 module_is_initialized = .false.
