@@ -105,7 +105,7 @@ character(len=128), parameter :: tagname = '$Name: siena_201211 $'
 !===============================================================================================
 ! variables needed for diagnostics
 integer :: id_ps, id_u, id_v, id_t, id_vor, id_div, id_omega, id_wspd, id_slp
-integer :: id_pres_full, id_pres_half, id_zfull, id_zhalf, id_vort_norm, id_EKE
+integer :: id_pres_full, id_pres_half, id_zfull, id_zhalf, id_vort_norm, id_EKE, id_sphum_vert_int
 integer :: id_uu, id_vv, id_tt, id_omega_omega, id_uv, id_omega_t, id_vw, id_uw, id_ut, id_vt, id_v_vor, id_uz, id_vz, id_omega_z
 integer, allocatable, dimension(:) :: id_tr, id_utr, id_vtr, id_wtr !extra advection diags added by RG
 real :: gamma, expf, expf_inverse
@@ -1681,6 +1681,9 @@ id_zhalf   = register_diag_field(mod_name, &
 
 id_slp = register_diag_field(mod_name, &
       'slp',(/id_lon,id_lat/),       Time, 'sea level pressure',           'pascals')
+      
+id_sphum_vert_int   = register_diag_field(mod_name, &
+      'sphum_vert_int', (/id_lon,id_lat/),    Time, 'vertical column mass of specific humidity', 'kg/m2')
 
 if(id_slp > 0) then
   gamma = 0.006
@@ -1716,7 +1719,7 @@ integer, intent(in) :: time_level
 
 real, dimension(is:ie, js:je, num_levels)    :: ln_p_full, p_full, z_full, worka3d, workb3d
 real, dimension(is:ie, js:je, num_levels+1)  :: ln_p_half, p_half, z_half
-real, dimension(is:ie, js:je)                :: t_low, slp, worka2d, workb2d
+real, dimension(is:ie, js:je)                :: t_low, slp, worka2d, workb2d, vert_int_sphum
 complex, dimension(ms:me, ns:ne, num_levels) :: vor_spec, div_spec
 complex, dimension(ms:me, ns:ne)             :: vorx, vory
 logical :: used
@@ -1819,6 +1822,15 @@ do ntr=1,num_tracers
   worka3d = tr_grid(:,:,:,time_level,ntr)*wg_full
   if(id_wtr(ntr) > 0) used = send_data(id_wtr(ntr), worka3d, Time)
 enddo
+
+if(id_sphum_vert_int > 0) then
+  if(id_zfull > 0 .or. id_zhalf > 0) then
+    call tracer_vertical_integral(p_half, grid_tracers, nhum, vert_int_sphum)
+    used = send_data(id_sphum_vert_int,  vert_int_sphum, Time)
+  else
+    call error_mesg('spectral_diagnostics','Vertical integral requires diagnostics height or height_half', FATAL)
+  endif
+endif
 
 if(id_slp > 0) then
   do j=js,je
@@ -1929,6 +1941,23 @@ deallocate(id_tr)
 
 return
 end subroutine spectral_diagnostics_end
+!===================================================================================
+subroutine tracer_vertical_integral(p_half, grid_tracers, nhum, vert_int_sphum)
+  ! This subroutine calculates the vertical integral of the tracer field, as
+  ! defined by the equation  W = -1/g sum(q_{v,i} * delta_p,i)
+  integer, intent(in) :: nhum
+  real, intent(in), dimension(is:, js:, :) :: p_half
+  real, intent(in), dimension(is:, js:, :, :, :) :: grid_tracers
+  real, intent(out), dimension(is:ie, js:je) :: vert_int_sphum
+  
+  real, dimension(is:ie, js:je, num_levels)  :: p_half_diff, ppress_sphum
+
+  p_half_diff = p_half(:,:,1:num_levels) - p_half(:,:,2:num_levels+1)
+  ppress_sphum = grid_tracers(:,:,:,current,nhum) * p_half_diff
+  vert_int_sphum = -(1.0/grav) * sum(ppress_sphum, DIM=3)
+
+  return
+end subroutine tracer_vertical_integral
 !===================================================================================
 
 end module spectral_dynamics_mod
