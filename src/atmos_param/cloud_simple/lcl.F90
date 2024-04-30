@@ -38,17 +38,17 @@ function lcl(p,T,rh,rhl,rhs,return_ldl,return_min_lcl_ldl)
    implicit none
 
    ! In
-   double precision, intent(in) :: p, T
-   double precision, intent(in), optional :: rh, rhl, rhs
+   real, intent(in) :: p, T
+   real, intent(in), optional :: rh, rhl, rhs
    logical, intent(in), optional :: return_ldl, return_min_lcl_ldl
 
    ! Out
-   double precision :: lcl
+   real :: lcl
 
    logical :: liquid2, solid2
    integer(kind=4) :: error
 
-   double precision :: Ttrip, ptrip, E0v, E0s, ggr, rgasa, &
+   real :: Ttrip, ptrip, E0v, E0s, ggr, rgasa, &
       rgasv, cva, cvv, cvl, cvs, cpa, cpv, al, bl, cl, as, bs, cs, &
       pv, qv, cpm, rgasm, rh2, rhl2, rhs2, ldl
    integer :: rh_counter
@@ -167,8 +167,8 @@ function lcl(p,T,rh,rhl,rhs,return_ldl,return_min_lcl_ldl)
 
         implicit none
 
-        double precision :: T        ! In
-        double precision :: pvstarl  ! Out
+        real :: T        ! In
+        real :: pvstarl  ! Out
   
         pvstarl = ptrip * (T/Ttrip)**((cpv-cvl)/rgasv) * &
           exp( (E0v - (cvv-cvl)*Ttrip) / rgasv * (1./Ttrip - 1./T) )
@@ -180,8 +180,8 @@ function lcl(p,T,rh,rhl,rhs,return_ldl,return_min_lcl_ldl)
          
         implicit none
 
-        double precision :: T        ! In
-        double precision :: pvstars  ! Out
+        real :: T        ! In
+        real :: pvstars  ! Out
   
         pvstars = ptrip * (T/Ttrip)**((cpv-cvs)/rgasv) * &
           exp( (E0v + E0s - (cvv-cvs)*Ttrip) / rgasv * (1./Ttrip - 1./T) )
@@ -234,7 +234,7 @@ function bisect ( xx, nb, ner, l )
 !
 !  Parameters:
 !
-!    Input, double precision :: XX, the argument.
+!    Input, real :: XX, the argument.
 !
 !    Input, integer ( kind = 4 ) NB, indicates the branch of the W function.
 !    0, the upper branch;
@@ -248,15 +248,15 @@ function bisect ( xx, nb, ner, l )
 !    1, XX represents the offset of the argument from -exp(-1).
 !    not 1, XX is the actual argument.
 !
-!    Output, double precision :: BISECT, the value of W(X), as determined
+!    Output, real :: BISECT, the value of W(X), as determined
 !
   implicit none
 
-  double precision :: bisect
-!  double precision :: crude
-  double precision :: d
-  double precision :: f
-  double precision :: fd
+  real :: bisect
+!  real :: crude
+  real :: d
+  real :: f
+  real :: fd
   integer ( kind = 4 ) i
   integer ( kind = 4 ) l
   integer ( kind = 4 ) n0
@@ -264,12 +264,12 @@ function bisect ( xx, nb, ner, l )
   integer ( kind = 4 ) nb
   integer ( kind = 4 ), save :: nbits = 0
   integer ( kind = 4 ) ner
-  double precision :: r
-  double precision :: test
-  double precision :: tol
-  double precision :: u
-  double precision :: x
-  double precision :: xx
+  real :: r
+  real :: test
+  real :: tol
+  real :: u
+  real :: x
+  real :: xx
 
   bisect = 0.0D+00
   ner = 0
@@ -414,34 +414,34 @@ function crude ( xx, nb )
 !
 !  Parameters:
 !
-!    Input, double precision :: XX, the argument.
+!    Input, real :: XX, the argument.
 !
 !    Input, integer ( kind = 4 ) NB, indicates the desired branch.
 !    * 0, the upper branch;
 !    * nonzero, the lower branch.
 !
-!    Output, double precision :: CRUDE, the crude approximation to W at XX.
+!    Output, real :: CRUDE, the crude approximation to W at XX.
 !
   implicit none
 
-  double precision :: an2
-  double precision :: c13
-  double precision :: crude
-  double precision :: em
-  double precision :: em2
-  double precision :: em9
-  double precision :: eta
+  real :: an2
+  real :: c13
+  real :: crude
+  real :: em
+  real :: em2
+  real :: em9
+  real :: eta
   integer ( kind = 4 ) init
   integer ( kind = 4 ) nb
-  double precision :: reta
-  double precision :: s2
-  double precision :: s21
-  double precision :: s22
-  double precision :: s23
-  double precision :: t
-  double precision :: ts
-  double precision :: xx
-  double precision :: zl
+  real :: reta
+  real :: s2
+  real :: s21
+  real :: s22
+  real :: s23
+  real :: t
+  real :: ts
+  real :: xx
+  real :: zl
 
   save c13
   save em
@@ -525,7 +525,7 @@ subroutine nbits_compute ( nbits )
 !    function should be calculated.
 !
 !    Most machines use a 24-bit matissa for single precision and
-!    53-56 bits for double precision ::. The IEEE standard is 53
+!    53-56 bits for real ::. The IEEE standard is 53
 !    bits. The Fujitsu VP2200 uses 56 bits. Long word length
 !    machines vary, e.g., the Cray X/MP has a 48-bit mantissa for
 !    single precision.
@@ -559,10 +559,10 @@ subroutine nbits_compute ( nbits )
 !
   implicit none
 
-  double precision :: b
+  real :: b
   integer ( kind = 4 ) i
   integer ( kind = 4 ) nbits
-  double precision :: v
+  real :: v
 
   nbits = 0
 
@@ -701,7 +701,7 @@ function wapr ( x, nb, nerror, l )
 !
 !  Parameters:
 !
-!    Input, double precision :: X, the argument.
+!    Input, real :: X, the argument.
 !
 !    Input, integer ( kind = 4 ) NB, indicates the desired branch.
 !    * 0, the upper branch;
@@ -715,23 +715,23 @@ function wapr ( x, nb, nerror, l )
 !    * 1, X is actually the offset from -(exp-1), so compute W(X-exp(-1)).
 !    * not 1, X is the argument; compute W(X);
 !
-!    Output, double precision :: WAPR, the approximate value of W(X).
+!    Output, real :: WAPR, the approximate value of W(X).
 !
   implicit none
 
-  double precision :: an2
-  double precision :: an3
-  double precision :: an4
-  double precision :: an5
-  double precision :: an6
-  double precision :: c13
-  double precision :: c23
-  double precision :: d12
-  double precision :: delx
-  double precision :: em
-  double precision :: em2
-  double precision :: em9
-  double precision :: eta
+  real :: an2
+  real :: an3
+  real :: an4
+  real :: an5
+  real :: an6
+  real :: c13
+  real :: c23
+  real :: d12
+  real :: delx
+  real :: em
+  real :: em2
+  real :: em9
+  real :: eta
   integer ( kind = 4 ) i
   integer ( kind = 4 ) init
   integer ( kind = 4 ) l
@@ -740,24 +740,24 @@ function wapr ( x, nb, nerror, l )
   integer ( kind = 4 ) nbits
   integer ( kind = 4 ) nerror
   integer ( kind = 4 ) niter
-  double precision :: reta
-  double precision :: s2
-  double precision :: s21
-  double precision :: s22
-  double precision :: s23
-  double precision :: t
-  double precision :: tb
-  double precision :: tb2
-  double precision :: temp
-  double precision :: temp2
-  double precision :: ts
-  double precision :: wapr
-  double precision :: x
-  double precision :: x0
-  double precision :: x1
-  double precision :: xx
-  double precision :: zl
-  double precision :: zn
+  real :: reta
+  real :: s2
+  real :: s21
+  real :: s22
+  real :: s23
+  real :: t
+  real :: tb
+  real :: tb2
+  real :: temp
+  real :: temp2
+  real :: ts
+  real :: wapr
+  real :: x
+  real :: x0
+  real :: x1
+  real :: xx
+  real :: zl
+  real :: zn
 
   save an3
   save an4
