@@ -120,6 +120,8 @@ class CodeBase(Logger):
         # read path names from the default file
         self.path_names = []
         self.compile_flags = []  # users can append to this to add additional compiler options
+        self.precision_compile_flags = ['-DOVERLOAD_C8'] #Default is to use double precision. User can change to single precision using cb.use_single_precision() before compile step 
+        self.env_suffix = ''
 
     @property
     def code_is_available(self):
@@ -255,6 +257,7 @@ class CodeBase(Logger):
         #     compile_flags.append('-O%d' % optimisation)
 
         compile_flags.extend(self.compile_flags)
+        compile_flags.extend(self.precision_compile_flags)        
         compile_flags_str = ' '.join(compile_flags)
 
         # get path_names from the directory
@@ -269,7 +272,7 @@ class CodeBase(Logger):
             'srcdir': self.srcdir,
             'workdir': self.workdir,
             'compile_flags': compile_flags_str,
-            'env_source': env,
+            'env_source': env+self.env_suffix,
             'path_names': path_names_str,
             'executable_name': self.executable_name,
             'run_idb': debug,
@@ -281,6 +284,13 @@ class CodeBase(Logger):
             self._log_line(line)
 
         self.log.info('Compilation complete.')
+
+    def use_single_precision(self):
+            self.log.info('Going to use single_precision')
+            self.precision_compile_flags = ['-DOVERLOAD_C4', '-DOVERLOAD_R4']
+            self.executable_name = self.executable_name.strip('.x')+'_single.x'
+            self.builddir = P(self.workdir, 'build', self.executable_name.split('.')[0])
+            self.env_suffix = '_single' #needs a seperate env file as flags are different
 
 
 

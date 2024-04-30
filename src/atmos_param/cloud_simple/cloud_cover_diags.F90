@@ -7,7 +7,7 @@ module cloud_cover_diags_mod
 #endif
 
   use           fms_mod, only: stdlog, FATAL, WARNING, NOTE, error_mesg, &
-                               uppercase, check_nml_error
+                               uppercase, check_nml_error, file_exist
   use  time_manager_mod, only: time_type
   use  diag_manager_mod, only: register_diag_field, send_data
 
