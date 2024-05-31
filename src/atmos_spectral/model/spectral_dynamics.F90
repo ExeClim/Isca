@@ -1568,7 +1568,7 @@ logical :: used
 real,dimension(2) :: vrange
 character(len=128) :: tname, longname, units
 
-vrange = (/ -10000., 10000. /)
+vrange = (/ -400., 400. /)
 
 rad_to_deg = 180./pi
 call get_grid_boundaries(lonb,latb,global=.true.)

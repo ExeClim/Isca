@@ -79,7 +79,7 @@
         !  cloud & aerosol optical depths, cloud and aerosol specific parameters. Set to zero
         real(kind=rb),allocatable,dimension(:,:,:) :: taucld,tauaer, sw_zro, zro_sw
         ! heating rates and fluxes, zenith angle when in-between radiation time steps
-        real(kind=rb),allocatable,dimension(:,:)   :: sw_flux,lw_flux,zencos, olr, toa_sw, toa_sw_down! surface and TOA fluxes, cos(zenith angle) 
+        real(kind=rb),allocatable,dimension(:,:)   :: sw_flux,lw_flux,zencos, olr, toa_sw! surface and TOA fluxes, cos(zenith angle) 
                                                                             ! dimension (lon x lat)
         real(kind=rb),allocatable,dimension(:,:,:) :: tdt_rad               ! heating rate [K/s]
                                                                             ! dimension (lon x lat x pfull)
@@ -162,8 +162,7 @@
                                                               !  for faster radiation calculation
 
 !!!!!! mp586 added for annual mean insolation!!!!!
-        logical :: do_toa_albedo = .false.
-        real(kind=rb):: alb_scaler = 1.
+
 		logical            :: frierson_solar_rad =.false.
 		real(kind=rb)	   :: del_sol = 0.95 ! frierson 2006 default = 1.4, but 0.95 gets the curve closer to the annual mean insolation 
 		real(kind=rb)	   :: del_sw = 0.0 !frierson 2006 default 
@@ -193,7 +192,7 @@
 !
 !-------------------- diagnostics fields -------------------------------
 
-        integer :: id_tdt_rad, id_tdt_sw, id_tdt_lw, id_coszen, id_flux_sw, id_flux_lw, id_olr, id_toa_sw, id_toa_sw_down, id_albedo,id_ozone, id_co2, id_fracday, id_half_level_temp, id_full_level_temp
+        integer :: id_tdt_rad, id_tdt_sw, id_tdt_lw, id_coszen, id_flux_sw, id_flux_lw, id_olr, id_toa_sw, id_albedo,id_ozone, id_co2, id_fracday, id_half_level_temp, id_full_level_temp
         character(len=14), parameter :: mod_name_rad = 'rrtm_radiation' !s changed parameter name from mod_name to mod_name_rad as compiler objected, presumably because mod_name also defined in idealized_moist_physics.F90 after use rrtm_vars is included. 
         real :: missing_value = -999.
 
@@ -211,7 +210,7 @@
              &lonstep, do_zm_tracers, do_zm_rad, &
              &do_precip_albedo, precip_albedo_mode, precip_albedo, precip_lat,&
              &do_read_co2, co2_file, co2_variable_name, use_dyofyr, solrad, &
-             &solday, equinox_day,solr_cnst,do_toa_albedo,alb_scaler
+             &solday, equinox_day,solr_cnst
 
       end module rrtm_vars
 !*****************************************************************************************
@@ -305,10 +304,6 @@
 	      id_toa_sw = &
 	           register_diag_field ( mod_name_rad, 'toa_sw', axes(1:2), Time, &
 	             'Net TOA SW flux', &
-	             'W/m2', missing_value=missing_value               )
-	      id_toa_sw_down = &
-	           register_diag_field ( mod_name_rad, 'toa_sw_down', axes(1:2), Time, &
-	             'Downward TOA SW flux', &
 	             'W/m2', missing_value=missing_value               )
           id_albedo  = &
                register_diag_field ( mod_name_rad, 'rrtm_albedo', axes(1:2), Time, &
@@ -468,8 +463,6 @@
 	           allocate(olr(size(lonb,1)-1,size(latb,2)-1))
 	      if(id_toa_sw > 0) &
 	           allocate(toa_sw(size(lonb,1)-1,size(latb,2)-1))
-	      if(id_toa_sw_down > 0) &
-	           allocate(toa_sw_down(size(lonb,1)-1,size(latb,2)-1))
           if(do_precip_albedo)allocate(rrtm_precip(size(lonb,1)-1,size(latb,2)-1))
           if(store_intermediate_rad .or. id_tdt_rad > 0)&
                allocate(tdt_rad(size(lonb,1)-1,size(latb,2)-1,nlay))
@@ -598,11 +591,10 @@
           real(kind=rb),dimension(size(q,1)/lonstep,size(q,2),size(q,3)  ) :: swijk,lwijk
           real(kind=rb),dimension(size(q,1)/lonstep,size(q,2)) :: swflxijk,lwflxijk
           real(kind=rb),dimension(ncols_rrt,nlay_rrt+1):: phalf,thalf
-          real(kind=rb),dimension(ncols_rrt)   :: tsrf,cosz_rr,albedo_rr, cloud_coalb_spatial_rr
+          real(kind=rb),dimension(ncols_rrt)   :: tsrf,cosz_rr,albedo_rr
           real(kind=rb) :: dlon,dlat,dj,di 
           type(time_type) :: Time_loc
           real(kind=rb),dimension(size(q,1),size(q,2)) :: albedo_loc
-          real(kind=rb),dimension(size(q,1),size(q,2)) :: cloud_coalb_spatial
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: q_tmp, h2o_vmr
           real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
           real(kind=rb),dimension(size(q,1),size(q,2)) :: p2 !mp586 addition for annual mean insolation
@@ -656,15 +648,8 @@
 !!!!! mp586 addition for annual mean insolation !!!!!
 !!!! following https://github.com/sit23/Isca/blob/master/src/atmos_param/socrates/interface/socrates_interface.F90#L888 !!!!
 
-       p2     = (1. - 3.*sin(lat(:,:))**2)/4.
-       if (do_toa_albedo) then 
-           !cloud_coalb_spatial(:,:) = (0.75 + 0.15 * 2. * p2(:,:))*alb_scaler  - (alb_scaler - 1.)
-           cloud_coalb_spatial(:,:) = (0.87 + 0.05 * 2. * p2(:,:))*alb_scaler  - (alb_scaler - 1.)
-       else
-           cloud_coalb_spatial(:,:) = 1.
-       endif 
-
-       if (frierson_solar_rad) then
+       	if (frierson_solar_rad) then
+            p2     = (1. - 3.*sin(lat(:,:))**2)/4.
             coszen = 0.25 * (1.0 + del_sol * p2 + del_sw * sin(lat(:,:)))
             rrsun  = 1 ! needs to be set, set to 1 so that stellar_radiation is unchanged in socrates_interface
        else
@@ -823,7 +808,6 @@
           cosz_rr   = reshape(coszen    (1:si:lonstep,:),(/ si*sj/lonstep /))
           albedo_rr = reshape(albedo_loc(1:si:lonstep,:),(/ si*sj/lonstep /))
           tsrf      = reshape(t_surf_rad(1:si:lonstep,:),(/ si*sj/lonstep /))
-          cloud_coalb_spatial_rr = reshape(cloud_coalb_spatial    (1:si:lonstep,:),(/ si*sj/lonstep /))
           
 !---------------------------------------------------------------------------------------------------------------
 ! now actually run RRTM
@@ -850,7 +834,7 @@
                   pfull     , phalf    , tfull    , thalf        , tsrf         , &
                   h2o       , o3       , co2      , ch4_val*ones , n2o_val*ones , o2_val*ones , &
                   albedo_rr , albedo_rr, albedo_rr, albedo_rr, &
-                  cosz_rr   , cloud_coalb_spatial_rr, solrad   , dyofyr   , solr_cnst, &
+                  cosz_rr   , solrad   , dyofyr   , solr_cnst, &
                   inflglw   , iceflglw , liqflglw , &
                   ! cloud parameters
                   zeros     , taucld   , sw_zro   , sw_zro   , sw_zro , &
@@ -864,7 +848,7 @@
                   pfull     , phalf    , tfull    , thalf    , tsrf , &
                   h2o       , o3       , co2      , zeros    , zeros, zeros, &
                   albedo_rr , albedo_rr, albedo_rr, albedo_rr, &
-                  cosz_rr   , cloud_coalb_spatial_rr, solrad   , dyofyr   , solr_cnst, &
+                  cosz_rr   , solrad   , dyofyr   , solr_cnst, &
                   inflglw   , iceflglw , liqflglw , &
                   ! cloud parameters
                   zeros     , taucld   , sw_zro   , sw_zro   , sw_zro , &
@@ -1023,21 +1007,6 @@
                 enddo
              enddo
           endif
-          if(id_toa_sw_down > 0)then 
-             swflxijk = reshape(swdflx(:,sk+1),(/ si/lonstep,sj /)) ! net TOA SW flux, +ve down
-             dlon=1./lonstep
-             do i=1,size(swijk,1)
-                i1 = i+1
-                ! close toroidally
-                if(i1 > size(swijk,1)) i1=1
-                do ij=1,lonstep
-                   di = (ij-1)*dlon
-                   ij1 = (i-1)*lonstep + ij
-                   toa_sw_down(ij1,:) = di*swflxijk(i1,:) + (1.-di)*swflxijk(i ,:)
-                enddo
-             enddo
-          endif
-          
 		  
 		  
 
@@ -1060,8 +1029,7 @@
           use rrtm_vars,only:         sw_flux,lw_flux,zencos,tdt_rad,tdt_sw_rad,tdt_lw_rad,t_half,&
                                       &id_tdt_rad,id_tdt_sw,id_tdt_lw,id_coszen,&
                                       &id_flux_sw,id_flux_lw,id_albedo,id_ozone, id_co2, id_fracday,&
-									  &id_olr,id_toa_sw,id_toa_sw_down,olr,toa_sw,toa_sw_down,&
-                                      id_half_level_temp, id_full_level_temp
+									  &id_olr,id_toa_sw,olr,toa_sw, id_half_level_temp, id_full_level_temp
           use diag_manager_mod, only: register_diag_field, send_data
           use time_manager_mod,only:  time_type
 
@@ -1112,10 +1080,6 @@
 !------- Net SW toa flux                   ------------
 		  if ( id_toa_sw > 0 ) then
              used = send_data ( id_toa_sw, toa_sw, Time)
-           endif
-!------- Downward SW toa flux                   ------------
-		  if ( id_toa_sw_down > 0 ) then
-             used = send_data ( id_toa_sw_down, toa_sw_down, Time)
            endif
 !------- Interactive albedo                    ------------
           if ( present(albedo_loc)) then

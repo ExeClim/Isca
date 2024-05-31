@@ -130,7 +130,7 @@ character(len=256) :: flux_lhe_anom_file_name  = 'INPUT/flux_lhe_anom.nc'
 character(len=256) :: flux_lhe_anom_field_name = 'flux_lhe_anom'
 
 ! THERMO ICE OPTIONS - NTL 01/23
-logical :: do_explicit = .false. ! explicit or implicit timestepping for ice
+logical :: do_explicit = .false. ! explicit or implicit timestepping for ocean covered surface 
 logical :: do_thermo_ice = .false. ! do thermodynamic sea ice? 
 real :: thermo_ice_albedo = 0.4 ! from Feldl & Merlis - original XZ is 0.8, M. England 0.6 
 real :: L_thermo_ice = DENS_ICE * HLF ! latent heat of fusion (J/m^3) 
@@ -138,19 +138,16 @@ real, parameter  :: k_thermo_ice = 2 ! conductivity of ice (W/m/K)
 real, parameter  :: thermo_ice_basal_flux_const = 120 ! linear coefficient for heat flux from ocean to ice base (W/m^2/K)
 real :: t_thermo_ice_base = TFREEZE ! temperature at base of ice, taken to be freshwater freezing point
 real :: t_surf_freeze = TFREEZE
-logical :: do_var_thermo_ice_albedo = .false.
 real :: thermo_ice_nudge_timescale = 7. * 86400. 
 logical :: do_nudge_ice = .false. 
 logical :: do_nudging_correction = .false.
-logical :: correct_nh_only = .false.
-logical :: diff_correction = .false.
 character(len=256) :: nudge_ice_file_name = 'nudge_ice'
 logical :: time_varying_nudge_ice = .false.
 logical :: do_prescribe_albedo = .false.
 character(len=256) :: albedo_file_name = 'albedo'
 logical :: time_varying_albedo = .false.
 logical :: prescribe_nh_albedo_only = .false.
-logical :: read_const_correct = .true. 
+logical :: read_const_correct = .true. ! set to false if doing nudging, and want to restart from simulation with no nudging
 logical :: read_nudge_out = .true. 
 logical :: albedo_from_nudge_file = .false.
 
@@ -172,11 +169,10 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               ice_concentration_threshold,                   &
                               add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
                               flux_lhe_anom_field_name, do_ape_sst, qflux_field_name,&
-                              do_explicit, do_thermo_ice, thermo_ice_albedo, t_surf_freeze, t_thermo_ice_base, & 
-                              do_var_thermo_ice_albedo,& ! ICE, NTL 01/23
+                              do_explicit, do_thermo_ice, thermo_ice_albedo, t_surf_freeze, t_thermo_ice_base, & ! NTL ice 
                               do_nudge_ice, nudge_ice_file_name, thermo_ice_nudge_timescale, time_varying_nudge_ice, &
-                              do_nudging_correction, correct_nh_only, do_prescribe_albedo, time_varying_albedo, albedo_file_name, &
-                              prescribe_nh_albedo_only, diff_correction, read_const_correct, read_nudge_out, albedo_from_nudge_file
+                              do_nudging_correction, do_prescribe_albedo, time_varying_albedo, albedo_file_name, &
+                              prescribe_nh_albedo_only, read_const_correct, read_nudge_out, albedo_from_nudge_file
 
 !=================================================================================================================================
 
@@ -199,11 +195,6 @@ integer ::                                                                    &
      id_h_thermo_ice,             &   ! sea ice thickness
      id_t_ml,              &   ! mixed layer temperature
      id_flux_thermo_ice, &              ! conductive heat flux through ice
-     id_ice_nudge_flux, &
-     id_ice_nudge_correction, &
-     id_ice_nudge_flux_avg, &
-     id_ice_nudge_correction_avg, &
-     id_ice_nudge_correction_chk !NTL_DELETE
 
 real, allocatable, dimension(:,:)   ::                                        &
      ocean_qflux,           &   ! Q-flux
@@ -242,7 +233,6 @@ real, allocatable, dimension(:,:)   ::                                        &
      flux_thermo_ice,              &   ! Conductive heat flux through ice
      corrected_flux_noq
 real, allocatable, dimension(:,:) :: h_thermo_ice_in, nudge_flux, nudge_correction, albedo_in
-real, allocatable, dimension(:,:) :: delta_t_surf_correct, delta_t_surf_nocorrect !NTL_DELETE
 real :: const_nudge_correction 
 type(interpolate_type),save :: nudge_ice_interp
 type(interpolate_type),save :: albedo_interp
@@ -351,8 +341,6 @@ allocate(h_thermo_ice_in         (is:ie, js:je))
 allocate(albedo_in               (is:ie, js:je))
 allocate(nudge_flux              (is:ie, js:je))
 allocate(nudge_correction        (is:ie, js:je))
-allocate(delta_t_surf_nocorrect  (is:ie, js:je)) !NTL_DELETE
-allocate(delta_t_surf_correct    (is:ie, js:je)) !NTL_DELETE
 !
 !see if restart file exists for the surface temperature
 !
@@ -440,9 +428,6 @@ elseif (prescribe_initial_dist) then
         albedo(:,:) = albedo_value
         where(land) albedo(:,:) = land_albedo_prefactor * albedo_value
         albedo_initial(:,:) = albedo (:,:)
-        !where(.not. land)
-        !    where (t_surf .lt. TFREEZE) albedo(:,:) = thermo_ice_albedo
-        !endwhere 
     else if (do_prescribe_albedo) then 
         albedo(:,:) = albedo_value
         where(land) albedo(:,:) = land_albedo_prefactor * albedo_value
@@ -479,16 +464,6 @@ if (update_albedo_from_ice .or. do_thermo_ice .or. do_prescribe_albedo) then
                                         axes(1:2), Time, 'mixed layer tempeature','K')
         id_flux_thermo_ice = register_diag_field(mod_name, 'flux_thermo_ice',        &
                                         axes(1:2), Time, 'conductive heat flux through sea ice','watts/m2')
-        id_ice_nudge_flux   = register_diag_field(mod_name, 'ice_nudge_flux',        &
-                                        axes(1:2), Time, 'nudging heat flux','watts/m2')     
-        id_ice_nudge_correction   = register_diag_field(mod_name, 'ice_nudge_correction',        &
-                                        axes(1:2), Time, 'nudging heat flux correction','watts/m2')   
-        id_ice_nudge_correction_chk   = register_diag_field(mod_name, 'ice_nudge_correction_chk',        &
-                                        axes(1:2), Time, 'nudging heat flux correction check','watts/m2') !NTL_DELETE 
-        id_ice_nudge_flux_avg   = register_diag_field(mod_name, 'ice_nudge_flux_avg',        &
-                                        Time, 'nudging heat flux','watts/m2')     
-        id_ice_nudge_correction_avg   = register_diag_field(mod_name, 'ice_nudge_correction_avg',        &
-                                        Time, 'nudging heat flux correction','watts/m2')                                                      
     else                                   
         id_ice_conc = register_diag_field(mod_name, 'ice_conc',    &
                                      axes(1:2), Time, 'ice_concentration', 'none')
@@ -529,7 +504,8 @@ if (load_qflux) then
 endif
 
 
-h_thermo_ice_in = 999. ! large number stops this doing anything if do_nudge_ice is false 
+h_thermo_ice_in = 999. ! this is used to determine whether nudging should occur 
+                       ! setting a large number ensures this will do nothing if not initialised from external file
 ! load ice
 if (do_nudge_ice .or. albedo_from_nudge_file) then
     if (time_varying_nudge_ice .or. albedo_from_nudge_file) then
@@ -876,22 +852,7 @@ corrected_flux = - net_surf_sw_down - surf_lw_down + alpha_t * CP_AIR + alpha_lw
 t_surf_dependence = beta_t * CP_AIR + beta_lw
 
 
-!nudge_out = 0.0
-!where ((h_thermo_ice .gt. 0) .and. (h_thermo_ice .le. 0.1)) 
-!nudge_out = h_thermo_ice / (86400./4.) * L_thermo_ice 
-!endwhere 
-!corrected_flux = corrected_flux - nudge_out 
-!const_nudge_correction = 0.0 
-!const_correct = 0.0
-!const_nudge_correction = -area_weighted_global_mean(nudge_out)
-!if (.not. (const_nudge_correction .eq. 0.)) then 
-!        where (nudge_out .eq. 0.) 
-!            const_correct(:,:) = const_nudge_correction 
-!        endwhere 
-!    const_correct = const_correct * const_nudge_correction / area_weighted_global_mean(const_correct)
-!    !const_correct(:,:) = -area_weighted_global_mean(nudge_out) !-area_weighted_global_mean(nudge_flux * L_thermo_ice/dt) 
-!    corrected_flux = corrected_flux - const_correct
-!endif 
+
 
 
 
@@ -914,17 +875,10 @@ const_correct = 0.0
 if (do_nudging_correction) then 
   const_nudge_correction = -area_weighted_global_mean(nudge_out)
   if (.not. (const_nudge_correction .eq. 0.)) then 
-    if (correct_nh_only) then 
-      where ((nudge_out .eq. 0.) .and. (rad_lat_2d .gt. 0))
-        const_correct(:,:) = const_nudge_correction 
-      endwhere 
-    else 
-      where (nudge_out .eq. 0.) 
-        const_correct(:,:) = const_nudge_correction 
-      endwhere 
-    endif 
+    where (nudge_out .eq. 0.) 
+      const_correct(:,:) = const_nudge_correction 
+    endwhere 
     const_correct = const_correct * const_nudge_correction / area_weighted_global_mean(const_correct)
-    !const_correct(:,:) = -area_weighted_global_mean(nudge_out) !-area_weighted_global_mean(nudge_flux * L_thermo_ice/dt) 
     corrected_flux = corrected_flux - const_correct
   endif 
 endif 
@@ -1025,7 +979,6 @@ else if (do_thermo_ice) then
         ! = update state =
         t_ml = t_ml + delta_t_ml
         h_thermo_ice = h_thermo_ice + delta_h_thermo_ice
-        !albedo_out(:,:) = albedo_value * land_albedo_prefactor
     elsewhere 
     
         ! NTL 01/23 thermodynamic sea ice
@@ -1064,10 +1017,6 @@ else if (do_thermo_ice) then
          elsewhere ! = ice-covered = ( h>0 )
            delta_t_ml = - ( thermo_ice_basal_flux_const * ( t_ml - t_thermo_ice_base ) - ocean_qflux ) * dt / land_sea_heat_capacity
            delta_h_thermo_ice = ( corrected_flux_noq - thermo_ice_basal_flux_const * ( t_ml - t_thermo_ice_base ) ) * dt / L_thermo_ice
-           !where (h_thermo_ice_in .le. 0 ) ! by default h_thermo_ice_in is zero and this doesn't do anything 
-           !  nudge_flux = - h_thermo_ice_in / thermo_ice_nudge_timescale * dt
-           !  delta_h_thermo_ice = delta_h_thermo_ice + nudge_flux 
-           !endwhere 
          endwhere
          
          where ( t_ml + delta_t_ml .lt. t_surf_freeze ) ! = frazil growth =
@@ -1078,15 +1027,6 @@ else if (do_thermo_ice) then
          where ( ( h_thermo_ice .gt. 0 ) .and. ( h_thermo_ice + delta_h_thermo_ice .le. 0 ) ) ! = complete ablation =
            delta_t_ml = delta_t_ml - ( h_thermo_ice + delta_h_thermo_ice ) * L_thermo_ice/land_sea_heat_capacity
            delta_h_thermo_ice = - h_thermo_ice
-
-        !  elsewhere ( ( h_thermo_ice .gt. 0 ) .and. ( h_thermo_ice + delta_h_thermo_ice - h_thermo_ice / thermo_ice_nudge_timescale * dt .le. 0 ) .and. (h_thermo_ice_in .le. 0 )) ! by default h_thermo_ice_in is 999 and this doesn't do anything 
-        !    nudge_flux = (h_thermo_ice + delta_h_thermo_ice) 
-        !    ! no need to update delta_t_ml as dT_ml = dT_ml - (h + dh + n_f), but this = dT_ml 
-        !    delta_h_thermo_ice = - h_thermo_ice
-        !  elsewhere ( (h_thermo_ice .gt. 0) .and. ( h_thermo_ice + delta_h_thermo_ice - h_thermo_ice / thermo_ice_nudge_timescale * dt .gt. 0 ) .and. (h_thermo_ice_in .le. 0 ))  ! by default h_thermo_ice_in is 999 and this doesn't do anything 
-        !    nudge_flux = h_thermo_ice / thermo_ice_nudge_timescale * dt
-        !    delta_h_thermo_ice = delta_h_thermo_ice - nudge_flux 
-
          endwhere
          
          ! = update surface temperature =
@@ -1117,125 +1057,17 @@ else if (do_thermo_ice) then
        
     endwhere 
     
-    ! delta_t_surf_nocorrect = delta_t_surf !NTL_DELETE
     
-    ! ! do nudging correction to ice free area
-    ! if (do_nudging_correction) then 
-    !   if(.not. diff_correction) then 
-    !     const_nudge_correction = -area_weighted_global_mean(nudge_flux * L_thermo_ice/land_sea_heat_capacity) 
-        
-    !     if (.not. (const_nudge_correction .eq. 0.)) then 
-    !         where ( h_thermo_ice .le. 0. )
-    !           nudge_correction = const_nudge_correction
-    !         endwhere 
-    
-    !         nudge_correction = nudge_correction * const_nudge_correction / area_weighted_global_mean(nudge_correction)
-    
-    !         where ( h_thermo_ice .le. 0. )
-    !           delta_t_surf = delta_t_surf + nudge_correction 
-    !           t_surf = t_surf + nudge_correction
-    !           delta_t_ml = delta_t_ml + nudge_correction !NTL_NEWCODE
-    !           t_ml = t_ml + nudge_correction !NTL_NEWCODE
-    !         endwhere 
-    !     endif       
-    !   else if (diff_correction) then 
-    
-    ! ! do nudging correction to all locs where there is no nudging 
-    ! !if (do_nudging_correction) then 
-    !     const_nudge_correction = -area_weighted_global_mean(nudge_flux * L_thermo_ice/land_sea_heat_capacity) 
-        
-    !     if (.not. (const_nudge_correction .eq. 0.)) then 
-    !         where ( nudge_flux .eq. 0. )
-    !           nudge_correction = const_nudge_correction
-    !         endwhere 
-
-    !         nudge_correction = nudge_correction * const_nudge_correction / area_weighted_global_mean(nudge_correction)
-            
-    !         where ( nudge_flux .eq. 0. )
-    !             where ( h_thermo_ice .le. 0. )
-    !               delta_t_surf = delta_t_surf + nudge_correction 
-    !               t_surf = t_surf + nudge_correction
-    !               delta_t_ml = delta_t_ml + nudge_correction !NTL_NEWCODE
-    !               t_ml = t_ml + nudge_correction !NTL_NEWCODE
-    !             elsewhere (h_thermo_ice .gt. 0.)
-    !               h_thermo_ice = h_thermo_ice - delta_h_thermo_ice
-    !               t_surf = t_surf - delta_t_thermo_ice
-    !               delta_h_thermo_ice = delta_h_thermo_ice - nudge_correction*depth*RHO_CP/L_thermo_ice 
-    !               flux_thermo_ice = k_thermo_ice / (h_thermo_ice + delta_h_thermo_ice) * ( t_thermo_ice_base - t_surf )
-    !               delta_t_thermo_ice = ( - corrected_flux_noq + flux_thermo_ice ) &
-    !                             / ( k_thermo_ice / (h_thermo_ice + delta_h_thermo_ice) + dFdt_surf )
-    !               where ( t_surf + delta_t_thermo_ice .gt. t_surf_freeze ) ! surface ablation
-    !                 delta_t_thermo_ice = t_surf_freeze - t_surf
-    !               endwhere
-    !               ! surface is ice-covered, so update t_surf as ice surface temperature
-    !               delta_t_surf = delta_t_thermo_ice
-    !               t_surf = t_surf + delta_t_thermo_ice
-    !               h_thermo_ice = h_thermo_ice + delta_h_thermo_ice
-    !             endwhere 
-    !         endwhere 
-    !     endif
-    !   endif
-    ! endif 
-    ! ! end of nudging correction 
-
-            !  elsewhere ( ( h_thermo_ice .gt. 0 ) .and. ( h_thermo_ice + delta_h_thermo_ice - h_thermo_ice / thermo_ice_nudge_timescale * dt .le. 0 ) .and. (h_thermo_ice_in .le. 0 )) ! by default h_thermo_ice_in is 999 and this doesn't do anything 
-        !    nudge_flux = (h_thermo_ice + delta_h_thermo_ice) 
-        !    ! no need to update delta_t_ml as dT_ml = dT_ml - (h + dh + n_f), but this = dT_ml 
-        !    delta_h_thermo_ice = - h_thermo_ice
-        !  elsewhere ( (h_thermo_ice .gt. 0) .and. ( h_thermo_ice + delta_h_thermo_ice - h_thermo_ice / thermo_ice_nudge_timescale * dt .gt. 0 ) .and. (h_thermo_ice_in .le. 0 ))  ! by default h_thermo_ice_in is 999 and this doesn't do anything 
-        !    nudge_flux = h_thermo_ice / thermo_ice_nudge_timescale * dt
-        !    delta_h_thermo_ice = delta_h_thermo_ice - nudge_flux 
-
-
-
-    ! if (do_nudge_ice) then 
-    !   where ((h_thermo_ice .gt. 0) .and. (h_thermo_ice_in .le. 0)) 
-    !     nudge_out = h_thermo_ice / thermo_ice_nudge_timescale * L_thermo_ice 
-    !   elsewhere 
-    !     nudge_out = 0.0
-    !   endwhere 
-    ! endif 
-      
-
-    ! if (do_nudging_correction) then 
-    !   const_nudge_correction = -area_weighted_global_mean(nudge_out)
-    !   where (nudge_out .eq. 0.) 
-    !    const_correct(:,:) = const_nudge_correction 
-    !   elsewhere 
-    !    const_correct(:,:) = 0.0
-    !   endwhere 
-    !   const_correct = const_correct * const_nudge_correction / area_weighted_global_mean(const_correct)
-    !   !const_correct(:,:) = -area_weighted_global_mean(nudge_out) !-area_weighted_global_mean(nudge_flux * L_thermo_ice/dt) 
-    ! else 
-    !   const_correct(:,:) = 0.0 
-    ! endif 
-
-    
-    !delta_t_surf_correct = delta_t_surf - delta_t_surf_nocorrect !NTL_DELETE 
-    
-    
-    ! compute albedo     
-    if (do_var_thermo_ice_albedo) then 
-        where (land_ice_mask)
-            albedo_out(:,:) = albedo_value * land_albedo_prefactor
+    ! compute albedo
+    where (land_ice_mask)
+        albedo_out(:,:) = albedo_value * land_albedo_prefactor
+    elsewhere 
+        where ( h_thermo_ice .gt. 0.0 )
+            albedo_out(:,:) = thermo_ice_albedo
         elsewhere 
-            where ( h_thermo_ice .gt. 0.0 )
-                albedo_out(:,:) = albedo_value + (thermo_ice_albedo - albedo_value) * tanh((h_thermo_ice)/1.)
-            elsewhere 
-                albedo_out(:,:) = albedo_value 
-            endwhere
-        endwhere   
-    else 
-        where (land_ice_mask)
-            albedo_out(:,:) = albedo_value * land_albedo_prefactor
-        elsewhere 
-            where ( h_thermo_ice .gt. 0.0 )
-                albedo_out(:,:) = thermo_ice_albedo
-            elsewhere 
-                albedo_out(:,:) = albedo_value 
-            endwhere
-        endwhere   
-    endif 
+            albedo_out(:,:) = albedo_value 
+        endwhere
+    endwhere 
 
 
     if (do_prescribe_albedo) then 
@@ -1288,11 +1120,6 @@ if(id_delta_t_surf > 0)   used = send_data(id_delta_t_surf, delta_t_surf, Time_n
 if(id_h_thermo_ice > 0) used = send_data(id_h_thermo_ice, h_thermo_ice, Time_next)
 if(id_t_ml > 0) used = send_data(id_t_ml, t_ml, Time_next)
 if(id_flux_thermo_ice > 0) used = send_data(id_flux_thermo_ice, flux_thermo_ice, Time_next)
-if(id_ice_nudge_flux > 0) used = send_data(id_ice_nudge_flux, L_thermo_ice * nudge_flux / dt, Time_next)
-if(id_ice_nudge_correction > 0) used = send_data(id_ice_nudge_correction, land_sea_heat_capacity * nudge_correction / dt, Time_next)
-if(id_ice_nudge_correction_chk > 0) used = send_data(id_ice_nudge_correction_chk, land_sea_heat_capacity * delta_t_surf_correct / dt, Time_next) ! NTL_DELETE
-if(id_ice_nudge_flux_avg > 0) used = send_data(id_ice_nudge_flux_avg, area_weighted_global_mean(L_thermo_ice * nudge_flux / dt), Time_next)
-if(id_ice_nudge_correction_avg > 0) used = send_data(id_ice_nudge_correction_avg, area_weighted_global_mean(land_sea_heat_capacity * nudge_correction / dt), Time_next)
 
 end subroutine mixed_layer
 

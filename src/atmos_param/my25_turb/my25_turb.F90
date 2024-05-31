@@ -27,15 +27,14 @@
 
  use mpp_mod,           only : input_nml_file
  use fms_mod,           only : file_exist, open_namelist_file, error_mesg, &
-                               FATAL, close_file, note, read_data, write_data,         &
+                               FATAL, close_file, note, read_data,          &
                                check_nml_error, mpp_pe, mpp_root_pe, &
-                               write_version_number, stdlog, open_restart_file, nullify_domain
+                               write_version_number, stdlog, open_restart_file
  use fms_io_mod,        only : register_restart_field, restart_file_type, &
                                save_restart, restore_state
  use tridiagonal_mod,   only : tri_invert, close_tridiagonal
  use constants_mod,     only : grav, vonkarm
  use monin_obukhov_mod, only : mo_diff
- use transforms_mod, only: grid_domain
 
 !---------------------------------------------------------------------
  implicit none
@@ -707,16 +706,14 @@ end subroutine get_tke
 ! --- Input TKE
 !---------------------------------------------------------------------
 
-  id_restart = register_restart_field(Tur_restart, 'my25_turb.res.nc', 'TKE', TKE)
+  id_restart = register_restart_field(Tur_restart, 'my25_turb.res', 'TKE', TKE)
   if (file_exist( 'INPUT/my25_turb.res.nc' )) then
       if (mpp_pe() == mpp_root_pe() ) then
         call error_mesg ('my25_turb_mod',  'MY25_TURB_INIT:&
              &Reading netCDF formatted restart file: &
                                  &INPUT/my25_turb.res.nc', NOTE)
       endif
-      !call restore_state(Tur_restart)
-      call nullify_domain()
-      call read_data(trim('INPUT/my25_turb.res'), 'TKE',   TKE, grid_domain)
+      call restore_state(Tur_restart)
 
   else if( FILE_EXIST( 'INPUT/my25_turb.res' ) ) then
 
@@ -784,9 +781,7 @@ subroutine my25_turb_restart(timestamp)
 !    write out the restart data which is always needed, regardless of
 !    when the first donner calculation step is after restart.
 !----------------------------------------------------------------------
-  !call save_restart(Tur_restart, timestamp)
-  call nullify_domain()
-  call write_data(trim('RESTART/my25_turb.res'), 'TKE', TKE, grid_domain)
+  call save_restart(Tur_restart, timestamp)
 
 end subroutine my25_turb_restart
 ! </SUBROUTINE> NAME="my25_turb_restart"

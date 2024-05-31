@@ -1,4 +1,4 @@
-name: isca_env2
+name: isca_env
 channels:
 - conda-forge
 dependencies:
