@@ -908,8 +908,6 @@ if (do_thermo_ice) then
     const_nudge_correction = 0.
     ! for calculation of ice sfc temperature
     dFdt_surf = dhdt_surf + drdt_surf + HLV * (dedt_surf) ! d(corrected_flux)/d(T_surf)
-    delta_t_surf_correct = 0. !NTL_DELETE
-    delta_t_surf_nocorrect = 0. !NTL_DELETE
 endif 
 
 !s Surface heat_capacity calculation based on that in MiMA by mj
