@@ -200,9 +200,9 @@ integer ::                                                                    &
      id_ice_conc,          &   ! st ice concentration
      id_delta_t_surf,      &
      ! NTL 01/23 thermodynamic sea ice 
-     id_h_thermo_ice,             &   ! sea ice thickness
+     id_h_thermo_ice,      &   ! sea ice thickness
      id_t_ml,              &   ! mixed layer temperature
-     id_flux_thermo_ice    &              ! conductive heat flux through ice
+     id_flux_thermo_ice        ! conductive heat flux through ice
 
 real, allocatable, dimension(:,:)   ::                                        &
      ocean_qflux,           &   ! Q-flux
