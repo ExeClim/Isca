@@ -714,7 +714,7 @@ case(B_GEEN)
   end do
   lw_up = lw_up + lw_up_win
 
-case(B_FRIERSON)
+case(B_FRIERSON, B_BYRNE)
   ! compute upward longwave flux by integrating upward
   lw_up(:,:,n+1)    = b_surf
   do k = n, 1, -1
