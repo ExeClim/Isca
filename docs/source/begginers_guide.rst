@@ -1,7 +1,7 @@
 Isca Beginner's Guide
 ====================
 
-Below is a list of reading and activites that will help you get comfortable using Isca. Be assured that your supervisor/tutor will not expect you to be fluent with this when you start using Isca, but it will help to have an idea of what to expect when you start running the model.
+Below is a list of reading and activities that will help you get comfortable using Isca. Be assured that your supervisor/tutor will not expect you to be fluent with this when you start using Isca, but it will help to have an idea of what to expect when you start running the model.
 
 This document is essentially a suggestion of signposts. With this kind of work, self-study and initiative is very important. It is up to you to go and research the topics until you feel comfortable.
 
@@ -112,7 +112,7 @@ Now you have made plots – or indeed any file you want to transfer between the 
 
 *SFTP (SSH File Transfer Protocol)* is one, it will work on all operating systems and is the easiest for windows. One way of using SFTP is with an *SFTP client*, many are available. One of them is `Cyberduck <https://cyberduck.io>`_. It will require setting up but it is fairly straight forward. These clients tend to have a GUI so you can just drag and drop the files you want to transfer. It is also possible to view and transfer files using the native file browser if you're using Linux or macOS, using their built-in functions to connect via SFTP.
 
-Other option is to use a command line function, for example ``scp``. This is a secure file copy protol, which uses SSH. The usage is simple, for example on the computer you want to transfer the file to, type:
+Other option is to use a command line function, for example ``scp``. This is a secure file copy protocol, which uses SSH. The usage is simple, for example on the computer you want to transfer the file to, type:
 
 ``scp USER@COMPUTERNAME.ex.ac.uk:/path_to_file/file.png /path_to_destination/``
 

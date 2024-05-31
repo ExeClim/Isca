@@ -142,6 +142,7 @@ exp.namelist = namelist = Namelist({
         'do_read_ozone':True,
         'ozone_file':'ozone_1990',
         'dt_rad': 3600, #Set RRTM radiation timestep to 3600 seconds, meaning it runs every 5 atmospheric timesteps
+
     },
 
     # FMS Framework configuration

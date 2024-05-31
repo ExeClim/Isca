@@ -144,8 +144,8 @@ subroutine vert_turb_driver (is, js, Time, Time_next, dt, tdtlw,     &
                              p_half, p_full, z_half, z_full, u_star,   &
                              b_star, q_star, rough, lat, convect,      &
                              u, v, t, q, r, um, vm, tm, qm, rm,        &
-                             udt, vdt, tdt, qdt, rdt, diff_t, diff_m,  &
-                             gust, z_pbl, mask, kbot                   )
+                             udt, vdt, tdt, qdt, rdt, ind_lcl, do_lcl_diffusivity_depth, diff_t, diff_m,  &
+                             gust, z_pbl, mask, kbot           )
 
 !-----------------------------------------------------------------------
 integer,         intent(in)         :: is, js
@@ -159,6 +159,8 @@ logical, intent(in), dimension(:,:) :: convect
                                          u, v, t, q, um, vm, tm, qm, &
                                          udt, vdt, tdt, qdt
    real, intent(in) ,   dimension(:,:,:,:) :: r, rm, rdt
+   integer, intent(in), dimension(:,:) :: ind_lcl
+   logical, intent(in) :: do_lcl_diffusivity_depth
    real, intent(out),   dimension(:,:,:) :: diff_t, diff_m
    real, intent(out),   dimension(:,:)   :: gust, z_pbl 
    real, intent(in),optional, dimension(:,:,:) :: mask
@@ -306,11 +308,15 @@ if (do_mellor_yamada) then
 !---------------------------
 !------------------- non-local K scheme --------------
 
-
-    call diffusivity ( tt, qq, uu, vv, p_full, p_half, z_full, z_half,   &
-                       u_star, b_star, z_pbl, diff_m, diff_t, &
-                       kbot = kbot)
-
+    if (do_lcl_diffusivity_depth) then 
+      call diffusivity ( tt, qq, uu, vv, p_full, p_half, z_full, z_half,   &
+                         u_star, b_star, z_pbl, diff_m, diff_t, &
+                         ind_lcl = ind_lcl, kbot = kbot)
+    else 
+      call diffusivity ( tt, qq, uu, vv, p_full, p_half, z_full, z_half,   &
+                         u_star, b_star, z_pbl, diff_m, diff_t, &
+                         kbot = kbot)
+    endif 
 !---------------------------
 else if (do_edt) then
 !----------------------------

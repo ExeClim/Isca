@@ -124,10 +124,10 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
-        'do_cloud_simple': True # this is where the clouds scheme is turned on
+        'do_cloud_spookie': True # this is where the clouds scheme is turned on
     },
 
-    'cloud_simple_nml': { #use all existing defaults as in code
+    'cloud_spookie_nml': { #use all existing defaults as in code
         'spookie_protocol':2
     },
 
