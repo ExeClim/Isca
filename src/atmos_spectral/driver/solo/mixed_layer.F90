@@ -37,18 +37,19 @@ use  field_manager_mod, only: MODEL_ATMOS
 
 use tracer_manager_mod, only: get_tracer_names, get_number_tracers
 
-use      constants_mod, only: HLV, PI, RHO_CP, CP_AIR, KELVIN
+use      constants_mod, only: HLV, PI, RHO_CP, CP_AIR, KELVIN, & 
+                              HLF, DENS_ICE, TFREEZE ! NTL 01/23 for sea ice code 
 
 use   diag_manager_mod, only: register_diag_field, register_static_field, send_data
 
 use   time_manager_mod, only: time_type
 
 #ifdef COLUMN_MODEL
-use    column_grid_mod, only: get_deg_lon, get_deg_lat
+use    column_grid_mod, only: get_deg_lon, get_deg_lat, area_weighted_global_mean
 use         column_mod, only: get_surf_geopotential
 use       spec_mpp_mod, only: grid_domain
 #else          
-use     transforms_mod, only: get_deg_lat, get_deg_lon, grid_domain
+use     transforms_mod, only: get_deg_lat, get_deg_lon, grid_domain, area_weighted_global_mean
 ! mj know about surface topography
 use spectral_dynamics_mod,only: get_surf_geopotential
 #endif
@@ -136,6 +137,28 @@ logical :: add_latent_heat_flux_anom = .false.
 character(len=256) :: flux_lhe_anom_file_name  = 'INPUT/flux_lhe_anom.nc'
 character(len=256) :: flux_lhe_anom_field_name = 'flux_lhe_anom'
 
+! THERMO ICE OPTIONS - NTL 01/23
+logical :: do_explicit = .false. ! explicit or implicit timestepping for ocean covered surface 
+logical :: do_thermo_ice = .false. ! do thermodynamic sea ice? 
+real :: thermo_ice_albedo = 0.4 ! from Feldl & Merlis - original XZ is 0.8, M. England 0.6 
+real :: L_thermo_ice = DENS_ICE * HLF ! latent heat of fusion (J/m^3) 
+real, parameter  :: k_thermo_ice = 2 ! conductivity of ice (W/m/K)
+real, parameter  :: thermo_ice_basal_flux_const = 120 ! linear coefficient for heat flux from ocean to ice base (W/m^2/K)
+real :: t_thermo_ice_base = TFREEZE ! temperature at base of ice, taken to be freshwater freezing point
+real :: t_surf_freeze = TFREEZE
+real :: thermo_ice_nudge_timescale = 7. * 86400. 
+logical :: do_nudge_ice = .false. 
+logical :: do_nudging_correction = .false.
+character(len=256) :: nudge_ice_file_name = 'nudge_ice'
+logical :: time_varying_nudge_ice = .false.
+logical :: do_prescribe_albedo = .false.
+character(len=256) :: albedo_file_name = 'albedo'
+logical :: time_varying_albedo = .false.
+logical :: prescribe_nh_albedo_only = .false.
+logical :: read_const_correct = .true. ! set to false if doing nudging, and want to restart from simulation with no nudging
+logical :: read_nudge_out = .true. 
+logical :: albedo_from_nudge_file = .false.
+
 namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               delta_T, prescribe_initial_dist,albedo_value,  &
                               land_depth,trop_depth,                         &  !mj
@@ -153,7 +176,11 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               ice_albedo_value, specify_sst_over_ocean_only, &
                               ice_concentration_threshold, ice_albedo_method,&
                               add_latent_heat_flux_anom,flux_lhe_anom_file_name,&
-                              flux_lhe_anom_field_name, do_ape_sst, qflux_field_name
+                              flux_lhe_anom_field_name, do_ape_sst, qflux_field_name,&
+                              do_explicit, do_thermo_ice, thermo_ice_albedo, t_surf_freeze, t_thermo_ice_base, & ! NTL ice 
+                              do_nudge_ice, nudge_ice_file_name, thermo_ice_nudge_timescale, time_varying_nudge_ice, &
+                              do_nudging_correction, do_prescribe_albedo, time_varying_albedo, albedo_file_name, &
+                              prescribe_nh_albedo_only, read_const_correct, read_nudge_out, albedo_from_nudge_file
 
 !=================================================================================================================================
 
@@ -171,7 +198,11 @@ integer ::                                                                    &
      id_heat_cap,          &   ! heat capacity
      id_albedo,            &   ! mj albedo
      id_ice_conc,          &   ! st ice concentration
-     id_delta_t_surf
+     id_delta_t_surf,      &
+     ! NTL 01/23 thermodynamic sea ice 
+     id_h_thermo_ice,      &   ! sea ice thickness
+     id_t_ml,              &   ! mixed layer temperature
+     id_flux_thermo_ice        ! conductive heat flux through ice
 
 real, allocatable, dimension(:,:)   ::                                        &
      ocean_qflux,           &   ! Q-flux
@@ -201,9 +232,22 @@ real, allocatable, dimension(:,:)   ::                                        &
      zsurf,                 &   ! mj know about topography
      land_sea_heat_capacity,&
      sst_new,               &   ! mj input SST
-     albedo_initial
+     albedo_initial,        &
+     ! NTL 01/23 thermodynamic sea ice 
+     dFdt_surf,             &   ! d(corrected_flux)/d(t_surf), for calculation of ice sfc temperature
+     delta_t_ml,            &   ! Increment in mixed layer temperature
+     delta_h_thermo_ice,           &   ! Increment in sea ice thickness
+     delta_t_thermo_ice,           &   ! Increment in ice (steady-state) surface temperature
+     flux_thermo_ice,              &   ! Conductive heat flux through ice
+     corrected_flux_noq
+real, allocatable, dimension(:,:) :: h_thermo_ice_in, nudge_flux, nudge_correction, albedo_in
+real :: const_nudge_correction 
+type(interpolate_type),save :: nudge_ice_interp
+type(interpolate_type),save :: albedo_interp
 
 logical, allocatable, dimension(:,:) ::      land_mask
+
+
 
 !mj read sst from input file
   type(interpolate_type),save :: sst_interp
@@ -217,10 +261,13 @@ real inv_cp_air
 contains
 !=================================================================================================================================
 
-subroutine mixed_layer_init(is, ie, js, je, num_levels, t_surf, bucket_depth, axes, Time, albedo, rad_lonb_2d,rad_latb_2d, land, restart_file_bucket_depth)
+subroutine mixed_layer_init(is, ie, js, je, num_levels, t_surf, &
+                            h_thermo_ice, t_ml, const_correct, nudge_out, & ! NTL 01/23 thermodynamic sea ice 
+                            bucket_depth, axes, Time, albedo, rad_lonb_2d,rad_latb_2d, land, restart_file_bucket_depth)
 
 type(time_type), intent(in)       :: Time
-real, intent(out), dimension(:,:) :: t_surf, albedo
+real, intent(out), dimension(:,:) :: t_surf, albedo 
+real, intent(out), dimension(:,:) :: h_thermo_ice, t_ml, const_correct, nudge_out ! NTL 01/23 thermodynamic sea ice 
 real, intent(out), dimension(:,:,:) :: bucket_depth
 integer, intent(in), dimension(4) :: axes
 real, intent(in), dimension(:,:) :: rad_lonb_2d, rad_latb_2d
@@ -284,12 +331,24 @@ allocate(beta_lw                 (is:ie, js:je))
 allocate(delta_t_surf            (is:ie, js:je))
 allocate(eff_heat_capacity       (is:ie, js:je))
 allocate(corrected_flux          (is:ie, js:je))
+allocate(corrected_flux_noq      (is:ie, js:je)) ! NTL 01/23 thermodynamic sea ice 
 allocate(t_surf_dependence       (is:ie, js:je))
 allocate (albedo_initial         (is:ie, js:je))
 allocate(land_sea_heat_capacity  (is:ie, js:je))
 allocate(zsurf                   (is:ie, js:je))
 allocate(sst_new                 (is:ie, js:je))
 allocate(land_mask                 (is:ie, js:je)); land_mask=land
+
+! NTL 01/23 thermodynamic sea ice 
+allocate(dFdt_surf               (is:ie, js:je))
+allocate(delta_t_ml              (is:ie, js:je))
+allocate(delta_h_thermo_ice      (is:ie, js:je))
+allocate(delta_t_thermo_ice      (is:ie, js:je))
+allocate(flux_thermo_ice         (is:ie, js:je))
+allocate(h_thermo_ice_in         (is:ie, js:je))
+allocate(albedo_in               (is:ie, js:je))
+allocate(nudge_flux              (is:ie, js:je))
+allocate(nudge_correction        (is:ie, js:je))
 !
 !see if restart file exists for the surface temperature
 !
@@ -297,6 +356,12 @@ allocate(land_mask                 (is:ie, js:je)); land_mask=land
 
 ! latitude will be needed for oceanic q flux
 !s Moved up slightly so that rad_lat_2d can be used in initial temperature distribution if necessary.
+
+if (do_thermo_ice .and. (.not. do_explicit)) then 
+  call error_mesg('mixed_layer','setting do_explicit .true. for consistency with sea ice', WARNING)
+  do_explicit = .true.
+endif 
+
 
 call get_deg_lat(deg_lat)
 do j=js,je
@@ -325,6 +390,23 @@ if (file_exist('INPUT/mixed_layer.res.nc')) then
 
    call nullify_domain()
    call read_data(trim('INPUT/mixed_layer.res'), 't_surf',   t_surf, grid_domain)
+   if (do_thermo_ice) then 
+       call read_data(trim('INPUT/mixed_layer.res'), 'h_thermo_ice', h_thermo_ice, grid_domain)
+       call read_data(trim('INPUT/mixed_layer.res'), 't_ml', t_ml, grid_domain)
+       if (read_const_correct) then 
+         call read_data(trim('INPUT/mixed_layer.res'), 'const_correct', const_correct, grid_domain)
+       else 
+         const_correct(:,:) = 0.0 
+       endif 
+       if (read_nudge_out) then 
+         call read_data(trim('INPUT/mixed_layer.res'), 'nudge_out', nudge_out, grid_domain)
+       else 
+         nudge_out(:,:) = 0.0 
+       endif 
+       call read_data(trim('INPUT/mixed_layer.res'), 'albedo', albedo, grid_domain)
+   else if (do_prescribe_albedo) then 
+       call read_data(trim('INPUT/mixed_layer.res'), 'albedo', albedo, grid_domain)
+   endif
    
    if (restart_file_bucket_depth) then
        call read_data(trim('INPUT/mixed_layer.res'), 'bucket_depth', bucket_depth, grid_domain)
@@ -344,13 +426,27 @@ else if( do_read_sst ) then !s Added so that if we are reading sst values then w
 elseif (prescribe_initial_dist) then
 !  call error_mesg('mixed_layer','mixed_layer restart file not found - initializing from prescribed distribution', WARNING)
 
+    
     t_surf(:,:) = tconst - delta_T*((3.*sin(rad_lat_2d)**2.)-1.)/3.
-
+    if (do_thermo_ice) then  ! NTL 01/23 thermodynamic sea ice 
+        h_thermo_ice(:,:) = 0.0 
+        t_ml(:,:) = t_surf(:,:)
+        const_correct(:,:) = 0.0
+        nudge_out(:,:) = 0.0
+        albedo(:,:) = albedo_value
+        where(land) albedo(:,:) = land_albedo_prefactor * albedo_value
+        albedo_initial(:,:) = albedo (:,:)
+    else if (do_prescribe_albedo) then 
+        albedo(:,:) = albedo_value
+        where(land) albedo(:,:) = land_albedo_prefactor * albedo_value
+        albedo_initial(:,:) = albedo (:,:)
+    endif
 else
 
   call error_mesg('mixed_layer','mixed_layer restart file not found - initializing from lowest model level temp', WARNING)
 
 endif
+
 
 if(trim(ice_albedo_method) == 'ramp_function') then
   call error_mesg('mixed_layer','Alternative method ramp_function used for ice albedo output.', NOTE)
@@ -368,11 +464,21 @@ id_heat_cap = register_static_field(mod_name, 'ml_heat_cap',        &
                                  axes(1:2), 'mixed layer heat capacity','joules/m^2/deg C')
 id_delta_t_surf = register_diag_field(mod_name, 'delta_t_surf',        &
                                  axes(1:2), Time, 'change in sst','K')
-if (update_albedo_from_ice) then
+if (update_albedo_from_ice .or. do_thermo_ice .or. do_prescribe_albedo) then
     id_albedo = register_diag_field(mod_name, 'albedo',    &
                                  axes(1:2), Time, 'surface albedo', 'none')
-    id_ice_conc = register_diag_field(mod_name, 'ice_conc',    &
-                                 axes(1:2), Time, 'ice_concentration', 'none')
+    if (do_thermo_ice) then 
+    ! NTL 01/23 thermodynamic sea ice 
+        id_h_thermo_ice = register_diag_field(mod_name, 'h_thermo_ice',        &
+                                        axes(1:2), Time, 'sea ice thickness','m')
+        id_t_ml = register_diag_field(mod_name, 't_ml',        &
+                                        axes(1:2), Time, 'mixed layer tempeature','K')
+        id_flux_thermo_ice = register_diag_field(mod_name, 'flux_thermo_ice',        &
+                                        axes(1:2), Time, 'conductive heat flux through sea ice','watts/m2')
+    else                                   
+        id_ice_conc = register_diag_field(mod_name, 'ice_conc',    &
+                                     axes(1:2), Time, 'ice_concentration', 'none')
+    endif 
 else
     id_albedo = register_static_field(mod_name, 'albedo',    &
                                  axes(1:2), 'surface albedo', 'none')
@@ -408,6 +514,64 @@ if (load_qflux) then
     endif
 endif
 
+
+h_thermo_ice_in = 999. ! this is used to determine whether nudging should occur 
+                       ! setting a large number ensures this will do nothing if not initialised from external file
+! load ice
+if (do_nudge_ice .or. albedo_from_nudge_file) then
+    if (time_varying_nudge_ice .or. albedo_from_nudge_file) then
+       call interpolator_init( nudge_ice_interp, trim(nudge_ice_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+    else
+
+       if(file_exist(trim('INPUT/'//nudge_ice_file_name//'.nc'))) then
+         call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat)
+         call field_size(trim('INPUT/'//nudge_ice_file_name//'.nc'), trim(nudge_ice_file_name), siz)
+         if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
+           call read_data(trim('INPUT/'//nudge_ice_file_name//'.nc'), trim(nudge_ice_file_name), h_thermo_ice_in, grid_domain)
+         else
+           write(ctmp1(1: 4),'(i4)') siz(1)
+           write(ctmp1(9:12),'(i4)') siz(2)
+           write(ctmp2(1: 4),'(i4)') global_num_lon
+           write(ctmp2(9:12),'(i4)') global_num_lat
+           call error_mesg ('get_ice','nudge_ice file contains data on a '// &
+                  ctmp1//' grid, but atmos model grid is '//ctmp2, FATAL)
+         endif
+       else
+         call error_mesg('get_ice','do_nudge_ice="'//trim('True')//'"'// &
+                         ' but '//trim(nudge_ice_file_name)//' does not exist', FATAL)
+       endif
+
+    endif
+endif
+
+albedo_in = 0.0 
+if (do_prescribe_albedo) then  
+  if (time_varying_albedo) then
+       call interpolator_init( albedo_interp, trim(albedo_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+    else
+
+       if(file_exist(trim('INPUT/'//albedo_file_name//'.nc'))) then
+         call mpp_get_global_domain(grid_domain, xsize=global_num_lon, ysize=global_num_lat)
+         call field_size(trim('INPUT/'//albedo_file_name//'.nc'), trim(albedo_file_name), siz)
+         if ( siz(1) == global_num_lon .or. siz(2) == global_num_lat ) then
+           call read_data(trim('INPUT/'//albedo_file_name//'.nc'), trim(albedo_file_name), albedo_in, grid_domain)
+         else
+           write(ctmp1(1: 4),'(i4)') siz(1)
+           write(ctmp1(9:12),'(i4)') siz(2)
+           write(ctmp2(1: 4),'(i4)') global_num_lon
+           write(ctmp2(9:12),'(i4)') global_num_lat
+           call error_mesg ('get_albedo','albedo file contains data on a '// &
+                  ctmp1//' grid, but atmos model grid is '//ctmp2, FATAL)
+         endif
+       else
+         call error_mesg('get_albedo','do_prescribe_albedo="'//trim('True')//'"'// &
+                         ' but '//trim(albedo_file_name)//' does not exist', FATAL)
+       endif
+
+    endif
+endif
+
+
 !s Adding MiMA options for qfluxes.
 
 if ( do_qflux .or. do_warmpool) then
@@ -430,65 +594,70 @@ inv_cp_air = 1.0 / CP_AIR
 
 !s Prescribe albedo distribution here so that it will be the same in both two_stream_gray later and rrtmg radiation.
 
-albedo(:,:) = albedo_value
+if ((.not. do_thermo_ice) .and. (.not. do_prescribe_albedo)) then ! NTL 01/23 thermodynamic sea ice -- this is set / loaded earlier 
 
-if(trim(land_option) .eq. 'input') then
+    albedo(:,:) = albedo_value
 
-where(land) albedo = land_albedo_prefactor * albedo
+    if(trim(land_option) .eq. 'input') then
 
-endif
+    where(land) albedo = land_albedo_prefactor * albedo
 
-!mj MiMA albedo choices.
-select case (albedo_choice)
-  case (2) ! higher_albedo northward (lat_glacier>0) or southward (lat_glacier <0 ) of lat_glacier
-    do j = 1, size(t_surf,2)
-      lat = deg_lat(js+j-1)
-      ! mj SH or NH only
-      if ( lat_glacier .ge. 0. ) then
-         if ( lat > lat_glacier ) then
+    endif
+
+    !mj MiMA albedo choices.
+    select case (albedo_choice)
+      case (2) ! higher_albedo northward (lat_glacier>0) or southward (lat_glacier <0 ) of lat_glacier
+        do j = 1, size(t_surf,2)
+          lat = deg_lat(js+j-1)
+          ! mj SH or NH only
+          if ( lat_glacier .ge. 0. ) then
+             if ( lat > lat_glacier ) then
+                albedo(:,j) = higher_albedo
+             else
+                albedo(:,j) = albedo_value
+             endif
+          else
+             if ( lat < lat_glacier ) then
+                albedo(:,j) = higher_albedo
+             else
+                albedo(:,j) = albedo_value
+             endif
+          endif
+        enddo
+      case (3) ! higher_albedo poleward of lat_glacier
+        do j = 1, size(t_surf,2)
+          lat = deg_lat(js+j-1)
+          if ( abs(lat) > lat_glacier ) then
             albedo(:,j) = higher_albedo
-         else
+          else
             albedo(:,j) = albedo_value
-         endif
-      else
-         if ( lat < lat_glacier ) then
-            albedo(:,j) = higher_albedo
-         else
-            albedo(:,j) = albedo_value
-         endif
-      endif
-    enddo
-  case (3) ! higher_albedo poleward of lat_glacier
-    do j = 1, size(t_surf,2)
-      lat = deg_lat(js+j-1)
-      if ( abs(lat) > lat_glacier ) then
-        albedo(:,j) = higher_albedo
-      else
-        albedo(:,j) = albedo_value
-      endif
-    enddo
-  case (4) ! exponential increase with albedo_exp
-     do j = 1, size(t_surf,2)
-       lat = abs(deg_lat(js+j-1))
-       albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*(lat/90.)**albedo_exp
-     enddo
-  case (5) ! tanh increase around albedo_cntr with albedo_wdth
-     do j = 1, size(t_surf,2)
-       lat = abs(deg_lat(js+j-1))
-       albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
-             0.5*(1+tanh((lat-albedo_cntr)/albedo_wdth))
-     enddo
-end select
+          endif
+        enddo
+      case (4) ! exponential increase with albedo_exp
+         do j = 1, size(t_surf,2)
+           lat = abs(deg_lat(js+j-1))
+           albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*(lat/90.)**albedo_exp
+         enddo
+      case (5) ! tanh increase around albedo_cntr with albedo_wdth
+         do j = 1, size(t_surf,2)
+           lat = abs(deg_lat(js+j-1))
+           albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
+                 0.5*(1+tanh((lat-albedo_cntr)/albedo_wdth))
+         enddo
+    end select
 
-albedo_initial=albedo
+    albedo_initial=albedo
 
-if (update_albedo_from_ice) then
-    call interpolator_init( ice_interp, trim(ice_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
-    call read_ice_conc(Time)
-    call albedo_calc(albedo,Time)
-else
-    if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
-endif
+    if (update_albedo_from_ice) then
+        call interpolator_init( ice_interp, trim(ice_file_name)//'.nc', rad_lonb_2d, rad_latb_2d, data_out_of_bounds=(/CONSTANT/) )
+        call read_ice_conc(Time)
+        call albedo_calc(albedo,Time)
+    else
+        if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo )
+    endif
+else ! NTL 01/23 thermodynamic sea ice 
+    if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo, Time) 
+endif ! if(do_thermo_ice) 
 
 ! Note: do_calc_eff_heat_cap is true by default and control when the surface 
 ! heat capacity is calculated (land and ocean). 
@@ -570,6 +739,12 @@ subroutine mixed_layer (                                               &
      Time_next,                                                        &
      js, je,                                                           &
      t_surf,                                                           &
+     ! NTL 01/23 thermodynamic sea ice
+     h_thermo_ice,                                                     &
+     t_ml,                                                             &
+     const_correct, &
+     nudge_out, &
+     ! end ice addition
      flux_t,                                                           &
      flux_q,                                                           &
      flux_r,                                                           &
@@ -583,7 +758,7 @@ subroutine mixed_layer (                                               &
      drdt_surf,                                                        &
      dhdt_atm,                                                         &
      dedq_atm,                                                         &
-     albedo_out)
+     albedo_out) 
 
 ! ---- arguments -----------------------------------------------------------
 type(time_type), intent(in)         :: Time, Time_next
@@ -591,6 +766,7 @@ integer, intent(in)                 :: js, je
 real, intent(in), dimension(:,:)    :: net_surf_sw_down, surf_lw_down
 real, intent(in), dimension(:,:)    :: flux_t, flux_q, flux_r
 real, intent(inout), dimension(:,:) :: t_surf
+real, intent(inout), dimension(:,:) :: h_thermo_ice, t_ml, const_correct, nudge_out ! NTL 01/23 thermodynamic sea ice
 real, intent(in), dimension(:,:)    :: dhdt_surf, dedt_surf, dedq_surf, &
                                        drdt_surf, dhdt_atm, dedq_atm
 real, intent(in)                    :: dt
@@ -616,7 +792,9 @@ else
   land_ice_mask=land_mask
 endif
 
-call albedo_calc(albedo_out,Time_next)
+if (.not. do_thermo_ice) then ! NTL 01/23 thermodynamic sea ice
+    call albedo_calc(albedo_out,Time_next)
+endif 
 
 !s Add latent heat flux anomalies before any of the calculations take place
 
@@ -665,16 +843,72 @@ if(load_qflux.and.time_varying_qflux) then
 
 endif
 
+if((do_nudge_ice.and.time_varying_nudge_ice).or. albedo_from_nudge_file) then 
+         call interpolator( nudge_ice_interp, Time_next, h_thermo_ice_in, trim(nudge_ice_file_name) )
+endif
+
+if(do_prescribe_albedo.and.time_varying_albedo) then 
+         call interpolator( albedo_interp, Time, albedo_in, trim(albedo_file_name) )
+endif
+
+
+
+
+
+
 !
 ! Implement mixed layer surface boundary condition
 !
 corrected_flux = - net_surf_sw_down - surf_lw_down + alpha_t * CP_AIR + alpha_lw - ocean_qflux
 t_surf_dependence = beta_t * CP_AIR + beta_lw
 
+
+
+
+
+
+
+nudge_out = 0.0
+if (do_nudge_ice) then 
+  where ((h_thermo_ice .gt. 0.0) .and. (h_thermo_ice_in .le. 0)) 
+    nudge_out = h_thermo_ice / thermo_ice_nudge_timescale * L_thermo_ice 
+  endwhere 
+  corrected_flux = corrected_flux - nudge_out 
+endif 
+  
+
+
+! if (prescribe_nh_albedo_only) then 
+!   where (rad_lat_2d .gt. 0) 
+
+const_nudge_correction = 0.0 
+const_correct = 0.0
+if (do_nudging_correction) then 
+  const_nudge_correction = -area_weighted_global_mean(nudge_out)
+  if (.not. (const_nudge_correction .eq. 0.)) then 
+    where (nudge_out .eq. 0.) 
+      const_correct(:,:) = const_nudge_correction 
+    endwhere 
+    const_correct = const_correct * const_nudge_correction / area_weighted_global_mean(const_correct)
+    corrected_flux = corrected_flux - const_correct
+  endif 
+endif 
+
 if (evaporation) then
   corrected_flux = corrected_flux + alpha_q * HLV
   t_surf_dependence = t_surf_dependence + beta_q * HLV
 endif
+
+if (do_thermo_ice) then 
+    ! NTL 01/23 thermodynamic sea ice
+    corrected_flux_noq = corrected_flux + ocean_qflux 
+    flux_thermo_ice = 0 ! Initialize conductive heat flux through sea ice
+    nudge_flux = 0. ! Initialize nudging flux 
+    nudge_correction = 0. ! Initializing nudging correction 
+    const_nudge_correction = 0.
+    ! for calculation of ice sfc temperature
+    dFdt_surf = dhdt_surf + drdt_surf + HLV * (dedt_surf) ! d(corrected_flux)/d(T_surf)
+endif 
 
 !s Surface heat_capacity calculation based on that in MiMA by mj
 
@@ -717,33 +951,169 @@ if (do_ape_sst) then
 endif
 
 
-if (do_calc_eff_heat_cap) then
-  !s use the land_sea_heat_capacity calculated in mixed_layer_init
+if (.not. do_thermo_ice) then ! NTL 01/23 thermodynamic sea ice switch 
 
-    ! Now update the mixed layer surface temperature using an implicit step
-    !
-    eff_heat_capacity = land_sea_heat_capacity + t_surf_dependence * dt !s need to investigate how this works
+    if (do_calc_eff_heat_cap) then
+      !s use the land_sea_heat_capacity calculated in mixed_layer_init
 
-    if (any(eff_heat_capacity .eq. 0.0))  then
-      write(*,*) 'mixed_layer: error', eff_heat_capacity
-      call error_mesg('mixed_layer', 'Avoiding division by zero',fatal)
-    end if
+        ! Now update the mixed layer surface temperature using an implicit step
+        !
+        if (do_explicit) then ! NTL 01/23 thermodynamic sea ice -- add explicit option for consistency with thermo ice 
+            eff_heat_capacity = land_sea_heat_capacity
+        else
+            eff_heat_capacity = land_sea_heat_capacity + t_surf_dependence * dt !s need to investigate how this works
+        endif
 
-    if(do_sc_sst.and.specify_sst_over_ocean_only) then
-        where (land_ice_mask) delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-        where (land_ice_mask) t_surf = t_surf + delta_t_surf             
-    else
-        delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-        t_surf = t_surf + delta_t_surf
-    endif
+        if (any(eff_heat_capacity .eq. 0.0))  then
+          write(*,*) 'mixed_layer: error', eff_heat_capacity
+          call error_mesg('mixed_layer', 'Avoiding division by zero',fatal)
+        end if
 
-endif !s end of if(do_sc_sst).
+        if(do_sc_sst.and.specify_sst_over_ocean_only) then
+            where (land_ice_mask) delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
+            where (land_ice_mask) t_surf = t_surf + delta_t_surf             
+        else
+            delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
+            t_surf = t_surf + delta_t_surf
+        endif
+
+    endif !s end of if(do_sc_sst).
+    
+else if (do_thermo_ice) then 
+    where (land_ice_mask) ! name misleading, for thermo sea ice, land_ice_mask is just land mask 
+        delta_t_ml = - corrected_flux * dt / land_sea_heat_capacity
+        delta_h_thermo_ice  = 0
+        ! t_surf and t_ml are equal (they differ only when mixed layer is ice-covered)
+        t_surf = t_ml + delta_t_ml
+        ! = update state =
+        t_ml = t_ml + delta_t_ml
+        h_thermo_ice = h_thermo_ice + delta_h_thermo_ice
+    elsewhere 
+    
+        ! NTL 01/23 thermodynamic sea ice
+        ! COPIED FROM Sea ice by Ian Eisenman, XZ 02/2018
+        ! === (3) surface temperature increment is calculated with
+        ! explicit forward time step using flux corrected for implicit atm;
+        ! next, (4) surface state is updated  ===
+
+        ! ======================================================================
+        !
+        !          Ocean mixed layer and sea ice model equations
+        !
+        ! ======================================================================
+        !
+        ! Mixed layer temperature is evolved is t_ml, and sea ice thickness is
+        ! h_ice. Atmosphere cares about surface temparature (t_surf). Where
+        ! h_ice=0, t_surf=t_ml, but where h_ice>0, t_surf=t_ice which is the
+        ! ice surface temperature (assumed to be in steady-state: "zero layer
+        ! model"). So h_ice, t_ml, and t_surf are all saved at each time step
+        ! (t_ice does not need to be saved).
+        !
+        ! This model is equivalent to the Semtner (1976) "zero-layer model",
+        ! with several differences (no snow, ice latent heat is same at base
+        ! as surface, ice surface temperature calculated by including sensible
+        ! and latent heat derivatives in dF/dT_surf, inclusion of frazil
+        ! growth).
+
+      ! calculate values of delta_h_ice, delta_t_ml, and delta_t_ice
+         
+         
+         
+         
+         where ( h_thermo_ice .le. 0 ) ! = ice-free = [ should be equivalent to use .eq. instead of .le. ]
+           delta_t_ml = - ( corrected_flux_noq - ocean_qflux) * dt / land_sea_heat_capacity
+           delta_h_thermo_ice = 0
+         elsewhere ! = ice-covered = ( h>0 )
+           delta_t_ml = - ( thermo_ice_basal_flux_const * ( t_ml - t_thermo_ice_base ) - ocean_qflux ) * dt / land_sea_heat_capacity
+           delta_h_thermo_ice = ( corrected_flux_noq - thermo_ice_basal_flux_const * ( t_ml - t_thermo_ice_base ) ) * dt / L_thermo_ice
+         endwhere
+         
+         where ( t_ml + delta_t_ml .lt. t_surf_freeze ) ! = frazil growth =
+           delta_h_thermo_ice = delta_h_thermo_ice - ( t_ml + delta_t_ml - t_surf_freeze ) * (land_sea_heat_capacity)/L_thermo_ice
+           delta_t_ml = t_surf_freeze - t_ml
+         endwhere
+         
+         where ( ( h_thermo_ice .gt. 0 ) .and. ( h_thermo_ice + delta_h_thermo_ice .le. 0 ) ) ! = complete ablation =
+           delta_t_ml = delta_t_ml - ( h_thermo_ice + delta_h_thermo_ice ) * L_thermo_ice/land_sea_heat_capacity
+           delta_h_thermo_ice = - h_thermo_ice
+         endwhere
+         
+         ! = update surface temperature =
+         ! compute surface melt
+         where ( h_thermo_ice + delta_h_thermo_ice .gt. 0 ) ! surface is ice-covered
+           ! calculate increment in steady-state ice surface temperature
+           flux_thermo_ice = k_thermo_ice / (h_thermo_ice + delta_h_thermo_ice) * ( t_thermo_ice_base - t_surf )
+           delta_t_thermo_ice = ( - corrected_flux_noq + flux_thermo_ice ) &
+                         / ( k_thermo_ice / (h_thermo_ice + delta_h_thermo_ice) + dFdt_surf )
+           where ( t_surf + delta_t_thermo_ice .gt. t_surf_freeze ) ! surface ablation
+             delta_t_thermo_ice = t_surf_freeze - t_surf
+           endwhere
+           ! surface is ice-covered, so update t_surf as ice surface temperature
+           delta_t_surf = delta_t_thermo_ice
+           t_surf = t_surf + delta_t_thermo_ice
+         elsewhere ! ice-free, so update t_surf as mixed layer temperature
+         delta_t_surf = delta_t_ml
+           t_surf = t_ml + delta_t_ml
+         endwhere
+         
+   
+   
+
+        ! = update state =
+        t_ml = t_ml + delta_t_ml
+        h_thermo_ice = h_thermo_ice + delta_h_thermo_ice
+        
+       
+    endwhere 
+    
+    
+    ! compute albedo
+    where (land_ice_mask)
+        albedo_out(:,:) = albedo_value * land_albedo_prefactor
+    elsewhere 
+        where ( h_thermo_ice .gt. 0.0 )
+            albedo_out(:,:) = thermo_ice_albedo
+        elsewhere 
+            albedo_out(:,:) = albedo_value 
+        endwhere
+    endwhere 
+
+
+    if (do_prescribe_albedo) then 
+      if (prescribe_nh_albedo_only) then 
+        where (rad_lat_2d .gt. 0) 
+          albedo_out(:,:) = albedo_in(:,:)    
+        endwhere 
+      else 
+        albedo_out(:,:) = albedo_in(:,:)
+      endif 
+    endif 
+    
+    if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo_out, Time_next ) 
+endif 
+  
+if ((do_prescribe_albedo).and.(.not.do_thermo_ice)) then 
+
+    albedo_out(:,:) = albedo_in(:,:)
+    if ( id_albedo > 0 ) used = send_data ( id_albedo, albedo_out, Time_next ) 
+endif ! if (do_thermo_ice)
+
+if (albedo_from_nudge_file) then 
+  where ((h_thermo_ice .gt. 0) .and. (h_thermo_ice_in .le. 0)) 
+    albedo_out(:,:) = albedo_value
+  endwhere 
+endif 
 
 !
 ! Finally calculate the increments for the lowest atmospheric layer
 !
-Tri_surf%delta_t = fn_t + en_t * delta_t_surf
-if (evaporation) Tri_surf%delta_tr(:,:,nhum) = fn_q + en_q * delta_t_surf
+if (do_explicit) then ! NTL 01/23 thermodynamic sea ice uses explicit step 
+    Tri_surf%delta_t = fn_t 
+    if (evaporation) Tri_surf%delta_tr(:,:,nhum) = fn_q 
+else 
+    Tri_surf%delta_t = fn_t + en_t * delta_t_surf
+    if (evaporation) Tri_surf%delta_tr(:,:,nhum) = fn_q + en_q * delta_t_surf
+endif 
 
 !
 ! Note:
@@ -755,6 +1125,10 @@ if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q_total, Time_next)
 if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time_next)
 
 if(id_delta_t_surf > 0)   used = send_data(id_delta_t_surf, delta_t_surf, Time_next)
+! NTL 01/23 thermodynamic sea ice
+if(id_h_thermo_ice > 0) used = send_data(id_h_thermo_ice, h_thermo_ice, Time_next)
+if(id_t_ml > 0) used = send_data(id_t_ml, t_ml, Time_next)
+if(id_flux_thermo_ice > 0) used = send_data(id_flux_thermo_ice, flux_thermo_ice, Time_next)
 
 end subroutine mixed_layer
 
@@ -799,9 +1173,12 @@ if ( id_ice_conc > 0 ) used = send_data ( id_ice_conc, ice_concentration, Time )
 end subroutine read_ice_conc
 !=================================================================================================================================
 
-subroutine mixed_layer_end(t_surf, bucket_depth, restart_file_bucket_depth)
+subroutine mixed_layer_end(t_surf, &
+                           h_thermo_ice, t_ml, const_correct, nudge_out, albedo, & ! NTL 01/23 thermodynamic sea ice
+                           bucket_depth, restart_file_bucket_depth) 
 
 real, intent(inout), dimension(:,:) :: t_surf
+real, intent(inout), dimension(:,:) :: h_thermo_ice, t_ml, const_correct, nudge_out, albedo ! NTL 01/23 thermodynamic sea ice
 real, intent(inout), dimension(:,:,:) :: bucket_depth
 logical, intent(in)                 :: restart_file_bucket_depth
 integer:: unit
@@ -811,6 +1188,15 @@ if(.not.module_is_initialized) return
 ! write a restart file for the surface temperature
 call nullify_domain()
 call write_data(trim('RESTART/mixed_layer.res'), 't_surf',   t_surf, grid_domain)
+if (do_thermo_ice) then ! NTL 01/23 thermodynamic sea ice
+    call write_data(trim('RESTART/mixed_layer.res'), 'h_thermo_ice',   h_thermo_ice, grid_domain)
+    call write_data(trim('RESTART/mixed_layer.res'), 't_ml',   t_ml, grid_domain)
+    call write_data(trim('RESTART/mixed_layer.res'), 'const_correct',   const_correct, grid_domain)
+    call write_data(trim('RESTART/mixed_layer.res'), 'nudge_out',   nudge_out, grid_domain)
+    call write_data(trim('RESTART/mixed_layer.res'), 'albedo',   albedo, grid_domain)
+else if (do_prescribe_albedo) then 
+    call write_data(trim('RESTART/mixed_layer.res'), 'albedo',   albedo, grid_domain)
+endif 
 if (restart_file_bucket_depth) then
     call write_data(trim('RESTART/mixed_layer.res'), 'bucket_depth',   bucket_depth, grid_domain)
 endif

@@ -174,6 +174,7 @@ real, allocatable, dimension(:,:    ) :: dt_bucket, filt
 real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
      t_surf,               &   ! surface temperature
+     t_ml, h_thermo_ice, const_correct, nudge_out,  &   ! NTL 01/23 thermodynamic sea ice
      q_surf,               &   ! surface moisture
      u_surf,               &   ! surface U wind
      v_surf,               &   ! surface V wind
@@ -392,7 +393,7 @@ if(uppercase(trim(convection_scheme)) == 'NONE') then
   r_conv_scheme = NO_CONV
   lwet_convection = .false.
   do_bm           = .false.
-  do_ras          = .false.
+  do_ras          = .false. 
   call error_mesg('idealized_moist_phys','No convective adjustment scheme used.', NOTE)
 
 else if(uppercase(trim(convection_scheme)) == 'SIMPLE_BETTS_MILLER') then
@@ -421,7 +422,7 @@ else if(uppercase(trim(convection_scheme)) == 'DRY') then
   call error_mesg('idealized_moist_phys','Using dry convection scheme.', NOTE)
   lwet_convection = .false.
   do_bm           = .false.
-  do_ras          = .false.
+  do_ras          = .false. 
 
 else if(uppercase(trim(convection_scheme)) == 'UNSET') then
   call error_mesg('idealized_moist_phys','determining convection scheme from flags', NOTE)
@@ -432,7 +433,7 @@ else if(uppercase(trim(convection_scheme)) == 'UNSET') then
   if (do_bm) then
     r_conv_scheme = FULL_BETTS_MILLER_CONV
     call error_mesg('idealized_moist_phys','Using Betts-Miller convection scheme.', NOTE)
-  end if
+  end if 
   if (do_ras) then
     r_conv_scheme = RAS_CONV
     call error_mesg('idealized_moist_phys','Using  relaxed Arakawa Schubert convection scheme.', NOTE)
@@ -475,6 +476,12 @@ allocate(depth_change_cond(is:ie, js:je))
 allocate(depth_change_conv(is:ie, js:je))
 allocate(z_surf      (is:ie, js:je))
 allocate(t_surf      (is:ie, js:je))
+! NTL 01/23 thermodynamic sea ice
+allocate(h_thermo_ice(is:ie, js:je))
+allocate(t_ml        (is:ie, js:je))
+allocate(const_correct(is:ie, js:je))
+allocate(nudge_out(is:ie, js:je))
+!
 allocate(q_surf      (is:ie, js:je)); q_surf = 0.0
 allocate(u_surf      (is:ie, js:je)); u_surf = 0.0
 allocate(v_surf      (is:ie, js:je)); v_surf = 0.0
@@ -642,7 +649,10 @@ if(mixed_layer_bc) then
   ! to quickly enter the atmosphere avoiding problems with the convection scheme
   t_surf = t_surf_init + 1.0
 
-  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, bucket_depth, get_axis_id(), Time, albedo, rad_lonb_2d(:,:), rad_latb_2d(:,:), land, bucket) ! t_surf is intent(inout) ! albedo distribution set here.
+  call mixed_layer_init(is, ie, js, je, num_levels, t_surf, &
+                        h_thermo_ice, t_ml, const_correct,nudge_out, & ! NTL 01/23 thermodynamic sea ice
+                        bucket_depth, get_axis_id(), Time, albedo, rad_lonb_2d(:,:), rad_latb_2d(:,:), land, bucket) ! t_surf is intent(inout) !s albedo distribution set here.
+  
 
 elseif(gp_surface) then
   albedo=0.0
@@ -1058,7 +1068,7 @@ if(two_stream_gray) then
                        tg(:,:,:,previous),     &
                        net_surf_sw_down(:,:),  &
                        surf_lw_down(:,:), albedo, &
-                       grid_tracers(:,:,:,previous,nsphum))
+                       grid_tracers(:,:,:,previous,nsphum), const_correct(:,:), nudge_out(:,:)) 
 end if
 
 if(.not.mixed_layer_bc) then
@@ -1311,6 +1321,7 @@ if(turb) then
                               js,                                          & 
                               je,                                          &
                               t_surf(:,:),                                 & ! t_surf is intent(inout)
+                              h_thermo_ice(:,:), t_ml(:,:), const_correct(:,:), nudge_out(:,:), & ! NTL 01/23 thermodynamic sea ice
                               flux_t(:,:),                                 &
                               flux_q(:,:),                                 &
                               flux_r(:,:),                                 &
@@ -1336,9 +1347,12 @@ if(turb) then
 
 endif ! if(turb) then
 
-! Adding relative humidity calculation so as to allow comparison with Frierson's thesis.
-   call rh_calc (p_full(:,:,:,previous),tg_tmp,qg_tmp,RH)
-   if(id_rh >0) used = send_data(id_rh, RH*100., Time)
+!s Adding relative humidity calculation so as to allow comparison with Frierson's thesis.
+   
+   if(id_rh >0) then 
+    call rh_calc (p_full(:,:,:,previous),tg_tmp,qg_tmp,RH)
+    used = send_data(id_rh, RH*100., Time)
+   endif
 
 ! Add bucket
 ! Timestepping for bucket.
@@ -1406,7 +1420,9 @@ if(turb) then
    call vert_turb_driver_end
 endif
 call lscale_cond_end
-if(mixed_layer_bc)  call mixed_layer_end(t_surf, bucket_depth, bucket)
+if(mixed_layer_bc)  call mixed_layer_end(t_surf, &
+                                         h_thermo_ice, t_ml, const_correct, nudge_out, albedo, & ! NTL 01/23 thermodynamic sea ice
+                                         bucket_depth, bucket)
 if(do_damping) call damping_driver_end
 
 #ifdef SOC_NO_COMPILE

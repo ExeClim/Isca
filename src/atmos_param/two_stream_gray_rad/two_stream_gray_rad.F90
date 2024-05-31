@@ -138,6 +138,7 @@ type(interpolate_type),save         :: co2_interp           ! use external file 
 character(len=256)                  :: co2_file='co2'       !  file name of co2 file to read
 character(len=256)                  :: co2_variable_name='co2'       !  file name of co2 file to read
 
+logical :: do_toa_albedo = .false.
 
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            ir_tau_eq, ir_tau_pole, odp, atm_abs, sw_diff, &
@@ -148,14 +149,15 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
 		   window, carbon_conc, rad_scheme, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
            use_time_average_coszen, dt_rad_avg,&
-           diabatic_acce !Schneider Liu values
+           diabatic_acce, & !Schneider Liu values 
+           do_toa_albedo 
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
 
 integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
            id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun, &
-           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2
+           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2, id_nudge_flux
 
 character(len=10), parameter :: mod_name = 'two_stream'
 
@@ -347,7 +349,6 @@ end select
         register_diag_field ( mod_name, 'flux_sw', axes(half), Time, &
                'Net shortwave radiative flux (positive up)', &
                'W/m^2', missing_value=missing_value               )
-
     id_coszen  = &
                register_diag_field ( mod_name, 'coszen', axes(1:2), Time, &
                  'cosine of zenith angle', &
@@ -378,13 +379,17 @@ end select
                register_diag_field ( mod_name, 'lw_dtrans', axes(1:3), Time, &
                  'LW transmission (non window)', &
                  'none', missing_value=missing_value      )
+   id_nudge_flux = &
+   register_diag_field ( mod_name, 'nudge_flux', axes(1:2), Time, &
+               'Sea ice nudging flux', &
+               'W/m2', missing_value=missing_value               )
 return
 end subroutine two_stream_gray_rad_init
 
 ! ==================================================================================
 
 subroutine two_stream_gray_rad_down (is, js, Time_diag, lat, lon, p_half, t,         &
-                           net_surf_sw_down, surf_lw_down, albedo, q)
+                           net_surf_sw_down, surf_lw_down, albedo, q, const_correct, nudge_out) 
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
@@ -395,6 +400,7 @@ real, intent(in), dimension(:,:)    :: lat, lon, albedo
 real, intent(out), dimension(:,:)   :: net_surf_sw_down
 real, intent(out), dimension(:,:)   :: surf_lw_down
 real, intent(in), dimension(:,:,:)  :: t, q,  p_half
+real, intent(in), dimension(:,:) :: const_correct, nudge_out
 integer :: i, j, k, n, dyofyr
 
 integer :: seconds, year_in_s, days
@@ -403,6 +409,7 @@ logical :: used
 
 
 real ,dimension(size(q,1),size(q,2),size(q,3)) :: co2f
+
 
 n = size(t,3)
 
@@ -446,6 +453,11 @@ if (do_seasonal) then
   end if
 
      insolation = solar_constant * coszen
+     
+  if (do_toa_albedo) then 
+      p2          = (1. - 3.*sin(lat)**2)/4.
+      insolation  = insolation * (0.75 + 0.15 * 2. * p2)
+  endif 
 
 else if (sw_scheme==B_SCHNEIDER_LIU) then
   insolation = (solar_constant/pi)*cos(lat)
@@ -453,6 +465,9 @@ else
   ! Default: Averaged Earth insolation at all longitudes
   p2          = (1. - 3.*sin(lat)**2)/4.
   insolation  = 0.25 * solar_constant * (1.0 + del_sol * p2 + del_sw * sin(lat))
+  if (do_toa_albedo) then 
+      insolation  = insolation * (0.75 + 0.15 * 2. * p2)
+  endif 
 end if
 
 select case(sw_scheme)
@@ -476,20 +491,24 @@ case(B_GEEN)
      sw_down(:,:,k+1)   = sw_down(:,:,k) * sw_dtrans(:,:,k)
   end do
 
+
 case(B_FRIERSON, B_BYRNE)
   ! Default: Frierson handling of SW radiation
   ! SW optical thickness
   sw_tau_0    = (1.0 - sw_diff*sin(lat)**2)*atm_abs
 
   ! compute optical depths for each model level
+  
   do k = 1, n+1
     sw_tau(:,:,k) = sw_tau_0 * (p_half(:,:,k)/pstd_mks)**solar_exponent
   end do
 
   ! compute downward shortwave flux
+
   do k = 1, n+1
      sw_down(:,:,k)   = insolation(:,:) * exp(-sw_tau(:,:,k))
   end do
+
 
 case(B_SCHNEIDER_LIU)
   ! Schneider & Liu 2009 Giant planet scheme
@@ -618,9 +637,9 @@ case default
 end select
 
 ! =================================================================================
-surf_lw_down     = lw_down(:, :, n+1)
+surf_lw_down     = lw_down(:, :, n+1) 
 toa_sw_in        = sw_down(:, :, 1)
-net_surf_sw_down = sw_down(:, :, n+1) * (1. - albedo)
+net_surf_sw_down = sw_down(:, :, n+1) * (1. - albedo) 
 ! =================================================================================
 
 if(lw_scheme.eq.B_SCHNEIDER_LIU) then
@@ -632,10 +651,18 @@ endif
 if ( id_lwdn_sfc > 0 ) then
    used = send_data ( id_lwdn_sfc, surf_lw_down, Time_diag)
 endif
+
 !------- incoming sw flux toa -------
 if ( id_swdn_toa > 0 ) then
    used = send_data ( id_swdn_toa, toa_sw_in, Time_diag)
 endif
+
+! NTL NUDGING
+if( id_nudge_flux > 0) then 
+   used = send_data ( id_nudge_flux, const_correct+nudge_out, Time_diag)
+endif 
+
+
 !------- downward sw flux surface -------
 if ( id_swdn_sfc > 0 ) then
    used = send_data ( id_swdn_sfc, net_surf_sw_down, Time_diag)
