@@ -280,6 +280,7 @@ class Experiment(Logger, EventEmitter):
         self.log.info("Beginning run %d" % i)
         try:
             #for line in sh.bash(P(self.rundir, 'run.sh'), _iter=True, _err_to_out=True):
+            print(P(self.rundir, "run.sh"))
             proc = sh.bash(P(self.rundir, 'run.sh'), _bg=True, _out=_outhandler, _err_to_out=True)
             self.log.info('process running as {}'.format(proc.process.pid))
             proc.wait()

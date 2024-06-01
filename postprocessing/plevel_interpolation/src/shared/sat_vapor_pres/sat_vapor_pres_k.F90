@@ -1352,6 +1352,7 @@
      ind = int(dtinvl*(tmp+tepsl))
      if (ind < 0 .or. ind >= table_siz)  then
        nbad = nbad+1
+       print *, "Invalid temperature at index", i, ": ", temp(i)  ! RUIZHI
      else
        del = tmp-dtres*real(ind)
        esat(i) = TABLE(ind+1) + del*(DTABLE(ind+1) + del*D2TABLE(ind+1))

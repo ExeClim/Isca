@@ -162,7 +162,7 @@ contains
     
     call escomp(Tmin, esmin)
     call escomp(Tmax, esmax)
-    
+     
     val_min = log(esmin/(Tmin**(1.0/kappa))) 
     val_max = log(esmax/(Tmax**(1.0/kappa)))
 

@@ -7,6 +7,7 @@ source {{ env_source }}
 # 1. Configuration
 hostname=`hostname`
 compiler=${GFDL_MKMF_TEMPLATE:-ia64}
+echo compiler=$compiler
 template={{ template_dir }}/mkmf.template.${compiler}
 mkmf={{ srcdir }}/../bin/mkmf                             # path to executable mkmf
 sourcedir={{ srcdir }}                             # path to directory containing model source code

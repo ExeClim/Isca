@@ -201,4 +201,4 @@ if __name__=="__main__":
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
         
         for i in range(2,121):
-            exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
+            exp.run(i, num_cores=NCORES, overwrite_data=False)

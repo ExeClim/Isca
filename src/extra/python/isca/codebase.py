@@ -246,10 +246,10 @@ class CodeBase(Logger):
         mkdir(self.builddir)
 
         compile_flags = []
-        # if debug:
-        #     compile_flags.append('-g')
-        #     compile_flags.append('-traceback')
-        #     compile_flags.append('-debug all')
+        if debug:
+            compile_flags.append('-g')
+            compile_flags.append('-traceback')
+            compile_flags.append('-debug all')
 
         # if optimisation is not None:
         #     compile_flags.append('-O%d' % optimisation)

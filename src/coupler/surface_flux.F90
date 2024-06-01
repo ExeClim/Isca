@@ -37,6 +37,7 @@ module surface_flux_mod
 
 use             fms_mod, only: FATAL, close_file, mpp_pe, mpp_root_pe, write_version_number
 use             fms_mod, only: file_exist, check_nml_error, open_namelist_file, stdlog
+use             fms_mod, only: error_mesg ! RUIZHI
 use   monin_obukhov_mod, only: mo_drag, mo_profile
 use  sat_vapor_pres_mod, only: escomp, descomp
 use       constants_mod, only: cp_air, hlv, stefan, rdgas, rvgas, grav, vonkarm, dens_h2o
@@ -264,6 +265,16 @@ logical :: do_simple             = .false.
 real    :: land_humidity_prefactor  =  1.0    ! Default is that land makes no difference to evaporative fluxes
 real    :: land_evap_prefactor  =  1.0    ! Default is that land makes no difference to evaporative fluxes
 
+! RUIZHI: from Stephen
+logical :: use_actual_surface_temperatures = .true. 
+!Always true, apart from when running a dry model, where you can set this to false so that 
+! escomp is called with temperatures of 200k always, preventing bad temperature errors.
+
+logical :: use_frierson_mo_drag = .false. 
+!Isca by default uses the full monin-obukhov formulae. 
+!When true we switch to using the simplified formulae from 10.1175/JAS3753.1 eq 12-14.
+! RUIZHI
+
 real    :: flux_heat_gp  =  5.7    ! Default value for Jupiter of 5.7 Wm^-2
 real    :: diabatic_acce =  1.0    ! Diabatic acceleration??
 
@@ -282,7 +293,9 @@ namelist /surface_flux_nml/ no_neg_q,             &
                             land_humidity_prefactor, & ! Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
                             land_evap_prefactor, & ! Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
                             flux_heat_gp,         &    ! prescribed lower boundary heat flux on a giant planet
-                            diabatic_acce
+                            diabatic_acce,       &
+                            use_actual_surface_temperatures, & ! RUIZHI
+                            use_frierson_mo_drag ! RUIZHI
 
 
 
@@ -401,8 +414,9 @@ subroutine surface_flux_1d (                                           &
   if (do_init) call surface_flux_init
 
   !---- use local value of surf temp ----
-
+! RUIZHI: from Stephen
   t_surf0 = 200.   !  avoids out-of-bounds in es lookup
+if (use_actual_surface_temperatures) then
   where (avail)
      where (land)
         t_surf0 = t_ca
@@ -410,11 +424,28 @@ subroutine surface_flux_1d (                                           &
         t_surf0 = t_surf
      endwhere
   endwhere
+! else
+!   if ((maxval(q_atm_in) > 0.).and. ( mpp_pe() == mpp_root_pe() )) then
+      ! print *, 'surface_flux_mod: Note that you are using dry models.'
+!      call error_mesg('surface_flux_mod','Note that you are using dry models.', FATAL)
+!   endif
+endif
 
   t_surf1 = t_surf0 + del_temp
 
   call escomp ( t_surf0, e_sat  )  ! saturation vapor pressure
   call escomp ( t_surf1, e_sat1 )  ! perturbed  vapor pressure
+
+if (.not. use_actual_surface_temperatures) then
+  where (avail)
+     where (land)
+        t_surf0 = t_ca
+     elsewhere
+        t_surf0 = t_surf
+     endwhere
+  endwhere
+endif
+! end RUIZHI
 
   if(use_mixing_ratio) then
     ! surface mixing ratio at saturation

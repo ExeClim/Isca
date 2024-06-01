@@ -112,7 +112,6 @@ integer :: r_conv_scheme = UNSET  ! the selected convection scheme
 logical :: lwet_convection = .false.
 logical :: do_bm = .false.
 logical :: do_ras = .false.
-
 ! Cloud options
 logical :: do_cloud_simple = .false. ! SimCloud cloud scheme
 logical :: do_cloud_spookie = .false. ! SPOOKIE protocol cloud scheme

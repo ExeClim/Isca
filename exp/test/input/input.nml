@@ -1,0 +1,113 @@
+&atmosphere_nml
+    idealized_moist_model = .true.
+/
+
+&damping_driver_nml
+    do_conserve_energy = .true.
+    do_rayleigh = .true.
+    sponge_pbottom = 50.0
+    trayfric = -0.5
+/
+
+&diag_manager_nml
+    mix_snapshot_average_fields = .false.
+/
+
+&diffusivity_nml
+    do_entrain = .false.
+    do_simple = .true.
+/
+
+&fms_io_nml
+    fileset_write = 'single'
+    threading_write = 'single'
+/
+
+&fms_nml
+    domains_stack_size = 600000
+/
+
+&idealized_moist_phys_nml
+    convection_scheme = 'SIMPLE_BETTS_MILLER'
+    do_damping = .true.
+    do_rrtm_radiation = .false.
+    do_simple = .true.
+    do_virtual = .false.
+    mixed_layer_bc = .true.
+    roughness_heat = 3.21e-05
+    roughness_moist = 3.21e-05
+    roughness_mom = 3.21e-05
+    turb = .true.
+    two_stream_gray = .true.
+/
+
+&two_stream_gray_rad_nml
+    do_seasonal     = .true.,
+    atm_abs        = 0.2
+/
+
+&lscale_cond_nml
+    do_evap = .true.
+    do_simple = .true.
+/
+
+&main_nml
+    calendar = 'thirty_day'
+    current_date = 1, 1, 1, 0, 0, 0
+    days = 30
+    dt_atmos = 600
+    hours = 0
+    minutes = 0
+    seconds = 0
+/
+
+&mixed_layer_nml
+    albedo_value = 0.205
+    depth = 100
+    do_qflux = .true.
+    evaporation = .true.
+    prescribe_initial_dist = .true.
+    tconst = 285.0
+/
+
+&qe_moist_convection_nml
+    tmax = 350.0
+    tmin = 160.0
+    rhbm = 0.7
+/
+
+&qflux_nml
+    qflux_amp = 30.0
+/
+
+&sat_vapor_pres_nml
+    do_simple = .true.
+/
+
+&spectral_dynamics_nml
+    damping_order = 4
+    exponent = 7.0
+    initial_sphum = 2e-06
+    num_levels = 40
+    reference_sea_level_press = 100000.0
+    robert_coeff = 0.03
+    scale_heights = 11.0
+    surf_res = 0.5
+    valid_range_t = 100.0, 800.0
+    vert_coord_option = 'uneven_sigma'
+    water_correction_limit = 20000.0
+/
+
+&surface_flux_nml
+    do_simple = .true.
+    old_dtaudv = .true.
+    use_virtual_temp = .false.
+/
+
+&vert_turb_driver_nml
+    constant_gust = 0.0
+    do_diffusivity = .true.
+    do_mellor_yamada = .false.
+    do_simple = .true.
+    use_tau = .false.
+/

@@ -32,7 +32,7 @@ use                fms_mod, only: mpp_pe, mpp_root_pe, error_mesg, NOTE, FATAL, 
                                   read_data, write_data, check_nml_error, lowercase, uppercase, mpp_npes,     &
                                   field_size
 
-use          constants_mod, only: rdgas, rvgas, grav, cp_air, omega, radius, pi
+use          constants_mod, only: rdgas, rvgas, grav, cp_air, omega, radius, pi, pstd_mks ! RUIZHI: pstd_mks
 
 use       time_manager_mod, only: time_type, get_time, set_time, get_calendar_type, NO_CALENDAR, &
                                   get_date, interval_alarm, operator( - ), operator( + )
@@ -196,7 +196,7 @@ real    :: damping_coeff       = 1.15740741e-4, & ! (one tenth day)**-1
            exponent            = 2.5, &
          ocean_topog_smoothing = .93, &
            initial_sphum       = 0.0, &
-     reference_sea_level_press =  101325.,&
+     reference_sea_level_press =  1.013250E+05,& ! RUIZHI
         water_correction_limit = 0.0, & !mj
            raw_filter_coeff    = 1.0     !st Default value of 1.0 turns the RAW part of the filtering off. 0.5 is the desired value, but this appears unstable. Requires further testing.
 
@@ -942,6 +942,10 @@ if(minval(tg(:,:,:,future)) < valid_range_t(1) .or. maxval(tg(:,:,:,future)) > v
 !mj !s This doesn't affect the normal running of the code in any way. It simply allows identification of the point where temp violation has occured.
    if(minval(tg(:,:,:,future)) < valid_range_t(1))then
       extrtmp = minval(tg(:,:,:,future))
+      ! RUIZHI: error message
+      print *, '(spectral dynamics): min/max temp = ',minval(tg(:,:,:,future)),maxval(tg(:,:,:,future))
+      call error_mesg('spectral_dynamics','temp out of valid range -- too cold.', FATAL)
+      ! RUIZHI
    else
       extrtmp = maxval(tg(:,:,:,future))
    endif
@@ -1121,7 +1125,7 @@ real   , intent(in   ), dimension(:,:,:  ) :: wg, p_half
 real   , intent(in   )  :: delta_t
 complex, intent(out  ), dimension(ms:me, ns:ne, num_levels, num_tracers) :: part_filt_trs_out
 real, intent(out  ), dimension(is:ie, js:je, num_levels, num_tracers) :: part_filt_tr_out
-
+ 
 
 complex, dimension(ms:me, ns:ne, num_levels) :: dt_trs
 real,    dimension(is:ie, js:je, num_levels) :: dp, dt_tmp, tr_future
