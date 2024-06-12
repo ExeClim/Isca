@@ -85,7 +85,7 @@ namelist/atmosphere_nml/ idealized_moist_model
 !=================================================================================================================================
 
 integer, parameter :: num_time_levels = 2
-integer :: is, ie, js, je, num_levels, num_tracers, nhum
+integer :: is, ie, js, je, num_levels, num_tracers, nhum,nhum_age
 logical :: dry_model, column_model
 
 real, allocatable, dimension(:,:,:,:) :: p_half, p_full
@@ -151,13 +151,17 @@ dt_real      = float(dt_integer)
 call get_number_tracers(MODEL_ATMOS, num_prog=num_tracers)
 allocate (tracer_attributes(num_tracers))
 #ifdef COLUMN_MODEL
-  call column_init(Time, Time_step, tracer_attributes, dry_model, nhum)
+  !!!print*, "call column_init"
+  call column_init(Time, Time_step, tracer_attributes, dry_model, nhum,nhum_age)
   column_model = .true.
 #else
-  call spectral_dynamics_init(Time, Time_step, tracer_attributes, dry_model, nhum)
+  !!!print*, "nhum before spectral:", nhum
+  call spectral_dynamics_init(Time, Time_step, tracer_attributes, dry_model, nhum,nhum_age)
   column_model = .false.
 #endif 
+!!!print*, "call get_grid_domain"
 call get_grid_domain(is, ie, js, je)
+!!!print*, "call get_num_levels"
 call get_num_levels(num_levels)
 
 allocate (p_half       (is:ie, js:je, num_levels+1, num_time_levels))
@@ -191,11 +195,13 @@ wg_full = 0.; psg = 0.; ug = 0.; vg = 0.; tg = 0.; grid_tracers = 0.
 dt_psg = 0.; dt_ug  = 0.; dt_vg  = 0.; dt_tg  = 0.; dt_tracers = 0.
 
 allocate (surf_geopotential(is:ie, js:je))
+!!!print*, "call get_surf_geopotential"
 call get_surf_geopotential(surf_geopotential)
 
 !--------------------------------------------------------------------------------------------------------------------------------
 file = 'INPUT/atmosphere.res.nc'
 if(file_exist(trim(file))) then
+  !!!print*, "in if"
   call get_lon_max(lon_max)
   call get_lat_max(lat_max)
   call field_size(trim(file), 'ug', siz)
@@ -216,6 +222,7 @@ if(file_exist(trim(file))) then
     call read_data(trim(file), 'tg',   tg(:,:,:,nt), grid_domain, timelevel=nt)
     call read_data(trim(file), 'psg', psg(:,:,  nt), grid_domain, timelevel=nt)
     do ntr = 1,num_tracers
+      !!!print*,"Loop over tracer"
       tr_name = trim(tracer_attributes(ntr)%name)
       call read_data(trim(file), trim(tr_name), grid_tracers(:,:,:,nt,ntr), grid_domain, timelevel=nt)
     enddo ! end loop over tracers
@@ -223,10 +230,12 @@ if(file_exist(trim(file))) then
   call read_data(trim(file), 'wg_full', wg_full, grid_domain)
 else
   previous = 1; current = 1
+  !!print*,"call get_initial_fields"
   call get_initial_fields(ug(:,:,:,1), vg(:,:,:,1), tg(:,:,:,1), psg(:,:,1), grid_tracers(:,:,:,1,:))
 endif
 !--------------------------------------------------------------------------------------------------------------------------------
 if(dry_model) then
+  !!print*,"dry model"
   call compute_pressures_and_heights(tg(:,:,:,current), psg(:,:,current), surf_geopotential, &
        z_full(:,:,:,current), z_half(:,:,:,current), p_full(:,:,:,current), p_half(:,:,:,current))
   call compute_pressures_and_heights(tg(:,:,:,previous), psg(:,:,previous), surf_geopotential, &
@@ -261,13 +270,14 @@ do j = js,je+1
 enddo
 
 if(idealized_moist_model) then
-   call idealized_moist_phys_init(Time, Time_step, nhum, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, tg(:,:,num_levels,current))
+   !print*, "call idealized_moist_phys_init"
+   call idealized_moist_phys_init(Time, Time_step, nhum,nhum_age, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, tg(:,:,num_levels,current))
+   !!print*, "after idealized_moist_phys_init"
 else
    call hs_forcing_init(get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, rad_lat_2d)
 endif
-
+!!print*, "atm init done!"
 module_is_initialized = .true.
-
 return
 end subroutine atmosphere_init
 
@@ -282,7 +292,7 @@ type(time_type) :: Time_next
 if(.not.module_is_initialized) then
   call error_mesg('atmosphere','atmosphere module is not initialized',FATAL)
 endif
-
+!!print*,"Starting atmosphere"
 dt_ug  = 0.0
 dt_vg  = 0.0
 dt_tg  = 0.0
@@ -298,8 +308,11 @@ endif
 Time_next = Time + Time_step
 
 if(idealized_moist_model) then
+  ! update the physics
    call idealized_moist_phys(Time, p_half, p_full, z_half, z_full, ug, vg, psg, wg_full, tg, grid_tracers, &
                              previous, current, dt_ug, dt_vg, dt_tg, dt_tracers)
+  !!print*,"Just called id moist phys"
+
 else
    call hs_forcing(1, ie-is+1, 1, je-js+1, delta_t, Time_next, rad_lon_2d, rad_lat_2d, &
                 p_half(:,:,:,current ),       p_full(:,:,:,current   ), &
@@ -322,11 +335,17 @@ call column(Time, psg(:,:,future), ug(:,:,:,future), vg(:,:,:,future), &
                        dt_psg, dt_ug, dt_vg, dt_tg, dt_tracers, wg_full, &
                        p_full(:,:,:,current), p_half(:,:,:,current), z_full(:,:,:,current))
 #else 
+  ! update the system with dynamics
+  !!print*,"about to call spectral"
   call spectral_dynamics(Time, psg(:,:,future), ug(:,:,:,future), vg(:,:,:,future), &
                        tg(:,:,:,future), tracer_attributes, grid_tracers(:,:,:,:,:), future, &
                        dt_psg, dt_ug, dt_vg, dt_tg, dt_tracers, wg_full, &
                        p_full(:,:,:,current), p_half(:,:,:,current), z_full(:,:,:,current))
+  !!print*,"finished spectral"
 #endif
+
+! copy tracer after it's been updated (phys and dynamics)
+!grid_tracers(:,:,:,:,nhum_c) = grid_tracers(:,:,:,:,nhum)
 
 if(dry_model) then
   call compute_pressures_and_heights(tg(:,:,:,future), psg(:,:,future), surf_geopotential, &

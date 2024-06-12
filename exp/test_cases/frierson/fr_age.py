@@ -19,20 +19,22 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
-#cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
+cb.compile(debug = False)  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('frierson_test_experiment', codebase=cb)
+exp = Experiment(name = 'Fr_age_rampup',ext_field_table="field_table_age", codebase=cb)
 
 #Tell model how to write diagnostics
 diag = DiagTable()
-diag.add_file('atmos_monthly', 30, 'days', time_units='days')
+diag.add_file('atmos_monthly', 6, 'hours', time_units='days')
 
 #Tell model which diagnostics to write
 diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
+diag.add_field('dynamics', 'height',time_avg=True)
+diag.add_field('dynamics', 'zsurf')
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('dynamics', 'sphum', time_avg=True)
@@ -41,6 +43,11 @@ diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
+
+diag.add_field('dynamics', 'sphum_age', time_avg=True)
+diag.add_field('atmosphere', 'dt_sink', time_avg=True)
+diag.add_field('atmosphere', 'dt_qg_convection', time_avg=True)
+diag.add_field('atmosphere', 'dt_qg_condensation', time_avg=True)
 
 exp.diag_table = diag
 
@@ -69,7 +76,8 @@ exp.namelist = namelist = Namelist({
         'roughness_heat':3.21e-05,
         'roughness_moist':3.21e-05,                
         'two_stream_gray': True,     #Use grey radiation
-        'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use the simple Betts Miller convection scheme from Frierson
+        #'convection_scheme': 'NONE', # SIMPLE_BETTS_MILLER #Use the simple Betts Miller convection scheme from Frierson
+        'convection_scheme': 'SIMPLE_BETTS_MILLER', # SIMPLE_BETTS_MILLER #Use the simple Betts Miller convection scheme from Frierson
     },
 
     'vert_turb_driver_nml': {
@@ -173,6 +181,11 @@ exp.namelist = namelist = Namelist({
 
 #Lets do a run!
 if __name__=="__main__":
-    exp.run(1, use_restart=False, num_cores=NCORES)
+    path  = os.getenv("GFDL_DATA")
+    # Start from beginning
+    #res_file = '/home/philbou/scratch/isca_data/Fr_age_rampup/restarts/res0120.tar.gz'
+    #exp.run(1, use_restart=True, restart_file=res_file, num_cores=NCORES,overwrite_data=True)
+    exp.run(1, use_restart=False, num_cores=NCORES,overwrite_data=True)
     for i in range(2,121):
-        exp.run(i, num_cores=NCORES)
+        exp.run(i ,num_cores=NCORES,overwrite_data=True)
+

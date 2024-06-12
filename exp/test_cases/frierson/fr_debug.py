@@ -4,7 +4,7 @@ import numpy as np
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 8
+NCORES = 1
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -19,23 +19,26 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
-#cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
+cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('frierson_test_experiment', codebase=cb)
+#exp = Experiment('mod_frierson_test_experiment_noconv', codebase=cb)
+exp = Experiment('fr_debug',ext_field_table="field_table_clone" ,codebase=cb)
 
 #Tell model how to write diagnostics
 diag = DiagTable()
-diag.add_file('atmos_monthly', 30, 'days', time_units='days')
+diag.add_file('atmos_monthly', 12, 'hours', time_units='days')
 
 #Tell model which diagnostics to write
 diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
+diag.add_field('dynamics', 'height',time_avg=True)
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('dynamics', 'sphum', time_avg=True)
+diag.add_field('dynamics', 'sphum_c', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
@@ -50,7 +53,7 @@ exp.clear_rundir()
 #Define values for the 'core' namelist
 exp.namelist = namelist = Namelist({
     'main_nml':{
-     'days'   : 30,
+     'days'   : 1,
      'hours'  : 0,
      'minutes': 0,
      'seconds': 0,
@@ -69,7 +72,8 @@ exp.namelist = namelist = Namelist({
         'roughness_heat':3.21e-05,
         'roughness_moist':3.21e-05,                
         'two_stream_gray': True,     #Use grey radiation
-        'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use the simple Betts Miller convection scheme from Frierson
+        #'convection_scheme': 'NONE', # SIMPLE_BETTS_MILLER #Use the simple Betts Miller convection scheme from Frierson
+        'convection_scheme': 'SIMPLE_BETTS_MILLER', # SIMPLE_BETTS_MILLER #Use the simple Betts Miller convection scheme from Frierson
     },
 
     'vert_turb_driver_nml': {
@@ -173,6 +177,10 @@ exp.namelist = namelist = Namelist({
 
 #Lets do a run!
 if __name__=="__main__":
-    exp.run(1, use_restart=False, num_cores=NCORES)
-    for i in range(2,121):
-        exp.run(i, num_cores=NCORES)
+    path  = os.getenv("GFDL_DATA")
+    # Start where we left off
+    print(os.getcwd())
+    restart_file = '/home/philbou/scratch/isca_data/frierson_test_experiment/restarts/res0120.tar.gz'
+    exp.run(1, num_cores=NCORES,overwrite_data=True)
+    #for i in range(2,13):
+        #exp.run(i, num_cores=NCORES)

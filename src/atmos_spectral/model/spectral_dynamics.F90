@@ -137,7 +137,7 @@ real, allocatable, dimension(:,:,:    ) :: vorg, divg        ! no time levels ne
 integer, allocatable, dimension(:) :: tracer_vert_advect_scheme
 
 real    :: virtual_factor, dt_real
-integer :: pe, npes, num_tracers, nhum, t_vert_advect_scheme, uv_vert_advect_scheme, step_number
+integer :: pe, npes, num_tracers, nhum,nhum_age, t_vert_advect_scheme, uv_vert_advect_scheme, step_number
 real    :: mean_energy_previous, mean_water_previous, mean_surf_press_previous
 integer :: ms, me, ns, ne, is, ie, js, je
 integer :: previous, current, future
@@ -227,15 +227,17 @@ contains
 
 !===============================================================================================
 
-subroutine spectral_dynamics_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhum_out, ocean_mask)
+subroutine spectral_dynamics_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhum_out,nhum_out_age, ocean_mask)
 
 type(time_type), intent(in) :: Time, Time_step_in
 type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
 logical, intent(out) :: dry_model_out
 integer, intent(out) :: nhum_out
+integer, intent(out) :: nhum_out_age
+
 logical, optional, intent(in), dimension(:,:) :: ocean_mask
 
-integer :: num_total_wavenumbers, unit, k, seconds, days, ierr, io, ntr, nsphum, nmix_rat
+integer :: num_total_wavenumbers, unit, k, seconds, days, ierr, io, ntr, nsphum,nsphum_age, nmix_rat
 logical :: south_to_north = .true.
 real    :: ref_surf_p_implicit, robert_coeff_tracers
 
@@ -313,10 +315,13 @@ call get_grid_domain(is, ie, js, je)
 call get_spec_domain(ms, me, ns, ne)
 call get_number_tracers(MODEL_ATMOS, num_prog=num_tracers)
 call allocate_fields
+!!!print*, "num_tracers inside spectral:", num_tracers
 
 do ntr=1,num_tracers
-
+  !!!print*, "ntr inside spectral:", ntr
   call get_tracer_names(MODEL_ATMOS, ntr, tname, longname, units)
+  !!!print*, "tname:",tname
+  !!!print*, "longname:",longname
   tracer_attributes(ntr)%name = lowercase(tname)
 
   if(query_method('numerical_representation', MODEL_ATMOS, ntr, scheme)) then
@@ -368,13 +373,17 @@ do ntr=1,num_tracers
   endif
 
 enddo
+!!!print*, "loop done"
 
 nsphum   = get_tracer_index(MODEL_ATMOS, 'sphum')
+nsphum_age   = get_tracer_index(MODEL_ATMOS, 'sphum_age')
+
 nmix_rat = get_tracer_index(MODEL_ATMOS, 'mix_rat')
 
 if(nsphum == NO_TRACER) then
   if(nmix_rat == NO_TRACER) then
     nhum = 0
+    nhum_age = 0
     dry_model = .true.
   else
     nhum = nmix_rat
@@ -383,6 +392,7 @@ if(nsphum == NO_TRACER) then
 else
   if(nmix_rat == NO_TRACER) then
     nhum = nsphum
+    nhum_age = nsphum_age
     dry_model = .false.
   else
     call error_mesg('spectral_dynamics_init','sphum and mix_rat cannot both be specified as tracers at the same time', FATAL)
@@ -390,6 +400,7 @@ else
 endif
 dry_model_out = dry_model
 nhum_out = nhum
+nhum_out_age = nhum_age
 
 allocate(tracer_vert_advect_scheme(num_tracers))
 
@@ -408,12 +419,13 @@ do ntr=1,num_tracers
   endif
 enddo
 
+!!print*, "call read_restart_or_do_coldstart"
 call read_restart_or_do_coldstart(tracer_attributes, ocean_mask)
-
+!!print*, "call press_and_geopot_init"
 call press_and_geopot_init(pk, bk, use_virtual_temperature, vert_difference_option)
-
+!!print*, "call spectral_diagnostics_init"
 call spectral_diagnostics_init(Time)
-
+!!print*, "call every_step_diagnostics_init"
 call every_step_diagnostics_init(Time, lon_max, lat_max, num_levels, reference_sea_level_press)
 
 if(do_water_correction .and. .not.do_mass_correction) then
@@ -559,17 +571,23 @@ if(file_exist(trim(file))) then
     call read_data(trim(file), 'tg',   tg(:,:,:,nt), grid_domain, timelevel=nt)
     call read_data(trim(file), 'psg', psg(:,:,  nt), grid_domain, timelevel=nt)
     do ntr = 1,num_tracers
+      !!print*,"numtracer in loop:",ntr
       tr_name = trim(tracer_attributes(ntr)%name)
+      !!print*,"call read_data"
+
       call read_data(trim(file), trim(tr_name), grid_tracers(:,:,:,nt,ntr), grid_domain, timelevel=nt)
+      !!print*, "line 572"
       if(uppercase(trim(tracer_attributes(ntr)%numerical_representation)) == 'SPECTRAL') then
         call read_data(trim(file), trim(tr_name)//'_real', real_part, spectral_domain, timelevel=nt)
         call read_data(trim(file), trim(tr_name)//'_imag', imag_part, spectral_domain, timelevel=nt)
+        !!print*, "line 576"
         do k=1,num_levels; do n=ns,ne; do m=ms,me
           spec_tracers(m,n,k,nt,ntr) = cmplx(real_part(m,n,k),imag_part(m,n,k))
         enddo; enddo; enddo
       endif
     enddo ! loop over tracers
   enddo ! loop over time levels
+  !!print*, "line 581"
   call read_data(trim(file), 'vorg', vorg, grid_domain)
   call read_data(trim(file), 'divg', divg, grid_domain)
   call read_data(trim(file), 'surf_geopotential', surf_geopotential, grid_domain)

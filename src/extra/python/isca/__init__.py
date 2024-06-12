@@ -9,6 +9,7 @@ try:
     GFDL_BASE        = os.environ['GFDL_BASE']
     GFDL_WORK        = os.environ['GFDL_WORK']
     GFDL_DATA        = os.environ['GFDL_DATA']
+
 except Exception as e:
     log.error('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')
     raise ValueError('Environment variables GFDL_BASE, GFDL_WORK, GFDL_DATA must be set')

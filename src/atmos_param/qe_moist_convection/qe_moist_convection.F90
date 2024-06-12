@@ -336,6 +336,7 @@ contains
              ! Calculate the precipitation rate Pq 
              call Pq_calculation(kLZB, k_surface, qref_parcel, qin(i,j,:),    &
                   p_half(i,j,:), deltaq_parcel, Pq_parcel, dt)
+                  
              ! Calculate the humidity change that would be necessary
              ! to balance temperature change by latent heat release 
              call Pt_calculation(kLZB, k_surface, Tref_parcel, Tin(i,j,:),    &
