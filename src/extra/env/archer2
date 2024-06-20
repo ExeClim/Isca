@@ -1,0 +1,9 @@
+echo loadmodules for archer2 
+
+module load cray-hdf5 
+module load cray-netcdf 
+
+export GFDL_MKMF_TEMPLATE=gfort 
+
+export F90=ftn 
+export CC=cc
