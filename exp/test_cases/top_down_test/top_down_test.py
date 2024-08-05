@@ -18,8 +18,6 @@ cb = DryCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
-cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
-
 # create a diagnostics output file for daily snapshots
 diag = DiagTable()
 diag.add_file('atmos_daily', 1, 'days', time_units='days')
@@ -97,6 +95,7 @@ namelist = Namelist({
 })
 
 if __name__=="__main__":
+    cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
     obls = [15]
     for obl in obls:
