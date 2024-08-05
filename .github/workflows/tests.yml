@@ -36,7 +36,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]  # ,  macos-latest]
-        python-version: ['3.9']
+        python-version: ['3.12']
 
     steps:
       - name: Checkout source
@@ -46,7 +46,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: ${{ matrix.python-version }}
-          environment-file: ci/environment-py${{ matrix.python-version }}.yml
+          environment-file: ci/environment-py${{ matrix.python-version }}_frozen.yml
           miniforge-variant: Mambaforge
           miniforge-version: "latest"
           use-mamba: true

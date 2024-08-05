@@ -4,7 +4,7 @@ from functools import wraps
 import sh
 
 mkdir = sh.mkdir.bake('-p')
-cd = sh.cd
+# cd = sh.cd
 git = sh.git.bake('--no-pager')
 
 P = os.path.join
