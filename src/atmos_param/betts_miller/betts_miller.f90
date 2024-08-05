@@ -19,7 +19,7 @@ private
 !---------------------------------------------------------------------
 !  ---- public interfaces ----
 
-   public  betts_miller, betts_miller_init
+   public  betts_miller, betts_miller_init, lcltabl
 
 !-----------------------------------------------------------------------
 !   ---- version number ----
@@ -101,7 +101,7 @@ contains
    subroutine betts_miller (dt, tin, qin, pfull, phalf, coldT, &
                            rain, snow, tdel, qdel, q_ref, bmflag, &
                            klzbs, cape, cin, t_ref,invtau_bm_t,invtau_bm_q, &
-                           capeflag, mask, conv)
+                           capeflag, klcls, mask, conv)
 
 !-----------------------------------------------------------------------
 !
@@ -142,9 +142,9 @@ contains
    real   , intent(in) , dimension(:,:,:) :: tin, qin, pfull, phalf
    real   , intent(in)                    :: dt
    logical   , intent(in) , dimension(:,:):: coldT
-   real   , intent(out), dimension(:,:)   :: rain,snow, klzbs, cape, &
+   real   , intent(out), dimension(:,:)   :: rain,snow, cape, &
        cin, invtau_bm_t, invtau_bm_q, capeflag
-   integer, intent(out), dimension(:,:)   :: bmflag
+   integer, intent(out), dimension(:,:)   :: bmflag, klzbs, klcls
    real   , intent(out), dimension(:,:,:) :: tdel, qdel, q_ref, t_ref
    real   , intent(in) , dimension(:,:,:), optional :: mask
    logical, intent(in) , dimension(:,:,:), optional :: conv
@@ -162,8 +162,8 @@ logical :: avgbl
 
    real                                                ::  & 
        cape1, cin1, tot, deltak, deltaq, qrefint, deltaqfrac, deltaqfrac2, &
-       ptopfrac, es, capeflag1, plzb, plcl, cape2, small
-integer  i, j, k, ix, jx, kx, klzb, ktop, klzb2
+       ptopfrac, es, capeflag1, plzb, plcl, small
+   integer  i, j, k, ix, jx, kx, klzb, ktop, klcl
 !-----------------------------------------------------------------------
 !     computation of precipitation by betts-miller scheme
 !-----------------------------------------------------------------------
@@ -197,13 +197,14 @@ integer  i, j, k, ix, jx, kx, klzb, ktop, klzb2
              call capecalcnew( kx,  pfull(i,j,:),  phalf(i,j,:),&
                             cp_air, rdgas, rvgas, hlv, kappa, tin(i,j,:), &
                             rin(i,j,:), avgbl, cape1, cin1, tpc, &
-                            rpc, klzb)
+                            rpc, klzb, klcl)
 
 ! set values for storage
              capeflag(i,j) = capeflag1
              cape(i,j) = cape1
              cin(i,j) = cin1
              klzbs(i,j) = klzb
+             klcls(i,j) = klcl
              if(cape1.gt.0.) then 
 !             if((tot.gt.0.).and.(cape1.gt.0.)) then 
                 bmflag(i,j) = 1
@@ -443,7 +444,7 @@ integer  i, j, k, ix, jx, kx, klzb, ktop, klzb2
 !all new cape calculation.
 
       subroutine capecalcnew(kx,p,phalf,cp_air,rdgas,rvgas,hlv,kappa,tin,rin,&
-                             avgbl,cape,cin,tp,rp,klzb)
+                             avgbl,cape,cin,tp,rp,klzb,klcl)
 
 !
 !    Input:
@@ -471,6 +472,7 @@ integer  i, j, k, ix, jx, kx, klzb, ktop, klzb2
 !                where no adjustment, and set to the saturation humidity at 
 !                the parcel temperature below the LCL)
 !    klzb        Level of zero buoyancy
+!    klcl        Lifting condensation level
 !
 !    Algorithm: 
 !    Start with surface parcel. 
@@ -485,11 +487,11 @@ integer  i, j, k, ix, jx, kx, klzb, ktop, klzb2
       logical, intent(in)                    :: avgbl
       real, intent(in), dimension(:)         :: p, phalf, tin, rin
       real, intent(in)                       :: rdgas, rvgas, hlv, kappa, cp_air
-      integer, intent(out)                   :: klzb
+      integer, intent(out)                   :: klzb, klcl
       real, intent(out), dimension(:)        :: tp, rp
       real, intent(out)                      :: cape, cin
 
-      integer            :: k, klcl, klfc, klcl2
+      integer            :: k, klfc, klcl2 !  klcl
       logical            :: nocape
       real, dimension(kx)   :: theta
       real                  :: t0, r0, es, rs, theta0, pstar, value, tlcl, &

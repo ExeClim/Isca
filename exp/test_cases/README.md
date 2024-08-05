@@ -6,6 +6,9 @@
 `bucket_hydrology`
 * As described in Isca paper (Vallis et al., 2017) but without q-fluxes
 
+`column_test_case`
+* Single column configuration of Isca. Please cite McKim et al. (2024, submitted) (<https://doi.org/10.22541/essoar.170904795.55675140/v1>) if you use the SCM. 
+
 `frierson`
 * Control case of the so-called `Frierson model` described in e.g. <https://doi.org/10.1175/JAS3753.1>
 

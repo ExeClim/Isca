@@ -1,0 +1,1 @@
+../../realistic_continents/input/sst_clim_amip.nc
