@@ -1,6 +1,6 @@
 # Project-specific
 compilation*/
-docs/source/examples/index.rst
+# docs/source/examples/index.rst
 exec.*/
 exp/st_test*
 exp/archived/*
