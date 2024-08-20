@@ -4,8 +4,13 @@ import numpy as np
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
+from field_table_write import write_ft
+
 NCORES = 32
 
+RESOLUTION = "T42", 25
+
+base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
 cb = IscaCodeBase.from_directory(GFDL_BASE)
@@ -19,19 +24,24 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
-cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
-field_table_name = "field_table"
+cb.compile(debug = False)  # compile the source code to working directory $GFDL_WORK/codebase
+
+n_moments = 4
+field_table_name = "field_table_age_" + str(n_moments)
+write_ft(field_table_name,n_moments)
+
+# Write field table
+
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('mima',ext_field_table=field_table_name, codebase=cb)
-
-exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
+exp = Experiment(name = 'fr_fluxq_f',ext_field_table=field_table_name, codebase=cb)
 
 #Tell model how to write diagnostics
 diag = DiagTable()
-diag.add_file('atmos_monthly', 30, 'days', time_units='days')
+diag.add_file('atmos_monthly', 6, 'hours', time_units='days')
 
 #Tell model which diagnostics to write
+
 diag.add_field('dynamics', 'ps', time_avg=True)
 diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
@@ -50,45 +60,51 @@ diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
 
-diag.add_field('rrtm_radiation', 'tdt_rad', time_avg=True)
-diag.add_field('rrtm_radiation', 'tdt_sw', time_avg=True)
-diag.add_field('rrtm_radiation', 'tdt_lw', time_avg=True)
-diag.add_field('rrtm_radiation', 'flux_sw', time_avg=True)
-diag.add_field('rrtm_radiation', 'flux_lw', time_avg=True)
-diag.add_field('rrtm_radiation', 'olr', time_avg=True)
-diag.add_field('rrtm_radiation', 'toa_sw', time_avg=True)
+diag.add_field('vert_turb', 'z_pbl', time_avg=True)
+
+for ind in range(n_moments):
+    name = f"sphum_age_{ind+1}"
+    diag.add_field('dynamics', name, time_avg=True)
+
+diag.add_field('atmosphere', 'cape', time_avg=True)
+diag.add_field('atmosphere', 'dt_qg_convection', time_avg=True)
+diag.add_field('atmosphere', 'dt_qg_condensation', time_avg=True)
+diag.add_field('atmosphere', 'dt_sink', time_avg=True)
+diag.add_field('atmosphere', 'dt_qg_diffusion', time_avg=True)
+
+
 
 
 exp.diag_table = diag
-
 
 #Empty the run directory ready to run
 exp.clear_rundir()
 
 #Define values for the 'core' namelist
 exp.namelist = namelist = Namelist({
-    'main_nml': {
-        'days'   : 30,
-        'hours'  : 0,
-        'minutes': 0,
-        'seconds': 0,
-        'dt_atmos':600,
-        'current_date' : [1,1,1,0,0,0],
-        'calendar' : 'thirty_day'
+    'main_nml':{
+     'days'   : 30,
+     'hours'  : 0,
+     'minutes': 0,
+     'seconds': 0,
+     'dt_atmos':720,
+     'current_date' : [1,1,1,0,0,0],
+     'calendar' : 'thirty_day'
     },
 
     'idealized_moist_phys_nml': {
-        'two_stream_gray': False,
-        'do_rrtm_radiation': True,    #Use RRTM radiation, not grey
-        'convection_scheme': 'SIMPLE_BETTS_MILLER',     #Use the simple Betts Miller convection scheme
         'do_damping': True,
         'turb':True,
         'mixed_layer_bc':True,
+        'floor_evap' : True,
         'do_virtual' :False,
         'do_simple': True,
         'roughness_mom':3.21e-05,
         'roughness_heat':3.21e-05,
         'roughness_moist':3.21e-05,                
+        'two_stream_gray': True,     #Use grey radiation
+        #'convection_scheme': 'NONE', # SIMPLE_BETTS_MILLER #Use the simple Betts Miller convection scheme from Frierson
+        'convection_scheme': 'SIMPLE_BETTS_MILLER', # SIMPLE_BETTS_MILLER #Use the simple Betts Miller convection scheme from Frierson
     },
 
     'vert_turb_driver_nml': {
@@ -116,19 +132,23 @@ exp.namelist = namelist = Namelist({
 
     #Use a large mixed-layer depth, and the Albedo of the CTRL case in Jucker & Gerber, 2017
     'mixed_layer_nml': {
-        'depth': 100,
-        'albedo_value': 0.205,
         'tconst' : 285.,
         'prescribe_initial_dist':True,
-        'evaporation':True,
-        'do_qflux': True,
-        'floor_evap': False        
+        'evaporation':True,   
+        'depth': 2.5,                          #Depth of mixed layer used
+        'albedo_value': 0.31                 #Albedo value used        
     },
 
     'qe_moist_convection_nml': {
         'rhbm':0.7,
         'Tmin':160.,
         'Tmax':350.   
+    },
+
+    'betts_miller_nml': {
+       'rhbm': .7   , 
+       'do_simp': False, 
+       'do_shallower': True, 
     },
     
     'lscale_cond_nml': {
@@ -142,20 +162,15 @@ exp.namelist = namelist = Namelist({
     
     'damping_driver_nml': {
         'do_rayleigh': True,
-        'trayfric': -0.5,              # neg. value: time in *days*
-        'sponge_pbottom':  50.,
-        'do_conserve_energy': True,         
+        'trayfric': -0.25,              # neg. value: time in *days*
+        'sponge_pbottom':  5000.,           #Bottom of the model's sponge down to 50hPa (units are Pa)
+        'do_conserve_energy': True,             
     },
 
-    'qflux_nml': {
-        'qflux_amp': 30.0
-    },
-
-    'rrtm_radiation_nml': {
-        'solr_cnst': 1360,  #s set solar constant to 1360, rather than default of 1368.22
-        'dt_rad': 7200, #Use long RRTM timestep
-        'do_read_ozone':True,
-        'ozone_file':'ozone_1990'
+    'two_stream_gray_rad_nml': {
+        'rad_scheme': 'frierson',            #Select radiation scheme to use, which in this case is Frierson
+        'do_seasonal': False,                #do_seasonal=false uses the p2 insolation profile from Frierson 2006. do_seasonal=True uses the GFDL astronomy module to calculate seasonally-varying insolation.
+        'atm_abs': 0.2,                      # default: 0.0        
     },
 
     # FMS Framework configuration
@@ -176,27 +191,29 @@ exp.namelist = namelist = Namelist({
         'damping_order': 4,             
         'water_correction_limit': 200.e2,
         'reference_sea_level_press':1.0e5,
-        'num_levels':40,
+        'num_levels':25,               #How many model pressure levels to use
         'valid_range_t':[100.,800.],
         'initial_sphum':[2.e-6],
-        'vert_coord_option':'uneven_sigma',
+        'vert_coord_option':'input', #Use the vertical levels from Frierson 2006
         'surf_res':0.5,
         'scale_heights' : 11.0,
         'exponent':7.0,
         'robert_coeff':0.03
-    }
-    
-    
+    },
+    'vert_coordinate_nml': {
+        'bk': [0.000000, 0.0117665, 0.0196679, 0.0315244, 0.0485411, 0.0719344, 0.1027829, 0.1418581, 0.1894648, 0.2453219, 0.3085103, 0.3775033, 0.4502789, 0.5244989, 0.5977253, 0.6676441, 0.7322627, 0.7900587, 0.8400683, 0.8819111, 0.9157609, 0.9422770, 0.9625127, 0.9778177, 0.9897489, 1.0000000],
+        'pk': [0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000],
+       }
 })
+
+exp.set_resolution(*RESOLUTION)
 #Lets do a run!
 if __name__=="__main__":
-    
-    """    exp.run(1, use_restart=False, num_cores=NCORES)
-    for i in range(2,121):
-        exp.run(i, num_cores=NCORES)"""
-        
-    res_file = '/home/philbou/scratch/isca_data/mima/restarts/res0012.tar.gz'
-    exp.run(13, use_restart=True, restart_file=res_file, num_cores=NCORES,overwrite_data=True)
-    #exp.run(1, use_restart=False, num_cores=NCORES,overwrite_data=True)
-    for i in range(14,50):
+    path  = os.getenv("GFDL_DATA")
+    # Start from beginning
+    res_file = '/home/philbou/scratch/isca_data/fr_new_dttracer/restarts/res0012.tar.gz'
+    #exp.run(13, use_restart=True, restart_file=res_file, num_cores=NCORES,overwrite_data=True)
+    exp.run(1, use_restart=False, num_cores=NCORES,overwrite_data=True)
+    for i in range(2,241):
         exp.run(i ,num_cores=NCORES,overwrite_data=True)
+

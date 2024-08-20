@@ -38,6 +38,8 @@ use      dry_convection_mod, only: dry_convection_init, dry_convection
 
 use        diag_manager_mod, only: register_diag_field, send_data
 
+use age_moments_mod 
+
 #ifdef COLUMN_MODEL 
 use              column_mod, only: get_num_levels, get_surf_geopotential, get_axis_id
 use            spec_mpp_mod, only: get_grid_domain, grid_domain 
@@ -128,6 +130,8 @@ logical :: do_socrates_radiation = .false.
 ! MiMA uses damping
 logical :: do_damping = .false.
 
+logical :: floor_evap = .false.
+
 
 logical :: mixed_layer_bc = .false.
 logical :: gp_surface = .false. ! Use Schneider & Liu 2009's prescription of lower-boundary heat flux
@@ -157,7 +161,7 @@ real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
 
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
                                       do_cloud_simple, do_cloud_spookie,             &
-                                      two_stream_gray, do_rrtm_radiation, do_damping,&
+                                      two_stream_gray, do_rrtm_radiation,floor_evap ,do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
                                       land_option, land_file_name, land_field_name,  & ! options for idealised land
@@ -176,6 +180,8 @@ real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
      t_surf,               &   ! surface temperature
      q_surf,               &   ! surface moisture
+     tmp_sink,             &
+     tmp_dq,             &
      u_surf,               &   ! surface U wind
      v_surf,               &   ! surface V wind
      rough_mom,            &   ! momentum roughness length for surface_flux
@@ -234,6 +240,7 @@ real, allocatable, dimension(:,:,:) ::                                        &
      conv_dt_tg,           &   ! temperature tendency from convection
      conv_dt_qg,           &   ! moisture tendency from convection
      sink,           &   ! negative moisture tendency from convection
+     sink_mixedlayer, &
      eps_blowup,               &
      condition_met, &
      cond_dt_tg,           &   ! temperature tendency from condensation
@@ -284,6 +291,7 @@ integer ::           &
      id_conv_dt_tg,  &   ! temperature tendency from convection
      id_conv_dt_qg,  &   ! moisture tendency from convection
      id_sink,  &   ! negative moisture tendency from convection
+     id_dt_tracer,  &   ! negative moisture tendency from convection
      id_cond_dt_tg,  &   ! temperature tendency from condensation
      id_cond_dt_qg,  &   ! temperature tendency from condensation
      id_bucket_depth,      &   ! bucket depth variable for output
@@ -324,10 +332,10 @@ type(time_type) :: Time_step
 contains
 !=================================================================================================================================
 
-subroutine idealized_moist_phys_init(Time, Time_step_in, nhum,nhum_age, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init)
+subroutine idealized_moist_phys_init(Time, Time_step_in, nhum,n_age, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init)
 type(time_type), intent(in) :: Time, Time_step_in
 integer, intent(in) :: nhum
-integer, intent(in) :: nhum_age
+integer, intent(in) :: n_age
 real, intent(in), dimension(:,:) :: rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init
 
 integer :: io, ierr, nml_unit, stdlog_unit, seconds, days, id, jd, kd
@@ -463,7 +471,7 @@ if(do_lcl_diffusivity_depth .and. (.not. (lwet_convection .or. do_ras .or. do_bm
 
 
 nsphum = nhum
-nsphum_age = nhum_age
+nsphum_age = n_age
 
 Time_step = Time_step_in
 call get_time(Time_step, seconds, days)
@@ -485,6 +493,8 @@ allocate(z_surf      (is:ie, js:je))
 allocate(t_surf      (is:ie, js:je))
 allocate(q_surf      (is:ie, js:je)); q_surf = 0.0
 allocate(u_surf      (is:ie, js:je)); u_surf = 0.0
+allocate(tmp_sink      (is:ie, js:je)); 
+allocate(tmp_dq      (is:ie, js:je)); 
 allocate(v_surf      (is:ie, js:je)); v_surf = 0.0
 allocate(rough_mom   (is:ie, js:je)); rough_mom = roughness_mom
 allocate(rough_heat  (is:ie, js:je)); rough_heat = roughness_heat
@@ -540,6 +550,7 @@ allocate(surf_lw_down            (is:ie, js:je))
 allocate(conv_dt_tg  (is:ie, js:je, num_levels))
 allocate(conv_dt_qg  (is:ie, js:je, num_levels))
 allocate(sink  (is:ie, js:je, num_levels))
+allocate(sink_mixedlayer  (is:ie, js:je, num_levels))
 allocate(eps_blowup  (is:ie, js:je, num_levels))
 allocate(condition_met  (is:ie, js:je, num_levels))
 
@@ -559,7 +570,6 @@ allocate(precip       (is:ie, js:je)); precip = 0.0
 allocate(convective_rain (is:ie, js:je)); convective_rain = 0.0
 allocate(convflag     (is:ie, js:je))
 allocate(convect      (is:ie, js:je)); convect = .false.
-
 
 
 allocate(t_ref (is:ie, js:je, num_levels)); t_ref = 0.0
@@ -775,6 +785,8 @@ end select
         axes(1:3), Time, 'Moisture tendency from convection','kg/kg/s')
    id_sink = register_diag_field(mod_name, 'dt_sink',          &
         axes(1:3), Time, '(sink) negative Moisture tendency from convection','idk')
+   id_dt_tracer = register_diag_field(mod_name, 'dt_tracer',          &
+        axes(1:3), Time, 'dt_tracer argument','idk')
    id_conv_dt_tg = register_diag_field(mod_name, 'dt_tg_convection',          &
         axes(1:3), Time, 'Temperature tendency from convection','K/s')
    id_conv_rain = register_diag_field(mod_name, 'convection_rain',            &
@@ -876,6 +888,8 @@ convective_rain = 0.0
 
 ! set sink to 0
 sink = 0.0
+tmp_sink = 0.0
+tmp_dq = 0.0
 
 select case(r_conv_scheme)
 
@@ -1042,10 +1056,6 @@ if (r_conv_scheme .ne. DRY_CONV) then
   if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
   if(id_precip     > 0) used = send_data(id_precip, precip, Time)
 endif
-! PHIL
-!---------------------------------------------------------------------------------------
-  
-
 !---------------------------------------------------------------------------------------
 
 ! Call the simple cloud scheme in line with SPOOKIE-2 requirements
@@ -1377,6 +1387,20 @@ if(turb) then
 
    call gcm_vert_diff_up (1, 1, delta_t, Tri_surf, dt_tg(:,:,:), dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:))
 
+    tmp_dq =( flux_q * Tri_surf%dtmass )/delta_t !dt_tracers(:,:,num_levels,nsphum) - non_diff_dt_qg(:,:,num_levels)
+
+    if (floor_evap) then
+      where (tmp_dq < 0.0)
+        tmp_dq = 0.0
+      endwhere 
+    endif
+
+    where (tmp_dq < 0.0)
+      tmp_sink = tmp_dq
+    endwhere 
+
+    sink(:,:,num_levels) =  sink(:,:,num_levels) + tmp_sink
+
    if(id_diff_dt_ug > 0) used = send_data(id_diff_dt_ug, dt_ug - non_diff_dt_ug, Time)
    if(id_diff_dt_vg > 0) used = send_data(id_diff_dt_vg, dt_vg - non_diff_dt_vg, Time)
    if(id_diff_dt_tg > 0) used = send_data(id_diff_dt_tg, dt_tg - non_diff_dt_tg, Time)
@@ -1442,20 +1466,11 @@ endif
   eps_blowup = 1e-10
   condition_met = .false.
 ! Calculate Age eq. RHS
-  !where (grid_tracers(:,:,:,previous,nsphum) < eps_blowup)
-  !   condition_met = .true.
-  !end where
-
-  !flag_test = any(sink(:,:,:) .ne. 0.0)
-
-  ! Print the flag if the condition is met for any element
-  !if (flag_test) then
-    !print*, 'Flag: Some values in sink are less than 0'
-  !endif
-
+  call get_age_moments(nsphum,nsphum_age,previous,grid_tracers,sink,dt_tracers)
+   
   if(id_sink > 0) used = send_data(id_sink, sink, Time)
-  
-  dt_tracers(:,:,:,nsphum_age)  = grid_tracers(:,:,:,previous,nsphum) + sink * (grid_tracers(:,:,:,previous,nsphum_age)/(eps_blowup+grid_tracers(:,:,:,previous,nsphum)))
+  ! Save the second moment
+  if(id_dt_tracer > 0) used = send_data(id_dt_tracer, dt_tracers(:,:,:,3), Time)
 
 end subroutine idealized_moist_phys
 !=================================================================================================================================

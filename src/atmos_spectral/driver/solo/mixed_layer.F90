@@ -161,12 +161,13 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
 logical :: module_is_initialized =.false.
 logical :: used
 
-integer :: iter, nhum
+integer :: iter, nhum, surface_p_level
 integer, dimension(4) :: axes
 integer ::                                                                    &
      id_t_surf,            &   ! surface temperature
      id_flux_lhe,          &   ! latent heat flux at surface
      id_flux_oceanq,       &   ! oceanic Q flux
+     id_corrected_flux,     &   ! Corrected flux at surface (avg to 0)
      id_flux_t,            &   ! sensible heat flux at surface
      id_heat_cap,          &   ! heat capacity
      id_albedo,            &   ! mj albedo
@@ -186,6 +187,7 @@ real, allocatable, dimension(:,:)   ::                                        &
      gamma_q,               &   ! correction to the diffusion in
      fn_t,                  &   ! the lowest layer
      fn_q,                  &   !
+     evap_inc,                  &   !
      en_t,                  &   !
      en_q,                  &   !
      alpha_t,               &   !
@@ -275,6 +277,7 @@ allocate(en_t                    (is:ie, js:je))
 allocate(en_q                    (is:ie, js:je))
 allocate(fn_t                    (is:ie, js:je))
 allocate(fn_q                    (is:ie, js:je))
+allocate(evap_inc                (is:ie, js:je))
 allocate(alpha_t                 (is:ie, js:je))
 allocate(alpha_q                 (is:ie, js:je))
 allocate(alpha_lw                (is:ie, js:je))
@@ -364,10 +367,13 @@ id_flux_lhe = register_diag_field(mod_name, 'flux_lhe',        &
                                  axes(1:2), Time, 'latent heat flux up at surface','watts/m2')
 id_flux_oceanq = register_diag_field(mod_name, 'flux_oceanq',        &
                                  axes(1:2), Time, 'oceanic Q-flux','watts/m2')
+id_corrected_flux          = register_diag_field(mod_name, 'corr_flux',        &
+                                 axes(1:2), Time, 'corrected flix at surface','watts/m2')
 id_heat_cap = register_static_field(mod_name, 'ml_heat_cap',        &
                                  axes(1:2), 'mixed layer heat capacity','joules/m^2/deg C')
 id_delta_t_surf = register_diag_field(mod_name, 'delta_t_surf',        &
                                  axes(1:2), Time, 'change in sst','K')
+
 if (update_albedo_from_ice) then
     id_albedo = register_diag_field(mod_name, 'albedo',    &
                                  axes(1:2), Time, 'surface albedo', 'none')
@@ -743,8 +749,10 @@ endif !s end of if(do_sc_sst).
 ! Finally calculate the increments for the lowest atmospheric layer
 !
 Tri_surf%delta_t = fn_t + en_t * delta_t_surf
-if (evaporation) Tri_surf%delta_tr(:,:,nhum) = fn_q + en_q * delta_t_surf
-
+if (evaporation) then
+   evap_inc = fn_q + en_q * delta_t_surf
+   Tri_surf%delta_tr(:,:,nhum) = evap_inc
+endif
 !
 ! Note:
 ! When using an implicit step there is not a clearly defined flux for a given timestep
@@ -753,6 +761,7 @@ if(id_t_surf > 0) used = send_data(id_t_surf, t_surf, Time_next)
 if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time_next)
 if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q_total, Time_next)
 if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time_next)
+if(id_corrected_flux > 0)   used = send_data(id_corrected_flux, corrected_flux, Time_next)
 
 if(id_delta_t_surf > 0)   used = send_data(id_delta_t_surf, delta_t_surf, Time_next)
 

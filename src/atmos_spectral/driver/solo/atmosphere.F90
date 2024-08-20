@@ -85,7 +85,7 @@ namelist/atmosphere_nml/ idealized_moist_model
 !=================================================================================================================================
 
 integer, parameter :: num_time_levels = 2
-integer :: is, ie, js, je, num_levels, num_tracers, nhum,nhum_age
+integer :: is, ie, js, je, num_levels, num_tracers, nhum,n_age
 logical :: dry_model, column_model
 
 real, allocatable, dimension(:,:,:,:) :: p_half, p_full
@@ -152,16 +152,16 @@ call get_number_tracers(MODEL_ATMOS, num_prog=num_tracers)
 allocate (tracer_attributes(num_tracers))
 #ifdef COLUMN_MODEL
   !!!print*, "call column_init"
-  call column_init(Time, Time_step, tracer_attributes, dry_model, nhum,nhum_age)
+  call column_init(Time, Time_step, tracer_attributes, dry_model, nhum,n_age)
   column_model = .true.
 #else
-  !!!print*, "nhum before spectral:", nhum
-  call spectral_dynamics_init(Time, Time_step, tracer_attributes, dry_model, nhum,nhum_age)
+  call spectral_dynamics_init(Time, Time_step, tracer_attributes, dry_model, nhum)
   column_model = .false.
 #endif 
-!!!print*, "call get_grid_domain"
+
+n_age = num_tracers - nhum + 1
+
 call get_grid_domain(is, ie, js, je)
-!!!print*, "call get_num_levels"
 call get_num_levels(num_levels)
 
 allocate (p_half       (is:ie, js:je, num_levels+1, num_time_levels))
@@ -271,14 +271,16 @@ enddo
 
 if(idealized_moist_model) then
    !print*, "call idealized_moist_phys_init"
-   call idealized_moist_phys_init(Time, Time_step, nhum,nhum_age, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, tg(:,:,num_levels,current))
+   call idealized_moist_phys_init(Time, Time_step, nhum,n_age, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, tg(:,:,num_levels,current))
    !!print*, "after idealized_moist_phys_init"
 else
    call hs_forcing_init(get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, rad_lat_2d)
 endif
 !!print*, "atm init done!"
 module_is_initialized = .true.
+
 return
+
 end subroutine atmosphere_init
 
 !=================================================================================================================================

@@ -227,13 +227,12 @@ contains
 
 !===============================================================================================
 
-subroutine spectral_dynamics_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhum_out,nhum_out_age, ocean_mask)
+subroutine spectral_dynamics_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhum_out, ocean_mask)
 
 type(time_type), intent(in) :: Time, Time_step_in
 type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
 logical, intent(out) :: dry_model_out
 integer, intent(out) :: nhum_out
-integer, intent(out) :: nhum_out_age
 
 logical, optional, intent(in), dimension(:,:) :: ocean_mask
 
@@ -373,17 +372,15 @@ do ntr=1,num_tracers
   endif
 
 enddo
-!!!print*, "loop done"
+
 
 nsphum   = get_tracer_index(MODEL_ATMOS, 'sphum')
-nsphum_age   = get_tracer_index(MODEL_ATMOS, 'sphum_age')
 
 nmix_rat = get_tracer_index(MODEL_ATMOS, 'mix_rat')
 
 if(nsphum == NO_TRACER) then
   if(nmix_rat == NO_TRACER) then
     nhum = 0
-    nhum_age = 0
     dry_model = .true.
   else
     nhum = nmix_rat
@@ -392,7 +389,6 @@ if(nsphum == NO_TRACER) then
 else
   if(nmix_rat == NO_TRACER) then
     nhum = nsphum
-    nhum_age = nsphum_age
     dry_model = .false.
   else
     call error_mesg('spectral_dynamics_init','sphum and mix_rat cannot both be specified as tracers at the same time', FATAL)
@@ -400,7 +396,6 @@ else
 endif
 dry_model_out = dry_model
 nhum_out = nhum
-nhum_out_age = nhum_age
 
 allocate(tracer_vert_advect_scheme(num_tracers))
 
@@ -1715,7 +1710,7 @@ do ntr=1,num_tracers
   id_tr(ntr) = register_diag_field(mod_name, tname, axes_3d_full, Time, longname, units)
   id_utr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_u'), axes_3d_full, Time, trim(longname)//trim(' x u'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
   id_vtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_v'), axes_3d_full, Time, trim(longname)//trim(' x v'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
-  id_wtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_w'), axes_3d_full, Time, trim(longname)//trim(' x w'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
+  id_wtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('P'), axes_3d_full, Time, trim(longname)//trim(' x w'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
 enddo
 
 id_vort_norm = register_diag_field(mod_name, 'vort_norm', Time, 'vorticity norm', '1/(m*sec)')

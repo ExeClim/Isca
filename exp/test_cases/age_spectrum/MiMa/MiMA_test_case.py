@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
-
+from field_table_write import write_ft
 NCORES = 32
 
 # a CodeBase can be a directory on the computer,
@@ -20,16 +20,21 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 # $GFDL_BASE and not the checked out git repo.
 
 cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
+
 field_table_name = "field_table"
+n_moments = 4
+field_table_name = "field_table_age_" + str(n_moments)
+write_ft(field_table_name,n_moments)
+
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('mima',ext_field_table=field_table_name, codebase=cb)
+exp = Experiment('mima_fluxq',ext_field_table=field_table_name, codebase=cb)
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
-diag.add_file('atmos_monthly', 30, 'days', time_units='days')
+diag.add_file('atmos_monthly', 6, 'hours', time_units='days')
 
 #Tell model which diagnostics to write
 diag.add_field('dynamics', 'ps', time_avg=True)
@@ -58,6 +63,9 @@ diag.add_field('rrtm_radiation', 'flux_lw', time_avg=True)
 diag.add_field('rrtm_radiation', 'olr', time_avg=True)
 diag.add_field('rrtm_radiation', 'toa_sw', time_avg=True)
 
+for ind in range(n_moments):
+    name = f"sphum_age_{ind+1}"
+    diag.add_field('dynamics', name, time_avg=True)
 
 exp.diag_table = diag
 
@@ -82,6 +90,7 @@ exp.namelist = namelist = Namelist({
         'do_rrtm_radiation': True,    #Use RRTM radiation, not grey
         'convection_scheme': 'SIMPLE_BETTS_MILLER',     #Use the simple Betts Miller convection scheme
         'do_damping': True,
+        'floor_evap': False,
         'turb':True,
         'mixed_layer_bc':True,
         'do_virtual' :False,
@@ -121,8 +130,7 @@ exp.namelist = namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':True,
-        'do_qflux': True,
-        'floor_evap': False        
+        'do_qflux': True     
     },
 
     'qe_moist_convection_nml': {
@@ -191,12 +199,12 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
     
-    """    exp.run(1, use_restart=False, num_cores=NCORES)
-    for i in range(2,121):
-        exp.run(i, num_cores=NCORES)"""
+    exp.run(1, use_restart=False, num_cores=NCORES)
+    for i in range(2,241):
+        exp.run(i, num_cores=NCORES,overwrite_data=True)
         
-    res_file = '/home/philbou/scratch/isca_data/mima/restarts/res0012.tar.gz'
+    """res_file = '/home/philbou/scratch/isca_data/mima/restarts/res0012.tar.gz'
     exp.run(13, use_restart=True, restart_file=res_file, num_cores=NCORES,overwrite_data=True)
     #exp.run(1, use_restart=False, num_cores=NCORES,overwrite_data=True)
     for i in range(14,50):
-        exp.run(i ,num_cores=NCORES,overwrite_data=True)
+        exp.run(i ,num_cores=NCORES,overwrite_data=True)"""
