@@ -34,6 +34,14 @@ class CodeBase(Logger):
     def from_directory(cls, directory, **kwargs):
         return cls(directory=directory, **kwargs)
 
+    def modify_exec_name(self):
+        if self.__class__==SocratesCodeBase:
+            if self.socrates_version == '1703':
+                self.executable_name = 'soc_isca.x'
+            else:
+                self.executable_name = f'soc_isca_{self.socrates_version}.x'
+
+
     def __init__(self, repo=None, commit=None, directory=None, storedir=P(GFDL_WORK, 'codebase'), safe_mode=False, socrates_version='1703'):
         """Create a new CodeBase object.
 
@@ -73,6 +81,9 @@ class CodeBase(Logger):
             self.directory = None
             self.commit = 'HEAD' if commit is None else commit
             workdir = url_to_folder(self.repo) + '-' + self.commit
+
+        self.socrates_version = socrates_version
+        self.modify_exec_name()
 
         # useful directory shortcuts
         self.workdir =  P(self.storedir, workdir)   # base for all codebase I/O actions
@@ -306,7 +317,7 @@ class SocratesCodeBase(CodeBase):
     """
     #path_names_file = P(_module_directory, 'templates', 'moist_path_names')
     name = 'socrates'
-    executable_name = 'soc_isca.x'
+    executable_name = None
 
     def disable_rrtm(self):
         # add no compile flag
@@ -344,15 +355,14 @@ class SocratesCodeBase(CodeBase):
                 self.log.error(error_mesg)
                 raise OSError(error_mesg)
 
-    def read_version_specific_paths(self, socrates_version_to_use):
-        self.extra_path_names = self.read_path_names(P(self.srcdir, 'extra', 'model', self.name, 'socrates_version_paths', socrates_version_to_use))        
+    def read_version_specific_paths(self):
+        self.extra_path_names = self.read_path_names(P(self.srcdir, 'extra', 'model', self.name, 'socrates_version_paths', self.socrates_version))        
 
     def __init__(self, *args, **kwargs):
         super(SocratesCodeBase, self).__init__(*args, **kwargs)
         self.disable_rrtm()
         self.simlink_to_soc_code()
-        socrates_version_to_use = kwargs['socrates_version']
-        self.read_version_specific_paths(socrates_version_to_use)
+        self.read_version_specific_paths()
 
 class SocColumnCodeBase(CodeBase):
     """Isca without RRTM but with the Met Office radiation scheme, Socrates. THIS VERSION FOR SINGLE COLUMN USE. 
