@@ -9,8 +9,7 @@ CONTAINS
 
 ! Subroutine to set input algorithmic options for the core radiation code
 !------------------------------------------------------------------------------
-SUBROUTINE read_control(control, spectrum, do_cloud_simple)
-
+SUBROUTINE read_control(control, spectrum, do_clouds)
 
 USE rad_pcf
 USE def_control,  ONLY: StrCtrl, allocate_control
@@ -28,7 +27,8 @@ TYPE(StrCtrl),      INTENT(INOUT) :: control
 ! Spectral data:
 TYPE (StrSpecData), INTENT(IN)    :: spectrum
 
-LOGICAL, INTENT(IN), OPTIONAL     :: do_cloud_simple
+LOGICAL, INTENT(IN), OPTIONAL     :: do_clouds
+
 
 ! Local variables.
 INTEGER :: i
@@ -97,7 +97,7 @@ control%l_continuum    = .TRUE.
 control%i_gas_overlap  = ip_overlap_k_eqv_scl
 
 ! Properties of clouds
-if (do_cloud_simple) then
+if (do_clouds) then
   control%i_cloud_representation = ip_cloud_ice_water
 else
   control%i_cloud_representation = ip_cloud_off

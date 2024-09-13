@@ -1,4 +1,4 @@
-from cftime import utime
+import cftime
 from datetime import  datetime
 from cmip_time import FakeDT
 import numpy as np
@@ -8,9 +8,11 @@ __author__='Stephen Thomson'
 
 def day_number_to_datetime_array(time_in, calendar_type, units_in):
 
-    cdftime = utime(units_in, calendar = calendar_type)
+    # cdftime = utime(units_in, calendar = calendar_type)
 
-    date_out = cdftime.num2date(time_in)
+    # date_out = cdftime.num2date(time_in)
+
+    date_out = cftime.num2date(time_in, units_in, calendar=calendar_type)
 
     return date_out
 

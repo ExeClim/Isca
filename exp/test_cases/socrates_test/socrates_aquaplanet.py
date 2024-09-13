@@ -107,7 +107,6 @@ exp.namelist = namelist = Namelist({
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
     },
 
-
     'vert_turb_driver_nml': {
         'do_mellor_yamada': False,     # default: True
         'do_diffusivity': True,        # default: False
@@ -152,8 +151,8 @@ exp.namelist = namelist = Namelist({
     },
     
     'sat_vapor_pres_nml': {
-           'do_simple':True,
-       },
+        'do_simple':True
+    },
     
     'damping_driver_nml': {
         'do_rayleigh': True,
@@ -199,8 +198,7 @@ if __name__=="__main__":
         #Set up the experiment object, with the first argument being the experiment name.
         #This will be the name of the folder that the data will appear in.
 
-        overwrite=False
-
-        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)#, run_idb=True)
+        exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
+        
         for i in range(2,121):
             exp.run(i, num_cores=NCORES, overwrite_data=overwrite)

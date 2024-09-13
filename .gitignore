@@ -79,6 +79,8 @@ coverage.xml
 .pytest_cache/
 test/.cache
 test/results.xml
+*.sh.e*
+*.sh.o*
 
 # Translations
 *.mo
