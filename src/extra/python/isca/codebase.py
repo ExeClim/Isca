@@ -5,7 +5,7 @@ import socket
 from jinja2 import Environment, FileSystemLoader
 import sh
 
-from isca import GFDL_WORK, GFDL_BASE, GFDL_SOC, _module_directory, get_env_file
+from isca import GFDL_WORK, GFDL_BASE, GFDL_SOC, GFDL_SOC_DIR, _module_directory, get_env_file
 from .loghandler import Logger
 from .helpers import url_to_folder, destructive, useworkdir, mkdir, git, P, git_run_in_directory, check_for_sh_stdout
 
@@ -325,9 +325,13 @@ class SocratesCodeBase(CodeBase):
         self.log.info('RRTM compilation disabled.')
 
     def simlink_to_soc_code(self):
-        #Make symlink to socrates source code if one doesn't already exist.
-        socrates_desired_location = self.codedir+'/src/atmos_param/socrates/src/trunk'
+        if GFDL_SOC_DIR is None and self.socrates_version!='1703':
+            error_mesg = f'You have not set the value of GFDL_SOC_DIR, but you have asked for version {self.socrates_version} of Socrates when the default is 1703. Please see Isca docs page for Socrates for information at Isca/docs/source/modules/socrates.rst.'
+            self.log.error(error_mesg)
+            raise OSError(error_mesg)
 
+        #Make symlink to socrates source code if one doesn't already exist.
+        socrates_desired_location = self.codedir+f'/src/atmos_param/socrates/src/{self.socrates_version}'
         #First check if socrates is in correct place already
         if os.path.exists(socrates_desired_location):
             link_correct = os.path.exists(socrates_desired_location+'/src/')
@@ -348,8 +352,11 @@ class SocratesCodeBase(CodeBase):
         if socrates_code_in_desired_location:
             self.log.info('Socrates source code already in correct place. Continuing.')
         else:
-            if GFDL_SOC is not None:
-                sh.ln('-s', GFDL_SOC, socrates_desired_location)
+            if GFDL_SOC_DIR is not None:
+                self.log.info('You have set the value of GFDL_SOC_DIR, so Isca will be configured to allow for multiple socrates versions. ')
+                sh.ln('-s', f'{GFDL_SOC_DIR}/{self.socrates_version}/', socrates_desired_location)
+            elif GFDL_SOC is not None:
+                sh.ln('-s', GFDL_SOC, socrates_desired_location)            
             elif GFDL_SOC is None:
                 error_mesg = 'Socrates code is required for SocratesCodebase, but source code is not provided in location GFDL_SOC='+ str(GFDL_SOC)
                 self.log.error(error_mesg)

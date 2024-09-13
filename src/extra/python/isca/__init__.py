@@ -39,6 +39,14 @@ except:
     GFDL_SOC = None
     log.warning('Environment variable GFDL_SOC not set, but this is only required if using SocratesCodebase. Setting to '+str(GFDL_SOC))
 
+try:
+    GFDL_SOC_DIR = os.environ['GFDL_SOC_DIR']
+except:
+    # if the user doesn't have the SOC variable set, then use None
+    GFDL_SOC_DIR = None
+    log.warning('Environment variable GFDL_SOC_DIR not set, but this is only required if using SocratesCodebase with multiple socrates versions. Setting to '+str(GFDL_SOC_DIR))
+
+
 def get_env_file(env=GFDL_ENV):
     filepath = os.path.join(GFDL_BASE, 'src', 'extra', 'env', env)
     if os.path.exists(filepath):
