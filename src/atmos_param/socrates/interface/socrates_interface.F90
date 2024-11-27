@@ -951,7 +951,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     logical :: soc_lw_mode, used
     integer :: seconds, days, year_in_s
     real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, &
-            dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg, , mars_solar_long, dec, ang_out, true_anomaly
+            dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg, mars_solar_long, dec, ang_out, true_anomaly
     real, dimension(size(temp_in,1), size(temp_in,2)) :: coszen, fracsun, surf_lw_net, olr, toa_sw, &
                                                          p2, toa_sw_down, surf_sw_down, &
                                                          olr_clr, toa_sw_clr, toa_sw_up, toa_sw_up_clr, &
