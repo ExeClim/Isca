@@ -117,7 +117,7 @@ module dry_convection_mod
 !! @param[out] dt_tg Calculated temperature tendency
 !! @param[out] cape Convective Available Potential Energy
 !! @param[out] cin Convective Inhibition
-  subroutine dry_convection(Time, tg, p_full, p_half, dt_tg, cape, cin)
+  subroutine dry_convection(Time, tg, p_full, p_half, dt_tg, cape, cin, lzb, lcl)
 
     type(time_type), intent(in) :: Time
 
@@ -131,6 +131,10 @@ module dry_convection_mod
     real, intent(out), dimension(size(tg,1),size(tg,2)) ::                    &
         cape,              &   !< convectively available potential energy
         cin                    !< convective inhibition
+    integer, intent(out), dimension(:,:)   ::                                 &
+        lcl,               &   !< lifting condensation level (index)
+        lzb                    !< level of zero buoyancy
+
 
 !                         ---  local variables ---
     real, dimension(size(tg,1),size(tg,2)) ::                                 &
@@ -138,8 +142,6 @@ module dry_convection_mod
          ener_int              !< energy integral from ground to LZB
 
     integer, dimension(size(tg,1),size(tg,2)) ::                              &
-         lcl,              &   !< lifting condensation level (index)
-         lzb,              &   !< level of zero buoyancy
          btm                   !< bottom of convecting region
 
     real, dimension(size(tg,1),size(tg,2), size(tg,3)) ::                     &
@@ -174,7 +176,7 @@ module dry_convection_mod
 
     do i=1, size(tg,1)
        do j=1, size(tg,2)
-
+         
           do k=1, num_levels
              if(k>=lzb(i,j).and. k<=btm(i,j)) then
                 ! in convecting region between ground and LZB

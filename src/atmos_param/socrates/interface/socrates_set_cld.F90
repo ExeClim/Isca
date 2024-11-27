@@ -7,12 +7,12 @@
 ! Set the variables in the Socrates cloud type
 !
 !------------------------------------------------------------------------------
-module socrates_set_cld_mod
+module socrates_set_cld
 implicit none
-character(len=*), parameter, private :: ModuleName = 'SOCRATES_SET_CLD_MOD'
+character(len=*), parameter, private :: ModuleName = 'SOCRATES_SET_CLD'
 contains
 
-subroutine set_simple_cld(cld, control, dimen, spectrum, n_profile, n_layer, &
+subroutine set_cld(cld, control, dimen, spectrum, n_profile, n_layer, &
   cloud_frac, conv_frac, &
   liq_frac, ice_frac, liq_conv_frac, ice_conv_frac, &
   liq_mmr, ice_mmr, liq_conv_mmr, ice_conv_mmr, &
@@ -81,7 +81,7 @@ real(r_def) :: eps = EPSILON(1.0)
 real(r_def) :: min_cloud_fraction = 0.0001
 
 integer                      :: ierr = i_normal
-character (len=*), parameter :: RoutineName = 'SET_SIMPLE_CLD'
+character (len=*), parameter :: RoutineName = 'SET_CLD'
 character (len=128) :: cmessage
 
 ! Functions called
@@ -499,5 +499,5 @@ do k = dimen%id_cloud_top, n_layer
   end do
 end do
 
-end subroutine set_simple_cld
-end module socrates_set_cld_mod
+end subroutine set_cld
+end module socrates_set_cld

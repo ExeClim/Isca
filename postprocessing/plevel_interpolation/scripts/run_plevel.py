@@ -7,11 +7,12 @@ import pdb
 import subprocess
 
 start_time=time.time()
-base_dir='/scratch/sit204/data_isca/'
-exp_name_list = ['project_3_omega_normal']
+base_dir='/disca/share/sit204/data_from_isca_cpu/cssp_perturb_exps/anoms/'
+#exp_name_list = ['soc_ga3_files_smooth_topo_fftw_mk1_fresh_compile_long', 'soc_ga3_files_smooth_topo_old_fft_mk2_long']
+exp_name_list = [f'soc_ga3_do_simple_false_cmip_o3_bucket_perturbed_ens_{f}' for f in range(100, 200)]
 avg_or_daily_list=['monthly']
-start_file=13
-end_file=24
+start_file=1
+end_file=1
 nfiles=(end_file-start_file)+1
 
 do_extra_averaging=False #If true, then 6hourly data is averaged into daily data using cdo
@@ -44,7 +45,7 @@ if level_set=='standard':
     var_names['timestep']='-a'
     var_names['6hourly']='ucomp slp height vor t_surf vcomp omega'
     var_names['daily']='ucomp slp height vor t_surf vcomp omega temp'
-    file_suffix='_interp_new_height_temp'
+    file_suffix='_interp_new_height_temp_not_below_ground'
 
 elif level_set=='ssw_diagnostics':
     plevs['6hourly']=' -p "1000 10000"'

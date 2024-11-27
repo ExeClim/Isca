@@ -19,8 +19,6 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
-cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
-
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 exp = Experiment('giant_planet_test_experiment', codebase=cb)
@@ -207,6 +205,8 @@ exp.namelist = namelist = Namelist({
 
 #Lets do a run!
 if __name__=="__main__":
+    cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
+
     exp.run(1, use_restart=False, num_cores=NCORES)
     for i in range(2,121):
         exp.run(i, num_cores=NCORES)

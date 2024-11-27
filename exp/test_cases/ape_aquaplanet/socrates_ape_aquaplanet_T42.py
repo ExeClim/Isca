@@ -107,8 +107,8 @@ exp.namelist = namelist = Namelist({
         'do_read_ozone': True,
         'ozone_file_name':'ozone_1990',
         'ozone_field_name':'ozone_1990',
-        'dt_rad':4320.,
-        'solday':90., #turn off seasonal cycle - diurnal by default
+        'dt_rad':4320,
+        'solday':90, #turn off seasonal cycle - diurnal by default
         'co2_ppmv':348.0,
         'store_intermediate_rad':True,
         'chunk_size': 16,
