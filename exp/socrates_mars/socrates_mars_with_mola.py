@@ -2,7 +2,7 @@ import numpy as np
 
 from isca import IscaCodeBase, SocratesCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 from isca.util import exp_progress
-from ntfy import notify
+# from ntfy import notify
 import os
 
 NCORES = 32
@@ -255,7 +255,7 @@ if __name__=="__main__":
     for conv in conv_schemes:
         for depth_val in depths:
             for per_value in pers:
-                exp = Experiment('soc_mars_mk36_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val)+'_with_mola_topo', codebase=cb)
+                exp = Experiment('soc_mars_mk36_per_value'+str((per_value))+'_'+conv+'_mld_'+str(depth_val)+'_with_mola_topo_2024', codebase=cb)
                 exp.clear_rundir()
 
                 exp.diag_table = diag
@@ -274,4 +274,4 @@ if __name__=="__main__":
                 for i in range(2, 241):
 #                with exp_progress(exp, description='o%.0f d{day}' % scale):
                     exp.run(i, num_cores=NCORES)
-                notify('top down with conv scheme = '+conv+' has completed', 'isca')
+                # notify('top down with conv scheme = '+conv+' has completed', 'isca')
