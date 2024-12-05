@@ -28,6 +28,7 @@ diag = DiagTable()
 diag.add_file('atmos_daily',88440 , 'seconds', time_units='days')
 #diag.add_file('atmos_e_daily',1 , 'days', time_units='days')
 #diag.add_file('atmos_timestep', 240, 'seconds', time_units='days')
+diag.add_file('atmos_2_hourly', 7370 , 'seconds', time_units='days')
 
 # Define diag table entries
 diag.add_field('dynamics', 'ps', time_avg=True)
@@ -213,9 +214,9 @@ namelist = Namelist({
 
 if __name__=="__main__":
 
-    conv_schemes = ['none']
+    conv_schemes = ['none', 'dry']
 
-    depths = [2.]
+    depths = [0.1, 0.5, 1.0]
 
     pers = [70.85]
 
@@ -237,9 +238,12 @@ if __name__=="__main__":
                 exp.namelist['mixed_layer_nml']['depth'] = depth_val
                 exp.namelist['astronomy_nml']['per'] = per_value
 
-#            with exp_progress(exp, description='o%.0f d{day}' % scale):
-                exp.run(1, use_restart=False, num_cores=NCORES)
-                for i in range(2, 241):
-#                with exp_progress(exp, description='o%.0f d{day}' % scale):
-                    exp.run(i, num_cores=NCORES)
-                # notify('top down with conv scheme = '+conv+' has completed', 'isca')
+                try:
+    #            with exp_progress(exp, description='o%.0f d{day}' % scale):
+                    exp.run(1, use_restart=False, num_cores=NCORES)
+                    for i in range(2, 65):
+    #                with exp_progress(exp, description='o%.0f d{day}' % scale):
+                        exp.run(i, num_cores=NCORES)
+                    # notify('top down with conv scheme = '+conv+' has completed', 'isca')
+                except:
+                    pass

@@ -173,7 +173,7 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roug
                                       gp_surface, convection_scheme,                 &
                                       bucket, init_bucket_depth, init_bucket_depth_land, &
                                       max_bucket_depth_land, robert_bucket, raw_bucket, &
-                                      do_socrates_radiation, do_lcl_diffusivity_depth, damping_coeff_bucket, &
+                                      do_lscale_cond, do_socrates_radiation, do_lcl_diffusivity_depth, damping_coeff_bucket, &
                                       finite_bucket_depth_over_land, &
                                       do_local_heating
 

@@ -5,7 +5,7 @@ from isca.util import exp_progress
 # from ntfy import notify
 import os
 
-NCORES = 32
+NCORES = 16
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
 # a CodeBase can be a directory on the computer,
@@ -32,6 +32,7 @@ diag = DiagTable()
 diag.add_file('atmos_daily',88440 , 'seconds', time_units='days')
 #diag.add_file('atmos_e_daily',1 , 'days', time_units='days')
 #diag.add_file('atmos_timestep', 240, 'seconds', time_units='days')
+diag.add_file('atmos_2_hourly', 7370 , 'seconds', time_units='days')
 
 # Define diag table entries
 diag.add_field('dynamics', 'ps', time_avg=True)
@@ -67,8 +68,8 @@ diag.add_field('socrates', 'ang', time_avg=True)
 namelist = Namelist({
     'main_nml': {
         'dt_atmos': 110,
-        'days': 0.,
-        'seconds': 30.*88440.,
+        'days': 0,
+        'seconds': 30*88440,
         'calendar': 'no_calendar'
     },
 
@@ -140,7 +141,7 @@ namelist = Namelist({
     'sat_vapor_pres_nml': {
         'do_simple':True,
         'tcmin':  -223, #Make sure low temperature limit of saturation vapour pressure is low enough that it doesn't cause an error (note that this giant planet has no moisture anyway, so doesn't directly affect calculation.        
-        'tcmax': 350.,
+        'tcmax': 350,
     },
     
     'damping_driver_nml': {
@@ -270,8 +271,8 @@ if __name__=="__main__":
                 exp.namelist['astronomy_nml']['per'] = per_value
 
 #            with exp_progress(exp, description='o%.0f d{day}' % scale):
-                exp.run(1, use_restart=False, num_cores=NCORES)
-                for i in range(2, 241):
+                exp.run(113, use_restart=False, num_cores=NCORES, restart_file='/home/links/sit204/Isca/exp/socrates_mars/input/res0112.tar.gz')
+                for i in range(114, 241):
 #                with exp_progress(exp, description='o%.0f d{day}' % scale):
                     exp.run(i, num_cores=NCORES)
                 # notify('top down with conv scheme = '+conv+' has completed', 'isca')
