@@ -199,6 +199,6 @@ if __name__=="__main__":
         #This will be the name of the folder that the data will appear in.
 
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
-        
+        overwrite=False
         for i in range(2,121):
             exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
