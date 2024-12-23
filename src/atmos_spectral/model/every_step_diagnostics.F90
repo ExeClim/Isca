@@ -98,7 +98,7 @@ call pressure_variables(p_half, ln_p_half, p_full, ln_p_full, reference_sea_leve
 p_full = .01*p_full
 id_pfull = diag_axis_init('pfull_every', p_full, 'hPa', 'z', 'approx full pressure level', direction=-1, set_name=mod_name)
 
-vrange = (/ -400., 400. /)
+vrange = (/ -40000., 40000. /)
 trange = (/  100., 400. /)
 axes_2d = (/ id_lon, id_lat /)
 axes_3d = (/ id_lon, id_lat, id_pfull /)

@@ -1,5 +1,21 @@
-# DKOLL dry convection!
-
+# Trappist-1b test3: 
+# pure co2 atmosphere
+# test for spec file: self picked best one
+# radius: 1.116 R_earth
+# surface gravity: 1.102 g_earth
+# orbital period: 1.51 days
+# solar constant: 4.153 S_earth
+### Planet configuration
+radius = 1.116
+surface_g = 1.102
+orbital_period = 1.51
+S0 = 4.153
+eccentricity = 0.00622
+surface_pressure = 1.0e5 # [Pa] reference_sea_level_press
+### atmospheric configuration
+kappa = 2./7. # CO
+mole_mass = 28e-3 # kg/mol
+rdgas = 8.314/mole_mass
 
 import os
 import numpy as np
@@ -11,14 +27,15 @@ NCORES = 16
 base_dir = os.path.dirname(os.path.realpath(__file__))
 cb = SocratesCodeBase.from_directory(GFDL_BASE)
 
-exp = Experiment('Trappist1btest10', codebase=cb)
+exp = Experiment('T1b_co_test3', codebase=cb)
 exp.clear_rundir()
 
 # exp.inputfiles = [os.path.join(base_dir,'input/co2.nc')] # maybe the distribution of co2 is not important?
 
 #Tell model how to write diagnostics
 diag = DiagTable()
-diag.add_file('atmos_monthly', 30, 'days', time_units='days')
+diag.add_file('atmos_10day', 10, 'days', time_units='days')
+# diag.add_file('atmos_monthly', 30, 'days', time_units='days') out put run length should be smaller than runlength
 
 #Write out diagnostics need for vertical interpolation post-processing
 diag.add_field('dynamics', 'ps', time_avg=True)
@@ -28,7 +45,7 @@ diag.add_field('dynamics', 'zsurf')
 
 #Tell model which diagnostics to write
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
-diag.add_field('atmosphere', 'rh', time_avg=True)
+# diag.add_field('atmosphere', 'rh', time_avg=True) # NaN output, but why it sometimes no report for this value?
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('mixed_layer', 'flux_t', time_avg=True) #SH
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) #LH
@@ -58,55 +75,60 @@ diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 diag.add_field('socrates', 'soc_co2', time_avg=True)
 
 exp.diag_table = diag
-
+sp_test_root = 'src/atmos_param/socrates/src/trunk/data/spectra/sp_test/'
+star_gas = 'Trappist1/CO'
 #Define values for the 'core' namelist
 exp.namelist = namelist = Namelist({
     'main_nml':{
-     'days'   : 30,
+     'days'   : 10, # control the file time dimension of netCDF
      'hours'  : 0,
      'minutes': 0,
      'seconds': 0,
      'dt_atmos':120,  # default: 600
      'current_date' : [1,1,1,0,0,0],
-     'calendar' : 'thirty_day'
+     'calendar' : 'THIRTY_DAY'
     },
     'socrates_rad_nml': {
-        'stellar_constant':5704.68, # 4.164*1370.
-        'lw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/sp_test/sp_lw_b75_Trappist1_Voi-Fnorm_UCL-4000_T49xP22_001'), #check _k used in the file
-        'sw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/sp_test/sp_sw_b75_Trappist1_Voi-Fnorm_UCL-4000_T49xP22_001'),
-        'dt_rad':1200,    # P=1.5 day dtrad=1day???
+        'stellar_constant':S0*1370,
+        'lw_spectral_filename':os.path.join(GFDL_BASE,sp_test_root,star_gas,'sp_lw_b61_Trappist1_CO_T42xP22_001_nk20'),
+        'sw_spectral_filename':os.path.join(GFDL_BASE,sp_test_root,star_gas,'sp_sw_b61_Trappist1_CO_T42xP22_001_nk20'),
+        'dt_rad':600,    # P=1.5 day dtrad=1day???
         'store_intermediate_rad':True,
         'chunk_size': 16,
         'use_pressure_interp_for_half_levels':False,
         'tidally_locked':True,
-        'solday':90,
-        'inc_o3': False, # only include CO2
+        'solday':0,
+        'inc_o3': False, 
         'inc_h2o': False,
+        'inc_co2':False,
+        'inc_co': True,
         'account_for_effect_of_water': False, # still water in the atm, not just disable the radiation; ask stephen: h2o; check the rain-> small value; email metoffice again
         'account_for_effect_of_ozone': False,
-        # 'co2_ppmv': 1e6, # pure CO2
-        #'do_read_co2': True,
-        #'co2_file_name':'co2',
-        #'co2_field_name':'co2' # CO2 change with time
+        
+        'co_mix_ratio': 1.0,
+         
+        'n2o_mix_ratio':0.0,'ch4_mix_ratio':0.0,'o2_mix_ratio':0.0, 
+        'so2_mix_ratio':0.0,'cfc11_mix_ratio':0.0, 'cfc12_mix_ratio':0.0, 
+        'cfc113_mix_ratio':0.0,'hcfc22_mix_ratio':0.0,'co2_ppmv': 0.0,
     },
     
     'spectral_init_cond_nml': {
-        'initial_temperature': 300
+        'initial_temperature': 400
     },
     
     'astronomy_nml': {
-        'ecc': 0.01,
+        'ecc': eccentricity,
         'obliq': 0.0
     },
     
     'constants_nml': {
-        'radius': 1.116*6371.e3, # form?
-        'grav': 1.103*9.81,
-        'omega': 2.*np.pi/(1.5*24.*3600.), # [s^-1]
-        'orbital_period': 1.5*24.*3600., # [s]
-        'solar_const': 4.164*1370., # [W/m^2]
-        'rdgas': 188.95, # gas constant for CO2 [J/kg/K]
-        'kappa': 2./9. # R/c_p depends on the molecule
+        'radius': radius*6371.e3, # form?
+        'grav': surface_g*9.81,
+        'omega': 2.*np.pi/(orbital_period*24.*3600.), # [s^-1]
+        'orbital_period': orbital_period*24.*3600., # [s]
+        'solar_const': S0*1370., # [W/m^2]
+        'rdgas': rdgas, # gas constant [J/kg/K]
+        'kappa': kappa # R/c_p depends on the molecule, 2./7. for CO, 2./9. for H2O
     },
     
     'idealized_moist_phys_nml': {
@@ -149,11 +171,11 @@ exp.namelist = namelist = Namelist({
 
     #Use a large mixed-layer depth, and the Albedo of the CTRL case in Jucker & Gerber, 2017
     'mixed_layer_nml': {
-        'tconst' : 285.,
+        'tconst' : 310.,                       # can it be higher?
         'prescribe_initial_dist':True,
         'evaporation': False,                  # Disable surface evaporation
         'depth': 0.5,                          # Depth of mixed layer used
-        'albedo_value': 0.38,                  # Albedo value used      
+        'albedo_value': 0.0,                   # set to zero for future tests
     },
 
     'qe_moist_convection_nml': {
@@ -195,11 +217,11 @@ exp.namelist = namelist = Namelist({
 
     'spectral_dynamics_nml': {
         'damping_order': 4,
-        'damping_coeff': 2.3148148e-05,      
+        'damping_coeff': 2.3148148e-04,   # times 10 to make it stabler  
         'water_correction_limit': 200.e2,
-        'reference_sea_level_press':1.0e5,
+        'reference_sea_level_press':surface_pressure,
         'num_levels':40,      #How many model pressure levels to use
-        'valid_range_t':[10.,2500.],
+        'valid_range_t':[1.,2500.],
         'initial_sphum':[0.], # set to zero
         'vert_coord_option':'uneven_sigma',
         'surf_res':0.2, # Parameter that sets the vertical distribution of sigma levels
@@ -211,7 +233,7 @@ exp.namelist = namelist = Namelist({
     
     'dry_convection_nml': {
         'tau': 120,
-        'small': 0.0001,
+        'small': 0.001,
     },
 
 })
@@ -221,5 +243,5 @@ if __name__=="__main__":
     cb.compile()
     exp.run(1, num_cores=NCORES, overwrite_data=False)
     overwrite = False
-    for i in range(2,13):
+    for i in range(2, 25):
         exp.run(i, num_cores=NCORES, overwrite_data=overwrite)

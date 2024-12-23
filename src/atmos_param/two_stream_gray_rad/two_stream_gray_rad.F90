@@ -78,9 +78,12 @@ real    :: atm_abs         = 0.0
 real    :: odp = 1.0  ! odp = optical depth parameter. Used to simulate GHG concentration, taken from Tapio FMS, added by Nathanael Wong
 real    :: sw_diff         = 0.0
 real    :: linear_tau      = 0.1
+real    :: surf_pres       = 100000.0
 real    :: wv_exponent     = 4.0
 real    :: solar_exponent  = 4.0
 logical :: do_seasonal     = .false.
+logical :: tidally_locked  = .true.
+real    :: noon_longitude  = 270.0
 integer :: solday          = -10  !s Day of year to run perpetually if do_seasonal=True and solday>0
 real    :: equinox_day     = 0.75 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months).
 logical :: use_time_average_coszen = .false. !s if .true., then time-averaging is done on coszen so that insolation doesn't depend on timestep
@@ -118,7 +121,8 @@ real :: bog_a = 0.8678
 real :: bog_b = 1997.9
 real :: bog_mu = 1.0
 
-real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 !s albedo now defined in mixed_layer_init
+!s albedo now defined in mixed_layer_init
+real, allocatable, dimension(:,:)   :: insolation, p2, lw_tau_0, sw_tau_0 
 real, allocatable, dimension(:,:)   :: b_surf, b_surf_gp
 real, allocatable, dimension(:,:,:) :: b, tdt_rad, tdt_solar
 real, allocatable, dimension(:,:,:) :: lw_up, lw_down, lw_flux, sw_up, sw_down, sw_flux, rad_flux
@@ -145,7 +149,8 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
            ir_tau_co2, ir_tau_wv1, ir_tau_wv2, &
-		   window, carbon_conc, rad_scheme, &
+           surf_pres,tidally_locked,noon_longitude, & !Ruizhi add for grey
+		       window, carbon_conc, rad_scheme, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
            use_time_average_coszen, dt_rad_avg,&
            diabatic_acce !Schneider Liu values
@@ -449,6 +454,16 @@ if (do_seasonal) then
 
 else if (sw_scheme==B_SCHNEIDER_LIU) then
   insolation = (solar_constant/pi)*cos(lat)
+else if (tidally_locked) then
+  ! Tidally locked: insolation depends on latitude and longitude
+  do i = 1, size(t, 1)
+     do j = 1, size(t, 2)
+        insolation(i, j) = solar_constant*cos(lat(i,j))*cos(lon(i,j) - noon_longitude*deg_to_rad)
+        if (insolation(i, j) .LT. 0.0) then
+           insolation(i, j) = 0.0
+        endif
+     enddo
+  enddo
 else
   ! Default: Averaged Earth insolation at all longitudes
   p2          = (1. - 3.*sin(lat)**2)/4.
@@ -576,10 +591,12 @@ case(B_FRIERSON)
   lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
   lw_tau_0 = lw_tau_0 * odp ! scale by optical depth parameter - default 1
 
-  ! compute optical depths for each model level
+  ! compute optical depths for each model level, RUIZHI
   do k = 1, n+1
-  lw_tau(:,:,k) = lw_tau_0 * ( linear_tau * p_half(:,:,k)/pstd_mks     &
-       + (1.0 - linear_tau) * (p_half(:,:,k)/pstd_mks)**wv_exponent )
+  !lw_tau(:,:,k) = lw_tau_0 * ( linear_tau * p_half(:,:,k)/pstd_mks     &
+  !     + (1.0 - linear_tau) * (p_half(:,:,k)/pstd_mks)**wv_exponent )
+  lw_tau(:,:,k) = 0.1 * p_half(:,:,k)/surf_pres &
+  + linear_tau*surf_pres/pstd_mks*(p_half(:,:,k)/surf_pres)**wv_exponent
   end do
 
   ! longwave differential transmissivity

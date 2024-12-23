@@ -26,7 +26,6 @@ cb = SocratesCodeBase.from_directory(GFDL_BASE)
 exp = Experiment('soc_aquaplanet', codebase=cb)
 exp.clear_rundir()
 
-inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -60,13 +59,15 @@ diag.add_field('socrates', 'soc_surf_flux_lw', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_sw', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_lw_down', time_avg=True)
 diag.add_field('socrates', 'soc_surf_flux_sw_down', time_avg=True)
+diag.add_field('socrates', 'soc_spectral_olr', time_avg=True)
 #net (up) TOA and downard fluxes
 diag.add_field('socrates', 'soc_olr', time_avg=True)
 diag.add_field('socrates', 'soc_toa_sw', time_avg=True) 
 diag.add_field('socrates', 'soc_toa_sw_down', time_avg=True)
+diag.add_field('socrates', 'soc_flux_lw', time_avg=True)
+diag.add_field('socrates', 'soc_flux_sw', time_avg=True)
 
 exp.diag_table = diag
-exp.inputfiles = inputfiles
 
 #Define values for the 'core' namelist
 exp.namelist = namelist = Namelist({
@@ -75,24 +76,53 @@ exp.namelist = namelist = Namelist({
      'hours'  : 0,
      'minutes': 0,
      'seconds': 0,
-     'dt_atmos':600,
+     'dt_atmos':300,
      'current_date' : [1,1,1,0,0,0],
      'calendar' : 'thirty_day'
     },
     'socrates_rad_nml': {
-        'stellar_constant':1370.,
+        'stellar_constant':1370.*0.5,
         'lw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7'),
         'sw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7'),
-        'do_read_ozone': True,
-        'ozone_file_name':'ozone_1990',
-        'ozone_field_name':'ozone_1990',
-        'dt_rad':3600,
+        'dt_rad':1800,
         'store_intermediate_rad':True,
         'chunk_size': 16,
         'use_pressure_interp_for_half_levels':False,
-        'tidally_locked':False,
-        'solday':90
+        'tidally_locked':True,
+        'solday':90,
+        'inc_o3': False, 
+        'inc_h2o': False,
+        'inc_co2': True,
+        'inc_co': True,
+        'account_for_effect_of_water': False, # still water in the atm, not just disable the radiation; ask stephen: h2o; check the rain-> small value; email metoffice again
+        'account_for_effect_of_ozone': False,
+        'co_mix_ratio': 0.0,  #  mixed gas concentrations (kg / kg)
+        'co2_ppmv': 1e1, # ppmv:0~1e6
+        
+        'n2o_mix_ratio':0.0,'ch4_mix_ratio':0.0,'o2_mix_ratio':0.0, 
+        'so2_mix_ratio':0.0,'cfc11_mix_ratio':0.0, 'cfc12_mix_ratio':0.0, 
+        'cfc113_mix_ratio':0.0,'hcfc22_mix_ratio':0.0,
     }, 
+    
+    'spectral_init_cond_nml': {
+        'initial_temperature': 200
+    },
+    
+    'astronomy_nml': {
+        'ecc': 0.0,
+        'obliq': 0.0
+    },
+    
+    'constants_nml': {
+        'radius': 1*6371.e3, # form?
+        'grav': 1*9.81,
+        'omega': 2.*np.pi/(1*24.*3600.), # [s^-1]
+        'orbital_period': 1*24.*3600., # [s]
+        'solar_const': 0.5*1370., # [W/m^2]
+        'rdgas': 8.314/44e-3, # gas constant for CO2 [J/kg/K]
+        'kappa': 2./9. # R/c_p depends on the molecule
+    },
+    
     'idealized_moist_phys_nml': {
         'do_damping': True,
         'turb':True,
@@ -104,7 +134,7 @@ exp.namelist = namelist = Namelist({
         'roughness_moist':3.21e-05,            
         'two_stream_gray': False,     #Use the grey radiation scheme
         'do_socrates_radiation': True,
-        'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use simple Betts miller convection            
+        'convection_scheme': 'DRY', #Use dry convection           
     },
 
     'vert_turb_driver_nml': {
@@ -123,35 +153,37 @@ exp.namelist = namelist = Namelist({
     'surface_flux_nml': {
         'use_virtual_temp': False,
         'do_simple': True,
-        'old_dtaudv': True    
+        'old_dtaudv': True,
+        'use_actual_surface_temperatures': False, 
     },
 
     'atmosphere_nml': {
-        'idealized_moist_model': True
+        'idealized_moist_model': True, 
     },
 
     #Use a large mixed-layer depth, and the Albedo of the CTRL case in Jucker & Gerber, 2017
     'mixed_layer_nml': {
-        'tconst' : 285.,
+        'tconst' : 310.,                       # can it be higher?
         'prescribe_initial_dist':True,
-        'evaporation':True,  
-        'depth': 2.5,                          #Depth of mixed layer used
-        'albedo_value': 0.38,                  #Albedo value used      
+        'evaporation': False,                  # Disable surface evaporation
+        'depth': 0.5,                          # Depth of mixed layer used
+        'albedo_value': 0.0,                   # set to zero for future tests
     },
 
     'qe_moist_convection_nml': {
         'rhbm':0.7,
         'Tmin':160.,
-        'Tmax':350.   
+        'Tmax':350.   # can't be more than 373K ?
     },
     
     'lscale_cond_nml': {
         'do_simple':True,
-        'do_evap':True
+        'do_evap':False,
     },
     
     'sat_vapor_pres_nml': {
-        'do_simple':True
+        'do_simple':True, # disable the calculation in the kernal code
+        'do_not_calculate':True, #turn of esat calc altogether (for exoplanets where temperatures will be outside valid range)
     },
     
     'damping_driver_nml': {
@@ -176,17 +208,24 @@ exp.namelist = namelist = Namelist({
     },
 
     'spectral_dynamics_nml': {
-        'damping_order': 4,             
+        'damping_order': 4,
+        'damping_coeff': 2.3148148e-04,      
         'water_correction_limit': 200.e2,
-        'reference_sea_level_press':1.0e5,
+        'reference_sea_level_press':1e5,
         'num_levels':40,      #How many model pressure levels to use
-        'valid_range_t':[100.,800.],
-        'initial_sphum':[2.e-6],
+        'valid_range_t':[0.,500.],
+        'initial_sphum':[0.], # set to zero
         'vert_coord_option':'uneven_sigma',
-        'surf_res':0.2, #Parameter that sets the vertical distribution of sigma levels
-        'scale_heights' : 11.0,
-        'exponent':7.0,
-        'robert_coeff':0.03
+        'surf_res':0.2, # Parameter that sets the vertical distribution of sigma levels
+        'scale_heights' : 4.0, # test scale height
+        'exponent':2.0,
+        'robert_coeff':0.03,
+        'do_water_correction': False # disable water correction
+    },
+    
+    'dry_convection_nml': {
+        'tau': 300,
+        'small': 0.001,
     },
 
 })

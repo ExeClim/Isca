@@ -1572,7 +1572,7 @@ logical :: used
 real,dimension(2) :: vrange
 character(len=128) :: tname, longname, units
 
-vrange = (/ -400., 400. /)
+vrange = (/ -40000., 40000. /) !RUIZHI
 
 rad_to_deg = 180./pi
 call get_grid_boundaries(lonb,latb,global=.true.)
