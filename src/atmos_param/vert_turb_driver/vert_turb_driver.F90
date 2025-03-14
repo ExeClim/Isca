@@ -39,7 +39,7 @@ use      my25_turb_mod, only: my25_turb_init, my25_turb_end,  &
                               my25_turb, tke_surf, get_tke,   &
                               my25_turb_restart
 
-use    diffusivity_mod, only: diffusivity, molecular_diff
+use    diffusivity_mod, only: diffusivity, molecular_diff, tj_diffusivity
 
 use            edt_mod, only: edt_init, edt, edt_end
 
@@ -109,6 +109,7 @@ logical            :: module_is_initialized = .false.
  logical :: use_tau          = .true.
  logical :: do_entrain    = .false.
  logical :: do_simple = .false. 
+ logical :: do_tj_bl = .false. 
 
  character(len=24) :: gust_scheme  = 'constant' ! valid schemes are:
                                                 !   => 'constant'
@@ -308,6 +309,7 @@ if (do_mellor_yamada) then
 !---------------------------
 !------------------- non-local K scheme --------------
 
+
     if (do_lcl_diffusivity_depth) then 
       call diffusivity ( tt, qq, uu, vv, p_full, p_half, z_full, z_half,   &
                          u_star, b_star, z_pbl, diff_m, diff_t, &
@@ -317,6 +319,24 @@ if (do_mellor_yamada) then
                          u_star, b_star, z_pbl, diff_m, diff_t, &
                          kbot = kbot)
     endif 
+ 
+ else if (do_tj_bl) then 
+   !--------------------------------------------------------------------
+   !----------- compute molecular diffusion, if desired  ---------------
+   
+      !  if (do_molecular_diffusion) then
+      !    call molecular_diff (tt, p_half, diff_m, diff_t)
+      !  else
+      diff_m = 0.0
+      diff_t = 0.0
+      z_pbl  = 0.0
+      !  endif
+   
+   !---------------------------
+   !------------------- thatcher jablonowski scheme --------------
+   
+       call tj_diffusivity ( tt, qq, uu, vv, p_full, p_half, z_full, z_half,   &
+                            diff_t, diff_m)!, kbot = kbot)
 !---------------------------
 else if (do_edt) then
 !----------------------------
@@ -569,12 +589,13 @@ end subroutine vert_turb_driver
 !#######################################################################
 
 subroutine vert_turb_driver_init (lonb, latb, id, jd, kd, axes, Time, &
-                                  doing_edt, doing_entrain)
+                                  do_tj_bl_in, doing_edt, doing_entrain)
 
 !-----------------------------------------------------------------------
    real, dimension(:,:), intent(in) :: lonb, latb
    integer,         intent(in) :: id, jd, kd, axes(4)
    type(time_type), intent(in) :: Time
+   logical, intent(in) :: do_tj_bl_in 
    logical,         intent(out) :: doing_edt, doing_entrain
 !-----------------------------------------------------------------------
    integer, dimension(3) :: full = (/1,2,3/), half = (/1,2,4/)
@@ -630,6 +651,14 @@ d622   = rdgas/rvgas
 d378   = 1.-d622
 d608   = d378/d622
 !-----------------------------------------------------------------------
+
+! do_tj_bl ? 
+do_tj_bl = do_tj_bl_in 
+if (do_tj_bl) then 
+   do_diffusivity = .false. 
+   do_mellor_yamada = .false. 
+   do_edt = .false. 
+endif 
          
        if (strat_cloud_on) then
 ! get tracer indices for stratiform cloud variables

@@ -47,7 +47,7 @@ private
 ! public interfaces
 !=======================================================================
 
- public diffusivity, pbl_depth, molecular_diff
+ public diffusivity, pbl_depth, molecular_diff, tj_diffusivity 
 
 !=======================================================================
 
@@ -147,12 +147,18 @@ logical :: do_simple           =.false.
 
 logical :: use_pog_bug_fix     =.true.
 
+real    :: tj_bl_pres = 85000. 
+real    :: tj_strato_pres = 10000. ! pressures for thatcher and jablonowski diffusion in Pa 
+real    :: tj_coeff = 0.0044 
+real    :: tj_coeff_m = 0.008
+
 namelist /diffusivity_nml/ fixed_depth, depth_0, frac_inner,&
                            rich_crit_pbl, entr_ratio, parcel_buoy,&
                            znom, free_atm_diff, free_atm_skyhi_diff,&
                            pbl_mcm, rich_crit_diff, mix_len, rich_prandtl,&
                            background_m, background_t, ampns, ampns_max, &
-                           do_entrain, do_simple, use_pog_bug_fix
+                           do_entrain, do_simple, use_pog_bug_fix, &
+                           tj_bl_pres, tj_strato_pres, tj_coeff, tj_coeff_m
 
 !=======================================================================
 
@@ -750,6 +756,62 @@ enddo
 end subroutine diffusivity_entr
 
 !=======================================================================
+! TJ DIFFUSIVITY STUFF BELOW ! 
+
+subroutine tj_diffusivity(t, q, u, v, p_full, p_half, z_full, z_half, k_t, k_m)!, kbot)
+
+real,    intent(in),           dimension(:,:,:) :: t, q, u, v
+real,    intent(in),           dimension(:,:,:) :: p_full, p_half
+real,    intent(in),           dimension(:,:,:) :: z_full, z_half
+real,    intent(inout),        dimension(:,:,:) :: k_t, k_m
+!integer, intent(in), optional, dimension(:,:)   :: kbot
+
+real, dimension(size(t,1),size(t,2),size(t,3))  :: k_t_save, k_m_save
+real, dimension(size(t,1),size(t,2))            :: z_surf
+integer                                         :: i,j,k,nlev!,nlat,nlon
+!integer, dimension(size(t,1),size(t,2))            :: ibot
+real,    dimension(size(t,1),size(t,2))            :: wbot, zbot 
+
+if(.not.module_is_initialized) call diffusivity_init
+
+nlev = size(t,3)
+
+
+k_t_save = k_t
+k_m_save = k_m
+
+
+wbot(:,:) = sqrt(u(:,:,nlev)*u(:,:,nlev)+v(:,:,nlev)*v(:,:,nlev))
+z_surf(:,:) = z_half(:,:,nlev+1)
+zbot(:,:) = z_full(:,:,nlev) - z_surf(:,:)
+
+
+do k = 1, nlev 
+  where (p_full(:,:,k) .gt. tj_bl_pres)
+        k_t(:,:,k) = tj_coeff * wbot(:,:) * zbot(:,:)
+        k_m(:,:,k) = tj_coeff_m * wbot(:,:) * zbot(:,:)
+  elsewhere (p_full(:,:,k) .le. tj_bl_pres)
+        k_t(:,:,k) = tj_coeff * wbot(:,:) * zbot(:,:) * exp(-1.0 * ((tj_bl_pres - p_full(:,:,k))/tj_strato_pres)**2.)
+        k_m(:,:,k) = tj_coeff_m * wbot(:,:) * zbot(:,:) * exp(-1.0 * ((tj_bl_pres - p_full(:,:,k))/tj_strato_pres)**2.)
+  endwhere 
+enddo
+
+
+
+
+
+
+k_t = k_t + k_t_save
+k_m = k_m + k_m_save
+
+
+!set background diffusivities
+if(background_m.gt.0.0) k_m = max(k_m,background_m)
+if(background_t.gt.0.0) k_t = max(k_t,background_t)
+
+
+return
+end subroutine tj_diffusivity
 
 end module diffusivity_mod
 
