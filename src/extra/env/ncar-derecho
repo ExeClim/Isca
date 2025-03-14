@@ -1,0 +1,5 @@
+echo loadmodules
+source /glade/u/home/${USER}/.bashrc
+module --force purge
+module load ncarenv/23.09 craype/2.7.31 intel/2023.2.1 cray-mpich/8.1.27 ncarcompilers/1.0.0 hdf5/1.12.2 netcdf/4.9.2 conda/latest
+conda activate isca_env
