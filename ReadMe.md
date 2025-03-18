@@ -27,6 +27,67 @@
      alt="twitter IscaModel"></a>
 </p>
 
+## This is a temporary fork targeting NSF NCAR's Derecho System
+
+This fork of the Isca repository is intended to assist users in building
+and running Isca on the Derecho Supercomputer at NSF NCAR. Once the modifications 
+in this fork are pulled into the main Isca repository this repo will be archived
+and eventually removed. 
+
+## Procedure for building and testing Isca on Derecho
+
+1. Check out the code
+   ```bash
+   git clone https://github.com/roryck/Isca-derecho.git
+   ```
+2. Set up the environment
+   ```bash
+   cd Isca-derecho
+
+   module --force purge
+   module load ncarenv/23.09 intel/2023.2.1 craype/2.7.31 cray-mpich/8.1.27 ncarcompilers/1.0.0 hdf5/1.12.2 netcdf/4.9.2 conda/latest
+
+   mamba env create -f ci/environment-py3.12_ncar-derecho.yml
+   conda activate isca_env
+
+   cd src/extra/python
+   pip install -e .
+   ```
+3. Add Isca settings to ~/.bashrc
+   ```bash
+   export GFDL_ENV=ncar-derecho
+   export GFDL_MKMF_TEMPLATE=ncar-derecho-intel
+   export GFDL_DATA=/glade/derecho/scratch/$USER/isca_data
+   export GFDL_BASE=/glade/derecho/scratch/$USER/tickets/rc-31217/Isca-derecho
+   export GFDL_WORK=/glade/derecho/scratch/$USER/isca_work
+   ```
+12. Build and Run a Test Case on a batch node
+    ```bash
+    cd $GFDL_BASE/exp/test_cases/held_suarez
+    qsub isca-test.sh
+    ```
+    Example batch script isca-test.sh
+    ```
+    #!/bin/bash
+    #PBS -l walltime=00:30:00
+    #PBS -l select=1:ncpus=128:mpiprocs=128
+    #PBS -q main
+    #PBS -A [ACCOUNT CODE]
+    #PBS -N Isca-test
+    #PBS -k eod
+    #PBS -j oe
+    #PBS -o Isca-test.out
+
+    module --force purge
+    module load ncarenv/23.09 intel/2023.2.1 craype/2.7.31 cray-mpich/8.1.27 ncarcompilers/1.0.0 hdf5/1.12.2 netcdf/4.9.2 conda/latest
+    conda activate isca_env
+
+    cd $GFDL_BASE/exp/test_cases/held_suarez
+    python held_suarez_test_case.py
+    ```
+
+## Main Isca README
+
 Isca is a framework for the idealized modelling of the global circulation of
 planetary atmospheres at varying levels of complexity and realism. The
 framework is an outgrowth of models from GFDL designed for Earth's atmosphere,
