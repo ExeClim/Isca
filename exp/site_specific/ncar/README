@@ -1,59 +1,53 @@
-Guildline to start running test case in Cheyenne Machine
--- July 15, 2018 Wanying Kang
-1. download Isca
-=========================================
-git clone https://github.com/ExeClim/Isca [IscaCodeDir]
-cd [IscaCodeDir]
-=========================================
+Quick start guide for running Isca on NSF NCAR's Derecho HPC Machine
+-- March 2025, Rory Kelly (rory@ucar.edu)
+1. Download the Isca code
+   ```bash
+   git clone https://github.com/ExeClim/Isca
+   ```
 
-2. install python package necessary following the Cheyenne guideline: https://www2.cisl.ucar.edu/resources/computational-systems/cheyenne/software/python. The following are the key steps, and detail please refer to cheyenne official site.
-=========================================
-cd [IscaCodeDir]/src/extra/python
-ncar_pylib -c 20180128 [personal_package_dir]
-cd [personal_package_dir]/bin
-pip install -r requirements.txt
-=========================================
+2. Set up the environment
+   ```bash
+   cd Isca
 
-Each time before using, type the following to activate. Suggest to add the following line to ~/.bashrc
-=========================================
-source [personal_package_dir]/bin/activate.csh (tcsh)
-OR
-source [personal_package_dir]/bin/activate (bash)
-=========================================
+   module --force purge
+   module load ncarenv/23.09 intel/2023.2.1 craype/2.7.31 cray-mpich/8.1.27 ncarcompilers/1.0.0 hdf5/1.12.2 netcdf/4.9.2 conda/latest
 
-3. install Isca
-pip install -e .
+   mamba env create -f ci/environment-py3.12_ncar-derecho.yml
+   conda activate isca_env
 
-4. define environment variables. Please add the following to ~/.bashrc.
+   cd src/extra/python
+   pip install -e .
+   ```
+3. Add Isca settings to `~/.bashrc` (modify paths as desired). After adding these settings you'll
+   need to source your ~/.bashrc file, or export the settings in the current shell as well.
+   ```bash
+   export GFDL_ENV=ncar-derecho
+   export GFDL_MKMF_TEMPLATE=ncar-derecho-intel
+   export GFDL_BASE=/glade/work/$USER/Isca-derecho
+   export GFDL_WORK=/glade/derecho/scratch/$USER/isca_work
+   export GFDL_DATA=/glade/derecho/scratch/$USER/isca_data
+   ```
+4. Build and Run a Test Case on a batch node
+   ```bash
+   cd $GFDL_BASE/exp/test_cases/held_suarez
+   qsub isca-test.sh
+   ```
+   Example batch script `isca-test.sh` (you'll need to add you account code to the `-A` argument)
+   ```bash
+   #!/bin/bash
+   #PBS -l walltime=00:30:00
+   #PBS -l select=1:ncpus=128:mpiprocs=128
+   #PBS -q main
+   #PBS -A [ACCOUNT CODE]
+   #PBS -N Isca-test
+   #PBS -k eod
+   #PBS -j oe
+   #PBS -o Isca-test.out
 
-=========================================
-# python package location
-export python_package_lib_path=[personal_package_dir]/bin/activate 
-# directory of the Isca source code
-export GFDL_BASE=[IscaCodeDir] 
-# "environment" configuration for emps-gv4
-export GFDL_ENV=cheyenne
-# temporary working directory used in running the model, you may change to other places, but need to change the code accordingly as well.
-export GFDL_WORK=/glade/scratch/${USER}/isca_rundir/
-# directory for storing model output, you may change to other places, but need to change the code accordingly.
-export GFDL_DATA=/glade/scratch/${USER}/isca_out/
-export ACCOUNT = [YourAccount]
-=========================================
+   module --force purge
+   module load ncarenv/23.09 intel/2023.2.1 craype/2.7.31 cray-mpich/8.1.27 ncarcompilers/1.0.0 hdf5/1.12.2 netcdf/4.9.2 conda/latest
+   conda activate isca_env
 
-5. to run the model
-=========================================
-cp [IscaCodeDir]/exp/test_cases/cheyenne_run/build_isca.* [SomePlaceAsYouWant]
-cd [SomePlaceAsYouWant]
-./build_isca.sh [CaseName] [NCORES] [TODO]
-=========================================
-	for [TODO]: you can combine the following keywords
-		clean: clean up the [CaseName] workdir and rundir
-		compile: set up experiments using the settings in build_isca.py, and compile the F90s. Copy exec and run script to the [builddir] folder.
-		run: submit the job to queue.
-
-
-
-
-For any questions regarding the porting and running on Cheyenne machine, you may send me an email: wanyingkang@g.harvard.edu.
-
-
+   cd $GFDL_BASE/exp/test_cases/held_suarez
+   python held_suarez_test_case.py
+   ```
