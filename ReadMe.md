@@ -53,7 +53,8 @@ and eventually removed.
    cd src/extra/python
    pip install -e .
    ```
-3. Add Isca settings to `~/.bashrc` (modify paths as desired)
+3. Add Isca settings to `~/.bashrc` (modify paths as desired). After adding these settings you'll
+   need to source your ~/.bashrc file, or export the settings in the current shell as well.
    ```bash
    export GFDL_ENV=ncar-derecho
    export GFDL_MKMF_TEMPLATE=ncar-derecho-intel
