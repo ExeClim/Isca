@@ -53,21 +53,21 @@ and eventually removed.
    cd src/extra/python
    pip install -e .
    ```
-3. Add Isca settings to ~/.bashrc
+3. Add Isca settings to `~/.bashrc` (modify paths as desired)
    ```bash
    export GFDL_ENV=ncar-derecho
    export GFDL_MKMF_TEMPLATE=ncar-derecho-intel
-   export GFDL_DATA=/glade/derecho/scratch/$USER/isca_data
-   export GFDL_BASE=/glade/derecho/scratch/$USER/tickets/rc-31217/Isca-derecho
+   export GFDL_BASE=/glade/work/$USER/Isca-derecho
    export GFDL_WORK=/glade/derecho/scratch/$USER/isca_work
+   export GFDL_DATA=/glade/derecho/scratch/$USER/isca_data
    ```
 12. Build and Run a Test Case on a batch node
     ```bash
     cd $GFDL_BASE/exp/test_cases/held_suarez
     qsub isca-test.sh
     ```
-    Example batch script isca-test.sh
-    ```
+    Example batch script `isca-test.sh` (you'll need to add you account code to the `-A` argument)
+    ```bash
     #!/bin/bash
     #PBS -l walltime=00:30:00
     #PBS -l select=1:ncpus=128:mpiprocs=128
