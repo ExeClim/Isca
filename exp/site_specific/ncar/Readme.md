@@ -23,7 +23,7 @@ Quick start guide for running Isca on NSF NCAR's Derecho HPC Machine
    ```bash
    export GFDL_ENV=ncar-derecho
    export GFDL_MKMF_TEMPLATE=ncar-derecho-intel
-   export GFDL_BASE=/glade/work/$USER/Isca-derecho
+   export GFDL_BASE=/glade/work/$USER/Isca
    export GFDL_WORK=/glade/derecho/scratch/$USER/isca_work
    export GFDL_DATA=/glade/derecho/scratch/$USER/isca_data
    ```
