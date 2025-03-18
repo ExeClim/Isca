@@ -79,6 +79,7 @@ void addEnd(struct Node *list, double x, double y, double z, int intersect, doub
 
 int getInbound( struct Node node );
 int length(struct Node *list);
+int isHeadNode(struct Node *list, struct Node nodeIn);
 struct Node *getNextNode(struct Node *list);
 struct Node *getNode(struct Node *list, struct Node inNode);
 int sameNode(struct Node node1, struct Node node2);

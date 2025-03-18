@@ -1,0 +1,22 @@
+# template for the Intel 2023.2.1 compiler suite on NCAR's derecho machine
+# typical use with mkmf
+# mkmf -t template.ifc -c"-Duse_libMPI -Duse_netCDF" path_names /usr/local/include
+
+# FFLAGS:
+#  -fpp: Use the fortran preprocessor
+#  -stack_temps:  Put temporary runtime arrays on the stack, not heap.
+#  -safe_cray_ptr: Cray pointers don't alias other variables.
+#  -ftz: Denormal numbers are flushed to zero.
+#  -assume byterecl: Specifies the units for the OPEN statement as bytes.
+#  -shared-intel:  Load intel libraries dynamically
+#  -i4: 4 byte integers
+#  -r8: 8 byte reals
+#  -g: Generate symbolic debugging info in code
+#  -O2: Level 2 speed optimisations
+#  -diag-disable 6843:
+#       This suppresses the warning: `warning #6843: A dummy argument with an explicit INTENT(OUT) declaration is not given an explicit value.` of which
+#       there are a lot of instances in the GFDL codebase.
+FFLAGS = -fpp -stack-temps -safe-cray-ptr -ftz -assume byterecl -i4 -r8 -g -O2 -diag-disable 6843 -mcmodel large
+CFLAGS = -DHAVE_GETTID -fPIC -g -O2
+LD = ifort 
+LDFLAGS = -lnetcdf -lnetcdff -lm

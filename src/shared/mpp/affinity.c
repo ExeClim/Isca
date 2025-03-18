@@ -30,10 +30,14 @@
 #include <sys/resource.h>
 #include <sys/syscall.h>
 
+#ifdef HAVE_GETTID
+/* will use gettid() from unistd.h */
+#else
 static pid_t gettid(void)
 {
   return syscall(__NR_gettid);
 }
+#endif
 
 /*
  * Returns this thread's CPU affinity, if bound to a single core,
