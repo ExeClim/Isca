@@ -44,8 +44,8 @@ control%last_band  = spectrum%basic%n_band
 ! Spectral region-specific options
 select case(control%isolir)
 case(ip_solar)
-  control%i_2stream        = ip_pifm80
-  control%i_scatter_method = ip_scatter_full
+  control%i_2stream        = ip_pifm80 ! 16
+  control%i_scatter_method = ip_scatter_full ! 1
   control%l_rayleigh       = .TRUE.
   control%l_orog           = .FALSE.
   control%l_solvar         = .FALSE.
@@ -57,13 +57,18 @@ case(ip_solar)
   control%l_ch4            = inc_ch4
   control%l_o2             = inc_o2
   control%l_so2            = inc_so2
+  control%l_cfc11          = inc_cfc11
+  control%l_cfc12          = inc_cfc12
+  control%l_cfc113         = inc_cfc113
+  control%l_hcfc22         = inc_hcfc22
+  control%l_hfc134a        = inc_hfc134a
   control%i_st_water       = 5
   control%i_cnv_water      = 5
   control%i_st_ice         = 11
   control%i_cnv_ice        = 11
 case(ip_infra_red)
   control%i_2stream        = ip_elsasser
-  control%i_scatter_method = ip_no_scatter_ext!ip_scatter_hybrid
+  control%i_scatter_method = ip_scatter_full !ip_scatter_hybrid
   control%l_ir_source_quad = .TRUE.
   control%l_h2o            = inc_h2o
   control%l_co2            = inc_co2
@@ -86,15 +91,15 @@ end select
 ! Angular integration (including algorithmic options):
 control%n_channel              = 1
 control%i_angular_integration  = ip_two_stream
-control%l_rescale              = .TRUE.
+control%l_rescale              = .FALSE.
 control%n_order_forward        = 2
 control%l_mixing_ratio         = .TRUE.
 
 ! Gaseous absorption
 control%l_gas          = .TRUE.
 control%l_continuum    = .TRUE.
-!control%l_cont_gen     = .FALSE.
-control%i_gas_overlap  = ip_overlap_k_eqv_scl
+control%l_cont_gen     = .TRUE.
+control%i_gas_overlap  = ip_overlap_k_eqv_scl!ip_overlap_random
 
 ! Properties of clouds
 if (do_clouds) then

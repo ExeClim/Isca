@@ -292,7 +292,8 @@ integer ::           &
      id_u_10m,       & ! used for 10m winds and 2m temp
      id_v_10m,       & ! used for 10m winds and 2m temp
      id_q_2m,        & ! used for 2m specific humidity
-     id_rh_2m          ! used for 2m relative humidity
+     id_rh_2m,       & ! used for 2m relative humidity
+     id_diss_heat    ! used for dissipation heat
 
 integer, allocatable, dimension(:,:) :: convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
@@ -753,6 +754,9 @@ end select
         axes(1:3), Time, 'Temperature tendency from convection','K/s')
    id_conv_rain = register_diag_field(mod_name, 'convection_rain',            &
         axes(1:2), Time, 'Rain from convection','kg/m/m/s')
+! Ruizhi add the output diss_heat
+   id_diss_heat = register_diag_field(mod_name, 'diss_heat',          &
+        axes(1:3), Time, 'Heat dissipated by vertical diffusion','unknown')
 !endif
 
 if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, dt_real)
@@ -945,6 +949,7 @@ case(RAS_CONV)
 case(NO_CONV)
    tg_tmp = tg(:,:,:,previous)
    qg_tmp = grid_tracers(:,:,:,previous,nsphum)
+   conv_dt_tg = 0.0 ! I hate anyone who forgets to initialize arrays!
 
 case default
   call error_mesg('idealized_moist_phys','Invalid convection scheme.', FATAL)
@@ -1316,6 +1321,7 @@ if(turb) then
    if(id_diff_dt_vg > 0) used = send_data(id_diff_dt_vg, dt_vg - non_diff_dt_vg, Time)
    if(id_diff_dt_tg > 0) used = send_data(id_diff_dt_tg, dt_tg - non_diff_dt_tg, Time)
    if(id_diff_dt_qg > 0) used = send_data(id_diff_dt_qg, dt_tracers(:,:,:,nsphum) - non_diff_dt_qg, Time)
+   if(id_diss_heat > 0) used  = send_data(id_diss_heat, diss_heat, Time)
 
 endif ! if(turb) then
 
