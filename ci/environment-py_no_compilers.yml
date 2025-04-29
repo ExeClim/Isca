@@ -1,0 +1,16 @@
+name: isca_env_no_comp
+channels:
+- conda-forge
+dependencies:
+- dask
+- f90nml
+- ipykernel
+- jinja2
+- numpy
+- pandas
+- python
+- pip
+- pytest
+- sh
+- tqdm
+- xarray
