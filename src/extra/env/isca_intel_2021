@@ -1,0 +1,8 @@
+echo loadmodules for Isca
+
+export F90=mpiifort
+export CC=mpicc
+
+module purge
+module load intel-compilers/2021.4.0
+module load netCDF-Fortran/4.5.3-iimpi-2021b

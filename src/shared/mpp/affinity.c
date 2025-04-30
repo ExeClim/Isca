@@ -28,12 +28,17 @@
 #include <sched.h>
 #include <errno.h>
 #include <sys/resource.h>
-#include <sys/syscall.h>
 
-static pid_t gettid(void)
-{
-  return syscall(__NR_gettid);
-}
+#if !defined(_GNU_SOURCE) || !defined(__GLIBC__) || __GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 30)
+#include <sys/syscall.h>
+static
+pid_t gettid ( void )
+ {
+   return syscall(__NR_gettid);
+ }
+#endif
+
+
 
 /*
  * Returns this thread's CPU affinity, if bound to a single core,
