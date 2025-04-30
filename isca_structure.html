@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="./">
 <head>
@@ -5,21 +7,17 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Isca’s Code Structure &mdash; isca dev documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=3ce10a4d"></script>
-        <script src="_static/doctools.js?v=9a2dae69"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=3ce10a4d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -38,9 +36,6 @@
           <a href="index.html" class="icon icon-home">
             isca
           </a>
-              <div class="version">
-                dev
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
@@ -101,7 +96,8 @@
 <p>For ease and accessibility, Isca is controlled using a python interface which sets up the experiment runs, e.g. <code class="docutils literal notranslate"><span class="pre">frierson_test_case.py</span></code>. This then calls the atmosphere model (<code class="docutils literal notranslate"><span class="pre">atmos_model.F90</span></code>) which essentially just controls the model run, calling the atmosphere module (<code class="docutils literal notranslate"><span class="pre">atmosphere.F90</span></code>) every timestep. This module in turn calls the physical parameterisations from the physics driver (usually <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys.F90</span></code>), the spectral dynamical core (<code class="docutils literal notranslate"><span class="pre">spectral_dynamics.F90</span></code>) and the vertical coordinate driver (<code class="docutils literal notranslate"><span class="pre">press_and_geopot.F90</span></code>). Most of the lower layer code, which is where the Isca’s many different options are located, is called from the physics driver. This includes radiation schemes, convection schemes, damping and diffusion.</p>
 <p>Note: If using grey radiation, the surface flux is calculated after the up sweep in the grey radiation code, but before the down sweep. In addition for any configuration, the mixed layer ocean code is called after the down sweep in the vertical diffusion code, but before the up sweep.</p>
 <figure class="align-default" id="id1">
-<a class="reference internal image-reference" href="_images/isca_structure_diagram_edited.png"><img alt="_images/isca_structure_diagram_edited.png" src="_images/isca_structure_diagram_edited.png" style="width: 728.2px; height: 1266.4px;" /></a>
+<a class="reference internal image-reference" href="_images/isca_structure_diagram_edited.png"><img alt="_images/isca_structure_diagram_edited.png" src="_images/isca_structure_diagram_edited.png" style="width: 728.2px; height: 1266.4px;" />
+</a>
 <figcaption>
 <p><span class="caption-text">Flowchart showing the order of modules in the Isca code. No particular set up has been chosen here, for example, all possible calls to the radiation and convection parameterisations are shown, when a model run would only call 1.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
 </figcaption>
@@ -111,7 +107,8 @@
 <h2>Comparison To A General Spectral Model<a class="headerlink" href="#comparison-to-a-general-spectral-model" title="Link to this heading"></a></h2>
 <p>Our comparison here is based on the 2006 release of the GDFL CM2 spectral model. Because these models have an atmosphere ocean coupler, the model runs in a different, and slightly more complicated way. Note the multiple loops that the code must run through to do an up and down sweep. In Isca, because the mixed layer ocean is defined on that atmosphere grid, we can avoid these steps, meaning the model is easier to understand and use.</p>
 <figure class="align-default" id="id2">
-<a class="reference internal image-reference" href="_images/other_model_structure_diagram.png"><img alt="_images/other_model_structure_diagram.png" src="_images/other_model_structure_diagram.png" style="width: 563.2px; height: 394.6px;" /></a>
+<a class="reference internal image-reference" href="_images/other_model_structure_diagram.png"><img alt="_images/other_model_structure_diagram.png" src="_images/other_model_structure_diagram.png" style="width: 563.2px; height: 394.6px;" />
+</a>
 <figcaption>
 <p><span class="caption-text">Flowchart showing the order of modules in a ‘normal’ GCM. Note this is a simplification of the call structure, as the subsequent parameterisations are not included here.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
 </figcaption>
