@@ -44,7 +44,7 @@ def gaussian_latitudes(n):
     nlat = 2 * n
     # Create the coefficients of the Legendre polynomial and construct the
     # companion matrix:
-    cs = np.array([0] * nlat + [1], dtype=np.int)
+    cs = np.array([0] * nlat + [1], dtype=int)
     cm = legcompanion(cs)
     # Compute the eigenvalues of the companion matrix (the roots of the
     # Legendre polynomial) taking advantage of the fact that the matrix is

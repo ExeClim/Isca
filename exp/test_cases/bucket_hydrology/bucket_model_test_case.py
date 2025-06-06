@@ -1,10 +1,12 @@
 import os
 
 import numpy as np
+from field_table_write import write_ft
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 4
+NCORES = 32
+
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -21,16 +23,29 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 
 cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
+
+n_moments = 4
+
+field_table_name = "field_table_age_" + str(n_moments)
+write_ft(field_table_name,n_moments)
+
+
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('bucket_test_experiment', codebase=cb)
+exp = Experiment('bucket_test_experiment' ,ext_field_table=field_table_name, codebase=cb)
 
 #Add any input files that are necessary for a particular experiment.
 exp.inputfiles = [os.path.join(base_dir,'input/land.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
+
+
 diag.add_file('atmos_monthly', 30, 'days', time_units='days')
+
+for ind in range(n_moments):
+    name = f"sphum_age_{ind+1}"
+    diag.add_field('dynamics', name, time_avg=True)
 
 #Tell model which diagnostics to write
 diag.add_field('dynamics', 'ps', time_avg=True)
@@ -180,5 +195,5 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
     exp.run(1, use_restart=False, num_cores=NCORES)
-    for i in range(2,121):
+    for i in range(2,241):
         exp.run(i, num_cores=NCORES)

@@ -20,7 +20,7 @@ subroutine get_age_moments(nsphum, nsphum_age, previous, grid_tracers, sink, dt_
 
 
     do i = 2, nsphum_age
-        dt_tracers(:,:,:,i)  = dt_tracers(:,:,:,i) + (i-1) * grid_tracers(:,:,:,previous,i-1) + sink * (grid_tracers(:,:,:,previous,i)/(eps_blowup+grid_tracers(:,:,:,previous,nsphum)))
+        dt_tracers(:,:,:,i)  = dt_tracers(:,:,:,i) +  (i-1) * grid_tracers(:,:,:,previous,i-1) + sink * (grid_tracers(:,:,:,previous,i)/(eps_blowup+grid_tracers(:,:,:,previous,nsphum)))
     end do
 
 end subroutine get_age_moments

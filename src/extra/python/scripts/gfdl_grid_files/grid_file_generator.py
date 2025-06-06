@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 
 # specify resolution
-t_res = 42
+t_res = 85
 
 #read in grid from approriate file
-resolution_file = Dataset('t'+str(t_res)+'_atmos_daily.nc', 'r', format='NETCDF3_CLASSIC')
+resolution_file = Dataset('/home/philbou/scratch/isca_data/frierson_T85/run0005/atmos_monthly.nc', 'r', format='NETCDF3_CLASSIC')
 
 lons = resolution_file.variables['lon'][:]
 lats = resolution_file.variables['lat'][:]

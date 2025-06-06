@@ -784,7 +784,7 @@ end select
    id_conv_dt_qg = register_diag_field(mod_name, 'dt_qg_convection',          &
         axes(1:3), Time, 'Moisture tendency from convection','kg/kg/s')
    id_sink = register_diag_field(mod_name, 'dt_sink',          &
-        axes(1:3), Time, '(sink) negative Moisture tendency from convection','idk')
+        axes(1:3), Time, '(sink) negative Moisture tendency from convection','kg/kg/s')
    id_dt_tracer = register_diag_field(mod_name, 'dt_tracer',          &
         axes(1:3), Time, 'dt_tracer argument','idk')
    id_conv_dt_tg = register_diag_field(mod_name, 'dt_tg_convection',          &

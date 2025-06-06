@@ -1,0 +1,5 @@
+chmod +x submit_clim_exp_T85.sh
+./submit_clim_exp_T85.sh
+
+chmod +x submit_clim_exp_T42.sh
+./submit_clim_exp_T42.sh

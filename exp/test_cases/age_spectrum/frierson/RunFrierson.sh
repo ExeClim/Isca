@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --ntasks=32
 #SBATCH --mem-per-cpu=3G
-#SBATCH --time=2-00:00
-#SBATCH --job-name=fr_fluxq_floor
+#SBATCH --time=0-10:00
+#SBATCH --job-name=fr_T42_nc_spin
 #SBATCH --output=/scratch/philbou/outerr/%x-%j.out
 #SBATCH --error=/scratch/philbou/outerr/%x-%j.err
 #SBATCH --account=def-rfajber
@@ -25,4 +25,4 @@ conda activate isca_env
 
 cd $GFDL_BASE/exp/test_cases/age_spectrum/frierson
 
-python fr_age_newsink.py
+python fr_age.py
