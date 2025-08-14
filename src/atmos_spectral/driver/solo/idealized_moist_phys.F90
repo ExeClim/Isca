@@ -20,6 +20,8 @@ use           vert_diff_mod, only: vert_diff_init, gcm_vert_diff_down, gcm_vert_
 
 use two_stream_gray_rad_mod, only: two_stream_gray_rad_init, two_stream_gray_rad_down, two_stream_gray_rad_up, two_stream_gray_rad_end
 
+use simple_spectral_rad_mod, only: simple_spectral_rad_init, simple_spectral_rad_down, simple_spectral_rad_up, simple_spectral_rad_end, debug_ssm
+
 use        cloud_simple_mod, only: cloud_simple_init, cloud_simple_end, cloud_simple
 
 use       cloud_spookie_mod, only: cloud_spookie_init, cloud_spookie
@@ -122,6 +124,7 @@ logical :: do_cloud_spookie = .false. ! SPOOKIE protocol cloud scheme
 
 ! Radiation options
 logical :: two_stream_gray = .true.
+logical :: do_simple_spectral_radiation = .false.
 logical :: do_rrtm_radiation = .false.
 logical :: do_socrates_radiation = .false.
 
@@ -156,7 +159,7 @@ real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
 
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
                                       do_cloud_simple, do_cloud_spookie,             &
-                                      two_stream_gray, do_rrtm_radiation, do_damping,&
+                                      two_stream_gray, do_simple_spectral_radiation, do_rrtm_radiation, do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
                                       land_option, land_file_name, land_field_name,  & ! options for idealised land
@@ -386,6 +389,13 @@ if(two_stream_gray .and. (do_cloud_simple .or. do_cloud_spookie)) &
 
 if(do_rrtm_radiation .and. (do_cloud_simple .or. do_cloud_spookie)) &
    call error_mesg('idealized_moist_phys','RRTM is not configured to run with the cloud scheme at present.',FATAL)
+
+! Make sure simple spectral radiation now called with rrtm or gray
+if(do_simple_spectral_radiation .and. ( do_rrtm_radiation .or. two_stream_gray ) ) &
+   call error_mesg('physics_driver_init','you are calling multiple radiation schemes at once',FATAL)
+
+if(do_simple_spectral_radiation .and. (do_cloud_simple .or. do_cloud_spookie)) &
+   call error_mesg('idealized_moist_phys','simple spectral radiation is not configured to run with the cloud scheme at present.',FATAL)
 
 
 if(uppercase(trim(convection_scheme)) == 'NONE') then
@@ -769,6 +779,8 @@ end select
 
 if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, dt_real)
 
+if(do_simple_spectral_radiation) call simple_spectral_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, dt_real)
+
 #ifdef RRTM_NO_COMPILE
     if (do_rrtm_radiation) then
         call error_mesg('idealized_moist_phys','do_rrtm_radiation is .true. but compiler flag -D RRTM_NO_COMPILE used. Stopping.', FATAL)
@@ -1061,6 +1073,21 @@ if(two_stream_gray) then
                        grid_tracers(:,:,:,previous,nsphum))
 end if
 
+if(do_simple_spectral_radiation) then
+   call simple_spectral_rad_down(is, js, Time, &
+                       rad_lat(:,:),           &
+                       rad_lon(:,:),           &
+                       p_full(:,:,:,current),  &
+                       p_half(:,:,:,current),  &
+                       tg(:,:,:,previous),     &
+                       net_surf_sw_down(:,:),  &
+                       surf_lw_down(:,:), albedo, &
+                       grid_tracers(:,:,:,previous,nsphum))
+    if (debug_ssm) then
+      call error_mesg('idealized_moist_phys','called simple_spectral_rad_down', NOTE)                       
+    end if
+end if
+
 if(.not.mixed_layer_bc) then
 
 !!$! infinite heat capacity
@@ -1161,6 +1188,20 @@ if(two_stream_gray) then
                      dt_tg(:,:,:), albedo)
 end if
 
+
+if(do_simple_spectral_radiation) then
+   call simple_spectral_rad_up(is, js, Time, &
+                     rad_lat(:,:),           &
+                     p_full(:,:,:,current),  &
+                     p_half(:,:,:,current),  &
+                     t_surf(:,:),            &
+                     tg(:,:,:,previous),     &
+                     dt_tg(:,:,:), albedo)
+    if (debug_ssm) then
+      call error_mesg('idealized_moist_phys','called simple_spectral_rad_up', NOTE)                       
+    end if
+end if
+
 #ifdef RRTM_NO_COMPILE
     if (do_rrtm_radiation) then
         call error_mesg('idealized_moist_phys','do_rrtm_radiation is .true. but compiler flag -D RRTM_NO_COMPILE used. Stopping.', FATAL)
@@ -1217,7 +1258,6 @@ if(gp_surface) then
     if(id_diss_heat_ray > 0) used = send_data(id_diss_heat_ray, diss_heat_ray, Time)
 endif
 
-
 !----------------------------------------------------------------------
 !    Copied from MiMA physics_driver.f90
 !    call damping_driver to calculate the various model dampings that
@@ -1235,7 +1275,6 @@ if(do_damping) then
                              dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:),             &
                              z_pbl) ! have taken the names of arrays etc from vert_turb_driver below. Watch ntp from 2006 call to this routine?
 endif
-
 
 if(turb) then
 
@@ -1261,7 +1300,6 @@ if(turb) then
                                                             z_pbl(:,:) )
 
       pbltop(is:ie,js:je) = z_pbl(:,:) ! added so that z_pbl can be used subsequently by damping_driver.
-
 !
 !! Don't zero these derivatives as the surface flux depends implicitly
 !! on the lowest level values
@@ -1397,9 +1435,10 @@ end subroutine idealized_moist_phys
 subroutine idealized_moist_phys_end
 
 deallocate (dt_bucket, filt)
-if(two_stream_gray)      call two_stream_gray_rad_end
-if(lwet_convection)      call qe_moist_convection_end
-if(do_ras)               call ras_end
+if(two_stream_gray)              call two_stream_gray_rad_end
+if(do_simple_spectral_radiation) call simple_spectral_rad_end
+if(lwet_convection)              call qe_moist_convection_end
+if(do_ras)                       call ras_end
 
 if(turb) then
    call vert_diff_end
