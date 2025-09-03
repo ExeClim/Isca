@@ -2,7 +2,8 @@
 
 # === CONFIGURATION ===
 FOLLOWUP_SCRIPTS=(
-    "RT85_sst_0.py"
+    "RT85_sst_dt.py"
+    "RT85_sst_sponge.py"
 )
 SBATCH_TEMPLATE_DIR="./sbatch_jobs"
 mkdir -p "$SBATCH_TEMPLATE_DIR"
@@ -28,7 +29,7 @@ for script in "${FOLLOWUP_SCRIPTS[@]}"; do
 #!/bin/bash
 #SBATCH --ntasks=64
 #SBATCH --mem-per-cpu=3G
-#SBATCH --time=7-00:00
+#SBATCH --time=0-23:00
 #SBATCH --job-name=$JOB_NAME
 #SBATCH --output=/scratch/philbou/outerr/%x-%j.out
 #SBATCH --error=/scratch/philbou/outerr/%x-%j.err

@@ -1,6 +1,5 @@
 import os
 
-import numpy as np
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
@@ -19,11 +18,11 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
-#cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
+cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('frierson_test_experiment', codebase=cb)
+exp = Experiment('frierson_test_experiment', codebase=cb,ext_field_table="field_table")
 
 #Tell model how to write diagnostics
 diag = DiagTable()

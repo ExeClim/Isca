@@ -80,7 +80,8 @@ A_default =  np.array([0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
 
 def start_sst_exp(exp_name,delta_sst, n_moments,n_simulation_months,namelist,
                   horizontal_resolution, vertical_resolution=40,
-                  use_restart = False,restart_file ="None",n_start_months = 1):
+                  use_restart = False,restart_file ="None",n_start_months = 1,dt_atm = 720,sponge = 150,trayfric = -0.5):
+    
     if horizontal_resolution == "T42":
         NCORES = 32
         name_era_land = 'input/era_land_t42.nc'
@@ -127,7 +128,7 @@ def start_sst_exp(exp_name,delta_sst, n_moments,n_simulation_months,namelist,
     diag.add_field('dynamics', 'vor', time_avg=True)
     diag.add_field('dynamics', 'div', time_avg=True)
 
-    diag.add_field('vert_turb', 'z_pbl', time_avg=True)
+    #diag.add_field('vert_turb', 'z_pbl', time_avg=True)
 
     for ind in range(n_moments):
         name = f"sphum_age_{ind+1}"
@@ -137,16 +138,19 @@ def start_sst_exp(exp_name,delta_sst, n_moments,n_simulation_months,namelist,
     diag.add_field('atmosphere', 'dt_qg_convection', time_avg=True)
     diag.add_field('atmosphere', 'dt_qg_condensation', time_avg=True)
     diag.add_field('atmosphere', 'dt_sink', time_avg=True)
+    diag.add_field('atmosphere', 'dt_tracer', time_avg=True)
+    diag.add_field('atmosphere', 'dt_q', time_avg=True)
+    diag.add_field('atmosphere', 'dt_tracer_diff', time_avg=True)
     diag.add_field('atmosphere', 'dt_qg_diffusion', time_avg=True)
     diag.add_field('atmosphere', 'rh', time_avg=True)
     diag.add_field('atmosphere', 'condensation_rain', time_avg=True)
     diag.add_field('atmosphere', 'convection_rain', time_avg=True)
-
+    
     diag.add_field('rrtm_radiation', 'olr', time_avg=True)
     diag.add_field('rrtm_radiation', 'toa_sw', time_avg=True)
     diag.add_field('rrtm_radiation', 'tdt_rad', time_avg=True)
-    diag.add_field('rrtm_radiation', 'tdt_sw_rad', time_avg=True)
-    diag.add_field('rrtm_radiation', 'tdt_lw_rad', time_avg=True)
+    diag.add_field('rrtm_radiation', 'tdt_sw', time_avg=True)
+    diag.add_field('rrtm_radiation', 'tdt_lw', time_avg=True)
     diag.add_field('rrtm_radiation', 'flux_sw', time_avg=True)
     diag.add_field('rrtm_radiation', 'flux_lw', time_avg=True)
 
@@ -170,8 +174,10 @@ def start_sst_exp(exp_name,delta_sst, n_moments,n_simulation_months,namelist,
         'sst_file' : f'sst_clim_amip({delta_sst})', #Set name of sst input file
         'specify_sst_over_ocean_only' : True, #Make sure sst only specified in regions of ocean.
     },
-
-    'damping_driver_nml': { "sponge_pbottom" : 150 }
+    'main_nml' : {
+        'dt_atmos' : dt_atm
+        },
+    'damping_driver_nml': { "sponge_pbottom" : sponge , "trayfric" : trayfric}
   ,
     'vert_coordinate_nml': {
             'bk' : B_default,

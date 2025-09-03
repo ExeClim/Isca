@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --ntasks=32
+#SBATCH --ntasks=64
 #SBATCH --mem-per-cpu=3G
-#SBATCH --time=0-12:00
-#SBATCH --job-name=real_T85_plev_spin_def
+#SBATCH --time=2-00:00
+#SBATCH --job-name=RT85_HYB
 #SBATCH --output=/scratch/philbou/outerr/%x-%j.out
 #SBATCH --error=/scratch/philbou/outerr/%x-%j.err
 #SBATCH --account=def-rfajber
@@ -25,4 +25,4 @@ conda activate isca_env
 
 cd $GFDL_BASE/exp/test_cases/realistic_continents
 
-python real_cont_fixed_sst_climrun.py
+python RT85_sst_sponge.py

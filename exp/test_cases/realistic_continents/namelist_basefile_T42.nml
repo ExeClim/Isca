@@ -25,7 +25,8 @@
     land_roughness_prefactor = 10.0,            !How much rougher to make land than ocean
     roughness_mom   = 2.e-04,                   !Ocean roughness lengths  
     roughness_heat  = 2.e-04,                   !Ocean roughness lengths  
-    roughness_moist = 2.e-04 /                  !Ocean roughness lengths  
+    roughness_moist = 2.e-04,                  !Ocean roughness lengths  
+    bucket = .true. /
 
  &vert_turb_driver_nml
    do_mellor_yamada       = .false.,  ! default: True
@@ -113,7 +114,7 @@
     num_fourier = 42
     num_spherical = 43 
 
-    vert_coord_option       = 'uneven_sigma',     !'uneven_sigma',
+    vert_coord_option       = 'hybrid',     !'uneven_sigma',
     surf_res                = 0.2,
     scale_heights           = 11.0,
     exponent                = 7 / !Use model's in-built spatial smoothing to smooth topography in order to prevent unwanted aliasing at low horizontal resolution    

@@ -237,6 +237,7 @@ real, allocatable, dimension(:,:,:) ::                                        &
      non_diff_dt_vg,       &   ! merid. wind tendency except from vertical diffusion
      non_diff_dt_tg,       &   ! temperature tendency except from vertical diffusion
      non_diff_dt_qg,       &   ! moisture tendency except from vertical diffusion
+     non_diff_dt_age,       &   ! age-mass tendency except from vertical diffusion
      conv_dt_tg,           &   ! temperature tendency from convection
      conv_dt_qg,           &   ! moisture tendency from convection
      sink,           &   ! negative moisture tendency from convection
@@ -290,8 +291,10 @@ integer ::           &
      id_precip,      &   ! rain and snow from condensation and convection
      id_conv_dt_tg,  &   ! temperature tendency from convection
      id_conv_dt_qg,  &   ! moisture tendency from convection
-     id_sink,  &   ! negative moisture tendency from convection
-     id_dt_tracer,  &   ! negative moisture tendency from convection
+     id_sink,  &   ! negative moisture tendency
+     id_dt_tracer,  &   ! total tendency of age-mass
+     id_dt_tracer_diff,  &   ! diffusion tendency of age-mass
+     id_dt_q,  &   ! total moisture tendency
      id_cond_dt_tg,  &   ! temperature tendency from condensation
      id_cond_dt_qg,  &   ! temperature tendency from condensation
      id_bucket_depth,      &   ! bucket depth variable for output
@@ -544,6 +547,7 @@ allocate(non_diff_dt_ug  (is:ie, js:je, num_levels))
 allocate(non_diff_dt_vg  (is:ie, js:je, num_levels))
 allocate(non_diff_dt_tg  (is:ie, js:je, num_levels))
 allocate(non_diff_dt_qg  (is:ie, js:je, num_levels))
+allocate(non_diff_dt_age  (is:ie, js:je, num_levels))
 
 allocate(net_surf_sw_down        (is:ie, js:je))
 allocate(surf_lw_down            (is:ie, js:je))
@@ -786,7 +790,11 @@ end select
    id_sink = register_diag_field(mod_name, 'dt_sink',          &
         axes(1:3), Time, '(sink) negative Moisture tendency from convection','kg/kg/s')
    id_dt_tracer = register_diag_field(mod_name, 'dt_tracer',          &
-        axes(1:3), Time, 'dt_tracer argument','idk')
+        axes(1:3), Time, 'tendency age-mass','kg/kg')
+   id_dt_tracer_diff = register_diag_field(mod_name, 'dt_tracer_diff',          &
+        axes(1:3), Time, 'tendency age-mass from diffusion','kg/kg')
+   id_dt_q = register_diag_field(mod_name, 'dt_q',          &
+        axes(1:3), Time, 'total moiture tendency','kg/kg/s')
    id_conv_dt_tg = register_diag_field(mod_name, 'dt_tg_convection',          &
         axes(1:3), Time, 'Temperature tendency from convection','K/s')
    id_conv_rain = register_diag_field(mod_name, 'convection_rain',            &
@@ -1346,6 +1354,7 @@ if(turb) then
    non_diff_dt_vg  = dt_vg
    non_diff_dt_tg  = dt_tg
    non_diff_dt_qg  = dt_tracers(:,:,:,nsphum)
+   non_diff_dt_age  = dt_tracers(:,:,:,2)
 
    call gcm_vert_diff_down (1, 1,                                          &
                             delta_t,             ug(:,:,:,previous),       &
@@ -1405,6 +1414,7 @@ if(turb) then
    if(id_diff_dt_vg > 0) used = send_data(id_diff_dt_vg, dt_vg - non_diff_dt_vg, Time)
    if(id_diff_dt_tg > 0) used = send_data(id_diff_dt_tg, dt_tg - non_diff_dt_tg, Time)
    if(id_diff_dt_qg > 0) used = send_data(id_diff_dt_qg, dt_tracers(:,:,:,nsphum) - non_diff_dt_qg, Time)
+   if(id_dt_tracer_diff > 0) used = send_data(id_dt_tracer_diff, dt_tracers(:,:,:,2) - non_diff_dt_age, Time)
 
 endif ! if(turb) then
 
@@ -1469,8 +1479,9 @@ endif
   call get_age_moments(nsphum,nsphum_age,previous,grid_tracers,sink,dt_tracers)
    
   if(id_sink > 0) used = send_data(id_sink, sink, Time)
-  ! Save the second moment
-  if(id_dt_tracer > 0) used = send_data(id_dt_tracer, dt_tracers(:,:,:,3), Time)
+  ! Save the first moment tendency
+  if(id_dt_tracer > 0) used = send_data(id_dt_tracer, dt_tracers(:,:,:,2), Time)
+  if(id_dt_q > 0) used = send_data(id_dt_q, dt_tracers(:,:,:,nsphum), Time)
 
 end subroutine idealized_moist_phys
 !=================================================================================================================================

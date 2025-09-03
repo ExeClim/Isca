@@ -113,10 +113,12 @@
     num_fourier = 42
     num_spherical = 43 
 
-    vert_coord_option       = 'input',     !'uneven_sigma',
-    surf_res                = 0.2,
-    scale_heights           = 11.0,
-    exponent                = 7 / !Use model's in-built spatial smoothing to smooth topography in order to prevent unwanted aliasing at low horizontal resolution    
+    vert_coord_option       = 'hybrid',     !'uneven_sigma',
+    surf_res                = 0.1,
+    scale_heights           = 4.5,
+    p_press                 = 0.05,
+    p_sigma                 = 0.45,
+    exponent                = 1.77 / !Use model's in-built spatial smoothing to smooth topography in order to prevent unwanted aliasing at low horizontal resolution    
  
  &spectral_init_cond_nml
     topog_file_name = 'era_land_t85.nc', !Name of land input file, which will also contain topography if generated using Isca's `land_file_generator_fn.py' routine.

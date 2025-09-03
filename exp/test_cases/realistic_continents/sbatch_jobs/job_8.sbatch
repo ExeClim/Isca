@@ -2,7 +2,7 @@
 #SBATCH --ntasks=32
 #SBATCH --mem-per-cpu=3G
 #SBATCH --time=1-00:00
-#SBATCH --job-name=RT42_sst_E_7
+#SBATCH --job-name=RT42_sst_E_8
 #SBATCH --output=/scratch/philbou/outerr/%x-%j.out
 #SBATCH --error=/scratch/philbou/outerr/%x-%j.err
 #SBATCH --account=def-rfajber
@@ -15,4 +15,4 @@ source /home/philbou/.bashrc
 conda activate isca_env
 cd $GFDL_BASE/exp/test_cases/realistic_continents
 
-python RT42_sst_m2.py
+python RT42_sst_m3.py

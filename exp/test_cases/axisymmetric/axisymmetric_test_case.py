@@ -23,7 +23,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('axisymmetric_test_case', codebase=cb)
+exp = Experiment('axisymmetric_test_case', codebase=cb,ext_field_table="field_table")
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),
                       os.path.join(base_dir,'input/sn_1.000_sst.nc')]

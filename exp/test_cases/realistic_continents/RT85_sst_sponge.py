@@ -10,14 +10,13 @@ n_moments = 2
 horizontal_resolution = "T85"
 
 
-exp_name = "RT85_sst_4" #"real_T85_sst_spinup"
-
-res_file = "/home/philbou/scratch/isca_data/RT85_sst_spinup/restarts/res0120.tar.gz"
-
-delta_sst = 4
+spinup_exp_name = "RT85_HYB_newlevels" #"real_T85_sst_spinup"
+res_file = "/home/philbou/scratch/isca_data/RT85_sst_sponge_200/restarts/res0074.tar.gz"
+delta_sst = 0
 namelist = "namelist_basefile_T85"
-start_sst_exp(exp_name,delta_sst, n_moments,360 ,namelist,
+start_sst_exp(spinup_exp_name,delta_sst, n_moments,361 ,namelist,
                 horizontal_resolution, vertical_resolution=45,
-                use_restart = False,restart_file = res_file,n_start_months=1)
+                use_restart = False,restart_file = res_file,n_start_months=1,
+                dt_atm=360)
     
     
