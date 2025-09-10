@@ -78,9 +78,9 @@ A_default =  np.array([0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
                     0.000000])
 
 
-def start_sst_exp(exp_name,delta_sst, n_moments,n_simulation_months,namelist,
+def create_exp_obj(exp_name,delta_sst, n_moments,namelist,
                   horizontal_resolution, vertical_resolution=40,
-                  use_restart = False,restart_file ="None",n_start_months = 1,dt_atm = 720,sponge = 150,trayfric = -0.5):
+                  dt_atm = 720,sponge = 150,trayfric = -0.5):
     
     if horizontal_resolution == "T42":
         NCORES = 32
@@ -88,6 +88,9 @@ def start_sst_exp(exp_name,delta_sst, n_moments,n_simulation_months,namelist,
     elif horizontal_resolution == "T85":
         NCORES = 64
         name_era_land = 'input/era_land_t85.nc'
+    elif horizontal_resolution == "T170":
+        NCORES = 64
+        name_era_land = 'input/era_land_t170.nc'
         
     RESOLUTION = horizontal_resolution, vertical_resolution
     base_dir = os.path.dirname(os.path.realpath(__file__))
@@ -182,15 +185,11 @@ def start_sst_exp(exp_name,delta_sst, n_moments,n_simulation_months,namelist,
     'vert_coordinate_nml': {
             'bk' : B_default,
             'pk' : A_default,
+            },
+    'spectral_dynamics_nml': {
+            'num_levels' : vertical_resolution
             }
     })
 
     exp.set_resolution(*RESOLUTION)
-    
-    n_max = n_simulation_months + 1
-    # Run first month with or without the restart_file
-    exp.run(n_start_months,restart_file = restart_file,use_restart=use_restart, num_cores=NCORES,overwrite_data = True)
-    for i in range(n_start_months + 1,n_max):
-        exp.run(i, num_cores=NCORES,overwrite_data = True)
-        
-    return "Experiment ran succesfully"
+    return exp

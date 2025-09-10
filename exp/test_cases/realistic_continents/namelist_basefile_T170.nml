@@ -21,7 +21,7 @@
     do_rrtm_radiation = .true.,                 !Do use RRTM radiation
     convection_scheme = 'FULL_BETTS_MILLER',    !Use the full betts-miller convection scheme
     land_option = 'input',                      !Use land mask from input file
-    land_file_name = 'INPUT/era_land_t85.nc',   !Tell model where to find input file
+    land_file_name = 'INPUT/era_land_t170.nc',   !Tell model where to find input file
     land_roughness_prefactor = 10.0,            !How much rougher to make land than ocean
     roughness_mom   = 2.e-04,                   !Ocean roughness lengths  
     roughness_heat  = 2.e-04,
@@ -109,10 +109,10 @@
     initial_sphum = 2e-06
 
     ocean_topog_smoothing = 0.99
-    lon_max = 128
-    lat_max = 64
-    num_fourier = 42
-    num_spherical = 43 
+    lon_max = 512
+    lat_max = 256
+    num_fourier = 170
+    num_spherical = 171 
 
     vert_coord_option       = 'hybrid',     !'uneven_sigma',
     surf_res                = 0.1,
@@ -122,5 +122,5 @@
     exponent                = 1.77 / !Use model's in-built spatial smoothing to smooth topography in order to prevent unwanted aliasing at low horizontal resolution    
  
  &spectral_init_cond_nml
-    topog_file_name = 'era_land_t85.nc', !Name of land input file, which will also contain topography if generated using Isca's `land_file_generator_fn.py' routine.
+    topog_file_name = 'era_land_t170.nc', !Name of land input file, which will also contain topography if generated using Isca's `land_file_generator_fn.py' routine.
     topography_option = 'input'/ !Tell model to get topography from input filew

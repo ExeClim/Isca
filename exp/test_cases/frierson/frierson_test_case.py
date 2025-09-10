@@ -175,3 +175,5 @@ if __name__=="__main__":
     exp.run(1, use_restart=False, num_cores=NCORES)
     for i in range(2,121):
         exp.run(i, num_cores=NCORES)
+
+exp.run

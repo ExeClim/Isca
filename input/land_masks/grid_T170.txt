@@ -1,0 +1,18 @@
+#
+# gridID T170
+#
+gridtype  = lonlat
+gridsize  = 131072
+xsize     = 512
+ysize     = 256
+xname     = lon
+xlongname = "longitude"
+xunits    = "degrees_east"
+yname     = lat
+ylongname = "latitude"
+yunits    = "degrees_north"
+xfirst    = 0
+xinc      = 0.703125      # 360 / 512
+yfirst    = -90
+yinc      = 0.703125      # 180 / 256
+
