@@ -1,0 +1,210 @@
+<HTML>
+<TITLE>module shallow_physics_mod</TITLE>
+<BODY BGCOLOR="#AABBCC" TEXT="#332211" >
+
+<DIV ALIGN="CENTER"> <FONT SIZE=1>
+<A HREF="#INTERFACE">PUBLIC INTERFACE</A> / 
+<A HREF="#DATA_TYPES">DATA</A> / 
+<A HREF="#ROUTINES">ROUTINES</A> / 
+<A HREF="#NAMELIST">NAMELIST</A> / 
+<A HREF="#ERRORS">ERRORS</A>
+</FONT>
+<BR><BR></DIV><HR>
+
+
+<H2>module shallow_physics_mod</H2>
+<A NAME="HEADER">
+<!-- BEGIN HEADER -->
+<PRE>
+     <B>Contact:</B> Isaac Held
+     <B>Reviewers:</B> Peter Phillipps
+
+</PRE>
+<!-- END HEADER --></A>
+<!--------------------------------------------------------------------->
+<A NAME="OVERVIEW">
+<HR>
+<H4>OVERVIEW</H4>
+<!-- BEGIN OVERVIEW -->
+<PRE>
+
+   A module that allows one to add processes that act in the grid domain
+   to the dynamics of the shallow model on the sphere
+   
+</PRE>
+<!-- END OVERVIEW --></A>
+<!--------------------------------------------------------------------->
+<A NAME="DESCRIPTION">
+<HR>
+<H4>DESCRIPTION</H4>
+<!-- BEGIN DESCRIPTION -->
+<PRE>
+
+   A module that allows one to add processes that act in the grid domain
+   to the dynamics of the shallow model on the sphere.  Currently adds
+   a relaxation to a specified  "equilibrium geopotential" and relaxes
+   the winds to zero
+</PRE>
+<!-- END DESCRIPTION --></A>
+<!--------------------------------------------------------------------->
+<A NAME="MODULES_USED">
+<HR>
+<H4>OTHER MODULES USED</H4>
+<!-- BEGIN MODULES_USED -->
+<PRE>
+
+     fms_mod
+     transforms_mod
+     time_manager_mod
+
+</PRE>
+<!-- END MODULES_USED --></A>
+<!--------------------------------------------------------------------->
+<A NAME="INTERFACE">
+<HR>
+<H4>PUBLIC INTERFACE</H4>
+<!-- BEGIN INTERFACE -->
+<PRE>
+
+  use shallow_physics_mod [,only: shallow_physics_init,       
+                                         shallow_physics,
+					 shallow_physics_end,
+					 phys_type]
+                                
+</PRE>
+<!-- END INTERFACE --></A>
+<!--------------------------------------------------------------------->
+<A NAME="DATA_TYPES">
+<HR>
+<H4>PUBLIC DATA</H4>
+<!-- BEGIN DATA_TYPES -->
+<PRE>
+     
+<HR>
+ <A NAME="phys_type">
+
+type phys_type
+   real, pointer, dimension(:,:)   :: empty
+end type
+
+  fields from physics module made available for diagnostics
+  
+ <HR>
+ </A>
+
+</PRE>
+<!-- END DATA_TYPES --></A>
+<!--------------------------------------------------------------------->
+<A NAME="ROUTINES">
+<HR>
+<H4>PUBLIC ROUTINES</H4>
+<!-- BEGIN ROUTINES -->
+<PRE>
+
+<A HREF="#shallow_physics_init">subroutine  shallow_physics_init</A>
+<A HREF="#shallow_physics">subroutine  shallow_physics</A>
+<A HREF="#shallow_physics_end">subroutine  shallow_physics_end</A>
+<A HREF="#phys_type">type(phys_type)</A>
+
+
+<A NAME="shallow_physics_init">
+<PRE>
+
+ subroutine shallow_physics_init(Phys)
+ 
+   type(phys_type)    , intent(inout)     :: Phys
+  
+ 
+   Initializes module
+
+<!-- END shallow_physics_init --></A>
+
+<HR>
+
+<A NAME="shallow_physics">
+
+  subroutine shallow_physics (Time, dt_ug, dt_vg, dt_hg, ug, vg, hg,   &
+                             delta_t, previous, current, Phys)
+
+      real, intent(inout),  dimension(:,:)    :: dt_ug, dt_vg, dt_hg
+      
+         the u, v and geopotential tendencies onto which tendencies due to 
+	    the grid-point physics are added (m/(s^2) for dt_ug, dt_vg; 
+	    (m^2)/(s^3) for dt_hg)
+	 
+      real, intent(in)   ,  dimension(:,:, 2) :: ug, vg, hg
+         the grid zonal and meridional velocities (m/s) and
+	 geopotential (m^2/s^2)
+	 the third index is the time-index used in the leapfrog step
+
+      real   , intent(in)  :: delta_t  
+         time step (s)
+	 
+      integer, intent(in)  :: previous, current
+         = 1 or 2
+	 ug(:,:,previous) is the velocity at t-delta_t
+	 ug(:,:,current ) is the velocity at t
+
+      type(time_type), intent(in)    :: Time
+      type(phys_type), intent(inout) :: Phys
+ 
+
+<!-- END shallow_physics --></A>
+
+<HR>
+
+<A NAME="shallow_physics_end">
+
+  subroutine shallow_physics_end (Phys)
+
+      type(phys_type), intent(inout) :: Phys
+ 
+
+<!-- END shallow_physics_end --></A>
+<HR>
+</PRE>
+<!-- END ROUTINES --></A>
+
+
+<A NAME="NAMELIST">
+<HR>
+<H4>NAMELIST</H4>
+<!-- BEGIN NAMELIST -->
+<PRE>
+
+<B>&shallow_physics_nml</B>
+
+real    :: fric_damp_time  = -20.0
+           rate at which ua nd v are relaxed to zero (seconds)
+           (if negative, units are days instead -- negative sign is ignored) 
+      
+real    :: therm_damp_time = -10.0
+           rate at which geopotential is relaxed to h_eq
+	   (units as above)
+
+real    :: h_0             = 3.e04  (m^2/s^2)
+real    :: h_amp           = 2.e04  (m^2/s^2)
+real    :: h_lon           =  90.0  degrees
+real    :: h_lat           =  25.0  degrees
+real    :: h_width         =  15.0  degrees
+real    :: h_itcz          = 1.e05  (m^2/s^2)
+real    :: itcz_width      =  4.0   degrees
+
+           h_eq is defined as
+	   h_0 + h_amp*exp(-r^2) + h_itcz*exp(-d^2)
+	   
+	   where r^2 = xx^2 + yy^2
+	      xx = (lon - h_lon)/(2*h_width)
+	      yy = (lat - h_lat)/h_width
+	      
+	   and d = lat/itcz_width
+	  
+
+</PRE>
+<!-- END NAMELIST --></A>
+<!--------------------------------------------------------------------->
+
+<HR>
+
+</BODY>
+</HTML>
