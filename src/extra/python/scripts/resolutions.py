@@ -171,7 +171,7 @@ def main():
         if exceeded:
             console.print(f"[bold green]Next grid size ({size}) exceeds specified maximum {latlon_maxprod}[/bold green]")
     elif choice == "b":
-        nfou = int(Prompt.ask("\nEnter truncation number (e.g., 21, 42, 85, 170):"))
+        nfou = int(Prompt.ask("\nEnter truncation number (e.g., 21, 42, 85, 170)"))
         grid = get_grid_for_truncation(nfou)
         console.print(
             f"\n[bold]Grid parameters for T{nfou}:[/bold]\n"
