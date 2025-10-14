@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --ntasks=64
+#SBATCH --ntasks=32
 #SBATCH --mem-per-cpu=3G
-#SBATCH --time=00-23:59
-#SBATCH --job-name=RT170_HYB_ADPT
+#SBATCH --time=00-00:59
+#SBATCH --job-name=A-Test
 #SBATCH --output=/scratch/philbou/outerr/%x-%j.out
 #SBATCH --error=/scratch/philbou/outerr/%x-%j.err
 #SBATCH --account=def-rfajber
@@ -25,4 +25,4 @@ conda activate isca_env
 
 cd $GFDL_BASE/exp/test_cases/realistic_continents
 
-python RT_adaptable_dt.py 
+python RT_sst.py 0 360

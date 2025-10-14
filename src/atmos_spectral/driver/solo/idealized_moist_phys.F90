@@ -127,6 +127,9 @@ logical :: two_stream_gray = .true.
 logical :: do_rrtm_radiation = .false.
 logical :: do_socrates_radiation = .false.
 
+! WVRT option
+logical :: do_wv_age = .false.
+
 ! MiMA uses damping
 logical :: do_damping = .false.
 
@@ -160,7 +163,7 @@ real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
 ! end Add bucket
 
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
-                                      do_cloud_simple, do_cloud_spookie,             &
+                                      do_wv_age, do_cloud_simple, do_cloud_spookie,             &
                                       two_stream_gray, do_rrtm_radiation,floor_evap ,do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
@@ -241,9 +244,6 @@ real, allocatable, dimension(:,:,:) ::                                        &
      conv_dt_tg,           &   ! temperature tendency from convection
      conv_dt_qg,           &   ! moisture tendency from convection
      sink,           &   ! negative moisture tendency from convection
-     sink_mixedlayer, &
-     eps_blowup,               &
-     condition_met, &
      cond_dt_tg,           &   ! temperature tendency from condensation
      cond_dt_qg                ! moisture tendency from condensation
 
@@ -474,7 +474,12 @@ if(do_lcl_diffusivity_depth .and. (.not. (lwet_convection .or. do_ras .or. do_bm
 
 
 nsphum = nhum
-nsphum_age = n_age
+
+if(do_wv_age) then
+  nsphum_age = n_age
+else
+  nsphum_age = 0
+endif
 
 Time_step = Time_step_in
 call get_time(Time_step, seconds, days)
@@ -554,9 +559,6 @@ allocate(surf_lw_down            (is:ie, js:je))
 allocate(conv_dt_tg  (is:ie, js:je, num_levels))
 allocate(conv_dt_qg  (is:ie, js:je, num_levels))
 allocate(sink  (is:ie, js:je, num_levels))
-allocate(sink_mixedlayer  (is:ie, js:je, num_levels))
-allocate(eps_blowup  (is:ie, js:je, num_levels))
-allocate(condition_met  (is:ie, js:je, num_levels))
 
 allocate(cond_dt_tg  (is:ie, js:je, num_levels))
 allocate(cond_dt_qg  (is:ie, js:je, num_levels))
@@ -1473,10 +1475,9 @@ if(bucket) then
 
 endif
 
-  eps_blowup = 1e-10
-  condition_met = .false.
-! Calculate Age eq. RHS
-  call get_age_moments(nsphum,nsphum_age,previous,grid_tracers,sink,dt_tracers)
+  ! Calculate Age eq. RHS
+  if(do_wv_age) &
+    call get_age_moments(nsphum,nsphum_age,previous,grid_tracers,sink,dt_tracers)
    
   if(id_sink > 0) used = send_data(id_sink, sink, Time)
   ! Save the first moment tendency

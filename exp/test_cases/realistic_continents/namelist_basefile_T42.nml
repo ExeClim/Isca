@@ -26,7 +26,9 @@
     roughness_mom   = 2.e-04,                   !Ocean roughness lengths  
     roughness_heat  = 2.e-04,                   !Ocean roughness lengths  
     roughness_moist = 2.e-04,                  !Ocean roughness lengths  
-    bucket = .true. /
+    bucket = .true. ,
+    do_wv_age = .true., /
+   
 
  &vert_turb_driver_nml
    do_mellor_yamada       = .false.,  ! default: True

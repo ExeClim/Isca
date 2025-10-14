@@ -13,7 +13,7 @@ def update_nml(exp,dt):
     print(f"{datetime.datetime.now()} : namelist updated to dt = {dt}",file=sys.stdout, flush=True)
 
 n_moments = 2
-horizontal_resolution = "T85"
+horizontal_resolution = "T170"
 NCORES = 64
 
 spinup_exp_name = f"R{horizontal_resolution}_HYB_ADPT" #"real_T85_sst_spinup"
@@ -22,10 +22,10 @@ delta_sst = 0
 namelist = f"namelist_basefile_{horizontal_resolution}"
 
 
-dt = 360
-original_dt = 360
+dt = 180
+original_dt = 180
 min_dt = 30
-n_start_month = 250
+n_start_month = 35
 n_end_month = 361
 if n_start_month != 1:  
     restart = True

@@ -152,7 +152,7 @@ call get_number_tracers(MODEL_ATMOS, num_prog=num_tracers)
 allocate (tracer_attributes(num_tracers))
 #ifdef COLUMN_MODEL
   !!!print*, "call column_init"
-  call column_init(Time, Time_step, tracer_attributes, dry_model, nhum,n_age)
+  call column_init(Time, Time_step, tracer_attributes, dry_model, nhum)
   column_model = .true.
 #else
   call spectral_dynamics_init(Time, Time_step, tracer_attributes, dry_model, nhum)

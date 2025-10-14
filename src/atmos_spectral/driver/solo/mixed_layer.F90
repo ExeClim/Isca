@@ -100,11 +100,15 @@ real    :: depth           = 40.0,         & !s 2013 implementation
            np_cap_factor   =  1.,          & !mj
            albedo_exp      = 2.,           & !mj
            albedo_cntr     = 45.,          & !mj
+           albedo_cntr_lon     = 45.,          & !mj
+           albedo_cntr_lat     = 45.,          & !mj
            albedo_wdth     = 10.,          & !mj
+           albedo_wdth_lat     = 10.,          & !mj
+           albedo_wdth_lon     = 10.,          & !mj
            higher_albedo   = 0.10,         & !mj
            lat_glacier     = 60.,          & !mj
            land_h_capacity_prefactor = 1.0 !s where(land) heat_capcity = land_h_capacity_prefactor * depth * rho_cp
-
+integer :: nshift
 !s Surface albedo options
 real    :: land_albedo_prefactor = 1.0 !s where(land) albedo = land_albedo_prefactor * albedo_value
 
@@ -142,7 +146,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               trop_cap_limit, heat_cap_limit, np_cap_factor, &  !mj
                               do_qflux,do_warmpool,                          &  !mj
                               albedo_choice,higher_albedo,albedo_exp,        &  !mj
-                              albedo_cntr,albedo_wdth,lat_glacier,           &  !mj
+                              albedo_cntr,albedo_cntr_lat,albedo_cntr_lon,albedo_wdth,albedo_wdth_lat,albedo_wdth_lon,lat_glacier,           &  !mj
                               do_read_sst,do_sc_sst,sst_file,                &  !mj
                               land_option,slandlon,slandlat,                 &  !mj
                               elandlon,elandlat,                             &  !mj
@@ -180,7 +184,7 @@ real, allocatable, dimension(:,:)   ::                                        &
      rad_lat_2d,            &   ! latitude in radians
      flux_lhe_anom, flux_q_total
 
-real, allocatable, dimension(:)   :: deg_lat, deg_lon
+real, allocatable, dimension(:)   :: deg_lat, deg_lon, lon_tmp
 
 real, allocatable, dimension(:,:)   ::                                        &
      gamma_t,               &   ! Used to calculate the implicit
@@ -271,6 +275,7 @@ allocate(flux_lhe_anom           (is:ie, js:je))
 allocate(flux_q_total            (is:ie, js:je))
 allocate(deg_lat                 (js:je))
 allocate(deg_lon                 (is:ie))
+allocate(lon_tmp                 (is:ie))
 allocate(gamma_t                 (is:ie, js:je))
 allocate(gamma_q                 (is:ie, js:je))
 allocate(en_t                    (is:ie, js:je))
@@ -484,6 +489,23 @@ select case (albedo_choice)
        albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
              0.5*(1+tanh((lat-albedo_cntr)/albedo_wdth))
      enddo
+
+   case (6) ! higher_albedo within the lat and lon limits
+    nshift = size(t_surf,1)/2
+    lon_tmp = cshift(deg_lon, nshift) - 180.0
+    do j = 1, size(t_surf,2)
+      do i = 1, size(t_surf,1)
+         lat = deg_lat(js+j-1)
+         lon = lon_tmp(is+i-1)
+         if (lat > albedo_cntr_lat - albedo_wdth_lat .and. lat < albedo_cntr_lat + albedo_wdth_lat) then
+            if (lon > albedo_cntr_lon - albedo_wdth_lon .and. lon < albedo_cntr_lon + albedo_wdth_lon) then
+               if (land(i,j)) then
+                  albedo(i,j) = higher_albedo
+               endif
+            endif
+         endif
+      enddo 
+   enddo
 end select
 
 albedo_initial=albedo

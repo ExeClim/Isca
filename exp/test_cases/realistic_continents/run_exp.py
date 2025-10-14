@@ -80,7 +80,7 @@ A_default =  np.array([0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
 
 def create_exp_obj(exp_name,delta_sst, n_moments,namelist,
                   horizontal_resolution, vertical_resolution=40,
-                  dt_atm = 720,sponge = 150,trayfric = -0.5):
+                  dt_atm = 720,sponge = 150,trayfric = -0.5, compile_bool = False):
     
     if horizontal_resolution == "T42":
         NCORES = 32
@@ -97,7 +97,10 @@ def create_exp_obj(exp_name,delta_sst, n_moments,namelist,
     # a CodeBase can be a directory on the computer,
     # useful for iterative development
     cb = IscaCodeBase.from_directory(GFDL_BASE)
-    #cb.compile(debug = False)
+    if compile_bool:
+        cb.compile(debug = False)
+        
+    # Need to add passive tracers to the field table
     field_table_name = "field_table_age_" + str(n_moments)
     write_ft(field_table_name,n_moments)
     
@@ -120,6 +123,7 @@ def create_exp_obj(exp_name,delta_sst, n_moments,namelist,
     diag.add_field('mixed_layer', 'flux_t', time_avg=True)
     diag.add_field('mixed_layer', 'flux_oceanq', time_avg=True)
     diag.add_field('mixed_layer', 'corr_flux', time_avg=True)
+    diag.add_field('mixed_layer', 'albedo', time_avg=True)
 
     diag.add_field('dynamics', 'sphum', time_avg=True)
     diag.add_field('dynamics', 'ucomp', time_avg=True)
