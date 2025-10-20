@@ -23,7 +23,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 field_table_name = "field_table"
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('mima',ext_field_table=field_table_name, codebase=cb)
+exp = Experiment('mima', codebase=cb)
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 

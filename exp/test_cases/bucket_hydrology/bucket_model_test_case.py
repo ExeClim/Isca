@@ -26,13 +26,13 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 n_moments = 4
 
-field_table_name = "field_table_age_" + str(n_moments)
+field_table_name = "field_table"
 write_ft(field_table_name,n_moments)
 
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('bucket_test_experiment' ,ext_field_table=field_table_name, codebase=cb)
+exp = Experiment('bucket_test_experiment', codebase=cb)
 
 #Add any input files that are necessary for a particular experiment.
 exp.inputfiles = [os.path.join(base_dir,'input/land.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]

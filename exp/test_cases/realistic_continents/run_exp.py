@@ -101,10 +101,10 @@ def create_exp_obj(exp_name,delta_sst, n_moments,namelist,
         cb.compile(debug = False)
         
     # Need to add passive tracers to the field table
-    field_table_name = "field_table_age_" + str(n_moments)
+    field_table_name = "field_table"
     write_ft(field_table_name,n_moments)
     
-    exp = Experiment(exp_name,ext_field_table=field_table_name ,codebase=cb)
+    exp = Experiment(exp_name ,codebase=cb)
 
     sst_file_name = f'input/sst_clim_amip({delta_sst}).nc'
     exp.inputfiles = [os.path.join(base_dir,name_era_land),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc'),

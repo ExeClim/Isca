@@ -22,7 +22,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('frierson_test_experiment', codebase=cb,ext_field_table="field_table")
+exp = Experiment('frierson_test_experiment', codebase=cb)
 
 #Tell model how to write diagnostics
 diag = DiagTable()

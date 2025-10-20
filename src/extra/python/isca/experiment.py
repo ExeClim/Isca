@@ -58,7 +58,7 @@ class Experiment(Logger, EventEmitter):
     runfmt = 'run%04d'
     restartfmt = 'res%04d.tar.gz'
 
-    def __init__(self, name, codebase,ext_field_table, safe_mode=False, workbase=GFDL_WORK, database=GFDL_DATA):
+    def __init__(self, name, codebase, safe_mode=False, workbase=GFDL_WORK, database=GFDL_DATA):
         super(Experiment, self).__init__()
         self.name = name
         self.codebase = codebase
@@ -78,7 +78,9 @@ class Experiment(Logger, EventEmitter):
         self.templates = Environment(loader=FileSystemLoader(self.template_dir))
 
         self.diag_table = DiagTable()
-        self.field_table_file = P(self.codebase.srcdir, 'extra', 'model', self.codebase.name, ext_field_table)
+        
+        
+        self.field_table_file = P(self.codebase.srcdir, 'extra', 'model', self.codebase.name, "field_table" )
         self.inputfiles = []
 
         self.namelist = Namelist()

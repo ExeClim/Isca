@@ -25,4 +25,4 @@ conda activate isca_env
 
 cd $GFDL_BASE/exp/test_cases/realistic_continents
 
-python RT_sst.py 0 360
+python RT_sst.py 0 1

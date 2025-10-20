@@ -25,10 +25,7 @@
     land_roughness_prefactor = 10.0,            !How much rougher to make land than ocean
     roughness_mom   = 2.e-04,                   !Ocean roughness lengths  
     roughness_heat  = 2.e-04,                   !Ocean roughness lengths  
-    roughness_moist = 2.e-04,                  !Ocean roughness lengths  
-    bucket = .true. ,
-    do_wv_age = .false., /
-   
+    roughness_moist = 2.e-04 /                  !Ocean roughness lengths  
 
  &vert_turb_driver_nml
    do_mellor_yamada       = .false.,  ! default: True
@@ -71,7 +68,7 @@
 
  &lscale_cond_nml
     do_simple=.true.,
-    do_evap = .false./
+    do_evap = .true./
 
  &sat_vapor_pres_nml
     do_simple = .true. /
@@ -86,8 +83,7 @@
      do_read_ozone   = .true.,
      ozone_file      = 'ozone_1990',
      solr_cnst       = 1360.,
-     lonstep= 2, 
-	 dt_rad          = 10800/   !4320/
+	 dt_rad          = 4320/
 
 ! FMS Framework configuration
       
@@ -102,27 +98,19 @@
    fileset_write = 'single' /
 
  &spectral_dynamics_nml
-    damping_order = 4
-    water_correction_limit = 20000.0
-    robert_coeff = 0.03
-    reference_sea_level_press = 100000.0
-    num_levels = 45
-    valid_range_t = 100.0, 800.0
-    initial_sphum = 2e-06
+    damping_order           = 4,
+    water_correction_limit  = 200.e2,
+    robert_coeff            = 0.03,
+    reference_sea_level_press=1.e5,
+    num_levels              = 40,
+    valid_range_t 	        = 100. 800.,
+    initial_sphum           = 2.e-6,
+    vert_coord_option       = 'uneven_sigma',
+    surf_res                = 0.2,
+    scale_heights           = 11.0,
+    exponent                = 7.0, 
+	ocean_topog_smoothing   = 0.8 / !Use model's in-built spatial smoothing to smooth topography in order to prevent unwanted aliasing at low horizontal resolution    
 
-    ocean_topog_smoothing = 0.99
-    lon_max = 128
-    lat_max = 64
-    num_fourier = 42
-    num_spherical = 43 
-
-    vert_coord_option       = 'hybrid',     !'uneven_sigma',
-    surf_res                = 0.1,
-    scale_heights           = 4.5,
-    p_press                 = 0.05,
-    p_sigma                 = 0.45,
-    exponent                = 1.77 / !Use model's in-built spatial smoothing to smooth topography in order to prevent unwanted aliasing at low horizontal resolution    
- 
  &spectral_init_cond_nml
     topog_file_name = 'era_land_t42.nc', !Name of land input file, which will also contain topography if generated using Isca's `land_file_generator_fn.py' routine.
-    topography_option = 'input'/ !Tell model to get topography from input filew
+    topography_option = 'input'/ !Tell model to get topography from input file

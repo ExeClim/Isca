@@ -193,7 +193,7 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
         else:
             cb = IscaCodeBase(repo=repo_to_use, commit=s)
         try:
-            cb.compile()
+            cb.compile(debug = False)
             exp = Experiment(exp_name, codebase=cb)
             exp.namelist = nml_use.copy()
             exp.diag_table = diag_use

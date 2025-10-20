@@ -25,7 +25,7 @@ else:
 
 
 
-exp_name = f"R{horizontal_resolution}_sst_{delta_sst_name}_bucket" #"real_T42_sst_spinup"
+exp_name = f"R{horizontal_resolution}_sst_{delta_sst_name}_test" #"real_T42_sst_spinup"
 
 dt = 720
 original_dt = 720
