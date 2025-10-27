@@ -111,8 +111,3 @@ ENV/
 
 # mkdocs documentation
 /site
-
-# commit #289
-/exp/test_cases/wv_age
-/home/philbou/Isca/input/land_masks/era_land_t85.nc
-/home/philbou/Isca/input/land_masks/era_land_t170.nc

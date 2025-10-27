@@ -4,7 +4,7 @@ import numpy as np
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 32
+NCORES = 4
 
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -19,11 +19,9 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
-cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
-field_table_name = "field_table"
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('mima', codebase=cb)
+exp = Experiment('mima_test_experiment', codebase=cb)
 
 exp.inputfiles = [os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
 
@@ -37,27 +35,12 @@ diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
-diag.add_field('mixed_layer', 'flux_lhe', time_avg=True)
-diag.add_field('mixed_layer', 'flux_t', time_avg=True)
-diag.add_field('mixed_layer', 'flux_oceanq', time_avg=True)
-diag.add_field('mixed_layer', 'corr_flux', time_avg=True)
-
-
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
 diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
-
-diag.add_field('rrtm_radiation', 'tdt_rad', time_avg=True)
-diag.add_field('rrtm_radiation', 'tdt_sw', time_avg=True)
-diag.add_field('rrtm_radiation', 'tdt_lw', time_avg=True)
-diag.add_field('rrtm_radiation', 'flux_sw', time_avg=True)
-diag.add_field('rrtm_radiation', 'flux_lw', time_avg=True)
-diag.add_field('rrtm_radiation', 'olr', time_avg=True)
-diag.add_field('rrtm_radiation', 'toa_sw', time_avg=True)
-
 
 exp.diag_table = diag
 
@@ -121,8 +104,7 @@ exp.namelist = namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':True,
-        'do_qflux': True,
-        'floor_evap': False        
+        'do_qflux': True        
     },
 
     'qe_moist_convection_nml': {
@@ -191,12 +173,8 @@ exp.namelist = namelist = Namelist({
 #Lets do a run!
 if __name__=="__main__":
     
-    """    exp.run(1, use_restart=False, num_cores=NCORES)
+    cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
+
+    exp.run(1, use_restart=False, num_cores=NCORES)
     for i in range(2,121):
-        exp.run(i, num_cores=NCORES)"""
-        
-    res_file = '/home/philbou/scratch/isca_data/mima/restarts/res0012.tar.gz'
-    exp.run(13, use_restart=True, restart_file=res_file, num_cores=NCORES,overwrite_data=True)
-    #exp.run(1, use_restart=False, num_cores=NCORES,overwrite_data=True)
-    for i in range(14,50):
-        exp.run(i ,num_cores=NCORES,overwrite_data=True)
+        exp.run(i, num_cores=NCORES)

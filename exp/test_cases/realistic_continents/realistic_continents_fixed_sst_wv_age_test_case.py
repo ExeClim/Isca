@@ -6,6 +6,8 @@ import f90nml
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
+
+# functions to modify field table to add new passive tracers
 def get_field(n):
     base = {
             "atmos_mod": "sphum_age",
@@ -22,9 +24,6 @@ def get_field(n):
     return base
 
 def write_ft(name,n_moments):
-    base_dir = os.path.dirname(os.path.realpath(__file__))
-    # a CodeBase can be a directory on the computer,
-    # useful for iterative development
     add_dir = "/src/extra/model/isca/"
     field_table_dir = GFDL_BASE + add_dir
 
@@ -54,7 +53,7 @@ def write_ft(name,n_moments):
                 file.write(f'"{key}", "{value[0]}", "{value[1]}"\n')
         file.write('/ \n')
 
-         
+         # write WV age distribution moments tracers
         for ind in range(n_moments):
             field = get_field(ind)
             file.write(f'"TRACER",')
