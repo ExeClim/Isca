@@ -33,10 +33,10 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
 
 # Common features of set-ups
     # specify resolution
-    t_res = 85
+    t_res = 42
     #read in grid from approriate file
     GFDL_BASE = os.environ['GFDL_BASE']
-    resolution_file = Dataset(GFDL_BASE + '/src/extra/python/scripts/gfdl_grid_files/t'+str(t_res)+'.nc', 'r', format='NETCDF3_CLASSIC')
+    resolution_file = Dataset(GFDL_BASE + 'src/extra/python/scripts/gfdl_grid_files/t'+str(t_res)+'.nc', 'r', format='NETCDF3_CLASSIC')
     lons = resolution_file.variables['lon'][:]
     lats = resolution_file.variables['lat'][:]
     lonb = resolution_file.variables['lonb'][:]
@@ -177,8 +177,8 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
 
 
     #Write land and topography arrays to file
-    topo_filename = GFDL_BASE  + '/input/land_masks/land_T85.nc'
-    topo_file = Dataset(topo_filename, 'w', format='NETCDF4')
+    topo_filename = GFDL_BASE + 'exp/' + exp + '/input/land.nc'
+    topo_file = Dataset(topo_filename, 'w', format='NETCDF3_CLASSIC')
     lat = topo_file.createDimension('lat', nlat)
     lon = topo_file.createDimension('lon', nlon)
     latitudes = topo_file.createVariable('lat','f4',('lat',))
@@ -211,6 +211,6 @@ def write_land(exp,land_mode='square',boundaries=[20.,60.,20.,60.],continents=['
 
 
 if __name__ == "__main__":
-    #write_land('test_cases/age_spectrum/frierson/square_land',land_mode='square',topo_mode = 'sauliere2012')
-    write_land('../input/land_masks',land_mode='continents',topo_mode = 'sauliere2012')
+
+    write_land('test',land_mode='continents')
 

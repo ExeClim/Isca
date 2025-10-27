@@ -133,8 +133,6 @@ logical :: do_wv_age = .false.
 ! MiMA uses damping
 logical :: do_damping = .false.
 
-logical :: floor_evap = .false.
-
 
 logical :: mixed_layer_bc = .false.
 logical :: gp_surface = .false. ! Use Schneider & Liu 2009's prescription of lower-boundary heat flux
@@ -164,7 +162,7 @@ real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
 
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
                                       do_wv_age, do_cloud_simple, do_cloud_spookie,             &
-                                      two_stream_gray, do_rrtm_radiation,floor_evap ,do_damping,&
+                                      two_stream_gray, do_rrtm_radiation ,do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
                                       land_option, land_file_name, land_field_name,  & ! options for idealised land
@@ -183,8 +181,8 @@ real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
      t_surf,               &   ! surface temperature
      q_surf,               &   ! surface moisture
-     tmp_sink,             &
-     tmp_dq,             &
+     dt_sink,             &
+     dq,             &
      u_surf,               &   ! surface U wind
      v_surf,               &   ! surface V wind
      rough_mom,            &   ! momentum roughness length for surface_flux
@@ -501,8 +499,8 @@ allocate(z_surf      (is:ie, js:je))
 allocate(t_surf      (is:ie, js:je))
 allocate(q_surf      (is:ie, js:je)); q_surf = 0.0
 allocate(u_surf      (is:ie, js:je)); u_surf = 0.0
-allocate(tmp_sink      (is:ie, js:je)); 
-allocate(tmp_dq      (is:ie, js:je)); 
+allocate(dt_sink      (is:ie, js:je)); 
+allocate(dq      (is:ie, js:je)); 
 allocate(v_surf      (is:ie, js:je)); v_surf = 0.0
 allocate(rough_mom   (is:ie, js:je)); rough_mom = roughness_mom
 allocate(rough_heat  (is:ie, js:je)); rough_heat = roughness_heat
@@ -879,13 +877,12 @@ integer :: nql, nqi, nqa   ! tracer indices for stratiform clouds
 logical :: flag_test
 
 
-if(current == previous) then ! first timestep
+if(current == previous) then 
    delta_t = dt_real
 else
    delta_t = 2*dt_real
 endif
 
-! P: We don't use bucket diffusion
 if (bucket) then
   dt_bucket = 0.0
   filt      = 0.0
@@ -896,10 +893,10 @@ endif
 rain = 0.0; snow = 0.0; precip = 0.0; klcls = 0
 convective_rain = 0.0
 
-! set sink to 0
+! set sink of WV to 0
 sink = 0.0
-tmp_sink = 0.0
-tmp_dq = 0.0
+dt_sink = 0.0
+dq = 0.0
 
 select case(r_conv_scheme)
 
@@ -1047,7 +1044,6 @@ if (r_conv_scheme .ne. DRY_CONV) then
   precip     = precip + rain + snow
 
 
-  !dt_tracers(:,:,:,nsphum_sink) = dt_tracers(:,:,:,nsphum_sink) + cond_dt_qg 
   where (cond_dt_qg < 0.0)
     sink = sink + cond_dt_qg
   end where 
@@ -1240,7 +1236,6 @@ if(do_rrtm_radiation) then
                   !do_cloud_simple )
 endif
 #endif
-! Radiation = DONE
 
 #ifdef SOC_NO_COMPILE
     if (do_socrates_radiation) then
@@ -1395,19 +1390,13 @@ if(turb) then
 
    call gcm_vert_diff_up (1, 1, delta_t, Tri_surf, dt_tg(:,:,:), dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:))
 
-    tmp_dq =( flux_q * Tri_surf%dtmass )/delta_t !dt_tracers(:,:,num_levels,nsphum) - non_diff_dt_qg(:,:,num_levels)
+    dq =( flux_q * Tri_surf%dtmass )/delta_t 
 
-    if (floor_evap) then
-      where (tmp_dq < 0.0)
-        tmp_dq = 0.0
-      endwhere 
-    endif
-
-    where (tmp_dq < 0.0)
-      tmp_sink = tmp_dq
+    where (dq < 0.0)
+      dt_sink = dq
     endwhere 
 
-    sink(:,:,num_levels) =  sink(:,:,num_levels) + tmp_sink
+    sink(:,:,num_levels) =  sink(:,:,num_levels) + dt_sink
 
    if(id_diff_dt_ug > 0) used = send_data(id_diff_dt_ug, dt_ug - non_diff_dt_ug, Time)
    if(id_diff_dt_vg > 0) used = send_data(id_diff_dt_vg, dt_vg - non_diff_dt_vg, Time)

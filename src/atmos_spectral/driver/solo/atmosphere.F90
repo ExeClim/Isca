@@ -151,7 +151,6 @@ dt_real      = float(dt_integer)
 call get_number_tracers(MODEL_ATMOS, num_prog=num_tracers)
 allocate (tracer_attributes(num_tracers))
 #ifdef COLUMN_MODEL
-  !!!print*, "call column_init"
   call column_init(Time, Time_step, tracer_attributes, dry_model, nhum)
   column_model = .true.
 #else
@@ -195,13 +194,11 @@ wg_full = 0.; psg = 0.; ug = 0.; vg = 0.; tg = 0.; grid_tracers = 0.
 dt_psg = 0.; dt_ug  = 0.; dt_vg  = 0.; dt_tg  = 0.; dt_tracers = 0.
 
 allocate (surf_geopotential(is:ie, js:je))
-!!!print*, "call get_surf_geopotential"
 call get_surf_geopotential(surf_geopotential)
 
 !--------------------------------------------------------------------------------------------------------------------------------
 file = 'INPUT/atmosphere.res.nc'
 if(file_exist(trim(file))) then
-  !!!print*, "in if"
   call get_lon_max(lon_max)
   call get_lat_max(lat_max)
   call field_size(trim(file), 'ug', siz)
@@ -222,20 +219,17 @@ if(file_exist(trim(file))) then
     call read_data(trim(file), 'tg',   tg(:,:,:,nt), grid_domain, timelevel=nt)
     call read_data(trim(file), 'psg', psg(:,:,  nt), grid_domain, timelevel=nt)
     do ntr = 1,num_tracers
-      !!!print*,"Loop over tracer"
       tr_name = trim(tracer_attributes(ntr)%name)
       call read_data(trim(file), trim(tr_name), grid_tracers(:,:,:,nt,ntr), grid_domain, timelevel=nt)
-    enddo ! end loop over tracers
-  enddo ! end loop over time levels
+    enddo 
+  enddo 
   call read_data(trim(file), 'wg_full', wg_full, grid_domain)
 else
   previous = 1; current = 1
-  !!print*,"call get_initial_fields"
   call get_initial_fields(ug(:,:,:,1), vg(:,:,:,1), tg(:,:,:,1), psg(:,:,1), grid_tracers(:,:,:,1,:))
 endif
 !--------------------------------------------------------------------------------------------------------------------------------
 if(dry_model) then
-  !!print*,"dry model"
   call compute_pressures_and_heights(tg(:,:,:,current), psg(:,:,current), surf_geopotential, &
        z_full(:,:,:,current), z_half(:,:,:,current), p_full(:,:,:,current), p_half(:,:,:,current))
   call compute_pressures_and_heights(tg(:,:,:,previous), psg(:,:,previous), surf_geopotential, &

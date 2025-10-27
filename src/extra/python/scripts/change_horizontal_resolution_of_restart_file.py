@@ -5,14 +5,13 @@ import gauss_grid as gg
 import scipy.interpolate as scinterp
 import pdb
 import mpl_toolkits.basemap as basemap
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import sh
 from netCDF4 import Dataset
 import copy_netcdf_attrs as cna
 import tempfile
 import shutil
 import os
-import argparse 
 
 def linear_interpolate_for_regrid(lon_list_in_grid, lat_list_in_grid, lon_list_out_grid, lat_list_out_grid, input_array):
 
@@ -121,18 +120,18 @@ def process_input_file(file_name, atmosphere_or_spectral_dynamics, num_fourier_o
         dataset_out[var].attrs = dataset[var].attrs
 
     out_file_name = file_name+'_mod_'+str(num_fourier_out)+'_onescript.res.nc'
-    dataset_out.to_netcdf(path='./'+out_file_name, format='NETCDF3_CLASSIC', engine='scipy')
+    dataset_out.to_netcdf(path='./temp_'+out_file_name, format='NETCDF3_CLASSIC', engine='scipy')
     
-    remove_fill_value_attribute('./'+out_file_name, out_file_name)
+    remove_fill_value_attribute('./temp_'+out_file_name, out_file_name)
     
-    #os.remove('./'+out_file_name)
+    os.remove('./temp_'+out_file_name)
     
     return out_file_name
 
 def join_into_cpio(atmosphere_file_name='./atmosphere.res.nc', spectral_dynamics_file_name='./spectral_dynamics.res.nc', atmos_model_file_name='./atmos_model.res', restart_file_out_name='./res_mod'):
 
     temp_folder_name = tempfile.mkdtemp()    
-    print(temp_folder_name)
+    
     shutil.move(atmosphere_file_name, temp_folder_name+'/atmosphere.res.nc')
     shutil.move(spectral_dynamics_file_name, temp_folder_name+'/spectral_dynamics.res.nc')    
     shutil.copyfile(atmos_model_file_name, temp_folder_name+'/atmos_model.res')
@@ -163,33 +162,24 @@ def remove_fill_value_attribute(in_file_name, out_file_name):
     
 if __name__=="__main__":
 
-    parser = argparse.ArgumentParser(description="Regrid FMS restart files")
-    parser.add_argument('--input_dir', type=str, required=True, help="Path to the directory containing input files")
-    parser.add_argument('--output_dir', type=str, required=True, help="Path to the directory to save output files")
-    args = parser.parse_args()
-
-    # Specify the desired number of Fourier modes and grid dimensions for the output
+    #Specify the number of fourier modes and lon and lat dimensions for the output
     num_fourier_out = 85
     num_x_out = 256
     num_y_out = 128
 
-    # Construct full paths for the input files
-    atmosphere_file_name = os.path.join(args.input_dir, 'atmosphere')
-    spectral_dynamics_file_name = os.path.join(args.input_dir, 'spectral_dynamics')
-    mixed_layer_file_name = os.path.join(args.input_dir, 'mixed_layer_T42')
-
-    atmos_model_file_name = os.path.join(args.input_dir, 'atmos_model.res')
-
-    # Specify output restart file path
-    restart_file_out_name = 'res_1200_realistic_continents_T85.res.tar'
-
+    #Specify the name of the input files that you want to regrid
+    atmosphere_file_name = 'atmosphere_old'
+    spectral_dynamics_file_name = 'spectral_dynamics_old'
+    atmos_model_file_name = 'atmos_model.res'
+    
+    #Specify the name of the output cpio archive    
+    restart_file_out_name = 'res_85_onescript'
     
     #Regridding atmosphere file
     atmosphere_out_file_name = process_input_file(atmosphere_file_name,        'atmosphere',        num_fourier_out, num_x_out, num_y_out)
     #regridding spectral dynamics file
     spectral_out_file_name   = process_input_file(spectral_dynamics_file_name, 'spectral_dynamics', num_fourier_out, num_x_out, num_y_out)
-#    spectral_out_file_name   = process_input_file(mixed_layer_file_name, 'spectral_dynamics', num_fourier_out, num_x_out, num_y_out)
     
     #merging into a single archive
-    #join_into_cpio(atmosphere_out_file_name, spectral_out_file_name, atmos_model_file_name, restart_file_out_name=restart_file_out_name)
+    join_into_cpio(atmosphere_out_file_name, spectral_out_file_name, atmos_model_file_name, restart_file_out_name=restart_file_out_name)
     
