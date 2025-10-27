@@ -118,7 +118,6 @@ character(len=128), parameter :: tag = &
 !   ------ atmosphere integration loop -------
 
     call mpp_clock_begin (id_loop)
-    !print*,"about to start loop, calls:",num_atmos_calls
     do na = 1, num_atmos_calls
        call atmosphere (Time)
        Time = Time + Time_step_atmos
@@ -129,7 +128,6 @@ character(len=128), parameter :: tag = &
        endif
 
     enddo
-    !print*,"end of loop"
     call mpp_clock_end (id_loop)
 
 !   ------ end of atmospheric time step loop -----
@@ -342,16 +340,12 @@ contains
 !$OMP END PARALLEL
 
       call atmosphere_init (Time_init, Time, Time_step_atmos)
-      !print*,"call atmosphere_domain"
       call atmosphere_domain(atmos_domain)
 
 !-----------------------------------------------------------------------
 !   open and close dummy file in restart dir to check if dir exists
-      !print*,"call mpp_set_current_pelist"
       call mpp_set_current_pelist()
-      !print*,"call mpp_open"
       call mpp_open  (unit, 'RESTART/file' )
-      !print*,"call mpp_close"
       call mpp_close (unit, action=MPP_DELETE)
 
 !  ---- terminate timing ----

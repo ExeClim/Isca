@@ -1016,9 +1016,6 @@ case default
   call error_mesg('idealized_moist_phys','Invalid convection scheme.', FATAL)
 
 end select
-!print*,nsphum_sink
-! find if conv_dt_qg is source or sink
-!dt_tracers(:,:,:,nsphum_sink) = dt_tracers(:,:,:,nsphum_sink) + conv_dt_qg
 
 where (conv_dt_qg < 0.0)
   sink = sink + conv_dt_qg

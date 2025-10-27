@@ -270,13 +270,10 @@ do j = js,je+1
 enddo
 
 if(idealized_moist_model) then
-   !print*, "call idealized_moist_phys_init"
    call idealized_moist_phys_init(Time, Time_step, nhum,n_age, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, tg(:,:,num_levels,current))
-   !!print*, "after idealized_moist_phys_init"
 else
    call hs_forcing_init(get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, rad_lat_2d)
 endif
-!!print*, "atm init done!"
 module_is_initialized = .true.
 
 return
@@ -294,7 +291,6 @@ type(time_type) :: Time_next
 if(.not.module_is_initialized) then
   call error_mesg('atmosphere','atmosphere module is not initialized',FATAL)
 endif
-!!print*,"Starting atmosphere"
 dt_ug  = 0.0
 dt_vg  = 0.0
 dt_tg  = 0.0
@@ -310,10 +306,8 @@ endif
 Time_next = Time + Time_step
 
 if(idealized_moist_model) then
-  ! update the physics
    call idealized_moist_phys(Time, p_half, p_full, z_half, z_full, ug, vg, psg, wg_full, tg, grid_tracers, &
                              previous, current, dt_ug, dt_vg, dt_tg, dt_tracers)
-  !!print*,"Just called id moist phys"
 
 else
    call hs_forcing(1, ie-is+1, 1, je-js+1, delta_t, Time_next, rad_lon_2d, rad_lat_2d, &
@@ -337,17 +331,12 @@ call column(Time, psg(:,:,future), ug(:,:,:,future), vg(:,:,:,future), &
                        dt_psg, dt_ug, dt_vg, dt_tg, dt_tracers, wg_full, &
                        p_full(:,:,:,current), p_half(:,:,:,current), z_full(:,:,:,current))
 #else 
-  ! update the system with dynamics
-  !!print*,"about to call spectral"
   call spectral_dynamics(Time, psg(:,:,future), ug(:,:,:,future), vg(:,:,:,future), &
                        tg(:,:,:,future), tracer_attributes, grid_tracers(:,:,:,:,:), future, &
                        dt_psg, dt_ug, dt_vg, dt_tg, dt_tracers, wg_full, &
                        p_full(:,:,:,current), p_half(:,:,:,current), z_full(:,:,:,current))
-  !!print*,"finished spectral"
 #endif
 
-! copy tracer after it's been updated (phys and dynamics)
-!grid_tracers(:,:,:,:,nhum_c) = grid_tracers(:,:,:,:,nhum)
 
 if(dry_model) then
   call compute_pressures_and_heights(tg(:,:,:,future), psg(:,:,future), surf_geopotential, &

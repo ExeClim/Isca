@@ -314,13 +314,9 @@ call get_grid_domain(is, ie, js, je)
 call get_spec_domain(ms, me, ns, ne)
 call get_number_tracers(MODEL_ATMOS, num_prog=num_tracers)
 call allocate_fields
-!!!print*, "num_tracers inside spectral:", num_tracers
 
 do ntr=1,num_tracers
-  !!!print*, "ntr inside spectral:", ntr
   call get_tracer_names(MODEL_ATMOS, ntr, tname, longname, units)
-  !!!print*, "tname:",tname
-  !!!print*, "longname:",longname
   tracer_attributes(ntr)%name = lowercase(tname)
 
   if(query_method('numerical_representation', MODEL_ATMOS, ntr, scheme)) then
@@ -414,13 +410,9 @@ do ntr=1,num_tracers
   endif
 enddo
 
-!!print*, "call read_restart_or_do_coldstart"
 call read_restart_or_do_coldstart(tracer_attributes, ocean_mask)
-!!print*, "call press_and_geopot_init"
 call press_and_geopot_init(pk, bk, use_virtual_temperature, vert_difference_option)
-!!print*, "call spectral_diagnostics_init"
 call spectral_diagnostics_init(Time)
-!!print*, "call every_step_diagnostics_init"
 call every_step_diagnostics_init(Time, lon_max, lat_max, num_levels, reference_sea_level_press)
 
 if(do_water_correction .and. .not.do_mass_correction) then
@@ -566,23 +558,19 @@ if(file_exist(trim(file))) then
     call read_data(trim(file), 'tg',   tg(:,:,:,nt), grid_domain, timelevel=nt)
     call read_data(trim(file), 'psg', psg(:,:,  nt), grid_domain, timelevel=nt)
     do ntr = 1,num_tracers
-      !!print*,"numtracer in loop:",ntr
       tr_name = trim(tracer_attributes(ntr)%name)
-      !!print*,"call read_data"
 
       call read_data(trim(file), trim(tr_name), grid_tracers(:,:,:,nt,ntr), grid_domain, timelevel=nt)
-      !!print*, "line 572"
       if(uppercase(trim(tracer_attributes(ntr)%numerical_representation)) == 'SPECTRAL') then
         call read_data(trim(file), trim(tr_name)//'_real', real_part, spectral_domain, timelevel=nt)
         call read_data(trim(file), trim(tr_name)//'_imag', imag_part, spectral_domain, timelevel=nt)
-        !!print*, "line 576"
         do k=1,num_levels; do n=ns,ne; do m=ms,me
           spec_tracers(m,n,k,nt,ntr) = cmplx(real_part(m,n,k),imag_part(m,n,k))
         enddo; enddo; enddo
       endif
-    enddo ! loop over tracers
-  enddo ! loop over time levels
-  !!print*, "line 581"
+    enddo 
+  enddo 
+
   call read_data(trim(file), 'vorg', vorg, grid_domain)
   call read_data(trim(file), 'divg', divg, grid_domain)
   call read_data(trim(file), 'surf_geopotential', surf_geopotential, grid_domain)

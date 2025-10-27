@@ -53,7 +53,7 @@ namelist = Namelist({
     },
 
     'atmosphere_nml': {
-        'idealized_moist_model': True  # False for Newtonian Cooling.  True for Isca/Frierson
+        'idealized_moist_model': False  # False for Newtonian Cooling.  True for Isca/Frierson
     },
 
     'spectral_dynamics_nml': {
