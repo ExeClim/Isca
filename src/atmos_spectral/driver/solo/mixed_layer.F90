@@ -184,7 +184,7 @@ real, allocatable, dimension(:,:)   ::                                        &
      rad_lat_2d,            &   ! latitude in radians
      flux_lhe_anom, flux_q_total
 
-real, allocatable, dimension(:)   :: deg_lat, deg_lon, lon_tmp
+real, allocatable, dimension(:)   :: deg_lat, deg_lon, deg_lon_shift
 
 real, allocatable, dimension(:,:)   ::                                        &
      gamma_t,               &   ! Used to calculate the implicit
@@ -275,7 +275,7 @@ allocate(flux_lhe_anom           (is:ie, js:je))
 allocate(flux_q_total            (is:ie, js:je))
 allocate(deg_lat                 (js:je))
 allocate(deg_lon                 (is:ie))
-allocate(lon_tmp                 (is:ie))
+allocate(deg_lon_shift                 (is:ie))
 allocate(gamma_t                 (is:ie, js:je))
 allocate(gamma_q                 (is:ie, js:je))
 allocate(en_t                    (is:ie, js:je))
@@ -492,11 +492,11 @@ select case (albedo_choice)
 
    case (6) ! higher_albedo within the lat and lon limits
     nshift = size(t_surf,1)/2
-    lon_tmp = cshift(deg_lon, nshift) - 180.0
+    deg_lon_shift = cshift(deg_lon, nshift) - 180.0
     do j = 1, size(t_surf,2)
       do i = 1, size(t_surf,1)
          lat = deg_lat(js+j-1)
-         lon = lon_tmp(is+i-1)
+         lon = deg_lon_shift(is+i-1)
          if (lat > albedo_cntr_lat - albedo_wdth_lat .and. lat < albedo_cntr_lat + albedo_wdth_lat) then
             if (lon > albedo_cntr_lon - albedo_wdth_lon .and. lon < albedo_cntr_lon + albedo_wdth_lon) then
                if (land(i,j)) then
