@@ -16,6 +16,11 @@ References
            *Quarterly Journal of the Royal Meteorological Society*,
            **112(473)**, 693--709,
            doi: `10.1002/qj.49711247308 <http://dx.doi.org/10.1002/qj.49711247308>`_.
+
+.. [Blackburn2013] Blackburn, M., Williamson, D. L., Nakajima, K., Ohfuchi, W., Takahashi, Y. O., Hayashi, Y., Nakamura, H., Ishiwatari, M., McGregor, J. L., Borth, H., Wirth, V., Frank, H., Bechtold, P., Wedi, N. P., Tomita, H., Satoh, M., Zhao, M., Held, I. M., Suarez, M. J., Lee, M., Watanabe, M., Kimoto, M., Liu, Y., Wang, Z., Molod, A., Rajendran, K., Kitoh, A., Statton, R, 2013: The Aqua-Planet Experiment (APE): CONTROL SST Simulation.
+           *Journal of the Meteorological Society of Japan. Ser. II*
+           **91A**, 17-56
+           doi: `https://doi.org/10.2151/jmsj.2013-A02 <10.2151/jmsj.2013-A02>`_.
            
 .. [Byrne2013] Byrne, M. P. and O’Gorman, P. A., 2013: Land–ocean warming contrast over a wide range of climates: Convective quasi-equilibrium the- ory and idealized simulations, *J. Climate*, **26**, doi.
 
@@ -34,14 +39,26 @@ References
 .. [Gierasch2000] Gierasch, P.J., Ingersoll, A.P., Banfield, D., Ewald, S.P., Helfenstein, P., Simon-Miller, A., Vasavada, A., Breneman,                 H.H., Senske, D.A. and Team, G.I., 2000: 
            Observation of moist convection in Jupiter's atmosphere. 
            *Nature*,
-           **403(6770)**, 628--630.
+           **403(6770)**, 628--630,
            doi: `10.1038/35001017 <https://doi.org/10.1038/35001017>`_.
+
+.. [Held1994] Held, I. M. and Suarez, M. J, 1994:
+           A Proposal for the Intercomparison of the Dynamical Cores of Atmospheric General Circulation Models
+           *Bulletin of the American Meteorological Society*
+           **75(10)**, 1825--1830
+           doi: `10.1175/1520-0477(1994)075\<1825:APFTIO\>2.0.CO;2 <https://doi.org/10.1175/1520-0477(1994)075\<1825:APFTIO\>2.0.CO;2>`_.
 
 .. [Jucker2017] Jucker, M. and Gerber, E. P., 2017:
            Untangling the Annual Cycle of the Tropical Tropopause Layer with an Idealized Moist Model.
            *Journal of Climate*,
            **30(18)**, 7339--7358,
            doi: `10.1175/JCLI-D-17-0127.1 <https://doi.org/10.1175/JCLI-D-17-0127.1>`_.
+
+.. [Neale2004] Neale, R. B. and Hoskins, B. J, 2004:
+           A standard test for AGCMs including their physical parametrizations: I: the proposal.
+           *Atmospheric Science Letters*,
+           **1(2)**, 101-107,
+           doi: `10.1006/asle.2000.0022 <https://doi.org/10.1006/asle.2000.0022>`_.
 
 .. [OGormanSchneider2008] O'Gorman, P. and Schneider, T., 2008:
            The Hydrological Cycle over a Wide Range of Climates Simulated with an Idealized GCM.
@@ -54,6 +71,12 @@ References
            *NCAR Technical Report; University Corporation for Atmospheric Research*,
            **No. NCAR/TN-460+STR**,
            doi: `10.5065/D6KK98Q6 <http://dx.doi.org/10.5065/D6KK98Q6>`_.
+
+.. [Liu2021] Liu, Q. and Collins, M. and Maher, P. and Thomson, S. I. and Vallis, G. K.:
+           SimCloud version 1.0: a simple diagnostic cloud scheme for idealized climate models.
+           *Geoscientific Model Development*
+           **14**, 2801--2826
+           doi: 10.5194/gmd-14-2801-2021
 
 .. [Manabe1969] Manabe, S. 1969:
            Climate and the Ocean Circulation: I. The Atmopsheric Circulation and the Hydrology of the Earth's Surface.
