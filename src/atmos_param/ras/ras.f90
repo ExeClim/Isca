@@ -1170,41 +1170,41 @@ endif
     rain_ev0(:,:)   =  rain_ev0(:,:)   * dtinv
 
      if ( id_tdt_revap > 0 ) then
-        used = send_data ( id_tdt_revap, dtemp_ev0, Time, is, js, 1 )
+        used = send_data ( id_tdt_revap, dtemp_ev0, Time)
      endif
      if ( id_qdt_revap > 0 ) then
-        used = send_data ( id_qdt_revap, dqvap_ev0, Time, is, js, 1 )
+        used = send_data ( id_qdt_revap, dqvap_ev0, Time)
      endif
      if ( id_prec_revap > 0 ) then
-        used = send_data ( id_prec_revap, rain_ev0+snow_ev0, Time, is, js )
+        used = send_data ( id_prec_revap, rain_ev0+snow_ev0, Time)
      endif
      if ( id_snow_revap > 0 ) then
-        used = send_data ( id_snow_revap, snow_ev0, Time, is, js )
+        used = send_data ( id_snow_revap, snow_ev0, Time)
      endif
      if ( id_prec_conv_3d > 0 ) then
-        used = send_data ( id_prec_conv_3d, cuprc3d, Time, is, js, 1 )
+        used = send_data ( id_prec_conv_3d, cuprc3d, Time)
      endif
      if ( id_pcldb > 0 ) then
-        used = send_data ( id_pcldb, pcldb0, Time, is, js )
+        used = send_data ( id_pcldb, pcldb0, Time)
      endif
 
 !------- diagnostics for dt/dt_ras -------
       if ( id_tdt_conv > 0 ) then
-        used = send_data ( id_tdt_conv, dtemp0, Time, is, js, 1, &
+        used = send_data ( id_tdt_conv, dtemp0, Time, &
                            rmask=mask )
       endif
 !------- diagnostics for dq/dt_ras -------
       if ( id_qdt_conv > 0 ) then
-        used = send_data ( id_qdt_conv, dqvap0, Time, is, js, 1, &
+        used = send_data ( id_qdt_conv, dqvap0, Time, &
                            rmask=mask )
       endif
 !------- diagnostics for precip_ras -------
       if ( id_prec_conv > 0 ) then
-        used = send_data ( id_prec_conv, (rain0+snow0), Time, is, js )
+        used = send_data ( id_prec_conv, (rain0+snow0), Time )
       endif
 !------- diagnostics for snow_ras -------
       if ( id_snow_conv > 0 ) then
-        used = send_data ( id_snow_conv, snow0, Time, is, js )
+        used = send_data ( id_snow_conv, snow0, Time )
       endif
 !------- diagnostics for cumulus mass flux from ras -------
       if ( id_mc > 0 ) then
@@ -1215,7 +1215,7 @@ endif
                      mask3(:,:,1:kmax) = 0.
               END WHERE
            endif
-           used = send_data ( id_mc, mc0, Time, is, js, 1, rmask=mask3 )
+           used = send_data ( id_mc, mc0, Time, rmask=mask3 )
       endif
 !------- diagnostics for water vapor path tendency ----------
       if ( id_q_conv_col > 0 ) then
@@ -1223,7 +1223,7 @@ endif
         do k=1,kmax
           tempdiag(:,:) = tempdiag(:,:) + dqvap0(:,:,k)*pmass(:,:,k)*dtinv
         end do
-        used = send_data ( id_q_conv_col, tempdiag, Time, is, js )
+        used = send_data ( id_q_conv_col, tempdiag, Time)
       end if
    
 !------- diagnostics for dry static energy tendency ---------
@@ -1232,26 +1232,26 @@ endif
         do k=1,kmax
           tempdiag(:,:) = tempdiag(:,:) + dtemp0(:,:,k)*Cp_Air*pmass(:,:,k)
         end do
-        used = send_data ( id_t_conv_col, tempdiag, Time, is, js )
+        used = send_data ( id_t_conv_col, tempdiag, Time)
       end if
 
    if ( do_strat ) then
 
       !------- diagnostics for dql/dt from RAS -----------------
       if ( id_qldt_conv > 0 ) then
-        used = send_data ( id_qldt_conv, Dl0, Time, is, js, 1, &
+        used = send_data ( id_qldt_conv, Dl0, Time, &
                            rmask=mask )
       endif
       
       !------- diagnostics for dqi/dt from RAS -----------------
       if ( id_qidt_conv > 0 ) then
-        used = send_data ( id_qidt_conv, Di0, Time, is, js, 1, &
+        used = send_data ( id_qidt_conv, Di0, Time, &
                            rmask=mask )
       endif
       
       !------- diagnostics for dqa/dt from RAS -----------------
       if ( id_qadt_conv > 0 ) then
-        used = send_data ( id_qadt_conv, Da0, Time, is, js, 1, &
+        used = send_data ( id_qadt_conv, Da0, Time, &
                            rmask=mask )
       endif
 
@@ -1261,7 +1261,7 @@ endif
         do k=1,kmax
           tempdiag(:,:) = tempdiag(:,:) + Dl0(:,:,k)*pmass(:,:,k)
         end do
-        used = send_data ( id_ql_conv_col, tempdiag, Time, is, js )
+        used = send_data ( id_ql_conv_col, tempdiag, Time)
       end if
       
       !------- diagnostics for ice water path tendency ---------
@@ -1270,7 +1270,7 @@ endif
         do k=1,kmax
           tempdiag(:,:) = tempdiag(:,:) + Di0(:,:,k)*pmass(:,:,k)
         end do
-        used = send_data ( id_qi_conv_col, tempdiag, Time, is, js )
+        used = send_data ( id_qi_conv_col, tempdiag, Time)
       end if
       
       !---- diagnostics for column integrated cloud mass tendency ---
@@ -1279,7 +1279,7 @@ endif
         do k=1,kmax
           tempdiag(:,:) = tempdiag(:,:) + Da0(:,:,k)*pmass(:,:,k)
         end do
-        used = send_data ( id_qa_conv_col, tempdiag, Time, is, js )
+        used = send_data ( id_qa_conv_col, tempdiag, Time)
       end if
          
    end if !end do strat if
@@ -1287,7 +1287,7 @@ endif
    do tr = 1, num_ras_tracers
       !------- diagnostics for dtracer/dt from RAS -------------
       if ( id_tracer_conv(tr) > 0 ) then
-        used = send_data ( id_tracer_conv(tr), qtrras(:,:,:,tr), Time, is, js, 1, &
+        used = send_data ( id_tracer_conv(tr), qtrras(:,:,:,tr), Time, &
                            rmask=mask )
       endif
 
@@ -1297,7 +1297,7 @@ endif
         do k=1,kmax
           tempdiag(:,:) = tempdiag(:,:) + qtrras(:,:,k,tr)*pmass(:,:,k)
         end do
-        used = send_data ( id_tracer_conv_col(tr), tempdiag, Time, is, js )
+        used = send_data ( id_tracer_conv_col(tr), tempdiag, Time)
       end if
 
 
