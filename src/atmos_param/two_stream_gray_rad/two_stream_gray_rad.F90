@@ -89,7 +89,7 @@ real    :: dt_rad_avg     = -1
 character(len=32) :: rad_scheme = 'frierson'
 
 integer, parameter :: B_GEEN = 1,  B_FRIERSON = 2, &
-                      B_BYRNE = 3, B_SCHNEIDER_LIU=4
+                      B_BYRNE = 3, B_SCHNEIDER_LIU=4, B_SCHNEIDER_TITAN=5
 integer, private :: sw_scheme = B_FRIERSON
 integer, private :: lw_scheme = B_FRIERSON
 
@@ -113,6 +113,11 @@ real    :: sw_tau_exponent_gp = 1.0
 real    :: diabatic_acce = 1.0
 real,save :: gp_albedo, Ga_asym, g_asym
 
+!constants for Schneider Titan radiation
+real :: titan_asymmetry_factor = 0.65
+real :: titan_single_albedo = 0.95
+real :: titan_albedo_surface = 0.3
+
 ! parameters for Byrne and OGorman radiation scheme
 real :: bog_a = 0.8678
 real :: bog_b = 1997.9
@@ -130,7 +135,8 @@ real, allocatable, dimension(:,:,:) :: lw_up_win, lw_down_win, lw_dtrans_win
 real, allocatable, dimension(:,:,:) :: b_win, sw_dtrans
 real, allocatable, dimension(:,:)   :: sw_wv, del_sol_tau, sw_tau_k, lw_del_tau, lw_del_tau_win
 
-real, save :: pi, deg_to_rad , rad_to_deg
+real, save :: pi, deg_to_rad , rad_to_deg, Ga, albedo_inf, albedo_mod, intensity_inflation 
+
 
 !extras for reading in co2 concentration
 logical                             :: do_read_co2=.false.
@@ -138,6 +144,12 @@ type(interpolate_type),save         :: co2_interp           ! use external file 
 character(len=256)                  :: co2_file='co2'       !  file name of co2 file to read
 character(len=256)                  :: co2_variable_name='co2'       !  file name of co2 file to read
 
+!extras for reading in huygens probe sw for Titan
+logical                             :: overwrite_net_sw_flux_with_huygens_data=.false.
+type(interpolate_type),save         :: huygens_sw_interp           ! use external file for huygens sw data
+character(len=256)                  :: huygens_sw_file='frac_sw_huygens'       !  file name of huygens sw file to read
+character(len=256)                  :: huygens_sw_variable_name='frac_sw'       !  file name of huygens sw file to read
+real, dimension(61) :: huygens_sw_profile_values
 
 namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            ir_tau_eq, ir_tau_pole, odp, atm_abs, sw_diff, &
@@ -145,17 +157,22 @@ namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
            ir_tau_co2, ir_tau_wv1, ir_tau_wv2, &
-		   window, carbon_conc, rad_scheme, &
+		     window, carbon_conc, rad_scheme, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
            use_time_average_coszen, dt_rad_avg,&
-           diabatic_acce !Schneider Liu values
+           diabatic_acce, & !Schneider Liu values
+           titan_asymmetry_factor, titan_single_albedo, &
+           titan_albedo_surface, &
+           overwrite_net_sw_flux_with_huygens_data, huygens_sw_file, &
+           huygens_sw_variable_name, huygens_sw_profile_values
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
 
 integer :: id_olr, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
            id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun, &
-           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2
+           id_lw_dtrans, id_lw_dtrans_win, id_sw_dtrans, id_co2, id_mars_solar_long, id_rrsun, id_true_anom, &
+           id_time_since_ae, id_dec, id_ang, id_tau_lw, id_tau_sw
 
 character(len=10), parameter :: mod_name = 'two_stream'
 
@@ -224,6 +241,9 @@ else if(uppercase(trim(rad_scheme)) == 'BYRNE') then
 else if(uppercase(trim(rad_scheme)) == 'SCHNEIDER') then
   lw_scheme = B_SCHNEIDER_LIU
   call error_mesg('two_stream_gray_rad','Using Schneider & Liu (2009) radiation scheme for GIANT PLANETS.', NOTE)
+else if(uppercase(trim(rad_scheme)) == 'SCHNEIDER_TITAN') then
+    lw_scheme = B_SCHNEIDER_TITAN
+    call error_mesg('two_stream_gray_rad','Using Schneider et al (2012) radiation scheme for TITAN.', NOTE)  
 else
   call error_mesg('two_stream_gray_rad','"'//trim(rad_scheme)//'"'//' is not a valid radiation scheme.', FATAL)
 endif
@@ -237,8 +257,32 @@ if(lw_scheme == B_SCHNEIDER_LIU) then
 	Ga_asym         = 2.*sqrt( (1. - single_albedo) * (1. - g_asym*single_albedo) );
 endif
 
+if(lw_scheme == B_SCHNEIDER_TITAN) then
+    ! Modified by LJJ
+    ! albedo of a semi-inifinite scattering atmosphere
+    albedo_inf  = ( sqrt(1. - titan_asymmetry_factor*titan_single_albedo) - sqrt(1. - titan_single_albedo) )        &
+        / ( sqrt(1. - titan_asymmetry_factor*titan_single_albedo) + sqrt(1. - titan_single_albedo) );
+
+    ! End modification
+
+    !auxiliary quantities in computation of solar flux
+    albedo_mod       = (-titan_albedo_surface + albedo_inf) / (1. - titan_albedo_surface*albedo_inf)
+    !N.B. switched the sign of the numerator in albedo mod compared to tapios github as tapio version had albedo_mod<0. New one has albedo_mod ~ 0.2, as in Schneider 2012 supplemental material.
+
+    ! rescaling factor for optical depth due to scattering
+    Ga          = 2.*sqrt( (1. - titan_single_albedo) * (1. - titan_asymmetry_factor*titan_single_albedo) );
+
+    intensity_inflation       = 1. / (1. + albedo_mod * albedo_inf * exp(-2*Ga*atm_abs))
+endif
+
 if ((lw_scheme == B_BYRNE).or.(lw_scheme == B_GEEN)) then
     if (pstd_mks/=pstd_mks_earth) call error_mesg('two_stream_gray_rad','Pstd_mks and pstd_mks_earth are not the same in the this run, but lw scheme will use pstd_mks_earth because abs coeffs in Byrne and Geen schemes are non-dimensionalized by Earth surface pressure.', NOTE)
+endif
+
+if(sw_scheme == B_SCHNEIDER_TITAN) then
+   if (overwrite_net_sw_flux_with_huygens_data) then
+      call interpolator_init (huygens_sw_interp, trim(huygens_sw_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+   endif
 endif
 
 
@@ -348,6 +392,16 @@ end select
                'Net shortwave radiative flux (positive up)', &
                'W/m^2', missing_value=missing_value               )
 
+    id_tau_lw = &
+        register_diag_field ( mod_name, 'tau_lw', axes(half), Time, &
+               'Long-wave optical depth', &
+               'None', missing_value=missing_value               )
+
+    id_tau_sw = &
+        register_diag_field ( mod_name, 'tau_sw', axes(half), Time, &
+               'Short-wave optical depth', &
+               'None', missing_value=missing_value               )       
+
     id_coszen  = &
                register_diag_field ( mod_name, 'coszen', axes(1:2), Time, &
                  'cosine of zenith angle', &
@@ -378,6 +432,25 @@ end select
                register_diag_field ( mod_name, 'lw_dtrans', axes(1:3), Time, &
                  'LW transmission (non window)', &
                  'none', missing_value=missing_value      )
+                 
+    id_mars_solar_long = register_diag_field ( mod_name, 'mars_solar_long', &
+                   Time, 'Martian solar longitude', 'deg')   
+
+    id_true_anom = register_diag_field ( mod_name, 'true_anomaly', &
+                   Time, 'True anomaly', 'deg')   
+                     
+    id_rrsun = register_diag_field ( mod_name, 'rrsun', &
+                   Time, 'inverse planet sun distance', 'none')   
+                   
+    id_time_since_ae = register_diag_field ( mod_name, 'time_since_ae', &
+                   Time, 'time since ae', 'none')   
+
+    id_dec = register_diag_field ( mod_name, 'dec', &
+                   Time, 'dec', 'none')
+
+    id_ang = register_diag_field ( mod_name, 'ang', &
+                   Time, 'ang', 'none')
+
 return
 end subroutine two_stream_gray_rad_init
 
@@ -398,17 +471,13 @@ real, intent(in), dimension(:,:,:)  :: t, q,  p_half
 integer :: i, j, k, n, dyofyr
 
 integer :: seconds, year_in_s, days
-real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday, r_total_seconds, r_days, r_dt_rad_avg, dt_rad_radians
+real :: r_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, day_in_s, r_solday, r_total_seconds, r_days, r_dt_rad_avg, dt_rad_radians, true_anomaly, dec, ang_out
 logical :: used
 
 
 real ,dimension(size(q,1),size(q,2),size(q,3)) :: co2f
 
 n = size(t,3)
-
-
-
-! albedo(:,:) = albedo_value !s albedo now set in mixed_layer_init.
 
 ! =================================================================================
 ! SHORTWAVE RADIATION
@@ -418,34 +487,47 @@ if (do_seasonal) then
   ! Seasonal Cycle: Use astronomical parameters to calculate insolation
   call get_time(Time_diag, seconds, days)
   call get_time(length_of_year(), year_in_s)
-  r_seconds = real(seconds)
   day_in_s = length_of_day()
-  frac_of_day = r_seconds / day_in_s
+  r_seconds = real(seconds)
+  r_days=real(days)
+  r_total_seconds=r_seconds+(r_days*86400.)
+  
+  frac_of_day = r_total_seconds / day_in_s
 
   if(solday .ge. 0) then
       r_solday=real(solday)
       frac_of_year = (r_solday*day_in_s) / year_in_s
   else
-      r_days=real(days)
-      r_total_seconds=r_seconds+(r_days*day_in_s)
       frac_of_year = r_total_seconds / year_in_s
   endif
 
   gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
-
+  
   time_since_ae = modulo(frac_of_year-equinox_day, 1.0) * 2.0 * pi
 
   if(use_time_average_coszen) then
 
      r_dt_rad_avg=real(dt_rad_avg)
      dt_rad_radians = (r_dt_rad_avg/day_in_s)*2.0*pi
-
-     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians)
+     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians, true_anom=true_anomaly, dec_out=dec, ang_out=ang_out)
   else
-     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
+     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, true_anom=true_anomaly, dec_out=dec, ang_out=ang_out)
   end if
 
-     insolation = solar_constant * coszen
+     insolation = solar_constant * coszen * rrsun
+
+    if (id_mars_solar_long > 0) used = send_data ( id_mars_solar_long, modulo((180./pi)*(true_anomaly-1.905637),360.), Time_diag)
+
+
+    if (id_time_since_ae > 0) used = send_data ( id_time_since_ae, time_since_ae, Time_diag)
+    if (id_dec > 0) used = send_data ( id_dec, dec, Time_diag)
+    if (id_ang > 0) used = send_data ( id_ang, ang_out, Time_diag)
+
+
+    if (id_true_anom > 0) used = send_data ( id_true_anom, true_anomaly, Time_diag)
+
+    if (id_rrsun > 0) used = send_data ( id_rrsun, rrsun, Time_diag)
+    
 
 else if (sw_scheme==B_SCHNEIDER_LIU) then
   insolation = (solar_constant/pi)*cos(lat)
@@ -504,6 +586,21 @@ case(B_SCHNEIDER_LIU)
   do k = 1, n+1
      sw_down(:,:,k)   = insolation(:,:) * (1.0-gp_albedo)* exp(- Ga_asym * sw_tau(:,:,k))
   end do
+
+case(B_SCHNEIDER_TITAN)
+
+    sw_tau_0    = (1.0 - sw_diff*sin(lat)**2)*atm_abs
+
+    do k = 1, n+1
+        sw_tau(:,:,k) = sw_tau_0 * (p_half(:,:,k)/pstd_mks)**solar_exponent
+    end do
+
+    ! compute downward shortwave flux
+    do k = 1, n+1
+       sw_down(:,:,k)   = insolation(:,:) * intensity_inflation &
+                          * (albedo_inf * albedo_mod * exp(Ga * (sw_tau(:,:,k) - 2.*sw_tau_0)) &
+                          + exp(-Ga * sw_tau(:,:,k)))
+    end do
 
 case default
  call error_mesg('two_stream_gray_rad','invalid radiation scheme',FATAL)
@@ -571,7 +668,7 @@ case(B_BYRNE)
      lw_down(:,:,k+1) = lw_down(:,:,k)*lw_dtrans(:,:,k) + b(:,:,k)*(1. - lw_dtrans(:,:,k))
   end do
 
-case(B_FRIERSON)
+case(B_FRIERSON, B_SCHNEIDER_TITAN)
   ! longwave optical thickness function of latitude and pressure
   lw_tau_0 = ir_tau_eq + (ir_tau_pole - ir_tau_eq)*sin(lat)**2
   lw_tau_0 = lw_tau_0 * odp ! scale by optical depth parameter - default 1
@@ -668,7 +765,7 @@ real, intent(in) , dimension(:,:,:) :: t, p_half
 real, intent(inout), dimension(:,:,:) :: tdt
 
 
-integer :: i, j, k, n
+integer :: i, j, k, n, num_lat, num_lon
 
 logical :: used
 
@@ -687,7 +784,7 @@ case(B_GEEN)
   end do
   lw_up = lw_up + lw_up_win
 
-case(B_FRIERSON, B_BYRNE)
+case(B_FRIERSON, B_BYRNE, B_SCHNEIDER_TITAN)
   ! compute upward longwave flux by integrating upward
   lw_up(:,:,n+1)    = b_surf
   do k = n, 1, -1
@@ -708,13 +805,47 @@ case default
 end select
 
 ! compute upward shortwave flux (here taken to be constant)
-do k = 1, n+1
-   sw_up(:,:,k)   = albedo(:,:) * sw_down(:,:,n+1)
-end do
+select case(sw_scheme)
+    case(B_SCHNEIDER_TITAN)
+        do k = 1,n+1
+              sw_up(:,:,k)   = insolation(:,:) * intensity_inflation          &
+                               * (albedo_mod * exp(Ga * (sw_tau(:,:,k) - 2.*sw_tau_0)) & 
+                                  + albedo_inf * exp(-Ga * sw_tau(:,:,k)))
+        end do
+    case default 
+        do k = 1, n+1
+            sw_up(:,:,k)   = albedo(:,:) * sw_down(:,:,n+1)
+        end do
+end select
 
 ! net fluxes (positive up)
 lw_flux  = lw_up - lw_down
-sw_flux  = sw_up - sw_down
+
+select case(sw_scheme)
+   case(B_SCHNEIDER_TITAN)
+      if (overwrite_net_sw_flux_with_huygens_data) then
+         ! write(6,*) 'shape phalf', shape(p_half)
+         ! write(6,*) 'shape swflux', size(sw_flux, 1)
+         ! call interpolator( huygens_sw_interp, p_half, sw_flux, trim(huygens_sw_variable_name))
+
+         num_lat = size(sw_flux,2)
+         num_lon = size(sw_flux,1)
+
+         do i = 1, num_lon
+            do j = 1, num_lat
+               do k = 1, n+1
+                  sw_flux(i,j, k) = -1.*huygens_sw_profile_values(k) * sw_down(i, j, 1) ! Huygens data is net sw flux as a fraction of TOA incoming SW
+               end do
+            end do
+         end do
+      else
+         sw_flux  = sw_up - sw_down      
+      endif
+   case default
+      sw_flux  = sw_up - sw_down
+end select
+
+
 rad_flux = lw_flux + sw_flux
 
 do k = 1, n
@@ -771,6 +902,14 @@ endif
 if ( id_sw_dtrans > 0 ) then
    used = send_data ( id_sw_dtrans, sw_dtrans, Time_diag)
 endif
+!---------optical depths (at half levels) ---------
+if ( id_tau_lw > 0 ) then
+   used = send_data ( id_tau_lw, lw_tau, Time_diag)
+endif
+if ( id_tau_sw > 0 ) then
+   used = send_data ( id_tau_sw, sw_tau, Time_diag)
+endif
+
 
 return
 end subroutine two_stream_gray_rad_up
@@ -798,6 +937,10 @@ if (lw_scheme.eq.B_BYRNE) then
 endif
 if(lw_scheme.eq.B_SCHNEIDER_LIU) then
 	deallocate (b_surf_gp)
+endif
+
+if(sw_scheme.eq.B_SCHNEIDER_TITAN .and. overwrite_net_sw_flux_with_huygens_data) then
+	call interpolator_end(huygens_sw_interp)
 endif
 
 if(do_read_co2)call interpolator_end(co2_interp)

@@ -46,7 +46,7 @@ use  field_manager_mod, only: MODEL_ATMOS, parse
 use tracer_manager_mod, only: query_method, get_number_tracers
 use   interpolator_mod, only: interpolate_type, interpolator_init, &
                               interpolator, interpolator_end, &
-                              CONSTANT, INTERP_WEIGHTED_P
+                              CONSTANT, INTERP_WEIGHTED_P, ZERO
 
 use      astronomy_mod, only: diurnal_exoplanet, astronomy_init, obliq, ecc
 #ifdef COLUMN_MODEL
@@ -62,7 +62,7 @@ private
 !-----------------------------------------------------------------------
 !---------- interfaces ------------
 
-   public :: hs_forcing, hs_forcing_init, hs_forcing_end
+   public :: hs_forcing, hs_forcing_init, hs_forcing_end, local_heating
 
    type(interpolate_type),save         ::  heating_source_interp
    type(interpolate_type),save         ::  u_interp
@@ -105,6 +105,7 @@ private
    real :: heat_capacity=4.2e6      ! equivalent to a 1m mixed layer water ocean
    real :: ml_depth=1               ! depth for heat capacity calculation
    real :: spinup_time=10800.     ! number of days to spin up heat capacity for - req. multiple of orbital_period
+   real :: equinox_day = 0. !N.b. the definition of declination is different here to what's in astronomy.F90 (the astronomy.F90 version has a minus sign. So to get equivalent behaviour to two-stream-grey/rrtm/socrates, the equinox_day here ought to be different by 0.5. I.e. here it should be 0.25 to get Earth-like calendar, rather than 0.75 elsewhere.)
 
 
 !-----------------------------------------------------------------------
@@ -119,8 +120,8 @@ private
                               u_wind_file, v_wind_file, equilibrium_t_option,&
                               equilibrium_t_file, p_trop, alpha, peri_time, smaxis, albedo, &
                               lapse, h_a, tau_s, orbital_period,         &
-                              heat_capacity, ml_depth, spinup_time, stratosphere_t_option, P00
-
+                              heat_capacity, ml_depth, spinup_time, stratosphere_t_option, & 
+                              equinox_day, P00
 !-----------------------------------------------------------------------
 
    character(len=128) :: version='$Id: hs_forcing.F90,v 19.0 2012/01/06 20:10:01 fms Exp $'
@@ -233,8 +234,6 @@ contains
       if(trim(local_heating_option) /= '') then
         call local_heating ( Time, is, js, lon, lat, ps, p_full, p_half, ttnd )
         tdt = tdt + ttnd
-!        if (id_local_heating > 0) used = send_data ( id_local_heating, ttnd, Time, is, js)
-        if (id_local_heating > 0) used = send_data ( id_local_heating, ttnd, Time)
       endif
 
 !      if (id_tdt > 0) used = send_data ( id_tdt, tdt, Time, is, js)
@@ -285,7 +284,7 @@ contains
            integer, intent(in) :: axes(4)
    type(time_type), intent(in) :: Time
    real, intent(in), dimension(:,:) :: lat
-   real, intent(in), optional, dimension(:,:) :: lonb, latb
+   real, intent(in), dimension(:,:) :: lonb, latb
 
 
 !-----------------------------------------------------------------------
@@ -453,7 +452,7 @@ contains
       endif
 
      if(trim(local_heating_option) == 'from_file') then
-       call interpolator_init(heating_source_interp, trim(local_heating_file)//'.nc', lonb, latb, data_out_of_bounds=(/CONSTANT/))
+       call interpolator_init(heating_source_interp, trim(local_heating_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
      endif
      if(trim(equilibrium_t_option) == 'from_file') then
        call interpolator_init (temp_interp, trim(equilibrium_t_file)//'.nc', lonb, latb, data_out_of_bounds=(/CONSTANT/))
@@ -739,6 +738,8 @@ real :: lon_temp, x_temp, p_factor
 real, dimension(size(lon,1),size(lon,2)) :: lon_factor
 real, dimension(size(lat,1),size(lat,2)) :: lat_factor
 real, dimension(size(p_half,1),size(p_half,2),size(p_half,3)) :: p_half2
+logical :: used
+
 do i=1,size(p_half,3)
   p_half2(:,:,i)=p_half(:,:,size(p_half,3)-i+1)
 enddo
@@ -746,7 +747,7 @@ enddo
 tdt(:,:,:)=0.
 
 if(trim(local_heating_option) == 'from_file') then
-   call interpolator( heating_source_interp, p_half, tdt, trim(local_heating_file))
+   call interpolator( heating_source_interp, Time, p_half, tdt, trim(local_heating_file))
 else if(trim(local_heating_option) == 'Isidoro') then
    do j=1,size(lon,2)
    do i=1,size(lon,1)
@@ -765,6 +766,8 @@ else if(trim(local_heating_option) == 'Isidoro') then
 else
   call error_mesg ('hs_forcing_nml','"'//trim(local_heating_option)//'"  is not a valid value for local_heating_option',FATAL)
 endif
+
+if (id_local_heating > 0) used = send_data ( id_local_heating, tdt, Time)
 
 end subroutine local_heating
 
@@ -832,7 +835,7 @@ real :: theta, mean_anomaly, ecc_anomaly, true_anomaly
     call calc_ecc_anomaly(mean_anomaly, ecc, ecc_anomaly)
     true_anomaly = 2*atan(((1 + ecc)/(1 - ecc))**0.5 * tan(ecc_anomaly/2))
     orb_dist = smaxis * (1 - ecc**2)/(1 + ecc*cos(true_anomaly))
-    theta = 2*pi*current_time/(orbital_period*86400)
+    theta = 2*pi*modulo((current_time/(orbital_period*86400))-equinox_day, 1.0)
     dec = asin(sin(obliq*pi/180)*sin(theta))
 
 end subroutine update_orbit

@@ -96,6 +96,7 @@ public :: spectral_dynamics_init, spectral_dynamics, spectral_dynamics_end, get_
 public :: get_use_virtual_temperature, get_reference_sea_level_press, get_surf_geopotential
 public :: get_pk_bk, complete_robert_filter, complete_update_of_future
 public :: get_axis_id, spectral_diagnostics, get_initial_fields
+public :: diffuse_surf_water
 
 !===============================================================================================
 
@@ -156,7 +157,8 @@ logical :: do_mass_correction     = .true. , &
            use_implicit           = .true.,  &
            triang_trunc           = .true.,  &
            graceful_shutdown      = .false., &
-		   make_symmetric         = .false. !GC/RG Add namelist option to run model as zonally symmetric
+           make_symmetric         = .false., & !GC/RG Add namelist option to run model as zonally symmetric
+           do_spec_tracer_filter  = .false.
 
 
 integer :: damping_order       = 2, &
@@ -221,7 +223,8 @@ namelist /spectral_dynamics_nml/ use_virtual_temperature, damping_option, cutoff
                                  raw_filter_coeff,                                                   & !st
                                  graceful_shutdown, json_logging,                                    &
                                  graceful_shutdown,                                                  &
-								 make_symmetric                                                       !GC/RG add make_symmetric option
+                                 make_symmetric,                                                     & !GC/RG add make_symmetric option
+                                 do_spec_tracer_filter
 
 contains
 
@@ -1154,18 +1157,38 @@ do ntr = 1, num_tracers
     call trans_spherical_to_grid  (spec_tracers(:,:,:,future,ntr), grid_tracers(:,:,:,future,ntr))
   else if(trim(tracer_attributes(ntr)%numerical_representation) == 'grid') then
     tr_future = grid_tracers(:,:,:,previous,ntr) + delta_t*dt_tr(:,:,:,ntr)
-    dt_tr(:,:,:,ntr) = 0.0
-    call a_grid_horiz_advection (ug(:,:,:,current), vg(:,:,:,current), tr_future, delta_t, dt_tr(:,:,:,ntr))
-    tr_future = tr_future + delta_t*dt_tr(:,:,:,ntr)
+
+    dt_tmp = 0.0
+    call a_grid_horiz_advection (ug(:,:,:,current), vg(:,:,:,current), tr_future, delta_t, dt_tmp)
+    dt_tr(:,:,:,ntr) = dt_tr(:,:,:,ntr) + dt_tmp
+    tr_future = tr_future + delta_t*dt_tmp
+
     dp = p_half(:,:,2:num_levels+1) - p_half(:,:,1:num_levels)
     call vert_advection(delta_t, wg, dp, tr_future, dt_tmp, scheme=tracer_vert_advect_scheme(ntr), form=ADVECTIVE_FORM)
-    tr_future = tr_future + delta_t*dt_tmp
+    dt_tr(:,:,:,ntr) = dt_tr(:,:,:,ntr) + dt_tmp
+
+    ! [TS/LJJ mod:] added spectral damping of grid tracer
+    if(do_spec_tracer_filter) then !added rwills - spec_tracer_filter only needed for titan, causes water conservation problems in def run
+      call trans_grid_to_spherical  (dt_tr(:,:,:,ntr), dt_trs(:,:,:))
+      call trans_grid_to_spherical (grid_tracers(:,:,:,previous,ntr), spec_tracers(:,:,:,previous,ntr))
+      call compute_spectral_damping (spec_tracers(:,:,:,previous,ntr), dt_trs(:,:,:), delta_t)
+      call trans_spherical_to_grid  (dt_trs(:,:,:), dt_tr(:,:,:,ntr))    
+   endif
+   tr_future = grid_tracers(:,:,:,previous, ntr) + delta_t * dt_tr(:,:,:,ntr)
+   !  End spectral damping modifications   !!!!
+
+   !End result of this modified version shouild be exacty as before. a_grid now updates dt_tmp, which is used to increment tr_future. tr_future is fed into vert_advection, which updates dt_tr. Then we have the option of sending the whole dt_tr through the spectral filter. But either way, we end up with a total dt_tr that is used to increment tr_future, and write over the temporary modifications made to tr_future after a_grid.
+
+
+
     if(step_number == num_steps) then
       part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)
 
       grid_tracers(:,:,:,current,ntr) = grid_tracers(:,:,:,current,ntr) + &
       tracer_attributes(ntr)%robert_coeff*(part_filt_tr_out(:,:,:,ntr))*raw_filter_coeff
       robert_complete_for_tracers = .false.
+      grid_tracers(:,:,:,future,ntr) = tr_future !Moved because if false then future value is updated. But default is num_steps=1, so shouldn't change existing functionality.
+
     else
       part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)+tr_future
 
@@ -1177,7 +1200,6 @@ do ntr = 1, num_tracers
 
       robert_complete_for_tracers = .true.
     endif
-    grid_tracers(:,:,:,future,ntr) = tr_future
   else
     call error_mesg('update_tracers',trim(tracer_attributes(ntr)%numerical_representation)// &
            ' is an invalid numerical_representation', FATAL)
@@ -1930,5 +1952,44 @@ deallocate(id_tr)
 return
 end subroutine spectral_diagnostics_end
 !===================================================================================
+
+subroutine diffuse_surf_water(dt_bucket,bucket_depth,delta_t,damping_coeff_bucket,bucket_diffusion)
+  !This subroutine diffuses the surface water reservoir more the bigger damping_coeff_bucket is.
+  !dt_bucket is the tendency for the current timestep, and gets changed by this subroutine
+  !to reflect the diffusion that occurs over time delta_t.
+  ! Taken from srcmods section of Titan model in Tapio Schneider's Github - https://github.com/tapios/fms-idealized/blob/master/exp/titan/srcmods/spectral_dynamics.f90
+  
+  real,    intent(inout), dimension(is:ie, js:je) :: dt_bucket
+  real,    intent(in), dimension(is:ie, js:je) :: bucket_depth
+  real,    intent(inout), dimension(is:ie, js:je) :: bucket_diffusion
+  real,    intent(in) :: delta_t,damping_coeff_bucket
+  
+  complex, dimension(ms:me, ns:ne) :: dt_bucket_sph
+  complex, dimension(ms:me, ns:ne) :: bucket_depth_sph
+  complex, dimension(ms:me, ns:ne) :: bucket_diffusion_sph !for output only, not used in calculation
+  real,    dimension(size(bucket_depth_sph,1),size(bucket_depth_sph,2)) :: coeff
+  real :: damping_order_bucket = 1
+  real,    allocatable, dimension(:,:) :: bucket_damping, eigen
+  
+  allocate(bucket_damping  (0:num_fourier, 0:num_spherical))
+  allocate(eigen           (0:num_fourier,0:num_spherical))
+  
+  call get_eigen_laplacian(eigen)
+  
+  call trans_grid_to_spherical(dt_bucket,dt_bucket_sph)
+  call trans_grid_to_spherical(bucket_depth,bucket_depth_sph)
+  
+  bucket_damping(:,:)  = damping_coeff_bucket * (eigen(:,:)**damping_order_bucket)
+  coeff                = 1.0/(1.0 + bucket_damping(ms:me,ns:ne)*delta_t)
+  bucket_diffusion_sph = dt_bucket_sph
+  dt_bucket_sph        = coeff * (dt_bucket_sph - bucket_damping(ms:me,ns:ne)*bucket_depth_sph*delta_t)
+  bucket_diffusion_sph = bucket_diffusion_sph*(-1.) + dt_bucket_sph
+  
+  call trans_spherical_to_grid(bucket_diffusion_sph,bucket_diffusion)
+  call trans_spherical_to_grid(dt_bucket_sph,dt_bucket)
+  
+  end subroutine diffuse_surf_water
+  
+  ! ===================================================================================
 
 end module spectral_dynamics_mod

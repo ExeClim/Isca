@@ -10,7 +10,7 @@ use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_m
                    FATAL, WARNING, read_data, field_size, uppercase, mpp_pe, check_nml_error
 
 ! cp_air needed for rrtmg and pstd_mks needed for pref calculation
-use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS, dens_h2o 
+use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS, dens_h2o, dens_vapor 
 
 use        time_manager_mod, only: time_type, get_time, operator( + )
 
@@ -43,12 +43,12 @@ use              column_mod, only: get_num_levels, get_surf_geopotential, get_ax
 use            spec_mpp_mod, only: get_grid_domain, grid_domain 
 #else
 use          transforms_mod, only: get_grid_domain, grid_domain
-use   spectral_dynamics_mod, only: get_axis_id, get_num_levels, get_surf_geopotential
+use   spectral_dynamics_mod, only: get_axis_id, get_num_levels, get_surf_geopotential, diffuse_surf_water
 #endif 
 
 use        surface_flux_mod, only: surface_flux, gp_surface_flux
 
-use      sat_vapor_pres_mod, only: lookup_es ! needed for relative humdity to be calculated in a consistent way.
+use      sat_vapor_pres_mod, only: lookup_es, escomp !s Have added this to allow relative humdity to be calculated in a consistent way.
 
 use      damping_driver_mod, only: damping_driver, damping_driver_init, damping_driver_end ! MiMA uses damping
 
@@ -61,6 +61,8 @@ use tracer_manager_mod, only: get_number_tracers, query_method
 use  field_manager_mod, only: MODEL_ATMOS
 
 use rayleigh_bottom_drag_mod, only: rayleigh_bottom_drag_init, compute_rayleigh_bottom_drag
+
+use hs_forcing_mod, only: hs_forcing_init, local_heating, hs_forcing_end
 
 #ifdef RRTM_NO_COMPILE
     ! RRTM_NO_COMPILE not included
@@ -116,6 +118,7 @@ logical :: lwet_convection = .false.
 logical :: do_bm = .false.
 logical :: do_ras = .false.
 
+logical :: do_lscale_cond = .true.
 ! Cloud options
 logical :: do_cloud_simple = .false. ! SimCloud cloud scheme
 logical :: do_cloud_spookie = .false. ! SPOOKIE protocol cloud scheme
@@ -152,7 +155,13 @@ real :: init_bucket_depth_land = 20.
 real :: max_bucket_depth_land = 0.15 ! default from Manabe 1969
 real :: robert_bucket = 0.04   ! default robert coefficient for bucket depth LJJ
 real :: raw_bucket = 0.53       ! default raw coefficient for bucket depth LJJ
+real :: damping_coeff_bucket = 0. ! default damping coefficient for diffusing of surface water - default is no diffusion. [degrees/year] 
+logical :: finite_bucket_depth_over_land = .true. !When using bucket model do we want finite bucket depth over land? Default is true. Some applications where bucket depth is not well known or testable (e.g. for Titan) we may want this option as false.
 ! end Add bucket
+
+!s Adding localised heating option from Held-Suarez
+logical :: do_local_heating = .false.
+!s end Adding localised heating option from Held-Suarez
 
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
                                       do_cloud_simple, do_cloud_spookie,             &
@@ -164,12 +173,14 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roug
                                       gp_surface, convection_scheme,                 &
                                       bucket, init_bucket_depth, init_bucket_depth_land, &
                                       max_bucket_depth_land, robert_bucket, raw_bucket, &
-                                      do_socrates_radiation, do_lcl_diffusivity_depth
+                                      do_lscale_cond, do_socrates_radiation, do_lcl_diffusivity_depth, damping_coeff_bucket, &
+                                      finite_bucket_depth_over_land, &
+                                      do_local_heating
 
 
 integer, parameter :: num_time_levels = 2 ! Add bucket - number of time levels added to allow timestepping in this module
 real, allocatable, dimension(:,:,:)   :: bucket_depth
-real, allocatable, dimension(:,:    ) :: dt_bucket, filt
+real, allocatable, dimension(:,:    ) :: dt_bucket, filt, bucket_diffusion
 
 real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
@@ -205,6 +216,7 @@ real, allocatable, dimension(:,:)   ::                                        &
      dedq_atm,             &   ! d(latent heat flux)/d(atmospheric mixing rat.)
      dtaudv_atm,           &   ! d(stress component)/d(atmos wind)
      dtaudu_atm,           &   ! d(stress component)/d(atmos wind)
+     q_surf_out,           &   ! Saturated specific humidity of mixed-layer
      fracland,             &   ! fraction of land in gridbox
      rough,                &   ! roughness for vert_turb_driver
      albedo,               &   ! albedo now defined in mixed_layer_init
@@ -285,6 +297,7 @@ integer ::           &
      id_bucket_depth_conv, &   ! bucket depth variation induced by convection
      id_bucket_depth_cond, &   ! bucket depth variation induced by condensation
      id_bucket_depth_lh,   &   ! bucket depth variation induced by LH
+     id_bucket_diffusion,  &   ! diffused surface water depth 
      id_rh,           & ! Relative humidity
      id_diss_heat_ray,&  ! Heat dissipated by rayleigh bottom drag if gp_surface=.True.
      id_z_tg,        &   ! Relative humidity
@@ -296,7 +309,16 @@ integer ::           &
      id_u_10m,       & ! used for 10m winds and 2m temp
      id_v_10m,       & ! used for 10m winds and 2m temp
      id_q_2m,        & ! used for 2m specific humidity
-     id_rh_2m          ! used for 2m relative humidity
+     id_rh_2m,       & ! used for 2m relative humidity
+     id_cd_t,        &
+     id_cd_q,        &
+     id_cd_m,        &
+     id_w_atm,       &
+     id_drag_m,      &
+     id_drag_t,      &
+     id_drag_q,      &
+     id_rho_drag,    &
+     id_q_surf0, id_flux_q_surf_part, id_flux_q_atm_part, id_flux_t_surf_part, id_flux_t_atm_part, id_e_sat     
 
 integer, allocatable, dimension(:,:) :: convflag ! indicates which qe convection subroutines are used
 real,    allocatable, dimension(:,:) :: rad_lat, rad_lon
@@ -439,7 +461,7 @@ else if(uppercase(trim(convection_scheme)) == 'UNSET') then
   end if
 else
   call error_mesg('idealized_moist_phys','"'//trim(convection_scheme)//'"'//' is not a valid convection scheme.'// &
-      ' Choices are NONE, SIMPLE_BETTS, FULL_BETTS_MILLER, RAS, DRY', FATAL)
+      ' Choices are NONE, SIMPLE_BETTS_MILLER, FULL_BETTS_MILLER, RAS, DRY', FATAL)
 endif
 
 if(lwet_convection .and. do_bm) &
@@ -473,6 +495,7 @@ allocate(bucket_depth (is:ie, js:je, num_time_levels)); bucket_depth = init_buck
 allocate(depth_change_lh(is:ie, js:je))
 allocate(depth_change_cond(is:ie, js:je))
 allocate(depth_change_conv(is:ie, js:je))
+allocate(bucket_diffusion(is:ie, js:je))                   
 allocate(z_surf      (is:ie, js:je))
 allocate(t_surf      (is:ie, js:je))
 allocate(q_surf      (is:ie, js:je)); q_surf = 0.0
@@ -503,6 +526,7 @@ allocate(dhdt_atm    (is:ie, js:je))
 allocate(dedq_atm    (is:ie, js:je))
 allocate(dtaudv_atm  (is:ie, js:je))
 allocate(dtaudu_atm  (is:ie, js:je))
+allocate(q_surf_out   (is:ie, js:je))
 allocate(ex_del_m    (is:ie, js:je))
 allocate(ex_del_h    (is:ie, js:je))
 allocate(ex_del_q    (is:ie, js:je))
@@ -593,8 +617,10 @@ if(trim(land_option) .eq. 'input')then
     where(land_ones > 0.) land = .true.
 
 elseif(trim(land_option) .eq. 'zsurf')then
-    ! wherever zsurf is greater than some threshold height then make land = .true.
-    where ( z_surf > 10. ) land = .true.
+	! wherever zsurf is greater than some threshold height then make land = .true.
+  where ( z_surf > 10. ) land = .true.
+elseif(trim(land_option) .eq. 'all_land')then
+  land = .true.
 endif
 
 !option to alter surface roughness length over land
@@ -680,6 +706,29 @@ id_flux_u = register_diag_field(mod_name, 'flux_u', &
 id_flux_v = register_diag_field(mod_name, 'flux_v', &
      axes(1:2), Time, 'Meridional momentum flux', 'Pa')
 
+id_cd_t = register_diag_field(mod_name, 'cd_t',          &
+     axes(1:2), Time, 'Temperature coeff for surface fluxes','None')
+id_cd_m = register_diag_field(mod_name, 'cd_m',          &
+     axes(1:2), Time, 'Momentum coeff for surface fluxes','None')
+id_cd_q = register_diag_field(mod_name, 'cd_q',          &
+     axes(1:2), Time, 'Sphum coeff for surface fluxes','None')     
+id_w_atm = register_diag_field(mod_name, 'w_atm',          &
+     axes(1:2), Time, 'Speed component of surface drag','m/s')  
+
+id_drag_m = register_diag_field(mod_name, 'drag_m', axes(1:2), Time, 'momentum drag_m from surface_flux', '.')
+id_drag_t = register_diag_field(mod_name, 'drag_t', axes(1:2), Time, 't drag_t from surface_flux', '.')
+id_drag_q = register_diag_field(mod_name, 'drag_q', axes(1:2), Time, 'q drag_q from surface_flux', '.')
+id_rho_drag = register_diag_field(mod_name, 'rho_drag', axes(1:2), Time, 'rho_drag from sensible heat', '.')
+id_q_surf0 = register_diag_field(mod_name, 'q_surf0', axes(1:2), Time, 'q_surf0 from surface flux', '.')
+id_flux_q_surf_part = register_diag_field(mod_name, 'flux_q_surf_part', axes(1:2), Time, 'flux_q_surf_part', '.')
+id_flux_q_atm_part = register_diag_field(mod_name, 'flux_q_atm_part', axes(1:2), Time, 'flux_q_atm_part', '.')
+id_flux_u = register_diag_field(mod_name, 'flux_u', axes(1:2), Time, 'flux zonal momentum', '.')
+id_flux_v = register_diag_field(mod_name, 'flux_v', axes(1:2), Time, 'flux meridional momentum', '.')  
+id_flux_t_surf_part = register_diag_field(mod_name, 'flux_t_surf_part', axes(1:2), Time, 'flux_t_surf_part', '.')
+id_flux_t_atm_part = register_diag_field(mod_name, 'flux_t_atm_part', axes(1:2), Time, 'flux_t_atm_part', '.')  
+
+id_e_sat = register_diag_field(mod_name, 'e_sat', axes(1:2), Time, 'e_sat', '.')  
+
 if(bucket) then
   id_bucket_depth = register_diag_field(mod_name, 'bucket_depth',            &
        axes(1:2), Time, 'Depth of surface reservoir', 'm')
@@ -689,6 +738,8 @@ if(bucket) then
        axes(1:2), Time, 'Tendency of bucket depth induced by Condensation', 'm/s')
   id_bucket_depth_lh = register_diag_field(mod_name, 'bucket_depth_lh',      &
        axes(1:2), Time, 'Tendency of bucket depth induced by LH', 'm/s')
+  id_bucket_diffusion = register_diag_field(mod_name, 'bucket_diffusion',  &  
+       axes(1:2), Time, 'Diffusion rate of bucket','m/s')       
 endif
 
 id_temp_2m = register_diag_field(mod_name, 'temp_2m',            &
@@ -767,6 +818,10 @@ end select
         axes(1:2), Time, 'Rain from convection','kg/m/m/s')
 !endif
 
+if (r_conv_scheme .eq. DRY_CONV .and. do_lscale_cond .eqv. .true.) then
+        call error_mesg('idealized_moist_phys','do_lscale_cond is .true. but r_conv_scheme is dry. These options may not be consistent.', WARNING)
+endif
+
 if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, dt_real)
 
 #ifdef RRTM_NO_COMPILE
@@ -814,6 +869,11 @@ endif
    id_rh = register_diag_field ( mod_name, 'rh',                           &
         axes(1:3), Time, 'relative humidity', 'percent')
 
+if (do_local_heating) then
+    call hs_forcing_init(get_axis_id(), Time, rad_lonb_2d, rad_latb_2d,  rad_lat_2d)
+endif
+
+
 end subroutine idealized_moist_phys_init
 !=================================================================================================================================
 subroutine idealized_moist_phys(Time, p_half, p_full, z_half, z_full, ug, vg, psg, wg_full, tg, grid_tracers, &
@@ -828,7 +888,8 @@ real, dimension(:,:,:),     intent(inout) :: dt_ug, dt_vg, dt_tg
 real, dimension(:,:,:,:),   intent(inout) :: dt_tracers
 
 real :: delta_t
-real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv
+real, dimension(size(ug,1), size(ug,2), size(ug,3)) :: tg_tmp, qg_tmp, RH,tg_interp, mc, dt_ug_conv, dt_vg_conv, tdt_local_heating
+real, dimension(size(ug,1), size(ug,2)) :: flux_q_surf_part, flux_q_atm_part, flux_t_surf_part, flux_t_atm_part, e_sat_out
 
 ! Simple cloud scheme variabilies to pass to radiation
 real, dimension(size(ug,1), size(ug,2), size(ug,3))    :: cf_rad, reff_rad, qcl_rad, cca_rad
@@ -848,6 +909,7 @@ endif
 if (bucket) then
   dt_bucket = 0.0
   filt      = 0.0
+  bucket_diffusion = 0.0
 endif
 
 
@@ -876,7 +938,7 @@ case(SIMPLE_BETTS_CONV)
 
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
-   depth_change_conv = rain/dens_h2o
+   depth_change_conv = rain/dens_vapor
    rain       = rain/delta_t
    precip     = rain
 
@@ -905,7 +967,7 @@ case(FULL_BETTS_MILLER_CONV)
 
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
-   depth_change_conv = rain/dens_h2o
+   depth_change_conv = rain/dens_vapor  
    rain       = rain/delta_t
    precip     = rain
 
@@ -974,7 +1036,7 @@ dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
 convective_rain = precip
 
 ! Perform large scale convection
-if (r_conv_scheme .ne. DRY_CONV) then
+if ( do_lscale_cond .eqv. .true.) then
   ! Large scale convection is a function of humidity only.  This is
   ! inconsistent with the dry convection scheme, don't run it!
   rain = 0.0; snow = 0.0
@@ -986,7 +1048,7 @@ if (r_conv_scheme .ne. DRY_CONV) then
 
   cond_dt_tg = cond_dt_tg/delta_t
   cond_dt_qg = cond_dt_qg/delta_t
-  depth_change_cond = rain/dens_h2o
+  depth_change_cond = rain/dens_vapor 
   rain       = rain/delta_t
   snow       = snow/delta_t
   precip     = precip + rain + snow
@@ -1118,6 +1180,7 @@ if(.not.gp_surface) then
                                 dedq_atm(:,:),                              &
                               dtaudu_atm(:,:),                              &
                               dtaudv_atm(:,:),                              &
+                              q_surf_out(:,:),                              & ! is intent(out)                              
                                 ex_del_m(:,:),                              &
                                 ex_del_h(:,:),                              &
                                 ex_del_q(:,:),                              &
@@ -1129,7 +1192,30 @@ if(.not.gp_surface) then
                                       delta_t,                              &
                                     land(:,:),                              &
                                .not.land(:,:),                              &
-                                   avail(:,:)  )
+                                  avail(:,:)  )
+
+          if(id_w_atm > 0) used = send_data(id_w_atm, w_atm, Time)
+          if(id_drag_m > 0) used = send_data(id_drag_m, drag_m*w_atm, Time)
+          if(id_drag_t > 0) used = send_data(id_drag_t, drag_t*w_atm, Time)
+          if(id_drag_q > 0) used = send_data(id_drag_q, drag_q*w_atm, Time)  
+          if(id_cd_m > 0) used = send_data(id_cd_m, drag_m, Time)
+          if(id_cd_t > 0) used = send_data(id_cd_t, drag_t, Time)
+          if(id_cd_q > 0) used = send_data(id_cd_q, drag_q, Time)  
+          if(id_rho_drag > 0) used = send_data(id_rho_drag, dhdt_surf, Time)  
+          if(id_q_surf0 > 0) used = send_data(id_q_surf0, q_surf_out, Time)  
+          flux_q_surf_part = dhdt_surf * q_surf_out
+          flux_q_atm_part = dhdt_surf * grid_tracers(:,:,num_levels,previous,nsphum)
+          if(id_flux_q_surf_part > 0) used = send_data(id_flux_q_surf_part, flux_q_surf_part, Time)  
+          if(id_flux_q_atm_part > 0) used = send_data(id_flux_q_atm_part, flux_q_atm_part, Time)  
+          flux_t_surf_part = dhdt_surf * t_surf
+          flux_t_atm_part = dhdt_surf * tg(:,:,num_levels,previous)
+          if(id_flux_t_surf_part > 0) used = send_data(id_flux_t_surf_part, flux_t_surf_part, Time)  
+          if(id_flux_t_atm_part > 0) used = send_data(id_flux_t_atm_part, flux_t_atm_part, Time)  
+          if(id_flux_u > 0) used = send_data(id_flux_u, flux_u, Time)
+          if(id_flux_v > 0) used = send_data(id_flux_v, flux_v, Time)  
+
+          call escomp ( t_surf, e_sat_out  )  ! saturation vapor pressure
+          if(id_e_sat > 0) used = send_data(id_e_sat, e_sat_out, Time)  
 
   if(id_flux_u > 0) used = send_data(id_flux_u, flux_u, Time)
   if(id_flux_v > 0) used = send_data(id_flux_v, flux_v, Time)
@@ -1176,6 +1262,13 @@ if(do_rrtm_radiation) then
                   !do_cloud_simple )
 endif
 #endif
+
+if (do_local_heating) then
+   call local_heating ( Time, is, js, rad_lon, rad_lat, &
+   p_half(:,:,num_levels+1,current), p_full(:,:,:,current), &
+   p_half(:,:,:,current), tdt_local_heating )
+   dt_tg = dt_tg + tdt_local_heating
+endif
 
 #ifdef SOC_NO_COMPILE
     if (do_socrates_radiation) then
@@ -1235,7 +1328,6 @@ if(do_damping) then
                              dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:),             &
                              z_pbl) ! have taken the names of arrays etc from vert_turb_driver below. Watch ntp from 2006 call to this routine?
 endif
-
 
 if(turb) then
 
@@ -1337,8 +1429,10 @@ if(turb) then
 endif ! if(turb) then
 
 ! Adding relative humidity calculation so as to allow comparison with Frierson's thesis.
-   call rh_calc (p_full(:,:,:,previous),tg_tmp,qg_tmp,RH)
-   if(id_rh >0) used = send_data(id_rh, RH*100., Time)
+   if (id_rh > 0) then
+       call rh_calc (p_full(:,:,:,previous),tg_tmp,qg_tmp,RH)
+       used = send_data(id_rh, RH*100., Time)
+   endif
 
 ! Add bucket
 ! Timestepping for bucket.
@@ -1358,6 +1452,9 @@ if(bucket) then
    ! bucket time tendency
    dt_bucket = depth_change_cond + depth_change_conv - depth_change_lh
    !change in bucket depth in one leapfrog timestep [m]
+
+   !diffuse_surf_water transforms dt_bucket to spherical, diffuses water, and transforms back
+   call diffuse_surf_water(dt_bucket,bucket_depth(:,:,previous),delta_t,damping_coeff_bucket,bucket_diffusion)
 
    ! use the raw filter in leapfrog time stepping
 
@@ -1380,14 +1477,17 @@ if(bucket) then
    where (bucket_depth <= 0.) bucket_depth = 0.
 
    ! truncate surface reservoir over land points
+   if (finite_bucket_depth_over_land) then
        where(land .and. (bucket_depth(:,:,future) > max_bucket_depth_land))
             bucket_depth(:,:,future) = max_bucket_depth_land
        end where
+   endif
 
    if(id_bucket_depth > 0) used = send_data(id_bucket_depth, bucket_depth(:,:,future), Time)
    if(id_bucket_depth_conv > 0) used = send_data(id_bucket_depth_conv, depth_change_conv(:,:), Time)
    if(id_bucket_depth_cond > 0) used = send_data(id_bucket_depth_cond, depth_change_cond(:,:), Time)
    if(id_bucket_depth_lh > 0) used = send_data(id_bucket_depth_lh, depth_change_lh(:,:), Time)
+   if(id_bucket_diffusion > 0) used = send_data(id_bucket_diffusion, bucket_diffusion(:,:)/delta_t, Time)
 
 endif
 ! end Add bucket section
@@ -1409,6 +1509,7 @@ call lscale_cond_end
 if(mixed_layer_bc)  call mixed_layer_end(t_surf, bucket_depth, bucket)
 if(do_damping) call damping_driver_end
 
+if(do_local_heating) call hs_forcing_end
 #ifdef SOC_NO_COMPILE
  !No need to end socrates
 #else

@@ -107,7 +107,7 @@ def create_time_arr(num_years,is_climatology,time_spacing):
     return time_arr,day_number,ntime,time_units,time_bounds
 
 
-def output_multiple_variables_to_file(data_dict,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,number_dict, time_bounds=None):
+def output_multiple_variables_to_file(data_dict,lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,number_dict, time_bounds=None, on_half_levels=False):
     """Default is to accept multiple data variables to put in the file.
     Input format in data_dict = {variable_name:variable_array}.
     Currently only accepts all 2D fields or all 3D fields. 
@@ -120,6 +120,11 @@ def output_multiple_variables_to_file(data_dict,lats,lons,latbs,lonbs,p_full,p_h
     else:
         is_thd=True
 
+    # if dims is not None and is_thd:
+    #     p_half_variable = 'phalf' in dims or 'p_half' in dims
+    # else:
+    #     p_half_variable=False
+        
     if time_arr is None:
         add_time = False
     else:
@@ -207,6 +212,22 @@ def output_multiple_variables_to_file(data_dict,lats,lons,latbs,lonbs,p_full,p_h
         time_bounds_file[:] = time_bounds
 
         times.bounds = 'time_bounds'
+
+
+    if is_thd:
+        if on_half_levels:
+            dims_list = ['time','phalf', 'lat','lon',]
+        else:
+            dims_list = ['time','pfull', 'lat','lon',]
+    else:
+        dims_list = ['time','lat','lon',]
+
+    if time_arr is None:
+        dims_list.remove('time')
+
+    # pdb.set_trace()
+    output_array_netcdf = output_file.createVariable(variable_name,'f4', tuple(dims_list))
+
 
     latitudes[:] = lats
     longitudes[:] = lons

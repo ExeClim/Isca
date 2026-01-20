@@ -160,11 +160,14 @@ integer :: second_ae = 0     ! second of specified autumnal equinox
 integer :: num_angles = 3600 ! number of intervals into which the year
                              ! is divided to compute orbital positions
 
+logical :: use_mean_anom_in_rrsun_calc = .TRUE. !It appears the standard astronomy module uses the mean anomaly for calculating the orbital distances on eccentric orbits, rather than the true anomaly. Keeping this behaviour default for legacy, but .FALSE. seems more correct.
+logical :: use_old_r_inv_squared
 
 namelist /astronomy_nml/ ecc, obliq, per, period, &
                          year_ae, month_ae,  day_ae,         &
                          hour_ae, minute_ae, second_ae, &
-                         num_angles
+                         num_angles, use_mean_anom_in_rrsun_calc, &
+                         use_old_r_inv_squared
 
 !--------------------------------------------------------------------
 !------   public data ----------
@@ -1122,7 +1125,7 @@ end subroutine get_ref_date_of_ae
 !
 subroutine diurnal_solar_2d (lat, lon, gmt, time_since_ae, cosz, &
                              fracday, rrsun, dt, allow_negative_cosz, &
-                             half_day_out)
+                             half_day_out, true_anom, dec_out, ang_out)
 
 !---------------------------------------------------------------------
 !    diurnal_solar_2d returns 2d fields of cosine of zenith angle,
@@ -1138,14 +1141,14 @@ real,                 intent(out)          :: rrsun
 real,                 intent(in), optional :: dt
 logical,              intent(in), optional :: allow_negative_cosz
 real, dimension(:,:), intent(out), optional :: half_day_out
-
+real,                 intent(out), optional :: true_anom, dec_out, ang_out
 
 !---------------------------------------------------------------------
 !   local variables
 
       real, dimension(size(lat,1),size(lat,2)) :: t, tt, h, aa, bb,  &
                                                   st, stt, sh
-      real                                     :: ang, dec
+      real :: dec, ang
       logical :: Lallow_negative
 
 !---------------------------------------------------------------------
@@ -1187,7 +1190,20 @@ real, dimension(:,:), intent(out), optional :: half_day_out
 !---------------------------------------------------------------------
       ang = angle(time_since_ae)
       dec = declination(ang)
-      rrsun  = r_inv_squared(ang)
+
+      if (present(ang_out)) ang_out = ang
+      if (present(dec_out)) dec_out = dec      
+
+      if (use_old_r_inv_squared) then
+          rrsun = r_inv_squared(ang)
+      else
+          if (present(true_anom)) then
+              call r_inv_squared_alt(ang,rrsun, true_anom)
+          else
+              call r_inv_squared_alt(ang,rrsun)
+          endif
+          
+      endif
 
 !---------------------------------------------------------------------
 !    define terms needed in the cosine zenith angle equation.
@@ -2080,7 +2096,7 @@ real,                 intent(out)  :: rr_out
 !   local variables
 
       real, dimension(size(lat,1),size(lat,2)) :: h
-      real :: ang, dec, rr
+      real :: ang, dec, rr, ta
 
 !--------------------------------------------------------------------
 !    be sure the time in the annual cycle is legitimate.
@@ -2097,7 +2113,11 @@ real,                 intent(out)  :: rr_out
       ang = angle (time_since_ae)
       dec = declination(ang)
       h   = half_day    (lat, dec)
-      rr  = r_inv_squared (ang)
+      if (use_old_r_inv_squared) then
+          rr = r_inv_squared(ang)
+      else      
+          call r_inv_squared_alt(ang,rr, ta)
+      endif
 
 !---------------------------------------------------------------------
 !    where the entire day is dark, define cosz to be zero. otherwise
@@ -3250,13 +3270,127 @@ real, intent(in) :: ang
 !    its square (r_inv_squared) to the calling routine.
 !--------------------------------------------------------------------
       rad_per       = per*deg_to_rad
-      r             = (1. - ecc**2)/(1. + ecc*cos(ang - rad_per))
-      r_inv_squared = r**(-2)
+      
+      if (ecc.eq.0.) then
+          r = 1.      
+          r_inv_squared = 1.
+      else
+          r             = (1. - ecc**2)/(1. + ecc*cos(ang - rad_per))          
+          r_inv_squared = r**(-2)
+      endif 
+      
 
 
 end function r_inv_squared
 
+subroutine r_inv_squared_alt (ang, r_inv_squared_out, true_anomaly_out)
 
+!--------------------------------------------------------------------
+!    r_inv_squared returns the inverse of the square of the earth-sun
+!    distance relative to the mean distance at angle ang in the earth's
+!    orbit.
+!--------------------------------------------------------------------
+
+!--------------------------------------------------------------------
+real, intent(in) :: ang
+real, intent(out) :: r_inv_squared_out
+real, intent(out), optional:: true_anomaly_out
+!--------------------------------------------------------------------
+
+!---------------------------------------------------------------------
+!
+!  intent(in) variables:
+!
+!      ang   angular position of earth in its orbit, relative to a
+!            value of 0.0 at the NH autumnal equinox, value between
+!            0.0 and 2 * pi
+!            [ radians ]
+!
+!---------------------------------------------------------------------
+
+!---------------------------------------------------------------------
+!  local variables
+
+      real :: r, rad_per, mean_anomaly, ecc_anomaly, true_anomaly
+
+!---------------------------------------------------------------------
+!  local variables:
+!
+!      r_inv_squared    the inverse of the square of the earth-sun
+!                       distance relative to the mean distance
+!                       [ dimensionless ]
+!      r                earth-sun distance relative to mean distance
+!                       [ dimensionless ]
+!      rad_per          angular position of perihelion
+!                       [ radians ]
+!
+!--------------------------------------------------------------------
+
+!--------------------------------------------------------------------
+!    define the earth-sun distance (r) and then return the inverse of
+!    its square (r_inv_squared) to the calling routine.
+!--------------------------------------------------------------------
+      rad_per       = per*deg_to_rad
+      
+      if (ecc.eq.0.) then
+          r = 1.      
+          r_inv_squared_out = 1.
+      else
+          
+          if (use_mean_anom_in_rrsun_calc) then
+              r             = (1. - ecc**2)/(1. + ecc*cos(ang - rad_per))
+              true_anomaly = ang-rad_per !This obviously isn't true, but is the approximation made by the old astronomy code.
+          else
+              mean_anomaly = ang - rad_per
+              call calc_ecc_anomaly(mean_anomaly, ecc, ecc_anomaly)
+              true_anomaly = 2*atan(((1 + ecc)/(1 - ecc))**0.5 * tan(ecc_anomaly/2))          
+              r             = (1. - ecc**2)/(1. + ecc*cos(true_anomaly))          
+          endif
+          
+          r_inv_squared_out = r**(-2)
+          
+      endif 
+      
+      if (present(true_anomaly_out)) then
+        true_anomaly_out = modulo(true_anomaly, twopi)
+        
+      endif
+
+end subroutine
+
+
+!#######################################################################
+!Written by Alex Paterson in hs_forcing.f90 and copied to astronomy by SIT 11th May '18
+
+ subroutine calc_ecc_anomaly( mean_anomaly, ecc, ecc_anomaly)
+
+ real, intent(in) :: mean_anomaly, ecc
+ real, intent(out) :: ecc_anomaly
+ real :: dE, d
+ integer, parameter :: maxiter = 30
+ real, parameter :: tol = 1.d-10
+ integer :: k
+
+ ecc_anomaly = mean_anomaly
+ d = ecc_anomaly - ecc*sin(ecc_anomaly) - mean_anomaly
+ do k=1,maxiter
+        dE = d/(1 - ecc*cos(ecc_anomaly))
+        ecc_anomaly = ecc_anomaly - dE
+        d = ecc_anomaly - ecc*sin(ecc_anomaly) - mean_anomaly
+        if (abs(d) < tol) then
+                exit
+        endif
+ enddo
+
+ if (k > maxiter) then
+        if (abs(d) > tol) then
+                print *, '*** Warning: eccentric anomaly has not converged'
+        endif
+ endif
+
+ end subroutine calc_ecc_anomaly
+
+!###################################################################
 
 
 !####################################################################
