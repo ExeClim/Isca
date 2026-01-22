@@ -1,0 +1,7 @@
+echo Loading basic gfortran environment
+module load  anaconda3/5.3.0  gcc/9.2.0   openmpi/3.1.5   netcdf-c/4.7.3   netcdf-fortran/4.5.2   git/2.25.0   hdf5/1.10.6
+# this defaults to ia64, but we will use gfortran, not ifort
+export GFDL_MKMF_TEMPLATE=gfort
+
+export F90=mpifort
+export CC=mpicc
