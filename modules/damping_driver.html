@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Damping Driver &mdash; isca dev documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
-      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
 
   
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
@@ -118,8 +118,8 @@
 <p>The <code class="docutils literal notranslate"><span class="pre">damping_driver</span></code> module is called by the <code class="docutils literal notranslate"><span class="pre">idealized_moist_phys</span></code> module by setting <code class="docutils literal notranslate"><span class="pre">do_damping</span></code> to true. It controls the upper level momentum damping in Isca. It controls 4 optional functions:</p>
 <ol class="arabic simple">
 <li><p><strong>Rayleigh friction</strong> which acts on levels <code class="docutils literal notranslate"><span class="pre">1</span></code> to <code class="docutils literal notranslate"><span class="pre">kbot</span></code>. This function is located in <code class="docutils literal notranslate"><span class="pre">damping_driver</span></code> itself.</p></li>
-<li><p>A (orographic) <strong>mountain gravity wave drag</strong> module (<code class="docutils literal notranslate"><span class="pre">cg_drag</span></code>) may be called.</p></li>
-<li><p>A (non orographic) <strong>convective gravity wave drag</strong> module (<code class="docutils literal notranslate"><span class="pre">mg_drag</span></code>) may be called.</p></li>
+<li><p>A (orographic) <strong>mountain gravity wave drag</strong> module (<code class="docutils literal notranslate"><span class="pre">mg_drag</span></code>) may be called.</p></li>
+<li><p>A (non orographic) <strong>convective gravity wave drag</strong> module (<code class="docutils literal notranslate"><span class="pre">cg_drag</span></code>) may be called.</p></li>
 <li><p>A <strong>time independent drag</strong> may be called. This function is located in <code class="docutils literal notranslate"><span class="pre">damping_driver</span></code> itself.</p></li>
 </ol>
 <p>Another module (<code class="docutils literal notranslate"><span class="pre">topo_drag</span></code>) is referenced in the code, but is not available in Isca at present.</p>
@@ -130,9 +130,9 @@
 <p><code class="docutils literal notranslate"><span class="pre">trayfric</span></code> - (for Rayleigh friction) damping time in seconds for Rayleigh damping momentum in the top model layers, the number of which is specified by <code class="docutils literal notranslate"><span class="pre">nlev_rayfric</span></code> (non namelist parameter, automatically determined in code). If <code class="docutils literal notranslate"><span class="pre">trayfric</span></code> &lt; 0 then time in days. Default 0.</p>
 <p><code class="docutils literal notranslate"><span class="pre">do_rayleigh</span></code> - On/Off switch for doing Rayleigh friction. Default False</p>
 <p><code class="docutils literal notranslate"><span class="pre">sponge_pbottom</span></code> - (for Rayleigh friction) used to calculate <code class="docutils literal notranslate"><span class="pre">nlev_rayfric</span></code>, it specifies the bottom level where the Rayleigh friction starts. Default 50Pa.</p>
-<p><code class="docutils literal notranslate"><span class="pre">do_cg_drag</span></code> - On/Off switch for doing mountain gravity wave drag. Default False.</p>
+<p><code class="docutils literal notranslate"><span class="pre">do_mg_drag</span></code> - On/Off switch for doing mountain gravity wave drag. Default False.</p>
 <p><code class="docutils literal notranslate"><span class="pre">do_topo_drag</span></code> - On/Off switch for doing the topo_drag module which is currently unavailable. Default False.</p>
-<p><code class="docutils literal notranslate"><span class="pre">do_mg_drag</span></code> - On/Off switch for doing convective gravity wave drag. Default False.</p>
+<p><code class="docutils literal notranslate"><span class="pre">do_cg_drag</span></code> - On/Off switch for doing convective gravity wave drag. Default False.</p>
 <p><code class="docutils literal notranslate"><span class="pre">do_conserve_energy</span></code> - (for Rayleigh friction) On/Off switch for also calculating the temperature tendency (if True). Default False.</p>
 <p><code class="docutils literal notranslate"><span class="pre">do_const_drag</span></code> - On/Off switch for doing the constant drag. Default False.</p>
 <p><code class="docutils literal notranslate"><span class="pre">const_drag_amp</span></code> - (for constant drag) Parameter for adjusting drag. Default 3.e-04.</p>
