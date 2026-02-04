@@ -85,7 +85,7 @@ namelist/atmosphere_nml/ idealized_moist_model
 !=================================================================================================================================
 
 integer, parameter :: num_time_levels = 2
-integer :: is, ie, js, je, num_levels, num_tracers, nhum
+integer :: is, ie, js, je, num_levels, num_tracers, nhum,n_age
 logical :: dry_model, column_model
 
 real, allocatable, dimension(:,:,:,:) :: p_half, p_full
@@ -157,6 +157,9 @@ allocate (tracer_attributes(num_tracers))
   call spectral_dynamics_init(Time, Time_step, tracer_attributes, dry_model, nhum)
   column_model = .false.
 #endif 
+
+n_age = num_tracers - nhum + 1
+
 call get_grid_domain(is, ie, js, je)
 call get_num_levels(num_levels)
 
@@ -218,8 +221,8 @@ if(file_exist(trim(file))) then
     do ntr = 1,num_tracers
       tr_name = trim(tracer_attributes(ntr)%name)
       call read_data(trim(file), trim(tr_name), grid_tracers(:,:,:,nt,ntr), grid_domain, timelevel=nt)
-    enddo ! end loop over tracers
-  enddo ! end loop over time levels
+    enddo 
+  enddo 
   call read_data(trim(file), 'wg_full', wg_full, grid_domain)
 else
   previous = 1; current = 1
@@ -261,14 +264,14 @@ do j = js,je+1
 enddo
 
 if(idealized_moist_model) then
-   call idealized_moist_phys_init(Time, Time_step, nhum, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, tg(:,:,num_levels,current))
+   call idealized_moist_phys_init(Time, Time_step, nhum,n_age, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, tg(:,:,num_levels,current))
 else
    call hs_forcing_init(get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, rad_lat_2d)
 endif
-
 module_is_initialized = .true.
 
 return
+
 end subroutine atmosphere_init
 
 !=================================================================================================================================
@@ -282,7 +285,6 @@ type(time_type) :: Time_next
 if(.not.module_is_initialized) then
   call error_mesg('atmosphere','atmosphere module is not initialized',FATAL)
 endif
-
 dt_ug  = 0.0
 dt_vg  = 0.0
 dt_tg  = 0.0
@@ -300,6 +302,7 @@ Time_next = Time + Time_step
 if(idealized_moist_model) then
    call idealized_moist_phys(Time, p_half, p_full, z_half, z_full, ug, vg, psg, wg_full, tg, grid_tracers, &
                              previous, current, dt_ug, dt_vg, dt_tg, dt_tracers)
+
 else
    call hs_forcing(1, ie-is+1, 1, je-js+1, delta_t, Time_next, rad_lon_2d, rad_lat_2d, &
                 p_half(:,:,:,current ),       p_full(:,:,:,current   ), &
@@ -327,6 +330,7 @@ call column(Time, psg(:,:,future), ug(:,:,:,future), vg(:,:,:,future), &
                        dt_psg, dt_ug, dt_vg, dt_tg, dt_tracers, wg_full, &
                        p_full(:,:,:,current), p_half(:,:,:,current), z_full(:,:,:,current))
 #endif
+
 
 if(dry_model) then
   call compute_pressures_and_heights(tg(:,:,:,future), psg(:,:,future), surf_geopotential, &

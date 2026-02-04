@@ -115,15 +115,11 @@ character(len=128), parameter :: tag = &
  call constants_init
  call fms_init ( )
  call atmos_model_init
-
 !   ------ atmosphere integration loop -------
 
     call mpp_clock_begin (id_loop)
-
     do na = 1, num_atmos_calls
-
        call atmosphere (Time)
-
        Time = Time + Time_step_atmos
 
        if(modulo(na,memuse_interval) == 0 .and. print_memuse) then
@@ -132,7 +128,6 @@ character(len=128), parameter :: tag = &
        endif
 
     enddo
-
     call mpp_clock_end (id_loop)
 
 !   ------ end of atmospheric time step loop -----

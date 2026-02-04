@@ -20,6 +20,7 @@ atmos_shared/vert_advection/vert_advection.F90
 atmos_solo/atmos_model.F90
 atmos_spectral/driver/solo/atmosphere.F90
 atmos_spectral/driver/solo/idealized_moist_phys.F90
+atmos_spectral/driver/solo/age_moments.F90
 atmos_spectral/driver/solo/mixed_layer.F90
 atmos_spectral/init/ic_from_external_file.F90
 atmos_spectral/init/jablonowski_2006.F90

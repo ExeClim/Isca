@@ -161,7 +161,7 @@ exp.namelist = namelist = Namelist({
         'evaporation':True,  
         'depth': 10.0,                          #Depth of mixed layer used
         'albedo_value': 0.38,                   #Albedo value used      
-        'do_ape_sst': True,
+        'do_ape_sst' : True,
     },
 
     'qe_moist_convection_nml': {

@@ -137,7 +137,7 @@ real, allocatable, dimension(:,:,:    ) :: vorg, divg        ! no time levels ne
 integer, allocatable, dimension(:) :: tracer_vert_advect_scheme
 
 real    :: virtual_factor, dt_real
-integer :: pe, npes, num_tracers, nhum, t_vert_advect_scheme, uv_vert_advect_scheme, step_number
+integer :: pe, npes, num_tracers, nhum,nhum_age, t_vert_advect_scheme, uv_vert_advect_scheme, step_number
 real    :: mean_energy_previous, mean_water_previous, mean_surf_press_previous
 integer :: ms, me, ns, ne, is, ie, js, je
 integer :: previous, current, future
@@ -233,9 +233,10 @@ type(time_type), intent(in) :: Time, Time_step_in
 type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
 logical, intent(out) :: dry_model_out
 integer, intent(out) :: nhum_out
+
 logical, optional, intent(in), dimension(:,:) :: ocean_mask
 
-integer :: num_total_wavenumbers, unit, k, seconds, days, ierr, io, ntr, nsphum, nmix_rat
+integer :: num_total_wavenumbers, unit, k, seconds, days, ierr, io, ntr, nsphum,nsphum_age, nmix_rat
 logical :: south_to_north = .true.
 real    :: ref_surf_p_implicit, robert_coeff_tracers
 
@@ -315,7 +316,6 @@ call get_number_tracers(MODEL_ATMOS, num_prog=num_tracers)
 call allocate_fields
 
 do ntr=1,num_tracers
-
   call get_tracer_names(MODEL_ATMOS, ntr, tname, longname, units)
   tracer_attributes(ntr)%name = lowercase(tname)
 
@@ -369,7 +369,9 @@ do ntr=1,num_tracers
 
 enddo
 
+
 nsphum   = get_tracer_index(MODEL_ATMOS, 'sphum')
+
 nmix_rat = get_tracer_index(MODEL_ATMOS, 'mix_rat')
 
 if(nsphum == NO_TRACER) then
@@ -409,11 +411,8 @@ do ntr=1,num_tracers
 enddo
 
 call read_restart_or_do_coldstart(tracer_attributes, ocean_mask)
-
 call press_and_geopot_init(pk, bk, use_virtual_temperature, vert_difference_option)
-
 call spectral_diagnostics_init(Time)
-
 call every_step_diagnostics_init(Time, lon_max, lat_max, num_levels, reference_sea_level_press)
 
 if(do_water_correction .and. .not.do_mass_correction) then
@@ -560,6 +559,7 @@ if(file_exist(trim(file))) then
     call read_data(trim(file), 'psg', psg(:,:,  nt), grid_domain, timelevel=nt)
     do ntr = 1,num_tracers
       tr_name = trim(tracer_attributes(ntr)%name)
+
       call read_data(trim(file), trim(tr_name), grid_tracers(:,:,:,nt,ntr), grid_domain, timelevel=nt)
       if(uppercase(trim(tracer_attributes(ntr)%numerical_representation)) == 'SPECTRAL') then
         call read_data(trim(file), trim(tr_name)//'_real', real_part, spectral_domain, timelevel=nt)
@@ -568,8 +568,9 @@ if(file_exist(trim(file))) then
           spec_tracers(m,n,k,nt,ntr) = cmplx(real_part(m,n,k),imag_part(m,n,k))
         enddo; enddo; enddo
       endif
-    enddo ! loop over tracers
-  enddo ! loop over time levels
+    enddo 
+  enddo 
+
   call read_data(trim(file), 'vorg', vorg, grid_domain)
   call read_data(trim(file), 'divg', divg, grid_domain)
   call read_data(trim(file), 'surf_geopotential', surf_geopotential, grid_domain)
@@ -1697,7 +1698,7 @@ do ntr=1,num_tracers
   id_tr(ntr) = register_diag_field(mod_name, tname, axes_3d_full, Time, longname, units)
   id_utr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_u'), axes_3d_full, Time, trim(longname)//trim(' x u'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
   id_vtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_v'), axes_3d_full, Time, trim(longname)//trim(' x v'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
-  id_wtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('_w'), axes_3d_full, Time, trim(longname)//trim(' x w'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
+  id_wtr(ntr) = register_diag_field(mod_name, trim(tname)//trim('P'), axes_3d_full, Time, trim(longname)//trim(' x w'), trim(units)//trim(' m/s')) !Add additional diagnostics RG
 enddo
 
 id_vort_norm = register_diag_field(mod_name, 'vort_norm', Time, 'vorticity norm', '1/(m*sec)')

@@ -250,7 +250,7 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
         exp_name = test_case_name+'_trip_test_21_'+s
         cb = codebase_obj(repo=repo_to_use, commit=s)
         try:
-            cb.compile()
+            cb.compile(debug = False)
             exp = Experiment(exp_name, codebase=cb)
             exp.namelist = nml_use.copy()
             exp.diag_table = diag_use

@@ -100,11 +100,15 @@ real    :: depth           = 40.0,         & !s 2013 implementation
            np_cap_factor   =  1.,          & !mj
            albedo_exp      = 2.,           & !mj
            albedo_cntr     = 45.,          & !mj
+           albedo_cntr_lon     = 45.,          & !mj
+           albedo_cntr_lat     = 45.,          & !mj
            albedo_wdth     = 10.,          & !mj
+           albedo_wdth_lat     = 10.,          & !mj
+           albedo_wdth_lon     = 10.,          & !mj
            higher_albedo   = 0.10,         & !mj
            lat_glacier     = 60.,          & !mj
            land_h_capacity_prefactor = 1.0 !s where(land) heat_capcity = land_h_capacity_prefactor * depth * rho_cp
-
+integer :: nshift
 !s Surface albedo options
 real    :: land_albedo_prefactor = 1.0 !s where(land) albedo = land_albedo_prefactor * albedo_value
 
@@ -142,7 +146,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               trop_cap_limit, heat_cap_limit, np_cap_factor, &  !mj
                               do_qflux,do_warmpool,                          &  !mj
                               albedo_choice,higher_albedo,albedo_exp,        &  !mj
-                              albedo_cntr,albedo_wdth,lat_glacier,           &  !mj
+                              albedo_cntr,albedo_cntr_lat,albedo_cntr_lon,albedo_wdth,albedo_wdth_lat,albedo_wdth_lon,lat_glacier,           &  !mj
                               do_read_sst,do_sc_sst,sst_file,                &  !mj
                               land_option,slandlon,slandlat,                 &  !mj
                               elandlon,elandlat,                             &  !mj
@@ -161,12 +165,13 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
 logical :: module_is_initialized =.false.
 logical :: used
 
-integer :: iter, nhum
+integer :: iter, nhum, surface_p_level
 integer, dimension(4) :: axes
 integer ::                                                                    &
      id_t_surf,            &   ! surface temperature
      id_flux_lhe,          &   ! latent heat flux at surface
      id_flux_oceanq,       &   ! oceanic Q flux
+     id_corrected_flux,     &   ! Corrected flux at surface (avg to 0)
      id_flux_t,            &   ! sensible heat flux at surface
      id_heat_cap,          &   ! heat capacity
      id_albedo,            &   ! mj albedo
@@ -179,13 +184,14 @@ real, allocatable, dimension(:,:)   ::                                        &
      rad_lat_2d,            &   ! latitude in radians
      flux_lhe_anom, flux_q_total
 
-real, allocatable, dimension(:)   :: deg_lat, deg_lon
+real, allocatable, dimension(:)   :: deg_lat, deg_lon, deg_lon_shift
 
 real, allocatable, dimension(:,:)   ::                                        &
      gamma_t,               &   ! Used to calculate the implicit
      gamma_q,               &   ! correction to the diffusion in
      fn_t,                  &   ! the lowest layer
      fn_q,                  &   !
+     evap_inc,                  &   !
      en_t,                  &   !
      en_q,                  &   !
      alpha_t,               &   !
@@ -269,12 +275,14 @@ allocate(flux_lhe_anom           (is:ie, js:je))
 allocate(flux_q_total            (is:ie, js:je))
 allocate(deg_lat                 (js:je))
 allocate(deg_lon                 (is:ie))
+allocate(deg_lon_shift                 (is:ie))
 allocate(gamma_t                 (is:ie, js:je))
 allocate(gamma_q                 (is:ie, js:je))
 allocate(en_t                    (is:ie, js:je))
 allocate(en_q                    (is:ie, js:je))
 allocate(fn_t                    (is:ie, js:je))
 allocate(fn_q                    (is:ie, js:je))
+allocate(evap_inc                (is:ie, js:je))
 allocate(alpha_t                 (is:ie, js:je))
 allocate(alpha_q                 (is:ie, js:je))
 allocate(alpha_lw                (is:ie, js:je))
@@ -364,10 +372,13 @@ id_flux_lhe = register_diag_field(mod_name, 'flux_lhe',        &
                                  axes(1:2), Time, 'latent heat flux up at surface','watts/m2')
 id_flux_oceanq = register_diag_field(mod_name, 'flux_oceanq',        &
                                  axes(1:2), Time, 'oceanic Q-flux','watts/m2')
+id_corrected_flux          = register_diag_field(mod_name, 'corr_flux',        &
+                                 axes(1:2), Time, 'corrected flix at surface','watts/m2')
 id_heat_cap = register_static_field(mod_name, 'ml_heat_cap',        &
                                  axes(1:2), 'mixed layer heat capacity','joules/m^2/deg C')
 id_delta_t_surf = register_diag_field(mod_name, 'delta_t_surf',        &
                                  axes(1:2), Time, 'change in sst','K')
+
 if (update_albedo_from_ice) then
     id_albedo = register_diag_field(mod_name, 'albedo',    &
                                  axes(1:2), Time, 'surface albedo', 'none')
@@ -478,6 +489,23 @@ select case (albedo_choice)
        albedo(:,j) = albedo_value + (higher_albedo-albedo_value)*&
              0.5*(1+tanh((lat-albedo_cntr)/albedo_wdth))
      enddo
+
+   case (6) ! higher_albedo within the lat and lon limits
+    nshift = size(t_surf,1)/2
+    deg_lon_shift = cshift(deg_lon, nshift) - 180.0
+    do j = 1, size(t_surf,2)
+      do i = 1, size(t_surf,1)
+         lat = deg_lat(js+j-1)
+         lon = deg_lon_shift(is+i-1)
+         if (lat > albedo_cntr_lat - albedo_wdth_lat .and. lat < albedo_cntr_lat + albedo_wdth_lat) then
+            if (lon > albedo_cntr_lon - albedo_wdth_lon .and. lon < albedo_cntr_lon + albedo_wdth_lon) then
+               if (land(i,j)) then
+                  albedo(i,j) = higher_albedo
+               endif
+            endif
+         endif
+      enddo 
+   enddo
 end select
 
 albedo_initial=albedo
@@ -743,8 +771,10 @@ endif !s end of if(do_sc_sst).
 ! Finally calculate the increments for the lowest atmospheric layer
 !
 Tri_surf%delta_t = fn_t + en_t * delta_t_surf
-if (evaporation) Tri_surf%delta_tr(:,:,nhum) = fn_q + en_q * delta_t_surf
-
+if (evaporation) then
+   evap_inc = fn_q + en_q * delta_t_surf
+   Tri_surf%delta_tr(:,:,nhum) = evap_inc
+endif
 !
 ! Note:
 ! When using an implicit step there is not a clearly defined flux for a given timestep
@@ -753,6 +783,7 @@ if(id_t_surf > 0) used = send_data(id_t_surf, t_surf, Time_next)
 if(id_flux_t > 0) used = send_data(id_flux_t, flux_t, Time_next)
 if(id_flux_lhe > 0) used = send_data(id_flux_lhe, HLV * flux_q_total, Time_next)
 if(id_flux_oceanq > 0)   used = send_data(id_flux_oceanq, ocean_qflux, Time_next)
+if(id_corrected_flux > 0)   used = send_data(id_corrected_flux, corrected_flux, Time_next)
 
 if(id_delta_t_surf > 0)   used = send_data(id_delta_t_surf, delta_t_surf, Time_next)
 
