@@ -1,0 +1,52 @@
+#!/bin/bash
+
+#SBATCH --job-name=isca
+#SBATCH --output=%x-%j.out
+#SBATCH --error=%x-%j.err
+
+#SBATCH --ntasks=32
+#SBATCH --ntasks-per-node=1
+#SBATCH --qos=orli
+#SBATCH --exclude cn10
+##SBATCH --mem=
+
+##SBATCH --mail-type=
+##SBATCH --mail-user=
+
+WORKDIR=$PWD
+INFILE=$1
+
+OUTFILE=$2
+
+cd $WORKDIR
+echo $WORKDIR
+echo $INFILE
+
+# the Isca source code
+export GFDL_BASE=$HOME/work/Isca-New
+# # "environment" configuration for bc4
+export GFDL_ENV=gfortran
+# # temporary working directory used in running the model
+export GFDL_WORK=$HOME/work/ISCA-OpenU/scratch/Isca_work
+# # directory for storing model output
+export GFDL_DATA=$HOME/work/ISCA-OpenU/scratch/Isca_data
+# #
+export GFDL_SOC=""
+#
+export GFDL_NCORES=${SLURM_NTASKS}
+
+module load gcc/9.2.0 python/3.7.6 anaconda3/5.3.0 gcc/9.2.0   openmpi/3.1.5   netcdf-c/4.7.3   netcdf-fortran/4.5.2   git/2.25.0   hdf5/1.10.6
+source activate isca
+
+python $INFILE
+
+export EXP_NAME=mima_test_git
+
+cp $GFDL_DATA/$EXP_NAME/run0001/atmos_monthly.nc atmos_tmp.nc
+
+#rm -rf $HOME/work/ISCA-OpenU/scratch/Isca_data/$EXP_NAME/run0001/
+
+
+#python $HOME/work/ISCA-OpenU/Isca-master/openu-scripts/nc_test.py -i atmos_tmp.nc -o $OUTFILE
+
+

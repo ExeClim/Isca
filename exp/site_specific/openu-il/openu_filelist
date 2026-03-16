@@ -1,0 +1,9 @@
+# files shloud be place according to this list
+# 
+#	modified:   exp/test_cases/MiMA/MiMA_test_case.py
+#	modified:   src/extra/env/gfortran
+#	modified:   src/extra/python/isca/codebase.py
+#	modified:   src/extra/python/isca/templates/compile.sh
+#	modified:   src/extra/python/isca/templates/mkmf.template.gfort
+#	modified:   src/extra/python/isca/templates/run.sh
+#	exp/test_cases/MiMA/submit_file
