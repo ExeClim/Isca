@@ -34,11 +34,11 @@ Navigate to the following Isca directory:
 
 `$GFDL_BASE/src/atmos_param/socrates/src`
 
-make a folder called `trunk` and then put the contents of your downloaded Socrates code into the `trunk` folder.
+make a folder called `1703` and then put the contents of your downloaded Socrates code into the `1703` folder.
 
 You should then have the following directory structure:
 
-`$GFDL_BASE/src/atmos_param/socrates/src/trunk/src/radiance_core/`
+`$GFDL_BASE/src/atmos_param/socrates/src/1703/src/radiance_core/`
 
 ### 3. Edit the number of angles in the phase function
 
@@ -46,7 +46,7 @@ From this point, the Isca test case for Socrates should run without issue. Howev
 
 Open the file
 
-`$GFDL_BASE/src/atmos_param/socrates/src/trunk/src/modules_core/dimensions_spec_ucf.F90`
+`$GFDL_BASE/src/atmos_param/socrates/src/1703/src/modules_core/dimensions_spec_ucf.F90`
 
 and make the following changes:
 
@@ -75,17 +75,17 @@ and run the test-case `socrates_aquaplanet.py`. This will compile and run Isca w
 * Isca is set up to pass socrates a certain number of vertical profiles for each time the Socrates is called. This number is set as `chunk_size` in the `socrates_rad_nml`. A value of 16 was found to be optimal on large linux-server-type machines in Exeter, but it is worth playing with this number to find the optimal number on your machine.
 
 * Socrates reads external input files that tell it the number of spectral bands to use, with one file setting the short-wave options, and another file setting the long-wave options. Some spectral files have lots of bands, which will make the model run slowly. The default files used in the Met Office's Unified Model-GA7, and also in Isca, can be found here:
-	* `$GFDL_BASE/src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7` for the long-wave
-	* `$GFDL_BASE/src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7` for the short-wave
+	* `$GFDL_BASE/src/atmos_param/socrates/src/1703/data/spectra/ga7/sp_lw_ga7` for the long-wave
+	* `$GFDL_BASE/src/atmos_param/socrates/src/1703/data/spectra/ga7/sp_sw_ga7` for the short-wave
 * Other options are available within this folder, and a useful set of other spectral files are provided via this [webpage](https://simplex.giss.nasa.gov/gcm/ROCKE-3D/).
 
 ### 6. If you find Socrates doesn't compile
 
-* Isca's Python front-end uses a static list of file names to be compiled for the Socrates version of Isca. This list of files is here: `$GFDL_BASE/src/extra/model/socrates/path_names`. This list was compiled from a version of Socrates that we first used with Isca, which is close to v17.
+* Isca's Python front-end uses a static list of file names to be compiled for the Socrates version of Isca. This list of files is here: `$GFDL_BASE/src/extra/model/socrates/socrates_version_paths/SOCRATES_VERSION_NAME`, where `SOCRATES_VERSION_NAME` is replaced by whichever version of Socrates you're using. The original list is in file `1703`, which was compiled from a version of Socrates that we first used with Isca, which is close to version 17.03.
 
-* When you download the Socrates code, please download the latest version, as this will include the latest updates etc. By doing this, however, you might find that the compilation of Isca fails because of files that are in `path_names` but no longer exist within Socrates, or new files that have been added to Socrates that are not in the `path_names` file, but are required.
+* When you download the Socrates code, please download the latest version, as this will include the latest updates etc. By doing this, however, you might find that the compilation of Isca fails. To attempt to fix this, you can set `socrates_version=SOCRATES_VERSION_NAME` in your first call to `SocratesCodeBase`. This will then look for a file `$GFDL_BASE/src/extra/model/socrates/socrates_version_paths/SOCRATES_VERSION_NAME` containing the list of path names for your version. If the version you have chosen does not have such a file, then you'll have to create one.
 
-* In the future, we will look to generate `path_names` dynamically. However, in the meantime, please begin by updating your `path_names` file to include **every** fortran file in the directory `src/radiance_core/` directory of Socrates. All the files in this folder are likely to be essential for compiling the version of Socrates you are using.
+* In the future, we will look to generate path names for each socrates version dynamically. However, in the meantime, please begin by updating your `SOCRATES_VERSION_NAME` file to include **every** fortran file in the directory `src/radiance_core/` directory of Socrates. All the files in this folder are likely to be essential for compiling the version of Socrates you are using.
 
 * You may also find errors of the type `multiple definition of MAIN`. This happens because various pieces of code within Socrates are designed to be run offline, meaning they have MAIN sections. These MAIN sections cause conflicts with Isca's MAIN section, and so the relevant Socrates files cannot be part of Isca's compiled version. To get around this error, remove from `path_names` any Socrates files that cause this error (i.e. remove the relevant files from `path_names` that start with `atmos_param/socrates/src` not Isca's MAIN program, which is `atmos_solo/atmos_model.F90`).
 

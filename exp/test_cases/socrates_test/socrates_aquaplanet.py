@@ -9,7 +9,7 @@ NCORES = 16
 base_dir = os.path.dirname(os.path.realpath(__file__))
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
-cb = SocratesCodeBase.from_directory(GFDL_BASE)
+cb = SocratesCodeBase.from_directory(GFDL_BASE, socrates_version='1703')
 
 # or it can point to a specific git repo and commit id.
 # This method should ensure future, independent, reproducibility of results.
@@ -81,8 +81,8 @@ exp.namelist = namelist = Namelist({
     },
     'socrates_rad_nml': {
         'stellar_constant':1370.,
-        'lw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7'),
-        'sw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7'),
+        'lw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/1703/data/spectra/ga7/sp_lw_ga7'),
+        'sw_spectral_filename':os.path.join(GFDL_BASE,'src/atmos_param/socrates/src/1703/data/spectra/ga7/sp_sw_ga7'),
         'do_read_ozone': True,
         'ozone_file_name':'ozone_1990',
         'ozone_field_name':'ozone_1990',
@@ -199,6 +199,6 @@ if __name__=="__main__":
         #This will be the name of the folder that the data will appear in.
 
         exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=False)
-        
+        overwrite=False
         for i in range(2,121):
             exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
