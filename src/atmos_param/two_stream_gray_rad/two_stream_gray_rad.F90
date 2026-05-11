@@ -75,6 +75,7 @@ real    :: del_sw          = 0.0
 real    :: ir_tau_eq       = 6.0
 real    :: ir_tau_pole     = 1.5
 real    :: atm_abs         = 0.0
+real    :: cloud_albedo    = 0.0
 real    :: odp = 1.0  ! odp = optical depth parameter. Used to simulate GHG concentration, taken from Tapio FMS, added by Nathanael Wong
 real    :: sw_diff         = 0.0
 real    :: linear_tau      = 0.1
@@ -146,18 +147,17 @@ character(len=256)                  :: co2_variable_name='co2'       !  file nam
 
 logical :: do_toa_albedo = .false.
 
-namelist/two_stream_gray_rad_nml/ solar_constant, del_sol, &
-           ir_tau_eq, ir_tau_pole, odp, atm_abs, sw_diff, &
-           linear_tau, del_sw, wv_exponent, &
+namelist /two_stream_gray_rad_nml/ solar_constant, del_sol, &
+           ir_tau_eq, ir_tau_pole, odp, atm_abs, cloud_albedo, &
+           sw_diff, linear_tau, del_sw, wv_exponent, &
            solar_exponent, do_seasonal, &
            ir_tau_co2_win, ir_tau_wv_win1, ir_tau_wv_win2, &
            ir_tau_co2, ir_tau_wv1, ir_tau_wv2, &
-		   window, carbon_conc, rad_scheme, &
+           window, carbon_conc, rad_scheme, &
            do_read_co2, co2_file, co2_variable_name, solday, equinox_day, bog_a, bog_b, bog_mu, &
-           use_time_average_coszen, dt_rad_avg,&
-           diabatic_acce, & !Schneider Liu values 
-           do_toa_albedo, do_tl, do_closein, R_stellar, d_stellar, do_normal_integration_method 
-
+           use_time_average_coszen, dt_rad_avg, &
+           diabatic_acce, &
+           do_toa_albedo, do_tl, do_closein, R_stellar, d_stellar, do_normal_integration_method
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
 
@@ -576,9 +576,8 @@ case(B_FRIERSON, B_BYRNE)
   ! compute downward shortwave flux
 
   do k = 1, n+1
-     sw_down(:,:,k)   = insolation(:,:) * exp(-sw_tau(:,:,k))
+     sw_down(:,:,k)   = (1-cloud_albedo) * insolation(:,:) * exp(-sw_tau(:,:,k))
   end do
-
 
 case(B_SCHNEIDER_LIU)
   ! Schneider & Liu 2009 Giant planet scheme

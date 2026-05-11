@@ -1,0 +1,3 @@
+==> 2025-07-02 16:50:06 <==
+# cmd: /apps/system/easybuild/software/Anaconda3/2022.05/bin/conda create --prefix python=3.12
+# conda version: 4.13.0

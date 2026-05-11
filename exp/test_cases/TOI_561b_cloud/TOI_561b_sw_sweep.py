@@ -4,7 +4,7 @@ import numpy as np
 
 from isca import GreyCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES =8
+NCORES = 8
 
 # Point to code as defined by $GFDL_BASE
 cb = GreyCodeBase.from_directory(GFDL_BASE)
@@ -16,7 +16,7 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('tl_grey', codebase=cb)
+exp = Experiment('TOI_516b_Ps_exp', codebase=cb)
 
 
 
@@ -36,6 +36,7 @@ diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'height', time_avg=True)
 diag.add_field('two_stream', 'flux_sw', time_avg=True)
 diag.add_field('two_stream', 'flux_lw', time_avg=True)
+diag.add_field('two_stream', 'olr', time_avg=True)
 diag.add_field('mixed_layer', 'flux_t', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
 diag.add_field('vert_turb', 'z_pbl', time_avg=True)
@@ -175,7 +176,7 @@ exp.namelist = namelist = Namelist({
     'mixed_layer_nml': { ## DON'T have namelist for this from Tan+ because SLAB ocean is implemented differently there 
         'depth': 5, # DEFAULT: 40
                      # Use 30m mixed layer depth as described in Tan+ paper 
-        'albedo_value': 0.,#35, # DEFAULT: 0.06
+        'albedo_value': 0,#35, # DEFAULT: 0.06
                               # Surface albedo of 0.25 as in Tan+ paper for RRTM
         'prescribe_initial_dist':True, # DEFAULT: FALSE 
                                        # prescribes initial t_s with t_s = tconst - delta_T*(3*sin^2(lat)-1)/3
@@ -248,15 +249,15 @@ exp.namelist = namelist = Namelist({
         'rad_scheme': 'frierson',            #Select radiation scheme to use
         'do_seasonal': False,                #do_seasonal=false uses the p2 insolation profile
         'do_tl':True,
-        'do_closein':False,
+        'do_closein':True,
         'atm_abs': 0.,#1.,#22,                      # default: 0.0  
         'solar_exponent':1,
         'ir_tau_eq':1,#4.5, 
         'ir_tau_pole':1,#1.5, 
         'del_sol':1.2, 
-        'solar_constant':4634724., 
-        'R_stellar':476700000.,
-        'd_stellar':1117512000.,
+        'solar_constant':4715*1361, 
+        'R_stellar':0.843*6.957e8,
+        'd_stellar':0.01055*1.496e11,
         'linear_tau':1.,#0.2, 
         'odp':1.0
     },
@@ -268,7 +269,7 @@ exp.namelist = namelist = Namelist({
         'water_correction_limit': 200.e2, # DEFAULT: 0. 
                                           # adds upper limit to water correction (which corrects small non-conservation
                                           # of water in the dynamical core)
-        'reference_sea_level_press':1.0e5, # DEFAULT: 101325. 
+        'reference_sea_level_press':10.0e5, # DEFAULT: 101325. 
                                            # used to construct hybrid coord and in implicit timestepping 
                                            # note actual mean sea level pressure is set in constants_mod 
         'num_levels':30, # Number of levels corresponding to set below 
@@ -280,7 +281,7 @@ exp.namelist = namelist = Namelist({
                                      # I have a set of hybrid levels I like to use, input below 
         'robert_coeff':0.03, # DEFAULT: 0.04, used in Robert filter for timestepping 
         # set to T42 resolution (default)
-        'lon_max': 64,#128,#256, # DEFAULT: 128
+        'lon_max': 64,#128,#256, # DEFAULT: 128 max(ncore)=lat/4
         'lat_max': 32,#64,#128, # DEFAULT: 64
         'num_fourier': 21,#42,#85, # DEFAULT: 42
         'num_spherical': 22,#43,#86, # DEFAULT: 43
@@ -318,14 +319,14 @@ exp.namelist = namelist = Namelist({
     },
     
     'constants_nml':{
-        'omega': 2*np.pi / ((400./60./24.)*86400.),#7.2921150e-5 / 8., 
+        'omega': 2*np.pi / (0.44656895*86400.),#7.2921150e-5 / 8., 
         'es0': 1.e-6,
-        'rdgas':297.,#4000.,#296.8,
-        'kappa':297./1285.,#4000./14000.,#296.8/1039,
-        'radius':1.51*6.371e6,
-        'grav':21.3, 
-        'pstd':1.e5, 
-        'pstd_mks':1.e6,
+        'rdgas':8.314/28.0134*1e3,
+        'kappa':(8.314/28.0134*1e3)/(1285-(8.314/28.0134)*1e3),
+        'radius':1.4195*6.371e6,
+        'grav':(6.67e-11*2.24*5.972e24)/((1.4195*6.371e6)**2), 
+        'pstd':10.e5, 
+        'pstd_mks':10.e6,
     },
 
 
@@ -334,40 +335,45 @@ exp.namelist = namelist = Namelist({
 })
 
 
-if __name__=="__main__":
-    
+if __name__ == "__main__":
+    # Define parameter values
+    albedo_list = [0]
+    pressures_bar = [1,3,5,10]   # in bar
+    lw_optical_depths = {1:1.6 ,3:4.7,5:7.8,10:15.6}  # mapping Ps -> tau
+    sw_optical_depths =[0.1,0.2]
+    M = 18.0153
+    Rd = 8.314 / M * 1e3
+    Cp = 2842 
+    gamma = Rd / Cp
+    for Ps in pressures_bar:
+        for a in albedo_list:
+            od_lw = lw_optical_depths[Ps]   # get optical depth for given Ps
+            od_sw = 0.5
+            run_exp = exp.derive(
+                f"TOI_561b/Sw_exp/H2O/TOI_561b_O2_atm_lw_{od_lw}__sw_{od_lw*od_sw}_{Ps}_bar_albedo_{a}"
+            )
 
-    ps_list = np.array([1]) 
-    drag_list = np.array([1e2,1e3]) 
-    
-    for n_ps, ps in enumerate(ps_list):
-        for n_drag, drag in enumerate(drag_list):
-            
-            if n_drag == 0:
-                run_exp = exp.derive('K2_141b/k2-141b_'+str(ps)+'bar_N2_closein_on')
-                run_exp.namelist['two_stream_gray_rad_nml']['do_closein'] = True
-            elif n_drag == 1:
-                run_exp = exp.derive('K2_141b/k2-141b_'+str(ps)+'bar_N2_closein_off')
-                run_exp.namelist['two_stream_gray_rad_nml']['do_closein'] = False
+            # Convert bar to Pa
+            Ps_Pa = Ps * 1e5
 
-            run_exp.namelist['constants_nml']['pstd'] = ps*1e5 
-            run_exp.namelist['constants_nml']['pstd_mks'] = ps*1e6 
-            run_exp.namelist['spectral_dynamics_nml']['reference_sea_level_press'] = ps*1e5 
-            run_exp.namelist['two_stream_gray_rad_nml']['ir_tau_eq'] = ps 
-            run_exp.namelist['two_stream_gray_rad_nml']['ir_tau_pole'] = ps 
-            run_exp.namelist['diffusivity_nml']['tj_bl_pres'] = 85000.*ps 
-            run_exp.namelist['diffusivity_nml']['tj_strato_pres'] = 10000./2.*ps
-            run_exp.namelist['damping_driver_nml']['sponge_pbottom'] = 260. * ps
-            
-            overwrite=False
+            # Update namelist parameters
+            run_exp.namelist['constants_nml']['pstd'] = Ps_Pa
+            run_exp.namelist['constants_nml']['pstd_mks'] = Ps_Pa * 10
+            run_exp.namelist['spectral_dynamics_nml']['reference_sea_level_press'] = Ps_Pa
+            run_exp.namelist['two_stream_gray_rad_nml']['ir_tau_eq'] = od_lw
+            run_exp.namelist['two_stream_gray_rad_nml']['ir_tau_pole'] = od_lw
+            run_exp.namelist['two_stream_gray_rad_nml']['atm_abs'] = od_lw*od_sw
+            run_exp.namelist['constants_nml']['rdgas'] = Rd
+            run_exp.namelist['constants_nml']['kappa'] = gamma
+            run_exp.namelist['diffusivity_nml']['tj_bl_pres'] = 85000. * Ps
+            run_exp.namelist['diffusivity_nml']['tj_strato_pres'] = 10000. / 2. * Ps
+            run_exp.namelist['damping_driver_nml']['sponge_pbottom'] = 260. * Ps
+            run_exp.namelist['mixed_layer_nml']['albedo_value'] = a
+
+            overwrite = False
+
+            # Run the experiment
             run_exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=overwrite)
-
-            for i in range(2,51):
+            for i in range(2, 51):
                 run_exp.run(i, num_cores=NCORES, overwrite_data=overwrite)
-        
-        
-                  
-    
-        
-        
 
