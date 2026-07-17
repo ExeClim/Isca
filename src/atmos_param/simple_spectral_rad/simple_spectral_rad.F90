@@ -117,10 +117,13 @@ real    :: nu_co2 = 667.5
 real    :: D  = 1.5 
 
 ! Defining the longwave spectral grid
-integer :: nwavenumber     = 41
-real    :: wavenumber_min  = 10   ! cm-1
-real    :: wavenumber_max  = 2510 ! cm-1
-real    :: dwavenumber    ! = (wavenumber_max-wavenumber_min) / nwavenumber    ! cm-1
+integer :: nwavenumber_fine = 40 
+integer :: nwavenumber_coarse = 10
+real    :: wavenumber_min = 0
+real    :: wavenumber_mid = 2500!10000
+real    :: wavenumber_max = 15000
+real    :: dwavenumber
+integer :: nwavenumber 
 
 ! Mechanism denial flags
 logical :: do_pressure_broadening = .true.
@@ -138,7 +141,7 @@ real, allocatable, dimension(:,:,:)   :: lw_up, lw_down, lw_flux, sw_up, sw_down
 real, allocatable, dimension(:,:,:)   :: sw_tau 
 real, allocatable, dimension(:,:)     :: b_surf, olr, net_lw_surf, toa_sw_in, coszen, fracsun
 
-real, allocatable, dimension(:)       :: nu_array, kappa
+real, allocatable, dimension(:)       :: nu_array, kappa, dwavenumber_array
 
 real, save :: pi, deg_to_rad , rad_to_deg
 
@@ -154,12 +157,12 @@ namelist/simple_spectral_rad_nml/ solar_constant, del_sol, &
            atm_abs, sw_diff, del_sw, &
 		   do_co2, carbon_conc, do_read_co2, co2_file, co2_variable_name, & 
            use_time_average_coszen, dt_rad_avg, &
-           k_rot, k_vr, k_cnt_1, k_cnt_2, nwavenumber, do_pressure_broadening, debug_ssm
+           k_rot, k_vr, k_cnt_1, k_cnt_2, nwavenumber_fine, nwavenumber_coarse, wavenumber_min, wavenumber_mid, wavenumber_max, do_pressure_broadening, debug_ssm
 
 !==================================================================================
 !-------------------- diagnostics fields -------------------------------
 
-integer :: id_olr, id_spectral_olr, id_ssm_bins_lw, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, &
+integer :: id_olr, id_spectral_olr, id_ssm_bins_lw, id_swdn_sfc, id_swdn_toa, id_net_lw_surf, id_lwdn_sfc, id_lwup_sfc, id_lwup_sfc_err, &
            id_tdt_rad, id_tdt_solar, id_flux_rad, id_flux_lw, id_flux_sw, id_coszen, id_fracsun, &
            id_lw_dtrans, id_co2
 
@@ -218,8 +221,10 @@ endif
 
 initialized = .true.
 
+nwavenumber = nwavenumber_fine + nwavenumber_coarse
 allocate (nu_array         (nwavenumber))
 allocate (kappa            (nwavenumber))
+allocate (dwavenumber_array(nwavenumber))
 
 allocate (b_nu             (ie-is+1, je-js+1, num_levels, nwavenumber))
 allocate (tdt_rad          (ie-is+1, je-js+1, num_levels))
@@ -260,12 +265,23 @@ allocate (fracsun          (ie-is+1, je-js+1)) !jp from astronomy.f90 : fraction
 
 
 ! Initialize wavenumber increment
-dwavenumber     = (wavenumber_max-wavenumber_min) / (nwavenumber - 1)
-
+dwavenumber     = (wavenumber_mid - wavenumber_min) / nwavenumber_fine
 ! Set up wavenumber array for LW calculations
-do v = 1, nwavenumber
-   nu_array(v) = wavenumber_min + dwavenumber*(v-1)
-end do
+nu_array(1) = dwavenumber/2 
+dwavenumber_array(1) = dwavenumber 
+do v = 2, nwavenumber_fine  
+  nu_array(v) = nu_array(v-1) + dwavenumber
+  dwavenumber_array(v) = dwavenumber
+enddo 
+
+dwavenumber = (wavenumber_max - wavenumber_mid) / nwavenumber_coarse 
+nu_array(nwavenumber_fine+1) = wavenumber_mid + dwavenumber/2 
+dwavenumber_array(nwavenumber_fine+1) = dwavenumber 
+do v = (nwavenumber_fine+2), nwavenumber 
+  nu_array(v) = nu_array(v-1) + dwavenumber  
+  dwavenumber_array(v) = dwavenumber 
+enddo 
+
 
 !-----------------------------------------------------------------------
 !------------ initialize diagnostic fields ---------------
@@ -296,6 +312,10 @@ end do
     id_lwup_sfc = &
     register_diag_field ( mod_name, 'lwup_sfc', axes(1:2), Time, &
                'LW flux up at surface', &
+               'W/m2', missing_value=missing_value               )
+    id_lwup_sfc_err = &
+    register_diag_field ( mod_name, 'lwup_sfc_err', axes(1:2), Time, &
+               'LW flux up at surface ERROR', &
                'W/m2', missing_value=missing_value               )
 
     id_lwdn_sfc = &
@@ -364,13 +384,13 @@ end subroutine simple_spectral_rad_init
 
 ! ==================================================================================
 
-subroutine simple_spectral_rad_down (is, js, Time_diag, lat, lon, p_full, p_half, t,         &
+subroutine simple_spectral_rad_down (is, ie, js, je, Time_diag, lat, lon, p_full, p_half, t,         &
                            net_surf_sw_down, surf_lw_down, albedo, q)
 
 ! Begin the radiation calculation by computing downward fluxes.
 ! This part of the calculation does not depend on the surface temperature.
 
-integer, intent(in)                 :: is, js
+integer, intent(in)                 :: is, ie, js, je
 type(time_type), intent(in)         :: Time_diag
 real, intent(in), dimension(:,:)    :: lat, lon, albedo
 real, intent(out), dimension(:,:)   :: net_surf_sw_down
@@ -491,8 +511,12 @@ do k = 1, n
 end do
 
 ! integrate over wavenumber to get total downwelling flux 
-! (is this right?)
-lw_down = sum(lw_down_nu, dim=4)*dwavenumber
+lw_down = 0. 
+do v = 1, nwavenumber 
+  lw_down(:,:,:) = lw_down(:,:,:) + lw_down_nu(:,:,:,v)*dwavenumber_array(v)
+enddo 
+
+
 
 ! =================================================================================
 surf_lw_down     = lw_down(:, :, n+1)
@@ -529,11 +553,11 @@ end subroutine simple_spectral_rad_down
 
 ! ==================================================================================
 
-subroutine simple_spectral_rad_up (is, js, Time_diag, lat, p_full, p_half, t_surf, t, tdt, albedo)
+subroutine simple_spectral_rad_up (is, ie, js, je, Time_diag, lat, p_full, p_half, t_surf, t, tdt, albedo)
 
 ! Now complete the radiation calculation by computing the upward and net fluxes.
 
-integer, intent(in)                 :: is, js
+integer, intent(in)                 :: is, ie, js, je
 type(time_type), intent(in)         :: Time_diag
 real, intent(in) , dimension(:,:)   :: lat, albedo
 real, intent(in) , dimension(:,:)   :: t_surf
@@ -555,7 +579,11 @@ n = size(t,3)
 call planckFunction_2D(t_surf, nu_array, b_surf_nu)
 
 ! integrate over wavenumber
-b_surf = sum(b_surf_nu, dim=3)*dwavenumber
+b_surf = 0. 
+do v = 1, nwavenumber 
+  b_surf(:,:) = b_surf(:,:) + b_surf_nu(:,:,v)*dwavenumber_array(v)
+enddo 
+
      
 ! compute upward longwave flux by integrating upward
 lw_up_nu(:,:,n+1,:)    = pi*b_surf_nu
@@ -568,7 +596,10 @@ end do
 ! integrate over wavenumber to get total downwelling flux
 ! because delta wavenumber is constant, i can just sum across
 ! wavenumber, then multiply by dwavenumber (right?)
-lw_up = sum(lw_up_nu, dim=4)*dwavenumber
+lw_up = 0. 
+do v = 1, nwavenumber 
+  lw_up(:,:,:) = lw_up(:,:,:) + lw_up_nu(:,:,:,v)*dwavenumber_array(v)
+enddo 
 
 ! compute upward shortwave flux (here taken to be constant)
 do k = 1, n+1
@@ -619,6 +650,9 @@ endif
 !------- upward lw flux surface -------
 if ( id_lwup_sfc > 0 ) then
    used = send_data ( id_lwup_sfc, pi*b_surf, Time_diag)
+endif
+if ( id_lwup_sfc_err > 0 ) then
+   used = send_data ( id_lwup_sfc_err, (pi*b_surf - stefan*t_surf**4), Time_diag)
 endif
 !------- net upward lw flux surface -------
 if ( id_net_lw_surf > 0 ) then

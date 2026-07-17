@@ -1074,7 +1074,7 @@ if(two_stream_gray) then
 end if
 
 if(do_simple_spectral_radiation) then
-   call simple_spectral_rad_down(is, js, Time, &
+   call simple_spectral_rad_down(is, ie, js, je, Time, &
                        rad_lat(:,:),           &
                        rad_lon(:,:),           &
                        p_full(:,:,:,current),  &
@@ -1190,7 +1190,7 @@ end if
 
 
 if(do_simple_spectral_radiation) then
-   call simple_spectral_rad_up(is, js, Time, &
+   call simple_spectral_rad_up(is, ie, js, je, Time, &
                      rad_lat(:,:),           &
                      p_full(:,:,:,current),  &
                      p_half(:,:,:,current),  &
