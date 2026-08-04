@@ -74,7 +74,7 @@ def get_nml_diag(test_case_name):
 
     if 'column_test' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/column_test_case/'))
-        from column_test import exp as exp_temp
+        from column_test_case import exp as exp_temp
         from isca import ColumnCodeBase
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist
@@ -144,7 +144,7 @@ def get_nml_diag(test_case_name):
 
     if 'top_down_test' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/top_down_test/'))
-        from top_down_test import namelist as nml_out
+        from top_down_test_case import namelist as nml_out
         input_files = []
         codebase_to_use = IscaCodeBase
 
@@ -171,7 +171,7 @@ def get_nml_diag(test_case_name):
         
     if 'barotropic_vort_eq_stirring' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/barotropic_vorticity_equation/'))
-        from barotropic_vor_eq_stirring_test import exp as exp_temp
+        from barotropic_vor_eq_stirring_test_case import exp as exp_temp
         from isca import BarotropicCodeBase
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist
@@ -179,7 +179,7 @@ def get_nml_diag(test_case_name):
 
     if 'shallow_water_stirring' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/shallow_water/'))
-        from shallow_water_stirring_test import exp as exp_temp
+        from shallow_water_stirring_test_case import exp as exp_temp
         from isca import ShallowCodeBase
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist
