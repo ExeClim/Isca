@@ -72,6 +72,14 @@ def get_nml_diag(test_case_name):
         nml_out = exp_temp.namelist
         codebase_to_use = SocratesCodeBase
 
+    if 'column_test' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/column_test_case/'))
+        from column_test import exp as exp_temp
+        from isca import ColumnCodeBase
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = ColumnCodeBase
+
     if 'giant_planet' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/giant_planet/'))
         from giant_planet_test_case import exp as exp_temp
@@ -199,6 +207,7 @@ def list_all_test_cases_implemented_in_trip_test():
                         'ape_aquaplanet',
                         'barotropic_vort_eq_stirring',
                         'shallow_water_stirring',
+                        'column_test',
                         'grey_mars',
                         'radiative_eq_mars',
                         #'socrates_mars', # requires Mars-specific Socrates spectral files not yet included in the repo - see exp/test_cases/socrates_mars/input/README.md
@@ -246,6 +255,23 @@ def define_simple_diag_table_2d(shallow_or_baro):
 
     return diag
 
+def define_simple_diag_table_column():
+    """Defines a simple diag table for the column model test case. The column
+    model bypasses the dynamical core, so its diagnostics live under the
+    'column' module rather than 'dynamics', and it has no vorticity/divergence."""
+
+    diag = DiagTable()
+    diag.add_file('atmos_daily', 1, 'days', time_units='days')
+
+    diag.add_field('column', 'ps', time_avg=True)
+    diag.add_field('column', 'bk')
+    diag.add_field('column', 'pk')
+    diag.add_field('column', 'ucomp', time_avg=True)
+    diag.add_field('column', 'vcomp', time_avg=True)
+    diag.add_field('column', 'temp', time_avg=True)
+
+    return diag
+
 def process_ids(base_commit_in, later_commit_in):
 
 
@@ -272,9 +298,11 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
     nml_use, input_files_use, codebase_obj  = get_nml_diag(test_case_name)
     
     if 'shallow_water' in test_case_name:
-        diag_use = define_simple_diag_table_2d('shallow')    
+        diag_use = define_simple_diag_table_2d('shallow')
     elif 'barotropic_vort_eq' in test_case_name:
-        diag_use = define_simple_diag_table_2d('barotropic')            
+        diag_use = define_simple_diag_table_2d('barotropic')
+    elif 'column_test' in test_case_name:
+        diag_use = define_simple_diag_table_column()
     else:
         diag_use = define_simple_diag_table()
         
@@ -305,10 +333,13 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             continue            
 
 
+        #The column model can currently only run on 1 core, regardless of -n.
+        num_cores_for_test = 1 if 'column_test' in test_case_name else num_cores_to_use
+
         try:
             # run with a progress bar
             with exp_progress(exp, description=s) as pbar:
-                exp.run(1, use_restart=False, num_cores=num_cores_to_use)
+                exp.run(1, use_restart=False, num_cores=num_cores_for_test)
         except FailedRunError as e:
             #If run fails then test automatically fails
             run_complete = False

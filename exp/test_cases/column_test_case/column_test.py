@@ -51,10 +51,8 @@ from isca import ColumnCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 # column model only uses 1 core
 NCORES = 1
 
-# compile code 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 cb = ColumnCodeBase.from_directory(GFDL_BASE)
-cb.compile() 
 
 # create an Experiment object to handle the configuration of model parameters
 exp = Experiment('column_test_exp', codebase=cb)
@@ -197,6 +195,8 @@ exp.namelist = namelist = Namelist({
 
 #Lets do a run!
 if __name__=="__main__":
+    cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
+
     exp.run(1, use_restart=False, num_cores=NCORES, mpirun_opts='--bind-to socket')
     for i in range(2,11):
         exp.run(i, num_cores=NCORES, mpirun_opts='--bind-to socket')
