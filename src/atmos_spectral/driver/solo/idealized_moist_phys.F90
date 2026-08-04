@@ -1454,7 +1454,10 @@ if(bucket) then
    !change in bucket depth in one leapfrog timestep [m]
 
    !diffuse_surf_water transforms dt_bucket to spherical, diffuses water, and transforms back
+   ! no need to diffuse in column model, as no horizontal diffusion is possible
+   #ifndef COLUMN_MODEL
    call diffuse_surf_water(dt_bucket,bucket_depth(:,:,previous),delta_t,damping_coeff_bucket,bucket_diffusion)
+   #endif
 
    ! use the raw filter in leapfrog time stepping
 
@@ -1487,7 +1490,10 @@ if(bucket) then
    if(id_bucket_depth_conv > 0) used = send_data(id_bucket_depth_conv, depth_change_conv(:,:), Time)
    if(id_bucket_depth_cond > 0) used = send_data(id_bucket_depth_cond, depth_change_cond(:,:), Time)
    if(id_bucket_depth_lh > 0) used = send_data(id_bucket_depth_lh, depth_change_lh(:,:), Time)
+   ! bucket_diffusion is never computed in column model - see diffuse_surf_water above
+   #ifndef COLUMN_MODEL
    if(id_bucket_diffusion > 0) used = send_data(id_bucket_diffusion, bucket_diffusion(:,:)/delta_t, Time)
+   #endif
 
 endif
 ! end Add bucket section
