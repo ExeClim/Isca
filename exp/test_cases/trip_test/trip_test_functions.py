@@ -134,6 +134,7 @@ def get_nml_diag(test_case_name):
         from socrates_aquaplanet import exp as exp_temp
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist
+        codebase_to_use=SocratesCodeBase
         
     if 'socrates_aquaplanet_cloud' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_test/'))
