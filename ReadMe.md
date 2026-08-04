@@ -78,15 +78,25 @@ $ cd Isca
 
 3. **Create a conda environment**
 
-Requirements for Isca can be installed via the .yml file included with the model in `Isca/ci/environment-py3.12_frozen.yml`
-Navigate to the downloaded Isca folder, and create a conda environment `isca_env` containing the required packages using: 
+Requirements for Isca can be installed via the .yml files included with the model in `Isca/ci/`. The choice of which yml file depends on your system:
+
+Both the `environment-py3.12_frozen.yml` and `environment-py.yml` files install everything required to install Isca, including the gfortran compilers and netcdf-fortran. The `environment-py3.12_frozen.yml` file has frozen versions of all the packages that we ourselves have tested, whereas the `environment-py.yml` file will grab the latest versions of all of these libraries etc. 
+
+The `environment-py_no_compilers.yml` version includes only the packages needed by Isca without the gfortran compilers and netcdf-fortran. This is the option to choose if you want to install Isca on a system that already has a fortran compiler, MPI and netcdf-fortran already installed. 
+
+Once you've decided on the yml file to use, you should navigate to the downloaded Isca folder, and create a conda environment `isca_env` containing the required packages using: 
 ```{bash}
-$ conda env create -f ci/environment-py3.12_frozen.yml
+$ conda env create -f ci/YML_FILE_THAT_YOU_CHOSE.yml
 ```
 Then activate the environment; you'll need to do this each time you launch a new bash session.
 ```{bash}
 $ conda activate isca_env
 ```
+or
+```{bash}
+$ conda activate isca_env_no_comp
+``` 
+if you chose the no-compilers yml file.
 
 4. **Install the model**
 
@@ -121,7 +131,7 @@ The value of `GFDL_ENV` corresponds to a file in `src/extra/env` that is sourced
 
 You may wish to configure your own way to run Isca using locally available compilers, e.g. the Intel compilers. An example using such a setup is available here - `src/extra/env/emps-gv`.
 
-At Exeter University, Isca is compiled using:
+At the University of Exeter, Isca is compiled using:
 
 * Intel Compiler Suite 14.0
 * OpenMPI 10.0.1

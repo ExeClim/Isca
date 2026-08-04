@@ -6,8 +6,8 @@ Summary
 The ``damping_driver`` module is called by the ``idealized_moist_phys`` module by setting ``do_damping`` to true. It controls the upper level momentum damping in Isca. It controls 4 optional functions:
 
 1. **Rayleigh friction** which acts on levels ``1`` to ``kbot``. This function is located in ``damping_driver`` itself.
-2. A (orographic) **mountain gravity wave drag** module (``cg_drag``) may be called.
-3. A (non orographic) **convective gravity wave drag** module (``mg_drag``) may be called.
+2. A (orographic) **mountain gravity wave drag** module (``mg_drag``) may be called.
+3. A (non orographic) **convective gravity wave drag** module (``cg_drag``) may be called.
 4. A **time independent drag** may be called. This function is located in ``damping_driver`` itself.
 
 Another module (``topo_drag``) is referenced in the code, but is not available in Isca at present.
@@ -22,11 +22,11 @@ Namelist options
 
 ``sponge_pbottom`` - (for Rayleigh friction) used to calculate ``nlev_rayfric``, it specifies the bottom level where the Rayleigh friction starts. Default 50Pa.
 
-``do_cg_drag`` - On/Off switch for doing mountain gravity wave drag. Default False.
+``do_mg_drag`` - On/Off switch for doing mountain gravity wave drag. Default False.
 
 ``do_topo_drag`` - On/Off switch for doing the topo_drag module which is currently unavailable. Default False. 
 
-``do_mg_drag`` - On/Off switch for doing convective gravity wave drag. Default False.
+``do_cg_drag`` - On/Off switch for doing convective gravity wave drag. Default False.
 
 ``do_conserve_energy`` - (for Rayleigh friction) On/Off switch for also calculating the temperature tendency (if True). Default False.
 

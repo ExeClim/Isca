@@ -21,11 +21,11 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.9']
+        python-version: ['3.12']
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -39,11 +39,11 @@ jobs:
       #     echo $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
 
       - name: Setup Conda Environment
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: ${{ matrix.python-version }}
           environment-file: docs/environment.yml
-          miniforge-variant: Mambaforge
+          # miniforge-variant: Mambaforge
           miniforge-version: "latest"
           use-mamba: true
           activate-environment: isca_docs

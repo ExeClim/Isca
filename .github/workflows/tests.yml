@@ -40,14 +40,13 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup Conda for OS ${{ matrix.os }} and Python ${{ matrix.python-version }}
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment-py${{ matrix.python-version }}_frozen.yml
-          miniforge-variant: Mambaforge
           miniforge-version: "latest"
           use-mamba: true
           activate-environment: isca_env
