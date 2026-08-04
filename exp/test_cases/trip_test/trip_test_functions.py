@@ -40,6 +40,29 @@ def get_nml_diag(test_case_name):
         nml_out = exp_temp.namelist  
         codebase_to_use = IscaCodeBase
         
+    if 'grey_mars' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/grey_mars/'))
+        from grey_mars_test_case import exp as exp_temp
+        from isca import GreyCodeBase
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = GreyCodeBase
+
+    if 'radiative_eq_mars' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/radiative_eq_mars/'))
+        from radiative_eq_mars_test_case import exp as exp_temp
+        from isca import GreyCodeBase
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = GreyCodeBase
+
+    if 'socrates_mars' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_mars/'))
+        from socrates_mars_test_case import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = SocratesCodeBase
+
     if 'giant_planet' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/giant_planet/'))
         from giant_planet_test_case import exp as exp_temp
@@ -166,7 +189,11 @@ def list_all_test_cases_implemented_in_trip_test():
                         'variable_co2_rrtm', 
                         'ape_aquaplanet',
                         'barotropic_vort_eq_stirring',
-                        'shallow_water_stirring']
+                        'shallow_water_stirring',
+                        'grey_mars',
+                        'radiative_eq_mars',
+                        #'socrates_mars', # requires Mars-specific Socrates spectral files not yet included in the repo - see exp/test_cases/socrates_mars/input/README.md
+                        ]
 
     return exps_implemented
 
