@@ -1,101 +1,98 @@
-# -*- coding: utf-8 -*-s
+# -*- coding: utf-8 -*-
+"""Creates an input file for hs_forcing_nml's 'from_file' local_heating_option.
+
+By default this generates a file where the heating rate is zero everywhere - a
+starting point that a user can edit (see the 'DEFINE A HEATING RATE HERE' comment
+below) to prescribe their own local heating field.
+"""
+import os
+
 import numpy as np
-from calendar_calc import day_number_to_date
-from netCDF4 import date2num
-import xarray as xar
-import pdb
+from netCDF4 import Dataset
+
 import create_timeseries as cts
-from finite_difference import diffz
 
-grav = 9.81
-c_p = 287.04 / (2./7.)
-
-#Read in radiation-scheme output file(s) Will need to use open_mfdataset if more than one.
-resolution_file = xar.open_dataset('~/Desktop/full_continents_global_monthly_control_test.nc', decode_times=False)
-
-lons = resolution_file['lon']
-lats = resolution_file['lat']
+__author__ = 'Stephen Thomson'
 
 
-#Set up output file variables. 
+def create_zero_heating_rate_file(output_dir, file_name='heating_rate.nc', num_levels=25, surface_pressure_hpa=1000., manual_grid_option=False):
+    """Writes a 12-month climatology of a local heating rate (K/s) to
+    output_dir/file_name, on the horizontal grid selected by manual_grid_option
+    (see create_timeseries.create_grid) and on num_levels evenly-spaced pressure
+    levels up to surface_pressure_hpa.
 
-latb_temp=np.zeros(lats.shape[0]+1)
+    The heating rate itself is all zeros - edit the array below this docstring
+    to prescribe a non-zero heating field."""
 
-for tick in np.arange(1,lats.shape[0]):
-    latb_temp[tick]=(lats[tick-1]+lats[tick])/2.
+    lons, lats, lonbs, latbs, nlon, nlat, nlonb, nlatb = cts.create_grid(manual_grid_option)
 
-lonb_temp=np.zeros(lons.shape[0]+1)
+    p_full = np.linspace(0., surface_pressure_hpa, num_levels + 1)[1:]
 
-for tick in np.arange(1,lons.shape[0]):
-    lonb_temp[tick]=(lons[tick-1]+lons[tick])/2.
+    ntime = 12
+    time_arr = np.arange(ntime) * 30.  # 12 months, 30 days apart, matching Isca's thirty_day calendar
 
-latb_temp[0]=-90.
-latb_temp[-1]=90.
+    # DEFINE A HEATING RATE HERE. Units are K/s. Defaults to zero everywhere.
+    heating_rate = np.zeros((ntime, num_levels, nlat, nlon))
 
-lonb_temp[0]=0.
-lonb_temp[-1]=360.
+    file_path = os.path.join(output_dir, file_name)
+    output_file = Dataset(file_path, 'w', format='NETCDF3_CLASSIC')
 
-latbs=latb_temp
-lonbs=lonb_temp
+    output_file.createDimension('lat', nlat)
+    output_file.createDimension('lon', nlon)
+    output_file.createDimension('latb', nlatb)
+    output_file.createDimension('lonb', nlonb)
+    output_file.createDimension('pfull', num_levels)
+    output_file.createDimension('time', 0)  # unlimited time axis
 
-nlon=lons.shape[0]
-nlat=lats.shape[0]
+    latitudes = output_file.createVariable('lat', 'd', ('lat',))
+    longitudes = output_file.createVariable('lon', 'd', ('lon',))
+    latitudebs = output_file.createVariable('latb', 'd', ('latb',))
+    longitudebs = output_file.createVariable('lonb', 'd', ('lonb',))
+    pfulls = output_file.createVariable('pfull', 'd', ('pfull',))
+    times = output_file.createVariable('time', 'd', ('time',))
 
-nlonb=len(lonbs)
-nlatb=latbs.shape[0]
+    latitudes.units = 'degrees_N'
+    latitudes.cartesian_axis = 'Y'
+    latitudes.long_name = 'latitude'
+    latitudes.edges = 'latb'
 
-p_full = resolution_file['pfull'][::-1]
+    longitudes.units = 'degrees_E'
+    longitudes.cartesian_axis = 'X'
+    longitudes.long_name = 'longitude'
+    longitudes.edges = 'lonb'
 
-p_half = resolution_file['phalf'][::-1]
+    latitudebs.units = 'degrees_N'
+    latitudebs.cartesian_axis = 'Y'
+    latitudebs.long_name = 'latitude edges'
 
-time_arr = resolution_file['time'].values
+    longitudebs.units = 'degrees_E'
+    longitudebs.cartesian_axis = 'X'
+    longitudebs.long_name = 'longitude edges'
 
-nphalf =p_half.shape[0] 
+    pfulls.units = 'hPa'
+    pfulls.cartesian_axis = 'Z'
+    pfulls.positive = 'down'
+    pfulls.long_name = 'full pressure level'
 
-heating_rate = np.zeros((nphalf, nlat, nlon))
+    times.units = 'days since 0000-01-01 00:00:00.0'
+    times.calendar = 'THIRTY_DAY_MONTHS'
+    times.calendar_type = 'THIRTY_DAY_MONTHS'
+    times.cartesian_axis = 'T'
+
+    heating_rate_out = output_file.createVariable('heating_rate', 'f4', ('time', 'pfull', 'lat', 'lon'))
+
+    latitudes[:] = lats
+    longitudes[:] = lons
+    latitudebs[:] = latbs
+    longitudebs[:] = lonbs
+    pfulls[:] = p_full
+    times[:] = time_arr
+    heating_rate_out[:] = heating_rate
+
+    output_file.close()
+
+    return file_path
 
 
-# DEFINE A HEATING RATE HERE.
-
-
-heating_rate_new = np.zeros((12, heating_rate.shape[1], nlat, nlon))
-
-#Arrange 12 months to be 30 days apart
-time_arr_new = np.arange(0,12,1)*30.
-time_arr = time_arr_new
-
-
-#Repeat 1 month 12 times just because I only have 1 input file. This would need replacing with different values each month.
-for t in range(len(time_arr)):
-    heating_rate_new[t,...] = heating_rate
-
-heating_rate = heating_rate_new[:,:,...]
-
-date_arr=np.mod((time_arr-time_arr[0]),12)
-date_arr_new=np.zeros(12)
-
-#Find grid and time numbers
-
-npfull=p_full.shape[0]
-nphalf=p_half.shape[0]
-
-ntime=len(time_arr)
-
-#Output it to a netcdf file. 
-file_name='full_continents_heating_input_file.nc'
-variable_name='heating_rate'
-
-number_dict={}
-number_dict['nlat']=nlat
-number_dict['nlon']=nlon
-number_dict['nlatb']=nlatb
-number_dict['nlonb']=nlonb
-number_dict['npfull']=npfull
-number_dict['nphalf']=nphalf
-number_dict['ntime']=ntime
-
-#Line that would need changing depending on year-on-year repeating heating or timeseries heating. 
-time_units='days since 0000-01-01 00:00:00.0'
-
-cts.output_to_file(heating_rate[:,::-1,...],lats,lons,latbs,lonbs,p_full,p_half,time_arr,time_units,file_name,variable_name,number_dict, dims=total_flux.dims)
-
+if __name__ == "__main__":
+    create_zero_heating_rate_file(os.getcwd())

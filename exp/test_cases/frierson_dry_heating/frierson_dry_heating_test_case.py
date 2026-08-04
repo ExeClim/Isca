@@ -1,4 +1,5 @@
 import os
+import sys
 
 import numpy as np
 
@@ -19,13 +20,20 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
-cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
-
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('frierson_test_experiment_dry_heating_mk8', codebase=cb)
+exp = Experiment('frierson_dry_heating_test_experiment', codebase=cb)
 
-exp.inputfiles = [ os.path.join(base_dir,'input/heating_rate.nc'),os.path.join(GFDL_BASE,'input/rrtm_input_files/ozone_1990.nc')]
+# Generate the local heating input file (all zeros by default) rather than committing a
+# large binary to git - see src/extra/python/scripts/create_local_heating_input_file.py.
+sys.path.insert(0, os.path.join(GFDL_BASE, 'src/extra/python/scripts'))
+from create_local_heating_input_file import create_zero_heating_rate_file
+
+input_dir = os.path.join(base_dir, 'input')
+os.makedirs(input_dir, exist_ok=True)
+create_zero_heating_rate_file(input_dir, num_levels=25, surface_pressure_hpa=1000.)
+
+exp.inputfiles = [os.path.join(input_dir, 'heating_rate.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -70,7 +78,7 @@ exp.namelist = namelist = Namelist({
         'do_simple': True,
         'roughness_mom':3.21e-05,
         'roughness_heat':3.21e-05,
-        'roughness_moist':3.21e-05,                
+        'roughness_moist':3.21e-05,
         'two_stream_gray': True,     #Use grey radiation
         'convection_scheme': 'SIMPLE_BETTS_MILLER', #Use the simple Betts Miller convection scheme from Frierson
         'do_local_heating':True,
@@ -83,7 +91,7 @@ exp.namelist = namelist = Namelist({
         'constant_gust': 0.0,          # default: 1.0
         'use_tau': False
     },
-    
+
     'diffusivity_nml': {
         'do_entrain':False,
         'do_simple': True,
@@ -92,7 +100,7 @@ exp.namelist = namelist = Namelist({
     'surface_flux_nml': {
         'use_virtual_temp': False,
         'do_simple': True,
-        'old_dtaudv': True    
+        'old_dtaudv': True
     },
 
     'atmosphere_nml': {
@@ -103,43 +111,43 @@ exp.namelist = namelist = Namelist({
     'mixed_layer_nml': {
         'tconst' : 285.,
         'prescribe_initial_dist':True,
-        'evaporation':True,   
+        'evaporation':True,
         'depth': 2.5,                          #Depth of mixed layer used
-        'albedo_value': 0.31,                  #Albedo value used             
+        'albedo_value': 0.31,                  #Albedo value used
     },
 
     'qe_moist_convection_nml': {
         'rhbm':0.7,
         'Tmin':160.,
-        'Tmax':350.   
+        'Tmax':350.
     },
 
     'betts_miller_nml': {
-       'rhbm': .7   , 
-       'do_simp': False, 
-       'do_shallower': True, 
+       'rhbm': .7   ,
+       'do_simp': False,
+       'do_shallower': True,
     },
-    
+
     'lscale_cond_nml': {
         'do_simple':True,
         'do_evap':True
     },
-    
+
     'sat_vapor_pres_nml': {
         'do_simple':True
     },
-    
+
     'damping_driver_nml': {
         'do_rayleigh': True,
         'trayfric': -0.25,              # neg. value: time in *days*
         'sponge_pbottom':  5000.,           #Bottom of the model's sponge down to 50hPa (units are Pa)
-        'do_conserve_energy': True,             
+        'do_conserve_energy': True,
     },
 
     'two_stream_gray_rad_nml': {
         'rad_scheme': 'frierson',            #Select radiation scheme to use, which in this case is Frierson
         'do_seasonal': False,                #do_seasonal=false uses the p2 insolation profile from Frierson 2006. do_seasonal=True uses the GFDL astronomy module to calculate seasonally-varying insolation.
-        'atm_abs': 0.2,                      # default: 0.0        
+        'atm_abs': 0.2,                      # default: 0.0
     },
 
     # FMS Framework configuration
@@ -157,7 +165,7 @@ exp.namelist = namelist = Namelist({
     },
 
     'spectral_dynamics_nml': {
-        'damping_order': 4,             
+        'damping_order': 4,
         'water_correction_limit': 200.e2,
         'reference_sea_level_press':1.0e5,
         'num_levels':25,               #How many model pressure levels to use
@@ -177,11 +185,13 @@ exp.namelist = namelist = Namelist({
     'hs_forcing_nml' :{
             'local_heating_option':'from_file',
             'local_heating_file':'heating_rate'
-       },       
+       },
 })
 
 #Lets do a run!
 if __name__=="__main__":
+    cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
+
     exp.run(1, use_restart=False, num_cores=NCORES)
     for i in range(2,121):
         exp.run(i, num_cores=NCORES)

@@ -37,9 +37,18 @@ def get_nml_diag(test_case_name):
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/frierson/'))
         from frierson_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
-        nml_out = exp_temp.namelist  
+        nml_out = exp_temp.namelist
         codebase_to_use = IscaCodeBase
-        
+
+    if 'frierson_dry_heating' in test_case_name:
+        # Note: 'frierson_dry_heating' also matches the 'frierson' check above - this block
+        # runs afterwards and overwrites nml_out/input_files/codebase_to_use, so it wins.
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/frierson_dry_heating/'))
+        from frierson_dry_heating_test_case import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = IscaCodeBase
+
     if 'grey_mars' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/grey_mars/'))
         from grey_mars_test_case import exp as exp_temp
@@ -193,6 +202,7 @@ def list_all_test_cases_implemented_in_trip_test():
                         'grey_mars',
                         'radiative_eq_mars',
                         #'socrates_mars', # requires Mars-specific Socrates spectral files not yet included in the repo - see exp/test_cases/socrates_mars/input/README.md
+                        #'frierson_dry_heating', # exercises the new local_heating feature, which the current ExeClim master doesn't have - included for opt-in testing, not run by default
                         ]
 
     return exps_implemented
