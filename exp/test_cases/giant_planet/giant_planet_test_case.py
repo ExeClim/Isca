@@ -66,6 +66,7 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray':  True, #Use grey radiation
         'do_rrtm_radiation':  False, #Don't use RRTM
         'convection_scheme':  'dry', #Use the dry convection scheme of Schneider & Walker
+        'do_lscale_cond': False, #Consistent with dry convection scheme - this planet has no moisture physics
         'gp_surface':  True, #Use the giant-planet option for the surface, meaning it's not a mixed layer, and applies energy conservation and a bottom-boundary heat flux
         'mixed_layer_bc':  False, #Don't use the mixed-layer surface
                    
