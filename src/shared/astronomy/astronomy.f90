@@ -161,7 +161,7 @@ integer :: num_angles = 3600 ! number of intervals into which the year
                              ! is divided to compute orbital positions
 
 logical :: use_mean_anom_in_rrsun_calc = .TRUE. !It appears the standard astronomy module uses the mean anomaly for calculating the orbital distances on eccentric orbits, rather than the true anomaly. Keeping this behaviour default for legacy, but .FALSE. seems more correct.
-logical :: use_old_r_inv_squared
+logical :: use_old_r_inv_squared = .TRUE. !Also defaulting to the old r_inv_squared calculation for legacy reasons. 
 
 namelist /astronomy_nml/ ecc, obliq, per, period, &
                          year_ae, month_ae,  day_ae,         &
