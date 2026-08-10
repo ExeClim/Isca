@@ -124,11 +124,12 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
 #else
    if ( file_exist('input.nml') ) then
       nml_unit = open_namelist_file()
+      ierr=1
       do while (ierr/=0)
         read (nml_unit, socrates_rad_nml, iostat=io)
         ierr = check_nml_error (io, 'socrates_rad_nml')
       enddo
-      call close_file(nml_unit) 
+      call close_file(nml_unit)
    endif
 #endif
     stdlog_unit = stdlog()
