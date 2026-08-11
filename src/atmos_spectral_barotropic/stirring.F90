@@ -71,7 +71,13 @@ integer :: n_total_forcing_max = 15 !total wavenumbers LESS THAN this number wil
 integer :: n_total_forcing_min = 9 !total wavenumbers GREATER THAN this number will be forced
 integer :: zonal_forcing_min = 3 !Zonal wavenumbers GREATER THAN this number will be forced, subject to total wavenumber constraints
 
-namelist / stirring_nml / decay_time, amplitude, lat0, lon0, widthy, widthx, B, do_localize, n_total_forcing_max, n_total_forcing_min, zonal_forcing_min
+! If >= 0, deterministically seeds the stirring random number generator from this value, giving
+! reproducible stirring on a fresh (non-restart) run. Ignored when restarting, since the restart
+! file's own saved seed is used instead. Default -1 leaves the runtime's own default (non-deterministic
+! on a fresh run) seed in place, matching the pre-existing behaviour.
+integer :: fixed_random_seed = -1
+
+namelist / stirring_nml / decay_time, amplitude, lat0, lon0, widthy, widthx, B, do_localize, n_total_forcing_max, n_total_forcing_min, zonal_forcing_min, fixed_random_seed
 
 contains
 
@@ -182,6 +188,9 @@ if(file_exist('INPUT/stirring.res.nc')) then
   end do
   deallocate(real_part, imag_part)
   call read_data('INPUT/stirring.res.nc', 'ran_nmbr_seed', seed, no_domain=.true.)
+  call random_seed(put=seed)
+else if(fixed_random_seed >= 0) then
+  seed = fixed_random_seed + (/ (i, i=1,nseed) /)
   call random_seed(put=seed)
 endif
 
