@@ -17,7 +17,8 @@ spin_up_restart/
 src/extra/python/scripts/*.nc
 src/extra/python/scripts/archived/
 *.sh.*
-src/atmos_param/socrates/src/trunk*
+src/atmos_param/socrates/src/*
+!src/atmos_param/socrates/src/README.md
 
 # Temporary files
 *.x

@@ -189,7 +189,10 @@ any express or implied warranties.
 Some of the code provided in the `src/atmos_params/socrates/interface` folder were provided by the UK Met Office,
 and are therefore covered by British Crown Copyright. The copyright statement at the top of the 
 relevant code is provided below. For the `copyright.txt` refered to in this statement, please see the
-Socrates source code itself, which is downloadable from the Met Office, and is not packaged with Isca.
+Socrates source code itself, which is not packaged within this repository but is fetched automatically
+(or via `git submodule update --init`) from its own BSD-3-Clause-licensed repository,
+[github.com/MetOffice/socrates](https://github.com/MetOffice/socrates) -- see
+[`docs/source/modules/socrates.rst`](docs/source/modules/socrates.rst) for details.
 
 ```
 ! *****************************COPYRIGHT*******************************

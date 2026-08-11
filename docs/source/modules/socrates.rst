@@ -9,9 +9,30 @@ Summary
 SOCRATES (Suite Of Community RAdiative Transfer codes based on Edwards and Slingo) is the radiation scheme used by UK Met Office for Earth and planetary science [MannersEtAl2015]_, which has many significant advantages over RRTM, notably its flexibility in terms of atmospheric composition and the spectral properties of the radiation scheme (e.g. number of bands, etc).
 
 * The code used to integrate Socrates into Isca is contained within the folder ``src/atmos_params/socrates/interface``.
-* The Socrates source code itself is **NOT** packed within this Isca repository, and **NEW** users will need to download it from the `Met Office Science Repository <https://code.metoffice.gov.uk/trac/socrates>`_. Users can then either choose to put the Socrates code within the directory ``src/atmos_params/socrates/src/trunk``, or can set the bash environment variable ``GFDL_SOC`` equal to the location of the source code for Socrates. Detailed instructions on how to do this are included in the `README.md <https://github.com/ExeClim/Isca/blob/master/exp/test_cases/socrates_test/README.md>`_ for the Socrates test-case: ``exp/test_cases/socrates_test/README.md``.
+* The Socrates source code itself is **NOT** packed within this Isca repository, but as of 2026 it is open source (BSD-3-Clause) and hosted at `github.com/MetOffice/socrates <https://github.com/MetOffice/socrates>`_. Isca depends on it via a git submodule pinned to a default, tested version (``src/atmos_param/socrates/src/<version>``, see ``.gitmodules``), and ``SocratesCodeBase``/``SocColumnCodeBase`` will fetch the matching source automatically the first time you compile if it isn't already present -- there is no manual download step for new users any more. See `Getting Socrates source code`_ below for how version selection, fetching and compilation work, and the `README.md <https://github.com/ExeClim/Isca/blob/master/exp/test_cases/socrates_test/README.md>`_ for the Socrates test-case (``exp/test_cases/socrates_test/README.md``) for a worked example.
 * The basis of ``socrates_interface`` was coded by Mark Hammond (Univ. of Oxford) and James Manners (Met Office) and modified by Stephen Thomson (Univ. of Exeter) [Thomson_and_Vallis2019]_. Features added include seasonality in the radiation based on Isca's ``astronomy`` package, and the ability to use a ``radiation timestep != atmospheric timestep``.
 * Socrates radiation scheme requires ``mass mixing ratios`` for all quantities (e.g. CO2, water vapor etc). This contrasts with RRTM, which wants ``volume mixing ratios``.
+
+
+Getting Socrates source code
+-----------------------------
+
+Socrates' own directory layout and exact file list change slightly from release to release, so rather than hand-maintaining a list of files to compile for each version, Isca derives it automatically from Socrates' own ``make/Mk_src_*``/``Mk_mod_*`` build manifests plus a dependency scan starting from Isca's interface code (see ``isca.socrates_paths`` and ``src/extra/python/scripts/generate_socrates_path_names.py`` for the implementation). A handful of tested versions already have this list committed at ``src/extra/model/socrates/socrates_version_paths/<version>``; for any other version it is generated on the fly the first time you compile.
+
+To compile with Socrates, pick a codebase and, optionally, a version::
+
+    from isca import SocratesCodeBase
+    cb = SocratesCodeBase.from_directory(GFDL_BASE, socrates_version='2026.07.1')  # version is optional; defaults to the vendored version
+    cb.compile()
+
+The first time this runs for a given version, Isca looks for the matching Socrates source in this order:
+
+1. Already present at ``src/atmos_param/socrates/src/<version>`` (e.g. because you ran ``git submodule update --init`` for the default vendored version).
+2. The legacy single-version override ``GFDL_SOC``, if set (points directly at a Socrates checkout, regardless of version -- kept for backwards compatibility with older setups).
+3. ``$GFDL_SOC_DIR/<version>``, if ``GFDL_SOC_DIR`` is set and that directory exists.
+4. Otherwise, Isca fetches it: a sparse, shallow clone of just Socrates' ``src/`` and ``make/`` directories plus the ``ga7``/``ga3_1`` spectral data Isca's own test cases use (``data/spectra/ga7``, ``data/spectra/ga3_1`` -- together under 15MB, not the ~300MB full repository with all of its example/data files) from ``github.com/MetOffice/socrates`` at the tag matching ``socrates_version``, into ``$GFDL_SOC_DIR/<version>`` (or a default cache under ``$GFDL_WORK`` if ``GFDL_SOC_DIR`` isn't set). If a test case needs a different spectral file, widen the sparse-checkout in that directory yourself (``git -C <dir> sparse-checkout add data/spectra/<whatever>``) or fetch it directly from the GitHub repository.
+
+This means a machine with no pre-existing Socrates checkout and no environment variables set can still go straight from ``cb = SocratesCodeBase.from_directory(...)`` to a working compile, as long as it has network access to GitHub at that point (e.g. on a login node -- if compute nodes are offline, fetch the version you need in advance on a node that does have access, or pre-populate ``GFDL_SOC_DIR``).
 
 
 Namelist options
