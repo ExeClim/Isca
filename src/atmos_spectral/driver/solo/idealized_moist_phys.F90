@@ -627,7 +627,7 @@ endif
       if(do_damping) then
          call pressure_variables(p_half_1d,ln_p_half_1d,pref(1:num_levels),ln_p_full_1d,PSTD_MKS)
          pref(num_levels+1) = PSTD_MKS
-         call damping_driver_init(rad_lonb_2d(:,1),rad_latb_2d(1,:), pref(:), get_axis_id(), Time, & 
+         call damping_driver_init(is, ie, js, je, rad_lonb_2d(:,1),rad_latb_2d(1,:), pref(:), get_axis_id(), Time, &
                                   sgsmtn)
          !note that in the original this is pref(:,1), which is the full model pressure levels and 
          !the surface pressure at the bottom. There is pref(:2) in this version with 81060 as 

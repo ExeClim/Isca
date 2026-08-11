@@ -44,7 +44,7 @@ module damping_driver_mod
    integer  :: nlev_rayfric
    real :: sponge_pbottom = 50. ! [Pa]
   logical  :: do_mg_drag = .false.
-!epg: Use cg_drag.f90, GFDL's version of the Alexander and Dunkerton 1999 
+!epg: Use cg_drag.f90, GFDL's version of the Alexander and Dunkerton 1999
 !     Non-orographic gravity wave parameterization, updated as for Cohen et al. 2013
 ! mj actively choose rayleigh friction
    logical  :: do_rayleigh = .false.
@@ -101,7 +101,7 @@ character(len=7) :: mod_name = 'damping'
 
  real :: rfactr
 
-!   note:  
+!   note:
 !     rfactr = coeff. for damping momentum at the top level
 
  character(len=128) :: version = '$Id: damping_driver.f90,v 10.0 2003/10/24 22:00:25 fms Exp $'
@@ -119,7 +119,7 @@ contains
                             u, v, t, q, r,  udt, vdt, tdt, qdt, rdt,  &
 !                                   mask, kbot)
                             z_pbl,  mask, kbot)
- 
+
 !-----------------------------------------------------------------------
  integer,         intent(in)                :: is, js
  real, dimension(:,:), intent(in)           :: lat
@@ -265,6 +265,7 @@ contains
 !mj updating call to riga version of cg_drag
       !call cg_drag_calc (is, js, lat, pfull, zfull, t, u, Time,    &
       !                  delt, utnd)
+
       call cg_drag_calc (is, js, lat, pfull, zfull, t, u, v, Time, delt, utnd, vtnd)
      udt =  udt + utnd
      vdt =  vdt + vtnd !mj
@@ -274,9 +275,9 @@ contains
      if ( id_udt_cgwd > 0 ) then
 !        used = send_data ( id_udt_cgwd, utnd, Time, is, js, 1, &
 !                          rmask=mask )
-        used = send_data ( id_udt_cgwd, utnd, Time, rmask=mask )
+        used = send_data ( id_udt_cgwd, utnd, Time)
      endif
- 
+
    endif
 
 ! constant drag, modeled on Alexander-Dunkerton winter average
@@ -298,7 +299,7 @@ contains
                  *( -1.65*abs(lat)**3 +2.5*lat**2 +0.17*abs(lat) +const_drag_off )
          end where
       enddo
-      udt = udt + utnd 
+      udt = udt + utnd
 
 !----- diagnostics -----
 
@@ -366,12 +367,13 @@ contains
 
 !#######################################################################
 
- subroutine damping_driver_init ( lonb, latb, pref, axes, Time, sgsmtn)
+ subroutine damping_driver_init (is, ie, js, je, lonb, latb, pref, axes, Time, sgsmtn)
 
  real,            intent(in) :: lonb(:), latb(:), pref(:)
- integer,         intent(in) :: axes(4)
+ integer, dimension(4), intent(in) :: axes
  type(time_type), intent(in) :: Time
  real, dimension(:,:), intent(out) :: sgsmtn
+ integer,         intent(in) :: is, ie, js, je
 !-----------------------------------------------------------------------
 !     lonb  = longitude in radians of the grid box edges
 !     latb  = latitude  in radians of the grid box edges
@@ -426,13 +428,13 @@ contains
 !-----------------------------------------------------------------------
 !----- mountain gravity wave drag -----
 
-   if (do_mg_drag) call mg_drag_init (lonb, latb, sgsmtn)
+   if (do_mg_drag) call mg_drag_init (is, ie, js, je, lonb, latb, sgsmtn)
 
 !--------------------------------------------------------------------
 !----- Alexander-Dunkerton gravity wave drag -----
- 
+
    if (do_cg_drag)  then
-     call cg_drag_init (lonb, latb, pref, Time=Time, axes=axes)
+     call cg_drag_init (is, ie, js, je, lonb, latb, pref, Time=Time, axes=axes)
    endif
 
 !-----------------------------------------------------------------------
@@ -454,7 +456,7 @@ if (do_rayleigh) then
    register_diag_field ( mod_name, 'tdt_diss_rdamp', axes(1:3), Time,  &
                       'Dissipative heating from Rayleigh damping',&
                              'deg_k/s', missing_value=missing_value   )
-       
+
    id_diss_heat_rdamp = &
    register_diag_field ( mod_name, 'diss_heat_rdamp', axes(1:2), Time,   &
                 'Integrated dissipative heating from Rayleigh damping',&
@@ -499,7 +501,7 @@ if (do_mg_drag) then
    register_diag_field ( mod_name, 'tdt_diss_gwd', axes(1:3), Time,    &
                           'Dissipative heating from gravity wave drag',&
                               'deg_k/s', missing_value=missing_value   )
-       
+
    id_diss_heat_gwd = &
    register_diag_field ( mod_name, 'diss_heat_gwd', axes(1:2), Time,      &
                 'Integrated dissipative heating from gravity wave drag',&
@@ -521,7 +523,7 @@ endif
                  'u wind tendency for constant drag', 'm/s2', &
                       missing_value=missing_value               )
    endif
-      
+
 
 !-----------------------------------------------------------------------
 !----- topo wave drag -----
@@ -639,4 +641,3 @@ endif
 !#######################################################################
 
 end module damping_driver_mod
-
