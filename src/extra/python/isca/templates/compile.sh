@@ -23,6 +23,16 @@ executable={{ executable_name }}
 #ulimit -s unlimited # Set stack size to unlimited
 export MALLOC_CHECK_=0
 
+# Number of parallel make jobs. Defaults to the number of available cores,
+# capped at 8 so we don't monopolise shared/multi-user machines by default.
+# Override explicitly with e.g. ISCA_MAKE_JOBS=32 on a dedicated machine.
+default_make_jobs=$(nproc 2>/dev/null || echo 1)
+if [ "$default_make_jobs" -gt 8 ]; then
+  default_make_jobs=8
+fi
+make_jobs=${ISCA_MAKE_JOBS:-$default_make_jobs}
+echo "Using $make_jobs parallel make job(s) (set ISCA_MAKE_JOBS to override)"
+
 # 3. compile the mppncombine tool if it hasn't yet been done.
 if [ ! -e "{{ execdir }}/mppnccombine.x" ]; then
   echo "Compiling postprocessing tools"
@@ -64,7 +74,7 @@ $mkmf  -a $sourcedir -t $template -p $executable -c "$cppDefs" $pathnames $sourc
 
 fi
 
-make
+make -j"$make_jobs"
 
 # $mkmf $make_flags -a $source_dir  -p fms_moist.x -t   $template \
 #     -c "-Duse_libMPI -Duse_netCDF -Duse_LARGEFILE -DINTERNAL_FILE_NML -DOVERLOAD_C8" $pathnames $sourcedir/shared/mpp/include $sourcedir/shared/constants $sourcedir/include
@@ -76,7 +86,7 @@ if [ $? != 0 ]; then
 fi
 
 # --- execute make ---
-make $executable
+make -j"$make_jobs" $executable
 if [ $? != 0 ]; then
     echo "ERROR: make failed for $executable"
     exit 1
