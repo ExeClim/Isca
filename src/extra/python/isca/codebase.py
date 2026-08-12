@@ -132,6 +132,13 @@ class CodeBase(Logger):
         self.path_names = []
         self.extra_path_names = []  # subclasses (e.g. SocratesCodeBase) can append version-specific files here
         self.compile_flags = []  # users can append to this to add additional compiler options
+        # subclasses can set this where mkmf's automatic dependency detection
+        # is known to miss a real build-order dependency (see
+        # SocratesCodeBase for why) -- makes compile() do a best-effort
+        # `make -k` pass before the normal one, so objects with no missing
+        # dependency of their own get built regardless of what order mkmf
+        # happened to schedule everything in
+        self.make_retry_keep_going = False
 
     @property
     def code_is_available(self):
@@ -286,6 +293,7 @@ class CodeBase(Logger):
             'path_names': path_names_str,
             'executable_name': self.executable_name,
             'run_idb': debug,
+            'make_retry_keep_going': self.make_retry_keep_going,
         }
 
         self.templates.get_template('compile.sh').stream(**vars).dump(P(self.builddir, 'compile.sh'))
@@ -455,11 +463,29 @@ class SocratesCodeBase(CodeBase):
                            (self.socrates_version, socrates_desired_location))
             return os.path.realpath(socrates_desired_location)
 
+        is_empty_submodule_placeholder = (
+            self.socrates_version == DEFAULT_SOCRATES_VERSION
+            and os.path.isdir(socrates_desired_location)
+            and not os.path.islink(socrates_desired_location)
+            and not os.listdir(socrates_desired_location)
+        )
+
         if os.path.islink(socrates_desired_location):
             # broken symlink (e.g. left over from a different GFDL_SOC_DIR)
             self.log.info('Socrates source symlink for version %s points somewhere invalid. Recreating.' %
                            self.socrates_version)
             os.unlink(socrates_desired_location)
+        elif is_empty_submodule_placeholder:
+            # A plain `git clone` of the superproject (without
+            # --recurse-submodules, e.g. GitHub Actions' default checkout)
+            # still materialises an empty directory at a submodule's path
+            # even though its content was never fetched -- not the same as
+            # the "missing entirely" case _init_socrates_submodule's `git
+            # submodule update --init` otherwise runs against, but it
+            # populates into an existing empty directory just as well, so
+            # there's nothing to clean up here.
+            self.log.info('Socrates source directory for version %s exists but is an empty, '
+                           'uninitialised submodule placeholder. Initialising.' % self.socrates_version)
         elif os.path.exists(socrates_desired_location):
             error_mesg = ('%s exists but does not look like a Socrates checkout (no src/ '
                           'subdirectory found inside it).' % socrates_desired_location)
@@ -522,6 +548,19 @@ class SocratesCodeBase(CodeBase):
         self.executable_name = '%s_%s.x' % (self.executable_prefix, socrates_version.replace('.', '_'))
         super(SocratesCodeBase, self).__init__(*args, **kwargs)
         self.disable_rrtm()
+        # mkmf's automatic dependency detection only scans each compiled
+        # file's own literal USE/MODULE statements -- never the text of
+        # files it pulls in via a plain Fortran INCLUDE (see bin/mkmf's
+        # scanfile_for_keywords). Some Socrates source is structured that
+        # way (e.g. aux/seaalbedo_driver.f both calls into and INCLUDEs the
+        # whole of aux/seaalbedo.f -- see _drop_textually_included_duplicates
+        # in isca.socrates_paths for why seaalbedo.f itself isn't compiled
+        # independently), so a real module dependency inherited through the
+        # INCLUDE (e.g. seaalbedo.f's own USE spline_evaluate_mod) is
+        # invisible to mkmf, leaving that one file's build order relative to
+        # its provider unconstrained in the generated Makefile. See
+        # CodeBase.make_retry_keep_going for how this is worked around.
+        self.make_retry_keep_going = True
         socrates_source_dir = self.ensure_socrates_source()
         self.load_version_path_names(socrates_source_dir)
 

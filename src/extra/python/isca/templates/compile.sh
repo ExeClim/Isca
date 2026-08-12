@@ -17,6 +17,7 @@ template_debug={{ template_dir }}/mkmf.template.debug
 #-----------------------------------------------------------------------------------------------------
 execdir={{ execdir }}        # where code is compiled and executable is created
 executable={{ executable_name }}
+make_retry_keep_going={{ make_retry_keep_going }}
 
 netcdf_flags=`nf-config --fflags --flibs`
 
@@ -76,6 +77,17 @@ if [ $? != 0 ]; then
 fi
 
 # --- execute make ---
+if [ "$make_retry_keep_going" == "True" ]; then
+    # Best-effort first pass: mkmf's auto-detected build order can be
+    # missing a real dependency for a handful of files (see where
+    # make_retry_keep_going gets set, in codebase.py), which without this
+    # can make the single `make` below fail depending on incidental
+    # ordering. `-k` pushes through and builds everything it can regardless
+    # of order rather than stopping at the first failure, so any object the
+    # missing dependency should have been ordered against gets built anyway;
+    # the plain `make` that follows then finds it already there and succeeds.
+    make -k $executable
+fi
 make $executable
 if [ $? != 0 ]; then
     echo "ERROR: make failed for $executable"
