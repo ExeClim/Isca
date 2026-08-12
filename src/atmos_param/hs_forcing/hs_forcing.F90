@@ -835,7 +835,19 @@ real :: theta, mean_anomaly, ecc_anomaly, true_anomaly
     call calc_ecc_anomaly(mean_anomaly, ecc, ecc_anomaly)
     true_anomaly = 2*atan(((1 + ecc)/(1 - ecc))**0.5 * tan(ecc_anomaly/2))
     orb_dist = smaxis * (1 - ecc**2)/(1 + ecc*cos(true_anomaly))
-    theta = 2*pi*modulo((current_time/(orbital_period*86400))-equinox_day, 1.0)
+    if (equinox_day == 0.) then
+      ! Original formulation, preserved bit-for-bit for the default (no equinox
+      ! offset requested) case. Mathematically theta is 2*pi-periodic either way
+      ! (sin(theta) below is invariant to adding whole orbits), but the modulo()
+      ! branch reorders the multiply/divide and adds a wrap-around, which is not
+      ! bit-identical even when equinox_day = 0 and no actual wrapping occurs -
+      ! breaking bit-reproducibility against master for any equinox_day=0 run
+      ! using equilibrium_t_option='top_down' (e.g. top_down_test). See
+      ! trip_test comparison notes.
+      theta = 2*pi*current_time/(orbital_period*86400)
+    else
+      theta = 2*pi*modulo((current_time/(orbital_period*86400))-equinox_day, 1.0)
+    endif
     dec = asin(sin(obliq*pi/180)*sin(theta))
 
 end subroutine update_orbit
