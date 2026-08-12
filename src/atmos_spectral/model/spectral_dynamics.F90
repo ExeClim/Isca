@@ -1158,28 +1158,42 @@ do ntr = 1, num_tracers
   else if(trim(tracer_attributes(ntr)%numerical_representation) == 'grid') then
     tr_future = grid_tracers(:,:,:,previous,ntr) + delta_t*dt_tr(:,:,:,ntr)
 
-    dt_tmp = 0.0
-    call a_grid_horiz_advection (ug(:,:,:,current), vg(:,:,:,current), tr_future, delta_t, dt_tmp)
-    dt_tr(:,:,:,ntr) = dt_tr(:,:,:,ntr) + dt_tmp
-    tr_future = tr_future + delta_t*dt_tmp
+    if (do_spec_tracer_filter) then
+      ! [TS/LJJ mod:] spectral damping of grid tracer (needed for Titan). The filter
+      ! has to act on the *combined* horizontal+vertical tendency, so build the full
+      ! tendency up in dt_tr and recompute tr_future from it once at the end, rather
+      ! than incrementing tr_future directly at each step as the do_spec_tracer_filter
+      ! = .false. branch below does. This changes the floating-point summation order
+      ! relative to that branch (same result to machine precision, not bit-for-bit),
+      ! so it's kept behind this namelist flag rather than being the only code path -
+      ! see the .false. branch's comment for why that distinction matters.
+      dt_tmp = 0.0
+      call a_grid_horiz_advection (ug(:,:,:,current), vg(:,:,:,current), tr_future, delta_t, dt_tmp)
+      dt_tr(:,:,:,ntr) = dt_tr(:,:,:,ntr) + dt_tmp
+      tr_future = tr_future + delta_t*dt_tmp
 
-    dp = p_half(:,:,2:num_levels+1) - p_half(:,:,1:num_levels)
-    call vert_advection(delta_t, wg, dp, tr_future, dt_tmp, scheme=tracer_vert_advect_scheme(ntr), form=ADVECTIVE_FORM)
-    dt_tr(:,:,:,ntr) = dt_tr(:,:,:,ntr) + dt_tmp
+      dp = p_half(:,:,2:num_levels+1) - p_half(:,:,1:num_levels)
+      call vert_advection(delta_t, wg, dp, tr_future, dt_tmp, scheme=tracer_vert_advect_scheme(ntr), form=ADVECTIVE_FORM)
+      dt_tr(:,:,:,ntr) = dt_tr(:,:,:,ntr) + dt_tmp
 
-    ! [TS/LJJ mod:] added spectral damping of grid tracer
-    if(do_spec_tracer_filter) then !added rwills - spec_tracer_filter only needed for titan, causes water conservation problems in def run
       call trans_grid_to_spherical  (dt_tr(:,:,:,ntr), dt_trs(:,:,:))
       call trans_grid_to_spherical (grid_tracers(:,:,:,previous,ntr), spec_tracers(:,:,:,previous,ntr))
       call compute_spectral_damping (spec_tracers(:,:,:,previous,ntr), dt_trs(:,:,:), delta_t)
-      call trans_spherical_to_grid  (dt_trs(:,:,:), dt_tr(:,:,:,ntr))    
-   endif
-   tr_future = grid_tracers(:,:,:,previous, ntr) + delta_t * dt_tr(:,:,:,ntr)
-   !  End spectral damping modifications   !!!!
+      call trans_spherical_to_grid  (dt_trs(:,:,:), dt_tr(:,:,:,ntr))
+      tr_future = grid_tracers(:,:,:,previous, ntr) + delta_t * dt_tr(:,:,:,ntr)
+    else
+      ! Original (pre-do_spec_tracer_filter) formulation, preserved exactly so that
+      ! cases which don't use the Titan spectral-tracer-filter option (the default,
+      ! e.g. frierson and every other non-Titan test case) get bit-identical results
+      ! to before that option was added - see trip_test comparison notes.
+      dt_tr(:,:,:,ntr) = 0.0
+      call a_grid_horiz_advection (ug(:,:,:,current), vg(:,:,:,current), tr_future, delta_t, dt_tr(:,:,:,ntr))
+      tr_future = tr_future + delta_t*dt_tr(:,:,:,ntr)
 
-   !End result of this modified version shouild be exacty as before. a_grid now updates dt_tmp, which is used to increment tr_future. tr_future is fed into vert_advection, which updates dt_tr. Then we have the option of sending the whole dt_tr through the spectral filter. But either way, we end up with a total dt_tr that is used to increment tr_future, and write over the temporary modifications made to tr_future after a_grid.
-
-
+      dp = p_half(:,:,2:num_levels+1) - p_half(:,:,1:num_levels)
+      call vert_advection(delta_t, wg, dp, tr_future, dt_tmp, scheme=tracer_vert_advect_scheme(ntr), form=ADVECTIVE_FORM)
+      tr_future = tr_future + delta_t*dt_tmp
+    endif
 
     if(step_number == num_steps) then
       part_filt_tr_out(:,:,:,ntr)=grid_tracers(:,:,:,previous,ntr) - 2.0*grid_tracers(:,:,:,current,ntr)

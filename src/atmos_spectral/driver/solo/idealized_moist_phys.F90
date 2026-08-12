@@ -1453,10 +1453,19 @@ if(bucket) then
    dt_bucket = depth_change_cond + depth_change_conv - depth_change_lh
    !change in bucket depth in one leapfrog timestep [m]
 
-   !diffuse_surf_water transforms dt_bucket to spherical, diffuses water, and transforms back
-   ! no need to diffuse in column model, as no horizontal diffusion is possible
+   ! diffuse_surf_water transforms dt_bucket to spherical, diffuses water, and transforms
+   ! back - no need to diffuse in column model, as no horizontal diffusion is possible.
+   ! Only do this round-trip when damping has actually been requested (damping_coeff_bucket
+   ! > 0). Even with damping_coeff_bucket = 0 (the default), the spherical/grid round-trip
+   ! is not a no-op: it truncates dt_bucket to the spectral resolution, acting as an
+   ! unconditional low-pass filter on grid-scale structure (e.g. land/ocean boundaries in
+   ! bucket_depth) that has nothing to do with the requested damping. Skipping it when
+   ! unused keeps non-Titan bucket runs bit-identical to before this option was added -
+   ! see trip_test comparison notes.
 #ifndef COLUMN_MODEL
-   call diffuse_surf_water(dt_bucket,bucket_depth(:,:,previous),delta_t,damping_coeff_bucket,bucket_diffusion)
+   if (damping_coeff_bucket > 0.) then
+     call diffuse_surf_water(dt_bucket,bucket_depth(:,:,previous),delta_t,damping_coeff_bucket,bucket_diffusion)
+   endif
 #endif
 
    ! use the raw filter in leapfrog time stepping
