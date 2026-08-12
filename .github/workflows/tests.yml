@@ -5,6 +5,7 @@ on:
     branches: [ master ]
     paths:
       - '.github/workflows/tests.yml'
+      - '.gitmodules'
       - 'bin/**'
       - 'bin/**'
       - 'ci/**'
@@ -16,6 +17,7 @@ on:
     branches: [ master ]
     paths:
       - '.github/workflows/tests.yml'
+      - '.gitmodules'
       - 'bin/**'
       - 'ci/**'
       - 'exp/**'
@@ -64,6 +66,10 @@ jobs:
         run: conda list
 
       - name: Run tests
+        # test_compile.py's Socrates tests fetch Socrates source from
+        # github.com/MetOffice/socrates on demand (a sparse partial clone,
+        # a few MB) if it isn't already present, which needs the outbound
+        # network access GitHub-hosted runners have by default.
         shell: bash -l {0}
         run: |
           python -m pytest

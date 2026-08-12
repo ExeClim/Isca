@@ -1,0 +1,5 @@
+[submodule "src/atmos_param/socrates/src/2026.07.1"]
+	path = src/atmos_param/socrates/src/2026.07.1
+	url = https://github.com/MetOffice/socrates.git
+	branch = 2026.07.1
+	shallow = true

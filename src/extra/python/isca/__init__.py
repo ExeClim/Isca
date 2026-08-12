@@ -37,7 +37,16 @@ try:
 except:
     # if the user doesn't have the SOC variable set, then use None
     GFDL_SOC = None
-    log.warning('Environment variable GFDL_SOC not set, but this is only required if using SocratesCodebase. Setting to '+str(GFDL_SOC))
+    log.warning('Environment variable GFDL_SOC not set, but this is only required if using SocratesCodebase with a single, manually-placed Socrates checkout. Setting to '+str(GFDL_SOC))
+
+try:
+    GFDL_SOC_DIR = os.environ['GFDL_SOC_DIR']
+except:
+    # if the user doesn't have this set, SocratesCodeBase falls back to
+    # a default cache directory under GFDL_WORK and fetches versions
+    # on demand, so this is just informational.
+    GFDL_SOC_DIR = None
+    log.warning('Environment variable GFDL_SOC_DIR not set. SocratesCodeBase will cache fetched Socrates source under GFDL_WORK by default; set GFDL_SOC_DIR to control where that lives (e.g. on a shared filesystem, or a pre-populated offline cache).')
 
 def get_env_file(env=GFDL_ENV):
     filepath = os.path.join(GFDL_BASE, 'src', 'extra', 'env', env)

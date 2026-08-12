@@ -130,10 +130,10 @@ exp.namelist = Namelist({
 
     'socrates_rad_nml': {
         'stellar_constant': 1370.,
-        #'lw_spectral_filename': os.path.join(GFDL_BASE, 'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_lw_ga7'),
-        #'sw_spectral_filename': os.path.join(GFDL_BASE, 'src/atmos_param/socrates/src/trunk/data/spectra/ga7/sp_sw_ga7'),
-        'lw_spectral_filename': os.path.join(GFDL_BASE, 'src/atmos_param/socrates/src/trunk/data/spectra/ga3_1/sp_lw_ga3_1'),
-        'sw_spectral_filename': os.path.join(GFDL_BASE, 'src/atmos_param/socrates/src/trunk/data/spectra/ga3_1/sp_sw_ga3_0'),
+        #'lw_spectral_filename': os.path.join(GFDL_BASE, 'src/atmos_param/socrates/src', cb.socrates_version, 'data/spectra/ga7/sp_lw_ga7'),
+        #'sw_spectral_filename': os.path.join(GFDL_BASE, 'src/atmos_param/socrates/src', cb.socrates_version, 'data/spectra/ga7/sp_sw_ga7'),
+        'lw_spectral_filename': os.path.join(GFDL_BASE, 'src/atmos_param/socrates/src', cb.socrates_version, 'data/spectra/ga3_1/sp_lw_ga3_1'),
+        'sw_spectral_filename': os.path.join(GFDL_BASE, 'src/atmos_param/socrates/src', cb.socrates_version, 'data/spectra/ga3_1/sp_sw_ga3_0'),
         'do_read_ozone': True,
         'ozone_file_name' : 'ozone_1990',
         'ozone_field_name': 'ozone_1990',
