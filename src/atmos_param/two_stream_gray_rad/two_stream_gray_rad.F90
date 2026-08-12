@@ -489,16 +489,42 @@ if (do_seasonal) then
   call get_time(length_of_year(), year_in_s)
   day_in_s = length_of_day()
   r_seconds = real(seconds)
-  r_days=real(days)
-  r_total_seconds=r_seconds+(r_days*86400.)
-  
-  frac_of_day = r_total_seconds / day_in_s
 
-  if(solday .ge. 0) then
-      r_solday=real(solday)
-      frac_of_year = (r_solday*day_in_s) / year_in_s
+  if (day_in_s == 86400.) then
+    ! Earth-standard solar day: r_seconds alone is already in [0, day_in_s), so
+    ! frac_of_day needs no whole-elapsed-days correction here. Kept as its own
+    ! branch, bit-for-bit as before 7f4201dd, so seasonal runs at the standard
+    ! Earth day length stay bit-identical to master - see trip_test comparison
+    ! notes. (7f4201dd's fix is only needed below, for day_in_s /= 86400.)
+    frac_of_day = r_seconds / day_in_s
+
+    if(solday .ge. 0) then
+        r_solday=real(solday)
+        frac_of_year = (r_solday*day_in_s) / year_in_s
+    else
+        r_days=real(days)
+        r_total_seconds=r_seconds+(r_days*day_in_s)
+        frac_of_year = r_total_seconds / year_in_s
+    endif
   else
-      frac_of_year = r_total_seconds / year_in_s
+    ! Non-Earth solar day (e.g. Mars, Titan): the model's own "days" bookkeeping
+    ! runs in fixed 86400s calendar units regardless of the actual solar day
+    ! length, so frac_of_day has to be built from the total elapsed seconds, not
+    ! just the current day's remainder - otherwise it's unaware of how much time
+    ! has passed via the days count, and the sub-stellar point stays fixed in
+    ! longitude for day lengths longer than 86400s. See 7f4201dd ("Important fix
+    ! for two-stream") for the original bug report.
+    r_days=real(days)
+    r_total_seconds=r_seconds+(r_days*86400.)
+
+    frac_of_day = r_total_seconds / day_in_s
+
+    if(solday .ge. 0) then
+        r_solday=real(solday)
+        frac_of_year = (r_solday*day_in_s) / year_in_s
+    else
+        frac_of_year = r_total_seconds / year_in_s
+    endif
   endif
 
   gmt = abs(mod(frac_of_day, 1.0)) * 2.0 * pi
