@@ -16,6 +16,7 @@ postprocessing/plevel_interpolation/scripts/archived/*
 spin_up_restart/
 src/extra/python/scripts/*.nc
 src/extra/python/scripts/archived/
+exp/test_cases/frierson_dry_heating/input/*.nc
 *.sh.*
 src/atmos_param/socrates/src/trunk*
 

@@ -399,7 +399,7 @@ contains
       if ( mpp_pe() == mpp_root_pe() ) then
            call mpp_open (unit, 'RESTART/atmos_model.res', form=MPP_ASCII, action=MPP_OVERWR, &
                           access=MPP_SEQUENTIAL, threading=MPP_SINGLE, nohdrs=.true. )
-           write (unit,'(6i6,8x,a)') date, &
+           write (unit,'(6i10,8x,a)') date, &
                  'Current model time: year, month, day, hour, minute, second'
            write (unit,'(i6,8x,a)') calendar_type, &
                  '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
