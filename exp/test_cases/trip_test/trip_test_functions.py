@@ -72,6 +72,15 @@ def get_nml_diag(test_case_name):
         nml_out = exp_temp.namelist
         codebase_to_use = SocratesCodeBase
 
+    if 'socrates_mars_dust' in test_case_name:
+        # Note: 'socrates_mars_dust' also matches the 'socrates_mars' check above - this
+        # block runs afterwards and overwrites nml_out/input_files/codebase_to_use, so it wins.
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_mars_dust/'))
+        from socrates_mars_dust_test_case import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = SocratesCodeBase
+
     if 'column_test' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/column_test_case/'))
         from column_test_case import exp as exp_temp
@@ -212,6 +221,7 @@ def list_all_test_cases_implemented_in_trip_test():
                         'grey_mars',
                         'radiative_eq_mars',
                         #'socrates_mars', # requires Mars-specific Socrates spectral files not yet included in the repo - see exp/test_cases/socrates_mars/input/README.md
+                        #'socrates_mars_dust', # requires Mars-dust-specific Socrates spectral files and dust climatology data not yet included in the repo - see exp/test_cases/socrates_mars_dust/input/README.md
                         #'frierson_dry_heating', # exercises the new local_heating feature, which the current ExeClim master doesn't have - included for opt-in testing, not run by default
                         ]
 
