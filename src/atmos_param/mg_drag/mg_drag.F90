@@ -6,16 +6,22 @@ module mg_drag_mod
 
 !-------------------------------------------------------------------
 !  Calculates partial tendencies for the zonal and meridional winds
-!  due to the effect of mountain gravity wave drag 
+!  due to the effect of mountain gravity wave drag
 !-------------------------------------------------------------------
 
  use  topography_mod, only: get_topog_stdev
 
  use         fms_mod, only: mpp_npes, field_size, file_exist, write_version_number, stdlog, &
                             mpp_pe, mpp_root_pe, error_mesg, FATAL, NOTE, read_data, write_data,  &
-                            open_namelist_file, close_file, check_nml_error, open_restart_file, mpp_error
+                            open_namelist_file, close_file, check_nml_error, open_restart_file, mpp_error, &
+                            set_domain
  use      fms_io_mod, only: get_restart_io_mode
  use   constants_mod, only: Grav, Kappa, RDgas, cp_air
+#ifdef COLUMN_MODEL
+ use    spec_mpp_mod, only: grid_domain
+#else
+ use  transforms_mod, only: grid_domain
+#endif
 
 !-----------------------------------------------------------------------
  implicit none
@@ -47,13 +53,13 @@ module mg_drag_mod
 !---------------------------------------------------------------------
 !     xl_mtn      effective mountain length ( set currently to 100km)
 !     acoef       order unity "tunable" parameter
-!     gmax    order unity "tunable" parameter 
+!     gmax    order unity "tunable" parameter
 !             (may be enhanced to increase drag)
 !     rho     stand value for density of the air at sea-level (1.13 KG/M**3)
 !     low_lev_frac - fraction of atmosphere (from bottom up) considered
 !              to be "low-level-layer for base flux calc. and where no
 !              wave breaking is allowed.
-!     flux_cut_level pressure level (Pa) above which flux divergence is set to zero 
+!     flux_cut_level pressure level (Pa) above which flux divergence is set to zero
 !-----------------------------------------------------------------------
 
  real :: &
@@ -65,22 +71,34 @@ module mg_drag_mod
       ,low_lev_frac = .23
 
 real  ::  flux_cut_level= 0.0
+real  ::  tp_level = .9
+
+integer  ::  ideal_lat_cent_NH = 48
+integer  ::  ideal_lat_cent_SH = 17
+integer  ::  ideal_pfull_cent = 19
+real  ::  ideal_strength = -0.00002
 
 logical :: do_netcdf_restart = .true.
 logical :: do_conserve_energy = .false.
 logical :: do_mcm_mg_drag = .false.
+logical :: no_strat_drag = .false.
+logical :: no_trop_drag = .false.
+logical :: do_idealised_NH = .false.
+logical :: do_idealised_SH = .false.
 character(len=128) :: source_of_sgsmtn = 'input'
 
     namelist / mg_drag_nml / do_netcdf_restart,  &
                              xl_mtn, gmax, acoef, rho, low_lev_frac, &
                              do_conserve_energy, do_mcm_mg_drag,     &
-                             source_of_sgsmtn, flux_cut_level 
+                             source_of_sgsmtn, flux_cut_level, &
+                             no_strat_drag, no_trop_drag, tp_level, &
+                             do_idealised_NH, do_idealised_SH, ideal_lat_cent_NH, ideal_lat_cent_SH, ideal_pfull_cent, ideal_strength
 
  public mg_drag, mg_drag_init, mg_drag_end
 
  contains
 
-!#############################################################################      
+!#############################################################################
 
  subroutine mg_drag (is, js, delt, uwnd, vwnd, temp, pfull, phalf, &
                     zfull,zhalf,dtaux,dtauy,dtemp,taubx, tauby, tausf,&
@@ -129,14 +147,14 @@ character(len=128) :: source_of_sgsmtn = 'input'
 !                   (dimensioned IDIM x JDIM)-kg/m/s**2
 !                   = -(RHO*U**3/(N*XL))*G(FR) FOR N**2 > 0
 !                   =          0               FOR N**2 <=0
-!      DTAUX    Tendency of the zonal wind component deceleration 
+!      DTAUX    Tendency of the zonal wind component deceleration
 !                   (dimensioned IDIM x JDIM x KDIM)
-!      DTAUY    Tendency of the meridional wind component deceleration 
+!      DTAUY    Tendency of the meridional wind component deceleration
 !                   (dimensioned IDIM x JDIM x KDIM)
 !      dtemp    Tendency of temperature due to dissipation of ke
 !
 !      TAUSF = "CLIPPED" SAT MOMENTUM FLUX ( AT HALF LEVELS below top)
-!                  
+!
 !===================================================================
 
 !-----------------------------------------------------------------------
@@ -178,7 +196,7 @@ character(len=128) :: source_of_sgsmtn = 'input'
 !=======================================================================
 !  (Intent local)
  real , dimension(size(uwnd,1),size(uwnd,2)) ::  xn, yn, psurf,ptop,taub
- real , dimension(size(uwnd,1),size(uwnd,2),size(uwnd,3)) ::  theta 
+ real , dimension(size(uwnd,1),size(uwnd,2),size(uwnd,3)) ::  theta
  real , dimension(size(uwnd,1),size(uwnd,2),size(uwnd,3)+1) ::  taus
  real vsamp
 integer, dimension (size(uwnd,1),size(uwnd,2)) :: ktop, kbtm
@@ -195,18 +213,18 @@ integer id, jd, idim, jdim, kdim, kdimm1, kdimp1, ie, je
 !                   -> -AETA(L)*PS*UMAG(L)*D(L)*GMAX/XL
 !      THETA    POTENTIAL temperature at full model levels
 !                   (dimensioned IDIM x JDIM x KDIM)
-!      PSURF    Surface pressure 
+!      PSURF    Surface pressure
 !                   (dimensioned IDIM x JDIM)
 !      PTOP     Pressure at top of low-level layer
 !                   (dimensioned IDIM x JDIM)
 !      KTOP     Top model level index included in low-level layer
 !                   (dimensioned IDIM x JDIM)
 !      KBTM     Bottom model level index included in low-level layer
-!                   usually the lowest level 
+!                   usually the lowest level
 !                   (dimensioned IDIM x JDIM)
 !-----------------------------------------------------------------------
 !  type loop indicies
- integer i, j, k, kd, kb, kt, kbp1, ktm1 
+ integer i, j, k, kd, kb, kt, kbp1, ktm1
 !-----------------------------------------------------------------------
 !  Local variables needed only for code that
 !  implements supersource-like gravity wave drag.
@@ -217,7 +235,7 @@ real    :: sigtop, small=1.e-10
 real,    dimension(size(uwnd,1),size(uwnd,2))              :: ulow, vlow, tlow, thlow
 real,    dimension(size(uwnd,1),size(uwnd,2))              :: rlow, zsvar, bvfreq, x
 real,    dimension(size(uwnd,1),size(uwnd,2))              :: depth, ave_p
-integer, dimension(size(uwnd,1),size(uwnd,2))              :: ntop 
+integer, dimension(size(uwnd,1),size(uwnd,2))              :: ntop
 real,    dimension(size(uwnd,1),size(uwnd,2),size(uwnd,3)) :: th, sh_ang, test
 real,    dimension(size(uwnd,1),size(uwnd,2),size(uwnd,3)) :: sigma, del_sigma
 !real,    dimension(size(uwnd,1),size(uwnd,2),size(uwnd,3)+1) :: sigma_half
@@ -229,7 +247,6 @@ real,    dimension(size(uwnd,1),size(uwnd,2),size(uwnd,3)) :: sigma, del_sigma
   kdim = size( uwnd, 3 )
   kdimm1 = kdim - 1
   kdimp1 = kdim + 1
-
 !-----------------------------------------------------------------------
 
 !        CODE VARIABLES     DESCRIPTION
@@ -259,7 +276,7 @@ real,    dimension(size(uwnd,1),size(uwnd,2),size(uwnd,3)) :: sigma, del_sigma
 !              BNV,BNVK = "LOW-LEVEL",V. PROFILE -  BRUNT VAISALA FREQ(1
 !                                                                 (= N,N
 !              BNV2,BNVK2 = N**2, N(L)**2
-!              HPRIME = Sub-grid scale mountain height 
+!              HPRIME = Sub-grid scale mountain height
 !                       over local domain (IDIM x JDIM)
 !              XL = EFFECTIVE MOUNTAIN LENGTH = (100KM EVERYWHERE)
 !              SIGTOP = HIGHEST LEVEL TO WHICH GRAVITY WAVE
@@ -305,8 +322,8 @@ if ( .not.do_mcm_mg_drag ) then
 !  (input via namelist), find highest model level.
 
     ptop(:,:) = (1.-low_lev_frac)*psurf(:,:)
-    do kd=kdim,1,-1 
-         where (pfull(:,:,kd) .ge. ptop(:,:)) 
+    do kd=kdim,1,-1
+         where (pfull(:,:,kd) .ge. ptop(:,:))
            ktop(:,:) = kd
          end where
     end do
@@ -328,7 +345,7 @@ if ( .not.do_mcm_mg_drag ) then
          &                xn,yn,taub,pfull, phalf,zfull,zhalf,vsamp,taus)
 
 !  calculate mountain gravity wave drag tendency contributions
-    call mgwd_tend (is,js,xn,yn,taub,phalf,taus,dtaux,dtauy, tausf)
+    call mgwd_tend (is,js,xn,yn,taub,pfull,phalf,taus,dtaux,dtauy,tausf)
 
 else if ( do_mcm_mg_drag ) then
 
@@ -378,9 +395,9 @@ else if ( do_mcm_mg_drag ) then
     do j = 1,jdim
       do i = 1,idim
         do k = ntop(i,j), kdim
-           ulow(i,j)  = ulow(i,j)  + del_sigma(i,j,k)* uwnd(i,j,k) 
-           vlow(i,j)  = vlow(i,j)  + del_sigma(i,j,k)* vwnd(i,j,k) 
-           tlow(i,j)  = tlow(i,j)  + del_sigma(i,j,k)* temp(i,j,k)  
+           ulow(i,j)  = ulow(i,j)  + del_sigma(i,j,k)* uwnd(i,j,k)
+           vlow(i,j)  = vlow(i,j)  + del_sigma(i,j,k)* vwnd(i,j,k)
+           tlow(i,j)  = tlow(i,j)  + del_sigma(i,j,k)* temp(i,j,k)
            thlow(i,j) = thlow(i,j) + del_sigma(i,j,k)*th(i,j,k)
            depth(i,j) = depth(i,j) + del_sigma(i,j,k)
         end do
@@ -440,7 +457,7 @@ else if ( do_mcm_mg_drag ) then
         20 continue
         if ( klast /= 0 )  test(i,j,1:klast) = 0.0
         kcrit = klast + 1
-        x(i,j) = x(i,j)/(1.-sigma(i,j,kcrit))  
+        x(i,j) = x(i,j)/(1.-sigma(i,j,kcrit))
 !       should be  x(i,j) = x(i,j)/(1 - sigma_half(klast)/sigma_half(kdim))
       end do
     end do
@@ -464,15 +481,20 @@ else
   dtemp = 0.0
 endif
 
+! Temperature tendencies crashing model due to size? Add a minimum size at x10-11.
+where (dtemp<=1E-11)
+    dtemp = 0.0
+end where
+
 return
 end subroutine mg_drag
 !=======================================================================
 
-!#############################################################################      
- 
+!#############################################################################
+
 subroutine mgwd_base_flux (is,js,uwnd,vwnd,temp,pfull,phalf,ktop,kbtm,  &
                           theta,xn,yn,taub)
-                                  
+
 
 
 !-------------------------------------------------------------------
@@ -493,12 +515,12 @@ subroutine mgwd_base_flux (is,js,uwnd,vwnd,temp,pfull,phalf,ktop,kbtm,  &
 !=======================================================================
 !  (Intent local)
 real , dimension(size(uwnd,1),size(uwnd,2)) :: sumw, delp, ulow, bnv, &
-     &  hprime, fr, g, ubar, vbar, bnv2 
+     &  hprime, fr, g, ubar, vbar, bnv2
 real grav2, xli, a, small
  integer idim, jdim,kdim,ie, je
 !-----------------------------------------------------------------------
 !  type loop indicies
- integer i, j, k, kb, kt, kbp1, ktm1 
+ integer i, j, k, kb, kt, kbp1, ktm1
 !-----------------------------------------------------------------------
 !===================================================================
 
@@ -516,7 +538,7 @@ real grav2, xli, a, small
 ! define local scalar variables
   xli=1.0/xl_mtn
   grav2=grav*grav
-  a = acoef 
+  a = acoef
 
 
 !-----------------------------------------------------------------------
@@ -565,7 +587,7 @@ real grav2, xli, a, small
 !  v197 uses p* as reference vlues for theta, in above 1000 hPa is used
 !      theta(:,:,:)=temp(:,:,:)*(pfull(:,:,:)/ &
 !     &             phalf(:,:,kdim+1))**(-kappa)
- 
+
       do j=1,jdim
         do i=1,idim
           kt=ktop(i,j)
@@ -582,7 +604,7 @@ real grav2, xli, a, small
 !      -----------------------------------------
            small = epsilon(ulow)
 
-           where (bnv2(:,:) .gt. 0.0) 
+           where (bnv2(:,:) .gt. 0.0)
              bnv(:,:) = sqrt(bnv2(:,:))
              fr (:,:) = bnv(:,:)*hprime(:,:)/(ulow(:,:) + small)
              g  (:,:) = gmax*fr(:,:)*fr(:,:)/(fr(:,:)*fr(:,:)+a*a)
@@ -596,7 +618,7 @@ real grav2, xli, a, small
 
 end subroutine mgwd_base_flux
 
-!#############################################################################      
+!#############################################################################
 
 subroutine mgwd_satur_flux (uwnd,vwnd,temp,theta,ktop,kbtm, &
                            xn,yn,taub,pfull,phalf,zfull,zhalf,vsamp,taus)
@@ -606,7 +628,7 @@ subroutine mgwd_satur_flux (uwnd,vwnd,temp,theta,ktop,kbtm, &
  real, intent(in), dimension (:,:,:)  :: &
      &             uwnd, vwnd, temp, theta, pfull, phalf,zfull, zhalf
  real, intent(in), dimension (:,:)    :: xn, yn, taub
- real, intent(in)                     :: vsamp 
+ real, intent(in)                     :: vsamp
  integer, intent(in), dimension (:,:) :: ktop, kbtm
 !===================================================================
 ! Arguments (intent out)
@@ -614,16 +636,16 @@ subroutine mgwd_satur_flux (uwnd,vwnd,temp,theta,ktop,kbtm, &
 !=======================================================================
 !  (Intent local)
  real , dimension(size(uwnd,1),size(uwnd,2),size(uwnd,3)) ::  &
-     &       dterm, dudz  
+     &       dterm, dudz
  real , dimension(size(uwnd,1),size(uwnd,2),size(uwnd,3)+1) ::  &
      &       umag, bnvk2, d,d2, d2i, d2udz2, extend
  real grav2, xli, small
  integer :: idim, jdim, kdim, kdimm1, kdimp1
 !-----------------------------------------------------------------------
 !  type loop indicies
- integer i, j, k, kb, kt, kbp1, ktm1 
+ integer i, j, k, kb, kt, kbp1, ktm1
 !-----------------------------------------------------------------------
-!  type flux cutoff 
+!  type flux cutoff
  integer kcut
 !=======================================================================
 
@@ -740,7 +762,7 @@ subroutine mgwd_satur_flux (uwnd,vwnd,temp,theta,ktop,kbtm, &
 !     compute wkb extension term for umag > 0
 !     ---------------------------------------
 
-         where (umag(:,:,:).gt.0.0) 
+         where (umag(:,:,:).gt.0.0)
             extend(:,:,:) = vsamp*d2udz2(:,:,:)/umag(:,:,:)
          elsewhere
             extend(:,:,:) = 0.0
@@ -784,7 +806,7 @@ subroutine mgwd_satur_flux (uwnd,vwnd,temp,theta,ktop,kbtm, &
 !     initialize d2i to a large number, which will result in a very
 !     small vertical wavelength (d) where umag = 0.
 
-         where (umag(:,:,:).gt.0.0) 
+         where (umag(:,:,:).gt.0.0)
             d2i(:,:,:) = (bnvk2(:,:,:)/(umag(:,:,:)* &
      &                   umag(:,:,:)) - extend(:,:,:) )
          elsewhere
@@ -797,7 +819,7 @@ subroutine mgwd_satur_flux (uwnd,vwnd,temp,theta,ktop,kbtm, &
 !     for 1/d**2 approaching 0 calculate d by dividing by a
 !     very small but finite number
 
-         where (d2i(:,:,:) .lt. 1.e-30) 
+         where (d2i(:,:,:) .lt. 1.e-30)
             d(:,:,:) = 1.e+30
          elsewhere
             d2(:,:,:) = 1./d2i(:,:,:)
@@ -806,7 +828,7 @@ subroutine mgwd_satur_flux (uwnd,vwnd,temp,theta,ktop,kbtm, &
 
 
 !     set d=0 for umag=0.
-         where (umag(:,:,:).eq.0.0) 
+         where (umag(:,:,:).eq.0.0)
             d(:,:,:) = 0.0
          endwhere
 
@@ -840,16 +862,16 @@ subroutine mgwd_satur_flux (uwnd,vwnd,temp,theta,ktop,kbtm, &
 
 !     keep taus profile constant across top model layer (original code)
 !     calculate taus profile in top model layer (new code)
- 
+
         taus(:,:,1) = taus(:,:,2)
 !del        taus(:,:,1) = -phalf(:,:,1)*umag(:,:,1)*umag(:,:,1) &
 !del     &                  *d(:,:,1)*xli*gmax / (temp(:,:,1)*rdgas)
 
 
 !     do not allow wave breaking for unstable layers
- 
+
        do k = 1,kdimp1
-         where ( bnvk2(:,:,k) .lt. 0.0) 
+         where ( bnvk2(:,:,k) .lt. 0.0)
            taus(:,:,k) =  taub(:,:)
          endwhere
        end do
@@ -858,8 +880,8 @@ subroutine mgwd_satur_flux (uwnd,vwnd,temp,theta,ktop,kbtm, &
 ! -------------------------------------------
 !        tausat(:,:,1) = 0.             ! use all forcing
 !         Instead,  let remaining flux escape above flux_cut_level
-      if( flux_cut_level > 0.0 ) then 
-         kcut= 1 
+      if( flux_cut_level > 0.0 ) then
+         kcut= 1
          do while( phalf(1,1,kcut) < flux_cut_level )
             kcut= kcut+1
          enddo
@@ -871,13 +893,13 @@ subroutine mgwd_satur_flux (uwnd,vwnd,temp,theta,ktop,kbtm, &
 
 end subroutine mgwd_satur_flux
 
-!#############################################################################      
+!#############################################################################
 
-subroutine mgwd_tend (is,js,xn,yn,taub,phalf,taus,dtaux,dtauy,tausf)
+subroutine mgwd_tend (is,js,xn,yn,taub,pfull,phalf,taus,dtaux,dtauy,tausf)
 
 !===================================================================
 ! Arguments (intent in)
- real, intent(in), dimension (:,:,:) :: phalf, taus
+ real, intent(in), dimension (:,:,:) :: pfull,phalf, taus
  real, intent(in), dimension (:,:) :: xn, yn, taub
  integer, intent(in)   :: is, js
 !===================================================================
@@ -885,9 +907,15 @@ subroutine mgwd_tend (is,js,xn,yn,taub,phalf,taus,dtaux,dtauy,tausf)
  real, intent(out), dimension (:,:,:) :: dtaux, dtauy, tausf
 !=======================================================================
 !  (Intent local)
- real , dimension(size(phalf,1),size(phalf,2),size(phalf,3)) ::  dterm 
+ real , dimension(size(phalf,1),size(phalf,2),size(phalf,3)) ::  dterm
  real , dimension(size(phalf,1),size(phalf,2),size(phalf,3)+1) ::  taup
  integer kdim, kdimp1
+
+ !  (Intent local) (trop/strat calc)
+ real , dimension(size(dtaux,1),size(dtaux,2)) ::  psurf,ptop_tp
+ integer, dimension (size(dtaux,1),size(dtaux,2)) :: kbtm
+ real pfull_av, ptop_av
+ integer ktop_tp
 !-----------------------------------------------------------------------
 !  type loop indicies
  integer k, kd
@@ -919,32 +947,128 @@ subroutine mgwd_tend (is,js,xn,yn,taub,phalf,taus,dtaux,dtauy,tausf)
 !     <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 !     <><><><><><><><>   DE-CELERATION CODE   <><><><><><><><>
- 
+
 !     CALCULATE DECELERATION TERMS - DTAUX,DTAUY
 !     ------------------------------------------
 
        do k=1,kdim
           dterm(:,:,k) = grav*(taup (:,:,k+1)-taup (:,:,k)) &
      &                     /(phalf(:,:,k+1)-phalf(:,:,k))
- 
+
         dtaux(:,:,k) = xn(:,:)*dterm(:,:,k)
         dtauy(:,:,k) = yn(:,:)*dterm(:,:,k)
        end do
+      !  ! RC Added to make stable at higher values of gmax (above 1) REMOVE AS UNREALISTIC!!
+      !  where (dtaux>0.001)
+      !  dtaux = 0.001
+      !  end where
 
+      !  where (dtaux<-0.001)
+      !  dtaux = -0.001
+      !  end where
 !  print sample output
 !            print*, ' mgdrag output for i,j=', is,js
-!            print *,'taub = ', taub(is,js)     
-!            print *,'taus = ', taus(is,js,:)     
-!            print *,'taup = ', taup(is,js,:)     
+!            print *,'taub = ', taub(is,js)
+!            print *,'taus = ', taus(is,js,:)
+!            print *,'taup = ', taup(is,js,:)
 
 
-!     ***********************************************************
+!-----------------------------------------------------------------------
+!! Turning off drag for stratosphere/troposphere
+!-----------------------------------------------------------------------
+!  calculate bottom of low-leveles layer = lowest level unless kbot is present
+!  copied this code from the low level fraction calculation in mg_drag
+    !     if (present(kbot)) then
+    !        kbtm(:,:) = kbot(:,:)
+    !     else
+    !        kbtm(:,:) = kdim
+    !     endif
+    ! !  calculate top of low-level layer, first get surface p from phalf
+    !     if (present(kbot)) then
+    !        do j=1,jdim
+    !        do i=1,idim
+    !          psurf(i,j) = phalf(i,j,kbtm(i,j)+1)
+    !        end do
+    !        end do
+    !     else
+    !        psurf(:,:) = phalf(:,:,kdimp1)
+    !     endif
+        psurf(:,:)=pfull(:,:,kdim)
+!  Based on fraction of model atmosphere to be considered below the "tropopause"
+!  (input via namelist), find highest model level in the "troposphere".
+! This definition is to do with the distribution of drag, not the actual tropopause
+
+        ptop_tp(:,:) = (1.-tp_level)*psurf(:,:)
+        ptop_av=sum(ptop_tp(:,:))/size(ptop_tp(:,:))
+        do kd=kdim,1,-1
+            pfull_av=sum(pfull(:,:,kd))/size(pfull(:,:,kd))
+            if (pfull_av .ge. ptop_av) then
+                ktop_tp = kd
+            endif
+        end do
+! Turn off drag below the "tropopause"
+        if (no_trop_drag) then
+            do k=kdim,ktop_tp,-1
+                dtaux(:,:,k) = 0
+                dtauy(:,:,k) = 0
+            end do
+        endif
+
+! Turn off drag above the "tropopause"
+        if (no_strat_drag) then
+            do k=ktop_tp,1,-1
+                dtaux(:,:,k) = 0
+                dtauy(:,:,k) = 0
+            end do
+        endif
+
+!! Idealised Drag
+        if (do_idealised_NH) then
+            dtaux(:,:,:) = 0
+            dtauy(:,:,:) = 0
+
+            if (ideal_lat_cent_NH .GE. js .AND. ideal_lat_cent_NH .LE. js+size(dtaux, 2 )-1) then
+                dtaux(:, MOD(ideal_lat_cent_NH-1,size(dtaux,2))+1, ideal_pfull_cent) = ideal_strength
+                dtaux(:, MOD(ideal_lat_cent_NH-1,size(dtaux,2))+1, ideal_pfull_cent-1) = ideal_strength
+
+                if (MOD(ideal_lat_cent_NH,size(dtaux,2)) .NE. 0) then
+                    dtaux(:, MOD(ideal_lat_cent_NH-1,size(dtaux,2))+2, ideal_pfull_cent) = ideal_strength
+                    dtaux(:, MOD(ideal_lat_cent_NH-1,size(dtaux,2))+2, ideal_pfull_cent-1) = ideal_strength
+                endif
+            endif
+
+            if (ideal_lat_cent_NH .EQ. js-1 ) then
+                dtaux(:,1,ideal_pfull_cent) = ideal_strength
+                dtaux(:,1,ideal_pfull_cent-1) = ideal_strength
+            endif
+        endif
+
+        if (do_idealised_SH) then
+            dtaux(:,:,:) = 0
+            dtauy(:,:,:) = 0
+
+            if (ideal_lat_cent_SH .GE. js .AND. ideal_lat_cent_SH .LE. js+size(dtaux, 2 )-1) then
+                dtaux(:, MOD(ideal_lat_cent_SH-1,size(dtaux,2))+1, ideal_pfull_cent) = ideal_strength
+                dtaux(:, MOD(ideal_lat_cent_SH-1,size(dtaux,2))+1, ideal_pfull_cent-1) = ideal_strength
+
+                if (MOD(ideal_lat_cent_SH,size(dtaux,2)) .NE. 1) then
+                    dtaux(:, MOD(ideal_lat_cent_SH-1,size(dtaux,2)), ideal_pfull_cent) = ideal_strength
+                    dtaux(:, MOD(ideal_lat_cent_SH-1,size(dtaux,2)), ideal_pfull_cent-1) = ideal_strength
+                endif
+            endif
+
+            if (ideal_lat_cent_SH .EQ. js+size(dtaux,2)) then
+                dtaux(:,size(dtaux,2),ideal_pfull_cent) = ideal_strength
+                dtaux(:,size(dtaux,2),ideal_pfull_cent-1) = ideal_strength
+            endif
+        endif
+!-----------------------------------------------------------------------
 
 end subroutine mgwd_tend
 
 !#######################################################################
 
-  subroutine mg_drag_init( lonb, latb, hprime )
+  subroutine mg_drag_init(is, ie, js, je, lonb, latb, hprime )
 
 !=======================================================================
 ! ***** INITIALIZE Mountain Gravity Wave Drag
@@ -955,14 +1079,15 @@ end subroutine mgwd_tend
 !     lonb  = longitude in radians of the grid box edges
 !     latb  = latitude  in radians of the grid box edges
 !---------------------------------------------------------------------
+ integer, intent(in) :: is, ie, js, je
  real, intent(in), dimension(:) :: lonb, latb
- 
+
 !---------------------------------------------------------------------
 ! Arguments (Intent out - optional)
 !     hprime  = array of sub-grid scale mountain heights
 !---------------------------------------------------------------------
  real, intent(out), dimension(:,:), optional :: hprime
- 
+
 !---------------------------------------------------------------------
 !  (Intent local)
 !---------------------------------------------------------------------
@@ -983,7 +1108,7 @@ if(module_is_initialized) return
    unit = open_namelist_file()
    ierr = 1
    do while( ierr .ne. 0 )
-   read ( unit,  nml = mg_drag_nml, iostat = io, end = 10 ) 
+   read ( unit,  nml = mg_drag_nml, iostat = io, end = 10 )
    ierr = check_nml_error(io,'mg_drag_nml')
    end do
 10 continue
@@ -1007,8 +1132,8 @@ if(module_is_initialized) return
   ix = size(lonb(:)) - 1
   iy = size(latb(:)) - 1
 
-  allocate( Ghprime(ix,iy) ) ; Ghprime = 0.0
-  
+  allocate( Ghprime(is:ie,js:je) ) ; Ghprime = 0.0
+
 !-------------------------------------------------------------------
   module_is_initialized = .true.
 !---------------------------------------------------------------------
@@ -1025,7 +1150,8 @@ if(module_is_initialized) return
     if ( file_exist( 'INPUT/mg_drag.res.nc' ) ) then
        if (mpp_pe() == mpp_root_pe()) call mpp_error ('mg_drag_mod', &
             'Reading NetCDF formatted restart file: INPUT/mg_drag.res.nc', NOTE)
-       call read_data ('INPUT/mg_drag.res.nc', 'ghprime', Ghprime)
+       call set_domain(grid_domain)
+       call read_data ('INPUT/mg_drag.res.nc', 'ghprime', Ghprime, grid_domain)
     else if ( file_exist( 'INPUT/mg_drag.res' ) ) then
        if (mpp_pe() == mpp_root_pe()) call mpp_error ('mg_drag_mod', &
             'Reading native formatted restart file.', NOTE)
@@ -1041,9 +1167,13 @@ if(module_is_initialized) return
           ' is not a valid value for source_of_sgsmtn', FATAL)
   endif
 
+  ! ! RC Added to make stable at higher values of gmax (above 1) 1500 STILL HAD ISSUES, TRY 1200
+  ! where (Ghprime>700)
+  !   Ghprime = 700
+  ! end where
 ! return sub-grid scale topography?
   if (present(hprime)) hprime = Ghprime
- 
+
 !=====================================================================
   end subroutine mg_drag_init
 
@@ -1056,7 +1186,8 @@ if(module_is_initialized) return
   if(do_netcdf_restart) then
      if (mpp_pe() == mpp_root_pe()) call mpp_error ('mg_drag_mod', &
           'Writing NetCDF formatted restart file: RESTART/mg_drag.res.nc', NOTE)
-     call write_data('RESTART/mg_drag.res.nc', 'ghprime', ghprime)
+     call set_domain(grid_domain)
+     call write_data('RESTART/mg_drag.res.nc', 'ghprime', ghprime, grid_domain)
   else
      if (mpp_pe() == mpp_root_pe()) call mpp_error ('mg_drag_mod', &
           'Writing native formatted restart file.', NOTE)

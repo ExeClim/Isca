@@ -26,7 +26,7 @@ atmos_param/frierson_monin_obukhov/frierson_monin_obukhov.F90
 atmos_param/dry_convection/dry_convection.f90
 atmos_param/rayleigh_bottom_drag/rayleigh_bottom_drag.F90
 atmos_param/damping_driver/damping_driver.f90
-atmos_param/mg_drag/mg_drag.f90
+atmos_param/mg_drag/mg_drag.F90
 atmos_param/cg_drag/cg_drag.f90
 atmos_param/topo_drag/topo_drag.f90
 atmos_param/vert_diff/vert_diff.F90

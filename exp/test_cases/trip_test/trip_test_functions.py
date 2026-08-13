@@ -80,6 +80,20 @@ def get_nml_diag(test_case_name):
         nml_out = exp_temp.namelist
         codebase_to_use = ColumnCodeBase
 
+    if 'cg_drag_qbo' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/cg_drag/'))
+        from cg_drag_qbo_test_case import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = IscaCodeBase
+
+    if 'mg_drag_socrates_topo' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/mg_drag/'))
+        from mg_drag_socrates_topo_test_case import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = SocratesCodeBase
+
     if 'giant_planet' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/giant_planet/'))
         from giant_planet_test_case import exp as exp_temp
@@ -211,6 +225,8 @@ def list_all_test_cases_implemented_in_trip_test():
                         'column_test',
                         'grey_mars',
                         'radiative_eq_mars',
+                        'cg_drag_qbo',
+                        'mg_drag_socrates_topo',
                         #'socrates_mars', # requires Mars-specific Socrates spectral files not yet included in the repo - see exp/test_cases/socrates_mars/input/README.md
                         #'frierson_dry_heating', # exercises the new local_heating feature, which the current ExeClim master doesn't have - included for opt-in testing, not run by default
                         ]
@@ -356,13 +372,21 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             base_commit_dataset  = xar.open_dataset(data_dir_dict[base_commit] +'/run0001/'+diag_file_entry+'.nc', decode_times=False)
             later_commit_dataset = xar.open_dataset(data_dir_dict[later_commit]+'/run0001/'+diag_file_entry+'.nc', decode_times=False)
 
-            diff = later_commit_dataset - base_commit_dataset
-
-            #Check each of the output variables for differences
-            for var in diff.data_vars.keys():
-                maxval = np.abs(diff[var]).max()
+            #Compare raw array values position-by-position rather than taking an
+            #xarray Dataset difference. Dataset subtraction aligns the two datasets
+            #by coordinate value first, which raises if a coordinate has duplicate
+            #values -- e.g. the single-column model's 'lonb' is two identical
+            #(near-zero placeholder) values, since a 1-column grid has no real
+            #longitude extent. Both datasets are the same test case run at the same
+            #resolution by construction (only the commit differs), so they already
+            #share the same grid and a positional comparison is exactly what's
+            #wanted here.
+            for var in base_commit_dataset.data_vars.keys():
+                base_vals = base_commit_dataset[var].values
+                later_vals = later_commit_dataset[var].values
+                maxval = np.abs(later_vals - base_vals).max()
                 if maxval !=0.:
-                    print('Test failed for '+var+' max diff value = '+str(maxval.values))
+                    print('Test failed for '+var+' max diff value = '+str(maxval))
                     test_pass = False
 
             base_experiment_input_nml = f90nml.read(data_dir_dict[base_commit] +'/run0001/input.nml')
