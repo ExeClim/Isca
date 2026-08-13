@@ -179,7 +179,7 @@ exp.namelist = namelist = Namelist({
     'sat_vapor_pres_nml': {
         'do_simple':True,
         'tcmin':  -223, #Make sure low temperature limit of saturation vapour pressure is low enough that it doesn't cause an error (this planet has no moisture anyway, so doesn't directly affect the calculation).
-        'tcmax': 350.,
+        'tcmax': 350, # NOTE: tcmin/tcmax are Fortran INTEGERs (sat_vapor_pres.F90) - a trailing '.' here makes this a Python float, which gfortran correctly rejects as a namelist type mismatch (FATAL "Unknown namelist, or mistyped namelist variable in namelist sat_vapor_pres_nml"). Keep this as an int.
     },
 
     'damping_driver_nml': {
