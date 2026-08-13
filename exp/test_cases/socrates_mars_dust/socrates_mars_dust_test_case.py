@@ -176,6 +176,11 @@ exp.namelist = namelist = Namelist({
         'do_evap':True
     },
 
+    'lscale_cond_lh_nml': {
+        'do_simple':True,
+        'do_evap':True
+    },
+
     'sat_vapor_pres_nml': {
         'do_simple':True,
         'tcmin':  -223, #Make sure low temperature limit of saturation vapour pressure is low enough that it doesn't cause an error (this planet has no moisture anyway, so doesn't directly affect the calculation).
