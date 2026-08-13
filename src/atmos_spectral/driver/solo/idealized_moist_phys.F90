@@ -26,9 +26,7 @@ use       cloud_spookie_mod, only: cloud_spookie_init, cloud_spookie
 
 use         mixed_layer_mod, only: mixed_layer_init, mixed_layer, mixed_layer_end, albedo_calc
 
-use         lscale_cond_mod, only: lscale_cond_init, lscale_cond, lscale_cond_end
-
-use      lscale_cond_lh_mod, only: lscale_cond_lh_init, lscale_cond_lh, lscale_cond_lh_end
+use         lscale_cond_mod, only: lscale_cond_init, lscale_cond, lscale_cond_co2_mars, lscale_cond_end
 
 use qe_moist_convection_mod, only: qe_moist_convection_init, qe_moist_convection, qe_moist_convection_end
 
@@ -698,7 +696,6 @@ if(turb) then
 end if
 
 call lscale_cond_init()
-call lscale_cond_lh_init()
 
 axes = get_axis_id()
 
@@ -1055,15 +1052,12 @@ end select
 dt_tg = dt_tg + conv_dt_tg
 dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
 
-! Perform large scale convection with latent heating
+! Perform CO2 condensation with latent heating (Mars)
 if ( do_lscale_cond_lh .eqv. .true.) then
-  ! Need to think about how this will work with lscale_cond turned on. Current
-  ! calculates a temperature floor below which CO2 condenses.
-
   ! Large scale convection is a function of humidity only.  This is
   ! inconsistent with the dry convection scheme, don't run it!
   rain = 0.0; snow = 0.0; lh_rel = 0.0
-  call lscale_cond_lh (      tg_tmp,                          qg_tmp,        &
+  call lscale_cond_co2_mars (tg_tmp,                          qg_tmp,        &
              p_full(:,:,:,previous),          p_half(:,:,:,previous),        &
                               lh_rel,        coldT,             rain,        &
                                snow,                   cond_lh_dt_tg,        &
