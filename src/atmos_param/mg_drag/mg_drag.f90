@@ -13,9 +13,11 @@ module mg_drag_mod
 
  use         fms_mod, only: mpp_npes, field_size, file_exist, write_version_number, stdlog, &
                             mpp_pe, mpp_root_pe, error_mesg, FATAL, NOTE, read_data, write_data,  &
-                            open_namelist_file, close_file, check_nml_error, open_restart_file, mpp_error
+                            open_namelist_file, close_file, check_nml_error, open_restart_file, mpp_error, &
+                            set_domain
  use      fms_io_mod, only: get_restart_io_mode
  use   constants_mod, only: Grav, Kappa, RDgas, cp_air
+ use   transforms_mod, only: grid_domain
 
 !-----------------------------------------------------------------------
  implicit none
@@ -1144,7 +1146,8 @@ if(module_is_initialized) return
     if ( file_exist( 'INPUT/mg_drag.res.nc' ) ) then
        if (mpp_pe() == mpp_root_pe()) call mpp_error ('mg_drag_mod', &
             'Reading NetCDF formatted restart file: INPUT/mg_drag.res.nc', NOTE)
-       call read_data ('INPUT/mg_drag.res.nc', 'ghprime', Ghprime)
+       call set_domain(grid_domain)
+       call read_data ('INPUT/mg_drag.res.nc', 'ghprime', Ghprime, grid_domain)
     else if ( file_exist( 'INPUT/mg_drag.res' ) ) then
        if (mpp_pe() == mpp_root_pe()) call mpp_error ('mg_drag_mod', &
             'Reading native formatted restart file.', NOTE)
@@ -1179,7 +1182,8 @@ if(module_is_initialized) return
   if(do_netcdf_restart) then
      if (mpp_pe() == mpp_root_pe()) call mpp_error ('mg_drag_mod', &
           'Writing NetCDF formatted restart file: RESTART/mg_drag.res.nc', NOTE)
-     call write_data('RESTART/mg_drag.res.nc', 'ghprime', ghprime)
+     call set_domain(grid_domain)
+     call write_data('RESTART/mg_drag.res.nc', 'ghprime', ghprime, grid_domain)
   else
      if (mpp_pe() == mpp_root_pe()) call mpp_error ('mg_drag_mod', &
           'Writing native formatted restart file.', NOTE)
