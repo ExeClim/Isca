@@ -12,7 +12,7 @@ variable "standard_deviation_of_orography". Not committed to git (large binary,
 regeneratable from CDS) -- edit ERA5_SDOR_PATH below to point at your own copy.
 
 Why 'input' mode instead of 'computed': mg_drag_nml's source_of_sgsmtn='computed'
-path (src/atmos_param/mg_drag/mg_drag.f90 -> src/shared/topography/topography.F90)
+path (src/atmos_param/mg_drag/mg_drag.F90 -> src/shared/topography/topography.F90)
 expects *raw high-resolution elevation* and computes subgrid standard deviation
 itself by binning many fine-grid points into each destination grid cell. ERA5's
 sdor is already a precomputed standard-deviation field (ECMWF derives it the same

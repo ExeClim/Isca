@@ -17,7 +17,11 @@ module mg_drag_mod
                             set_domain
  use      fms_io_mod, only: get_restart_io_mode
  use   constants_mod, only: Grav, Kappa, RDgas, cp_air
- use   transforms_mod, only: grid_domain
+#ifdef COLUMN_MODEL
+ use    spec_mpp_mod, only: grid_domain
+#else
+ use  transforms_mod, only: grid_domain
+#endif
 
 !-----------------------------------------------------------------------
  implicit none
