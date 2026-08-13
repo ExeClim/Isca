@@ -80,6 +80,20 @@ def get_nml_diag(test_case_name):
         nml_out = exp_temp.namelist
         codebase_to_use = ColumnCodeBase
 
+    if 'cg_drag_qbo' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/cg_drag/'))
+        from cg_drag_qbo_test_case import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = IscaCodeBase
+
+    if 'mg_drag_socrates_topo' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/mg_drag/'))
+        from mg_drag_socrates_topo_test_case import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = SocratesCodeBase
+
     if 'giant_planet' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/giant_planet/'))
         from giant_planet_test_case import exp as exp_temp
@@ -211,6 +225,8 @@ def list_all_test_cases_implemented_in_trip_test():
                         'column_test',
                         'grey_mars',
                         'radiative_eq_mars',
+                        'cg_drag_qbo',
+                        'mg_drag_socrates_topo',
                         #'socrates_mars', # requires Mars-specific Socrates spectral files not yet included in the repo - see exp/test_cases/socrates_mars/input/README.md
                         #'frierson_dry_heating', # exercises the new local_heating feature, which the current ExeClim master doesn't have - included for opt-in testing, not run by default
                         ]
