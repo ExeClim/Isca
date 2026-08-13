@@ -840,7 +840,7 @@ end select
 if (r_conv_scheme .eq. DRY_CONV .and. do_lscale_cond .eqv. .true.) then
         call error_mesg('idealized_moist_phys','do_lscale_cond is .true. but r_conv_scheme is dry. These options may not be consistent.', WARNING)
 endif
-if (r_conv_scheme .eq. DRY_CONV .and. do_lscale_cond_lh .eq. .true.) then
+if (r_conv_scheme .eq. DRY_CONV .and. do_lscale_cond_lh .eqv. .true.) then
         call error_mesg('idealized_moist_phys','do_lscale_cond_lh is .true. but r_conv_scheme is dry. These options may not be consistent.', WARNING)
 endif
 
