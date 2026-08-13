@@ -40,7 +40,7 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   logical :: do_read_cdod = .FALSE. ! read dust optical depth from external file?
   character(len=256) :: cdod_file_name='dust'
   character(len=256) :: cdod_field_name='cdod' !Name of dust optical depth variable in cdod file
-  logical            :: some_dust_condition=.TRUE.
+  logical            :: do_dust_forcing=.FALSE. ! compute a Mars dust vertical profile (Ball et al. 2021) and feed it to Socrates as an aerosol?
   real(r_def) :: input_planet_emissivity = 1.0 !Emissivity of surface. Defined as constant all over surface.
   real :: co2_ppmv = 300. !Default CO2 concentration in PPMV
   logical ::  input_co2_mmr=.false. !Socrates wants input concentrations as mmr not vmr, so need to make sure input data supplied is converted if necessary
@@ -132,7 +132,7 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
                              account_for_effect_of_water, account_for_effect_of_ozone, account_for_effect_of_dust, &
                              do_read_ozone, ozone_file_name, ozone_field_name, input_o3_file_is_mmr, &
                              do_read_co2, co2_file_name, co2_field_name, input_co2_mmr, &
-                             do_read_cdod, cdod_file_name, cdod_field_name, &                         
+                             do_read_cdod, cdod_file_name, cdod_field_name, do_dust_forcing, &                         
                              solday, do_rad_time_avg, equinox_day,  &
                              store_intermediate_rad, dt_rad_avg, dt_rad, &
                              chunk_size, &

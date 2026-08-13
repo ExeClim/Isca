@@ -1412,7 +1412,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
     ! Build the dust vertical profile (Conrath-type distribution) from the reference
     ! mixing ratio computed above, following Ball et al. 2021's Mars dust representation.
-    if (some_dust_condition .eqv. .true.) then
+    if (do_dust_forcing .eqv. .true.) then
         sin_lat(:,:) = sin(rad_lat(:,:))
         zmax(:,:) = 60 + 18*sin((mars_solar_long-158.)*pi/180.) &
                      -(32+18*sin((mars_solar_long-158.)*pi/180.))*(sin_lat(:,:))**4 &
