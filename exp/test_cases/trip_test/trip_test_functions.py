@@ -372,13 +372,21 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             base_commit_dataset  = xar.open_dataset(data_dir_dict[base_commit] +'/run0001/'+diag_file_entry+'.nc', decode_times=False)
             later_commit_dataset = xar.open_dataset(data_dir_dict[later_commit]+'/run0001/'+diag_file_entry+'.nc', decode_times=False)
 
-            diff = later_commit_dataset - base_commit_dataset
-
-            #Check each of the output variables for differences
-            for var in diff.data_vars.keys():
-                maxval = np.abs(diff[var]).max()
+            #Compare raw array values position-by-position rather than taking an
+            #xarray Dataset difference. Dataset subtraction aligns the two datasets
+            #by coordinate value first, which raises if a coordinate has duplicate
+            #values -- e.g. the single-column model's 'lonb' is two identical
+            #(near-zero placeholder) values, since a 1-column grid has no real
+            #longitude extent. Both datasets are the same test case run at the same
+            #resolution by construction (only the commit differs), so they already
+            #share the same grid and a positional comparison is exactly what's
+            #wanted here.
+            for var in base_commit_dataset.data_vars.keys():
+                base_vals = base_commit_dataset[var].values
+                later_vals = later_commit_dataset[var].values
+                maxval = np.abs(later_vals - base_vals).max()
                 if maxval !=0.:
-                    print('Test failed for '+var+' max diff value = '+str(maxval.values))
+                    print('Test failed for '+var+' max diff value = '+str(maxval))
                     test_pass = False
 
             base_experiment_input_nml = f90nml.read(data_dir_dict[base_commit] +'/run0001/input.nml')
