@@ -30,6 +30,15 @@
 `variable_co2_concentration`
 * Example experiments with a time-varying co2 concentration read-in from an input file. Examples are given with varying co2 in the [Byrne & O'Gorman radiation scheme](https://doi.org/10.1175/JCLI-D-12-00262.1) and RRTM.
 
+`grey_mars`
+* Dry Mars configuration using the grey radiation scheme, as described [Thomson and Vallis 2019](https://doi.org/10.3390/atmos10120803). 
+
+`radiative_eq_mars`
+* Dry Mars configuration in radiative equilibrium, using Newtonian cooling towards a radiative-equilibrium profile rather than an interactive radiation scheme, as described [Thomson and Vallis 2019](https://doi.org/10.3390/atmos10120803). 
+
+`socrates_mars`
+* Dry Mars configuration using the Socrates radiation scheme, as described, as described in [Thomson and Vallis 2019](https://doi.org/10.3390/atmos10120803). Requires Mars-specific Socrates spectral files not currently included in the repository - see `exp/test_cases/socrates_mars/input/README.md`.
+
 # List of Isca features and the location of the appropriate python scripts
 
 Make land-mask:

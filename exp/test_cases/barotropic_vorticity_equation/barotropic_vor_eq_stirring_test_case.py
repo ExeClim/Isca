@@ -103,6 +103,7 @@ exp.namelist = namelist = Namelist({
    'widthy':12.,
    'widthx':45.,
    'B':1.0,
+   'fixed_random_seed':12345,
    },
 
 })

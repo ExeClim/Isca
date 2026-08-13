@@ -37,9 +37,49 @@ def get_nml_diag(test_case_name):
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/frierson/'))
         from frierson_test_case import exp as exp_temp
         input_files = exp_temp.inputfiles
-        nml_out = exp_temp.namelist  
+        nml_out = exp_temp.namelist
         codebase_to_use = IscaCodeBase
-        
+
+    if 'frierson_dry_heating' in test_case_name:
+        # Note: 'frierson_dry_heating' also matches the 'frierson' check above - this block
+        # runs afterwards and overwrites nml_out/input_files/codebase_to_use, so it wins.
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/frierson_dry_heating/'))
+        from frierson_dry_heating_test_case import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = IscaCodeBase
+
+    if 'grey_mars' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/grey_mars/'))
+        from grey_mars_test_case import exp as exp_temp
+        from isca import GreyCodeBase
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = GreyCodeBase
+
+    if 'radiative_eq_mars' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/radiative_eq_mars/'))
+        from radiative_eq_mars_test_case import exp as exp_temp
+        from isca import GreyCodeBase
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = GreyCodeBase
+
+    if 'socrates_mars' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_mars/'))
+        from socrates_mars_test_case import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = SocratesCodeBase
+
+    if 'column_test' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/column_test_case/'))
+        from column_test_case import exp as exp_temp
+        from isca import ColumnCodeBase
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = ColumnCodeBase
+
     if 'giant_planet' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/giant_planet/'))
         from giant_planet_test_case import exp as exp_temp
@@ -94,6 +134,7 @@ def get_nml_diag(test_case_name):
         from socrates_aquaplanet import exp as exp_temp
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist
+        codebase_to_use=SocratesCodeBase
         
     if 'socrates_aquaplanet_cloud' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/socrates_test/'))
@@ -104,7 +145,7 @@ def get_nml_diag(test_case_name):
 
     if 'top_down_test' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/top_down_test/'))
-        from top_down_test import namelist as nml_out
+        from top_down_test_case import namelist as nml_out
         input_files = []
         codebase_to_use = IscaCodeBase
 
@@ -131,7 +172,7 @@ def get_nml_diag(test_case_name):
         
     if 'barotropic_vort_eq_stirring' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/barotropic_vorticity_equation/'))
-        from barotropic_vor_eq_stirring_test import exp as exp_temp
+        from barotropic_vor_eq_stirring_test_case import exp as exp_temp
         from isca import BarotropicCodeBase
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist
@@ -139,7 +180,7 @@ def get_nml_diag(test_case_name):
 
     if 'shallow_water_stirring' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/shallow_water/'))
-        from shallow_water_stirring_test import exp as exp_temp
+        from shallow_water_stirring_test_case import exp as exp_temp
         from isca import ShallowCodeBase
         input_files = exp_temp.inputfiles
         nml_out = exp_temp.namelist
@@ -166,7 +207,13 @@ def list_all_test_cases_implemented_in_trip_test():
                         'variable_co2_rrtm', 
                         'ape_aquaplanet',
                         'barotropic_vort_eq_stirring',
-                        'shallow_water_stirring']
+                        'shallow_water_stirring',
+                        'column_test',
+                        'grey_mars',
+                        'radiative_eq_mars',
+                        #'socrates_mars', # requires Mars-specific Socrates spectral files not yet included in the repo - see exp/test_cases/socrates_mars/input/README.md
+                        #'frierson_dry_heating', # exercises the new local_heating feature, which the current ExeClim master doesn't have - included for opt-in testing, not run by default
+                        ]
 
     return exps_implemented
 
@@ -209,6 +256,23 @@ def define_simple_diag_table_2d(shallow_or_baro):
 
     return diag
 
+def define_simple_diag_table_column():
+    """Defines a simple diag table for the column model test case. The column
+    model bypasses the dynamical core, so its diagnostics live under the
+    'column' module rather than 'dynamics', and it has no vorticity/divergence."""
+
+    diag = DiagTable()
+    diag.add_file('atmos_daily', 1, 'days', time_units='days')
+
+    diag.add_field('column', 'ps', time_avg=True)
+    diag.add_field('column', 'bk')
+    diag.add_field('column', 'pk')
+    diag.add_field('column', 'ucomp', time_avg=True)
+    diag.add_field('column', 'vcomp', time_avg=True)
+    diag.add_field('column', 'temp', time_avg=True)
+
+    return diag
+
 def process_ids(base_commit_in, later_commit_in):
 
 
@@ -235,9 +299,11 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
     nml_use, input_files_use, codebase_obj  = get_nml_diag(test_case_name)
     
     if 'shallow_water' in test_case_name:
-        diag_use = define_simple_diag_table_2d('shallow')    
+        diag_use = define_simple_diag_table_2d('shallow')
     elif 'barotropic_vort_eq' in test_case_name:
-        diag_use = define_simple_diag_table_2d('barotropic')            
+        diag_use = define_simple_diag_table_2d('barotropic')
+    elif 'column_test' in test_case_name:
+        diag_use = define_simple_diag_table_column()
     else:
         diag_use = define_simple_diag_table()
         
@@ -268,10 +334,13 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             continue            
 
 
+        #The column model can currently only run on 1 core, regardless of -n.
+        num_cores_for_test = 1 if 'column_test' in test_case_name else num_cores_to_use
+
         try:
             # run with a progress bar
             with exp_progress(exp, description=s) as pbar:
-                exp.run(1, use_restart=False, num_cores=num_cores_to_use)
+                exp.run(1, use_restart=False, num_cores=num_cores_for_test)
         except FailedRunError as e:
             #If run fails then test automatically fails
             run_complete = False

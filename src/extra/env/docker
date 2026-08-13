@@ -5,3 +5,4 @@ export GFDL_MKMF_TEMPLATE=gfort
 
 export F90=mpifort
 export CC=mpicc
+export NETCDF_LIBS = `nf-config --fflags --flibs`

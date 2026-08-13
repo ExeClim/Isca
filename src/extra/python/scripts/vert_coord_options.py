@@ -58,12 +58,12 @@ def p_half_to_p_full(p_half, num_levels):
 
 if __name__ == "__main__":
 
-	num_levels = 41 #number of half levels
+	num_levels = 19 #number of half levels
 
-	vert_coord_option = "uneven_sigma"
-	surf_res                = 0.5
-	scale_heights           = 11.0
-	exponent                = 7.0
+	vert_coord_option = "even_sigma"
+	surf_res                = 0.1
+	scale_heights           = 4.0
+	exponent                = 2.5
 
 	if vert_coord_option == "uneven_sigma":
 
