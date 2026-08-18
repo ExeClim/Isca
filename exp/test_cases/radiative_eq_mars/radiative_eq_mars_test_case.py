@@ -76,7 +76,9 @@ exp.namelist = namelist = Namelist({
         'roughness_heat':3.21e-05,
         'roughness_moist':0.,
         'two_stream_gray': False,
+        'do_newtonian_cooling_as_rad': True,
         'convection_scheme': 'none',
+        'newt_relax_surface': False,
         'do_lscale_cond': False,
     },
 
@@ -97,6 +99,8 @@ exp.namelist = namelist = Namelist({
         'use_virtual_temp': False,
         'do_simple': True,
         'old_dtaudv': True,
+        'rh_target': 50.,
+        'delta_t_relax': 7200.,
         'use_actual_surface_temperatures':False,
     },
 
@@ -108,6 +112,7 @@ exp.namelist = namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':False,
+        'update_sst_from_fluxes' : False,
     },
 
     'qe_moist_convection_nml': {
