@@ -765,6 +765,11 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
 
     input_co2_mixing_ratio = reshape(fms_co2(:,:,:),(/si*sj,sk /))
 
+    ! Second (radiative-transfer) gate on dust: fms_dust here is whatever run_socrates
+    ! computed, which is already zero if do_dust_forcing=.FALSE. (see its Conrath-profile
+    ! block below). account_for_effect_of_dust decides whether a non-zero profile is
+    ! actually passed on to Socrates, or zeroed right here - see the comment by both
+    ! flags' declarations in socrates_config_mod.f90 for the full picture.
     if (account_for_effect_of_dust .eqv. .true.) then
         input_dust_mixing_ratio = reshape(fms_dust(:,:,:),(/si*sj,sk /))
     else
@@ -1412,6 +1417,11 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
     ! Build the dust vertical profile (Conrath-type distribution) from the reference
     ! mixing ratio computed above, following Ball et al. 2021's Mars dust representation.
+    ! This is the first (computation) gate on dust: dust_in ends up all zero here if
+    ! do_dust_forcing=.FALSE., regardless of account_for_effect_of_dust. If this profile
+    ! IS computed, whether it's then actually radiatively active is decided separately,
+    ! further down the call chain in socrates_interface (see the comment there, and by
+    ! both flags' declarations in socrates_config_mod.f90).
     if (do_dust_forcing .eqv. .true.) then
         sin_lat(:,:) = sin(rad_lat(:,:))
         zmax(:,:) = 60 + 18*sin((mars_solar_long-158.)*pi/180.) &

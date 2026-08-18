@@ -187,7 +187,10 @@ END IF
 ! i_aerosol_parametrization wired up for Isca's use of them - switching
 ! l_aerosol on for those crashes Socrates' opt_prop_aerosol with "illegal
 ! value" for those species. do_dust_forcing is the actual user-facing
-! namelist flag for whether this capability is wanted.
+! namelist flag for whether this capability is wanted - deliberately NOT
+! account_for_effect_of_dust (socrates_config_mod.f90), which only decides
+! whether an already-computed dust profile is fed to the radiation call and
+! is meaningless when do_dust_forcing is off in the first place.
 control%l_aerosol      = do_dust_forcing
 control%l_aerosol_mode = .FALSE.
 control%l_aerosol_ccn  = .FALSE.

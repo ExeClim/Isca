@@ -228,6 +228,19 @@ exp.namelist = namelist = Namelist({
         'do_read_cdod': True,
         'cdod_file_name': dust_clim,
         'cdod_field_name': 'cdod',
+        # do_dust_forcing and account_for_effect_of_dust both need to be True to get
+        # the full Mars dust scheme (Ball et al. 2021) as intended here:
+        #   - do_dust_forcing is the master switch for whether the Conrath-type dust
+        #     vertical profile is computed at all. If False, there's no dust profile
+        #     regardless of account_for_effect_of_dust below.
+        #   - account_for_effect_of_dust then decides whether that computed profile is
+        #     actually passed into the radiative transfer calculation, or discarded at
+        #     that last step. Set it False (with do_dust_forcing still True) to run with
+        #     the dust profile computed and diagnosed (soc_dust, dust_mmr_ref) but not
+        #     radiatively active - e.g. to isolate dust's radiative effect from runs
+        #     that only differ by this flag.
+        # See the matching comments in socrates_config_mod.f90/socrates_interface.F90
+        # for the Fortran-side detail.
         'account_for_effect_of_dust': True,
         'do_dust_forcing': True,
         'dust_scale': 7.4e-5,

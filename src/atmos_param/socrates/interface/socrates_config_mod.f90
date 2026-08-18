@@ -29,7 +29,21 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   character(len=256) :: sw_hires_spectral_filename='unset'
   logical :: account_for_effect_of_water=.TRUE. !if False then radiation is fed water mixing ratios = 0. If true it's fed mixing ratios based on model specific humidity.
   logical :: account_for_effect_of_ozone=.TRUE. !if False then radiation is fed ozone mixing ratios = 0. If true it's fed mixing ratios based on model ozone field.
-  logical :: account_for_effect_of_dust=.TRUE. !if False then radiation is fed dust mixing ratios = 0. If true it's fed mixing ratios based on model dust field.
+  ! account_for_effect_of_dust vs do_dust_forcing (below): two different gates on the
+  ! same field, applied at two different stages. do_dust_forcing controls whether a
+  ! Mars dust profile is COMPUTED at all (run_socrates); account_for_effect_of_dust
+  ! controls whether that computed profile is then actually PASSED to the radiative
+  ! transfer call (socrates_interface), vs. zeroed at that last step. So:
+  !   do_dust_forcing=F                        -> no dust, regardless of this flag
+  !   do_dust_forcing=T, account_for_...=T      -> dust computed AND radiatively active (the normal Mars dust case)
+  !   do_dust_forcing=T, account_for_...=F      -> dust computed and diagnosed (soc_dust,
+  !                                                dust_mmr_ref diagnostics) but NOT fed to radiation -
+  !                                                useful for isolating dust's radiative effect from its
+  !                                                mere presence in diagnostics/other schemes.
+  ! Mirrors the existing account_for_effect_of_water/_ozone pattern above, which exists
+  ! because water/ozone are always available as fields; do_dust_forcing exists as well
+  ! because, unlike water/ozone, the dust field has no other reason to be computed.
+  logical :: account_for_effect_of_dust=.TRUE. !if False then radiation is fed dust mixing ratios = 0. If true it's fed mixing ratios based on model dust field (see comment above).
   logical :: do_read_ozone = .FALSE. ! read ozone from an external file?
   character(len=256) :: ozone_file_name='ozone' !Name of file containing ozone field - n.b. don't need to include '.nc'
   character(len=256) :: ozone_field_name='ozone' !Name of ozone variable in ozone file
@@ -40,7 +54,9 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   logical :: do_read_cdod = .FALSE. ! read dust optical depth from external file?
   character(len=256) :: cdod_file_name='dust'
   character(len=256) :: cdod_field_name='cdod' !Name of dust optical depth variable in cdod file
-  logical            :: do_dust_forcing=.FALSE. ! compute a Mars dust vertical profile (Ball et al. 2021) and feed it to Socrates as an aerosol?
+  logical            :: do_dust_forcing=.FALSE. ! Master switch: compute a Mars dust vertical profile (Ball et al. 2021)?
+                                                 ! See account_for_effect_of_dust above for how this interacts with whether
+                                                 ! that profile actually reaches the radiation calculation.
   real(r_def) :: input_planet_emissivity = 1.0 !Emissivity of surface. Defined as constant all over surface.
   real :: co2_ppmv = 300. !Default CO2 concentration in PPMV
   logical ::  input_co2_mmr=.false. !Socrates wants input concentrations as mmr not vmr, so need to make sure input data supplied is converted if necessary
