@@ -97,8 +97,6 @@ exp.namelist = namelist = Namelist({
         'use_virtual_temp': False,
         'do_simple': True,
         'old_dtaudv': True,
-        'rh_target': 50.,
-        'delta_t_relax': 7200.,
         'use_actual_surface_temperatures':False,
     },
 
