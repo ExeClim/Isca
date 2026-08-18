@@ -178,7 +178,12 @@ ELSE
 END IF
 
 ! Aerosols
-control%l_aerosol      = .TRUE.
+! Only switch on aerosol radiative effects when the spectral file actually
+! defines aerosol species (e.g. the Mars-dust spectral files) - forcing this on
+! unconditionally was found to change results for ordinary (non-Mars, non-dust)
+! Socrates runs using spectral files with no aerosols, such as the standard ga7
+! files (spectrum%aerosol%n_aerosol == 0 there).
+control%l_aerosol      = (spectrum%aerosol%n_aerosol > 0)
 control%l_aerosol_mode = .FALSE.
 control%l_aerosol_ccn  = .FALSE.
 
