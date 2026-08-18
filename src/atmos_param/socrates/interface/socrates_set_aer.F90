@@ -46,13 +46,15 @@ REAL(r_def), INTENT(IN) :: dust(n_profile, n_layer)
 CALL allocate_aer(aer, dimen, spectrum)
 CALL allocate_aer_prsc(aer, dimen, spectrum)
 
-! Only touch mr_source/mix_ratio when the spectral file actually defines aerosol
-! species - for spectral files with no aerosols (e.g. the standard, non-Mars ga7
-! files), aer%mr_source must be left exactly as allocate_aer/allocate_aer_prsc set
-! it, matching the upstream set_aer_mod's behaviour for that case. Setting it
-! unconditionally here was found to change results for ordinary (non-Mars,
-! non-dust) Socrates runs, presumably via how radiance_calc interprets mr_source.
-IF (spectrum%aerosol%n_aerosol > 0) THEN
+! Only touch mr_source/mix_ratio when aerosol radiative effects are actually
+! switched on (control%l_aerosol, set from do_dust_forcing in read_control.F90)
+! - for ordinary runs aer%mr_source must be left exactly as
+! allocate_aer/allocate_aer_prsc set it, matching the upstream set_aer_mod's
+! behaviour. This can NOT be gated on spectrum%aerosol%n_aerosol > 0: the
+! standard ga7 spectral files also define aerosol species blocks (inherited
+! from the Met Office UM) despite Isca never wiring up their parametrizations,
+! so that check is true even for non-Mars, non-dust runs.
+IF (control%l_aerosol) THEN
   aer%mr_source = ip_aersrc_classic_ron
 
   DO i_aer=1, spectrum%aerosol%n_aerosol

@@ -15,9 +15,10 @@ USE rad_pcf
 USE def_control,  ONLY: StrCtrl, allocate_control
 USE def_spectrum, ONLY: StrSpecData
 
-USE socrates_config_mod, ONLY: l_planet_grey_surface, inc_h2o, inc_co2, inc_co,      & 
+USE socrates_config_mod, ONLY: l_planet_grey_surface, inc_h2o, inc_co2, inc_co,      &
                                inc_o3, inc_n2o, inc_ch4, inc_o2, inc_so2, inc_cfc11, &
-                               inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a, inc_n2
+                               inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a, inc_n2, &
+                               do_dust_forcing
 
 IMPLICIT NONE
 
@@ -178,12 +179,16 @@ ELSE
 END IF
 
 ! Aerosols
-! Only switch on aerosol radiative effects when the spectral file actually
-! defines aerosol species (e.g. the Mars-dust spectral files) - forcing this on
-! unconditionally was found to change results for ordinary (non-Mars, non-dust)
-! Socrates runs using spectral files with no aerosols, such as the standard ga7
-! files (spectrum%aerosol%n_aerosol == 0 there).
-control%l_aerosol      = (spectrum%aerosol%n_aerosol > 0)
+! Only switch on aerosol radiative effects when the Mars dust forcing scheme
+! (Ball et al. 2021) is actually requested via do_dust_forcing. Note this
+! can NOT be gated on spectrum%aerosol%n_aerosol > 0: the standard ga7
+! spectral files used by every non-Mars Socrates run also carry aerosol
+! species blocks (inherited from the Met Office UM), but with no
+! i_aerosol_parametrization wired up for Isca's use of them - switching
+! l_aerosol on for those crashes Socrates' opt_prop_aerosol with "illegal
+! value" for those species. do_dust_forcing is the actual user-facing
+! namelist flag for whether this capability is wanted.
+control%l_aerosol      = do_dust_forcing
 control%l_aerosol_mode = .FALSE.
 control%l_aerosol_ccn  = .FALSE.
 
