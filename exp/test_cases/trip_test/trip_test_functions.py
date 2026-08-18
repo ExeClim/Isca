@@ -15,6 +15,18 @@ import os
 import sys
 import f90nml
 
+# Mars test cases (grey_mars, radiative_eq_mars, socrates_mars, socrates_mars_dust) use dt_atmos=110s,
+# chosen to divide evenly into a Mars "day" of MARS_DAY_LENGTH_SECONDS=88440s (804 steps) - a calendar
+# convention (see e.g. grey_mars_test_case.py) rather than the true Martian sol (rotation_period=88308s
+# in those same namelists), chosen so an integer number of days fits into a Mars year. main_nml's
+# days/seconds units and DiagTable's 'days' time_units always mean Earth's fixed 86400s/day regardless
+# of planet, and 86400 is not a multiple of 110 - so the generic short-test-run overrides below (which
+# assume a run length in whole Earth days divides evenly by dt_atmos) need a Mars-specific equivalent.
+MARS_DAY_LENGTH_SECONDS = 88440
+
+def is_mars_test_case(test_case_name):
+    return any(name in test_case_name for name in ('grey_mars', 'radiative_eq_mars', 'socrates_mars'))
+
 def get_nml_diag(test_case_name):
     """Gets the appropriate namelist and input files from each of the test case scripts in the test_cases folder
     """
@@ -245,6 +257,26 @@ def define_simple_diag_table():
 
     return diag
 
+def define_simple_diag_table_mars():
+    """Defines a simple diag table for the Mars test cases, with the output cadence set to
+    MARS_DAY_LENGTH_SECONDS (one Mars day) rather than the generic 1 Earth day used elsewhere -
+    see the MARS_DAY_LENGTH_SECONDS comment above for why."""
+
+    diag = DiagTable()
+    diag.add_file('atmos_daily', MARS_DAY_LENGTH_SECONDS, 'seconds', time_units='days')
+
+    #Tell model which diagnostics to write
+    diag.add_field('dynamics', 'ps', time_avg=True)
+    diag.add_field('dynamics', 'bk')
+    diag.add_field('dynamics', 'pk')
+    diag.add_field('dynamics', 'ucomp', time_avg=True)
+    diag.add_field('dynamics', 'vcomp', time_avg=True)
+    diag.add_field('dynamics', 'temp', time_avg=True)
+    diag.add_field('dynamics', 'vor', time_avg=True)
+    diag.add_field('dynamics', 'div', time_avg=True)
+
+    return diag
+
 def define_simple_diag_table_2d(shallow_or_baro):
     """Defines a simple diag table for the 
     shallow water and barotropic vorticity test cases."""
@@ -314,6 +346,8 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
         diag_use = define_simple_diag_table_2d('barotropic')
     elif 'column_test' in test_case_name:
         diag_use = define_simple_diag_table_column()
+    elif is_mars_test_case(test_case_name):
+        diag_use = define_simple_diag_table_mars()
     else:
         diag_use = define_simple_diag_table()
         
@@ -332,11 +366,21 @@ def conduct_comparison_on_test_case(base_commit, later_commit, test_case_name, r
             exp.diag_table = diag_use
             exp.inputfiles = input_files_use
 
-            #Only run for 3 days to keep things short.
-            exp.update_namelist({
-            'main_nml': {
-            'days': 3,
-            }})
+            #Only run for a short time to keep things short.
+            if is_mars_test_case(test_case_name):
+                #Override in whole Mars days (see MARS_DAY_LENGTH_SECONDS above) rather than
+                #'days', since main_nml's 'days' always means Earth's fixed 86400s regardless
+                #of planet, and 86400 is not a multiple of these test cases' dt_atmos=110s.
+                exp.update_namelist({
+                'main_nml': {
+                'days': 0,
+                'seconds': 3*MARS_DAY_LENGTH_SECONDS,
+                }})
+            else:
+                exp.update_namelist({
+                'main_nml': {
+                'days': 3,
+                }})
         except:
             run_complete = False
             test_pass = False      
