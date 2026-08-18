@@ -46,27 +46,24 @@ REAL(r_def), INTENT(IN) :: dust(n_profile, n_layer)
 CALL allocate_aer(aer, dimen, spectrum)
 CALL allocate_aer_prsc(aer, dimen, spectrum)
 
-aer%mr_source = ip_aersrc_classic_ron
+! Only touch mr_source/mix_ratio when the spectral file actually defines aerosol
+! species - for spectral files with no aerosols (e.g. the standard, non-Mars ga7
+! files), aer%mr_source must be left exactly as allocate_aer/allocate_aer_prsc set
+! it, matching the upstream set_aer_mod's behaviour for that case. Setting it
+! unconditionally here was found to change results for ordinary (non-Mars,
+! non-dust) Socrates runs, presumably via how radiance_calc interprets mr_source.
+IF (spectrum%aerosol%n_aerosol > 0) THEN
+  aer%mr_source = ip_aersrc_classic_ron
 
-DO i_aer=1, spectrum%aerosol%n_aerosol
-  aer%mr_type_index(i_aer)=i_aer
-  DO i=1, n_layer
-    DO l=1, n_profile
-      aer%mix_ratio(l,i,i_aer) = dust(l,i)
+  DO i_aer=1, spectrum%aerosol%n_aerosol
+    aer%mr_type_index(i_aer)=i_aer
+    DO i=1, n_layer
+      DO l=1, n_profile
+        aer%mix_ratio(l,i,i_aer) = dust(l,i)
+      END DO
     END DO
   END DO
-END DO
-
-
-!  CASE DEFAULT
-!    DO i=1, n_layer
-!      DO l=1, n_profile
-!        atm%gas_mix_ratio(l, i, i_gas) = 0.0_r_def
-!      END DO
-!    END DO
-!  END SELECT
-!END DO
-
+END IF
 
 END SUBROUTINE set_aer
 END MODULE socrates_set_aer
