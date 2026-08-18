@@ -76,9 +76,7 @@ exp.namelist = namelist = Namelist({
         'roughness_heat':3.21e-05,
         'roughness_moist':0.,
         'two_stream_gray': False,
-        'do_newtonian_cooling_as_rad': True,
         'convection_scheme': 'none',
-        'newt_relax_surface': False,
         'do_lscale_cond': False,
     },
 
