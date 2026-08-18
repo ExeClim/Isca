@@ -110,7 +110,6 @@ exp.namelist = namelist = Namelist({
         'tconst' : 285.,
         'prescribe_initial_dist':True,
         'evaporation':False,
-        'update_sst_from_fluxes' : False,
     },
 
     'qe_moist_convection_nml': {
