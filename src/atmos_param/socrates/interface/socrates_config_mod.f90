@@ -34,8 +34,9 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   ! Mars dust profile is COMPUTED at all (run_socrates); account_for_effect_of_dust
   ! controls whether that computed profile is then actually PASSED to the radiative
   ! transfer call (socrates_interface), vs. zeroed at that last step. So:
-  !   do_dust_forcing=F                        -> no dust, regardless of this flag
-  !   do_dust_forcing=T, account_for_...=T      -> dust computed AND radiatively active (the normal Mars dust case)
+  !   do_dust_forcing=F                        -> no dust, regardless of this flag (both default here)
+  !   do_dust_forcing=T, account_for_...=T      -> dust computed AND radiatively active (the normal Mars dust case -
+  !                                                both must be set explicitly, e.g. socrates_mars_dust_test_case.py)
   !   do_dust_forcing=T, account_for_...=F      -> dust computed and diagnosed (soc_dust,
   !                                                dust_mmr_ref diagnostics) but NOT fed to radiation -
   !                                                useful for isolating dust's radiative effect from its
@@ -43,7 +44,9 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   ! Mirrors the existing account_for_effect_of_water/_ozone pattern above, which exists
   ! because water/ozone are always available as fields; do_dust_forcing exists as well
   ! because, unlike water/ozone, the dust field has no other reason to be computed.
-  logical :: account_for_effect_of_dust=.TRUE. !if False then radiation is fed dust mixing ratios = 0. If true it's fed mixing ratios based on model dust field (see comment above).
+  ! Defaults to .FALSE. (unlike water/ozone above) so that setting do_dust_forcing alone
+  ! is never enough to silently turn on dust radiative effects - both flags must be set.
+  logical :: account_for_effect_of_dust=.FALSE. !if False then radiation is fed dust mixing ratios = 0. If true it's fed mixing ratios based on model dust field (see comment above).
   logical :: do_read_ozone = .FALSE. ! read ozone from an external file?
   character(len=256) :: ozone_file_name='ozone' !Name of file containing ozone field - n.b. don't need to include '.nc'
   character(len=256) :: ozone_field_name='ozone' !Name of ozone variable in ozone file
