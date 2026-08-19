@@ -29,13 +29,37 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   character(len=256) :: sw_hires_spectral_filename='unset'
   logical :: account_for_effect_of_water=.TRUE. !if False then radiation is fed water mixing ratios = 0. If true it's fed mixing ratios based on model specific humidity.
   logical :: account_for_effect_of_ozone=.TRUE. !if False then radiation is fed ozone mixing ratios = 0. If true it's fed mixing ratios based on model ozone field.
+  ! account_for_effect_of_dust vs do_dust_forcing (below): two different gates on the
+  ! same field, applied at two different stages. do_dust_forcing controls whether a
+  ! Mars dust profile is COMPUTED at all (run_socrates); account_for_effect_of_dust
+  ! controls whether that computed profile is then actually PASSED to the radiative
+  ! transfer call (socrates_interface), vs. zeroed at that last step. So:
+  !   do_dust_forcing=F                        -> no dust, regardless of this flag (both default here)
+  !   do_dust_forcing=T, account_for_...=T      -> dust computed AND radiatively active (the normal Mars dust case -
+  !                                                both must be set explicitly, e.g. socrates_mars_dust_test_case.py)
+  !   do_dust_forcing=T, account_for_...=F      -> dust computed and diagnosed (soc_dust,
+  !                                                dust_mmr_ref diagnostics) but NOT fed to radiation -
+  !                                                useful for isolating dust's radiative effect from its
+  !                                                mere presence in diagnostics/other schemes.
+  ! Mirrors the existing account_for_effect_of_water/_ozone pattern above, which exists
+  ! because water/ozone are always available as fields; do_dust_forcing exists as well
+  ! because, unlike water/ozone, the dust field has no other reason to be computed.
+  ! Defaults to .FALSE. (unlike water/ozone above) so that setting do_dust_forcing alone
+  ! is never enough to silently turn on dust radiative effects - both flags must be set.
+  logical :: account_for_effect_of_dust=.FALSE. !if False then radiation is fed dust mixing ratios = 0. If true it's fed mixing ratios based on model dust field (see comment above).
   logical :: do_read_ozone = .FALSE. ! read ozone from an external file?
   character(len=256) :: ozone_file_name='ozone' !Name of file containing ozone field - n.b. don't need to include '.nc'
   character(len=256) :: ozone_field_name='ozone' !Name of ozone variable in ozone file
   logical            :: input_o3_file_is_mmr=.true. ! Does the ozone input file contain values as a mass mixing ratio (set to true) or a volume mixing ratio (set to false)?
   logical :: do_read_co2 = .FALSE. ! read ozone from an external file?
   character(len=256) :: co2_file_name='co2' !Name of file containing co2 field - n.b. don't need to include '.nc'
-  character(len=256) :: co2_field_name='co2' !Name of co2 variable in co2 file  
+  character(len=256) :: co2_field_name='co2' !Name of co2 variable in co2 file
+  logical :: do_read_cdod = .FALSE. ! read dust optical depth from external file?
+  character(len=256) :: cdod_file_name='dust'
+  character(len=256) :: cdod_field_name='cdod' !Name of dust optical depth variable in cdod file
+  logical            :: do_dust_forcing=.FALSE. ! Master switch: compute a Mars dust vertical profile (Ball et al. 2021)?
+                                                 ! See account_for_effect_of_dust above for how this interacts with whether
+                                                 ! that profile actually reaches the radiation calculation.
   real(r_def) :: input_planet_emissivity = 1.0 !Emissivity of surface. Defined as constant all over surface.
   real :: co2_ppmv = 300. !Default CO2 concentration in PPMV
   logical ::  input_co2_mmr=.false. !Socrates wants input concentrations as mmr not vmr, so need to make sure input data supplied is converted if necessary
@@ -43,8 +67,8 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   logical :: do_scm_ozone=.false. ! read single column ozone from namelist? note: ONLY when using SCM
   real(r_def), dimension(100) :: scm_ozone = -1 ! input array for single column ozone. max number of levels = 100 
 
-  logical :: use_pressure_interp_for_half_levels = .False. !By default (.False.) does linear interpolation in height for half-level temperatures. True does linear interp using pressure. 
-
+  logical :: use_pressure_interp_for_half_levels = .False. !By default (.False.) does linear interpolation in height for half-level temperatures. True does linear interp using pressure.
+  real(r_def) :: dust_scale = 2.6e-4
   ! Incoming radiation options for namelist
   
   integer   :: solday=0  ! if >0, do perpetual run corresponding to day of the year = solday \in [0,days per year]
@@ -71,6 +95,9 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   REAL(r_def) :: cfc113_mix_ratio = 4.826e-10
   REAL(r_def) :: hcfc22_mix_ratio = 6.866e-10
   REAL(r_def) :: hfc134a_mix_ratio = 2.536e-10
+  
+  REAL(r_def) :: dust_mix_ratio = 1.0e-06
+  REAL(r_def) :: nu_dust = 0.007
 
 
   ! Whether to include radiative effects of particular gases
@@ -121,9 +148,10 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
   NAMELIST/socrates_rad_nml/ stellar_constant, tidally_locked, lw_spectral_filename, lw_hires_spectral_filename, &
                              sw_spectral_filename, sw_hires_spectral_filename, socrates_hires_mode, &
                              input_planet_emissivity, co2_ppmv, &
-                             account_for_effect_of_water, account_for_effect_of_ozone, &
+                             account_for_effect_of_water, account_for_effect_of_ozone, account_for_effect_of_dust, &
                              do_read_ozone, ozone_file_name, ozone_field_name, input_o3_file_is_mmr, &
-                             do_read_co2, co2_file_name, co2_field_name, input_co2_mmr, &                             
+                             do_read_co2, co2_file_name, co2_field_name, input_co2_mmr, &
+                             do_read_cdod, cdod_file_name, cdod_field_name, do_dust_forcing, &                         
                              solday, do_rad_time_avg, equinox_day,  &
                              store_intermediate_rad, dt_rad_avg, dt_rad, &
                              chunk_size, &
@@ -134,6 +162,7 @@ LOGICAL :: l_planet_grey_surface = .TRUE.
                              inc_h2o, inc_co2, inc_co, inc_o3, inc_n2o, inc_n2, inc_ch4, inc_o2, &
                              inc_so2, inc_cfc11, inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a, &
                              use_pressure_interp_for_half_levels,  &
-                             frierson_solar_rad, del_sol, del_sw, do_scm_ozone, scm_ozone
+                             frierson_solar_rad, del_sol, del_sw, do_scm_ozone, scm_ozone, &
+                             dust_mix_ratio, nu_dust, dust_scale
 
 end module socrates_config_mod

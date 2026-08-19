@@ -63,7 +63,8 @@ MODULE socrates_interface_mod
   INTEGER :: id_soc_olr_clr, id_soc_toa_sw_clr, id_soc_toa_sw_up_clr ! clear-sky case
   INTEGER :: id_soc_surf_flux_sw_clr, id_soc_surf_flux_sw_down_clr, &
              id_soc_surf_flux_lw_clr, id_soc_surf_flux_lw_down_clr
-  INTEGER :: id_soc_ozone, id_soc_co2, id_soc_coszen
+  INTEGER :: id_soc_ozone, id_soc_co2, id_soc_cdod, id_soc_dust_mmr_ref, &
+             id_soc_dust, id_soc_coszen
   INTEGER :: n_soc_bands_lw, n_soc_bands_sw
   INTEGER :: n_soc_bands_lw_hires, n_soc_bands_sw_hires
   INTEGER :: id_soc_bins_lw, id_soc_bins_sw
@@ -75,19 +76,21 @@ MODULE socrates_interface_mod
   CHARACTER(len=10), PARAMETER :: soc_mod_name = 'socrates'
   REAL :: missing_value = -999
 
-  type(interpolate_type),save                :: o3_interp, co2_interp            ! use external file for ozone and co2
+  type(interpolate_type),save                :: o3_interp, co2_interp
+  type(interpolate_type),save                :: cdod_interp     ! use external file for dust optical depth
 
   REAL :: dt_last !Time of last radiation calculation - used to tell whether it is time to recompute radiation or not
   REAL(r_def), allocatable, dimension(:,:,:) :: tdt_soc_sw_store, tdt_soc_lw_store
   REAL(r_def), allocatable, dimension(:,:,:) :: thd_sw_flux_net_store, thd_lw_flux_net_store, &
                                                 thd_sw_flux_clr_net_store, thd_lw_flux_clr_net_store
-  REAL(r_def), allocatable, dimension(:,:,:) :: thd_co2_store, thd_ozone_store
+  REAL(r_def), allocatable, dimension(:,:,:) :: thd_co2_store, thd_ozone_store, thd_dust_store
   REAL(r_def), allocatable, dimension(:,:)   :: net_surf_sw_down_store, surf_lw_down_store, surf_lw_net_store, &
                                                 surf_sw_down_store, toa_sw_down_store, &
                                                 toa_sw_store, olr_store, coszen_store, &
                                                 toa_sw_clr_store, olr_clr_store, toa_sw_up_store, toa_sw_up_clr_store, &
                                                 net_surf_sw_down_clr_store, surf_lw_down_clr_store, &
-                                                surf_lw_net_clr_store, surf_sw_down_clr_store
+                                                surf_lw_net_clr_store, surf_sw_down_clr_store, &
+                                                thd_cdod_store, thd_dust_mmr_ref_store
 
   REAL(r_def), allocatable, dimension(:,:,:) :: outputted_soc_spectral_olr, spectral_olr_store, outputted_soc_spectral_olr_clr
   REAL(r_def), allocatable, dimension(:)     :: soc_bins_lw, soc_bins_sw
@@ -385,6 +388,21 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
          'socrates Co2', &
          'mmr', missing_value=missing_value )
 
+    id_soc_dust_mmr_ref   = &
+         register_diag_field ( soc_mod_name, 'dust_mmr_ref', axes(1:2), Time, &
+         'socrates dust_mmr_ref', &
+         'mmr', missing_value=missing_value               )
+
+    id_soc_cdod   = &
+         register_diag_field ( soc_mod_name, 'soc_cdod', axes(1:2), Time, &
+         'socrates CDOD', &
+         'none', missing_value=missing_value               )
+
+    id_soc_dust   = &
+         register_diag_field ( soc_mod_name, 'soc_dust', axes(1:3), Time, &
+         'socrates Dust', &
+         'mmr', missing_value=missing_value               )
+
     id_mars_solar_long = register_diag_field ( soc_mod_name, 'mars_solar_long', &
                    Time, 'Martian solar longitude', 'deg')   
 
@@ -419,6 +437,11 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
          call error_mesg('socrates_interface', &
              'Input o3 will be read in exactly as specified in input (i.e. no plevel interpolation will be performed). Ensure it is specified correctly in namelist. ONLY FOR USE WITH SINGLE COLUMN MODEL.', &
              WARNING)
+      endif
+
+      if(do_read_cdod)then
+         call interpolator_init (cdod_interp, trim(cdod_file_name)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+         print*, 'CDOD interpolator initialized'
       endif
 
     if (mod((size(lonb,1)-1)*(size(latb,1)-1), chunk_size) .ne. 0) then
@@ -528,6 +551,18 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
             allocate(thd_co2_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
         endif
 
+	if (id_soc_cdod > 0 ) then
+            allocate(thd_cdod_store(size(lonb,1)-1, size(latb,2)-1))
+        endif
+
+        if (id_soc_dust_mmr_ref > 0) then
+            allocate(thd_dust_mmr_ref_store(size(lonb,1)-1, size(latb,2)-1))
+        endif
+
+	if (id_soc_dust > 0) then
+            allocate(thd_dust_store(size(lonb,1)-1, size(latb,2)-1, num_levels))
+        endif
+
         ! spectral output currently not available as required axis not present in diag file
         if (id_soc_spectral_olr > 0) then
             if (socrates_hires_mode .eqv. .True.) then
@@ -590,7 +625,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
   ! Set up the call to the Socrates radiation scheme
   ! -----------------------------------------------------------------------------
   subroutine socrates_interface(Time_diag, rlat, rlon, soc_lw_mode,  &
-       fms_temp, fms_spec_hum, fms_ozone, fms_co2, fms_t_surf,       &
+       fms_temp, fms_spec_hum, fms_ozone, fms_co2, fms_dust, fms_t_surf, &
        fms_p_full, fms_p_half, fms_z_full, fms_z_half, fms_albedo,   &
        fms_coszen, fms_rrsun, n_profile, n_layer,                    &
        fms_cld_frac, fms_reff_rad, fms_mmr_cl_rad,                   &
@@ -628,7 +663,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     INTEGER(i_def) :: nlat
 
     ! Input arrays
-    real(r_def), intent(in) :: fms_temp(:,:,:), fms_spec_hum(:,:,:), fms_ozone(:,:,:), fms_co2(:,:,:)
+    real(r_def), intent(in) :: fms_temp(:,:,:), fms_spec_hum(:,:,:), fms_ozone(:,:,:), fms_co2(:,:,:), fms_dust(:,:,:)
     real(r_def), intent(in) :: fms_p_full(:,:,:)
     real(r_def), intent(in) :: fms_p_half(:,:,:)
     real(r_def), intent(in) :: fms_t_surf(:,:), fms_albedo(:,:)
@@ -665,6 +700,8 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
          input_d_mass, input_density, input_layer_heat_capacity, &
          soc_heating_rate, input_o3_mixing_ratio, &
          input_co2_mixing_ratio,z_full_reshaped, input_cld_frac, input_reff_rad, input_mmr_cl_rad
+
+    real(r_def), dimension(n_profile, n_layer) :: input_dust_mixing_ratio
 
     real(r_def), dimension(n_profile, 0:n_layer) :: input_p_level, input_t_level, soc_flux_direct, &
          soc_flux_down, soc_flux_up, soc_flux_direct_clr, soc_flux_down_clr, soc_flux_up_clr, z_half_reshaped
@@ -727,6 +764,17 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
     endif
 
     input_co2_mixing_ratio = reshape(fms_co2(:,:,:),(/si*sj,sk /))
+
+    ! Second (radiative-transfer) gate on dust: fms_dust here is whatever run_socrates
+    ! computed, which is already zero if do_dust_forcing=.FALSE. (see its Conrath-profile
+    ! block below). account_for_effect_of_dust decides whether a non-zero profile is
+    ! actually passed on to Socrates, or zeroed right here - see the comment by both
+    ! flags' declarations in socrates_config_mod.f90 for the full picture.
+    if (account_for_effect_of_dust .eqv. .true.) then
+        input_dust_mixing_ratio = reshape(fms_dust(:,:,:),(/si*sj,sk /))
+    else
+        input_dust_mixing_ratio = 0.0
+    endif
 
     !-------------
 
@@ -830,6 +878,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
             input_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                         &
             input_o3_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                      &
             input_co2_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                     &
+            input_dust_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                    &
             input_t_surf(idx_chunk_start:idx_chunk_end),                                 &
             input_cos_zenith_angle(idx_chunk_start:idx_chunk_end),                       &
             input_solar_irrad(idx_chunk_start:idx_chunk_end),                            &
@@ -863,6 +912,7 @@ SUBROUTINE socrates_init(is, ie, js, je, num_levels, axes, Time, lat, lonb, latb
             input_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                         &
             input_o3_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                      &
             input_co2_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                     &
+            input_dust_mixing_ratio(idx_chunk_start:idx_chunk_end,:),                    &
             input_t_surf(idx_chunk_start:idx_chunk_end),                                 &
             input_cos_zenith_angle(idx_chunk_start:idx_chunk_end),                       &
             input_solar_irrad(idx_chunk_start:idx_chunk_end),                            &
@@ -933,10 +983,13 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     real, intent(in), dimension(:,:,:) :: cf_rad, reff_rad, qcl_rad
 
     integer(i_def) :: n_profile, n_layer
+    ! loop variables
+    integer :: i, j, k
 
-    real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: t_surf_for_soc, rad_lat_soc, rad_lon_soc, albedo_soc
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: t_surf_for_soc, rad_lat_soc, rad_lon_soc, albedo_soc, sin_lat, zmax
+    real(r_def), dimension(size(temp_in,1), size(temp_in,2)) :: dust_mmr_ref, cdod_in
     real(r_def), dimension(size(temp_in,1), &
-        size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, co2_soc, p_full_soc, &
+        size(temp_in,2), size(temp_in,3)) :: tg_tmp_soc, q_soc, ozone_soc, co2_soc, dust_soc, p_full_soc, &
                                              output_heating_rate_sw, output_heating_rate_lw, output_heating_rate_total, &
                                              output_heating_rate_sw_clr, output_heating_rate_lw_clr, &
                                              z_full_soc, cld_frac_soc, reff_rad_soc, mmr_cl_rad_soc, qcl_rad_soc, &
@@ -957,7 +1010,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                                                          p2, toa_sw_down, surf_sw_down, &
                                                          olr_clr, toa_sw_clr, toa_sw_up, toa_sw_up_clr, &
                                                          net_surf_sw_down_clr, surf_sw_down_clr, surf_lw_net_clr, surf_lw_down_clr
-    real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: ozone_in, co2_in
+    real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)) :: ozone_in, co2_in, dust_in
     real, dimension(size(temp_in,1), size(temp_in,2), size(temp_in,3)+1) :: thd_sw_flux_net, thd_lw_flux_net, thd_sw_flux_clr_net, thd_lw_flux_clr_net
 
     type(time_type) :: Time_loc
@@ -1059,6 +1112,18 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
                 co2_in = thd_co2_store
             endif
 
+            if (id_soc_cdod > 0) then
+                cdod_in = thd_cdod_store
+            endif
+
+            if (id_soc_dust_mmr_ref > 0) then
+                dust_mmr_ref = thd_dust_mmr_ref_store
+            endif
+
+            if (id_soc_dust > 0) then
+                dust_in = thd_dust_store
+            endif
+
             if (id_soc_spectral_olr > 0) then
                 outputted_soc_spectral_olr = spectral_olr_store
             endif
@@ -1068,19 +1133,19 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             endif
             if (id_time_since_ae > 0) then
                 time_since_ae = time_since_ae_store
-            endif            
+            endif
             if (id_dec > 0) then
                 dec =  dec_store
-            endif            
+            endif
             if (id_ang > 0) then
-                ang_out= ang_out_store 
-            endif            
+                ang_out= ang_out_store
+            endif
             if (id_true_anom > 0) then
                 true_anomaly = true_anomaly_store
-            endif            
+            endif
             if (id_rrsun > 0) then
                 rrsun = rrsun_store
-            endif         
+            endif
 
         else
             output_heating_rate_sw = 0.
@@ -1107,13 +1172,16 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             coszen = 0.
             ozone_in = 0.
             co2_in = 0.
+            cdod_in = 0.
+            dust_mmr_ref = 0.
+            dust_in = 0.
             outputted_soc_spectral_olr = 0.
             mars_solar_long = 0.
             time_since_ae = 0.
             dec = 0.
             ang_out = 0.
             true_anomaly = 0.
-            rrsun = 0.            
+            rrsun = 0.
         endif
 
         temp_tend(:,:,:) = temp_tend(:,:,:) + real(output_heating_rate_sw)+real(output_heating_rate_lw)
@@ -1198,28 +1266,37 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
         if(id_soc_ozone > 0) then
             used = send_data ( id_soc_ozone, ozone_in, Time_diag)
         endif
+        if(id_soc_cdod > 0) then
+            used = send_data ( id_soc_cdod, cdod_in, Time_diag)
+        endif
+        if(id_soc_dust_mmr_ref > 0) then
+            used = send_data ( id_soc_dust_mmr_ref, dust_mmr_ref, Time_diag)
+        endif
+        if(id_soc_dust > 0) then
+            used = send_data ( id_soc_dust, dust_in, Time_diag)
+        endif
         if(id_soc_spectral_olr > 0) then
             used = send_data ( id_soc_spectral_olr, outputted_soc_spectral_olr, Time_diag)
-        endif         
+        endif
         if (id_mars_solar_long > 0) then
             used = send_data ( id_mars_solar_long, mars_solar_long, Time_diag)
         endif
         if (id_time_since_ae > 0) then
             used = send_data ( id_time_since_ae, time_since_ae, Time_diag)
-        endif            
+        endif
         if (id_dec > 0) then
             used = send_data ( id_dec, dec, Time_diag)
-        endif            
+        endif
         if (id_ang > 0) then
             used = send_data ( id_ang, ang_out, Time_diag)
-        endif            
+        endif
         if (id_true_anom > 0) then
             used = send_data ( id_true_anom, true_anomaly, Time_diag)
-        endif            
+        endif
         if (id_rrsun > 0) then
-            used = send_data ( id_rrsun, rrsun, Time_diag)        
-        endif            
-        ! Diagnostics sent 
+            used = send_data ( id_rrsun, rrsun, Time_diag)
+        endif
+        ! Diagnostics sent
 
         return !not time yet
 
@@ -1282,33 +1359,33 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
 
     ozone_in = 0.0
 
-    !get ozone 
+    !get ozone
      if(do_read_ozone)then
        call interpolator( o3_interp, Time_diag, p_half_in, ozone_in, trim(ozone_field_name))
-     endif 
-     if(do_scm_ozone)then ! Allows for option to specify ozone vertical profile in namelist for SCM. 
-       if(do_read_ozone)then 
+     endif
+     if(do_scm_ozone)then ! Allows for option to specify ozone vertical profile in namelist for SCM.
+       if(do_read_ozone)then
           call error_mesg('socrates_interface', 'Cannot set do_scm_ozone and do_read_ozone = .true.', FATAL)
-       endif 
-       if((size(temp_in,1)>1).or.(size(temp_in,2)>1))then 
+       endif
+       if((size(temp_in,1)>1).or.(size(temp_in,2)>1))then
           call error_mesg('socrates_interface', 'Cannot set do_scm_ozone if simulating more than one column, use do_read_ozone instead', FATAL)
-       endif 
-      if(scm_ozone(size(temp_in,3)).eq.-1)then 
+       endif
+      if(scm_ozone(size(temp_in,3)).eq.-1)then
           call error_mesg('socrates_interface', 'Input o3 must be specified on model pressure levels but not enough levels specified', FATAL)
-      endif 
-      if(scm_ozone(size(temp_in,3)+1).ne.-1)then 
+      endif
+      if(scm_ozone(size(temp_in,3)+1).ne.-1)then
           call error_mesg('socrates_interface', 'Input o3 must be specified on model pressure levels but too many levels specified', FATAL)
-      endif 
+      endif
       ozone_in(1,1,:) = scm_ozone(1:size(temp_in,3))
-           !PUT THIS WARNING SOMEWHERE ELSE 
+           !PUT THIS WARNING SOMEWHERE ELSE
      endif
      if (do_read_ozone .or. do_scm_ozone) then
        if (input_o3_file_is_mmr.eqv..false.) then
 
            ozone_in = ozone_in * wtmozone / (1000. * gas_constant / rdgas ) !Socrates expects all abundances to be mass mixing ratio. So if input file is volume mixing ratio, it must be converted to mass mixing ratio using the molar masses of dry air and ozone
            ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol from kg/mol by multiplying by 1000. This conversion is necessary because wtmozone is in g/mol.
-           
-       endif 
+
+       endif
      endif
 
     if (input_co2_mmr .eqv. .false.) then
@@ -1328,6 +1405,35 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol
             ! from kg/mol by multiplying by 1000. This conversion is necessary because wtmco2 is in g/mol.
         endif
+    endif
+
+    !get dust optical depth / mass mixing ratio reference value
+    if(do_read_cdod)then
+        call interpolator( cdod_interp, Time_diag, cdod_in, trim(cdod_field_name) )
+        dust_mmr_ref = dust_scale*cdod_in / (16.4 - dust_scale*cdod_in) ! Converts dust optical depth at 610Pa to dust mass mixing ratio at 610Pa.
+    else
+        dust_mmr_ref = dust_mix_ratio
+    endif
+
+    ! Build the dust vertical profile (Conrath-type distribution) from the reference
+    ! mixing ratio computed above, following Ball et al. 2021's Mars dust representation.
+    ! This is the first (computation) gate on dust: dust_in ends up all zero here if
+    ! do_dust_forcing=.FALSE., regardless of account_for_effect_of_dust. If this profile
+    ! IS computed, whether it's then actually radiatively active is decided separately,
+    ! further down the call chain in socrates_interface (see the comment there, and by
+    ! both flags' declarations in socrates_config_mod.f90).
+    if (do_dust_forcing .eqv. .true.) then
+        sin_lat(:,:) = sin(rad_lat(:,:))
+        zmax(:,:) = 60 + 18*sin((mars_solar_long-158.)*pi/180.) &
+                     -(32+18*sin((mars_solar_long-158.)*pi/180.))*(sin_lat(:,:))**4 &
+                     -8*sin((mars_solar_long-158.)*pi/180.)*(sin_lat(:,:))**5
+        do i=1, size(temp_in,1)
+          do j=1, size(temp_in,2)
+            dust_in(i, j, :) = dust_mmr_ref(i, j)*exp(nu_dust*(1-MAX((700/p_full_in(i,j,:))**(70./zmax(i,j)),1.)))
+          end do
+        end do
+    else
+        dust_in = 0.
     endif
 
     if(do_cloud_simple .or. do_cloud_spookie) then
@@ -1359,6 +1465,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     q_soc      =  REAL(q_in, kind(r_def))
     ozone_soc  =  REAL(ozone_in, kind(r_def))
     co2_soc    =  REAL(co2_in, kind(r_def))
+    dust_soc   =  REAL(dust_in, kind(r_def))
     p_full_soc = REAL(p_full_in, kind(r_def))
     p_half_soc = REAL(p_half_in, kind(r_def))
     albedo_soc = REAL(albedo_in, kind(r_def))
@@ -1366,7 +1473,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     z_half_soc = REAL(z_half_in, kind(r_def))
 
     CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,   &
-        tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc, &
+        tg_tmp_soc, q_soc, ozone_soc, co2_soc, dust_soc, t_surf_for_soc, p_full_soc, &
         p_half_soc, z_full_soc, z_half_soc, albedo_soc, coszen, rrsun,     &
         n_profile, n_layer, cld_frac_soc, reff_rad_soc, mmr_cl_rad_soc,    &
         output_heating_rate_lw, output_soc_flux_lw_down, output_soc_flux_lw_up, &
@@ -1394,7 +1501,7 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     ! Retrieve output_heating_rate, and downward surface SW and LW fluxes
     soc_lw_mode = .FALSE.
     CALL socrates_interface(Time, rad_lat_soc, rad_lon_soc, soc_lw_mode,     &
-        tg_tmp_soc, q_soc, ozone_soc, co2_soc, t_surf_for_soc, p_full_soc,  &
+        tg_tmp_soc, q_soc, ozone_soc, co2_soc, dust_soc, t_surf_for_soc, p_full_soc,  &
         p_half_soc, z_full_soc, z_half_soc, albedo_soc, coszen, rrsun,      &
         n_profile, n_layer, cld_frac_soc, reff_rad_soc, mmr_cl_rad_soc,     &
         output_heating_rate_sw, output_soc_flux_sw_down, output_soc_flux_sw_up, &
@@ -1506,6 +1613,18 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
             thd_co2_store = co2_in
         endif
 
+        if (id_soc_cdod > 0) then
+            thd_cdod_store = cdod_in
+        endif
+
+        if (id_soc_dust_mmr_ref > 0) then
+            thd_dust_mmr_ref_store = dust_mmr_ref
+        endif
+
+        if (id_soc_dust > 0) then
+            thd_dust_store = dust_in
+        endif
+
         if (id_soc_spectral_olr > 0) then
             spectral_olr_store = outputted_soc_spectral_olr
         endif
@@ -1515,19 +1634,19 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
         endif
         if (id_time_since_ae > 0) then
             time_since_ae_store = time_since_ae
-        endif            
+        endif
         if (id_dec > 0) then
             dec_store =  dec
-        endif            
+        endif
         if (id_ang > 0) then
             ang_out_store = ang_out
-        endif            
+        endif
         if (id_true_anom > 0) then
             true_anomaly_store = true_anomaly
-        endif            
+        endif
         if (id_rrsun > 0) then
             rrsun_store = rrsun
-        endif   
+        endif
 
     endif
 
@@ -1608,6 +1727,15 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     if(id_soc_ozone > 0) then
         used = send_data ( id_soc_ozone, ozone_in, Time_diag)
     endif
+    if(id_soc_cdod > 0) then
+        used = send_data ( id_soc_cdod, cdod_in, Time_diag)
+    endif
+    if(id_soc_dust_mmr_ref > 0) then
+        used = send_data ( id_soc_dust_mmr_ref, dust_mmr_ref, Time_diag)
+    endif
+    if(id_soc_dust > 0) then
+        used = send_data ( id_soc_dust, dust_in, Time_diag)
+    endif
     if(id_soc_spectral_olr > 0) then
         used = send_data ( id_soc_spectral_olr, outputted_soc_spectral_olr, Time_diag)
     endif
@@ -1619,19 +1747,19 @@ subroutine run_socrates(Time, Time_diag, rad_lat, rad_lon, temp_in, q_in, t_surf
     endif
     if (id_time_since_ae > 0) then
         used = send_data ( id_time_since_ae, time_since_ae, Time_diag)
-    endif            
+    endif
     if (id_dec > 0) then
         used = send_data ( id_dec, dec, Time_diag)
-    endif            
+    endif
     if (id_ang > 0) then
         used = send_data ( id_ang, ang_out, Time_diag)
-    endif            
+    endif
     if (id_true_anom > 0) then
         used = send_data ( id_true_anom, true_anomaly, Time_diag)
-    endif            
+    endif
     if (id_rrsun > 0) then
-        used = send_data ( id_rrsun, rrsun, Time_diag)        
-    endif   
+        used = send_data ( id_rrsun, rrsun, Time_diag)
+    endif
 
     ! Diagnostics sent
 
@@ -1644,6 +1772,7 @@ subroutine run_socrates_end
 
     if(do_read_ozone) call interpolator_end(o3_interp)
     if(do_read_co2)   call interpolator_end(co2_interp)
+    if(do_read_cdod)  call interpolator_end(cdod_interp)
 
 end subroutine run_socrates_end
 

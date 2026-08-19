@@ -34,7 +34,7 @@ private
 !-----------------------------------------------------------------------
 !  ---- public interfaces ----
 
-   public  lscale_cond, lscale_cond_init, lscale_cond_end
+   public  lscale_cond, lscale_cond_co2_mars, lscale_cond_init, lscale_cond_end
 
 !-----------------------------------------------------------------------
 !   ---- version number ----
@@ -253,6 +253,139 @@ subroutine precip_evap (pmass, tin, qin, qsat, dqsat, hlcp, &
 !-----------------------------------------------------------------------
 
    end subroutine precip_evap
+
+!#######################################################################
+
+   subroutine lscale_cond_co2_mars (tin, qin, pfull, phalf, lh_rel, coldT, &
+                            rain, snow, tdel, qdel, mask, conv)
+
+!-----------------------------------------------------------------------
+!
+!      Mars-specific CO2 condensation (Way et al. 2017), ported from
+!      Emily Ball's lscale_cond_lh (github.com/emilyrball/Isca-Mars).
+!
+!      Unlike lscale_cond above, which condenses water vapor wherever
+!      specific humidity exceeds a saturation curve, this adjusts
+!      temperature toward a pressure-dependent CO2 frost point and
+!      diagnoses the associated latent heat release. Not applicable to
+!      Earth or other non-CO2-dominated atmospheres - only wire this up
+!      behind its own namelist option, never as a default code path.
+!
+!-----------------------------------------------------------------------
+!
+!   input:  tin      temperature at full model levels
+!           qin      specific humidity of water vapor at full
+!                      model levels (unused - retained for interface
+!                      compatibility with lscale_cond)
+!           pfull    pressure at full model levels
+!           phalf    pressure at half (interface) model levels
+!           coldT    should precipitation be snow at this point?
+!   optional:
+!           mask     optional mask (0 or 1.) (unused)
+!           conv     logical flag (unused)
+!
+!  output:  rain     liquid precipitation (kg/m2) - always zero; see
+!                      qdel note below
+!           snow     frozen precipitation (kg/m2) - always zero; see
+!                      qdel note below
+!           tdel     temperature tendency at full model levels
+!           qdel     specific humidity tendency - always zero; see note
+!                      below
+!           lh_rel   latent heat released by CO2 condensation (J/kg)
+!
+!-----------------------------------------------------------------------
+!--------------------- interface arguments -----------------------------
+
+   real   , intent(in) , dimension(:,:,:) :: tin, qin, pfull, phalf
+   logical   , intent(in) , dimension(:,:):: coldT
+   real   , intent(out), dimension(:,:)   :: rain,snow
+   real   , intent(out), dimension(:,:,:) :: tdel, qdel, lh_rel
+   real   , intent(in) , dimension(:,:,:), optional :: mask
+   logical, intent(in) , dimension(:,:,:), optional :: conv
+!-----------------------------------------------------------------------
+!---------------------- local data -------------------------------------
+
+   real,dimension(size(tin,1),size(tin,2),size(tin,3)) :: pmass, tcond, mdel
+   integer  k, kx, j, jx, i, ix
+
+   ! Reference latent heat of CO2 condensation at T0=150K (J/kg), the
+   ! anchor point for the Kirchhoff-type expansion of lh_rel below.
+   real, parameter :: L_c0 = 5.902e05
+   ! Specific heat capacity of gaseous CO2 (J/kg/K), evaluated near the
+   ! ~150K polar-cap condensation temperature - NOT the same value as
+   ! CP_AIR (constants_mod), which is derived from the model's configured
+   ! rdgas/kappa and represents Mars' bulk/mean atmospheric temperature
+   ! (~845 J/kg/K for the existing Mars test cases, vs 770.2 here).
+   ! two_stream_gray_rad.F90, socrates_interface.F90, spectral_dynamics.F90,
+   ! mixed_layer.F90 and hs_forcing.F90 all use CP_AIR for the bulk
+   ! atmosphere's energy budget - this hasn't been reconciled with c_pg/c_p
+   ! below, so a Mars run currently has two different atmospheric specific
+   ! heats in play simultaneously. Check before trusting lh_rel/mdel
+   ! quantitatively.
+   real, parameter :: c_pg = 770.2
+   ! Specific heat capacity of solid CO2 ice (J/kg/K).
+   real, parameter :: c_pc = 1070.7
+   ! Specific heat capacity used to convert the diagnosed temperature
+   ! adjustment into an implied condensed CO2 mass (see mdel below).
+   ! Same CP_AIR consistency caveat as c_pg above.
+   real, parameter :: c_p  = 735.9
+
+!-----------------------------------------------------------------------
+!     computation of latent heating from CO2 condensation
+!-----------------------------------------------------------------------
+
+      if (.not. module_is_initialized) call error_mesg ('lscale_cond_co2_mars',  &
+                         'lscale_cond_init has not been called.', FATAL)
+
+      kx=size(tin,3)
+      jx=size(tin,2)
+      ix=size(tin,1)
+
+      tcond(:,:,:) = 149.2+6.48*LOG(0.00135*pfull(:,:,:))         ! CO2 condensation temperature, Way 2017
+
+   do i=1,ix
+      do j=1,jx
+         do k=1,kx
+         if (tin(i,j,k) < tcond(i,j,k)) then
+            tdel(i,j,k) = tcond(i,j,k)-tin(i,j,k)
+            lh_rel(i,j,k) = L_c0 + c_pg*(tin(i,j,k)-150.) &
+                          - c_pc*(tcond(i,j,k)-150.)
+         else
+            tdel(i,j,k)=0.0
+            lh_rel(i,j,k)=0.0
+         endif
+         enddo
+      enddo
+   enddo
+
+!------------ pressure mass of each layer ------------------------------
+
+   do k=1,kx
+      pmass(:,:,k)=(phalf(:,:,k+1)-phalf(:,:,k))/Grav
+      do j=1,jx
+         do i=1,ix
+            mdel(i,j,k)=c_p*pmass(i,j,k)/L_c0 * tdel(i,j,k)
+            lh_rel(i,j,k) = lh_rel(i,j,k)*mdel(i,j,k)
+         enddo
+      enddo
+   enddo
+
+!-----------------------------------------------------------------------
+! NOTE: this scheme does not yet track the CO2 mass condensing as a
+! tracer tendency - it only adjusts temperature (tdel) and diagnoses the
+! associated latent heat (lh_rel). qdel/rain/snow are set to zero (they
+! were previously left uninitialized - do_evap/precip_evap depended on
+! qsat/dqsat/hlcp, which this formulation never computes, so that path
+! has been dropped rather than run against undefined data).
+!-----------------------------------------------------------------------
+
+      qdel(:,:,:) = 0.0
+      rain(:,:) = 0.0
+      snow(:,:) = 0.0
+
+!-----------------------------------------------------------------------
+
+   end subroutine lscale_cond_co2_mars
 
 !#######################################################################
 
