@@ -1,6 +1,6 @@
 sh
 jinja2
-git+git://github.com/marshallward/f90nml.git#egg=f90nml
+f90nml
 numpy
 pandas
 xarray

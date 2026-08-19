@@ -104,6 +104,7 @@ contains
     call write_version_number (version, tagname)
 #ifdef INTERNAL_FILE_NML
       read (input_nml_file, horiz_interp_spherical_nml, iostat=io)
+      ierr = check_nml_error(io,'horiz_interp_spherical_nml')  ! also initializes nml error codes
 #else
     if (file_exist('input.nml')) then
        unit = open_namelist_file ( )

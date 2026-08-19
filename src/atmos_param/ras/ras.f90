@@ -492,6 +492,7 @@ end subroutine ras_end
                   uwnd0,  vwnd0,  pres0,   pres0_int, zhalf0,  coldT0,    &
                   dtime,  dtemp0,  dqvap0,    duwnd0,  dvwnd0,    &
                   rain0,  snow0,   do_strat,                      &
+                  klzbs,  klcls,                                  &
                   !OPTIONAL IN
                   mask,    kbot,                                  &
                   !OPTIONAL OUT
@@ -554,6 +555,7 @@ end subroutine ras_end
 !       Da0    - OPTIONAL; cloud fraction change
 !       DR0    - OPTIONAL; increment to prognostic tracers
 !---------------------------------------------------------------------
+  integer, intent(out), dimension(:,:)  :: klzbs, klcls
   real, intent(out), dimension(:,:,:) :: dtemp0, dqvap0, duwnd0, dvwnd0
   real, intent(out), dimension(:,:)   :: rain0,  snow0
   
@@ -569,7 +571,7 @@ end subroutine ras_end
 
  logical :: coldT,  exist    
  real    :: precip, Hl, psfc, dpcu, dtinv
- integer :: ksfc,   klcl
+ integer :: ksfc,   klcl, klzb
 
  integer, dimension(SIZE(temp0,3)) :: ic
 
@@ -750,6 +752,12 @@ end subroutine ras_end
      end do
   end if
 
+  do j = 1,jmax
+    do i = 1,imax
+    klcls(i,j) = kcbase(i,j)
+    end do
+  end do
+
 !---------------------------------------------------------------------
 
 ! LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
@@ -853,6 +861,7 @@ end subroutine ras_end
                        Hl,   exist  )
  if ( .not. exist ) CYCLE
 
+  klzbs(i,j) = klcl
 !---------------------------------------------------------------------
 ! Cloud top loop starts
 !---------------------------------------------------------------------
@@ -861,6 +870,8 @@ end subroutine ras_end
 
      ib  = ic(nc)
  if( ib >= klcl) CYCLE
+
+ klzbs(i,j) = min(klzbs(i,j), ib)
 
  if ( setras ) then
 ! --- Compute some stuff

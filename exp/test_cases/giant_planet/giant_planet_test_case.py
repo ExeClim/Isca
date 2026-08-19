@@ -4,7 +4,7 @@ import numpy as np
 
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
 
-NCORES = 4
+NCORES = 8
 
 # a CodeBase can be a directory on the computer,
 # useful for iterative development
@@ -18,8 +18,6 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 # environment variable is used to determine which `$GFDL_BASE/src/extra/env` file
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
-
-cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
@@ -68,6 +66,7 @@ exp.namelist = namelist = Namelist({
         'two_stream_gray':  True, #Use grey radiation
         'do_rrtm_radiation':  False, #Don't use RRTM
         'convection_scheme':  'dry', #Use the dry convection scheme of Schneider & Walker
+        'do_lscale_cond': False, #Consistent with dry convection scheme - this planet has no moisture physics
         'gp_surface':  True, #Use the giant-planet option for the surface, meaning it's not a mixed layer, and applies energy conservation and a bottom-boundary heat flux
         'mixed_layer_bc':  False, #Don't use the mixed-layer surface
                    
@@ -140,7 +139,7 @@ exp.namelist = namelist = Namelist({
     },
 
     'fms_nml': {
-        'domains_stack_size': 620000 #Setting size of stack available to model, which needs to be higher than the default when running at high spatial resolution
+        'domains_stack_size': 6200000 #Setting size of stack available to model, this can be decreased when not running at a high resolution. 
     },
 
     'fms_io_nml': {
@@ -207,6 +206,8 @@ exp.namelist = namelist = Namelist({
 
 #Lets do a run!
 if __name__=="__main__":
+    cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
+
     exp.run(1, use_restart=False, num_cores=NCORES)
     for i in range(2,121):
         exp.run(i, num_cores=NCORES)

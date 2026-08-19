@@ -7,11 +7,13 @@ import pdb
 import subprocess
 
 start_time=time.time()
-base_dir='/scratch/sit204/data_isca/'
-exp_name_list = ['zonally_symmetric_ozone_realistic_continents_fixed_sst_test_experiment_mk3', 'zonally_asymmetric_ozone_realistic_continents_fixed_sst_test_experiment_mk3']
-avg_or_daily_list=['monthly', 'daily']
-start_file=120
-end_file=240
+# base_dir='/disca/share/sit204/data_from_isca_cpu/cssp_perturb_exps/anoms/'
+base_dir = os.environ['GFDL_DATA']
+#exp_name_list = ['soc_ga3_files_smooth_topo_fftw_mk1_fresh_compile_long', 'soc_ga3_files_smooth_topo_old_fft_mk2_long']
+exp_name_list = ['ml_test_with_ml_full_sd_mean_clim_half_month']
+avg_or_daily_list=['half_monthly']
+start_file=133
+end_file=134
 nfiles=(end_file-start_file)+1
 
 do_extra_averaging=False #If true, then 6hourly data is averaged into daily data using cdo
@@ -32,6 +34,8 @@ if level_set=='standard':
 
     plevs['monthly']=' -p "3 16 51 138 324 676 1000 1266 2162 3407 5014 6957 9185 10000 11627 14210 16864 19534 20000 22181 24783 27331 29830 32290 34731 37173 39637 42147 44725 47391 50164 53061 56100 59295 62661 66211 70000 73915 78095 82510 85000 87175 92104 97312"'
 
+    plevs['half_monthly']=' -p "3 16 51 138 324 676 1000 1266 2162 3407 5014 6957 9185 10000 11627 14210 16864 19534 20000 22181 24783 27331 29830 32290 34731 37173 39637 42147 44725 47391 50164 53061 56100 59295 62661 66211 70000 73915 78095 82510 85000 87175 92104 97312"'
+
     plevs['timestep']=' -p "3 16 51 138 324 676 1000 1266 2162 3407 5014 6957 9185 10000 11627 14210 16864 19534 20000 22181 24783 27331 29830 32290 34731 37173 39637 42147 44725 47391 50164 53061 56100 59295 62661 66211 70000 73915 78095 82510 85000 87175 92104 97312"'
 
     plevs['pentad']=' -p "3 16 51 138 324 676 1000 1266 2162 3407 5014 6957 9185 10000 11627 14210 16864 19534 20000 22181 24783 27331 29830 32290 34731 37173 39637 42147 44725 47391 50164 53061 56100 59295 62661 66211 70000 73915 78095 82510 85000 87175 92104 97312"'
@@ -40,11 +44,12 @@ if level_set=='standard':
     plevs['daily']  =' -p "1000 10000 25000 50000 85000 92500"'
     
     var_names['monthly']='-a slp height'
+    var_names['half_monthly']='-a slp height'
     var_names['pentad']='-a slp height'    
     var_names['timestep']='-a'
     var_names['6hourly']='ucomp slp height vor t_surf vcomp omega'
-    var_names['daily']='-a slp'
-    file_suffix='_interp_new_height_temp'
+    var_names['daily']='ucomp slp height vor t_surf vcomp omega temp'
+    file_suffix='_interp_new_height_temp_not_below_ground'
 
 elif level_set=='ssw_diagnostics':
     plevs['6hourly']=' -p "1000 10000"'
@@ -64,12 +69,8 @@ for exp_name in exp_name_list:
         for avg_or_daily in avg_or_daily_list:
             print(n+start_file)
 
-            number_prefix=''
-
-            number_prefix='/run%04d' % (n+start_file)
-
-            nc_file_in = base_dir+'/'+exp_name+number_prefix+'/atmos_'+avg_or_daily+'.nc'
-            nc_file_out = out_dir+'/'+exp_name+number_prefix+'/atmos_'+avg_or_daily+file_suffix+'.nc'
+            nc_file_in = base_dir+'/'+exp_name+'/run%04d'%(n+start_file)+'/atmos_'+avg_or_daily+'.nc'
+            nc_file_out = out_dir+'/'+exp_name+'/run%04d'%(n+start_file)+'/atmos_'+avg_or_daily+file_suffix+'.nc'
 
             if not os.path.isfile(nc_file_out):
                 plevel_call(nc_file_in,nc_file_out, var_names = var_names[avg_or_daily], p_levels = plevs[avg_or_daily], mask_below_surface_option=mask_below_surface_set)

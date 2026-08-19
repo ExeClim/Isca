@@ -161,7 +161,7 @@ integer :: num_angles = 3600 ! number of intervals into which the year
                              ! is divided to compute orbital positions
 
 logical :: use_mean_anom_in_rrsun_calc = .TRUE. !It appears the standard astronomy module uses the mean anomaly for calculating the orbital distances on eccentric orbits, rather than the true anomaly. Keeping this behaviour default for legacy, but .FALSE. seems more correct.
-logical :: use_old_r_inv_squared
+logical :: use_old_r_inv_squared = .TRUE. !Also defaulting to the old r_inv_squared calculation for legacy reasons.
 
 namelist /astronomy_nml/ ecc, obliq, per, period, &
                          year_ae, month_ae,  day_ae,         &
@@ -299,6 +299,7 @@ real,   dimension(:,:), intent(in), optional   :: lonb
 !-----------------------------------------------------------------------
 #ifdef INTERNAL_FILE_NML
       read (input_nml_file, astronomy_nml, iostat=io)
+      ierr = check_nml_error(io,'astronomy_nml')
 #else
       if ( file_exist('input.nml')) then
         unit =  open_namelist_file ( )
@@ -1124,7 +1125,7 @@ end subroutine get_ref_date_of_ae
 !
 subroutine diurnal_solar_2d (lat, lon, gmt, time_since_ae, cosz, &
                              fracday, rrsun, dt, allow_negative_cosz, &
-                             half_day_out, true_anom, dec, ang)
+                             half_day_out, true_anom, dec_out, ang_out)
 
 !---------------------------------------------------------------------
 !    diurnal_solar_2d returns 2d fields of cosine of zenith angle,
@@ -1140,14 +1141,14 @@ real,                 intent(out)          :: rrsun
 real,                 intent(in), optional :: dt
 logical,              intent(in), optional :: allow_negative_cosz
 real, dimension(:,:), intent(out), optional :: half_day_out
-real,                 intent(out), optional :: true_anom, dec, ang
+real,                 intent(out), optional :: true_anom, dec_out, ang_out
 
 !---------------------------------------------------------------------
 !   local variables
 
       real, dimension(size(lat,1),size(lat,2)) :: t, tt, h, aa, bb,  &
                                                   st, stt, sh
-      real :: dec_loc, ang_loc
+      real :: dec, ang
       logical :: Lallow_negative
 
 !---------------------------------------------------------------------
@@ -1187,15 +1188,19 @@ real,                 intent(out), optional :: true_anom, dec, ang
 !    define the orbital angle (location in year), solar declination and
 !    earth sun distance factor. use functions contained in this module.
 !---------------------------------------------------------------------
-      ang_loc = angle(time_since_ae)
-      dec_loc = declination(ang_loc)
+      ang = angle(time_since_ae)
+      dec = declination(ang)
+
+      if (present(ang_out)) ang_out = ang
+      if (present(dec_out)) dec_out = dec
+
       if (use_old_r_inv_squared) then
-          rrsun = r_inv_squared(ang_loc)
+          rrsun = r_inv_squared(ang)
       else
           if (present(true_anom)) then
-              call r_inv_squared_alt(ang_loc,rrsun, true_anom)
+              call r_inv_squared_alt(ang,rrsun, true_anom)
           else
-              call r_inv_squared_alt(ang_loc,rrsun)
+              call r_inv_squared_alt(ang,rrsun)
           endif
           
       endif
@@ -1203,8 +1208,8 @@ real,                 intent(out), optional :: true_anom, dec, ang
 !---------------------------------------------------------------------
 !    define terms needed in the cosine zenith angle equation.
 !--------------------------------------------------------------------
-      aa = sin(lat)*sin(dec_loc)
-      bb = cos(lat)*cos(dec_loc)
+      aa = sin(lat)*sin(dec)
+      bb = cos(lat)*cos(dec)
 
 !---------------------------------------------------------------------
 !    define local time. force it to be between -pi and pi.
@@ -1222,7 +1227,7 @@ real,                 intent(out), optional :: true_anom, dec, ang
 !    perform a time integration to obtain cosz and fracday if desired.
 !    output is valid over the period from t to t + dt.
 !--------------------------------------------------------------------
-      h   = half_day   (lat,dec_loc)
+      h   = half_day   (lat,dec)
 
       if ( present(half_day_out) ) then
          half_day_out = h
@@ -1417,9 +1422,6 @@ real,                 intent(out), optional :: true_anom, dec, ang
       end if
 
 !--------------------------------------------------------------------
-
-      if(present(dec)) dec = dec_loc
-      if(present(ang)) ang = ang_loc
 
 end subroutine diurnal_solar_2d
 

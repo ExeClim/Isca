@@ -270,6 +270,7 @@ subroutine read_namelist
 
 #ifdef INTERNAL_FILE_NML
       read (input_nml_file, gaussian_topog_nml, iostat=io)
+      ierr = check_nml_error(io,'gaussian_topog_nml')
 #else
    if ( file_exist('input.nml')) then
       unit = open_namelist_file ( )

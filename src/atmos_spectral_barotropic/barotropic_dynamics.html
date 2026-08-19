@@ -1,0 +1,371 @@
+<HTML>
+<TITLE>module barotropic_dynamics_mod</TITLE>
+<BODY BGCOLOR="#AABBCC" TEXT="#332211" >
+
+<DIV ALIGN="CENTER"> <FONT SIZE=1>
+<A HREF="#INTERFACE">PUBLIC INTERFACE</A> / 
+<A HREF="#DATA_TYPES">DATA</A> / 
+<A HREF="#ROUTINES">ROUTINES</A> / 
+<A HREF="#NAMELIST">NAMELIST</A> / 
+<A HREF="#ERRORS">ERRORS</A>
+</FONT>
+<BR><BR></DIV><HR>
+
+
+<H2>module barotropic_dynamics_mod</H2>
+<A NAME="HEADER">
+<!-- BEGIN HEADER -->
+<PRE>
+     <B>Contact:</B> Isaac Held
+     <B>Reviewers:</B> Peter Phillipps
+
+</PRE>
+<!-- END HEADER --></A>
+<!--------------------------------------------------------------------->
+<A NAME="OVERVIEW">
+<HR>
+<H4>OVERVIEW</H4>
+<!-- BEGIN OVERVIEW -->
+<PRE>
+
+   The dynamical core of the spectral transform model for 
+   two-dimensional, non-divergent flow on the surface of the sphere.  
+   
+</PRE>
+<!-- END OVERVIEW --></A>
+<!--------------------------------------------------------------------->
+<A NAME="DESCRIPTION">
+<HR>
+<H4>DESCRIPTION</H4>
+<!-- BEGIN DESCRIPTION -->
+<PRE>
+
+   Integrates the barotropic vorticity equation for nondivergent flow on the
+   sphere using the spectral transform technique.  Also allows for the
+   inclusion of a passive tracer advected by the same spectral advection
+   algorithm as  the vorticity, and a gridpoint tracer advected with a finite
+   volume  algorithm on the transform grid.  The default initial condition 
+   provided as an example is a zonal flow resembling that in the Northern
+   winter,  plus a sinusoidal disurbance localized in midlatitudes.
+
+   For a full description of the model and algorithms used, see 
+   <A HREF="barotropic.ps">  barotropic.ps </A>
+   
+   For higher level routines for running this barotropic spectral model,
+   see <A HREF="atmosphere_mod"> atmosphere_mod </A>
+
+
+</PRE>
+<!-- END DESCRIPTION --></A>
+<!--------------------------------------------------------------------->
+<A NAME="MODULES_USED">
+<HR>
+<H4>OTHER MODULES USED</H4>
+<!-- BEGIN MODULES_USED -->
+<PRE>
+
+     fms_mod
+     constants_mod
+     time_manager_mod
+     transforms_mod
+     spectral_damping_mod
+     leapfrog_mod
+     fv_advection_mod
+
+</PRE>
+<!-- END MODULES_USED --></A>
+<!--------------------------------------------------------------------->
+<A NAME="INTERFACE">
+<HR>
+<H4>PUBLIC INTERFACE</H4>
+<!-- BEGIN INTERFACE -->
+<PRE>
+
+  use barotropic_dynamics_mod [,only: barotropic_dynamics_init,       
+                                      barotropic_dynamics,
+			              barotropic_dynamics_end,
+                                      dynamics_type,
+				      grid_type,
+				      spectral_type,
+				      tendency_type]
+                                
+</PRE>
+<!-- END INTERFACE --></A>
+<!--------------------------------------------------------------------->
+<A NAME="DATA_TYPES">
+<HR>
+<H4>PUBLIC DATA</H4>
+<!-- BEGIN DATA_TYPES -->
+<PRE>
+     
+<HR>
+ <A NAME="grid_type">
+
+type grid_type
+   real, pointer, dimension(:,:,:) :: u, v, vor, trs, tr, pv
+   real, pointer, dimension(:,:)   :: stream
+end type
+
+   allocated space for grid fields
+
+   (:,:,:) => (lon, lat, time_level)
+   (:,:)   => (lon, lat)
+      (lon, lat) on local computational domain
+      time_level stores the two time levels needed for the
+          leapfrog step
+   
+   u      -- eastward velocity (m/s)
+   v      -- northward velocity (m/s)
+   vor    -- vorticity (1/s)
+   trs    -- tracer advected spectrally
+   tr     -- tracer advected on grid
+   pv     -- absolute vorticity, f + vor, where f = 2*omega*sin(lat) (1/s)
+   stream -- streamfunction (m^2/s) at current time
+   
+ </A>
+ 
+ <HR>
+ 
+ <A NAME="spectral_type">
+type spectral_type
+   complex, pointer, dimension(:,:,:) :: vor, trs
+end type
+
+   allocated space for spectral fields
+   
+      (:,:,:) => (zonal, meridional, time_level)
+
+   vor -- spectral vorticity
+   trs -- spectral tracer
+
+ <HR>
+ </A>
+ <A NAME="tendency_type">
+type tendency_type
+    real, pointer, dimension(:,:) :: u, v, trs, tr
+end type
+
+   allocated space for accumulating tendencies, d/dt, in grid space, 
+           for prognostic variables
+   
+      (:,:,:) => (lon, lat)
+
+ <HR>
+ </A>
+ <A NAME="dynamics_type">
+type dynamics_type
+   type(grid_type)     :: grid
+   type(spectral_type) :: spec
+   type(tendency_type) :: tend
+   integer             :: num_lon, num_lat  ! size of global domain
+   logical             :: grid_tracer, spec_tracer 
+end type
+
+   grid_tracer = .true. => tracer with gridpoint advection is beign integrated
+   similarly for spec_tracer
+ </A>
+ <HR>
+ 
+</PRE>
+<!-- END DATA_TYPES --></A>
+<!--------------------------------------------------------------------->
+<A NAME="ROUTINES">
+<HR>
+<H4>PUBLIC ROUTINES</H4>
+<!-- BEGIN ROUTINES -->
+<PRE>
+
+<A HREF="#barotropic_dynamics_init">subroutine  barotropic_dynamics_init</A>
+<A HREF="#barotropic_dynamics">subroutine  barotropic _dynamics</A>
+<A HREF="#barotropic_dynamics_end">subroutine  barotropic_dynamics_end</A>
+<A HREF="#grid_type">type (grid_type)</A>
+<A HREF="#spectral_type">type (spectral_type)</A>
+<A HREF="#tendency_type">type (tendency_type)</A>
+<A HREF="#dynamics_type">type (dynamics_type)</A>
+
+
+<A NAME="barotropic_dynamics_init">
+<PRE>
+
+ subroutine barotropic_dynamics_init(Dyn,  Time, Time_init)
+ 
+   type(dynamics_type), intent(inout)  :: Dyn
+         type containing all dynamical fields and related information
+	 (see <A HREF="#dynamics_type">type (dynamics_type)</A>)
+	 
+   type(time_type)    , intent(in)     :: Time, Time_init
+         current time and time at which integeration began
+	 time_type defined by time_manager_mod
+         
+
+   Initializes the module;
+   Reads restart from 'INPUT/barotropic_dynamics.res' if Time = Time_init;
+     otherwise uses default initial conditions
+
+<!-- END atmosphere_init --></A>
+
+<HR>
+
+<A NAME="barotropic_dynamics">
+
+  subroutine barotropic_dynamics &
+     (Time, Time_init, Dyn, previous, current, future, delta_t)
+ 
+     type(time_type)    , intent(inout)  :: Time, Time_init
+     type(dynamics_type), intent(inout)  :: Dyn
+     integer            , intent(in   )  :: previous, current, future
+     real               , intent(in   )  :: delta_t
+      
+     previous, current and future = 1 or 2
+       these integers refer to the third dimension of the 
+         three-dimensional fields in Dyn
+       the fields at time t - delta_t are assumed to be in (:,:,previous)
+       the fields at time t           are assumed to be in (:,:,current)
+       the fields at time t + delta_t are placed        in (:,:,future)
+          overwriting whatever is already there
+
+     delta_t = time step in seconds
+     
+     updates dynamical fields by one time step
+
+<!-- END barotropic_dynamics --></A>
+
+<HR>
+
+ <A NAME="barotropic_dynamics_end">
+   subroutine barotropic_dynamics_end(Dyn, previous, current)
+   
+     type(dynamics_type), intent(inout)  :: Dyn
+     integer, intent(in) :: previous, current
+   
+      
+    Terminates module; 
+     writes restart file to 'RESTART/barotropic_dynamics.res'
+    
+    
+<!-- END barotropic_dynamics_end --></A>
+
+<HR>
+</PRE>
+<!-- END ROUTINES --></A>
+
+<A NAME="NAMELIST">
+<HR>
+<H4>NAMELIST</H4>
+<!-- BEGIN NAMELIST -->
+<PRE>
+
+<B>&barotropic_dynamics_nml</B>
+
+  integer :: num_lat            = 128  
+        number of latitudes in global grid
+       
+  integer :: num_lon            = 256
+        number of longitudes in global grid
+        should equal 2*num_lat for Triangular truncation
+  
+  integer :: num_fourier        = 85
+        the retained fourier wavenumber are n*fourier_inc, where
+        n ranges from 0 to num_fourier
+	 
+  integer :: num_spherical      = 86
+        the maximum number of meridional modes for any zonal wavenumber
+        for triangular truncation, set num_spherical = num_fourier +1
+         
+  integer :: fourier_inc        = 1
+        creates a "sector" model if fourier_inc > 1; integration domain is
+	(360 degrees longitude)/fourier_inc
+	
+  (the default values listed above define a standard T85 model)
+
+  logical :: check_fourier_imag = .false.
+        if true, checks to see if fields to be transformed to grid 
+	domain have zero imaginary part to their zonally symmetric
+	modes; useful for debugging
+	
+  logical :: south_to_north     = .true.
+        true => grid runs from south to north
+	false => grid runs from north to south
+	
+  logical :: triangular_trunc   = .true.
+        true  => shape of truncation is triangular
+	false => shape of truncation is rhomboidal
+
+  real    :: robert_coeff       = 0.04
+        x(current) => (1-2r)*x(current) + r*(x(future)+x(previous))
+	where r = robert_coeff (non-dimensional)
+	
+  real    :: longitude_origin   = 0.0
+        longitude of first longitude, in degrees
+	(if you want the westgern boundary of first grid boc to be at 
+         0.0, set longitude_origin = 0.5*360./float(num_lon))
+	 
+  integer :: damping_option     = 'resolution_dependent'
+  integer :: damping_order      = 4
+  real    :: damping_coeff      = 1.e-04
+  
+        damping = nu*(del^2)^n where n = damping order
+	damping_option = 'resolution_dependent' or 'resolution_independent'
+	  = 'resolution_dependent' => nu is set so that the damping rate for the 
+	        mode (m=0,n=num_spherical-1) equals damping_coeff (in 1/s)
+	        For triangular truncation, damping_coeff is then the 
+	        rate of damping of the highest retained mode
+	     
+	  = 'resolution_independent' => nu = damping_coef
+	
+	
+  real     :: zeta_0     = 8.e-05
+  integer  :: m_0        = 4
+  real     :: eddy_width = 15.0
+  real     :: eddy_lat   = 45.0
+  
+         eddy component of the initial condition is sinusoidal with
+	 wavenumber m_0 and with a gaussian distribution of 
+	 vorticity in latitude, centered at eddy_lat with half-width
+	 eddy_width
+	 
+	 zeta_0 ( 1/s)
+	 eddy_width and eddy_lat (degrees)
+
+  logical :: spec_tracer      = .true.
+  logical :: grid_tracer      = .true.
+       spec_tracer = true => a passive tracer is carried that is advected
+          spectrally, with the same algorithm as the vorticity
+       grid_tracer = ture => a passive tracer is carried that is advected
+          on the spectral transform grid by a finite-volume algorithm
+	  (see <A HREF="barotropic.ps"> barotropic.ps </A>)
+       Both tracers can be carried simultaeneously
+	  
+The vorticity and the tracers are initialized within subroutine
+     barotropic_dynamics_init
+
+  real, dimension(2) :: valid_range_v = -1000., 1000.
+        A valid range for meridional wind. Model terminates if meridional wind
+        goes outside the valid range. Allows model to terminate gracefully when,
+        for example, the model becomes numerically unstable.
+
+</PRE>
+<!-- END NAMELIST --></A>
+<!--------------------------------------------------------------------->
+<A NAME="ERRORS">
+<HR>
+<H4>ERROR MESSAGES</H4>
+<!-- BEGIN ERRORS -->
+<PRE>
+
+   "Dynamics has not been initialized"
+      -- barotropic_dynamics_init must be called before any other
+         routines in the module are called
+	 
+   "restart does not exist" 
+      -- Time is not equal to Time_init at initalization, but the file
+          'INPUT/barotropic_dynamics.res' does not exit 
+	 
+
+</PRE>
+<!-- END ERRORS --></A>
+<!--------------------------------------------------------------------->
+
+<HR>
+</BODY>
+</HTML>

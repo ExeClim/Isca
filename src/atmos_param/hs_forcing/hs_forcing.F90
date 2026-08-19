@@ -46,10 +46,14 @@ use  field_manager_mod, only: MODEL_ATMOS, parse
 use tracer_manager_mod, only: query_method, get_number_tracers
 use   interpolator_mod, only: interpolate_type, interpolator_init, &
                               interpolator, interpolator_end, &
-                              CONSTANT, INTERP_WEIGHTED_P
+                              CONSTANT, INTERP_WEIGHTED_P, ZERO
 
 use      astronomy_mod, only: diurnal_exoplanet, astronomy_init, obliq, ecc, diurnal_solar
+#ifdef COLUMN_MODEL
+use       spec_mpp_mod, only: grid_domain, get_grid_domain
+#else
 use     transforms_mod, only: grid_domain, get_grid_domain
+#endif
 
 
 implicit none
@@ -58,7 +62,7 @@ private
 !-----------------------------------------------------------------------
 !---------- interfaces ------------
 
-   public :: hs_forcing, hs_forcing_init, hs_forcing_end
+   public :: hs_forcing, hs_forcing_init, hs_forcing_end, local_heating
 
    type(interpolate_type),save         ::  heating_source_interp
    type(interpolate_type),save         ::  u_interp
@@ -107,7 +111,7 @@ private
    real :: del_sw  = 0.0
    real :: dt_rad_avg = -1
    integer :: solday = -10 !s Day of year to run perpetually if do_seasonal=True and solday>0
-   real    :: equinox_day     = 0.0 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months).
+   real    :: equinox_day     = 0.0 !s Fraction of year [0,1] where NH autumn equinox occurs (only really useful if calendar has defined months). N.b. the definition of declination is different here to what's in astronomy.F90 (the astronomy.F90 version has a minus sign. So to get equivalent behaviour to two-stream-grey/rrtm/socrates, the equinox_day here ought to be different by 0.5. I.e. here it should be 0.25 to get Earth-like calendar, rather than 0.75 elsewhere.)
    logical :: use_t_surf_floor_in_t_ground = .false.
    real :: t_surf_floor = 149.
    real :: insolation_in_surface_prefactor = 0.0
@@ -139,7 +143,6 @@ private
                               use_time_average_coszen, solday, equinox_day, &
                               use_t_surf_floor_in_t_ground, t_surf_floor, &
                               insolation_in_surface_prefactor
-
 !-----------------------------------------------------------------------
 
    character(len=128) :: version='$Id: hs_forcing.F90,v 19.0 2012/01/06 20:10:01 fms Exp $'
@@ -306,9 +309,10 @@ contains
 
            integer, intent(in) :: axes(4)
    type(time_type), intent(in) :: Time
-   real, intent(in), dimension(:,:) :: lat, lon
-   real, intent(in), optional, dimension(:,:) :: lonb, latb
-   real, intent(in)                        :: dt_real
+   real, intent(in), dimension(:,:) :: lat
+   real, intent(in), dimension(:,:) :: lonb, latb
+   real, intent(in), optional, dimension(:,:) :: lon
+   real, intent(in), optional              :: dt_real
 
 
 !-----------------------------------------------------------------------
@@ -356,7 +360,7 @@ contains
 
   call astronomy_init()
 
-  if(dt_rad_avg .le. 0) dt_rad_avg = dt_real !s if dt_rad_avg is set to a value in nml then it will be used instead of dt_real 
+  if(dt_rad_avg .le. 0 .and. present(dt_real)) dt_rad_avg = dt_real !s if dt_rad_avg is set to a value in nml then it will be used instead of dt_real. dt_real is only actually supplied by callers that also need the top-down radiative-equilibrium spin-up below (lon and dt_real are optional so that the do_local_heating-only call to hs_forcing_init, which needs neither, still compiles).
 
    ! ---- spin-up simple heat capacity used in top-down code ----
 
@@ -410,9 +414,9 @@ contains
                     if(use_time_average_coszen) then        
                         r_dt_rad_avg=real(dt_rad_avg)
                         dt_rad_radians = 2.0*pi !For newt-cooling run we can't easily have a diurnal cycle, so average over 1 day
-                        call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians, true_anom=true_anomaly, dec=dec, ang=ang_out)
+                        call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians, true_anom=true_anomaly, dec_out=dec, ang_out=ang_out)
                     else
-                        call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, true_anom=true_anomaly, dec=dec, ang=ang_out)
+                        call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, true_anom=true_anomaly, dec_out=dec, ang_out=ang_out)
                     end if
                 
                     s(:,:) = solar_const * coszen * rrsun
@@ -568,7 +572,7 @@ contains
       endif
 
      if(trim(local_heating_option) == 'from_file') then
-       call interpolator_init(heating_source_interp, trim(local_heating_file)//'.nc', lonb, latb, data_out_of_bounds=(/CONSTANT/))
+       call interpolator_init(heating_source_interp, trim(local_heating_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
      endif
      if(trim(equilibrium_t_option) == 'from_file') then
        call interpolator_init (temp_interp, trim(equilibrium_t_file)//'.nc', lonb, latb, data_out_of_bounds=(/CONSTANT/))
@@ -852,6 +856,8 @@ real :: lon_temp, x_temp, p_factor
 real, dimension(size(lon,1),size(lon,2)) :: lon_factor
 real, dimension(size(lat,1),size(lat,2)) :: lat_factor
 real, dimension(size(p_half,1),size(p_half,2),size(p_half,3)) :: p_half2
+logical :: used
+
 do i=1,size(p_half,3)
   p_half2(:,:,i)=p_half(:,:,size(p_half,3)-i+1)
 enddo
@@ -859,7 +865,7 @@ enddo
 tdt(:,:,:)=0.
 
 if(trim(local_heating_option) == 'from_file') then
-   call interpolator( heating_source_interp, p_half, tdt, trim(local_heating_file))
+   call interpolator( heating_source_interp, Time, p_half, tdt, trim(local_heating_file))
 else if(trim(local_heating_option) == 'Isidoro') then
    do j=1,size(lon,2)
    do i=1,size(lon,1)
@@ -878,6 +884,8 @@ else if(trim(local_heating_option) == 'Isidoro') then
 else
   call error_mesg ('hs_forcing_nml','"'//trim(local_heating_option)//'"  is not a valid value for local_heating_option',FATAL)
 endif
+
+if (id_local_heating > 0) used = send_data ( id_local_heating, tdt, Time)
 
 end subroutine local_heating
 
@@ -945,7 +953,26 @@ real :: theta, mean_anomaly, ecc_anomaly
     true_anomaly = 2*atan(((1 + ecc)/(1 - ecc))**0.5 * tan(ecc_anomaly/2))
     orb_dist = smaxis * (1 - ecc**2)/(1 + ecc*cos(true_anomaly))
     inv_rsun_sqd = (smaxis/orb_dist)**2.
-    theta = 2*pi*(current_time/(orbital_period) - frac_of_year_ae)
+    ! TODO(top_down_with_moisture merge): top_down_with_moisture originally used
+    ! theta = 2*pi*(current_time/(orbital_period) - frac_of_year_ae), with no
+    ! *86400 scaling and its own frac_of_year_ae offset instead of equinox_day.
+    ! Folded frac_of_year_ae into master's bit-reproducibility-tested equinox_day
+    ! formula below (both default to 0, so the bit-exact default path is
+    ! unaffected) rather than reintroducing the old unscaled formula - flagged
+    ! for review since this combines two previously-independent offsets.
+    if (equinox_day == 0. .and. frac_of_year_ae == 0.) then
+      ! Original formulation, preserved bit-for-bit for the default (no equinox
+      ! offset requested) case. Mathematically theta is 2*pi-periodic either way
+      ! (sin(theta) below is invariant to adding whole orbits), but the modulo()
+      ! branch reorders the multiply/divide and adds a wrap-around, which is not
+      ! bit-identical even when equinox_day = 0 and no actual wrapping occurs -
+      ! breaking bit-reproducibility against master for any equinox_day=0 run
+      ! using equilibrium_t_option='top_down' (e.g. top_down_test). See
+      ! trip_test comparison notes.
+      theta = 2*pi*current_time/(orbital_period*86400)
+    else
+      theta = 2*pi*modulo((current_time/(orbital_period*86400))-equinox_day-frac_of_year_ae, 1.0)
+    endif
     dec = asin(sin(obliq*pi/180)*sin(theta))
 
 end subroutine update_orbit
@@ -1084,9 +1111,9 @@ real, intent(in),  dimension(:,:,:), optional :: mask
           if(use_time_average_coszen) then        
              r_dt_rad_avg=real(dt_rad_avg)
              dt_rad_radians = 2.0*pi !For newt-cooling run we can't easily have a diurnal cycle, so average over 1 day
-             call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians, true_anom=true_anomaly, dec=dec, ang=ang_out)
+             call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, dt_rad_radians, true_anom=true_anomaly, dec_out=dec, ang_out=ang_out)
           else
-             call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, true_anom=true_anomaly, dec=dec, ang=ang_out)
+             call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun, true_anom=true_anomaly, dec_out=dec, ang_out=ang_out)
           end if
         
           s(:,:) = solar_const * coszen * rrsun
@@ -1164,7 +1191,7 @@ real, intent(in),  dimension(:,:,:), optional :: mask
       else
           teq(:,:,k) = t_trop + lapse*(h_trop-zfull(:,:,k)/1000)
       endif
-        
+
       if (stratosphere_t_option == 'c_above_tp') then
         do i=1, size(t,1)
           do j=1, size(t,2)
@@ -1183,8 +1210,8 @@ real, intent(in),  dimension(:,:,:), optional :: mask
             endif
           enddo
         enddo
-      elseif (stratosphere_t_option == 'pure_rad_equil') then			
-        teq(:,:,k) = (olr * (tau_s*exp(-zfull(:,:,k)/(1000.*h_a))+1)/(2.*stefan))**0.25	
+      elseif (stratosphere_t_option == 'pure_rad_equil') then
+        teq(:,:,k) = (olr * (tau_s*exp(-zfull(:,:,k)/(1000.*h_a))+1)/(2.*stefan))**0.25
       else
         teq(:,:,k) = max(teq(:,:,k), 0.)
       endif

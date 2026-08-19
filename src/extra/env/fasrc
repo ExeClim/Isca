@@ -1,0 +1,11 @@
+echo loadmodules for Isca on Harvard FASRC Cluster Cannon/Odyssey
+
+export F90=mpif90; echo $F90;
+export CC=mpicc
+
+module purge
+module load intel/17.0.4-fasrc01
+#module load hdf5/1.10.1-fasrc03
+module load intel/17.0.4-fasrc01 openmpi/2.1.0-fasrc02 netcdf-fortran/4.4.4-fasrc06
+module load zlib/1.2.8-fasrc07
+#module load netcdf/4.3.2-fasrc03

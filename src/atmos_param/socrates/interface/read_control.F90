@@ -9,13 +9,15 @@ CONTAINS
 
 ! Subroutine to set input algorithmic options for the core radiation code
 !------------------------------------------------------------------------------
-SUBROUTINE read_control(control, spectrum)
-
+SUBROUTINE read_control(control, spectrum, do_clouds)
 
 USE rad_pcf
 USE def_control,  ONLY: StrCtrl, allocate_control
 USE def_spectrum, ONLY: StrSpecData
-USE socrates_config_mod, ONLY: l_planet_grey_surface, inc_h2o, inc_co2, inc_co, inc_o3, inc_n2o, inc_ch4, inc_o2, inc_so2, inc_cfc11, inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a
+
+USE socrates_config_mod, ONLY: l_planet_grey_surface, inc_h2o, inc_co2, inc_co,      & 
+                               inc_o3, inc_n2o, inc_ch4, inc_o2, inc_so2, inc_cfc11, &
+                               inc_cfc12, inc_cfc113, inc_hcfc22, inc_hfc134a, inc_n2
 
 IMPLICIT NONE
 
@@ -25,6 +27,9 @@ TYPE(StrCtrl),      INTENT(INOUT) :: control
 
 ! Spectral data:
 TYPE (StrSpecData), INTENT(IN)    :: spectrum
+
+LOGICAL, INTENT(IN), OPTIONAL     :: do_clouds
+
 
 ! Local variables.
 INTEGER :: i
@@ -50,6 +55,7 @@ case(ip_solar)
   control%l_co             = inc_co
   control%l_o3             = inc_o3
   control%l_n2o            = inc_n2o
+  control%l_n2             = inc_n2  
   control%l_ch4            = inc_ch4
   control%l_o2             = inc_o2
   control%l_so2            = inc_so2
@@ -66,6 +72,7 @@ case(ip_infra_red)
   control%l_co             = inc_co
   control%l_o3             = inc_o3
   control%l_n2o            = inc_n2o
+  control%l_n2             = inc_n2
   control%l_ch4            = inc_ch4
   control%l_so2            = inc_so2
   control%l_cfc11          = inc_cfc11
@@ -93,7 +100,11 @@ control%l_continuum    = .TRUE.
 control%i_gas_overlap  = ip_overlap_k_eqv_scl
 
 ! Properties of clouds
-control%i_cloud_representation = ip_cloud_off
+if (do_clouds) then
+  control%i_cloud_representation = ip_cloud_ice_water
+else
+  control%i_cloud_representation = ip_cloud_off
+end if
 control%i_overlap              = ip_max_rand
 control%i_inhom                = ip_homogeneous
 

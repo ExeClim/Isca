@@ -21,6 +21,16 @@
 
 #define _GNU_SOURCE
 
+#ifdef MACOS
+// Mac OS doesn't permit thread pinning.  So we just ignore it...
+// https://developer.apple.com/library/archive/releasenotes/Performance/RN-AffinityAPI/index.html
+// see also Neil's question on Stack Overflow
+// https://stackoverflow.com/questions/45227009/alternative-to-shed-getaffinity-cpu-set-t-etc
+int get_cpu_affinity(void) { return -1; };
+void set_cpu_affinity( int cpu ) {};
+
+#else
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,12 +38,17 @@
 #include <sched.h>
 #include <errno.h>
 #include <sys/resource.h>
-#include <sys/syscall.h>
 
-static pid_t gettid(void)
-{
-  return syscall(__NR_gettid);
-}
+#if !defined(_GNU_SOURCE) || !defined(__GLIBC__) || __GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 30)
+#include <sys/syscall.h>
+static
+pid_t gettid ( void )
+ {
+   return syscall(__NR_gettid);
+ }
+#endif
+
+
 
 /*
  * Returns this thread's CPU affinity, if bound to a single core,
@@ -64,7 +79,6 @@ int get_cpu_affinity(void)
   return (last_cpu == -1) ? first_cpu : -1;
 }
 
-int get_cpu_affinity_(void) { return get_cpu_affinity(); }	/* Fortran interface */
 
 
 /*
@@ -81,4 +95,7 @@ void set_cpu_affinity( int cpu )
   }
 }
 
+#endif
+
+int get_cpu_affinity_(void) { return get_cpu_affinity(); }  /* Fortran interface */
 void set_cpu_affinity_(int *cpu) { set_cpu_affinity(*cpu); }	/* Fortran interface */

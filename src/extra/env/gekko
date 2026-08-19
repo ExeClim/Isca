@@ -1,0 +1,10 @@
+echo loadmodules for Isca on NTU Gekko
+
+export F90=mpiifort; echo $F90;
+export CC=mpiicc
+
+module purge
+module load intel/2018u3
+module load hdf/1.10.0
+module load netcdf-fortran/4.4.4
+module load netcdf/4.6.1

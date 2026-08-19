@@ -4,7 +4,7 @@ from functools import wraps
 import sh
 
 mkdir = sh.mkdir.bake('-p')
-cd = sh.cd
+# cd = sh.cd
 git = sh.git.bake('--no-pager')
 
 P = os.path.join
@@ -66,11 +66,19 @@ def git_run_in_directory(GFDL_BASE_DIR, dir_in):
        
     try:
         codedir_git = git.bake('-C', GFDL_BASE_DIR)        
-        git_test = codedir_git.log('-1', '--format="%H"').stdout
+        git_test = check_for_sh_stdout(codedir_git.log('-1', '--format="%H"'))
         baked_git_fn = git.bake('-C', dir_in)
     except:
         codedir_git = git.bake('--git-dir='+GFDL_BASE_DIR+'/.git', '--work-tree='+GFDL_BASE_DIR)
-        git_test = codedir_git.log('-1', '--format="%H"').stdout
+        git_test = check_for_sh_stdout(codedir_git.log('-1', '--format="%H"'))
         baked_git_fn = git.bake('--git-dir='+dir_in+'/.git', '--work-tree='+dir_in)        
         
-    return baked_git_fn        
+    return baked_git_fn       
+
+def check_for_sh_stdout(input_exp):
+    """Versions of sh>2.* have started returning str types rather than a sh.RunningCommand type. To distinguish these possibilites, this function looks at the output of a sh expression, and asks for stdout and decodes it only if the type is a sh.RunningCommand."""
+
+    if type(input_exp)==sh.RunningCommand:     
+        input_exp=input_exp.stdout.decode('utf8')
+    
+    return input_exp

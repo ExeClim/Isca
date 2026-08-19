@@ -7,8 +7,9 @@ import sh
 
 from isca import GFDL_WORK, GFDL_BASE, GFDL_SOC, _module_directory, get_env_file
 from .loghandler import Logger
-from .helpers import url_to_folder, destructive, useworkdir, mkdir, cd, git, P, git_run_in_directory
+from .helpers import url_to_folder, destructive, useworkdir, mkdir, git, P, git_run_in_directory, check_for_sh_stdout
 
+import pdb
 
 class CodeBase(Logger):
     """The CodeBase.
@@ -91,6 +92,28 @@ class CodeBase(Logger):
                 self.checkout()
             else:
                 self.link_source_to(directory)
+        elif self.code_is_available and self.commit is not None:
+            # problem is that if you try to checkout a specific commit, and it doesn't work, the next time you try it, the above code will only check if code exists, which it will, but it won't be at the correct commit. This will cause problems for e.g. the trip tests. Following code checks if the code that's checked out is the correct commit ID compared to what was asked for, and gives an error if they are different.         
+            commit_at_HEAD_of_repo = self.git_commit.split('"')[1]
+            commit_desired = self.commit
+            if len(commit_desired)==len(commit_at_HEAD_of_repo):
+                commit_to_compare_1 = commit_desired
+                commit_to_compare_2 = commit_at_HEAD_of_repo
+            elif len(commit_desired)>len(commit_at_HEAD_of_repo):
+                commit_to_compare_1 = commit_desired[0:len(commit_at_HEAD_of_repo)]
+                commit_to_compare_2 = commit_at_HEAD_of_repo
+            else:
+                commit_to_compare_1 = commit_desired
+                commit_to_compare_2 = commit_at_HEAD_of_repo[0:len(commit_desired)]
+
+            if commit_to_compare_1==commit_to_compare_2:
+                self.log.info('commit requested successfully checked out')
+            else:
+                self.log.warn('commit requested is not the commit to be used')
+                raise NotImplementedError("commit requested %s but commit supplied %s. This happens when you've previously tried to checkout a particular commit, but the commit was not found in the repo supplied. Try removing %s and trying again, making sure to select a repo that contains your desired commit." % (commit_to_compare_1, commit_to_compare_2, self.workdir ))
+
+
+        #TODO 
 
         self.templates = Environment(loader=FileSystemLoader(self.templatedir))
 
@@ -114,7 +137,7 @@ class CodeBase(Logger):
 
     @property
     def git_commit(self):
-        return self.git.log('-1', '--format="%H"').stdout.decode('utf8')
+        return check_for_sh_stdout(self.git.log('-1', '--format="%H"'))
 
     # @property
     # def git_diff(self):
@@ -139,11 +162,12 @@ class CodeBase(Logger):
 
             # write out the git commit id of GFDL_BASE
             file.write("\n\n*---commit hash used for code in GFDL_BASE, including this python module---*:\n")
-            file.write(gfdl_git.log('-1', '--format="%H"').stdout.decode('utf8'))
+            gfdl_git_out = check_for_sh_stdout(gfdl_git.log('-1', '--format="%H"'))
+            file.write(gfdl_git_out)
 
             # if there are any uncommited changes in the working directory,
             # add those to the file too
-            source_status = self.git.status("-b", "--porcelain").stdout.decode('utf8')
+            source_status = check_for_sh_stdout(self.git.status("-b", "--porcelain"))
             # filter the source status for changes in specific files
             filetypes = ('.f90', '.inc', '.c')
             source_status = [line for line in source_status.split('\n')
@@ -155,7 +179,7 @@ class CodeBase(Logger):
                 file.write("*---git status output (only f90 and inc files)---*:\n")
                 file.write('\n'.join(source_status))
                 file.write('\n\n*---git diff output---*\n')
-                source_diff = self.git.diff('--no-color').stdout.decode('utf8')
+                source_diff = check_for_sh_stdout(self.git.diff('--no-color'))
                 file.write(source_diff)
 
     def read_path_names(self, path_names_file):
@@ -324,6 +348,59 @@ class SocratesCodeBase(CodeBase):
         self.disable_rrtm()
         self.simlink_to_soc_code()
 
+class SocColumnCodeBase(CodeBase):
+    """Isca without RRTM but with the Met Office radiation scheme, Socrates. THIS VERSION FOR SINGLE COLUMN USE. 
+    """
+    #path_names_file = P(_module_directory, 'templates', 'moist_path_names')
+    name = 'socrates_column'
+    executable_name = 'soc_column_isca.x'
+
+    def column_model(self):
+        self.compile_flags.append('-DCOLUMN_MODEL')
+        self.log.info('USING SINGLE COLUMN MODEL')
+
+    def disable_rrtm(self):
+        # add no compile flag
+        self.compile_flags.append('-DRRTM_NO_COMPILE')
+        self.log.info('RRTM compilation disabled.')
+
+    def simlink_to_soc_code(self):
+        #Make symlink to socrates source code if one doesn't already exist.
+        socrates_desired_location = self.codedir+'/src/atmos_param/socrates/src/trunk'
+
+        #First check if socrates is in correct place already
+        if os.path.exists(socrates_desired_location):
+            link_correct = os.path.exists(socrates_desired_location+'/src/')
+            if link_correct:
+                socrates_code_in_desired_location=True
+            else:
+                socrates_code_in_desired_location=False                
+                if os.path.islink(socrates_desired_location):
+                    self.log.info('Socrates source code symlink is in correct place, but is to incorrect location. Trying to correct.')
+                    os.unlink(socrates_desired_location)
+                else:
+                    self.log.info('Socrates source code is in correct place, but folder structure is wrong. Contents of the folder '+socrates_desired_location+' should include a src folder.')
+        else:
+            socrates_code_in_desired_location=False
+            self.log.info('Socrates source code symlink does not exist. Creating.')
+
+        # If socrates is not in the right place already, then attempt to make symlink to location of code provided by GFDL_SOC
+        if socrates_code_in_desired_location:
+            self.log.info('Socrates source code already in correct place. Continuing.')
+        else:
+            if GFDL_SOC is not None:
+                sh.ln('-s', GFDL_SOC, socrates_desired_location)
+            elif GFDL_SOC is None:
+                error_mesg = 'Socrates code is required for SocratesCodebase, but source code is not provided in location GFDL_SOC='+ str(GFDL_SOC)
+                self.log.error(error_mesg)
+                raise OSError(error_mesg)
+
+    def __init__(self, *args, **kwargs):
+        super(SocColumnCodeBase, self).__init__(*args, **kwargs)
+        self.column_model()
+        self.disable_rrtm()
+        self.simlink_to_soc_code()
+
 class GreyCodeBase(CodeBase):
     """The Frierson model.
     This is the closest to the Frierson model, with moist dynamics and a
@@ -352,6 +429,27 @@ class GreyCodeBase(CodeBase):
         self.disable_rrtm()
         self.disable_soc()
 
+class ColumnCodeBase(CodeBase):
+    """This contains code that will allow one to use all model physics in a single column configuration (i.e. without calling the dynamical core)
+    """
+    #path_names_file = P(_module_directory, 'templates', 'moist_path_names')
+    name = 'column'
+    executable_name = 'column_isca.x'
+
+    def column_model(self):
+        self.compile_flags.append('-DCOLUMN_MODEL')
+        self.log.info('USING SINGLE COLUMN MODEL')
+
+    def disable_soc(self):
+        # add no compile flag
+        self.compile_flags.append('-DSOC_NO_COMPILE')
+        self.log.info('SOCRATES compilations diabled.') 
+
+    def __init__(self, *args, **kwargs):
+        super(ColumnCodeBase, self).__init__(*args, **kwargs)
+        self.column_model()
+        self.disable_soc()
+
 class DryCodeBase(GreyCodeBase):
     """The Held-Suarez model.
 
@@ -366,8 +464,14 @@ class DryCodeBase(GreyCodeBase):
 
 
 
-# class ShallowCodeBase(CodeBase):
-#     """The Shallow Water Equations.
-#     """
-#     name = 'shallow'
-#     executable_name = 'shallow.x'
+class ShallowCodeBase(CodeBase):
+    """The Shallow Water Equations.
+    """
+    name = 'shallow'
+    executable_name = 'shallow.x'
+
+class BarotropicCodeBase(CodeBase):
+    """The Barotropic vorticity equations.
+    """
+    name = 'barotropic'
+    executable_name = 'barotropic_isca.x'

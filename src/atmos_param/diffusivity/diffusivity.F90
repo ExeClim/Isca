@@ -261,7 +261,7 @@ end subroutine diffusivity_end
 !=======================================================================
 
 subroutine diffusivity(t, q, u, v, p_full, p_half, z_full, z_half,  &
-                       u_star, b_star, h, k_m, k_t, kbot)
+                       u_star, b_star, h, k_m, k_t, ind_lcl, kbot)
 
 real,    intent(in),           dimension(:,:,:) :: t, q, u, v
 real,    intent(in),           dimension(:,:,:) :: p_full, p_half
@@ -269,6 +269,7 @@ real,    intent(in),           dimension(:,:,:) :: z_full, z_half
 real,    intent(in),           dimension(:,:)   :: u_star, b_star
 real,    intent(inout),        dimension(:,:,:) :: k_m, k_t
 real,    intent(out),          dimension(:,:)   :: h
+integer, intent(in), optional, dimension(:,:)   :: ind_lcl
 integer, intent(in), optional, dimension(:,:)   :: kbot
 
 real, dimension(size(t,1),size(t,2),size(t,3))  :: svcp,z_full_ag, &
@@ -311,9 +312,16 @@ do k = 1, nlev
 end do
 z_half_ag(:,:,nlev+1) = z_half(:,:,nlev+1) - z_surf(:,:)
 
-
 if(fixed_depth)  then
    h = depth_0
+else if (present(ind_lcl)) then 
+   nlat = size(t,2) 
+   nlon = size(t,1) 
+   do j=1,nlat
+     do i=1,nlon 
+       h(i,j)=z_full_ag(i,j,ind_lcl(i,j))
+     end do 
+   end do
 else
    call pbl_depth(svcp,u,v,z_full_ag,u_star,b_star,h,kbot=kbot)
 end if

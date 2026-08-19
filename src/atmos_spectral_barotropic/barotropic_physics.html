@@ -1,0 +1,165 @@
+<HTML>
+<TITLE>module barotropic_physics_mod</TITLE>
+<BODY BGCOLOR="#AABBCC" TEXT="#332211" >
+
+<DIV ALIGN="CENTER"> <FONT SIZE=1>
+<A HREF="#INTERFACE">PUBLIC INTERFACE</A> / 
+<A HREF="#DATA_TYPES">DATA</A> / 
+<A HREF="#ROUTINES">ROUTINES</A> / 
+<A HREF="#NAMELIST">NAMELIST</A> / 
+<A HREF="#ERRORS">ERRORS</A>
+</FONT>
+<BR><BR></DIV><HR>
+
+
+<H2>module barotropic_physics_mod</H2>
+<A NAME="HEADER">
+<!-- BEGIN HEADER -->
+<PRE>
+     <B>Contact:</B> Isaac Held
+     <B>Reviewers:</B> Peter Phillipps
+
+</PRE>
+<!-- END HEADER --></A>
+<!--------------------------------------------------------------------->
+<A NAME="OVERVIEW">
+<HR>
+<H4>OVERVIEW</H4>
+<!-- BEGIN OVERVIEW -->
+<PRE>
+
+   A module that allows one to add processes that act in the grid domain
+   to the dynamics of the barotropic model on the sphere
+   
+</PRE>
+<!-- END OVERVIEW --></A>
+<!--------------------------------------------------------------------->
+<A NAME="DESCRIPTION">
+<HR>
+<H4>DESCRIPTION</H4>
+<!-- BEGIN DESCRIPTION -->
+<PRE>
+
+   A module that allows one to add processes that act in the grid domain
+   to the dynamics of the barotropic model on the sphere.  Currently,
+   does nothing!
+
+</PRE>
+<!-- END DESCRIPTION --></A>
+<!--------------------------------------------------------------------->
+<A NAME="MODULES_USED">
+<HR>
+<H4>OTHER MODULES USED</H4>
+<!-- BEGIN MODULES_USED -->
+<PRE>
+
+     fms_mod
+     transforms_mod
+     time_manager_mod
+
+</PRE>
+<!-- END MODULES_USED --></A>
+<!--------------------------------------------------------------------->
+<A NAME="INTERFACE">
+<HR>
+<H4>PUBLIC INTERFACE</H4>
+<!-- BEGIN INTERFACE -->
+<PRE>
+
+  use barotropic_physics_mod [,only: barotropic_physics_init,       
+                                         barotropic_physics,
+					 barotropic_physics_end,
+					 phys_type]
+                                
+</PRE>
+<!-- END INTERFACE --></A>
+<!--------------------------------------------------------------------->
+<A NAME="DATA_TYPES">
+<HR>
+<H4>PUBLIC DATA</H4>
+<!-- BEGIN DATA_TYPES -->
+<PRE>
+     
+<HR>
+ <A NAME="phys_type">
+
+type phys_type
+   real, pointer, dimension(:,:)   :: empty
+end type
+
+  fields from physics module made available for diagnostics
+  
+ <HR>
+ </A>
+
+</PRE>
+<!-- END DATA_TYPES --></A>
+<A NAME="ROUTINES">
+<HR>
+<H4>PUBLIC ROUTINES</H4>
+<!-- BEGIN ROUTINES -->
+<PRE>
+
+<A HREF="#barotropic_physics_init">subroutine  barotropic_physics_init</A>
+<A HREF="#barotropic_physics">subroutine  barotropic_physics</A>
+<A HREF="#barotropic_physics_end">subroutine  barotropic_physics_end</A>
+<A HREF="#phys_type">type(phys_type)</A>
+
+
+<A NAME="barotropic_physics_init">
+<PRE>
+
+ subroutine barotropic_physics_init(Phys)
+ 
+   type(phys_type)    , intent(inout)     :: Phys
+  
+ 
+   Initializes module
+
+<!-- END barotropic_physics_init --></A>
+
+<HR>
+
+<A NAME="barotropic_physics">
+
+  subroutine barotropic_physics (Time, dt_ug, dt_vg, ug, vg,    &
+                             delta_t, previous, current, Phys)
+
+      real, intent(inout),  dimension(:,:)    :: dt_ug, dt_vg
+      
+         the u and v tendencies onto which tendencies due to 
+	    the grid-point physics are added (m/(s^2))
+	 
+      real, intent(in)   ,  dimension(:,:, 2) :: ug, vg
+         the grid zonal and meridional velocities (m/s)
+	 the third index is the time-index used in the leapfrog step
+
+      real   , intent(in)  :: delta_t  
+         time step (s)
+	 
+      integer, intent(in)  :: previous, current
+         = 1 or 2
+	 ug(:,:,previous) is the velocity at t-delta_t
+	 ug(:,:,current ) is the velocity at t
+
+      type(time_type), intent(in)    :: Time
+      type(phys_type), intent(inout) :: Phys
+ 
+
+<!-- END barotropic_physics --></A>
+
+<HR>
+
+<A NAME="barotropic_physics_end">
+
+  subroutine barotropic_physics_end (Phys)
+
+      type(phys_type), intent(inout) :: Phys
+ 
+
+<!-- END barotropic_physics_end --></A>
+
+<HR>
+
+</BODY>
+</HTML>

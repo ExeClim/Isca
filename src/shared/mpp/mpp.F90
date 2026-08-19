@@ -1182,7 +1182,7 @@ private
 !  variables needed for subroutine read_input_nml (include/mpp_util.inc)
 !
 ! parameter defining length of character variables 
-  integer, parameter :: INPUT_STR_LENGTH = 256
+  integer, parameter :: INPUT_STR_LENGTH = 512
 ! public variable needed for reading input.nml from an internal file
   character(len=INPUT_STR_LENGTH), dimension(:), allocatable, public :: input_nml_file
 !***********************************************************************

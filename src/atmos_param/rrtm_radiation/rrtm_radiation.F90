@@ -131,6 +131,9 @@
         character(len=256) :: co2_file='co2'                  !  file name of co2 file to read
         character(len=256) :: co2_variable_name='co2'         !  field name of co2 file to read
 
+        logical            :: do_scm_ozone=.false.            ! read single column ozone from namelist? note: ONLY when using SCM. 
+        real(kind=rb), dimension(100) :: scm_ozone = -1       ! input array for single column ozone. max number of levels = 100
+
 ! secondary gases (CH4,N2O,O2,CFC11,CFC12,CFC22,CCL4)
         logical            :: include_secondary_gases=.false. ! non-zero values for above listed secondary gases?
         real(kind=rb)      :: ch4_val  = 0.                   !  if .true., value for CH4 vmr
@@ -160,6 +163,15 @@
         integer(kind=im)   :: dt_rad_avg = -1                 ! If averaging, over what time? dt_rad_avg=dt_rad if dt_rad_avg<=0
         integer(kind=im)   :: lonstep=1                       ! Subsample fields along longitude
                                                               !  for faster radiation calculation
+
+!!!!!! mp586 added for annual mean insolation!!!!!
+
+		logical            :: frierson_solar_rad =.false.
+		real(kind=rb)	   :: del_sol = 0.95 ! frierson 2006 default = 1.4, but 0.95 gets the curve closer to the annual mean insolation 
+		real(kind=rb)	   :: del_sw = 0.0 !frierson 2006 default 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 ! some fancy radiation tweaks  
         real(kind=rb)      :: slowdown_rad = 1.0              ! factor do simulate slower seasonal cycle: >1 means faster, <1 slower
         logical            :: do_zm_rad=.false.               ! Only compute zonal mean radiation
@@ -197,11 +209,11 @@
              &h2o_lower_limit,temp_lower_limit,temp_upper_limit,co2ppmv, &
              &do_fixed_water,fixed_water,fixed_water_pres,fixed_water_lat, &
              &slowdown_rad, &
-             &store_intermediate_rad, do_rad_time_avg, dt_rad, dt_rad_avg, &
+             &store_intermediate_rad, do_rad_time_avg, frierson_solar_rad, del_sol, del_sw, dt_rad, dt_rad_avg, & !mp586 added frierson_solar_rad, del_sol, del_sw for annual mean insolation
              &lonstep, do_zm_tracers, do_zm_rad, &
              &do_precip_albedo, precip_albedo_mode, precip_albedo, precip_lat,&
              &do_read_co2, co2_file, co2_variable_name, use_dyofyr, solrad, &
-             &solday, equinox_day,solr_cnst
+             &solday, equinox_day,solr_cnst, do_scm_ozone, scm_ozone
 
       end module rrtm_vars
 !*****************************************************************************************
@@ -231,7 +243,11 @@
                                       &write_version_number, stdlog, &
                                       &error_mesg, NOTE, WARNING, FATAL
           use time_manager_mod, only: time_type, length_of_day, get_time
-	  use transforms_mod,   only: get_grid_domain
+#ifdef COLUMN_MODEL
+          use spec_mpp_mod,     only: get_grid_domain 
+#else
+          use transforms_mod,   only: get_grid_domain 
+#endif
 ! Local variables
           implicit none
           
@@ -436,7 +452,7 @@
 
           if(do_read_ozone)then
              call interpolator_init (o3_interp, trim(ozone_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
-          endif
+          endif 
 
           if(do_read_h2o)then
              call interpolator_init (h2o_interp, trim(h2o_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
@@ -444,6 +460,12 @@
 
           if(do_read_co2)then
              call interpolator_init (co2_interp, trim(co2_file)//'.nc', lonb, latb, data_out_of_bounds=(/ZERO/))
+          endif
+
+          if(do_scm_ozone)then 
+             call error_mesg('run_rrtm', &
+             'Input o3 will be read in exactly as specified in input (i.e. no plevel interpolation will be performed). Ensure it is specified correctly in namelist. ONLY FOR USE IN SINGLE COLUMN MODEL.', &
+             WARNING)
           endif
 
           if(store_intermediate_rad .or. id_flux_sw > 0) &
@@ -540,7 +562,11 @@
 
           use diag_manager_mod, only: register_diag_field, send_data
           use time_manager_mod,only:  time_type
+#ifdef COLUMN_MODEL
+          use  column_grid_mod, only: area_weighted_global_mean 
+#else
           use transforms_mod,only:    area_weighted_global_mean
+#endif
 !---------------------------------------------------------------------------------------------------------------
 ! In/Out variables
           implicit none
@@ -588,6 +614,7 @@
           real(kind=rb),dimension(size(q,1),size(q,2)) :: albedo_loc
           real(kind=rb),dimension(size(q,1),size(q,2),size(q,3)) :: q_tmp, h2o_vmr
           real(kind=rb),dimension(size(q,1),size(q,2)) :: fracsun
+          real(kind=rb),dimension(size(q,1),size(q,2)) :: p2 !mp586 addition for annual mean insolation
 
 	  integer :: year_in_s
           real :: r_seconds, r_days, r_total_seconds, frac_of_day, frac_of_year, gmt, time_since_ae, rrsun, dt_rad_radians, day_in_s, r_solday, r_dt_rad_avg
@@ -635,6 +662,17 @@
              Time_loc = Time
           endif
 
+!!!!! mp586 addition for annual mean insolation !!!!!
+!!!! following https://github.com/sit23/Isca/blob/master/src/atmos_param/socrates/interface/socrates_interface.F90#L888 !!!!
+
+       	if (frierson_solar_rad) then
+            p2     = (1. - 3.*sin(lat(:,:))**2)/4.
+            coszen = 0.25 * (1.0 + del_sol * p2 + del_sw * sin(lat(:,:)))
+            rrsun  = 1 ! needs to be set, set to 1 so that stellar_radiation is unchanged in socrates_interface
+       else
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 !
 ! compute zenith angle
 !  this is also an output, so need to compute even if we read radiation from file
@@ -665,6 +703,8 @@
 	     ! Seasonal Cycle: Use astronomical parameters to calculate insolation
 	     call diurnal_solar(lat, lon, gmt, time_since_ae, coszen, fracsun, rrsun)
           end if
+
+   		end if !mp586 addition for annual mean insolation
 
 ! input files: only deal with case where we don't need to call radiation at all
           if(do_read_radiation .and. do_read_sw_flux .and. do_read_lw_flux) then
@@ -702,11 +742,30 @@
           !get ozone 
           if(do_read_ozone)then
              call interpolator( o3_interp, Time_loc, p_half, o3f, trim(ozone_file))
-             if (input_o3_file_is_mmr==.true.) then
+          endif 
+          if(do_scm_ozone)then ! Allows for option to specify ozone vertical profile in namelist for SCM. 
+             if(do_read_ozone)then 
+                call error_mesg('run_rrtm', 'Cannot set do_scm_ozone and do_read_ozone = .true.', FATAL)
+             endif 
+             if((size(q,1)>1).or.(size(q,2)>1))then 
+                call error_mesg('run_rrtm', 'Cannot set do_scm_ozone if simulating more than one column, use do_read_ozone instead', FATAL)
+             endif 
+             if(scm_ozone(size(q,3)).eq.-1)then 
+                call error_mesg('run_rrtm', 'Input o3 must be specified on model pressure levels but not enough levels specified', FATAL)
+             endif 
+             if(scm_ozone(size(q,3)+1).ne.-1)then 
+                call error_mesg('run_rrtm', 'Input o3 must be specified on model pressure levels but too many levels specified', FATAL)
+             endif 
+             o3f(1,1,:) = scm_ozone(1:size(q,3))
+             !PUT THIS WARNING SOMEWHERE ELSE 
+          endif
+          if (do_read_ozone .or. do_scm_ozone) then 
+             if (input_o3_file_is_mmr) then
                  o3f = o3f * (1000. * gas_constant / rdgas ) / wtmozone !RRTM expects all abundances to be volume mixing ratio. So if input file is mass mixing ratio, it must be converted to volume mixing ratio using the molar masses of dry air and ozone. 
                  ! Molar mass of dry air calculated from gas_constant / rdgas, and converted into g/mol from kg/mol by multiplying by 1000. This conversion is necessary because wtmozone is in g/mol.
              endif 
           endif
+          
 
           !get co2
           if(do_read_co2)then
@@ -777,8 +836,8 @@
                &phalf(:,sk+1) = pfull(:,sk)*0.5
           tfull = reshape(t     (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
           thalf = reshape(t_half(1:si:lonstep,:,sk+1:1:-1),(/ si*sj/lonstep,sk+1 /))
-          h2o   = reshape(h2o_vmr (1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
-          if(do_read_ozone)o3 = reshape(o3f(1:si:lonstep,:,sk :1:-1),(/ si*sj/lonstep,sk  /))
+          h2o   = reshape(h2o_vmr(1:si:lonstep,:,sk  :1:-1),(/ si*sj/lonstep,sk   /))
+          if((do_read_ozone).or.(do_scm_ozone))o3 = reshape(o3f(1:si:lonstep,:,sk :1:-1),(/ si*sj/lonstep,sk  /))
           if(do_read_co2)co2 = reshape(co2f(1:si:lonstep,:,sk :1:-1),(/ si*sj/lonstep,sk  /))
 
          
