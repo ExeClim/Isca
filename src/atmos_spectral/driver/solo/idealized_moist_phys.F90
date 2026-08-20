@@ -249,6 +249,9 @@ real, allocatable, dimension(:,:,:) ::                                        &
      non_diff_dt_vg,       &   ! merid. wind tendency except from vertical diffusion
      non_diff_dt_tg,       &   ! temperature tendency except from vertical diffusion
      non_diff_dt_qg,       &   ! moisture tendency except from vertical diffusion
+     dt_qg_vert_diff,      &   ! moisture tendency scratch space for gcm_vert_diff_down/up - see
+                               ! comment at its use below for why this can't just be
+                               ! dt_tracers(:,:,:,nsphum) directly
      conv_dt_tg,           &   ! temperature tendency from convection
      conv_dt_qg,           &   ! moisture tendency from convection
      cond_dt_tg,           &   ! temperature tendency from condensation
@@ -565,6 +568,7 @@ allocate(non_diff_dt_ug  (is:ie, js:je, num_levels))
 allocate(non_diff_dt_vg  (is:ie, js:je, num_levels))
 allocate(non_diff_dt_tg  (is:ie, js:je, num_levels))
 allocate(non_diff_dt_qg  (is:ie, js:je, num_levels))
+allocate(dt_qg_vert_diff (is:ie, js:je, num_levels))
 
 allocate(net_surf_sw_down        (is:ie, js:je))
 allocate(surf_lw_down            (is:ie, js:je))
@@ -1419,6 +1423,20 @@ if(turb) then
    non_diff_dt_tg  = dt_tg
    non_diff_dt_qg  = dt_tracers(:,:,:,nsphum)
 
+   ! gcm_vert_diff_down/up take the moisture tendency both as its own dedicated
+   ! dt_q argument (handled through a separate, sphum-specific code path inside
+   ! vert_diff.F90) and, aliased to the exact same memory, as part of the full
+   ! dt_tr(:,:,:,nsphum) tracer tendency array - even though vert_diff_init sets
+   ! tracers(sphum)%do_vert_diff=.false. so the generic tracer loop never writes
+   ! to that slice. Passing the same actual array to two dummy arguments that
+   ! can each be defined (dt_q and dt_tr are both intent(out) in
+   ! gcm_vert_diff_up) is not standard-conforming even if only one of them ends
+   ! up actually written, and has been a source of unreliable/compiler-dependent
+   ! tracer non-conservation here in the past. Route the moisture tendency
+   ! through its own scratch array instead, so it never shares memory with
+   ! dt_tracers(:,:,:,:) during these two calls.
+   dt_qg_vert_diff = dt_tracers(:,:,:,nsphum)
+
    call gcm_vert_diff_down (1, 1,                                          &
                             delta_t,             ug(:,:,:,previous),       &
                             vg(:,:,:,previous),  tg(:,:,:,previous),       &
@@ -1429,7 +1447,7 @@ if(turb) then
                             flux_u(:,:),                      flux_v(:,:), &
                             dtaudu_atm(:,:),              dtaudv_atm(:,:), &
                             dt_ug(:,:,:),                    dt_vg(:,:,:), &
-                            dt_tg(:,:,:),        dt_tracers(:,:,:,nsphum), &
+                            dt_tg(:,:,:),          dt_qg_vert_diff(:,:,:), &
                             dt_tracers(:,:,:,:),         diss_heat(:,:,:), &
                             Tri_surf)
 !
@@ -1457,7 +1475,9 @@ if(turb) then
                               albedo(:,:))
    endif
 
-   call gcm_vert_diff_up (1, 1, delta_t, Tri_surf, dt_tg(:,:,:), dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:))
+   call gcm_vert_diff_up (1, 1, delta_t, Tri_surf, dt_tg(:,:,:), dt_qg_vert_diff(:,:,:), dt_tracers(:,:,:,:))
+
+   dt_tracers(:,:,:,nsphum) = dt_qg_vert_diff
 
    if(id_diff_dt_ug > 0) used = send_data(id_diff_dt_ug, dt_ug - non_diff_dt_ug, Time)
    if(id_diff_dt_vg > 0) used = send_data(id_diff_dt_vg, dt_vg - non_diff_dt_vg, Time)

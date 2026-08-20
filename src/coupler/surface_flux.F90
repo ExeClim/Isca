@@ -422,7 +422,14 @@ if (use_actual_surface_temperatures) then
      endwhere
   endwhere
 else
-   if ((maxval(q_atm_in) > 0.).and. ( mpp_pe() == mpp_root_pe() )) then
+   ! Small tolerance rather than an exact 0. comparison, purely as a guard
+   ! against floating-point noise from the spectral transforms (a nominally
+   ! all-zero moisture field is not guaranteed to transform to exactly zero at
+   ! every grid point). q_surf0 is matched to q_atm below whenever this branch
+   ! is taken, so a genuinely dry model has no surface moisture source to
+   ! accumulate here - this check still catches a real moist atmosphere
+   ! reaching this flag by mistake, which is what it was written for.
+   if ((maxval(q_atm_in) > 1.e-10).and. ( mpp_pe() == mpp_root_pe() )) then
       call error_mesg('surface_flux_mod','Note that you are passing fixed surface temperatures to the calculation of flux_lhe because you have set use_actual_surface_temperatures=.false. This option is designed only for use with dry models.', FATAL)
    endif
 endif
@@ -480,6 +487,14 @@ endif
             q_surf0 = q_sat    ! everything else assumes saturated sfc humidity
       end where
   endif
+
+  ! In a dry model (use_actual_surface_temperatures=.false.) there is no real
+  ! surface moisture source, so match q_surf0 to q_atm here (mirroring the
+  ! empty-bucket case above) rather than leaving it at its saturation value -
+  ! otherwise q_sat above (from the fixed t_surf0=200. reference) keeps
+  ! supplying a small but unbounded diffusive moisture source into the
+  ! atmosphere every timestep, since there is no sink for it to balance against.
+  if (.not. use_actual_surface_temperatures) q_surf0 = q_atm
 
   q_surf_out = q_surf0
 
