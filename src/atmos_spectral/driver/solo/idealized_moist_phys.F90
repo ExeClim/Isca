@@ -1233,8 +1233,10 @@ if(.not.gp_surface .and. .not.newt_relax_surface) then
           if(id_flux_u > 0) used = send_data(id_flux_u, flux_u, Time)
           if(id_flux_v > 0) used = send_data(id_flux_v, flux_v, Time)  
 
-          call escomp ( t_surf, e_sat_out  )  ! saturation vapor pressure
-          if(id_e_sat > 0) used = send_data(id_e_sat, e_sat_out, Time)  
+          if(id_e_sat > 0) then
+            call escomp ( t_surf, e_sat_out  )  ! saturation vapor pressure
+            used = send_data(id_e_sat, e_sat_out, Time)
+          endif
 
   if(id_flux_u > 0) used = send_data(id_flux_u, flux_u, Time)
   if(id_flux_v > 0) used = send_data(id_flux_v, flux_v, Time)

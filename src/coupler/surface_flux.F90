@@ -576,21 +576,30 @@ endif
       where (avail) &
            q_2m = q_surf + (q_atm - q_surf) * ex_del_q
 
-      call escomp ( temp_2m, e_sat_2m )
+      ! temp_2m is a real (unclamped) extrapolated temperature, so on a dry/cold
+      ! planet run with use_actual_surface_temperatures=.false. it can lie outside
+      ! escomp's valid range even though this whole block only ever feeds an
+      ! optional diagnostic (rh_2m). Skip it in that case, consistent with how
+      ! use_actual_surface_temperatures already guards the other escomp calls above.
+      if (use_actual_surface_temperatures) then
+        call escomp ( temp_2m, e_sat_2m )
 
-      if(use_mixing_ratio) then
-         ! surface mixing ratio at saturation
-         q_sat_2m   = d622 * e_sat_2m / (p_surf - e_sat_2m)
-      elseif(do_simple) then
-         q_sat_2m   = d622 * e_sat_2m / p_surf
+        if(use_mixing_ratio) then
+           ! surface mixing ratio at saturation
+           q_sat_2m   = d622 * e_sat_2m / (p_surf - e_sat_2m)
+        elseif(do_simple) then
+           q_sat_2m   = d622 * e_sat_2m / p_surf
+        else
+           ! surface specific humidity at saturation
+           q_sat_2m   = d622 * e_sat_2m / (p_surf - d378*e_sat)
+        endif
+
+        ! ------- reference relative humidity -----------
+        where (avail) &
+           rh_2m = q_2m / q_sat_2m
       else
-         ! surface specific humidity at saturation
-         q_sat_2m   = d622 * e_sat_2m / (p_surf - d378*e_sat)
+        rh_2m = 0.
       endif
-
-      ! ------- reference relative humidity -----------
-      where (avail) &
-         rh_2m = q_2m / q_sat_2m
 
 
   ! override with ocean fluxes from NCAR calculation
