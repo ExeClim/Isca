@@ -127,6 +127,55 @@ any two bit-non-identical runs of the same physical configuration.
 (Bolded rows are the ones most directly tied to the ported physics; all
 match exactly.)
 
+## Where the divergence actually comes from
+
+The chaotic-growth explanation above is correct as far as it goes, but it
+doesn't answer the sharper question: *is the divergence a generic property of
+comparing any two Isca compiles, or is it caused by something specific?* This
+was checked directly, using a plain `socrates_aquaplanet` control case (no
+ice/land-SST physics involved at all) run the same way (1 month +
+a 5-day daily-output growth check) across several pairings:
+
+| Comparison | Result |
+|---|---|
+| `master` vs. `uob_fftw_sit23_physics_2026` | **Bit-identical.** 0.0 difference in every field, every day, for the full month. |
+| Merge-base (2023) vs. current `master` | **Bit-identical**, bar one ~10<sup>-7</sup>-relative rounding blip in a diagnostic-only flux field that never reaches any dynamical field. |
+| Original `uob_fftw_sit23_new_maths2intel` vs. `physics_2026` | **Diverges** — same signature as the Maunder Minimum comparison above. |
+
+So `master` has been essentially perfectly reproducible for three years and
+372 commits, and the physics port doesn't disturb that at all. The divergence
+is real, and it's specific to the original branch.
+
+**Root cause, isolated by bisection:** every one of the ~35 source files the
+original branch modifies (relative to its merge-base) was reverted to the
+merge-base version in a scratch copy of the branch, one at a time / in
+batches, re-testing against `physics_2026` after each step, until the
+divergence disappeared and reappeared cleanly. Two environment-only patches
+(the `affinity.c` glibc fix and the `spectral_dynamics.F90` format-string fix,
+both already on `master`) were re-applied throughout purely so the branch
+would compile on this machine's current toolchain - they're unrelated to the
+result. This narrowed the entire divergence to a single file:
+**`src/atmos_param/socrates/interface/socrates_interface.F90`** — the
+branch's own (never-merged, unrelated to this port's `mixed_layer.F90`
+changes) modifications to the Socrates radiation coupling code. Reverting
+just that one file, with everything else at the branch's tip, restores
+bit-identical output; restoring just that one file, with everything else at
+merge-base, reproduces the full divergence on its own.
+
+The individual changes within that file (syntax cleanups from `.eqv. .true.`
+to bare booleans, an explicit `real(kind(r_def))` cast on `coszen`/`rrsun`
+that's a no-op given `r_def` resolves to the same double-precision kind as
+this build's default real, six new gated-off diagnostic registrations, and a
+reordered spectral-filename validity check) don't individually look like they
+should change any computed value under this build's configuration — yet the
+whole file, as a unit, does. That residual is a genuine loose end in the
+original branch's own Socrates interface work, not yet pinned to one exact
+line. It doesn't affect this PR: **`uob_fftw_sit23_physics_2026` never
+touches `socrates_interface.F90` at all** — confirmed byte-identical to
+`master`'s current version — so this file's issue, whatever it precisely is,
+isn't carried into the physics port and isn't part of what's being merged
+here.
+
 ## Bottom line
 
 - The physics port compiles and runs the real Maunder Minimum experiment
@@ -134,10 +183,14 @@ match exactly.)
 - The specific physics carried over (sea-ice/land SST patching, ice albedo,
   q-flux masking) is reproduced correctly — every field tied to it matches
   the original branch exactly.
-- The two runs' large-scale weather diverges over a month, but with the
-  classic chaotic-growth signature (near-zero on day 1, amplifying steadily)
-  rather than an abrupt jump, which is the expected outcome of any two
-  non-bit-identical compiles of a chaotic model, not evidence of a bug.
+- `master` and `physics_2026` are bit-identical to each other on cases the
+  port doesn't touch, and master has been bit-identical to its own 2023
+  merge-base for three years — so the port introduces no detectable
+  regression of its own.
+- The Maunder Minimum comparison's divergence from the *original* branch is
+  real, but traced to that branch's own unported `socrates_interface.F90`
+  changes — a file this port never touches - not to chaos alone and not to
+  anything in the physics being merged here.
 
 ## Appendix: how this was tested
 
