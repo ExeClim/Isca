@@ -116,6 +116,7 @@ logical :: do_read_sst      = .false. !mj
 logical :: do_sc_sst        = .false. !mj use specified SSTs
 logical :: do_ape_sst       = .false. ! use the AquaPlanet Experiement (APE) sst profile.
 logical :: specify_sst_over_ocean_only = .false.
+logical :: update_sst_from_fluxes = .true.
 logical :: do_calc_eff_heat_cap = .true. ! assumes specified SST are off the default.
 
 character(len=256) :: sst_file
@@ -147,6 +148,7 @@ namelist/mixed_layer_nml/ evaporation, depth, qflux_amp, qflux_width, tconst,&
                               albedo_choice,higher_albedo,albedo_exp,        &  !mj
                               albedo_cntr,albedo_wdth,lat_glacier,           &  !mj
                               do_read_sst,do_sc_sst,sst_file,                &  !mj
+                              update_sst_from_fluxes,                        &
                               land_option,slandlon,slandlat,                 &  !mj
                               elandlon,elandlat,                             &  !mj
                               land_h_capacity_prefactor,                     &  !s
@@ -741,10 +743,14 @@ if (do_calc_eff_heat_cap) then
 
     if(do_sc_sst.and.specify_sst_over_ocean_only) then
         where (land_ice_mask) delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-        where (land_ice_mask) t_surf = t_surf + delta_t_surf             
+        where (land_ice_mask) t_surf = t_surf + delta_t_surf
     else
-        delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
-        t_surf = t_surf + delta_t_surf
+        if (update_sst_from_fluxes) then
+            delta_t_surf = - corrected_flux  * dt / eff_heat_capacity
+            t_surf = t_surf + delta_t_surf
+        else
+            delta_t_surf = 0.
+        endif
     endif
 
 endif !s end of if(do_sc_sst).

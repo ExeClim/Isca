@@ -20,6 +20,8 @@ use           vert_diff_mod, only: vert_diff_init, gcm_vert_diff_down, gcm_vert_
 
 use two_stream_gray_rad_mod, only: two_stream_gray_rad_init, two_stream_gray_rad_down, two_stream_gray_rad_up, two_stream_gray_rad_end
 
+use           hs_forcing_mod, only: hs_forcing_init, hs_forcing, hs_forcing_end
+
 use        cloud_simple_mod, only: cloud_simple_init, cloud_simple_end, cloud_simple
 
 use       cloud_spookie_mod, only: cloud_spookie_init, cloud_spookie
@@ -46,7 +48,7 @@ use          transforms_mod, only: get_grid_domain, grid_domain
 use   spectral_dynamics_mod, only: get_axis_id, get_num_levels, get_surf_geopotential, diffuse_surf_water
 #endif 
 
-use        surface_flux_mod, only: surface_flux, gp_surface_flux
+use        surface_flux_mod, only: surface_flux, gp_surface_flux, newt_relax_surface_flux
 
 use      sat_vapor_pres_mod, only: lookup_es, escomp !s Have added this to allow relative humdity to be calculated in a consistent way.
 
@@ -119,13 +121,15 @@ logical :: do_bm = .false.
 logical :: do_ras = .false.
 
 logical :: do_lscale_cond = .true.
+
 ! Cloud options
 logical :: do_cloud_simple = .false. ! SimCloud cloud scheme
 logical :: do_cloud_spookie = .false. ! SPOOKIE protocol cloud scheme
 
-! Radiation options
+!s Radiation options
 logical :: two_stream_gray = .true.
 logical :: do_rrtm_radiation = .false.
+logical :: do_newtonian_cooling_as_rad = .false.
 logical :: do_socrates_radiation = .false.
 
 ! MiMA uses damping
@@ -133,7 +137,9 @@ logical :: do_damping = .false.
 
 
 logical :: mixed_layer_bc = .false.
-logical :: gp_surface = .false. ! Use Schneider & Liu 2009's prescription of lower-boundary heat flux
+logical :: gp_surface = .false. !s Use Schneider & Liu 2009's prescription of lower-boundary heat flux
+logical :: newt_relax_surface = .false. !s Use Schneider & Liu 2009's prescription of lower-boundary heat flux
+
 
 logical :: do_simple = .false. ! Have added this to enable relative humidity to be calculated correctly below.
 real :: roughness_heat = 0.05
@@ -168,14 +174,15 @@ namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roug
                                       two_stream_gray, do_rrtm_radiation, do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
-                                      land_option, land_file_name, land_field_name,  & ! options for idealised land
-                                      land_roughness_prefactor,                      &
-                                      gp_surface, convection_scheme,                 &
-                                      bucket, init_bucket_depth, init_bucket_depth_land, &
+                                      land_option, land_file_name, land_field_name,   & !s options for idealised land
+                                      land_roughness_prefactor,               &
+                                      gp_surface, newt_relax_surface, convection_scheme,          &
+                                      bucket, init_bucket_depth, init_bucket_depth_land, & !RG Add bucket
                                       max_bucket_depth_land, robert_bucket, raw_bucket, &
                                       do_lscale_cond, do_socrates_radiation, do_lcl_diffusivity_depth, damping_coeff_bucket, &
                                       finite_bucket_depth_over_land, &
-                                      do_local_heating
+                                      do_local_heating, &
+                                      do_newtonian_cooling_as_rad
 
 
 integer, parameter :: num_time_levels = 2 ! Add bucket - number of time levels added to allow timestepping in this module
@@ -242,6 +249,9 @@ real, allocatable, dimension(:,:,:) ::                                        &
      non_diff_dt_vg,       &   ! merid. wind tendency except from vertical diffusion
      non_diff_dt_tg,       &   ! temperature tendency except from vertical diffusion
      non_diff_dt_qg,       &   ! moisture tendency except from vertical diffusion
+     dt_qg_vert_diff,      &   ! moisture tendency scratch space for gcm_vert_diff_down/up - see
+                               ! comment at its use below for why this can't just be
+                               ! dt_tracers(:,:,:,nsphum) directly
      conv_dt_tg,           &   ! temperature tendency from convection
      conv_dt_qg,           &   ! moisture tendency from convection
      cond_dt_tg,           &   ! temperature tendency from condensation
@@ -403,6 +413,14 @@ end if
 if(two_stream_gray .and. do_rrtm_radiation) &
    call error_mesg('physics_driver_init','do_grey_radiation and do_rrtm_radiation cannot both be .true.',FATAL)
 
+!s need to make sure that gray radiation and HS are not both called.
+if(two_stream_gray .and. do_newtonian_cooling_as_rad) &
+   call error_mesg('physics_driver_init','do_grey_radiation and do_newtonian_cooling_as_rad cannot both be .true.',FATAL)
+
+!s need to make sure that gray radiation and rrtm radiation are not both called.
+if(do_rrtm_radiation .and. do_newtonian_cooling_as_rad) &
+   call error_mesg('physics_driver_init','do_rrtm_radiation and do_newtonian_cooling_as_rad cannot both be .true.',FATAL)
+
 if(two_stream_gray .and. (do_cloud_simple .or. do_cloud_spookie)) &
    call error_mesg('idealized_moist_phys','Gray radiation is not configured to run with the cloud scheme at present.',FATAL)
 
@@ -550,6 +568,7 @@ allocate(non_diff_dt_ug  (is:ie, js:je, num_levels))
 allocate(non_diff_dt_vg  (is:ie, js:je, num_levels))
 allocate(non_diff_dt_tg  (is:ie, js:je, num_levels))
 allocate(non_diff_dt_qg  (is:ie, js:je, num_levels))
+allocate(dt_qg_vert_diff (is:ie, js:je, num_levels))
 
 allocate(net_surf_sw_down        (is:ie, js:je))
 allocate(surf_lw_down            (is:ie, js:je))
@@ -841,6 +860,10 @@ if(two_stream_gray) call two_stream_gray_rad_init(is, ie, js, je, num_levels, ge
     endif
 #endif
 
+if (do_newtonian_cooling_as_rad) then
+   call hs_forcing_init(get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, rad_lat_2d, rad_lon_2d, dt_real)
+endif
+
 #ifdef SOC_NO_COMPILE
     if (do_socrates_radiation) then
         call error_mesg('idealized_moist_phys','do_socrates_radiation is .true. but compiler flag -D SOC_NO_COMPILE used. Stopping.', FATAL)
@@ -876,10 +899,10 @@ endif
 
 end subroutine idealized_moist_phys_init
 !=================================================================================================================================
-subroutine idealized_moist_phys(Time, p_half, p_full, z_half, z_full, ug, vg, psg, wg_full, tg, grid_tracers, &
+subroutine idealized_moist_phys(Time, Time_next, p_half, p_full, z_half, z_full, ug, vg, psg, wg_full, tg, grid_tracers, &
                                 previous, current, dt_ug, dt_vg, dt_tg, dt_tracers, mask, kbot)
 
-type(time_type),            intent(in)    :: Time
+type(time_type),            intent(in)    :: Time, Time_next
 real, dimension(:,:,:,:),   intent(in)    :: p_half, p_full, z_half, z_full, ug, vg, tg
 real, dimension(:,:,:),     intent(in)    :: psg, wg_full
 real, dimension(:,:,:,:,:), intent(in)    :: grid_tracers
@@ -1135,7 +1158,7 @@ if(.not.mixed_layer_bc) then
 end if
 
 
-if(.not.gp_surface) then 
+if(.not.gp_surface .and. .not.newt_relax_surface) then
   call surface_flux(                                                        &
                   tg(:,:,num_levels,previous),                              &
  grid_tracers(:,:,num_levels,previous,nsphum),                              &
@@ -1214,8 +1237,10 @@ if(.not.gp_surface) then
           if(id_flux_u > 0) used = send_data(id_flux_u, flux_u, Time)
           if(id_flux_v > 0) used = send_data(id_flux_v, flux_v, Time)  
 
-          call escomp ( t_surf, e_sat_out  )  ! saturation vapor pressure
-          if(id_e_sat > 0) used = send_data(id_e_sat, e_sat_out, Time)  
+          if(id_e_sat > 0) then
+            call escomp ( t_surf, e_sat_out  )  ! saturation vapor pressure
+            used = send_data(id_e_sat, e_sat_out, Time)
+          endif
 
   if(id_flux_u > 0) used = send_data(id_flux_u, flux_u, Time)
   if(id_flux_v > 0) used = send_data(id_flux_v, flux_v, Time)
@@ -1262,6 +1287,18 @@ if(do_rrtm_radiation) then
                   !do_cloud_simple )
 endif
 #endif
+
+if(do_newtonian_cooling_as_rad) then
+   call hs_forcing(1, ie-is+1, 1, je-js+1, delta_t, Time_next, rad_lon, rad_lat, &
+                p_half(:,:,:,current ),       p_full(:,:,:,current   ), &
+                    ug(:,:,:,previous),           vg(:,:,:,previous  ), &
+                    tg(:,:,:,previous), grid_tracers(:,:,:,previous,:), &
+                    ug(:,:,:,previous),           vg(:,:,:,previous  ), &
+                    tg(:,:,:,previous), grid_tracers(:,:,:,previous,:), &
+                 dt_ug(:,:,:         ),        dt_vg(:,:,:           ), &
+                 dt_tg(:,:,:         ),   dt_tracers(:,:,:,:), z_full(:,:,:,current), &
+                 t_grnd=t_surf(:,:))
+endif
 
 if (do_local_heating) then
    call local_heating ( Time, is, js, rad_lon, rad_lat, &
@@ -1310,6 +1347,11 @@ if(gp_surface) then
     if(id_diss_heat_ray > 0) used = send_data(id_diss_heat_ray, diss_heat_ray, Time)
 endif
 
+if(newt_relax_surface) then
+
+    call newt_relax_surface_flux (tg(:,:,num_levels,previous), dt_tracers(:,:,:,nsphum), grid_tracers(:,:,:,previous,nsphum), p_half(:,:,num_levels+1,current), num_levels, delta_t, is, ie, js, je)
+
+endif
 
 !----------------------------------------------------------------------
 !    Copied from MiMA physics_driver.f90
@@ -1365,7 +1407,7 @@ if(turb) then
 !!$   dhdt_atm   = 0.0
 !!$   dedq_atm   = 0.0
 
-   if(.not.(mixed_layer_bc.or.gp_surface)) then
+   if(.not.((mixed_layer_bc.or.gp_surface).or.newt_relax_surface)) then
      call error_mesg('atmosphere','no diffusion implentation for non-mixed layer b.c.',FATAL)
    endif
 
@@ -1381,6 +1423,20 @@ if(turb) then
    non_diff_dt_tg  = dt_tg
    non_diff_dt_qg  = dt_tracers(:,:,:,nsphum)
 
+   ! gcm_vert_diff_down/up take the moisture tendency both as its own dedicated
+   ! dt_q argument (handled through a separate, sphum-specific code path inside
+   ! vert_diff.F90) and, aliased to the exact same memory, as part of the full
+   ! dt_tr(:,:,:,nsphum) tracer tendency array - even though vert_diff_init sets
+   ! tracers(sphum)%do_vert_diff=.false. so the generic tracer loop never writes
+   ! to that slice. Passing the same actual array to two dummy arguments that
+   ! can each be defined (dt_q and dt_tr are both intent(out) in
+   ! gcm_vert_diff_up) is not standard-conforming even if only one of them ends
+   ! up actually written, and has been a source of unreliable/compiler-dependent
+   ! tracer non-conservation here in the past. Route the moisture tendency
+   ! through its own scratch array instead, so it never shares memory with
+   ! dt_tracers(:,:,:,:) during these two calls.
+   dt_qg_vert_diff = dt_tracers(:,:,:,nsphum)
+
    call gcm_vert_diff_down (1, 1,                                          &
                             delta_t,             ug(:,:,:,previous),       &
                             vg(:,:,:,previous),  tg(:,:,:,previous),       &
@@ -1391,7 +1447,7 @@ if(turb) then
                             flux_u(:,:),                      flux_v(:,:), &
                             dtaudu_atm(:,:),              dtaudv_atm(:,:), &
                             dt_ug(:,:,:),                    dt_vg(:,:,:), &
-                            dt_tg(:,:,:),        dt_tracers(:,:,:,nsphum), &
+                            dt_tg(:,:,:),          dt_qg_vert_diff(:,:,:), &
                             dt_tracers(:,:,:,:),         diss_heat(:,:,:), &
                             Tri_surf)
 !
@@ -1419,7 +1475,9 @@ if(turb) then
                               albedo(:,:))
    endif
 
-   call gcm_vert_diff_up (1, 1, delta_t, Tri_surf, dt_tg(:,:,:), dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:))
+   call gcm_vert_diff_up (1, 1, delta_t, Tri_surf, dt_tg(:,:,:), dt_qg_vert_diff(:,:,:), dt_tracers(:,:,:,:))
+
+   dt_tracers(:,:,:,nsphum) = dt_qg_vert_diff
 
    if(id_diff_dt_ug > 0) used = send_data(id_diff_dt_ug, dt_ug - non_diff_dt_ug, Time)
    if(id_diff_dt_vg > 0) used = send_data(id_diff_dt_vg, dt_vg - non_diff_dt_vg, Time)
@@ -1523,6 +1581,9 @@ endif
 call lscale_cond_end
 if(mixed_layer_bc)  call mixed_layer_end(t_surf, bucket_depth, bucket)
 if(do_damping) call damping_driver_end
+if(do_newtonian_cooling_as_rad) then
+    call hs_forcing_end
+endif
 
 if(do_local_heating) call hs_forcing_end
 #ifdef SOC_NO_COMPILE

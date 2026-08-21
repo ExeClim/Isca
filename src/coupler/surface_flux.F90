@@ -47,7 +47,7 @@ implicit none
 private
 
 ! ==== public interface ======================================================
-public  surface_flux, gp_surface_flux
+public  surface_flux, gp_surface_flux, newt_relax_surface_flux
 ! ==== end of public interface ===============================================
 
 ! <INTERFACE NAME="surface_flux">
@@ -271,7 +271,8 @@ logical :: use_frierson_mo_drag = .false. !Isca by default uses the full monin-o
 
 real    :: flux_heat_gp  =  5.7    !s Default value for Jupiter of 5.7 Wm^-2
 real    :: diabatic_acce =  1.0    !s Diabatic acceleration??
-
+real    :: rh_target =  100.0    !s 
+real    :: delta_t_relax = -1. !When < 0. the atmospheric timestep is used. If positive then the value given to delta_t_relax is used
 
 namelist /surface_flux_nml/ no_neg_q,             &
                             use_virtual_temp,     &
@@ -284,10 +285,13 @@ namelist /surface_flux_nml/ no_neg_q,             &
                             ncar_ocean_flux_orig, &
                             raoult_sat_vap,       &
                             do_simple,            &
-                            land_humidity_prefactor, & ! Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
-                            land_evap_prefactor, &     ! Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
-                            flux_heat_gp,         &    ! prescribed lower boundary heat flux on a giant planet
-                            diabatic_acce, use_actual_surface_temperatures, &
+                            land_humidity_prefactor, & !s Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
+                            land_evap_prefactor, & !s Added to make land 'dry', i.e. to decrease the evaporative heat flux in areas of land.
+                            flux_heat_gp,         &    !s prescribed lower boundary heat flux on a giant planet
+                            diabatic_acce,        &
+                            rh_target,            &
+                            delta_t_relax,        &
+                            use_actual_surface_temperatures, &
                             use_frierson_mo_drag
 
 
@@ -418,7 +422,14 @@ if (use_actual_surface_temperatures) then
      endwhere
   endwhere
 else
-   if ((maxval(q_atm_in) > 0.).and. ( mpp_pe() == mpp_root_pe() )) then
+   ! Small tolerance rather than an exact 0. comparison, purely as a guard
+   ! against floating-point noise from the spectral transforms (a nominally
+   ! all-zero moisture field is not guaranteed to transform to exactly zero at
+   ! every grid point). q_surf0 is matched to q_atm below whenever this branch
+   ! is taken, so a genuinely dry model has no surface moisture source to
+   ! accumulate here - this check still catches a real moist atmosphere
+   ! reaching this flag by mistake, which is what it was written for.
+   if ((maxval(q_atm_in) > 1.e-10).and. ( mpp_pe() == mpp_root_pe() )) then
       call error_mesg('surface_flux_mod','Note that you are passing fixed surface temperatures to the calculation of flux_lhe because you have set use_actual_surface_temperatures=.false. This option is designed only for use with dry models.', FATAL)
    endif
 endif
@@ -476,6 +487,14 @@ endif
             q_surf0 = q_sat    ! everything else assumes saturated sfc humidity
       end where
   endif
+
+  ! In a dry model (use_actual_surface_temperatures=.false.) there is no real
+  ! surface moisture source, so match q_surf0 to q_atm here (mirroring the
+  ! empty-bucket case above) rather than leaving it at its saturation value -
+  ! otherwise q_sat above (from the fixed t_surf0=200. reference) keeps
+  ! supplying a small but unbounded diffusive moisture source into the
+  ! atmosphere every timestep, since there is no sink for it to balance against.
+  if (.not. use_actual_surface_temperatures) q_surf0 = q_atm
 
   q_surf_out = q_surf0
 
@@ -572,21 +591,30 @@ endif
       where (avail) &
            q_2m = q_surf + (q_atm - q_surf) * ex_del_q
 
-      call escomp ( temp_2m, e_sat_2m )
+      ! temp_2m is a real (unclamped) extrapolated temperature, so on a dry/cold
+      ! planet run with use_actual_surface_temperatures=.false. it can lie outside
+      ! escomp's valid range even though this whole block only ever feeds an
+      ! optional diagnostic (rh_2m). Skip it in that case, consistent with how
+      ! use_actual_surface_temperatures already guards the other escomp calls above.
+      if (use_actual_surface_temperatures) then
+        call escomp ( temp_2m, e_sat_2m )
 
-      if(use_mixing_ratio) then
-         ! surface mixing ratio at saturation
-         q_sat_2m   = d622 * e_sat_2m / (p_surf - e_sat_2m)
-      elseif(do_simple) then
-         q_sat_2m   = d622 * e_sat_2m / p_surf
+        if(use_mixing_ratio) then
+           ! surface mixing ratio at saturation
+           q_sat_2m   = d622 * e_sat_2m / (p_surf - e_sat_2m)
+        elseif(do_simple) then
+           q_sat_2m   = d622 * e_sat_2m / p_surf
+        else
+           ! surface specific humidity at saturation
+           q_sat_2m   = d622 * e_sat_2m / (p_surf - d378*e_sat)
+        endif
+
+        ! ------- reference relative humidity -----------
+        where (avail) &
+           rh_2m = q_2m / q_sat_2m
       else
-         ! surface specific humidity at saturation
-         q_sat_2m   = d622 * e_sat_2m / (p_surf - d378*e_sat)
+        rh_2m = 0.
       endif
-
-      ! ------- reference relative humidity -----------
-      where (avail) &
-         rh_2m = q_2m / q_sat_2m
 
 
   ! override with ocean fluxes from NCAR calculation
@@ -949,7 +977,7 @@ subroutine surface_flux_init
   ! read namelist
 #ifdef INTERNAL_FILE_NML
       read (input_nml_file, surface_flux_nml, iostat=io)
-     ierr = check_nml_error(io, 'surface_flux_nml')      
+     ierr = check_nml_error(io, 'surface_flux_nml')
 #else
   if ( file_exist('input.nml')) then
      unit = open_namelist_file ()
@@ -1130,6 +1158,44 @@ dt_tg(:,:,num_levels) = dt_tg(:,:,num_levels)                          &
 
 
 end subroutine gp_surface_flux
+
+subroutine newt_relax_surface_flux (bottom_level_atm_temp, dt_sphum, sphum, p_surf, num_levels, delta_t, is, ie, js, je)
+
+real   , intent(inout), dimension(:,:,:) :: dt_sphum
+real   , intent(in), dimension(:,:,:) :: sphum
+real   , intent(in), dimension(:,:) :: bottom_level_atm_temp, p_surf
+integer   , intent(in) :: num_levels, is, ie, js, je
+real, intent(in) :: delta_t
+
+real, dimension(size(sphum,1), size(sphum,2)) :: e_sat, q_sat, sphum_target
+real :: delta_t_relax_use
+
+  if (do_init) call surface_flux_init
+
+
+    if(delta_t_relax .lt. 0.) then
+        delta_t_relax_use  = delta_t
+    else
+        delta_t_relax_use = delta_t_relax
+    endif
+
+          call escomp ( bottom_level_atm_temp, e_sat  )  ! saturation vapor pressure
+
+          if(use_mixing_ratio) then
+            ! surface mixing ratio at saturation
+            q_sat   = d622*e_sat /(p_surf-e_sat )
+          elseif(do_simple) then                  !rif:(09/02/09)
+            q_sat   = d622*e_sat / p_surf
+          else
+            ! surface specific humidity at saturation
+            q_sat   = d622*e_sat /(p_surf-d378*e_sat )
+          endif
+
+          sphum_target = (rh_target/100.) * q_sat
+
+          dt_sphum(:,:,num_levels) = dt_sphum(:,:,num_levels) + (sphum_target - sphum(:,:,num_levels))/(delta_t_relax_use)
+
+end subroutine newt_relax_surface_flux
 
 
 end module surface_flux_mod

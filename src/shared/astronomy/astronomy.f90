@@ -161,7 +161,7 @@ integer :: num_angles = 3600 ! number of intervals into which the year
                              ! is divided to compute orbital positions
 
 logical :: use_mean_anom_in_rrsun_calc = .TRUE. !It appears the standard astronomy module uses the mean anomaly for calculating the orbital distances on eccentric orbits, rather than the true anomaly. Keeping this behaviour default for legacy, but .FALSE. seems more correct.
-logical :: use_old_r_inv_squared = .TRUE. !Also defaulting to the old r_inv_squared calculation for legacy reasons. 
+logical :: use_old_r_inv_squared = .TRUE. !Also defaulting to the old r_inv_squared calculation for legacy reasons.
 
 namelist /astronomy_nml/ ecc, obliq, per, period, &
                          year_ae, month_ae,  day_ae,         &
@@ -1192,7 +1192,7 @@ real,                 intent(out), optional :: true_anom, dec_out, ang_out
       dec = declination(ang)
 
       if (present(ang_out)) ang_out = ang
-      if (present(dec_out)) dec_out = dec      
+      if (present(dec_out)) dec_out = dec
 
       if (use_old_r_inv_squared) then
           rrsun = r_inv_squared(ang)
@@ -1475,7 +1475,7 @@ end subroutine diurnal_solar_2d
 !
 subroutine diurnal_solar_1d (lat, lon, gmt, time_since_ae, cosz, &
                              fracday, rrsun, dt, allow_negative_cosz, &
-                             half_day_out)
+                             half_day_out, true_anom, dec, ang)
 
 !--------------------------------------------------------------------
 !    diurnal_solar_1d takes 1-d input fields, adds a second dimension
@@ -1491,6 +1491,7 @@ real,                intent(out)          :: rrsun
 real,                intent(in), optional :: dt
 logical,             intent(in), optional :: allow_negative_cosz
 real, dimension(:),  intent(out), optional :: half_day_out
+real,                intent(out), optional :: true_anom, dec, ang
 
 !---------------------------------------------------------------------
 !  local variables
@@ -1509,9 +1510,10 @@ real, dimension(:),  intent(out), optional :: half_day_out
 !--------------------------------------------------------------------
 !     if (present(dt)) then
         call diurnal_solar_2d (lat_2d, lon_2d, gmt, time_since_ae,&
-                               cosz_2d, fracday_2d, rrsun, dt=dt, &
-                               allow_negative_cosz=allow_negative_cosz, &
-                               half_day_out=halfday_2d)
+                               cosz_2d, fracday_2d, rrsun, dt, &
+                               allow_negative_cosz, &
+                               halfday_2d, &
+                               true_anom, dec, ang)
 !     else
 !       call diurnal_solar_2d (lat_2d, lon_2d, gmt, time_since_ae, &
 !                              cosz_2d, fracday_2d, rrsun)
@@ -1580,7 +1582,7 @@ end subroutine diurnal_solar_1d
 !
 subroutine diurnal_solar_0d (lat, lon, gmt, time_since_ae, cosz,  &
                              fracday, rrsun, dt, allow_negative_cosz, &
-                             half_day_out)
+                             half_day_out, true_anom, dec, ang)
 
 !--------------------------------------------------------------------
 !    diurnal_solar_0d takes scalar input fields, makes them into 2d
@@ -1593,6 +1595,7 @@ real, intent(out)          :: cosz, fracday, rrsun
 real, intent(in), optional :: dt
 logical,intent(in), optional :: allow_negative_cosz
 real, intent(out), optional :: half_day_out
+real, intent(out), optional :: true_anom, dec, ang
 
 !--------------------------------------------------------------------
 !  local variables:
@@ -1610,9 +1613,10 @@ real, intent(out), optional :: half_day_out
 !--------------------------------------------------------------------
 !     if (present(dt)) then
         call diurnal_solar_2d (lat_2d, lon_2d, gmt, time_since_ae,  &
-                               cosz_2d, fracday_2d, rrsun, dt=dt, &
-                               allow_negative_cosz=allow_negative_cosz, &
-                               half_day_out=halfday_2d)
+                               cosz_2d, fracday_2d, rrsun, dt, &
+                               allow_negative_cosz, &
+                               halfday_2d, &
+                               true_anom, dec, ang)
 !     else
 !       call diurnal_solar_2d (lat_2d, lon_2d, gmt, time_since_ae, &
 !                              cosz_2d, fracday_2d, rrsun)

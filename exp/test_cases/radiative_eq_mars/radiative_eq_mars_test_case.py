@@ -181,6 +181,16 @@ exp.namelist = namelist = Namelist({
         'use_olr_from_t_surf':True,
         'equinox_day': 0.,
         'use_gfdl_astronomy':True,
+        # trflux/trsink default to a nonzero surface flux/sink meant for an
+        # optional generic tracer, but hs_forcing applies them to every tracer
+        # it's passed - including sphum - unless the field_table registers a
+        # 'tracer_sms' override for that tracer (the grey model's field_table
+        # doesn't for sphum). With do_newtonian_cooling_as_rad routing
+        # "radiation" through hs_forcing here, that default flux was silently
+        # adding moisture to this otherwise-dry setup every timestep. Zero it
+        # explicitly since this experiment has no optional tracer of its own.
+        'trflux': 0.,
+        'trsink': 0.,
     },
 
     'astronomy_nml': {

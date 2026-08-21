@@ -263,7 +263,7 @@ enddo
 if(idealized_moist_model) then
    call idealized_moist_phys_init(Time, Time_step, nhum, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, tg(:,:,num_levels,current))
 else
-   call hs_forcing_init(get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, rad_lat_2d)
+   call hs_forcing_init(get_axis_id(), Time, rad_lonb_2d, rad_latb_2d, rad_lat_2d, rad_lon_2d, dt_real)
 endif
 
 module_is_initialized = .true.
@@ -298,7 +298,7 @@ endif
 Time_next = Time + Time_step
 
 if(idealized_moist_model) then
-   call idealized_moist_phys(Time, p_half, p_full, z_half, z_full, ug, vg, psg, wg_full, tg, grid_tracers, &
+   call idealized_moist_phys(Time, Time_next, p_half, p_full, z_half, z_full, ug, vg, psg, wg_full, tg, grid_tracers, &
                              previous, current, dt_ug, dt_vg, dt_tg, dt_tracers)
 else
    call hs_forcing(1, ie-is+1, 1, je-js+1, delta_t, Time_next, rad_lon_2d, rad_lat_2d, &

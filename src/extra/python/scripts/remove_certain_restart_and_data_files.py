@@ -37,11 +37,11 @@ def create_exp_object(exp_name, data_directory=None):
 #         files_to_remove=list(range(0,max_num_files))
 
 #             #Then defines a list of the ones we want to KEEP
-#         files_to_keep  =list(range(0,max_num_files,interval)) 
+#         files_to_keep  =list(range(0,max_num_files,interval))
 
 #             #Then we remove the files we want to keep from the list of all files, giving a list of those we wish to remove
 #         for x in files_to_keep:
-#                files_to_remove.remove(x) 
+#                files_to_remove.remove(x)
 
 #             #Then we remove them.
 #         for entry in files_to_remove:
@@ -126,12 +126,12 @@ def keep_only_certain_daily_data_uninterp(exp_object, max_num_files, interval=No
 if __name__=="__main__":
 
     max_num_files_input = None
-    
+
     # exp_name_list = ['']
     exp_name_list = glob('/disca/share/sit204/data_isca_from_gv5/frierson_post_soc_fix_*/')
-    
-    
-    for exp_name_input in exp_name_list:    
+
+
+    for exp_name_input in exp_name_list:
         print('Percentage progress through list:'+str(exp_name_list.index(exp_name_input)/len(exp_name_list)))
         temp_obj = create_exp_object(exp_name_input, data_directory='/disca/share/sit204/data_from_isca_cpu/')
         # keep_only_certain_restart_files(temp_obj, max_num_files_input)
