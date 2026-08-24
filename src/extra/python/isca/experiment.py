@@ -27,6 +27,13 @@ class Experiment(Logger, EventEmitter):
     """A basic GFDL experiment"""
 
     RESOLUTIONS = {
+        'T213': {
+            'lon_max': 1024,
+            'lat_max': 320,
+            'num_fourier': 213,
+            'num_spherical': 214
+        },
+
         'T170': {
             'lon_max': 512,
             'lat_max': 256,
@@ -232,8 +239,15 @@ class Experiment(Logger, EventEmitter):
             sh.cp([filename, P(indir, os.path.split(filename)[1])])
 
         if multi_node:
-            mpirun_opts += ' -bootstrap pbsdsh -f $PBS_NODEFILE'
-
+            try:
+                nodefile = os.environ['PBS_NODEFILE']
+                mpirun_opts += f' -bootstrap pbsdsh -f {nodefile}'
+            except:
+                nodefile = os.environ['GFDL_JOB_NODEFILE']
+                mpirun_opts += f' -bootstrap slurm -f {nodefile}'
+           
+            self.log.info(f'using nodefile {nodefile}, mpirun_opts = {mpirun_opts}')
+            
         if use_restart and not restart_file and i == 1:
             # no restart file specified, but we are at first run number
             self.log.warn('use_restart=True, but restart_file not specified.  As this is run 1, assuming spin-up from namelist stated initial conditions so continuing.')
@@ -397,4 +411,3 @@ class Experiment(Logger, EventEmitter):
 # class RunSpec(Logger):
 #     def __init__(self, exp):
 #         self.exp = exp
-

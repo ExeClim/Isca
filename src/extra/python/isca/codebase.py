@@ -119,7 +119,9 @@ class CodeBase(Logger):
 
         # read path names from the default file
         self.path_names = []
+        self.path_names_to_append = [] #Adding option so that individual path names can be appended to existing lists
         self.compile_flags = []  # users can append to this to add additional compiler options
+        self.precision_compile_flags = ['-DOVERLOAD_C8'] #Default is to use double precision. User can change to single precision using cb.use_single_precision() before compile step 
 
     @property
     def code_is_available(self):
@@ -255,11 +257,13 @@ class CodeBase(Logger):
         #     compile_flags.append('-O%d' % optimisation)
 
         compile_flags.extend(self.compile_flags)
+        compile_flags.extend(self.precision_compile_flags)
         compile_flags_str = ' '.join(compile_flags)
 
         # get path_names from the directory
         if not self.path_names:
             self.path_names = self.read_path_names(P(self.srcdir, 'extra', 'model', self.name, 'path_names'))
+        self.path_names.extend(self.path_names_to_append)
         self.write_path_names(self.path_names)
         path_names_str = P(self.builddir, 'path_names')
 
@@ -281,6 +285,20 @@ class CodeBase(Logger):
             self._log_line(line)
 
         self.log.info('Compilation complete.')
+
+    def enable_fftw3(self):
+        self.log.info('Going to use the FFTW3 options to run the spectral core')
+        self.compile_flags.append('-DFFTW3')
+        self.path_names_to_append.append('shared/fft/fftw.F90')    
+        self.executable_name = self.executable_name.strip('.x')+'_fftw.x'     
+        self.builddir = P(self.workdir, 'build', self.executable_name.split('.')[0])
+
+    def use_single_precision(self):
+        self.log.info('Going to use single_precision')
+        self.precision_compile_flags = ['-DOVERLOAD_C4', '-DOVERLOAD_R4']
+        self.executable_name = self.executable_name.strip('.x')+'_single.x'
+        self.builddir = P(self.workdir, 'build', self.executable_name.split('.')[0])
+
 
 
 
@@ -341,12 +359,18 @@ class SocratesCodeBase(CodeBase):
             elif GFDL_SOC is None:
                 error_mesg = 'Socrates code is required for SocratesCodebase, but source code is not provided in location GFDL_SOC='+ str(GFDL_SOC)
                 self.log.error(error_mesg)
-                raise OSError(error_mesg)
+                raise OSError(error_mesg)       
+
+    def run_socrates_single_precision(self):
+        self.compile_flags.append('-DSOC_SINGLE_PRECISION')
+        self.log.info('Socrates running with single precision')
+        self.executable_name = self.executable_name.strip('.x')+'_soc_single.x'
+        self.builddir = P(self.workdir, 'build', self.executable_name.split('.')[0])                
 
     def __init__(self, *args, **kwargs):
         super(SocratesCodeBase, self).__init__(*args, **kwargs)
         self.disable_rrtm()
-        self.simlink_to_soc_code()
+        self.simlink_to_soc_code() 
 
 class SocColumnCodeBase(CodeBase):
     """Isca without RRTM but with the Met Office radiation scheme, Socrates. THIS VERSION FOR SINGLE COLUMN USE. 
@@ -462,7 +486,11 @@ class DryCodeBase(GreyCodeBase):
     name = 'dry'
     executable_name = 'held_suarez.x'
 
-
+class DryCodeBaseFFTW(GreyCodeBase):
+    """The Held-Suarez model using FFTW
+    """
+    name = 'dry_fftw'
+    executable_name = 'held_suarez.x'
 
 class ShallowCodeBase(CodeBase):
     """The Shallow Water Equations.

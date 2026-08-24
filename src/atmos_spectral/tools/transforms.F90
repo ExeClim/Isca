@@ -27,7 +27,7 @@ use mpp_mod, only: input_nml_file
 use fms_mod, only: open_namelist_file
 #endif
 
-use fms_mod, only: mpp_pe, mpp_root_pe, error_mesg, FATAL, write_version_number, stdlog, close_file, check_nml_error
+use fms_mod, only: mpp_pe, mpp_root_pe, error_mesg, FATAL, write_version_number, stdlog, close_file, check_nml_error, open_namelist_file
 
 use mpp_mod, only: mpp_chksum, mpp_error, mpp_npes, mpp_sum, mpp_sync, mpp_sync_self, mpp_transmit
 
@@ -79,7 +79,7 @@ use grid_fourier_mod, only: grid_fourier_init, grid_fourier_end, trans_grid_to_f
 !---------------------------------------------------------------------------
 
 implicit none
-private
+! private
 
 interface trans_spherical_to_grid
    module procedure trans_spherical_to_grid_3d,  &
@@ -246,8 +246,10 @@ integer :: i, j
 if(module_is_initialized) return
 
 #ifdef INTERNAL_FILE_NML
-    read (input_nml_file, nml=transforms_nml, iostat=io)
-    ierr = check_nml_error(io, 'transforms_nml')
+    namelist_unit = open_namelist_file()
+    read (namelist_unit, transforms_nml, iostat=io)
+    call close_file(namelist_unit)
+    ierr = check_nml_error(io,'transforms_nml')
 #else
     namelist_unit = open_namelist_file()
     ierr=1
@@ -301,7 +303,7 @@ call get_spec_domain(ms, me, ns, ne)
    
 ! initialize spherical_fourier (which initializes spherical)
 call spherical_fourier_init(radius, lat_max, num_fourier, fourier_inc, num_spherical, &
-                            south_to_north=south_to_north_local, make_symmetric=make_symmetric_local)   
+                            south_to_north=south_to_north_local, make_symmetric=make_symmetric_local)  
 
 trunc_fourier = num_fourier
 
@@ -376,12 +378,13 @@ return
 end subroutine reset_num_lon_in_transform
 
 !--------------------------------------------------------------------------
- subroutine trans_spherical_to_grid_3d(spherical, grid)
+ subroutine trans_spherical_to_grid_3d(spherical, grid, block)
 !--------------------------------------------------------------------------
 
 complex, intent (in), dimension (ms:,ns:,:) :: spherical
 real, intent(out), dimension (is:,:,:) :: grid
 real, dimension(num_lon,size(grid,2),size(grid,3)) :: grid_xglobal
+logical, intent(in), optional :: block
 
 integer(kind=kind(spherical)) :: c1, c2, c3
 
@@ -390,6 +393,11 @@ complex, dimension (ms:me, je-js+1, size(grid,3), grid_layout(2)) :: fourier_s
 logical :: grid_x_is_global, spectral_y_is_global
 type(domain1D) :: spectral_domain_y
 integer, allocatable :: pelist(:)
+logical :: block_comm = .true.
+
+if(PRESENT(block)) then 
+  block_comm = block
+endif
 
 if(.not.module_is_initialized) then
   call error_mesg('trans_spherical_to_grid','transforms module is not initialized', FATAL)
@@ -410,6 +418,8 @@ if( size(spherical,2).ne.ne-ns+1 )&
 if( size(spherical,3).ne.size(grid,3) )&
      call mpp_error( FATAL, 'TRANS_SPHERICAL_TO_GRID: size(spherical,3).ne.size(grid,3.' )
 
+
+
 call trans_spherical_to_fourier( spherical, fourier_s )
 call mpp_get_compute_domain( spectral_domain, y_is_global=spectral_y_is_global )
 if( .NOT.spectral_y_is_global )then
@@ -419,7 +429,7 @@ if( .NOT.spectral_y_is_global )then
     call mpp_sum( fourier_s          , size(fourier_s(:,:,:,:)), pelist )
 end if
 
-call reverse_transpose_fourier( fourier_s, fourier_g )
+call reverse_transpose_fourier( fourier_s, fourier_g, block=block_comm )
 
 fourier_g(trunc_fourier+1:num_lon/2,:,:) = cmplx(0.,0.)
 call mpp_get_compute_domain( grid_domain, x_is_global=grid_x_is_global )
@@ -442,17 +452,23 @@ return
 end subroutine trans_spherical_to_grid_3d
 
 !--------------------------------------------------------------------------
- subroutine trans_spherical_to_grid_2d(spherical, grid)
+ subroutine trans_spherical_to_grid_2d(spherical, grid, block)
 !--------------------------------------------------------------------------
 
 complex, intent (in), dimension (:,:)  ::  spherical
 real, intent(out), dimension (:,:) :: grid
+logical, optional :: block
 
 real, dimension (size(grid,1), size(grid,2), 1) :: grid_3d
 complex, dimension(size(spherical,1), size(spherical,2), 1) :: spherical_3d
+logical :: block_comm = .true.
+
+if(PRESENT(block)) then 
+  block_comm = block
+endif
 
 spherical_3d(:,:,1) = spherical(:,:)
-call trans_spherical_to_grid_3d(spherical_3d, grid_3d)
+call trans_spherical_to_grid_3d(spherical_3d, grid_3d, block_comm)
 grid(:,:) = grid_3d(:,:,1)
 
 return
@@ -472,7 +488,6 @@ complex, dimension (0:num_lon/2,          js:je, size(grid,3)) :: fourier_g
 complex, dimension (ms:me, je-js+1, size(grid,3), grid_layout(2)) :: fourier_s
 
 integer(kind=kind(spherical)) :: c1, c2, c3
-
 if(.not.module_is_initialized) then
   call error_mesg('trans_grid_to_spherical','transforms module is not initialized', FATAL)
 end if
@@ -967,14 +982,24 @@ subroutine get_grid_boundaries(lon_boundaries, lat_boundaries,global)
 end subroutine get_grid_boundaries
 
 !-------------------------------------------------------------------------
-subroutine reverse_transpose_fourier( fourier_s, fourier_g )
+subroutine reverse_transpose_fourier( fourier_s, fourier_g , block)
 !-------------------------------------------------------------------------
   complex, intent(in)  :: fourier_s(:,:,:,0:)
   complex, intent(out) :: fourier_g(0:,:,:)
+  logical, optional, intent(in) :: block
   complex, dimension(xmaxsize*ymaxsize*size(fourier_s,3)) :: get_data
   integer :: i,j,k, jj, jp, jm, pp, pm, nput, nget, jpos
   type(domain1D) :: spectral_domain_x, grid_domain_y
   integer, dimension(0:grid_layout(2)-1) :: pelist, ygridsize, xspecsize, xsbegin, xsend
+  real :: start_time = 0.0, stop_time = 0.0
+
+  logical :: block_comm = .true.
+
+  if(PRESENT(block)) then 
+    block_comm = block
+  endif
+
+
 
   if(.not.module_is_initialized) then
     call error_mesg('reverse_transpose_fourier','transforms module is not initialized', FATAL)
@@ -987,15 +1012,17 @@ subroutine reverse_transpose_fourier( fourier_s, fourier_g )
   call mpp_get_compute_domains( spectral_domain_x, xsbegin, xsend, xspecsize )
   nput = size(fourier_s,1)*size(fourier_s,2)*size(fourier_s,3)
   fourier_g(ms:me,:,:) = fourier_s(:,:,:,jpos)
+
   do jj = 1,grid_layout(2)-1
      jp = mod(jpos+jj,grid_layout(2))
      jm = mod(jpos-jj+grid_layout(2),grid_layout(2))
      pp = pelist(jp)
      pm = pelist(jm)
+
      nget = xspecsize(jm)*ygridsize(jm)*size(fourier_s,3)
      ! Force use of "scalar", integer pointer mpp interface
      call mpp_transmit( put_data=fourier_s(1,1,1,jp), plen=nput, to_pe=pp, &
-                        get_data=get_data(1), glen=nget, from_pe=pm )
+                        get_data=get_data(1), glen=nget, from_pe=pm,block=block_comm)
      nget = 0
      do k = 1,size(fourier_g,3)
         do j = 1,size(fourier_g,2)
@@ -1006,6 +1033,7 @@ subroutine reverse_transpose_fourier( fourier_s, fourier_g )
         end do
      end do
   end do
+ 
   call mpp_sync()
   return
 end subroutine reverse_transpose_fourier

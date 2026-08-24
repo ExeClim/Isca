@@ -1,0 +1,10 @@
+
+"TRACER", "atmos_mod", "sphum"
+          "longname",  "specific humidity"
+          "units",     "kg/kg"
+          "numerical_representation", "grid"
+	  "hole_filling",             "off"
+          "advect_vert",              "finite_volume_parabolic"
+          "robert_filter",            "on"
+          "profile_type", "fixed",   "surface_value=0.0" /
+
