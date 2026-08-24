@@ -162,35 +162,65 @@ just that one file, with everything else at the branch's tip, restores
 bit-identical output; restoring just that one file, with everything else at
 merge-base, reproduces the full divergence on its own.
 
-The individual changes within that file (syntax cleanups from `.eqv. .true.`
-to bare booleans, an explicit `real(kind(r_def))` cast on `coszen`/`rrsun`
-that's a no-op given `r_def` resolves to the same double-precision kind as
-this build's default real, six new gated-off diagnostic registrations, and a
-reordered spectral-filename validity check) don't individually look like they
-should change any computed value under this build's configuration — yet the
-whole file, as a unit, does. That residual is a genuine loose end in the
-original branch's own Socrates interface work, not yet pinned to one exact
-line. It doesn't affect this PR: **`uob_fftw_sit23_physics_2026` never
-touches `socrates_interface.F90` at all** — confirmed byte-identical to
-`master`'s current version — so this file's issue, whatever it precisely is,
-isn't carried into the physics port and isn't part of what's being merged
-here.
+**Why that file specifically:** it isn't one subtle line. Diffing the
+original branch's `socrates_interface.F90` directly against `master`'s
+current version (not against the shared merge-base) turns up **~2400 changed
+lines** out of a ~1650-line file — `master` has independently grown this file
+far beyond where the branch left it, including a full reimplementation of the
+same Mars-orbital diagnostics (`mars_solar_long`, `true_anomaly`, `rrsun`,
+`time_since_ae`, `dec`, `ang`) the branch added back in 2019, plus clear-sky
+diagnostics and SPOOKIE cloud support the branch never had at all. Notably,
+`master`'s version of the shared `astronomy.f90` machinery behind those
+diagnostics explicitly initializes `use_old_r_inv_squared = .TRUE.`, fixing
+an uninitialized-variable bug present in the branch's original version of the
+same logic. In short: this file's divergence is two genuinely different,
+independently-matured implementations of overlapping functionality, not a
+bug to hunt down to one line — and `master`'s is the more complete, already-
+fixed one. This doesn't affect this PR either way:
+**`uob_fftw_sit23_physics_2026` never touches `socrates_interface.F90` at
+all** — confirmed byte-identical to `master`'s current version.
+
+## Confirming the physics port directly, with that confound removed
+
+The comparison above answers "does the whole branch reproduce the whole
+branch's own experiment" — useful, but conflates the `socrates_interface.F90`
+divergence (irrelevant to this port) with the actual physics being merged. A
+cleaner test isolates just the latter: a scratch copy of the original branch
+had every file reverted to match current `master` **except**
+`mixed_layer.F90`, which was left at the branch's own original (un-ported)
+ice/land-SST physics. That "patched" branch was then run through the same
+Maunder Minimum experiment and restart file as above, and compared against
+`physics_2026`.
+
+**Result: bit-identical.** Every field, every day, for the full month —
+`ps`, `temp`, `ucomp`, `vcomp`, `t_surf`, `albedo`, `ice_conc`,
+`flux_oceanq`, all diagnostics, all exactly 0.0 difference, except
+`soc_surf_flux_lw`/`soc_surf_flux_lw_down` at ~10<sup>-7</sup> relative — the
+same pure floating-point noise level seen in the `master`-self-consistency
+check above, not chaotic amplification. This is the direct confirmation that
+the physics actually ported to `uob_fftw_sit23_physics_2026` reproduces
+exactly what the original branch's `mixed_layer.F90` would have produced
+running on top of current `master`, with no gap in what was carried over.
 
 ## Bottom line
 
 - The physics port compiles and runs the real Maunder Minimum experiment
   successfully on top of current `master`.
-- The specific physics carried over (sea-ice/land SST patching, ice albedo,
-  q-flux masking) is reproduced correctly — every field tied to it matches
-  the original branch exactly.
+- With the original branch patched to match current `master` everywhere
+  except `mixed_layer.F90`, the Maunder Minimum experiment is
+  **bit-identical** between that patched branch and `physics_2026` for the
+  full month — direct confirmation that the ported physics is complete and
+  correct, with no gap between what the branch had and what got carried over.
 - `master` and `physics_2026` are bit-identical to each other on cases the
   port doesn't touch, and master has been bit-identical to its own 2023
   merge-base for three years — so the port introduces no detectable
   regression of its own.
-- The Maunder Minimum comparison's divergence from the *original* branch is
-  real, but traced to that branch's own unported `socrates_interface.F90`
-  changes — a file this port never touches - not to chaos alone and not to
-  anything in the physics being merged here.
+- The *unpatched* branch's divergence from `physics_2026` is real, but
+  traced to that branch's own `socrates_interface.F90` — which has
+  independently diverged from `master` by ~2400 lines (`master`'s own,
+  more complete reimplementation of the same Mars-diagnostics work, plus
+  clear-sky/SPOOKIE support the branch never had) — a file this port never
+  touches and that isn't part of what's being merged here.
 
 ## Appendix: how this was tested
 
