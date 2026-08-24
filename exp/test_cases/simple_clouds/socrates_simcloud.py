@@ -247,6 +247,7 @@ exp.namelist = Namelist({
         'specify_sst_over_ocean_only': True,    # Make sure sst only specified in regions of ocean.
         # Copy from realistic_continents namelist
         'update_albedo_from_ice': True,         # Use the simple ice model to update surface albedo
+        'update_land_mask_from_ice': True,      # Keep pre-existing behaviour: land_ice_mask includes ice-covered cells
         'ice_albedo_value': 0.7,                # What value of albedo to use in regions of ice
         #'ice_concentration_threshold': 0.5,    # ice concentration threshold above which to make albedo equal to ice_albedo_value       
         'ice_albedo_method': 'ramp_function', 

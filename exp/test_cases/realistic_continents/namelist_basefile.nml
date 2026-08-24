@@ -58,6 +58,7 @@
     albedo_value = 0.25,                !Ocean albedo value
     land_albedo_prefactor = 1.3,        !What factor to multiply ocean albedo by over land    
     update_albedo_from_ice = .true.,    !Use the simple ice model to update surface albedo
+    update_land_mask_from_ice = .true., !Keep pre-existing behaviour: land_ice_mask includes ice-covered cells
     ice_albedo_value = 0.7,             !What value of albedo to use in regions of ice
     ice_concentration_threshold = 0.5/ !ice concentration threshold above which to make albedo equal to ice_albedo_value        
 
