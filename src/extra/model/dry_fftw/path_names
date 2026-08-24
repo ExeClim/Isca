@@ -8,6 +8,12 @@ atmos_param/qe_moist_convection/qe_moist_convection.F90
 atmos_param/betts_miller/betts_miller.f90
 atmos_param/sea_esf_rad/null/rad_utilities.F90
 atmos_param/shallow_conv/shallow_conv.F90
+atmos_param/cloud_simple/cloud_simple.F90
+atmos_param/cloud_simple/lcl.F90
+atmos_param/cloud_simple/large_scale_cloud.F90  
+atmos_param/cloud_simple/marine_strat_cloud.F90
+atmos_param/cloud_simple/cloud_cover_diags.F90
+atmos_param/cloud_simple/cloud_spookie.F90
 atmos_param/stable_bl_turb/stable_bl_turb.F90
 atmos_param/strat_cloud/null/strat_cloud.F90
 atmos_param/two_stream_gray_rad/two_stream_gray_rad.F90
@@ -15,6 +21,7 @@ atmos_param/qflux/qflux.f90
 atmos_param/monin_obukhov/monin_obukhov_interfaces.h
 atmos_param/monin_obukhov/monin_obukhov_kernel.F90
 atmos_param/monin_obukhov/monin_obukhov.F90
+atmos_param/frierson_monin_obukhov/frierson_monin_obukhov.F90
 atmos_param/dry_convection/dry_convection.f90
 atmos_param/rayleigh_bottom_drag/rayleigh_bottom_drag.F90
 atmos_param/damping_driver/damping_driver.f90
@@ -66,7 +73,6 @@ shared/diag_manager/diag_manager.F90
 shared/diag_manager/diag_output.F90
 shared/diag_manager/diag_table.F90
 shared/diag_manager/diag_util.F90
-shared/fft/fftw.F90
 shared/fft/fft99.F90
 shared/fft/fft.F90
 shared/field_manager/field_manager.F90
@@ -197,3 +203,4 @@ shared/topography/gaussian_topog.F90
 shared/topography/topography.F90
 shared/tracer_manager/tracer_manager.F90
 shared/tridiagonal/tridiagonal.F90
+shared/fft/fftw.F90
