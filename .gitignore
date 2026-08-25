@@ -17,6 +17,7 @@ spin_up_restart/
 src/extra/python/scripts/*.nc
 src/extra/python/scripts/archived/
 exp/test_cases/frierson_dry_heating/input/*.nc
+exp/test_cases/polvani_kushner/input/*.nc
 *.sh.*
 src/atmos_param/socrates/src/trunk*
 
