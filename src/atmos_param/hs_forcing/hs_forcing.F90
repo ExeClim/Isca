@@ -118,6 +118,9 @@ private
    real :: z_ozone = 20.0
    logical :: strat_vtx = .true.
 
+   real :: A = 0., B = 0. ! Jet latitude control amplitude terms (Garfinkel et al. 2013), default off
+   character(len=256) :: P_opt = 'Option1' ! Jet latitude control phase option, 'Option1' or 'Option2'
+
    logical :: sponge_flag = .false. !flag for sponge at top of model
    real :: sponge_pbottom = 5.e1    !bottom of sponge layer, where damping is zero (Pa)
    real :: sponge_tau_days  = 0.5   !damping time scale for the sponge (days)
@@ -143,6 +146,7 @@ private
                               heat_capacity, ml_depth, spinup_time, stratosphere_t_option, &
                               equinox_day, P00, &
                               vtx_edge, vtx_width, vtx_gamma, t_min, z_ozone, strat_vtx, &
+                              A, B, P_opt, &
                               sponge_flag,sponge_pbottom,sponge_tau_days, &
                               polar_heating_srfamp,    & 
                               polar_heating_sigcenter,polar_heating_latwidth,& 
@@ -613,7 +617,8 @@ real, intent(in),  dimension(:,:,:), optional :: mask
           real, dimension(size(t,1),size(t,2)) :: &
      sin_lat, cos_lat, sin_lat_2, cos_lat_2, t_star, cos_lat_4, &
      tstr, sigma, the, tfactr, rps, p_norm, sin_sublon_2, coszen, fracday, &
-     w_vtx, t_hs, z_vortex, z_offset, z_norm, t_pk, t_summer, t_winter
+     w_vtx, t_hs, z_vortex, z_offset, z_norm, t_pk, t_summer, t_winter, &
+     A_term, exp_term, B_term, P_term, jet_fix
 
        real, dimension(size(t,1),size(t,2),size(t,3)) :: tdamp
        real, dimension(size(t,2),size(t,3)) :: tz
@@ -631,10 +636,23 @@ real, intent(in),  dimension(:,:,:), optional :: mask
       cos_lat_2(:,:) = 1.0-sin_lat_2(:,:)
       cos_lat_4(:,:) = cos_lat_2(:,:)*cos_lat_2(:,:)
 
-      t_star(:,:) = t_zero - delh*sin_lat_2(:,:) - eps*sin_lat(:,:)
+!-----------------------------------------------------------------------
+!------------control jet latitude (Garfinkel et al. 2013)---------------
+
+      A_term(:,:) = A * cos( 2 * ( lat(:,:) - (pi/4) ) )
+      exp_term(:,:) = exp( - ( ( lat(:,:) - ( 50. * pi/180 ) )**2 ) / ( 2 * ( 15. * pi/180 )**2 ) ) + exp( - ( ( lat(:,:) + ( 50. * pi/180 ) )**2 ) / ( 2 * ( 15. * pi/180 ) **2 ) )
+      B_term(:,:) = B * cos( 2 * ( lat(:,:) - (pi/4) ) ) * sin( 3 * ( lat(:,:) - (pi/3) ) ) * exp_term(:,:)
+      if(trim(P_opt) .eq. 'Option1') then
+         P_term(:,:) = sin( 4 * ( lat(:,:) - (pi/4) ) )
+      else if(trim(P_opt) .eq. 'Option2') then
+         P_term(:,:) = sin( ( 4 * lat(:,:) ) - (pi/4) )
+      endif
+      jet_fix(:,:) = A_term(:,:) * P_term(:,:) + B_term(:,:)
+
+      t_star(:,:) = t_zero - delh*sin_lat_2(:,:) - eps*sin_lat(:,:) - jet_fix(:,:)
       tstr  (:,:) = t_strat - eps*sin_lat(:,:)
 
-      vtx_width_r   = vtx_width * pi / 180.0 
+      vtx_width_r   = vtx_width * pi / 180.0
       vtx_edge_r    = vtx_edge * pi / 180.0
 
 !-----------------------------------------------------------------------
