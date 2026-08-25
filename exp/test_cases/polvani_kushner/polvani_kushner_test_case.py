@@ -23,10 +23,8 @@ cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
 
-exp_name = 'polvani_kushner_qbo3'
+exp_name = 'polvani_kushner_default'
 exp = Experiment(exp_name, codebase=cb)
-
-exp.inputfiles = [os.path.join(GFDL_BASE,'input/land_masks/era_land_t42.nc')]
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -98,22 +96,20 @@ namelist = Namelist({
         # 'polar_heating_sigwidth': 0.1,
         # 'polar_heating_sigcenter': 1.,
         # 'local_heating_option': 'Polar'
-        'relax_to_qbo': True,
-        'qbo_amp': -20.
+        # relax_to_qbo left at its default (False): the original Polvani &
+        # Kushner (2002) setup has no QBO relaxation.
     },
-    
+
     # 'damping_driver_nml': {
     #     'do_rayleigh': True,
     #     'trayfric': -0.5,              # neg. value: time in *days*
     #     'sponge_pbottom':  50., #Bottom of the model's sponge down to 0.5hPa
-    #     'do_conserve_energy': True,    
+    #     'do_conserve_energy': True,
     # },
 
-    'spectral_init_cond_nml':{
-         'topog_file_name': 'era_land_t42.nc', #Name of land input file, which will also contain topography if generated using Isca's `land_file_generator_fn.py' routine.
-         'topography_option': 'input' #!Tell model to get topography from input file
-    },
-    
+    # spectral_init_cond_nml left at its default (topography_option='flat'):
+    # the original Polvani & Kushner (2002) setup has no topography/land.
+
     'diag_manager_nml': {
         'mix_snapshot_average_fields': False
     },
