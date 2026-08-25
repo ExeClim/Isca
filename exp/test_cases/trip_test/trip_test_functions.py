@@ -101,6 +101,23 @@ def get_nml_diag(test_case_name):
         nml_out = exp_temp.namelist
         codebase_to_use = IscaCodeBase
         
+    if 'polvani_kushner' in test_case_name:
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/polvani_kushner/'))
+        from polvani_kushner_test_case import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = IscaCodeBase
+
+    if 'polvani_kushner_polar_heating' in test_case_name:
+        # Note: 'polvani_kushner_polar_heating' also matches the 'polvani_kushner' check
+        # above - this block runs afterwards and overwrites nml_out/input_files/codebase_to_use,
+        # so it wins.
+        sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/polvani_kushner/'))
+        from polvani_kushner_polar_heating_test_case import exp as exp_temp
+        input_files = exp_temp.inputfiles
+        nml_out = exp_temp.namelist
+        codebase_to_use = IscaCodeBase
+
     if 'MiMA' in test_case_name:
         sys.path.insert(0, os.path.join(GFDL_BASE, 'exp/test_cases/MiMA/'))
         from MiMA_test_case import exp as exp_temp
@@ -195,8 +212,10 @@ def list_all_test_cases_implemented_in_trip_test():
                         'bucket_model', 
                         'frierson', 
                         'giant_planet', 
-                        'held_suarez', 
-                        'MiMA', 
+                        'held_suarez',
+                        'polvani_kushner',
+                        'polvani_kushner_polar_heating',
+                        'MiMA',
                         'realistic_continents_fixed_sst', 
                         'realistic_continents_variable_qflux', 
                         #'simple_clouds', 
