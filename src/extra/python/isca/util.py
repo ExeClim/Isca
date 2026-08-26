@@ -178,7 +178,26 @@ def interpolate_output(infile, outfile, all_fields=True, var_names=[], p_levs = 
 @contextmanager
 def edit_restart_archive(restart_archive, outfile='./res_edit.tar.gz', tmp_dir='./restart_edit'):
     with tarfile.open(restart_archive, 'r:gz') as tar:
-        tar.extractall(path=tmp_dir)
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(tar, path=tmp_dir)
         restart_files = [os.path.join(tmp_dir, x.split('/')[-1]) for x in  tar.getnames() if x != '.']
     try:
         yield {os.path.basename(f): f for f in restart_files}
