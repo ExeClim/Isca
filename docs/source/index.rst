@@ -128,6 +128,7 @@ Contents
    isca_structure
    modules/index.rst
    python
+   single_precision
    changelog
    contributing
    testing/index.rst
