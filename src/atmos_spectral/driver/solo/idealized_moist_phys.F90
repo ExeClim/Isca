@@ -7,7 +7,7 @@ module idealized_moist_phys_mod
 #endif
 
 use fms_mod, only: write_version_number, file_exist, close_file, stdlog, error_mesg, NOTE, &
-                   FATAL, WARNING, read_data, field_size, uppercase, mpp_pe, check_nml_error
+                   FATAL, WARNING, read_data, write_data, field_size, uppercase, mpp_pe, check_nml_error
 
 ! cp_air needed for rrtmg and pstd_mks needed for pref calculation
 use           constants_mod, only: grav, rdgas, rvgas, cp_air, PSTD_MKS, dens_h2o, dens_vapor 
@@ -505,6 +505,14 @@ allocate(rough_mom   (is:ie, js:je)); rough_mom = roughness_mom
 allocate(rough_heat  (is:ie, js:je)); rough_heat = roughness_heat
 allocate(rough_moist (is:ie, js:je)); rough_moist = roughness_moist
 allocate(gust        (is:ie, js:je)); gust = 1.0
+! gust, like pbltop below, is a one-timestep-lagged coupling variable: it is
+! consumed by surface_flux() before vert_turb_driver recomputes it each step
+! (see the "turb" block further down). Restore it from a restart if present so
+! a restarted leg does not reset the surface gustiness back to its cold-start
+! default of 1.0 for one spurious timestep.
+if (file_exist('INPUT/idealized_moist_phys.res.nc')) then
+   call read_data(trim('INPUT/idealized_moist_phys.res'), 'gust', gust, grid_domain)
+endif
 allocate(z_pbl       (is:ie, js:je))
 allocate(flux_t      (is:ie, js:je))
 allocate(flux_q      (is:ie, js:je))
@@ -580,6 +588,15 @@ allocate(q_ref (is:ie, js:je, num_levels)); q_ref = 0.0
 allocate (albedo      (is:ie, js:je)) ! allocate for albedo, to be set in mixed_layer_init.
 allocate(coszen       (is:ie, js:je)) ! allocate coszen to be set in run_rrtmg
 allocate(pbltop       (is:ie, js:je)) ! allocate coszen to be set in run_rrtmg
+pbltop = 0.0
+! pbltop is a one-timestep-lagged coupling variable fed from vert_turb_driver's
+! diagnosed PBL height into damping_driver's sponge calculation (see below). Without
+! restarting it, every restarted leg re-enters with pbltop reset to 0 instead of the
+! value a continuous run would have carried in memory, perturbing the sponge tendency
+! and causing restarted moist runs to diverge from an equivalent continuous run.
+if (file_exist('INPUT/idealized_moist_phys.res.nc')) then
+   call read_data(trim('INPUT/idealized_moist_phys.res'), 'pbltop', pbltop, grid_domain)
+endif
 
 allocate(pref(num_levels+1)) ! reference pressure profile, as in spectral_physics.f90 in FMS 2006 and original MiMA.
 allocate(p_half_1d(num_levels+1), ln_p_half_1d(num_levels+1))
@@ -1510,6 +1527,9 @@ endif
 end subroutine idealized_moist_phys
 !=================================================================================================================================
 subroutine idealized_moist_phys_end
+
+call write_data(trim('RESTART/idealized_moist_phys.res'), 'pbltop', pbltop, grid_domain)
+call write_data(trim('RESTART/idealized_moist_phys.res'), 'gust', gust, grid_domain)
 
 deallocate (dt_bucket, filt)
 if(two_stream_gray)      call two_stream_gray_rad_end
