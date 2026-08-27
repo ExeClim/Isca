@@ -1,0 +1,16 @@
+# template for the gfortran compiler, single precision
+# same as mkmf.template.ubuntu_conda, but without -fdefault-real-8/-fdefault-double-8,
+# so the compiler's default (4 byte) real is used - see cb.use_single_precision()
+CPPFLAGS = `nc-config --cflags`
+NC_INC=`nc-config --fflags`
+NC_LIB=`nc-config --flibs`
+
+FFLAGS = $(CPPFLAGS) $(NC_LIB) -cpp -fcray-pointer \
+	-O2 -ffree-line-length-none -fno-range-check \
+	-fallow-invalid-boz -fallow-argument-mismatch
+
+FC = $(F90)
+LD = $(F90)
+
+LDFLAGS = -lnetcdff -lnetcdf -lmpi
+CFLAGS = -D__IFC
