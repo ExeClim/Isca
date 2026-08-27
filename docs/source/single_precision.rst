@@ -48,6 +48,37 @@ a module you use, the fix is generally to change the hardcoded
 ``double precision``/``real*8`` declaration to plain ``real``, as was
 done for ``lcl.F90``.
 
+Does not work with Socrates (``SocratesCodeBase``)
+----------------------------------------------------
+
+``cb.use_single_precision()`` does **not** work with ``SocratesCodeBase``
+(and so cannot be used for any experiment that needs Socrates radiation,
+e.g. ``socrates_aquaplanet`` and similar test cases) - compilation fails
+outright:
+::
+    Error: There is no specific function for the generic 'send_data'
+    Error: Type mismatch in argument 'fms_coszen'; passed REAL(4) to REAL(8)
+    make: *** [Makefile:699: socrates_interface.o] Error 1
+
+Socrates defines its own internal real kind (``r_def``) throughout its
+radiative transfer code, independent of the rest of Isca. Ordinarily this
+is invisible - Isca's default build is double precision throughout, and
+``r_def`` is also double precision, so the two line up and nothing needs
+converting at the interface. ``use_single_precision()`` only changes the
+*rest* of Isca to single precision; it doesn't touch Socrates' own
+``r_def``, which stays double - so the interface between the two
+(``socrates_interface.F90``, which passes data back and forth in plain
+``real``) ends up mixing single- and double-precision reals in the same
+argument lists, which gfortran correctly refuses to compile.
+
+This is a real gap, not just an oversight in wiring up the option -
+fixing it would mean auditing ``socrates_interface.F90`` for every place
+it passes data across that boundary and converting explicitly, module by
+module. ``DryCodeBase``/``GreyCodeBase`` (which never compile Socrates in
+at all) and ``IscaCodeBase`` (which uses RRTM instead of Socrates by
+default) are unaffected - this limitation is specific to
+``SocratesCodeBase``.
+
 Does it change the default (double-precision) build?
 ------------------------------------------------------
 
