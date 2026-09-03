@@ -58,7 +58,7 @@ real, allocatable, dimension(:) :: pk, bk
 !real, allocatable, dimension(:) :: lat_boundaries_global, lon_boundaries_global
 
 real :: virtual_factor, dt_real
-integer :: pe, npes, num_tracers, nhum, step_number
+integer :: pe, npes, num_tracers, nhum,nhum_age,nhum_sink, step_number
 integer :: is, ie, js, je
 integer :: previous, current, future 
 
@@ -109,14 +109,16 @@ namelist /column_nml/ use_virtual_temperature, valid_range_t, &
 
 contains 
 
-subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhum_out)
+subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhum_out,nhum_out_age,nhum_out_sink)
 
     type(time_type), intent(in) :: Time, Time_step_in
     type(tracer_type), intent(inout), dimension(:) :: tracer_attributes
     logical, intent(out) :: dry_model_out
     integer, intent(out) :: nhum_out
+    integer, intent(out) :: nhum_out_age
+    integer, intent(out) :: nhum_out_sink    
 
-    integer :: unit, ierr, io, ntr, nsphum, nmix_rat, seconds, days 
+    integer :: unit, ierr, io, ntr, nsphum,nsphum_age,nsphum_sink, nmix_rat, seconds, days 
     !real :: del_lon, del_lat !!! NTL START HERE
     !real :: longitude_origin_local = 0.0
 
@@ -172,11 +174,15 @@ subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhu
       
     enddo
     nsphum   = get_tracer_index(MODEL_ATMOS, 'sphum')
+    nsphum_age   = get_tracer_index(MODEL_ATMOS, 'sphum_age')
+    nsphum_sink   = get_tracer_index(MODEL_ATMOS, 'sphum_sink')
     nmix_rat = get_tracer_index(MODEL_ATMOS, 'mix_rat')
       
     if(nsphum == NO_TRACER) then
         if(nmix_rat == NO_TRACER) then
           nhum = 0
+          nhum_age = 0
+          nhum_sink = 0
           dry_model = .true.
         else
           nhum = nmix_rat
@@ -185,6 +191,8 @@ subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhu
     else
         if(nmix_rat == NO_TRACER) then
           nhum = nsphum
+          nhum_age = nsphum_age
+          nhum_sink = nsphum_sink
           dry_model = .false.
         else
           call error_mesg('column_init','sphum and mix_rat cannot both be specified as tracers at the same time', FATAL)
@@ -192,6 +200,8 @@ subroutine column_init(Time, Time_step_in, tracer_attributes, dry_model_out, nhu
     endif
     dry_model_out = dry_model
     nhum_out = nhum
+    nhum_out_age = nhum_age
+    nhum_out_sink = nhum_sink
 
 
     call read_restart_or_do_coldstart(tracer_attributes)

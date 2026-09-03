@@ -731,7 +731,6 @@ endif
         dtaudv_atm = -cd_m*rho*(dw_atmdv*v_dif + w_atm)
      endwhere
   endif
-
 end subroutine surface_flux_1d
 ! </SUBROUTINE>
 

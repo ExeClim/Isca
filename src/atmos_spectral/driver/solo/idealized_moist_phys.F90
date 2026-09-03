@@ -38,6 +38,8 @@ use      dry_convection_mod, only: dry_convection_init, dry_convection
 
 use        diag_manager_mod, only: register_diag_field, send_data
 
+use age_moments_mod 
+
 #ifdef COLUMN_MODEL 
 use              column_mod, only: get_num_levels, get_surf_geopotential, get_axis_id
 use            spec_mpp_mod, only: get_grid_domain, grid_domain 
@@ -128,6 +130,9 @@ logical :: two_stream_gray = .true.
 logical :: do_rrtm_radiation = .false.
 logical :: do_socrates_radiation = .false.
 
+! WVRT option
+logical :: do_wv_age = .false.
+
 ! MiMA uses damping
 logical :: do_damping = .false.
 
@@ -147,6 +152,7 @@ character(len=256) :: land_option = 'none'
 character(len=256) :: land_file_name  = 'INPUT/land.nc'
 character(len=256) :: land_field_name = 'land_mask'
 
+
 ! Add bucket
 logical :: bucket = .false.
 integer :: future
@@ -164,8 +170,8 @@ logical :: do_local_heating = .false.
 !s end Adding localised heating option from Held-Suarez
 
 namelist / idealized_moist_phys_nml / turb, lwet_convection, do_bm, do_ras, roughness_heat,  &
-                                      do_cloud_simple, do_cloud_spookie,             &
-                                      two_stream_gray, do_rrtm_radiation, do_damping,&
+                                      do_wv_age, do_cloud_simple, do_cloud_spookie,             &
+                                      two_stream_gray, do_rrtm_radiation ,do_damping,&
                                       mixed_layer_bc, do_simple,                     &
                                       roughness_moist, roughness_mom, do_virtual,    &
                                       land_option, land_file_name, land_field_name,  & ! options for idealised land
@@ -186,6 +192,8 @@ real, allocatable, dimension(:,:)   ::                                        &
      z_surf,               &   ! surface height
      t_surf,               &   ! surface temperature
      q_surf,               &   ! surface moisture
+     dt_sink,             &
+     dq,             &
      u_surf,               &   ! surface U wind
      v_surf,               &   ! surface V wind
      rough_mom,            &   ! momentum roughness length for surface_flux
@@ -242,8 +250,10 @@ real, allocatable, dimension(:,:,:) ::                                        &
      non_diff_dt_vg,       &   ! merid. wind tendency except from vertical diffusion
      non_diff_dt_tg,       &   ! temperature tendency except from vertical diffusion
      non_diff_dt_qg,       &   ! moisture tendency except from vertical diffusion
+     non_diff_dt_age,       &   ! age-mass tendency except from vertical diffusion
      conv_dt_tg,           &   ! temperature tendency from convection
      conv_dt_qg,           &   ! moisture tendency from convection
+     sink,           &   ! negative moisture tendency from convection
      cond_dt_tg,           &   ! temperature tendency from condensation
      cond_dt_qg                ! moisture tendency from condensation
 
@@ -290,7 +300,11 @@ integer ::           &
      id_cond_rain,   &   ! rain from condensation
      id_precip,      &   ! rain and snow from condensation and convection
      id_conv_dt_tg,  &   ! temperature tendency from convection
-     id_conv_dt_qg,  &   ! temperature tendency from convection
+     id_conv_dt_qg,  &   ! moisture tendency from convection
+     id_sink,  &   ! negative moisture tendency
+     id_dt_tracer,  &   ! total tendency of age-mass
+     id_dt_tracer_diff,  &   ! diffusion tendency of age-mass
+     id_dt_q,  &   ! total moisture tendency
      id_cond_dt_tg,  &   ! temperature tendency from condensation
      id_cond_dt_qg,  &   ! temperature tendency from condensation
      id_bucket_depth,      &   ! bucket depth variable for output
@@ -333,7 +347,7 @@ real :: d378 = 0.
 
 logical :: used, doing_edt, doing_entrain, do_strat
 integer, dimension(4) :: axes
-integer :: is, ie, js, je, num_levels, nsphum, dt_integer
+integer :: is, ie, js, je, num_levels, nsphum,nsphum_age, dt_integer
 real :: dt_real
 type(time_type) :: Time_step
 
@@ -341,9 +355,10 @@ type(time_type) :: Time_step
 contains
 !=================================================================================================================================
 
-subroutine idealized_moist_phys_init(Time, Time_step_in, nhum, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init)
+subroutine idealized_moist_phys_init(Time, Time_step_in, nhum,n_age, rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init)
 type(time_type), intent(in) :: Time, Time_step_in
 integer, intent(in) :: nhum
+integer, intent(in) :: n_age
 real, intent(in), dimension(:,:) :: rad_lon_2d, rad_lat_2d, rad_lonb_2d, rad_latb_2d, t_surf_init
 
 integer :: io, ierr, nml_unit, stdlog_unit, seconds, days, id, jd, kd
@@ -479,6 +494,13 @@ if(do_lcl_diffusivity_depth .and. (.not. (lwet_convection .or. do_ras .or. do_bm
 
 
 nsphum = nhum
+
+if(do_wv_age) then
+  nsphum_age = n_age
+else
+  nsphum_age = 0
+endif
+
 Time_step = Time_step_in
 call get_time(Time_step, seconds, days)
 dt_integer   = 86400*days + seconds
@@ -500,6 +522,8 @@ allocate(z_surf      (is:ie, js:je))
 allocate(t_surf      (is:ie, js:je))
 allocate(q_surf      (is:ie, js:je)); q_surf = 0.0
 allocate(u_surf      (is:ie, js:je)); u_surf = 0.0
+allocate(dt_sink      (is:ie, js:je)); 
+allocate(dq      (is:ie, js:je)); 
 allocate(v_surf      (is:ie, js:je)); v_surf = 0.0
 allocate(rough_mom   (is:ie, js:je)); rough_mom = roughness_mom
 allocate(rough_heat  (is:ie, js:je)); rough_heat = roughness_heat
@@ -550,11 +574,14 @@ allocate(non_diff_dt_ug  (is:ie, js:je, num_levels))
 allocate(non_diff_dt_vg  (is:ie, js:je, num_levels))
 allocate(non_diff_dt_tg  (is:ie, js:je, num_levels))
 allocate(non_diff_dt_qg  (is:ie, js:je, num_levels))
+allocate(non_diff_dt_age  (is:ie, js:je, num_levels))
 
 allocate(net_surf_sw_down        (is:ie, js:je))
 allocate(surf_lw_down            (is:ie, js:je))
 allocate(conv_dt_tg  (is:ie, js:je, num_levels))
 allocate(conv_dt_qg  (is:ie, js:je, num_levels))
+allocate(sink  (is:ie, js:je, num_levels))
+
 allocate(cond_dt_tg  (is:ie, js:je, num_levels))
 allocate(cond_dt_qg  (is:ie, js:je, num_levels))
 
@@ -571,7 +598,6 @@ allocate(precip       (is:ie, js:je)); precip = 0.0
 allocate(convective_rain (is:ie, js:je)); convective_rain = 0.0
 allocate(convflag     (is:ie, js:je))
 allocate(convect      (is:ie, js:je)); convect = .false.
-
 
 
 allocate(t_ref (is:ie, js:je, num_levels)); t_ref = 0.0
@@ -812,6 +838,14 @@ end select
 !if(lwet_convection .or. do_bm) then
    id_conv_dt_qg = register_diag_field(mod_name, 'dt_qg_convection',          &
         axes(1:3), Time, 'Moisture tendency from convection','kg/kg/s')
+   id_sink = register_diag_field(mod_name, 'dt_sink',          &
+        axes(1:3), Time, '(sink) negative Moisture tendency from convection','kg/kg/s')
+   id_dt_tracer = register_diag_field(mod_name, 'dt_tracer',          &
+        axes(1:3), Time, 'tendency age-mass','kg/kg')
+   id_dt_tracer_diff = register_diag_field(mod_name, 'dt_tracer_diff',          &
+        axes(1:3), Time, 'tendency age-mass from diffusion','kg/kg')
+   id_dt_q = register_diag_field(mod_name, 'dt_q',          &
+        axes(1:3), Time, 'total moiture tendency','kg/kg/s')
    id_conv_dt_tg = register_diag_field(mod_name, 'dt_tg_convection',          &
         axes(1:3), Time, 'Temperature tendency from convection','K/s')
    id_conv_rain = register_diag_field(mod_name, 'convection_rain',            &
@@ -885,6 +919,8 @@ real, dimension(:,:,:),     intent(in)    :: psg, wg_full
 real, dimension(:,:,:,:,:), intent(in)    :: grid_tracers
 integer,                    intent(in)    :: previous, current
 real, dimension(:,:,:),     intent(inout) :: dt_ug, dt_vg, dt_tg
+
+! dt_tracers
 real, dimension(:,:,:,:),   intent(inout) :: dt_tracers
 
 real :: delta_t
@@ -899,8 +935,10 @@ integer, intent(in) , dimension(:,:),   optional :: kbot
 
 real, dimension(1,1,1):: tracer, tracertnd
 integer :: nql, nqi, nqa   ! tracer indices for stratiform clouds
+logical :: flag_test
 
-if(current == previous) then
+
+if(current == previous) then 
    delta_t = dt_real
 else
    delta_t = 2*dt_real
@@ -913,9 +951,14 @@ if (bucket) then
 endif
 
 
+! rain and convective rain and precip
 rain = 0.0; snow = 0.0; precip = 0.0; klcls = 0
 convective_rain = 0.0
 
+! set sink of WV to 0
+sink = 0.0
+dt_sink = 0.0
+dq = 0.0
 
 select case(r_conv_scheme)
 
@@ -932,14 +975,18 @@ case(SIMPLE_BETTS_CONV)
                   invtau_t_relaxation,                           t_ref,      &
                                 klcls)
 
+  
    tg_tmp = conv_dt_tg + tg(:,:,:,previous)
    qg_tmp = conv_dt_qg + grid_tracers(:,:,:,previous,nsphum)
-!  note the delta's are returned rather than the time derivatives
+
+   !  note the delta's are returned rather than the time derivatives
 
    conv_dt_tg = conv_dt_tg/delta_t
    conv_dt_qg = conv_dt_qg/delta_t
    depth_change_conv = rain/dens_vapor
    rain       = rain/delta_t
+
+   ! assign value of precip
    precip     = rain
 
    if(id_conv_dt_qg > 0) used = send_data(id_conv_dt_qg, conv_dt_qg, Time)
@@ -1029,6 +1076,10 @@ case default
 
 end select
 
+where (conv_dt_qg < 0.0)
+  sink = sink + conv_dt_qg
+end where   
+
 ! Add the T and q tendencies due to convection to the timestep
 dt_tg = dt_tg + conv_dt_tg
 dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + conv_dt_qg
@@ -1051,17 +1102,26 @@ if ( do_lscale_cond .eqv. .true.) then
   depth_change_cond = rain/dens_vapor 
   rain       = rain/delta_t
   snow       = snow/delta_t
+  ! update precip
   precip     = precip + rain + snow
 
+
+  where (cond_dt_qg < 0.0)
+    sink = sink + cond_dt_qg
+  end where 
+
+  ! Update Tracers and temperature
   dt_tg = dt_tg + cond_dt_tg
   dt_tracers(:,:,:,nsphum) = dt_tracers(:,:,:,nsphum) + cond_dt_qg
+
+
 
   if(id_cond_dt_qg > 0) used = send_data(id_cond_dt_qg, cond_dt_qg, Time)
   if(id_cond_dt_tg > 0) used = send_data(id_cond_dt_tg, cond_dt_tg, Time)
   if(id_cond_rain  > 0) used = send_data(id_cond_rain, rain, Time)
   if(id_precip     > 0) used = send_data(id_precip, precip, Time)
-
 endif
+!---------------------------------------------------------------------------------------
 
 ! Call the simple cloud scheme in line with SPOOKIE-2 requirements
 ! Using start of time step variables
@@ -1380,6 +1440,7 @@ if(turb) then
    non_diff_dt_vg  = dt_vg
    non_diff_dt_tg  = dt_tg
    non_diff_dt_qg  = dt_tracers(:,:,:,nsphum)
+   non_diff_dt_age  = dt_tracers(:,:,:,2)
 
    call gcm_vert_diff_down (1, 1,                                          &
                             delta_t,             ug(:,:,:,previous),       &
@@ -1421,10 +1482,19 @@ if(turb) then
 
    call gcm_vert_diff_up (1, 1, delta_t, Tri_surf, dt_tg(:,:,:), dt_tracers(:,:,:,nsphum), dt_tracers(:,:,:,:))
 
+    dq =( flux_q * Tri_surf%dtmass )/delta_t 
+
+    where (dq < 0.0)
+      dt_sink = dq
+    endwhere 
+
+    sink(:,:,num_levels) =  sink(:,:,num_levels) + dt_sink
+
    if(id_diff_dt_ug > 0) used = send_data(id_diff_dt_ug, dt_ug - non_diff_dt_ug, Time)
    if(id_diff_dt_vg > 0) used = send_data(id_diff_dt_vg, dt_vg - non_diff_dt_vg, Time)
    if(id_diff_dt_tg > 0) used = send_data(id_diff_dt_tg, dt_tg - non_diff_dt_tg, Time)
    if(id_diff_dt_qg > 0) used = send_data(id_diff_dt_qg, dt_tracers(:,:,:,nsphum) - non_diff_dt_qg, Time)
+   if(id_dt_tracer_diff > 0) used = send_data(id_dt_tracer_diff, dt_tracers(:,:,:,2) - non_diff_dt_age, Time)
 
 endif ! if(turb) then
 
@@ -1482,7 +1552,7 @@ if(bucket) then
       bucket_depth(:,:,future ) = bucket_depth(:,:,previous) + dt_bucket
       bucket_depth(:,:,current) = bucket_depth(:,:,current) + robert_bucket * bucket_depth(:,:,future) * raw_bucket
    endif
-
+   
    bucket_depth(:,:,future) = bucket_depth(:,:,future) + robert_bucket * (filt(:,:) + bucket_depth(:,:, future)) &
                            * (raw_bucket - 1.0)
 
@@ -1505,7 +1575,15 @@ if(bucket) then
 #endif
 
 endif
-! end Add bucket section
+
+  ! Calculate Age eq. RHS
+  if(do_wv_age) &
+    call get_age_moments(nsphum,nsphum_age,previous,grid_tracers,sink,dt_tracers)
+   
+  if(id_sink > 0) used = send_data(id_sink, sink, Time)
+  ! Save the first moment tendency
+  if(id_dt_tracer > 0) used = send_data(id_dt_tracer, dt_tracers(:,:,:,2), Time)
+  if(id_dt_q > 0) used = send_data(id_dt_q, dt_tracers(:,:,:,nsphum), Time)
 
 end subroutine idealized_moist_phys
 !=================================================================================================================================
@@ -1526,10 +1604,10 @@ if(do_damping) call damping_driver_end
 
 if(do_local_heating) call hs_forcing_end
 #ifdef SOC_NO_COMPILE
- !No need to end socrates
 #else
 if(do_socrates_radiation) call run_socrates_end
 #endif
+
 
 end subroutine idealized_moist_phys_end
 !=================================================================================================================================
