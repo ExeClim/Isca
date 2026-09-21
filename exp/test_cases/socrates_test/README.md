@@ -22,7 +22,7 @@ Access to this website requires a user account on the Met Office's Science Repos
 
 `https://code.metoffice.gov.uk/trac/home`
 
-To download a packaged release of Socrates, click on the `tar.xz` file of the latest version. Once the folder has downloaded, unzip it using
+To download a packaged release of Socrates, click on the `tar.xz` file of a version supported by Isca (currently 1710). Once the folder has downloaded, unzip it using
 
 `tar -xf INSERT_FILE_NAME_HERE.xz`
 
