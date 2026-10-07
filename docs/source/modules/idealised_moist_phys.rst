@@ -34,7 +34,7 @@ NB. Defaults are generally set to ``False`` to avoid accidental use of modules, 
 
 Humidity, Condensation and Convection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Four convection schemes, and the option of no convection, are currently available in Isca. The defaults are set so the user should actively select a scheme to use via one of the methods below. Large-scale condensation will be called following the convection scheme in all cases, unless ``DRY_CONV`` is selected.
+Four convection schemes, and the option of no convection, are currently available in Isca. The defaults are set so the user should actively select a scheme to use via one of the methods below. Large-scale condensation will be called following the convection scheme in all cases, unless ``DRY`` is selected.
 
 Method 1 (preferred)
 """"""""""""""""""""
@@ -43,15 +43,15 @@ The scheme to be used can be selected using the ``convection_scheme`` namelist p
 +--------------------------+---------------------------------------------------------------------------+
 |Value                     |Effect                                                                     |
 +==========================+===========================================================================+
-|``SIMPLE_BETTS_CONV``     |Use Frierson Quasi-Equilibrium convection scheme [Frierson2007]_.          |
+|``SIMPLE_BETTS_MILLER``          |Use Frierson Quasi-Equilibrium convection scheme [Frierson2007]_.          |
 +--------------------------+---------------------------------------------------------------------------+
-|``FULL_BETTS_MILLER_CONV``|Use the Betts-Miller convection scheme [Betts1986]_, [BettsMiller1986]_.   |
+|``FULL_BETTS_MILLER``     |Use the Betts-Miller convection scheme [Betts1986]_, [BettsMiller1986]_.   |
 +--------------------------+---------------------------------------------------------------------------+
-|``RAS_CONV``              |Use the relaxed Arakawa Schubert convection scheme [Moorthi1992]_.         |
+|``RAS``                   |Use the relaxed Arakawa Schubert convection scheme [Moorthi1992]_.         |
 +--------------------------+---------------------------------------------------------------------------+
-|``DRY_CONV``              |Use the dry convection scheme [Schneider2006]_.                            |
+|``DRY``                   |Use the dry convection scheme [Schneider2006]_.                            |
 +--------------------------+---------------------------------------------------------------------------+
-|``NO_CONV``               |Use no convection scheme.                                                  |
+|``NONE``                  |Use no convection scheme.                                                  |
 +--------------------------+---------------------------------------------------------------------------+
 |``UNSET``                 |Model looks through flags listed under Method 2.                           |
 +--------------------------+---------------------------------------------------------------------------+
@@ -65,11 +65,11 @@ Three namelist parameters exist as switches to select the convection options:
 +-------------------+----------------------------------------------------------------------------------+---------+
 | Option            | Summary                                                                          |Default  |
 +===================+==================================================================================+=========+
-|``lwet_convection``|If true, this is equivalent to specifying ``SIMPLE_BETTS_CONV`` in Method 1.      |``False``|
+|``lwet_convection``|If true, this is equivalent to specifying ``SIMPLE_BETTS_MILLER`` in Method 1.      |``False``|
 +-------------------+----------------------------------------------------------------------------------+---------+
-|``do_bm``          |If true, this is equivalent to specifying ``FULL_BETTS_MILLER_CONV`` in Method 1. |``False``|
+|``do_bm``          |If true, this is equivalent to specifying ``FULL_BETTS_MILLER`` in Method 1. |``False``|
 +-------------------+----------------------------------------------------------------------------------+---------+
-|``do_ras``         |If true, this is equivalent to specifying ``RAS_CONV`` in Method 1.               |``False``|
+|``do_ras``         |If true, this is equivalent to specifying ``RAS`` in Method 1.               |``False``|
 +-------------------+----------------------------------------------------------------------------------+---------+
 
 If multiple flags are set as True, or all are False, an error will be raised. This method exists for compatibility with configurations pre-dating method 1. Method 1 is preferred for new model configurations.
