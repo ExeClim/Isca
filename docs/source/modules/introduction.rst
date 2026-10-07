@@ -82,7 +82,7 @@ Running the experiment
     exp.run(...)
 will make the model run for the amount of time specified in ``main_nml`` (usually 30 days). 
 
-The ``use_restart`` option can be set to ``False`` to start from scratch (isothermal atmosphere) or can point to a restart file (``use_restart = $GFDL_DATA/exp_name/run####/restarts/*``) to initialize the run from the output of a previous run. If unspecified, it will start from where the previous run left off or from an isothermal atmosphere in the absence of a previous run.
+The ``use_restart`` option can be set to ``False`` to start from scratch (isothermal atmosphere) or ``True``, in which case ``restart_file`` must point to a restart file (``restart_file = $GFDL_DATA/exp_name/run####/restarts/*``) to initialize the run from the output of a previous run. If unspecified, it will start from where the previous run left off or from an isothermal atmosphere in the absence of a previous run.
 
 Output
 -------
